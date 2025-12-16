@@ -478,7 +478,7 @@ For Kenya tea industry only
 ### System Architecture & Interfaces
 
 - Each Model must be deployed separately
-- Each Model must offer a clear, well-documented interface 
+- Each Model must offer a clear, well-documented 1interface 
 - Communication via GRPC between models via sidecar 
 - Backend for frontend to connect model to UI 
 - Communication between the backend to frontend via REST-API and Web Sockets 
