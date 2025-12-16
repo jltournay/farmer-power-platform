@@ -1,0 +1,38 @@
+.env
+.venv/
+__pycache__/
+.idea
+*.iml
+.idea/.gitignore
+
+data/
+
+# OS generated files #
+######################
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+desktop.ini
+
+/.run/
+
+/test/generated_data/
+.vscode/settings.json
+/benchmarks/
+/.output.txt
+/mac_dev_config/
+/documentation/media/QC-analyzer hardware pptx.pptx
+/documentation/media/raw schema.pptx
+/tests_integration/test_output/
+/worker_1.sh
+/worker_2.sh
+/worker_3.sh
+/worker_4.sh
+/manager.sh
+/deploy/config_files/components/worker-specific/
+/prompt/
+/_bmad/
