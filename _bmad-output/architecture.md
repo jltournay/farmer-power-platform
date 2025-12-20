@@ -1614,8 +1614,9 @@ Action Plan Model                 NOTIFICATION INFRASTRUCTURE
 
 | Channel    | Adapter                       | Use Case                   |
 |------------|-------------------------------|----------------------------|
-| SMS        | Twilio, Africa's Talking      | Basic phones, low literacy |
-| WhatsApp   | WhatsApp Business API         | Rich media, most farmers   |
+| SMS        | Twilio, Africa's Talking      | Basic phones, brief alerts |
+| Voice IVR  | Africa's Talking, Twilio      | Detailed explanations for low-literacy farmers |
+| WhatsApp   | WhatsApp Business API         | Rich media, farmers with smartphones |
 | Telegram   | Telegram Bot API              | Tech-savvy farmers         |
 | Email      | SendGrid / SMTP               | Factory managers, reports  |
 | Mobile App | Push Notifications (FCM/APNs) | App users                  |
@@ -1773,6 +1774,218 @@ transliteration:
     "'": "'"
     "…": "..."
 ```
+
+### Voice IVR System
+
+The Voice IVR (Interactive Voice Response) system enables farmers with basic phones and limited literacy to receive detailed action plan explanations via spoken audio in their local language.
+
+#### Voice IVR Architecture
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                         VOICE IVR SYSTEM                                     │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                              │
+│  SMS HANDOFF                              INBOUND IVR                        │
+│  ┌─────────────────────┐                 ┌─────────────────────┐            │
+│  │ "Piga *384# kwa     │                 │ Farmer dials        │            │
+│  │  maelezo zaidi"     │ ───────────────▶│ *384# or shortcode  │            │
+│  └─────────────────────┘                 └──────────┬──────────┘            │
+│                                                     │                        │
+│                                                     ▼                        │
+│                                          ┌─────────────────────┐            │
+│                                          │ IVR GATEWAY         │            │
+│                                          │ (Africa's Talking)  │            │
+│                                          └──────────┬──────────┘            │
+│                                                     │                        │
+│                                                     ▼                        │
+│                                          ┌─────────────────────┐            │
+│                                          │ VOICE IVR SERVER    │            │
+│                                          │ (Notification Svc)  │            │
+│                                          └──────────┬──────────┘            │
+│                                                     │                        │
+│                           ┌─────────────────────────┼─────────────────────┐  │
+│                           ▼                         ▼                     ▼  │
+│                  ┌──────────────┐       ┌──────────────────┐   ┌──────────┐ │
+│                  │ CALLER ID    │       │ LANGUAGE         │   │ FARMER   │ │
+│                  │ LOOKUP       │       │ SELECTION        │   │ CONTEXT  │ │
+│                  │ (farmer_id)  │       │ (IVR menu)       │   │ FETCH    │ │
+│                  └──────┬───────┘       └────────┬─────────┘   └────┬─────┘ │
+│                         │                        │                   │       │
+│                         └────────────────────────┼───────────────────┘       │
+│                                                  ▼                           │
+│                                       ┌─────────────────────┐               │
+│                                       │ TTS ENGINE          │               │
+│                                       │ (Google Cloud TTS / │               │
+│                                       │  Amazon Polly)      │               │
+│                                       └──────────┬──────────┘               │
+│                                                  │                           │
+│                                                  ▼                           │
+│                                       ┌─────────────────────┐               │
+│                                       │ AUDIO STREAM        │               │
+│                                       │ Action plan spoken  │               │
+│                                       │ in local language   │               │
+│                                       │ (2-3 min max)       │               │
+│                                       └─────────────────────┘               │
+│                                                                              │
+└──────────────────────────────────────────────────────────────────────────────┘
+```
+
+#### Voice IVR Call Flow
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                         IVR CALL FLOW                                        │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                              │
+│  1. GREETING (5 sec)                                                         │
+│     "Habari! Karibu Farmer Power. Press 1 for Swahili, 2 for Kikuyu..."     │
+│                                                                              │
+│  2. LANGUAGE SELECTION                                                       │
+│     ┌──────┐  ┌──────┐  ┌──────┐                                            │
+│     │ 1    │  │ 2    │  │ 3    │                                            │
+│     │ SW   │  │ KI   │  │ LUO  │                                            │
+│     └──┬───┘  └──┬───┘  └──┬───┘                                            │
+│        └─────────┴─────────┘                                                 │
+│                  │                                                           │
+│                  ▼                                                           │
+│  3. FARMER IDENTIFICATION (auto via caller ID)                               │
+│     "Jambo Mama Wanjiku, tunakuwa na mpango wako..."                        │
+│                                                                              │
+│  4. ACTION PLAN PLAYBACK (2-3 min)                                          │
+│     TTS reads full action plan in selected language                         │
+│                                                                              │
+│  5. OPTIONS MENU                                                             │
+│     ┌──────┐  ┌──────┐  ┌──────┐                                            │
+│     │ 1    │  │ 2    │  │ 9    │                                            │
+│     │REPLAY│  │ HELP │  │ END  │                                            │
+│     └──────┘  └──────┘  └──────┘                                            │
+│                                                                              │
+└──────────────────────────────────────────────────────────────────────────────┘
+```
+
+#### TTS Engine Configuration
+
+```yaml
+# notification-service/config/voice-ivr.yaml
+voice_ivr:
+  enabled: true
+
+  # IVR Provider (handles call routing, DTMF, etc.)
+  ivr_provider:
+    primary: africa_talking
+    fallback: twilio
+    shortcode: "*384#"
+
+  # TTS Provider (text-to-speech conversion)
+  tts_provider:
+    primary: google_cloud_tts
+    fallback: amazon_polly
+
+  # Supported languages with voice configurations
+  languages:
+    swahili:
+      code: "sw-KE"
+      voice_name: "sw-KE-Standard-A"  # Female voice
+      display_name: "Kiswahili"
+      dtmf_key: "1"
+    kikuyu:
+      code: "ki-KE"
+      voice_name: "ki-KE-Standard-A"  # Custom trained
+      display_name: "Gĩkũyũ"
+      dtmf_key: "2"
+    luo:
+      code: "luo-KE"
+      voice_name: "luo-KE-Standard-A"  # Custom trained
+      display_name: "Dholuo"
+      dtmf_key: "3"
+
+  # Audio settings
+  audio:
+    speaking_rate: 0.9          # Slightly slower for clarity
+    pitch: 0.0                  # Natural pitch
+    volume_gain_db: 0.0
+    audio_encoding: "MP3"       # Compressed for streaming
+    sample_rate_hz: 8000        # Phone quality
+
+  # Call limits
+  limits:
+    max_duration_seconds: 300   # 5 min max call
+    max_tts_chars: 2000         # ~3 min of speech
+    max_replays: 3              # Prevent abuse
+
+  # Farmer identification
+  caller_id_lookup:
+    enabled: true
+    cache_ttl_seconds: 3600
+    fallback_prompt: "Please enter your farmer ID followed by hash"
+```
+
+#### SMS → Voice Handoff
+
+The SMS notification includes a Voice IVR prompt for farmers who want detailed explanations:
+
+```yaml
+# notification-service/templates/sms-with-voice.yaml
+sms_templates:
+  action_plan_with_voice:
+    swahili: |
+      {farmer_name}, chai yako: {quality_score} stars.
+      {short_action}.
+      Piga *384# kwa maelezo zaidi.
+    kikuyu: |
+      {farmer_name}, mũtĩ waku: {quality_score} stars.
+      {short_action}.
+      Ĩta *384# nĩ ũhoro mũingĩ.
+    luo: |
+      {farmer_name}, yathi mari: {quality_score} stars.
+      {short_action}.
+      Goch *384# mondo iyud weche momedore.
+```
+
+#### Action Plan to Voice Script Conversion
+
+The AI Model generates voice-optimized scripts alongside standard action plans:
+
+```python
+# ai-model/agents/action_generator.py
+class ActionPlanOutput(BaseModel):
+    # Standard outputs
+    action_plan_markdown: str
+    sms_summary: str  # Max 300 chars
+
+    # Voice IVR outputs (NEW)
+    voice_script: VoiceScript
+
+class VoiceScript(BaseModel):
+    """Voice-optimized action plan for TTS playback."""
+
+    greeting: str              # "Habari Mama Wanjiku..."
+    quality_summary: str       # "Chai yako imepata nyota 4..."
+    main_actions: list[str]    # Spoken action items (3-5 max)
+    closing: str               # "Ukihitaji msaada, wasiliana na..."
+
+    # TTS hints
+    pause_after_greeting_ms: int = 500
+    pause_between_actions_ms: int = 800
+
+    # Estimated duration
+    estimated_duration_seconds: int
+
+    # Language
+    language_code: str  # "sw-KE", "ki-KE", "luo-KE"
+```
+
+#### Voice IVR Cost Model
+
+| Component | Provider | Unit Cost | Monthly Estimate |
+|-----------|----------|-----------|------------------|
+| TTS API | Google Cloud TTS | $16 per 1M chars | $500-1,000 |
+| Voice Minutes | Africa's Talking | $0.02/min (Kenya) | $2,000-3,000 |
+| Shortcode Rental | Africa's Talking | $50/month | $50 |
+| **Total Voice IVR** | | | **~$3,000-4,000/month** |
+
+*Assumptions: 800K farmers, 20% use Voice IVR monthly, 2.5 min avg call*
 
 ### Two-Way Communication
 

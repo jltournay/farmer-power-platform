@@ -315,8 +315,9 @@ _This file contains critical rules and patterns that AI agents must follow when 
 
 - Farmers are often basic users with limited English
 - Action plans must be simple, clear, actionable
-- Generate dual-format: detailed (factory) + simple (farmer)
-- Support SMS delivery for farmer messages
+- Generate triple-format output: detailed (factory), SMS summary (farmer), voice script (farmer via IVR)
+- Support SMS + Voice IVR delivery for farmer messages
+- Voice IVR enables low-literacy farmers to hear detailed explanations in local languages
 
 ### SMS Cost Optimization (Notification Model)
 
@@ -325,6 +326,39 @@ _This file contains critical rules and patterns that AI agents must follow when 
 - Action Generator must output `sms_summary` field (max 300 chars)
 - Tiered strategy: critical alerts = immediate, routine = batched daily digest
 - Two-way SMS: support keyword commands (STOP, HELP, STATUS)
+- Include Voice IVR prompt in SMS: "Piga *384# kwa maelezo zaidi" (Call *384# for more details)
+
+### Voice IVR Rules (Notification Model)
+
+- **Purpose**: Provide detailed action plan explanations for low-literacy farmers via spoken audio
+- **Providers**: Africa's Talking (primary), Twilio (fallback) for IVR; Google Cloud TTS / Amazon Polly for TTS
+- **Languages supported**: Swahili (sw-KE), Kikuyu (ki-KE), Luo (luo-KE)
+
+**Voice Script Generation:**
+- Action Generator must output `voice_script` field alongside `sms_summary`
+- Voice scripts use `VoiceScript` Pydantic model with: greeting, quality_summary, main_actions (max 3), closing
+- Maximum voice script length: 2000 chars (~3 minutes of speech)
+- Use simple language (6th-grade reading level equivalent)
+- Action items start with verbs: "Anika..." (Dry...), "Usivune..." (Don't harvest...)
+
+**IVR Call Flow:**
+1. Farmer dials shortcode (*384#)
+2. Caller ID lookup → farmer identification (fallback: enter farmer ID)
+3. Language selection via DTMF (1=Swahili, 2=Kikuyu, 3=Luo)
+4. TTS plays personalized action plan (2-3 minutes)
+5. Options menu: replay (1), help (2), end (9)
+
+**TTS Configuration:**
+- Speaking rate: 0.9x (slightly slower for clarity)
+- Pauses: 0.5s after greeting, 0.8s between action items
+- Audio encoding: MP3, 8kHz sample rate (phone quality)
+- Max call duration: 5 minutes (cost control)
+- Max replays: 3 per call (abuse prevention)
+
+**Voice IVR Anti-Patterns:**
+- **NO hardcoded language strings** - All voice content via templates in MongoDB
+- **NO synchronous TTS calls** - Pre-generate audio or stream asynchronously
+- **NO storing raw audio** - Generate on-demand or cache with TTL
 
 ### Event Deduplication
 
@@ -383,4 +417,4 @@ This file contains critical rules. For detailed decisions not covered here:
 
 ---
 
-_Last Updated: 2025-12-17_
+_Last Updated: 2025-12-20_

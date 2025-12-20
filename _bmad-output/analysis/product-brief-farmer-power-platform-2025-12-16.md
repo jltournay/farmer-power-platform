@@ -40,7 +40,7 @@ Initial deployment targets tea production in Kenya (100 factories, 800,000 farms
 | **Cloud Platform** | Backend services, APIs, data processing |
 | **6 Models** | Collection, Knowledge, Action, Plantation, Market Analysis, AI |
 | **Data Storage** | MongoDB, Azure Blob, Pinecone |
-| **Farmer Messaging** | SMS/WhatsApp delivery to farmers |
+| **Farmer Messaging** | SMS/WhatsApp/Voice IVR delivery to farmers |
 | **Web Dashboards** | Factory manager, owner, and regulator interfaces |
 | **API Gateway** | Receives data FROM QC Analyzers |
 | **AI Action Plans** | Generates personalized farmer recommendations |
@@ -105,7 +105,7 @@ The Farmer Power Platform closes the loop with three connected capabilities:
 
 The six technical models (Collection, Knowledge, Action, Plantation, Market Analysis, AI) power this experience invisibly. Users don't see models - they see prices, photos, and simple instructions.
 
-**Delivery Channels:** Guidance is delivered via SMS in local languages (Swahili, Kikuyu, Luo) to accommodate farmers with basic feature phones. Visual evidence (photos of leaf quality issues) can be accessed via factory kiosks or WhatsApp for farmers with smartphones.
+**Delivery Channels:** Guidance is delivered via SMS in local languages (Swahili, Kikuyu, Luo) to accommodate farmers with basic feature phones. For detailed explanations, farmers can call the **Voice IVR system** to hear action plans spoken in their local language via Text-to-Speech - addressing low-literacy farmers without smartphones. Visual evidence (photos of leaf quality issues) can be accessed via factory kiosks or WhatsApp for farmers with smartphones.
 
 ---
 
@@ -248,6 +248,9 @@ The Cloud Platform does NOT control the QC Analyzer - it receives data via the C
 - [ ] Shows: Grade, score, ONE specific tip
 - [ ] Tip actionable within 24-48 hours
 - [ ] Price impact shown in KES
+- [ ] Can call Voice IVR for detailed explanation in local language
+- [ ] Voice message plays full action plan via TTS (2-3 minutes max)
+- [ ] Voice supports Swahili, Kikuyu, Luo language selection
 
 **Joseph (Factory Quality Manager) - Cloud Platform User:**
 - [ ] Dashboard loads in <3 seconds
@@ -334,7 +337,8 @@ Kesho: chuma KIJANI tu = ⭐⭐⭐⭐⭐!
 
 **Wanjiku (Low-tech, Low-literacy):**
 - SMS works on ANY phone (no app required)
-- Audio messages via WhatsApp for low-literacy farmers
+- **Voice IVR** for detailed explanations - farmer calls in to hear action plan in local language via TTS
+- Audio messages via WhatsApp for low-literacy farmers with smartphones
 - Factory kiosk displays photos for visual learners
 
 **Peter (Outdoor, High-pressure):**
@@ -633,8 +637,9 @@ The cloud platform receives data from edge devices; it does not control them. Ed
 | Storage (MongoDB, Blob, Pinecone) | $610 |
 | LLM APIs (OpenRouter, optimized) | $10,000 |
 | Messaging (WhatsApp + SMS fallback) | $8,000 |
+| Voice IVR (TTS + IVR minutes) | $4,000 |
 | Other (API Gateway, Weather) | $650 |
-| **Total** | **~$21,000/month** |
+| **Total** | **~$25,000/month** |
 
 **Unit Economics Targets:**
 - Per factory: < $250/month
