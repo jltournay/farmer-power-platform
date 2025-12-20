@@ -17,6 +17,7 @@ This guide provides comprehensive guidelines for developers working on the AI Mo
 7. [Security](#7-security)
 8. [Performance](#8-performance)
 9. [Observability](#9-observability)
+10. [RAG Knowledge Management](#10-rag-knowledge-management)
 
 ---
 
@@ -110,6 +111,193 @@ def should_retry_or_output(state: ExplorerState) -> str:
     return "output"
 ```
 
+#### LangGraph Saga Pattern (Parallel Analyzers)
+
+For complex analysis requiring multiple parallel analyzers with aggregation:
+
+```python
+from langgraph.graph import StateGraph, END
+from langgraph.checkpoint.mongodb import MongoDBSaver
+from typing import TypedDict, Optional
+import asyncio
+
+class SagaState(TypedDict):
+    doc_id: str
+    farmer_id: str
+    triage_result: dict
+    branch_results: dict[str, dict]  # Results from parallel branches
+    primary_diagnosis: Optional[dict]
+    secondary_diagnoses: list[dict]
+    workflow_metadata: dict
+
+def create_quality_analysis_saga():
+    """
+    Saga pattern for parallel analyzer orchestration.
+    Used when triage confidence < 0.7 and multiple analyzers needed.
+    """
+    workflow = StateGraph(SagaState)
+
+    # Nodes
+    workflow.add_node("fetch_context", fetch_context_node)
+    workflow.add_node("triage", triage_node)
+    workflow.add_node("parallel_analyzers", parallel_analyzers_node)
+    workflow.add_node("single_analyzer", single_analyzer_node)
+    workflow.add_node("aggregate", aggregate_node)
+    workflow.add_node("output", output_node)
+
+    # Edges
+    workflow.set_entry_point("fetch_context")
+    workflow.add_edge("fetch_context", "triage")
+
+    # Conditional: high confidence → single, low → parallel
+    workflow.add_conditional_edges(
+        "triage",
+        route_by_confidence,
+        {
+            "single": "single_analyzer",
+            "parallel": "parallel_analyzers"
+        }
+    )
+
+    workflow.add_edge("single_analyzer", "aggregate")
+    workflow.add_edge("parallel_analyzers", "aggregate")
+    workflow.add_edge("aggregate", "output")
+    workflow.add_edge("output", END)
+
+    # Compile with MongoDB checkpointing for crash recovery
+    checkpointer = MongoDBSaver.from_conn_string(
+        conn_string=os.environ["MONGODB_URI"],
+        db_name="ai_model",
+        collection_name="workflow_checkpoints"
+    )
+
+    return workflow.compile(checkpointer=checkpointer)
+
+def route_by_confidence(state: SagaState) -> str:
+    """Route based on triage confidence."""
+    if state["triage_result"]["confidence"] >= 0.7:
+        return "single"
+    return "parallel"
+
+async def parallel_analyzers_node(state: SagaState) -> dict:
+    """
+    Fan-out to multiple analyzers in parallel.
+    Implements timeout and partial failure handling.
+    """
+    triage = state["triage_result"]
+    analyzers_to_run = triage["route_to"] + triage.get("also_check", [])
+
+    # Create tasks for each analyzer
+    tasks = {}
+    for analyzer in analyzers_to_run:
+        tasks[analyzer] = run_analyzer(analyzer, state)
+
+    # Wait with timeout
+    results = {}
+    try:
+        done, pending = await asyncio.wait(
+            tasks.values(),
+            timeout=30.0,  # 30 second timeout
+            return_when=asyncio.ALL_COMPLETED
+        )
+
+        # Collect results
+        for analyzer, task in tasks.items():
+            if task in done:
+                try:
+                    results[analyzer] = task.result()
+                except Exception as e:
+                    results[analyzer] = {"error": str(e), "status": "failed"}
+            else:
+                task.cancel()
+                results[analyzer] = {"error": "timeout", "status": "timeout"}
+
+    except Exception as e:
+        # Partial results are still useful
+        pass
+
+    return {"branch_results": results}
+
+def aggregate_node(state: SagaState) -> dict:
+    """
+    Aggregate results from parallel analyzers.
+    Select primary (highest confidence) and secondaries.
+    """
+    results = state["branch_results"]
+
+    # Filter successful results
+    successful = {
+        k: v for k, v in results.items()
+        if v.get("status") != "failed" and v.get("status") != "timeout"
+    }
+
+    if not successful:
+        return {
+            "primary_diagnosis": {"condition": "inconclusive", "confidence": 0},
+            "secondary_diagnoses": []
+        }
+
+    # Sort by confidence
+    sorted_results = sorted(
+        successful.items(),
+        key=lambda x: x[1].get("confidence", 0),
+        reverse=True
+    )
+
+    primary = sorted_results[0][1]
+    secondaries = [
+        r[1] for r in sorted_results[1:]
+        if r[1].get("confidence", 0) >= 0.5
+    ][:2]  # Max 2 secondary
+
+    return {
+        "primary_diagnosis": primary,
+        "secondary_diagnoses": secondaries
+    }
+```
+
+#### LangGraph Checkpointing (Crash Recovery)
+
+Always use checkpointing for workflows that make LLM calls:
+
+```python
+from langgraph.checkpoint.mongodb import MongoDBSaver
+
+def create_workflow_with_checkpointing():
+    workflow = StateGraph(MyState)
+    # ... add nodes and edges ...
+
+    # MongoDB checkpointer survives crashes
+    checkpointer = MongoDBSaver.from_conn_string(
+        conn_string=os.environ["MONGODB_URI"],
+        db_name="ai_model",
+        collection_name="workflow_checkpoints"
+    )
+
+    return workflow.compile(checkpointer=checkpointer)
+
+# When invoking, provide a thread_id for resumability
+async def run_with_recovery(workflow, input_data: dict, thread_id: str):
+    config = {"configurable": {"thread_id": thread_id}}
+
+    # If workflow was interrupted, this resumes from last checkpoint
+    result = await workflow.ainvoke(input_data, config)
+    return result
+```
+
+**Crash Recovery Flow:**
+```
+1. Event received → workflow starts
+2. Fetch context ✓ → checkpoint saved
+3. Triage ✓ → checkpoint saved
+4. Parallel analyzers running → CRASH!
+5. AI Model restarts
+6. Load checkpoint from MongoDB
+7. Resume from last completed node
+8. Re-run only incomplete branches
+9. Continue to aggregation → output
+```
+
 #### Generator Graph with Multiple Outputs
 
 ```python
@@ -195,23 +383,23 @@ ai-model/
 │   │       └── generators/
 │   │           └── weekly-action-plan.yaml
 │   │
-│   ├── prompts/                      # Prompt templates (Markdown)
+│   ├── prompts/                      # Prompt source files (Git-versioned)
+│   │   │                             # NOTE: Deployed to MongoDB, not read from disk at runtime
 │   │   ├── extractors/
 │   │   │   └── qc-event/
-│   │   │       ├── system.md
-│   │   │       └── template.md
+│   │   │       ├── prompt.yaml       # Combined prompt definition
+│   │   │       └── examples.yaml     # Few-shot examples
 │   │   ├── explorers/
 │   │   │   ├── disease-diagnosis/
-│   │   │   │   ├── system.md
-│   │   │   │   └── template.md
+│   │   │   │   ├── prompt.yaml
+│   │   │   │   └── examples.yaml
 │   │   │   └── weather-impact/
-│   │   │       ├── system.md
-│   │   │       └── template.md
+│   │   │       ├── prompt.yaml
+│   │   │       └── examples.yaml
 │   │   └── generators/
 │   │       └── action-plan/
-│   │           ├── system.md
-│   │           ├── report-template.md
-│   │           └── farmer-message-template.md
+│   │           ├── prompt.yaml
+│   │           └── examples.yaml
 │   │
 │   ├── llm/                          # LLM Gateway
 │   │   ├── __init__.py
@@ -444,6 +632,331 @@ Create test data:
 - [ ] Golden sample tests created
 - [ ] Trigger registered in domain model
 
+### Advanced Patterns
+
+#### Triage Agent Pattern
+
+For cost optimization, use a fast triage agent (Haiku) before invoking expensive analyzers (Sonnet):
+
+```
+┌───────────────────────────────────────────────────────────────────┐
+│                     TRIAGE-FIRST PATTERN                          │
+├───────────────────────────────────────────────────────────────────┤
+│                                                                   │
+│   QC Event ──► Triage (Haiku) ──┬──► High Confidence (≥0.7)      │
+│                   ~$0.001        │    Route to single analyzer    │
+│                   ~200ms         │                                │
+│                                  └──► Low Confidence (<0.7)       │
+│                                       Invoke parallel analyzers   │
+│                                                                   │
+│   Result: 60-70% of events skip expensive parallel analysis      │
+│                                                                   │
+└───────────────────────────────────────────────────────────────────┘
+```
+
+**Triage Agent Configuration:**
+
+```yaml
+# src/agents/instances/triage/quality-triage.yaml
+agent:
+  id: "quality-triage"
+  type: extractor  # Simple classification, use LangChain
+  version: "1.0.0"
+  description: "Fast classification of quality issues for routing"
+
+  llm:
+    task_type: "triage"  # Routes to Haiku
+    temperature: 0.1     # Low temperature for consistent classification
+    max_tokens: 200      # Short response
+
+  prompt:
+    system_file: "prompts/triage/quality/system.md"
+    template_file: "prompts/triage/quality/template.md"
+    output_format: "json"
+    output_schema:
+      type: object
+      properties:
+        classification:
+          type: string
+          enum: [disease, weather, harvest, pest, nutrition, processing, unknown]
+        confidence:
+          type: number
+          minimum: 0
+          maximum: 1
+        route_to:
+          type: array
+          items:
+            type: string
+        also_check:
+          type: array
+          items:
+            type: string
+          description: "Secondary analyzers to run if uncertain"
+
+  # Few-shot examples improve triage accuracy
+  few_shot:
+    enabled: true
+    examples_file: "prompts/triage/quality/examples.yaml"
+    max_examples: 5
+```
+
+**Triage Prompt with Few-Shot Examples:**
+
+```markdown
+<!-- prompts/triage/quality/system.md -->
+You are a fast quality issue classifier for tea leaf analysis.
+
+Your job is to quickly categorize the issue type and route to the appropriate analyzer.
+
+## Classification Categories
+- disease: Fungal, bacterial, or viral infections
+- weather: Damage from rain, frost, drought, or extreme temperatures
+- harvest: Timing, technique, or handling issues
+- pest: Insect or animal damage
+- nutrition: Soil deficiency or fertilizer issues
+- processing: Factory handling problems
+- unknown: Cannot determine from available information
+
+## Output Rules
+- Be decisive - pick the most likely category
+- Set confidence based on how clear the symptoms are
+- If confidence < 0.7, add secondary categories to also_check
+- route_to contains the primary analyzer(s) to invoke
+```
+
+**Triage Feedback Loop:**
+
+```python
+# Agronomist corrections improve triage over time
+async def record_triage_correction(
+    triage_result: dict,
+    actual_diagnosis: dict,
+    agronomist_id: str
+):
+    """
+    When agronomist corrects a diagnosis, update triage few-shot examples.
+    This creates a continuous improvement loop.
+    """
+    if triage_result["classification"] != actual_diagnosis["condition_category"]:
+        # Triage was wrong - this is a learning opportunity
+        await store_few_shot_candidate(
+            input_summary=triage_result["input_summary"],
+            predicted=triage_result["classification"],
+            actual=actual_diagnosis["condition_category"],
+            agronomist_id=agronomist_id,
+            context=actual_diagnosis.get("correction_notes")
+        )
+
+        # Periodically review candidates and add best ones to few-shot examples
+        await trigger_few_shot_review_if_needed()
+```
+
+#### Tiered Vision Processing
+
+For image analysis, use a two-tier approach to minimize expensive vision API calls:
+
+```
+┌───────────────────────────────────────────────────────────────────┐
+│                   TIERED VISION PROCESSING                        │
+├───────────────────────────────────────────────────────────────────┤
+│                                                                   │
+│   Image ──► Tier 1: Haiku (256x256)                              │
+│              Cost: ~$0.002                                        │
+│              Purpose: Quick screening                             │
+│                    │                                              │
+│                    ├──► "Normal" (confidence > 0.8)              │
+│                    │    → Skip Tier 2, output directly           │
+│                    │                                              │
+│                    └──► "Abnormal" or uncertain                  │
+│                         → Proceed to Tier 2                       │
+│                                                                   │
+│             ──► Tier 2: Sonnet (full resolution)                 │
+│                  Cost: ~$0.02                                     │
+│                  Purpose: Detailed analysis                       │
+│                                                                   │
+│   Result: ~40% cost reduction for image-heavy workloads          │
+│                                                                   │
+└───────────────────────────────────────────────────────────────────┘
+```
+
+**Tiered Vision Implementation:**
+
+```python
+async def analyze_image_tiered(
+    image_path: str,
+    farmer_context: dict
+) -> dict:
+    """
+    Two-tier vision analysis for cost optimization.
+    """
+    # Tier 1: Quick screening with downscaled image
+    thumbnail = resize_image(image_path, max_size=256)
+
+    tier1_result = await llm_gateway.complete_vision(
+        model="haiku",
+        image=thumbnail,
+        prompt=TIER1_SCREENING_PROMPT,
+        max_tokens=100
+    )
+
+    # If clearly normal, skip expensive analysis
+    if tier1_result["assessment"] == "normal" and tier1_result["confidence"] > 0.8:
+        return {
+            "condition": "healthy",
+            "confidence": tier1_result["confidence"],
+            "tier": 1,
+            "cost": tier1_result["cost"]
+        }
+
+    # Tier 2: Detailed analysis with full resolution
+    tier2_result = await llm_gateway.complete_vision(
+        model="sonnet",
+        image=load_image(image_path),  # Full resolution
+        prompt=TIER2_ANALYSIS_PROMPT.format(
+            tier1_findings=tier1_result["findings"],
+            farmer_context=farmer_context
+        ),
+        max_tokens=500
+    )
+
+    return {
+        **tier2_result,
+        "tier": 2,
+        "cost": tier1_result["cost"] + tier2_result["cost"]
+    }
+```
+
+#### Diagnosis Aggregation Rules
+
+When multiple analyzers produce diagnoses, apply these aggregation rules:
+
+```yaml
+# config/aggregation-rules.yaml
+aggregation:
+  # Primary diagnosis selection
+  primary:
+    strategy: highest_confidence
+    minimum_confidence: 0.5
+    tie_breaker: severity  # If tied, pick more severe
+
+  # Secondary diagnoses
+  secondary:
+    max_count: 2
+    minimum_confidence: 0.5
+    must_be_different_category: true
+
+  # Conflict resolution
+  conflicts:
+    # When two analyzers disagree on the same category
+    same_category_conflict:
+      strategy: highest_confidence
+      require_minimum_gap: 0.15  # Winner must be 15% more confident
+
+    # When results are contradictory (e.g., "too wet" vs "too dry")
+    contradictory_results:
+      strategy: flag_for_review
+      notify: true
+
+  # Output rules
+  output:
+    include_all_analyzer_results: true  # For transparency
+    include_aggregation_reasoning: true
+    confidence_penalty_for_disagreement: 0.1  # Reduce confidence when analyzers disagree
+```
+
+**Aggregation Implementation:**
+
+```python
+def aggregate_diagnoses(
+    analyzer_results: dict[str, dict],
+    rules: AggregationRules
+) -> AggregatedDiagnosis:
+    """
+    Aggregate results from multiple parallel analyzers.
+    """
+    # Filter to successful results only
+    valid_results = {
+        k: v for k, v in analyzer_results.items()
+        if v.get("status") == "success" and v.get("confidence", 0) >= rules.primary.minimum_confidence
+    }
+
+    if not valid_results:
+        return AggregatedDiagnosis(
+            primary={"condition": "inconclusive", "confidence": 0},
+            secondary=[],
+            reasoning="No analyzer produced confident results"
+        )
+
+    # Sort by confidence (and severity as tie-breaker)
+    sorted_results = sorted(
+        valid_results.items(),
+        key=lambda x: (x[1]["confidence"], severity_score(x[1].get("severity", "low"))),
+        reverse=True
+    )
+
+    # Select primary
+    primary = sorted_results[0][1]
+
+    # Check for conflicts
+    conflict_detected = detect_conflicts(sorted_results, rules)
+    if conflict_detected:
+        primary["confidence"] -= rules.output.confidence_penalty_for_disagreement
+        primary["conflict_warning"] = conflict_detected
+
+    # Select secondaries (different categories only)
+    primary_category = primary.get("condition_category")
+    secondaries = [
+        r[1] for r in sorted_results[1:]
+        if r[1].get("condition_category") != primary_category
+        and r[1].get("confidence", 0) >= rules.secondary.minimum_confidence
+    ][:rules.secondary.max_count]
+
+    return AggregatedDiagnosis(
+        primary=primary,
+        secondary=secondaries,
+        all_results=analyzer_results,
+        reasoning=generate_aggregation_reasoning(sorted_results, conflict_detected)
+    )
+```
+
+#### Diagnosis Deduplication
+
+Before running expensive analysis, check if similar conditions were already diagnosed recently:
+
+```python
+async def check_existing_diagnosis(
+    farmer_id: str,
+    symptoms: dict,
+    lookback_days: int = 7
+) -> Optional[dict]:
+    """
+    Check if farmer has recent diagnosis for similar symptoms.
+    Prevents duplicate analysis for ongoing conditions.
+    """
+    recent_diagnoses = await knowledge_mcp.get_recent_diagnoses(
+        farmer_id=farmer_id,
+        days=lookback_days
+    )
+
+    for diagnosis in recent_diagnoses:
+        similarity = calculate_symptom_similarity(
+            symptoms,
+            diagnosis["original_symptoms"]
+        )
+
+        if similarity > 0.85:  # 85% similar symptoms
+            # Return existing diagnosis with freshness indicator
+            return {
+                **diagnosis,
+                "source": "cached",
+                "original_date": diagnosis["created_at"],
+                "similarity_score": similarity,
+                "note": "Similar condition diagnosed recently - using existing analysis"
+            }
+
+    return None  # No match, proceed with fresh analysis
+```
+
 ---
 
 ## 4. Prompt Engineering
@@ -560,20 +1073,262 @@ Output:
 }
 ```
 
-### Prompt Versioning
+### Externalized Prompt Management
 
-Track prompt versions in the YAML config:
+Prompts are stored in MongoDB for hot-reload capability and A/B testing without redeployment. Source files in Git provide version control and review workflow.
+
+#### Prompt Source File Structure
 
 ```yaml
+# src/prompts/explorers/disease-diagnosis/prompt.yaml
 prompt:
-  system_file: "prompts/explorers/disease-diagnosis/system.md"
-  template_file: "prompts/explorers/disease-diagnosis/template.md"
-  version: "2.1.0"  # Semantic versioning
-  changelog:
-    - "2.1.0: Added regional context consideration"
-    - "2.0.0: Restructured output format"
-    - "1.0.0: Initial version"
+  prompt_id: "disease-diagnosis"
+  agent_id: "diagnose-quality-issue"
+  version: "2.1.0"
+
+  content:
+    system_prompt: |
+      You are an expert agricultural diagnostician for the Farmer Power platform.
+
+      Your role is to analyze quality issues in tea leaf samples and provide
+      accurate diagnoses with actionable recommendations.
+
+      ## Guidelines
+      - Be specific and actionable
+      - Include confidence levels (0-1)
+      - Consider regional and seasonal factors
+      - Prioritize farmer-friendly language
+
+      ## Output Format
+      Respond in JSON with: condition, confidence, severity, details, recommendations
+
+    template: |
+      ## Input Document
+      {{document}}
+
+      ## Farmer Context
+      {{farmer_context}}
+
+      ## Expert Knowledge
+      {{rag_context}}
+
+      ## Task
+      Analyze the above information and diagnose any quality issues.
+
+    output_schema:
+      type: object
+      properties:
+        condition: { type: string }
+        confidence: { type: number, minimum: 0, maximum: 1 }
+        severity: { type: string, enum: [low, moderate, high, critical] }
+        details: { type: string }
+        recommendations: { type: array, items: { type: string } }
+
+  metadata:
+    author: "agronomist_team"
+    changelog:
+      - "2.1.0: Added regional context consideration"
+      - "2.0.0: Restructured output format"
+      - "1.0.0: Initial version"
 ```
+
+#### Runtime Prompt Loading
+
+Agents load prompts from MongoDB at startup with automatic refresh:
+
+```python
+class PromptManager:
+    """Manage prompt loading from MongoDB with caching."""
+
+    def __init__(self, db_client, refresh_interval: int = 300):
+        self.db = db_client
+        self.cache = {}
+        self.refresh_interval = refresh_interval  # 5 minutes default
+
+    async def get_prompt(
+        self,
+        prompt_id: str,
+        version: str = None
+    ) -> PromptConfig:
+        """
+        Load prompt from MongoDB.
+        Uses cache with TTL for performance.
+        """
+        cache_key = f"{prompt_id}:{version or 'active'}"
+
+        # Check cache
+        if cache_key in self.cache:
+            cached = self.cache[cache_key]
+            if time.time() - cached["loaded_at"] < self.refresh_interval:
+                return cached["prompt"]
+
+        # Load from MongoDB
+        query = {"prompt_id": prompt_id}
+        if version:
+            query["version"] = version
+        else:
+            query["status"] = "active"
+
+        doc = await self.db.prompts.find_one(query)
+
+        if not doc:
+            raise PromptNotFoundError(f"Prompt {prompt_id} not found")
+
+        prompt = PromptConfig(
+            system_prompt=doc["content"]["system_prompt"],
+            template=doc["content"]["template"],
+            output_schema=doc["content"].get("output_schema"),
+            few_shot_examples=doc["content"].get("few_shot_examples", []),
+            version=doc["version"],
+            ab_test=doc.get("ab_test")
+        )
+
+        # Update cache
+        self.cache[cache_key] = {
+            "prompt": prompt,
+            "loaded_at": time.time()
+        }
+
+        return prompt
+
+    async def force_refresh(self, prompt_id: str):
+        """Force immediate refresh of a prompt (for A/B test changes)."""
+        keys_to_delete = [k for k in self.cache if k.startswith(f"{prompt_id}:")]
+        for key in keys_to_delete:
+            del self.cache[key]
+```
+
+#### Prompt Deployment Workflow
+
+```
+┌───────────────────────────────────────────────────────────────────┐
+│                   PROMPT DEPLOYMENT WORKFLOW                       │
+├───────────────────────────────────────────────────────────────────┤
+│                                                                   │
+│  1. AUTHOR (Local Development)                                    │
+│     └─→ Edit prompt YAML in src/prompts/                         │
+│     └─→ Test locally with farmer-cli playground                  │
+│     └─→ Commit to Git (status: draft)                            │
+│                                                                   │
+│  2. REVIEW (Pull Request)                                         │
+│     └─→ PR triggers validation: farmer-cli prompt validate       │
+│     └─→ Reviewer checks prompt quality, examples, schema         │
+│     └─→ Approval merges to main                                  │
+│                                                                   │
+│  3. STAGE (CI/CD Pipeline)                                        │
+│     └─→ farmer-cli prompt stage --prompt disease-diagnosis       │
+│     └─→ Uploads to MongoDB with status: staged                   │
+│     └─→ Runs golden sample tests against staged version          │
+│                                                                   │
+│  4. A/B TEST (Optional)                                           │
+│     └─→ farmer-cli prompt ab-test start --prompt disease-diagnosis │
+│     └─→ Routes 10-20% traffic to staged version                  │
+│     └─→ Monitors accuracy and latency metrics                    │
+│                                                                   │
+│  5. PROMOTE                                                       │
+│     └─→ farmer-cli prompt promote --prompt disease-diagnosis     │
+│     └─→ Archives previous active version                         │
+│     └─→ Sets staged → active (immediate, no redeploy)            │
+│                                                                   │
+│  6. ROLLBACK (If Needed)                                          │
+│     └─→ farmer-cli prompt rollback --prompt disease-diagnosis    │
+│     └─→ Restores previous archived version to active             │
+│                                                                   │
+└───────────────────────────────────────────────────────────────────┘
+```
+
+#### CLI Commands for Prompt Management
+
+```bash
+# Validate prompt YAML structure
+farmer-cli prompt validate --prompt disease-diagnosis
+
+# Stage prompt to MongoDB (from Git source)
+farmer-cli prompt stage --prompt disease-diagnosis
+
+# Start A/B test with staged version
+farmer-cli prompt ab-test start \
+  --prompt disease-diagnosis \
+  --traffic 20
+
+# Check A/B test results
+farmer-cli prompt ab-test status --prompt disease-diagnosis
+
+# Promote staged to active
+farmer-cli prompt promote --prompt disease-diagnosis
+
+# Rollback to previous version
+farmer-cli prompt rollback \
+  --prompt disease-diagnosis \
+  --to-version 2.0.0
+
+# List all versions
+farmer-cli prompt versions --prompt disease-diagnosis
+
+# Force refresh in running AI Model (immediate)
+farmer-cli prompt refresh --prompt disease-diagnosis --env production
+```
+
+#### Prompt A/B Testing
+
+Test prompt changes with production traffic before full rollout:
+
+```python
+class PromptABTestRouter:
+    """Route to control or variant prompt versions."""
+
+    def __init__(self, test_config: dict):
+        self.prompt_id = test_config["prompt_id"]
+        self.control_version = test_config["control_version"]
+        self.variant_version = test_config["variant_version"]
+        self.traffic_percentage = test_config["traffic_percentage"]
+
+    def get_version(self, request_id: str) -> tuple[str, str]:
+        """
+        Deterministic routing based on request_id.
+        Returns (version, group) tuple.
+        """
+        hash_val = int(hashlib.md5(request_id.encode()).hexdigest(), 16)
+        bucket = hash_val % 100
+
+        if bucket < self.traffic_percentage:
+            return self.variant_version, "variant"
+        return self.control_version, "control"
+
+    async def get_prompt_with_tracking(
+        self,
+        prompt_manager: PromptManager,
+        request_id: str
+    ) -> PromptConfig:
+        """Get prompt version with A/B tracking."""
+        version, group = self.get_version(request_id)
+
+        prompt = await prompt_manager.get_prompt(
+            self.prompt_id,
+            version=version
+        )
+
+        # Track for analysis
+        await metrics.record_ab_usage(
+            prompt_id=self.prompt_id,
+            version=version,
+            group=group,
+            request_id=request_id
+        )
+
+        return prompt
+```
+
+#### Key Benefits
+
+| Benefit | Description |
+|---------|-------------|
+| **No Redeploy** | Change prompts without rebuilding/deploying AI Model container |
+| **Hot Reload** | 5-minute cache TTL means changes take effect quickly |
+| **A/B Testing** | Test prompt changes safely with subset of traffic |
+| **Instant Rollback** | Restore previous version in seconds if issues arise |
+| **Version History** | Full audit trail of all prompt changes |
+| **Git-Backed** | Source of truth in Git with review workflow |
 
 ---
 
@@ -984,6 +1739,285 @@ histogram_quantile(0.5, sum(rate(agent_confidence_bucket[1h])) by (le, correct))
 # Cost per correct output
 sum(rate(llm_cost_total[1h])) by (agent_id) /
 sum(rate(agent_correct_total[1h])) by (agent_id)
+```
+
+### Agronomist Feedback Loop
+
+When agronomists correct diagnoses, capture this feedback to improve triage and analysis agents:
+
+```
+┌───────────────────────────────────────────────────────────────────┐
+│                   CONTINUOUS IMPROVEMENT LOOP                      │
+├───────────────────────────────────────────────────────────────────┤
+│                                                                   │
+│   Production Diagnosis ──► Agronomist Review                     │
+│          │                        │                               │
+│          │                        ├──► Approved ──► No action     │
+│          │                        │                               │
+│          │                        └──► Corrected                  │
+│          │                                │                       │
+│          │                                ▼                       │
+│          │                        Store Correction                │
+│          │                                │                       │
+│          │                                ▼                       │
+│          │         ┌──────────────────────┴───────────────┐      │
+│          │         │                                       │      │
+│          │         ▼                                       ▼      │
+│          │   Update Triage                         Create New    │
+│          │   Few-Shot Examples                     Golden Sample │
+│          │         │                                       │      │
+│          │         └──────────────────────┬───────────────┘      │
+│          │                                │                       │
+│          │                                ▼                       │
+│          └────────────────────► Improved Agents                   │
+│                                                                   │
+└───────────────────────────────────────────────────────────────────┘
+```
+
+**Feedback Capture Implementation:**
+
+```python
+async def handle_agronomist_correction(
+    diagnosis_id: str,
+    original_diagnosis: dict,
+    corrected_diagnosis: dict,
+    agronomist_id: str,
+    correction_notes: str
+):
+    """
+    Process agronomist correction and route to appropriate improvement path.
+    """
+    correction = {
+        "diagnosis_id": diagnosis_id,
+        "original": original_diagnosis,
+        "corrected": corrected_diagnosis,
+        "agronomist_id": agronomist_id,
+        "notes": correction_notes,
+        "timestamp": datetime.utcnow().isoformat()
+    }
+
+    # Determine correction type
+    if original_diagnosis["condition"] != corrected_diagnosis["condition"]:
+        # Classification was wrong - triage improvement opportunity
+        await update_triage_examples(correction)
+
+    if abs(original_diagnosis["confidence"] - 0.5) > 0.3:
+        # High confidence but wrong - prompt tuning needed
+        await flag_for_prompt_review(correction)
+
+    # Always store for golden sample consideration
+    await store_correction_candidate(correction)
+
+    # Update metrics for monitoring
+    await metrics.increment(
+        "agronomist_corrections_total",
+        tags={
+            "original_condition": original_diagnosis["condition"],
+            "corrected_condition": corrected_diagnosis["condition"],
+            "agent_id": original_diagnosis.get("agent_id")
+        }
+    )
+
+async def update_triage_examples(correction: dict):
+    """
+    Add correction to triage few-shot example candidates.
+    Reviewed periodically and best examples promoted to production.
+    """
+    candidate = {
+        "input_summary": extract_input_summary(correction["original"]),
+        "predicted_category": correction["original"]["condition_category"],
+        "actual_category": correction["corrected"]["condition_category"],
+        "symptoms": correction["original"].get("symptoms", []),
+        "agronomist_notes": correction["notes"],
+        "quality_score": 0,  # Updated during review
+        "status": "pending_review"
+    }
+
+    await db.triage_example_candidates.insert_one(candidate)
+
+    # Check if we have enough candidates for review
+    pending_count = await db.triage_example_candidates.count_documents(
+        {"status": "pending_review"}
+    )
+
+    if pending_count >= 10:
+        await trigger_example_review_workflow()
+```
+
+**Few-Shot Example Review Workflow:**
+
+```python
+async def review_triage_examples():
+    """
+    Periodic review of correction candidates to promote to few-shot examples.
+    Run weekly or when candidate count threshold reached.
+    """
+    candidates = await db.triage_example_candidates.find(
+        {"status": "pending_review"}
+    ).to_list(100)
+
+    # Group by category mismatch type
+    grouped = group_by_correction_type(candidates)
+
+    for correction_type, examples in grouped.items():
+        # Select best example for each type
+        best = select_best_example(examples, criteria=[
+            "clear_symptoms",
+            "representative_case",
+            "agronomist_confidence"
+        ])
+
+        if best and best["quality_score"] >= 0.8:
+            # Promote to production few-shot examples
+            await promote_to_few_shot(best, correction_type)
+
+            # Update status
+            await db.triage_example_candidates.update_one(
+                {"_id": best["_id"]},
+                {"$set": {"status": "promoted"}}
+            )
+
+    # Archive old candidates
+    await archive_old_candidates(days=30)
+```
+
+### RAG Knowledge A/B Testing
+
+Test new knowledge base versions before full deployment:
+
+```yaml
+# config/rag-ab-test.yaml
+ab_tests:
+  - test_id: "disease-kb-v2"
+    description: "Testing improved fungal disease documentation"
+    status: active
+    started: "2024-01-15"
+
+    control:
+      knowledge_version: "disease-kb-v1.2"
+      traffic_percentage: 80
+
+    variant:
+      knowledge_version: "disease-kb-v2.0-staged"
+      traffic_percentage: 20
+
+    metrics:
+      - accuracy_vs_agronomist_review
+      - confidence_calibration
+      - recommendation_acceptance_rate
+
+    success_criteria:
+      accuracy_improvement: ">= 5%"
+      no_regression_on: ["latency", "cost"]
+
+    auto_promote:
+      enabled: true
+      minimum_samples: 500
+      confidence_level: 0.95
+```
+
+**A/B Test Implementation:**
+
+```python
+class RAGABTestRouter:
+    """Route RAG queries to control or variant knowledge versions."""
+
+    def __init__(self, test_config: dict):
+        self.test_id = test_config["test_id"]
+        self.control = test_config["control"]
+        self.variant = test_config["variant"]
+
+    def get_knowledge_version(self, farmer_id: str) -> tuple[str, str]:
+        """
+        Deterministic routing based on farmer_id.
+        Returns (version, group) tuple.
+        """
+        # Hash farmer_id for consistent assignment
+        hash_val = int(hashlib.md5(farmer_id.encode()).hexdigest(), 16)
+        bucket = hash_val % 100
+
+        if bucket < self.variant["traffic_percentage"]:
+            return self.variant["knowledge_version"], "variant"
+        return self.control["knowledge_version"], "control"
+
+    async def query_with_tracking(
+        self,
+        query: str,
+        farmer_id: str,
+        domains: list[str]
+    ) -> dict:
+        """Query RAG with A/B test tracking."""
+        version, group = self.get_knowledge_version(farmer_id)
+
+        # Query the appropriate version
+        result = await rag_engine.query(
+            query=query,
+            domains=domains,
+            knowledge_version=version
+        )
+
+        # Track for analysis
+        await metrics.record_ab_query(
+            test_id=self.test_id,
+            group=group,
+            version=version,
+            farmer_id=farmer_id,
+            query_hash=hashlib.md5(query.encode()).hexdigest()
+        )
+
+        return {**result, "ab_test_group": group, "knowledge_version": version}
+```
+
+**A/B Test Analysis:**
+
+```python
+async def analyze_ab_test(test_id: str) -> dict:
+    """
+    Analyze A/B test results and determine if variant should be promoted.
+    """
+    test_config = await load_test_config(test_id)
+
+    # Gather metrics for control and variant
+    control_metrics = await gather_group_metrics(test_id, "control")
+    variant_metrics = await gather_group_metrics(test_id, "variant")
+
+    # Statistical significance testing
+    results = {}
+    for metric in test_config["metrics"]:
+        control_val = control_metrics[metric]
+        variant_val = variant_metrics[metric]
+
+        # Calculate statistical significance
+        p_value, significant = calculate_significance(
+            control_val,
+            variant_val,
+            confidence_level=test_config["auto_promote"]["confidence_level"]
+        )
+
+        results[metric] = {
+            "control": control_val,
+            "variant": variant_val,
+            "difference": variant_val - control_val,
+            "p_value": p_value,
+            "significant": significant
+        }
+
+    # Check success criteria
+    should_promote = check_success_criteria(
+        results,
+        test_config["success_criteria"]
+    )
+
+    return {
+        "test_id": test_id,
+        "sample_size": {
+            "control": control_metrics["sample_count"],
+            "variant": variant_metrics["sample_count"]
+        },
+        "results": results,
+        "recommendation": "promote" if should_promote else "continue",
+        "analysis_timestamp": datetime.utcnow().isoformat()
+    }
 ```
 
 ---
@@ -1519,3 +2553,425 @@ prompt = template.format(rag_context=rag_context, **inputs)
 - [ ] Error handling covers all failure modes
 - [ ] Tracing spans added for key operations
 - [ ] Cost impact estimated
+
+---
+
+## 10. RAG Knowledge Management
+
+### Knowledge Document Lifecycle
+
+Knowledge documents in Pinecone follow a versioned lifecycle to ensure safe updates and rollback capability:
+
+```
+┌───────────────────────────────────────────────────────────────────┐
+│                   DOCUMENT LIFECYCLE                               │
+├───────────────────────────────────────────────────────────────────┤
+│                                                                   │
+│   New Document ──► DRAFT                                          │
+│                      │                                            │
+│                      │ Review + Approval                          │
+│                      ▼                                            │
+│                   STAGED ◄──────────────────────┐                │
+│                      │                           │                │
+│                      │ A/B Test (optional)       │                │
+│                      ▼                           │                │
+│                   ACTIVE ────────────────────────┤                │
+│                      │                           │ Rollback       │
+│                      │ Superseded by new version │                │
+│                      ▼                           │                │
+│                   ARCHIVED ──────────────────────┘                │
+│                                                                   │
+└───────────────────────────────────────────────────────────────────┘
+```
+
+**Document States:**
+
+| State | Description | Queryable |
+|-------|-------------|-----------|
+| `draft` | Being edited, not yet reviewed | No |
+| `staged` | Approved, ready for A/B test or promotion | A/B test only |
+| `active` | Live in production | Yes |
+| `archived` | Replaced by newer version, kept for rollback | Rollback only |
+
+### Versioning Schema
+
+```yaml
+# knowledge/documents/disease/fungal-blister-blight.yaml
+document:
+  id: "disease-fungal-blister-blight"
+  version: "2.1.0"
+  status: active
+  domain: "tea_diseases"
+
+  metadata:
+    title: "Blister Blight (Exobasidium vexans)"
+    author: "agronomist_team"
+    created_at: "2024-01-10"
+    updated_at: "2024-06-15"
+    review_status: approved
+    reviewer: "dr_ochieng"
+
+  versioning:
+    previous_version: "2.0.0"
+    changelog:
+      - "2.1.0: Added regional severity variations for highland vs lowland"
+      - "2.0.0: Updated treatment recommendations based on 2024 research"
+      - "1.0.0: Initial version"
+    rollback_available: true
+
+  content:
+    description: |
+      Blister blight is a fungal disease affecting tea plants,
+      caused by Exobasidium vexans...
+
+    symptoms:
+      - "Pale, translucent spots on young leaves"
+      - "Blisters that turn white and velvety"
+      - "Leaf curling and distortion"
+
+    conditions:
+      - "High humidity (>80%)"
+      - "Cool temperatures (15-20°C)"
+      - "Frequent rainfall"
+
+    recommendations:
+      immediate:
+        - "Remove and destroy infected leaves"
+        - "Improve air circulation by pruning"
+      preventive:
+        - "Apply copper-based fungicide before rainy season"
+        - "Maintain proper spacing between plants"
+
+  embedding_config:
+    chunk_strategy: section  # Embed each section separately
+    include_metadata: true   # Include metadata in embeddings
+```
+
+### Pinecone Namespace Strategy
+
+Use Pinecone namespaces for version isolation:
+
+```python
+class KnowledgeVersionManager:
+    """Manage knowledge versions in Pinecone."""
+
+    def __init__(self, pinecone_index):
+        self.index = pinecone_index
+
+    def get_namespace(self, version: str, status: str) -> str:
+        """
+        Namespace naming convention:
+        - Active: knowledge-v{version}
+        - Staged: knowledge-v{version}-staged
+        - Archived: knowledge-v{version}-archived
+        """
+        if status == "active":
+            return f"knowledge-v{version}"
+        return f"knowledge-v{version}-{status}"
+
+    async def promote_staged_to_active(
+        self,
+        document_id: str,
+        new_version: str,
+        old_version: str
+    ):
+        """
+        Promote staged document to active, archive old version.
+        """
+        # 1. Copy staged vectors to active namespace
+        staged_ns = self.get_namespace(new_version, "staged")
+        active_ns = self.get_namespace(new_version, "active")
+
+        await self._copy_vectors(
+            source_ns=staged_ns,
+            target_ns=active_ns,
+            doc_id_prefix=document_id
+        )
+
+        # 2. Archive old active version
+        old_active_ns = self.get_namespace(old_version, "active")
+        old_archived_ns = self.get_namespace(old_version, "archived")
+
+        await self._move_vectors(
+            source_ns=old_active_ns,
+            target_ns=old_archived_ns,
+            doc_id_prefix=document_id
+        )
+
+        # 3. Update routing config
+        await self._update_routing(document_id, new_version)
+
+    async def rollback(self, document_id: str, to_version: str):
+        """
+        Rollback to a previous archived version.
+        """
+        # Restore archived version to active
+        archived_ns = self.get_namespace(to_version, "archived")
+        active_ns = self.get_namespace(to_version, "active")
+
+        await self._copy_vectors(
+            source_ns=archived_ns,
+            target_ns=active_ns,
+            doc_id_prefix=document_id
+        )
+
+        # Update routing
+        await self._update_routing(document_id, to_version)
+
+        logger.info(
+            "Knowledge rollback completed",
+            document_id=document_id,
+            rolled_back_to=to_version
+        )
+```
+
+### Knowledge Update Workflow
+
+```
+┌───────────────────────────────────────────────────────────────────┐
+│                   KNOWLEDGE UPDATE WORKFLOW                        │
+├───────────────────────────────────────────────────────────────────┤
+│                                                                   │
+│  1. AUTHOR                                                        │
+│     └─→ Create/update document in Git                            │
+│     └─→ farmer-cli knowledge validate --doc disease/xxx.yaml     │
+│     └─→ Commit with status: draft                                │
+│                                                                   │
+│  2. REVIEW                                                        │
+│     └─→ Agronomist/domain expert reviews                         │
+│     └─→ farmer-cli knowledge review --doc disease/xxx.yaml       │
+│     └─→ Approve or request changes                               │
+│                                                                   │
+│  3. STAGE                                                         │
+│     └─→ farmer-cli knowledge stage --doc disease/xxx.yaml        │
+│     └─→ Embed and upload to staged namespace                     │
+│     └─→ Run integration tests against staged version             │
+│                                                                   │
+│  4. TEST (Optional)                                               │
+│     └─→ Configure A/B test with 10-20% traffic                   │
+│     └─→ Monitor accuracy metrics                                 │
+│     └─→ Wait for statistical significance                        │
+│                                                                   │
+│  5. PROMOTE                                                       │
+│     └─→ farmer-cli knowledge promote --doc disease/xxx.yaml      │
+│     └─→ Archive previous version                                 │
+│     └─→ Route all traffic to new version                         │
+│                                                                   │
+│  6. MONITOR                                                       │
+│     └─→ Watch for accuracy regressions                           │
+│     └─→ If issues: farmer-cli knowledge rollback --to v1.0.0     │
+│                                                                   │
+└───────────────────────────────────────────────────────────────────┘
+```
+
+### CLI Commands for Knowledge Management
+
+```bash
+# Validate document structure and content
+farmer-cli knowledge validate --doc knowledge/disease/fungal-xxx.yaml
+
+# Stage a document (embed and upload to staged namespace)
+farmer-cli knowledge stage --doc knowledge/disease/fungal-xxx.yaml
+
+# Start A/B test with staged version
+farmer-cli knowledge ab-test start \
+  --doc knowledge/disease/fungal-xxx.yaml \
+  --traffic 20 \
+  --duration 7d
+
+# Check A/B test status
+farmer-cli knowledge ab-test status --doc knowledge/disease/fungal-xxx.yaml
+
+# Promote staged to active
+farmer-cli knowledge promote --doc knowledge/disease/fungal-xxx.yaml
+
+# Rollback to previous version
+farmer-cli knowledge rollback \
+  --doc knowledge/disease/fungal-xxx.yaml \
+  --to-version 1.0.0
+
+# List all versions of a document
+farmer-cli knowledge versions --doc knowledge/disease/fungal-xxx.yaml
+
+# Sync all knowledge to Pinecone (for initial setup or recovery)
+farmer-cli knowledge sync --domain tea_diseases
+```
+
+### Knowledge Query Routing
+
+The RAG engine routes queries to the appropriate knowledge version:
+
+```python
+class RAGEngine:
+    """RAG engine with version-aware querying."""
+
+    async def query(
+        self,
+        query: str,
+        domains: list[str],
+        knowledge_version: str = None,  # For A/B testing
+        farmer_id: str = None
+    ) -> dict:
+        """
+        Query knowledge base with version routing.
+        """
+        # Determine version to use
+        if knowledge_version:
+            # Explicit version (from A/B test)
+            version = knowledge_version
+        else:
+            # Use active version
+            version = await self._get_active_version(domains)
+
+        # Build namespace
+        namespace = f"knowledge-v{version}"
+
+        # Embed query
+        query_embedding = await self.embedder.embed(query)
+
+        # Query Pinecone
+        results = await self.pinecone_index.query(
+            vector=query_embedding,
+            namespace=namespace,
+            top_k=5,
+            include_metadata=True,
+            filter={"domain": {"$in": domains}}
+        )
+
+        # Format results
+        context_chunks = [
+            {
+                "content": r.metadata["content"],
+                "source": r.metadata["document_id"],
+                "version": r.metadata["version"],
+                "relevance": r.score
+            }
+            for r in results.matches
+        ]
+
+        return {
+            "context": context_chunks,
+            "version_used": version,
+            "namespace": namespace
+        }
+```
+
+### Knowledge Quality Metrics
+
+Track knowledge effectiveness:
+
+```python
+# Metrics to capture for knowledge quality
+knowledge_metrics = {
+    "rag_retrieval_relevance": Histogram(
+        "rag_retrieval_relevance_score",
+        "Relevance scores of retrieved chunks",
+        ["domain", "version"],
+        buckets=[0.5, 0.6, 0.7, 0.8, 0.9, 0.95, 1.0]
+    ),
+
+    "rag_context_usage": Counter(
+        "rag_context_usage_total",
+        "How often each document is retrieved",
+        ["document_id", "version"]
+    ),
+
+    "diagnosis_with_rag_accuracy": Gauge(
+        "diagnosis_with_rag_accuracy",
+        "Accuracy of diagnoses using specific knowledge version",
+        ["domain", "version"]
+    ),
+
+    "knowledge_staleness": Gauge(
+        "knowledge_staleness_days",
+        "Days since knowledge document was last updated",
+        ["document_id"]
+    )
+}
+```
+
+**Grafana Queries:**
+
+```promql
+# Retrieval relevance by version (are newer versions better?)
+histogram_quantile(0.5,
+  sum(rate(rag_retrieval_relevance_score_bucket[1h]))
+  by (le, version)
+)
+
+# Most frequently used documents
+topk(10,
+  sum(rate(rag_context_usage_total[24h])) by (document_id)
+)
+
+# Documents that may need updating
+knowledge_staleness_days > 180
+
+# Accuracy comparison between versions
+diagnosis_with_rag_accuracy{version="2.0.0"}
+  - diagnosis_with_rag_accuracy{version="1.0.0"}
+```
+
+### Knowledge Document Best Practices
+
+**DO:**
+- Use clear, structured content with sections
+- Include specific symptoms, conditions, and recommendations
+- Add regional variations where applicable
+- Version all changes with meaningful changelogs
+- Test with A/B before major updates
+
+**DON'T:**
+- Mix multiple diseases/conditions in one document
+- Use overly technical language (farmers read these via LLM)
+- Remove information without archiving first
+- Skip the staging/review process for "small" changes
+
+**Document Structure Template:**
+
+```markdown
+# {Condition Name}
+
+## Overview
+Brief description of the condition.
+
+## Identification
+### Visual Symptoms
+- Symptom 1
+- Symptom 2
+
+### Affected Plant Parts
+- Leaves, stems, roots, etc.
+
+## Conditions Favoring Development
+- Environmental factors
+- Seasonal patterns
+- Regional variations
+
+## Severity Assessment
+| Level | Indicators | Urgency |
+|-------|------------|---------|
+| Low | ... | Monitor |
+| Moderate | ... | Treat within 1 week |
+| High | ... | Immediate action |
+
+## Recommendations
+### Immediate Actions
+1. Action 1
+2. Action 2
+
+### Preventive Measures
+1. Measure 1
+2. Measure 2
+
+### Product Recommendations
+- Product A: For severe cases
+- Product B: For prevention
+
+## Regional Notes
+### Highland (>1500m)
+- Specific considerations
+
+### Lowland (<1500m)
+- Specific considerations
+```
