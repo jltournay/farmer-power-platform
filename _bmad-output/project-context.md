@@ -129,7 +129,7 @@ _This file contains critical rules and patterns that AI agents must follow when 
 
 ## Architecture & Domain Model Rules
 
-### Domain Model Boundaries
+### Domain Model Boundaries (8 Models)
 
 | Model | Responsibility | Does NOT |
 |-------|---------------|----------|
@@ -137,9 +137,10 @@ _This file contains critical rules and patterns that AI agents must follow when 
 | Plantation | Farmer/factory digital twin | Store raw documents |
 | Knowledge | Diagnose situations | Prescribe solutions |
 | Action Plan | Generate recommendations | Store diagnoses, deliver messages |
-| Notification | Deliver messages (SMS, WhatsApp) | Generate content |
+| Notification | Deliver messages (SMS, WhatsApp, Voice IVR) | Generate content, handle dialogue |
 | Market Analysis | Buyer profiles, lot matching | Generate action plans |
 | AI Model | Agent orchestration, LLM calls | Own business data |
+| Conversational AI | Two-way dialogue (voice chatbot, text chat) | Execute AI logic, deliver final messages |
 
 ### Cross-Model Communication
 
@@ -162,6 +163,7 @@ _This file contains critical rules and patterns that AI agents must follow when 
 - `knowledge_model`: `diagnoses`, `triage_feedback`
 - `action_plan_model`: `action_plans`, `farmer_dashboard_view`
 - `ai_model`: `prompts`, `rag_documents`, `workflow_checkpoints`, `agent_configs`
+- `conversational_ai_model`: `sessions`, `conversation_history`, `channel_configs`
 
 ### Region Definition (Plantation Model)
 
@@ -178,6 +180,7 @@ _This file contains critical rules and patterns that AI agents must follow when 
 | Extractor | LangChain | Data extraction, validation, classification |
 | Explorer | LangGraph | Multi-step analysis with conditional routing |
 | Generator | LangGraph | Content generation (action plans, reports) |
+| Conversational | LangGraph | Multi-turn dialogue with context management |
 
 ### Triage-First Pattern
 
@@ -359,6 +362,33 @@ _This file contains critical rules and patterns that AI agents must follow when 
 - **NO hardcoded language strings** - All voice content via templates in MongoDB
 - **NO synchronous TTS calls** - Pre-generate audio or stream asynchronously
 - **NO storing raw audio** - Generate on-demand or cache with TTL
+
+### Conversational AI Rules
+
+- **Purpose**: Enable interactive two-way dialogue with farmers via voice chatbot and text chat
+- **Channels**: Voice chatbot (phone), WhatsApp chat, SMS text
+- **Architecture**: Open-Closed Principle - base handler + channel-specific adapters
+
+**Channel Adapters:**
+- `VoiceChatbotAdapter`: Real-time voice dialogue, STT/TTS integration
+- `WhatsAppChatAdapter`: Async text messaging, media support
+- `SMSChatAdapter`: Simple text exchange, 160-char limits
+
+**Session Management:**
+- Store sessions in `conversational_ai_model.sessions` collection
+- Session timeout: 30 minutes of inactivity
+- Persist conversation history for context across turns
+- Use `session_id` to link multi-turn conversations
+
+**Integration Pattern:**
+- Conversational AI Model invokes AI Model for LLM processing
+- Uses existing MCP servers for data retrieval (does NOT expose own MCP)
+- Hands off final delivery to Notification Model
+
+**Conversational AI Anti-Patterns:**
+- **NO direct LLM calls** - Always invoke via AI Model
+- **NO final message delivery** - Hand off to Notification Model
+- **NO business data ownership** - Query via MCP servers
 
 ### Event Deduplication
 

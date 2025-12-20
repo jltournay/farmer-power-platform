@@ -71,7 +71,7 @@ _This index maps all architectural decisions from `architecture.md` to their cov
 | AD-040 | AI Model is 6th Domain Model (centralized intelligence) | Overview | COVERED | Domain Model Boundaries table |
 | AD-041 | AI Model is STATELESS, results via events | Communication | COVERED | Anti-patterns section |
 | AD-042 | AI Model does NOT expose MCP Server | MCP Decision | PARTIAL | Implied |
-| AD-043 | Three agent types: Extractor, Explorer, Generator | Agent Types | COVERED | AI Model Agent Types table |
+| AD-043 | Four agent types: Extractor, Explorer, Generator, Conversational | Agent Types | COVERED | AI Model Agent Types table |
 | AD-044 | Agent instances in YAML, types in code | Configuration | GAP | Implementation detail |
 | AD-045 | Triggering is domain model responsibility | Triggering | COVERED | Triggering Responsibility section |
 | AD-046 | OpenRouter as unified LLM gateway | LLM Gateway | COVERED | Technology Stack table |
@@ -79,6 +79,35 @@ _This index maps all architectural decisions from `architecture.md` to their cov
 | AD-048 | RAG is internal to AI Model only | RAG Engine | PARTIAL | Implied by MCP rules |
 | AD-049 | Prompts externalized to MongoDB | Prompt Management | COVERED | Externalized Configuration |
 | AD-050 | Prompt A/B testing capability | Prompt Management | COVERED | A/B test traffic in Confidence Thresholds |
+
+## Notification Model Decisions
+
+| ID | Decision | Section | In Context? | Notes |
+|----|----------|---------|-------------|-------|
+| AD-080 | Notification Model is 7th Domain Model (message delivery) | Overview | COVERED | Domain Model Boundaries table |
+| AD-081 | One-way message delivery only (no dialogue) | Scope | COVERED | Domain Model Boundaries table |
+| AD-082 | Channels: SMS, WhatsApp, Voice IVR | Channels | COVERED | Notification row in boundaries |
+| AD-083 | Voice IVR for low-literacy farmers | Voice IVR | COVERED | Voice IVR Rules section |
+| AD-084 | TTS providers: Google Cloud TTS, Amazon Polly | TTS | COVERED | Voice IVR Rules section |
+| AD-085 | IVR providers: Africa's Talking (primary), Twilio (fallback) | IVR | COVERED | Voice IVR Rules section |
+| AD-086 | Voice script max 2000 chars (~3 min speech) | Voice Script | COVERED | Voice IVR Rules section |
+| AD-087 | Languages: Swahili, Kikuyu, Luo | Localization | COVERED | Voice IVR Rules section |
+| AD-088 | Notification Model does NOT generate content | Scope | COVERED | Domain Model Boundaries table |
+
+## Conversational AI Model Decisions
+
+| ID | Decision | Section | In Context? | Notes |
+|----|----------|---------|-------------|-------|
+| AD-090 | Conversational AI Model is 8th Domain Model (two-way dialogue) | Overview | COVERED | Domain Model Boundaries table |
+| AD-091 | Channels: Voice chatbot, WhatsApp chat, SMS text | Channels | COVERED | Conversational AI Rules section |
+| AD-092 | Open-Closed Principle: base handler + channel adapters | Architecture | COVERED | Conversational AI Rules section |
+| AD-093 | Session-based conversation management | Session | COVERED | Conversational AI Rules section |
+| AD-094 | 30-minute session timeout | Session | COVERED | Conversational AI Rules section |
+| AD-095 | Invokes AI Model for LLM processing (no direct LLM calls) | Integration | COVERED | Conversational AI Anti-Patterns |
+| AD-096 | Uses existing MCP servers for data retrieval | Data Access | COVERED | Conversational AI Rules section |
+| AD-097 | Hands off final delivery to Notification Model | Delivery | COVERED | Conversational AI Anti-Patterns |
+| AD-098 | Does NOT expose own MCP server | MCP | COVERED | Conversational AI Rules section |
+| AD-099 | MongoDB collections: sessions, conversation_history, channel_configs | Storage | COVERED | MongoDB Collection Ownership |
 
 ## Cross-Cutting Decisions
 
@@ -160,5 +189,5 @@ All medium-priority gaps have been added to `project-context.md`:
 ---
 
 _Generated: 2025-12-17_
-_Updated: 2025-12-20 - Grading Model Flexibility decisions added (AD-075, AD-076, AD-077)_
-_Source: architecture.md (as of commit 4a4309e)_
+_Updated: 2025-12-20 - Added Notification Model (AD-080-088) and Conversational AI Model (AD-090-099) decisions; Updated agent types to 4_
+_Source: architecture.md (as of commit b0e6a62)_

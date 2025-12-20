@@ -40,6 +40,7 @@ This guide provides comprehensive guidelines for developers working on the AI Mo
 | **Extractor** | LangChain | Linear workflow (fetch → extract → validate → output), no complex state needed |
 | **Explorer** | LangGraph | Complex workflows - iterative analysis, conditional RAG, confidence-based re-analysis |
 | **Generator** | LangGraph | Complex workflows - multiple outputs, prioritization, translation with quality checks |
+| **Conversational** | LangGraph | Multi-turn dialogue requiring session state, context management, and channel routing |
 
 ### When to Use LangChain vs LangGraph
 
@@ -367,11 +368,22 @@ ai-model/
 │   │   │   │   ├── graph.py          # LangGraph implementation
 │   │   │   │   ├── nodes.py
 │   │   │   │   └── state.py          # State type definitions
-│   │   │   └── generator/
+│   │   │   ├── generator/
+│   │   │   │   ├── __init__.py
+│   │   │   │   ├── graph.py
+│   │   │   │   ├── nodes.py
+│   │   │   │   └── state.py
+│   │   │   └── conversational/
 │   │   │       ├── __init__.py
-│   │   │       ├── graph.py
+│   │   │       ├── graph.py          # LangGraph for multi-turn dialogue
 │   │   │       ├── nodes.py
-│   │   │       └── state.py
+│   │   │       ├── state.py
+│   │   │       └── adapters/         # Channel adapters (voice, whatsapp, sms)
+│   │   │           ├── __init__.py
+│   │   │           ├── base.py
+│   │   │           ├── voice_chatbot.py
+│   │   │           ├── whatsapp.py
+│   │   │           └── sms.py
 │   │   │
 │   │   └── instances/                # Agent instance configs (YAML)
 │   │       ├── extractors/
@@ -488,6 +500,7 @@ Determine which type fits your use case:
 | Extract structured data from documents | Extractor |
 | Analyze, diagnose, find patterns | Explorer |
 | Create content, reports, messages | Generator |
+| Handle multi-turn dialogue with users | Conversational |
 
 #### Step 2: Create Instance Configuration
 
@@ -2524,6 +2537,7 @@ Configure alerts for:
 Need to extract data from documents?     → Extractor (LangChain)
 Need to analyze/diagnose/find patterns?  → Explorer (LangGraph)
 Need to generate content/reports?        → Generator (LangGraph)
+Need multi-turn dialogue with users?     → Conversational (LangGraph)
 ```
 
 ### Common Patterns
