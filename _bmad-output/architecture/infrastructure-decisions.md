@@ -1,0 +1,474 @@
+# Infrastructure Decisions
+
+## MCP Server Scaling
+
+**Decision:** MCP servers are stateless and deployed as separate Kubernetes pods, enabling horizontal scaling via HPA.
+
+```
+┌─────────────────────────────────────────────────────────────────────────┐
+│                    MCP SERVER SCALING (Kubernetes)                       │
+├─────────────────────────────────────────────────────────────────────────┤
+│                                                                         │
+│  AI MODEL (MCP Client)                                                  │
+│  ┌─────────────────────────────────────────────────────────────────┐   │
+│  │  MCP Client calls → Kubernetes Service (load balanced)           │   │
+│  └─────────────────────────────────────────────────────────────────┘   │
+│                          │                                              │
+│          ┌───────────────┼───────────────┐                              │
+│          ▼               ▼               ▼                              │
+│  ┌──────────────┐ ┌──────────────┐ ┌──────────────┐                    │
+│  │ Collection   │ │ Plantation   │ │ Knowledge    │                    │
+│  │ MCP Service  │ │ MCP Service  │ │ MCP Service  │                    │
+│  │ (ClusterIP)  │ │ (ClusterIP)  │ │ (ClusterIP)  │                    │
+│  └──────┬───────┘ └──────┬───────┘ └──────┬───────┘                    │
+│         │                │                │                             │
+│    ┌────┴────┐      ┌────┴────┐      ┌────┴────┐                       │
+│    ▼    ▼    ▼      ▼    ▼    ▼      ▼    ▼    ▼                       │
+│  ┌───┐┌───┐┌───┐  ┌───┐┌───┐┌───┐  ┌───┐┌───┐┌───┐                    │
+│  │Pod││Pod││Pod│  │Pod││Pod││Pod│  │Pod││Pod││Pod│                    │
+│  └───┘└───┘└───┘  └───┘└───┘└───┘  └───┘└───┘└───┘                    │
+│         │                │                │                             │
+│         ▼                ▼                ▼                             │
+│      MongoDB          MongoDB          MongoDB                          │
+│      (Read            (Read            (Read                            │
+│       Replicas)        Replicas)        Replicas)                       │
+│                                                                         │
+└─────────────────────────────────────────────────────────────────────────┘
+```
+
+**Scaling Configuration:**
+
+```yaml
+# kubernetes/mcp-servers/collection-mcp-hpa.yaml
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: collection-mcp-hpa
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: collection-mcp-server
+  minReplicas: 2
+  maxReplicas: 10
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 70
+    - type: Pods
+      pods:
+        metric:
+          name: mcp_requests_per_second
+        target:
+          type: AverageValue
+          averageValue: "100"
+```
+
+**Key Points:**
+- All state in MongoDB (read replicas for queries)
+- Kubernetes Service provides load balancing
+- HPA scales based on CPU and request rate
+- Each MCP server (Collection, Plantation, Knowledge) scales independently
+
+## External API Resiliency (DAPR Circuit Breaker)
+
+**Decision:** Use DAPR's built-in resiliency policies for external API calls (Starfish Network, Weather APIs, Google Elevation API).
+
+```yaml
+# dapr/components/resiliency.yaml
+apiVersion: dapr.io/v1alpha1
+kind: Resiliency
+metadata:
+  name: external-api-resiliency
+spec:
+  policies:
+    # ═══════════════════════════════════════════════════════════════════════
+    # RETRY POLICIES
+    # ═══════════════════════════════════════════════════════════════════════
+    retries:
+      default-retry:
+        policy: constant
+        maxRetries: 3
+        duration: 1s
+
+      starfish-retry:
+        policy: exponential
+        maxRetries: 5
+        maxInterval: 30s
+
+      weather-retry:
+        policy: constant
+        maxRetries: 3
+        duration: 2s
+
+    # ═══════════════════════════════════════════════════════════════════════
+    # CIRCUIT BREAKER POLICIES
+    # ═══════════════════════════════════════════════════════════════════════
+    circuitBreakers:
+      starfish-cb:
+        maxRequests: 5              # Max requests when half-open
+        interval: 30s               # Time window for counting failures
+        timeout: 60s                # Time circuit stays open
+        trip: consecutiveFailures >= 3
+
+      weather-cb:
+        maxRequests: 3
+        interval: 60s
+        timeout: 120s
+        trip: consecutiveFailures >= 5
+
+    # ═══════════════════════════════════════════════════════════════════════
+    # TIMEOUT POLICIES
+    # ═══════════════════════════════════════════════════════════════════════
+    timeouts:
+      starfish-timeout: 10s
+      weather-timeout: 5s
+      elevation-timeout: 3s
+
+  # ═══════════════════════════════════════════════════════════════════════════
+  # TARGET CONFIGURATION
+  # ═══════════════════════════════════════════════════════════════════════════
+  targets:
+    components:
+      starfish-api:
+        outbound:
+          retry: starfish-retry
+          circuitBreaker: starfish-cb
+          timeout: starfish-timeout
+
+      weather-api:
+        outbound:
+          retry: weather-retry
+          circuitBreaker: weather-cb
+          timeout: weather-timeout
+
+      google-elevation-api:
+        outbound:
+          retry: default-retry
+          timeout: elevation-timeout
+```
+
+**Circuit Breaker Behavior:**
+
+```
+┌─────────────────────────────────────────────────────────────────────────┐
+│                    CIRCUIT BREAKER STATES                                │
+├─────────────────────────────────────────────────────────────────────────┤
+│                                                                         │
+│   CLOSED (Normal)                                                       │
+│   ┌─────────────┐                                                       │
+│   │ Requests    │──────▶ External API                                   │
+│   │ pass through│                                                       │
+│   └──────┬──────┘                                                       │
+│          │ 3 consecutive failures                                       │
+│          ▼                                                              │
+│   OPEN (Protecting)                                                     │
+│   ┌─────────────┐                                                       │
+│   │ Requests    │──────▶ Fail fast (no API call)                        │
+│   │ rejected    │        Return cached/default if available             │
+│   └──────┬──────┘                                                       │
+│          │ After 60s timeout                                            │
+│          ▼                                                              │
+│   HALF-OPEN (Testing)                                                   │
+│   ┌─────────────┐                                                       │
+│   │ Limited     │──────▶ External API (max 5 requests)                  │
+│   │ requests    │                                                       │
+│   └──────┬──────┘                                                       │
+│          │                                                              │
+│    ┌─────┴─────┐                                                        │
+│    │           │                                                        │
+│ Success     Failure                                                     │
+│    │           │                                                        │
+│    ▼           ▼                                                        │
+│  CLOSED     OPEN                                                        │
+│                                                                         │
+└─────────────────────────────────────────────────────────────────────────┘
+```
+
+**Key Benefits:**
+- Configuration-driven (no code changes)
+- Prevents cascading failures when external APIs are down
+- Automatic recovery when services become healthy
+- Consistent resilience pattern across all external calls
+
+## Kubernetes Deployment Architecture
+
+**Decision:** Single namespace per environment on a shared Kubernetes cluster, with Backend-for-Frontend (BFF) pattern for external API exposure.
+
+### Multi-Environment Strategy
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                    SINGLE KUBERNETES CLUSTER - MULTI-ENVIRONMENT            │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│  Namespace: farmer-power-qa                                                 │
+│  ┌─────────────────────────────────────────────────────────────────────┐   │
+│  │  All services for QA environment                                    │   │
+│  │  ResourceQuota: cpu=4, memory=8Gi                                   │   │
+│  └─────────────────────────────────────────────────────────────────────┘   │
+│                                                                             │
+│  Namespace: farmer-power-preprod                                            │
+│  ┌─────────────────────────────────────────────────────────────────────┐   │
+│  │  All services for Pre-Production environment                        │   │
+│  │  ResourceQuota: cpu=8, memory=16Gi                                  │   │
+│  └─────────────────────────────────────────────────────────────────────┘   │
+│                                                                             │
+│  Namespace: farmer-power-prod                                               │
+│  ┌─────────────────────────────────────────────────────────────────────┐   │
+│  │  All services for Production environment                            │   │
+│  │  ResourceQuota: cpu=32, memory=64Gi (or no limit)                   │   │
+│  └─────────────────────────────────────────────────────────────────────┘   │
+│                                                                             │
+│  Namespace: dapr-system (shared across all environments)                    │
+│  ┌─────────────────────────────────────────────────────────────────────┐   │
+│  │  Dapr Control Plane (operator, placement, sentry)                   │   │
+│  └─────────────────────────────────────────────────────────────────────┘   │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+**Benefits:**
+- Single cluster reduces infrastructure cost
+- Namespace isolation via RBAC, NetworkPolicies, ResourceQuotas
+- QA/PreProd can share node pools, Prod uses dedicated nodes
+- Simple deployment pipeline per environment
+
+### Namespace Service Organization
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                    NAMESPACE: farmer-power-{env}                             │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│  ┌─────────────────────── EDGE LAYER ──────────────────────────┐           │
+│  │                                                              │           │
+│  │  ┌──────────────────────────────────────────────────────┐   │           │
+│  │  │           INGRESS (NGINX / Azure App Gateway)         │   │           │
+│  │  │  api.farmerpower.io → bff-service                    │   │           │
+│  │  │  webhooks.farmerpower.io → inbound-webhook-svc       │   │           │
+│  │  └──────────────────────────────────────────────────────┘   │           │
+│  │                          │                                   │           │
+│  │                          ▼                                   │           │
+│  │  ┌──────────────────────────────────────────────────────┐   │           │
+│  │  │              BFF (Backend For Frontend)               │   │           │
+│  │  │  ┌────────────────────────────────────────────────┐  │   │           │
+│  │  │  │  FastAPI + WebSocket                           │  │   │           │
+│  │  │  │  - REST API endpoints for React UI             │  │   │           │
+│  │  │  │  - WebSocket for real-time updates             │  │   │           │
+│  │  │  │  - OAuth2/JWT authentication                   │  │   │           │
+│  │  │  │  - Request aggregation & transformation        │  │   │           │
+│  │  │  │  + Dapr sidecar (gRPC to internal services)    │  │   │           │
+│  │  │  └────────────────────────────────────────────────┘  │   │           │
+│  │  │  replicas: 3 (HPA: 2-10)                             │   │           │
+│  │  └──────────────────────────────────────────────────────┘   │           │
+│  └──────────────────────────────────────────────────────────────┘           │
+│                          │                                                  │
+│                          │ gRPC via Dapr                                    │
+│                          ▼                                                  │
+│  ┌─────────────── BUSINESS MODELS (gRPC + Dapr) ───────────────┐           │
+│  │                                                              │           │
+│  │  ┌──────────────┐ ┌──────────────┐ ┌──────────────┐        │           │
+│  │  │ collection-  │ │ knowledge-   │ │ plantation-  │        │           │
+│  │  │ model        │ │ model        │ │ model        │        │           │
+│  │  │ + dapr       │ │ + dapr       │ │ + dapr       │        │           │
+│  │  │ gRPC :50051  │ │ gRPC :50051  │ │ gRPC :50051  │        │           │
+│  │  └──────────────┘ └──────────────┘ └──────────────┘        │           │
+│  │        │                │                │                  │           │
+│  │        └────────────────┼────────────────┘                  │           │
+│  │                         │ gRPC via Dapr                     │           │
+│  │                         ▼                                   │           │
+│  │  ┌──────────────┐ ┌──────────────┐ ┌──────────────┐        │           │
+│  │  │ action-plan- │ │ market-      │ │ ai-model     │        │           │
+│  │  │ model        │ │ analysis     │ │ (LLM gateway)│        │           │
+│  │  │ + dapr       │ │ + dapr       │ │ + dapr       │        │           │
+│  │  │ gRPC :50051  │ │ gRPC :50051  │ │ gRPC :50051  │        │           │
+│  │  └──────────────┘ └──────────────┘ └──────────────┘        │           │
+│  └──────────────────────────────────────────────────────────────┘           │
+│                          │                                                  │
+│                          │ gRPC via Dapr                                    │
+│                          ▼                                                  │
+│  ┌─────────────── MCP SERVERS (gRPC, HPA-enabled) ─────────────┐           │
+│  │                                                              │           │
+│  │  ┌──────────────┐ ┌──────────────┐ ┌──────────────┐        │           │
+│  │  │ collection-  │ │ plantation-  │ │ knowledge-   │        │           │
+│  │  │ mcp          │ │ mcp          │ │ mcp          │        │           │
+│  │  │ HPA: 2-10    │ │ HPA: 2-10    │ │ HPA: 2-10    │        │           │
+│  │  │ gRPC :50051  │ │ gRPC :50051  │ │ gRPC :50051  │        │           │
+│  │  └──────────────┘ └──────────────┘ └──────────────┘        │           │
+│  └──────────────────────────────────────────────────────────────┘           │
+│                                                                             │
+│  ┌─────────────── MESSAGING (gRPC + Dapr) ─────────────────────┐           │
+│  │                                                              │           │
+│  │  ┌──────────────┐ ┌──────────────┐                         │           │
+│  │  │ notification-│ │ inbound-     │ ← External webhook      │           │
+│  │  │ service      │ │ webhook      │   (Africa's Talking)    │           │
+│  │  │ + dapr       │ │ + dapr       │                         │           │
+│  │  └──────────────┘ └──────────────┘                         │           │
+│  └──────────────────────────────────────────────────────────────┘           │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+### Communication Protocol Strategy
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                        COMMUNICATION PROTOCOLS                               │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│  React UI                                                                   │
+│     │                                                                       │
+│     │  HTTPS (REST API + WebSocket)                                        │
+│     ▼                                                                       │
+│  ┌─────────────────────────────────────────────────────────────────────┐   │
+│  │  BFF (FastAPI)                                                       │   │
+│  │  ┌─────────────────┐  ┌─────────────────┐  ┌─────────────────┐     │   │
+│  │  │ REST Endpoints  │  │ WebSocket Hub   │  │ Auth Middleware │     │   │
+│  │  │ /api/v1/...     │  │ /ws/events      │  │ JWT Validation  │     │   │
+│  │  └────────┬────────┘  └────────┬────────┘  └─────────────────┘     │   │
+│  │           │                    │                                    │   │
+│  │           └─────────┬──────────┘                                    │   │
+│  │                     ▼                                               │   │
+│  │           ┌─────────────────────┐                                   │   │
+│  │           │ Dapr Sidecar        │                                   │   │
+│  │           │ (Service Invocation)│                                   │   │
+│  │           └─────────┬───────────┘                                   │   │
+│  └─────────────────────│───────────────────────────────────────────────┘   │
+│                        │                                                    │
+│                        │ gRPC (via Dapr service invocation)                │
+│                        ▼                                                    │
+│  ┌─────────────────────────────────────────────────────────────────────┐   │
+│  │  Internal Services (all with Dapr sidecars)                         │   │
+│  │                                                                      │   │
+│  │  plantation-model ◄──gRPC──► collection-model ◄──gRPC──► ai-model   │   │
+│  │         │                          │                        │        │   │
+│  │         └──────────gRPC────────────┼────────────────────────┘        │   │
+│  │                                    │                                 │   │
+│  │                              knowledge-model                         │   │
+│  └─────────────────────────────────────────────────────────────────────┘   │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+**Protocol Summary:**
+
+| Layer | Protocol | Reason |
+|-------|----------|--------|
+| UI → BFF | REST + WebSocket | Browser-compatible, real-time updates |
+| BFF → Services | gRPC via Dapr | Efficient binary protocol, type-safe |
+| Service → Service | gRPC via Dapr | Low latency, streaming support |
+| Service → MCP | gRPC | LLM tool invocation |
+
+### BFF Responsibilities
+
+| Function | Description |
+|----------|-------------|
+| **Authentication** | Validate JWT tokens, enforce RBAC per endpoint |
+| **API Aggregation** | Combine multiple gRPC calls into single REST response |
+| **Protocol Translation** | REST/WebSocket ↔ gRPC conversion |
+| **Real-time Events** | Push updates to UI via WebSocket (quality events, alerts) |
+| **Rate Limiting** | Protect internal services from abuse |
+| **Request Validation** | Validate input schemas before forwarding |
+
+### Deployment Manifest Summary
+
+| Service | Type | Protocol Exposed | Replicas | HPA |
+|---------|------|------------------|----------|-----|
+| bff | Deployment | REST + WebSocket (external) | 3 | 2-10 |
+| collection-model | Deployment | gRPC (internal) | 2 | No |
+| knowledge-model | Deployment | gRPC (internal) | 2 | No |
+| plantation-model | Deployment | gRPC (internal) | 2 | No |
+| action-plan-model | Deployment | gRPC (internal) | 2 | No |
+| market-analysis | Deployment | gRPC (internal) | 1 | No |
+| ai-model | Deployment | gRPC (internal) | 3 | No |
+| collection-mcp | Deployment | gRPC (internal) | 2 | 2-10 |
+| plantation-mcp | Deployment | gRPC (internal) | 2 | 2-10 |
+| knowledge-mcp | Deployment | gRPC (internal) | 2 | 2-10 |
+| notification-service | Deployment | gRPC (internal) | 2 | No |
+| inbound-webhook | Deployment | HTTPS (external) | 2 | No |
+
+### External Managed Services
+
+| Service | Provider | Connection |
+|---------|----------|------------|
+| MongoDB | Atlas or Azure CosmosDB | Connection string in Secret |
+| Pinecone | Pinecone Cloud | API key in Secret |
+| Azure OpenAI | Azure | Endpoint + key in Secret |
+| Azure Blob Storage | Azure | Connection string in Secret |
+| Africa's Talking | AT | API credentials in Secret |
+
+### Environment Configuration
+
+```yaml
+# configmap-prod.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: app-config
+  namespace: farmer-power-prod
+data:
+  ENVIRONMENT: "production"
+  MONGODB_DATABASE: "farmerpower_prod"
+  PINECONE_INDEX: "knowledge-prod"
+  LOG_LEVEL: "info"
+  ENABLE_SMS: "true"
+  GRPC_PORT: "50051"
+
+---
+# configmap-qa.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: app-config
+  namespace: farmer-power-qa
+data:
+  ENVIRONMENT: "qa"
+  MONGODB_DATABASE: "farmerpower_qa"
+  PINECONE_INDEX: "knowledge-qa"
+  LOG_LEVEL: "debug"
+  ENABLE_SMS: "false"  # Mock SMS in QA
+  GRPC_PORT: "50051"
+```
+
+### Dapr Component Configuration (Per Namespace)
+
+```yaml
+# dapr/components/statestore.yaml
+apiVersion: dapr.io/v1alpha1
+kind: Component
+metadata:
+  name: statestore
+  namespace: farmer-power-prod
+spec:
+  type: state.mongodb
+  version: v1
+  metadata:
+    - name: host
+      secretKeyRef:
+        name: mongodb-connection
+        key: host
+    - name: databaseName
+      value: "farmerpower_prod"
+
+---
+# dapr/components/pubsub.yaml
+apiVersion: dapr.io/v1alpha1
+kind: Component
+metadata:
+  name: pubsub
+  namespace: farmer-power-prod
+spec:
+  type: pubsub.azure.servicebus
+  version: v1
+  metadata:
+    - name: connectionString
+      secretKeyRef:
+        name: servicebus-connection
+        key: connectionString
+```
+
+---

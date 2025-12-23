@@ -8,13 +8,13 @@ _Single entry point for all platform documentation. This index ensures coherence
 
 | Aspect | Canonical Source | Purpose |
 |--------|------------------|---------|
-| **Technical Architecture** | `architecture.md` | All domain models, infrastructure decisions, patterns |
+| **Technical Architecture** | `architecture/index.md` | All domain models, infrastructure decisions, patterns |
 | **AI Agent Rules** | `project-context.md` | Critical rules for AI agents during implementation |
 | **Decision Traceability** | `architecture-decision-index.md` | Maps decisions to documentation coverage |
-| **AI Implementation** | `ai-model-developer-guide.md` | Detailed AI/LLM development patterns |
-| **User Experience** | `ux-design-specification.md` | UI/UX patterns and user journeys |
+| **AI Implementation** | `ai-model-developer-guide/index.md` | Detailed AI/LLM development patterns |
+| **User Experience** | `ux-design-specification/index.md` | UI/UX patterns and user journeys |
 
-**Rule:** When documents conflict, `architecture.md` is the authoritative source for technical decisions.
+**Rule:** When documents conflict, `architecture/index.md` is the authoritative source for technical decisions.
 
 ---
 
@@ -37,15 +37,20 @@ _Single entry point for all platform documentation. This index ensures coherence
 
 ## Document Inventory
 
-### Core Architecture Documents
+### Core Architecture Documents (Sharded for AI Agent Efficiency)
 
 | Document | Description | Last Updated |
 |----------|-------------|--------------|
-| [`architecture.md`](./architecture.md) | Complete platform architecture with all 8 domain models | 2025-12-20 |
-| [`project-context.md`](./project-context.md) | Lean AI agent rules (136 rules) | 2025-12-20 |
+| [`architecture/index.md`](./architecture/index.md) | Complete platform architecture with all 8 domain models | 2025-12-23 |
+| [`project-context.md`](./project-context.md) | Lean AI agent rules (136 rules) - ALWAYS LOAD FIRST | 2025-12-20 |
 | [`architecture-decision-index.md`](./architecture-decision-index.md) | Decision traceability matrix | 2025-12-20 |
-| [`ai-model-developer-guide.md`](./ai-model-developer-guide.md) | AI/LLM development patterns | 2025-12-17 |
-| [`ux-design-specification.md`](./ux-design-specification.md) | User experience design | 2025-12-17 |
+| [`ai-model-developer-guide/index.md`](./ai-model-developer-guide/index.md) | AI/LLM development patterns (12 sections) | 2025-12-23 |
+| [`ux-design-specification/index.md`](./ux-design-specification/index.md) | User experience design (15 sections) | 2025-12-23 |
+
+**AI Agent Loading Strategy:**
+1. **Always load first:** `project-context.md` (17 KB - critical rules)
+2. **Load by task:** Navigate via index files to load only relevant sections
+3. **Never load:** Full sharded folders at once
 
 ### Product Briefs (Point-in-Time Snapshots)
 
@@ -79,18 +84,25 @@ _Single entry point for all platform documentation. This index ensures coherence
          ┌─────────────────────────┼─────────────────────────┐
          │                         │                         │
          ▼                         ▼                         ▼
-┌─────────────────┐    ┌─────────────────────┐    ┌─────────────────┐
-│ architecture.md │    │ project-context.md  │    │ Product Briefs  │
-│ (Source of Truth)│    │ (AI Agent Rules)   │    │ (Point-in-Time) │
-└────────┬────────┘    └──────────┬──────────┘    └─────────────────┘
-         │                        │
-         │ Traces to              │ Derived from
-         ▼                        ▼
-┌─────────────────────┐    ┌─────────────────────┐
-│ architecture-       │    │ ai-model-developer- │
-│ decision-index.md   │    │ guide.md            │
-│ (Decision Matrix)   │    │ (Implementation)    │
-└─────────────────────┘    └─────────────────────┘
+┌─────────────────────┐  ┌─────────────────────┐  ┌─────────────────┐
+│ architecture/       │  │ project-context.md  │  │ Product Briefs  │
+│ (12 sharded files)  │  │ (AI Agent Rules)    │  │ (Point-in-Time) │
+│ Source of Truth     │  │ LOAD FIRST - 17KB   │  │                 │
+└─────────┬───────────┘  └──────────┬──────────┘  └─────────────────┘
+          │                         │
+          │ Traces to               │ Derived from
+          ▼                         ▼
+┌─────────────────────┐  ┌─────────────────────────────┐
+│ architecture-       │  │ ai-model-developer-guide/   │
+│ decision-index.md   │  │ (12 sharded files)          │
+│ (Decision Matrix)   │  │                             │
+└─────────────────────┘  └─────────────────────────────┘
+                                    │
+                                    ▼
+                         ┌─────────────────────────────┐
+                         │ ux-design-specification/    │
+                         │ (15 sharded files)          │
+                         └─────────────────────────────┘
 ```
 
 ---
@@ -101,21 +113,22 @@ _Single entry point for all platform documentation. This index ensures coherence
 
 | Trigger | Update |
 |---------|--------|
-| New domain model added | `architecture.md` (add model section) → `index.md` (update count) → `project-context.md` (add boundaries) |
-| New architectural decision | `architecture.md` → `architecture-decision-index.md` (add entry) |
-| New AI agent pattern | `architecture.md` → `ai-model-developer-guide.md` (add pattern) → `project-context.md` (add rules) |
+| New domain model added | `architecture/` (add model file) → `index.md` (update count) → `project-context.md` (add boundaries) |
+| New architectural decision | `architecture/` (relevant section) → `architecture-decision-index.md` (add entry) |
+| New AI agent pattern | `architecture/ai-model-architecture.md` → `ai-model-developer-guide/` (add pattern) → `project-context.md` (add rules) |
 | New feature requiring PRD | Create new product brief in `analysis/` → Reference in `index.md` |
-| Technology version change | `project-context.md` (update versions) → `architecture.md` if major |
+| Technology version change | `project-context.md` (update versions) → `architecture/infrastructure-decisions.md` if major |
 
 ### Coherence Checklist
 
 When making significant changes, verify:
 
-- [ ] Model count matches across `index.md`, `architecture.md`, `project-context.md`
+- [ ] Model count matches across `index.md`, `architecture/index.md`, `project-context.md`
 - [ ] All models have entries in Domain Model Boundaries table (`project-context.md`)
 - [ ] New decisions are indexed in `architecture-decision-index.md`
-- [ ] AI agent types include all current types in `ai-model-developer-guide.md`
+- [ ] AI agent types include all current types in `ai-model-developer-guide/3-agent-development.md`
 - [ ] Product briefs are marked with their model count context
+- [ ] Sharded folder index files are updated when sections change
 
 ---
 
@@ -153,8 +166,9 @@ When making significant changes, verify:
 |---------|------|---------|
 | 1.0 | 2025-12-16 | Initial platform with 6 core models |
 | 1.1 | 2025-12-20 | Added Notification Model (explicit), Conversational AI Model (8th model) |
+| 1.2 | 2025-12-23 | Sharded large documents for AI agent efficiency (architecture, ai-model-developer-guide, ux-design-specification) |
 
 ---
 
-_Last Updated: 2025-12-20_
+_Last Updated: 2025-12-23_
 _Maintainer: Platform Architecture Team_
