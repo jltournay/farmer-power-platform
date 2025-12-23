@@ -157,3 +157,91 @@ class TestIDGenerator:
         assert call_args[0][0] == {"_id": "factory"}
         assert call_args[0][1] == {"$inc": {"seq": 1}}
         assert call_args[1]["upsert"] is True
+
+    # =========================================================================
+    # Farmer ID Generation Tests
+    # =========================================================================
+
+    @pytest.mark.asyncio
+    async def test_generate_farmer_id_first(
+        self, id_generator: IDGenerator, mock_db: MagicMock
+    ) -> None:
+        """Test generating the first farmer ID."""
+        mock_db["id_counters"].find_one_and_update = AsyncMock(
+            return_value={"_id": "farmer", "seq": 1}
+        )
+
+        farmer_id = await id_generator.generate_farmer_id()
+
+        assert farmer_id == "WM-0001"
+
+    @pytest.mark.asyncio
+    async def test_generate_farmer_id_sequence(
+        self, id_generator: IDGenerator, mock_db: MagicMock
+    ) -> None:
+        """Test farmer ID sequence numbering."""
+        mock_db["id_counters"].find_one_and_update = AsyncMock(
+            return_value={"_id": "farmer", "seq": 42}
+        )
+
+        farmer_id = await id_generator.generate_farmer_id()
+
+        assert farmer_id == "WM-0042"
+
+    @pytest.mark.asyncio
+    async def test_generate_farmer_id_four_digits(
+        self, id_generator: IDGenerator, mock_db: MagicMock
+    ) -> None:
+        """Test farmer ID with four-digit sequence."""
+        mock_db["id_counters"].find_one_and_update = AsyncMock(
+            return_value={"_id": "farmer", "seq": 9999}
+        )
+
+        farmer_id = await id_generator.generate_farmer_id()
+
+        assert farmer_id == "WM-9999"
+
+    @pytest.mark.asyncio
+    async def test_farmer_id_format(
+        self, id_generator: IDGenerator, mock_db: MagicMock
+    ) -> None:
+        """Test farmer ID format is correct (WM-XXXX)."""
+        mock_db["id_counters"].find_one_and_update = AsyncMock(
+            return_value={"_id": "farmer", "seq": 7}
+        )
+
+        farmer_id = await id_generator.generate_farmer_id()
+
+        # Verify format
+        assert farmer_id.startswith("WM-")
+        assert len(farmer_id) == 7  # WM-XXXX
+        assert farmer_id[-4:].isdigit()
+
+    @pytest.mark.asyncio
+    async def test_farmer_id_zero_padding(
+        self, id_generator: IDGenerator, mock_db: MagicMock
+    ) -> None:
+        """Test farmer ID is zero-padded correctly."""
+        # Single digit
+        mock_db["id_counters"].find_one_and_update = AsyncMock(
+            return_value={"_id": "farmer", "seq": 1}
+        )
+        assert await id_generator.generate_farmer_id() == "WM-0001"
+
+        # Double digit
+        mock_db["id_counters"].find_one_and_update = AsyncMock(
+            return_value={"_id": "farmer", "seq": 12}
+        )
+        assert await id_generator.generate_farmer_id() == "WM-0012"
+
+        # Triple digit
+        mock_db["id_counters"].find_one_and_update = AsyncMock(
+            return_value={"_id": "farmer", "seq": 123}
+        )
+        assert await id_generator.generate_farmer_id() == "WM-0123"
+
+        # Four digits
+        mock_db["id_counters"].find_one_and_update = AsyncMock(
+            return_value={"_id": "farmer", "seq": 1234}
+        )
+        assert await id_generator.generate_farmer_id() == "WM-1234"

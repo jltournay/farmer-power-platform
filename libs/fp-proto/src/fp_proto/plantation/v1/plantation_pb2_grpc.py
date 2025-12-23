@@ -91,6 +91,11 @@ class PlantationServiceStub(object):
                 request_serializer=plantation_dot_v1_dot_plantation__pb2.GetFarmerRequest.SerializeToString,
                 response_deserializer=plantation_dot_v1_dot_plantation__pb2.Farmer.FromString,
                 _registered_method=True)
+        self.GetFarmerByPhone = channel.unary_unary(
+                '/farmer_power.plantation.v1.PlantationService/GetFarmerByPhone',
+                request_serializer=plantation_dot_v1_dot_plantation__pb2.GetFarmerByPhoneRequest.SerializeToString,
+                response_deserializer=plantation_dot_v1_dot_plantation__pb2.Farmer.FromString,
+                _registered_method=True)
         self.ListFarmers = channel.unary_unary(
                 '/farmer_power.plantation.v1.PlantationService/ListFarmers',
                 request_serializer=plantation_dot_v1_dot_plantation__pb2.ListFarmersRequest.SerializeToString,
@@ -211,6 +216,12 @@ class PlantationServiceServicer(object):
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
+    def GetFarmerByPhone(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
     def ListFarmers(self, request, context):
         """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
@@ -318,6 +329,11 @@ def add_PlantationServiceServicer_to_server(servicer, server):
             'GetFarmer': grpc.unary_unary_rpc_method_handler(
                     servicer.GetFarmer,
                     request_deserializer=plantation_dot_v1_dot_plantation__pb2.GetFarmerRequest.FromString,
+                    response_serializer=plantation_dot_v1_dot_plantation__pb2.Farmer.SerializeToString,
+            ),
+            'GetFarmerByPhone': grpc.unary_unary_rpc_method_handler(
+                    servicer.GetFarmerByPhone,
+                    request_deserializer=plantation_dot_v1_dot_plantation__pb2.GetFarmerByPhoneRequest.FromString,
                     response_serializer=plantation_dot_v1_dot_plantation__pb2.Farmer.SerializeToString,
             ),
             'ListFarmers': grpc.unary_unary_rpc_method_handler(
@@ -642,6 +658,33 @@ class PlantationService(object):
             target,
             '/farmer_power.plantation.v1.PlantationService/GetFarmer',
             plantation_dot_v1_dot_plantation__pb2.GetFarmerRequest.SerializeToString,
+            plantation_dot_v1_dot_plantation__pb2.Farmer.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def GetFarmerByPhone(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/farmer_power.plantation.v1.PlantationService/GetFarmerByPhone',
+            plantation_dot_v1_dot_plantation__pb2.GetFarmerByPhoneRequest.SerializeToString,
             plantation_dot_v1_dot_plantation__pb2.Farmer.FromString,
             options,
             channel_credentials,

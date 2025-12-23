@@ -78,3 +78,72 @@ class GoogleElevationClient:
         except Exception as e:
             logger.error("Unexpected error fetching altitude: %s", e)
             return None
+
+
+def assign_region_from_altitude(
+    latitude: float, longitude: float, altitude: float
+) -> str:
+    """Assign a farm to a region based on location and altitude.
+
+    Regions are defined by {county}-{altitude_band}:
+    - highland: >= 1800m (cooler, more rainfall, later flushes, frost risk)
+    - midland: 1400m - 1800m (moderate conditions)
+    - lowland: < 1400m (warmer, earlier flushes)
+
+    For MVP, we use a simplified county assignment based on Kenya tea regions.
+    A full implementation would use reverse geocoding to get the actual county.
+
+    Args:
+        latitude: Farm latitude in decimal degrees.
+        longitude: Farm longitude in decimal degrees.
+        altitude: Altitude in meters.
+
+    Returns:
+        Region ID in format: {county}-{altitude_band} (e.g., "nyeri-highland")
+    """
+    # Determine altitude band
+    if altitude >= 1800:
+        band = "highland"
+    elif altitude >= 1400:
+        band = "midland"
+    else:
+        band = "lowland"
+
+    # MVP: Simplified county assignment for Kenya tea regions
+    # Using rough bounding boxes for major tea-producing counties
+    # A production implementation would use reverse geocoding
+
+    # Nyeri County approximate bounds
+    if -0.6 <= latitude <= 0.0 and 36.5 <= longitude <= 37.5:
+        county = "nyeri"
+    # Kericho County approximate bounds
+    elif -0.8 <= latitude <= 0.0 and 35.0 <= longitude <= 36.0:
+        county = "kericho"
+    # Nandi County approximate bounds
+    elif 0.0 <= latitude <= 0.5 and 34.5 <= longitude <= 35.5:
+        county = "nandi"
+    # Bomet County approximate bounds
+    elif -1.0 <= latitude <= -0.3 and 35.0 <= longitude <= 35.8:
+        county = "bomet"
+    # Kisii County approximate bounds
+    elif -1.0 <= latitude <= -0.4 and 34.5 <= longitude <= 35.0:
+        county = "kisii"
+    else:
+        # Default to nyeri for coordinates outside known regions
+        county = "nyeri"
+        logger.warning(
+            "Could not determine county for coordinates (%.4f, %.4f), "
+            "defaulting to 'nyeri'",
+            latitude,
+            longitude,
+        )
+
+    region_id = f"{county}-{band}"
+    logger.debug(
+        "Assigned region '%s' for coordinates (%.4f, %.4f) at altitude %.0fm",
+        region_id,
+        latitude,
+        longitude,
+        altitude,
+    )
+    return region_id
