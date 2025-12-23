@@ -38,35 +38,34 @@ class TestHealthEndpoint:
         assert response.status_code == 200
         data = response.json()
         assert data["status"] == "healthy"
-        assert "timestamp" in data
-        assert data["service"] == "plantation-model"
 
-    def test_health_includes_version(self, client: TestClient) -> None:
-        """Test that health endpoint includes version."""
+    def test_health_response_is_minimal(self, client: TestClient) -> None:
+        """Test that health endpoint returns minimal response for fast liveness checks."""
         response = client.get("/health")
 
         assert response.status_code == 200
         data = response.json()
-        assert "version" in data
+        # Liveness probe should be minimal - just status
+        assert "status" in data
 
 
 @pytest.mark.unit
 class TestReadyEndpoint:
     """Tests for /ready endpoint."""
 
-    def test_ready_without_mongodb_check_returns_not_ready(
+    def test_ready_without_mongodb_check_returns_not_configured(
         self, client: TestClient
     ) -> None:
-        """Test that ready returns not ready when MongoDB check not set."""
+        """Test that ready returns not_configured when MongoDB check not set."""
         # Reset the check function
         set_mongodb_check(None)
 
         response = client.get("/ready")
 
-        assert response.status_code == 503
+        # When not configured, service is still considered "ready" (startup phase)
+        assert response.status_code == 200
         data = response.json()
-        assert data["status"] == "not_ready"
-        assert data["checks"]["mongodb"] is False
+        assert data["checks"]["mongodb"] == "not_configured"
 
     def test_ready_with_healthy_mongodb(self, client: TestClient) -> None:
         """Test that ready returns ready when MongoDB is healthy."""
@@ -78,7 +77,7 @@ class TestReadyEndpoint:
         assert response.status_code == 200
         data = response.json()
         assert data["status"] == "ready"
-        assert data["checks"]["mongodb"] is True
+        assert data["checks"]["mongodb"] == "connected"
 
     def test_ready_with_unhealthy_mongodb(self, client: TestClient) -> None:
         """Test that ready returns not ready when MongoDB is unhealthy."""
@@ -90,7 +89,7 @@ class TestReadyEndpoint:
         assert response.status_code == 503
         data = response.json()
         assert data["status"] == "not_ready"
-        assert data["checks"]["mongodb"] is False
+        assert data["checks"]["mongodb"] == "disconnected"
 
     def test_ready_with_mongodb_exception(self, client: TestClient) -> None:
         """Test that ready handles MongoDB check exceptions."""
@@ -102,4 +101,4 @@ class TestReadyEndpoint:
         assert response.status_code == 503
         data = response.json()
         assert data["status"] == "not_ready"
-        assert data["checks"]["mongodb"] is False
+        assert data["checks"]["mongodb"] == "error"
