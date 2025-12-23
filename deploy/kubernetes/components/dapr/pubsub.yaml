@@ -1,0 +1,22 @@
+---
+# DAPR Pub/Sub Component - For event-driven communication
+apiVersion: dapr.io/v1alpha1
+kind: Component
+metadata:
+  name: pubsub
+spec:
+  type: pubsub.redis
+  version: v1
+  metadata:
+    - name: redisHost
+      secretKeyRef:
+        name: redis-secrets
+        key: host
+    - name: redisPassword
+      secretKeyRef:
+        name: redis-secrets
+        key: password
+    - name: consumerID
+      value: "{podName}"
+    - name: enableTLS
+      value: "true"

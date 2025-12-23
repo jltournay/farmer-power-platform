@@ -1,0 +1,37 @@
+---
+# DAPR State Store Component - MongoDB
+# Used by all domain model services for state management
+apiVersion: dapr.io/v1alpha1
+kind: Component
+metadata:
+  name: statestore
+spec:
+  type: state.mongodb
+  version: v1
+  metadata:
+    - name: host
+      secretKeyRef:
+        name: mongodb-secrets
+        key: host
+    - name: username
+      secretKeyRef:
+        name: mongodb-secrets
+        key: username
+    - name: password
+      secretKeyRef:
+        name: mongodb-secrets
+        key: password
+    - name: databaseName
+      value: "farmer_power_state"
+    - name: collectionName
+      value: "state"
+    - name: writeConcern
+      value: "majority"
+    - name: readConcern
+      value: "majority"
+    - name: operationTimeout
+      value: "10s"
+  # Scope to specific apps (optional)
+  # scopes:
+  #   - plantation-model
+  #   - collection-model

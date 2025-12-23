@@ -1,0 +1,114 @@
+---
+# Plantation Model Service - Kubernetes Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: plantation-model
+  labels:
+    app: plantation-model
+    component: domain-model
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: plantation-model
+  template:
+    metadata:
+      labels:
+        app: plantation-model
+        component: domain-model
+      annotations:
+        # DAPR sidecar injection
+        dapr.io/enabled: "true"
+        dapr.io/app-id: "plantation-model"
+        dapr.io/app-port: "8000"
+        dapr.io/app-protocol: "http"
+        dapr.io/enable-api-logging: "true"
+        dapr.io/log-level: "info"
+        # Enable metrics and tracing
+        dapr.io/enable-metrics: "true"
+        dapr.io/metrics-port: "9090"
+    spec:
+      containers:
+        - name: plantation-model
+          image: farmer-power/plantation-model:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 8000
+              protocol: TCP
+            - name: grpc
+              containerPort: 50051
+              protocol: TCP
+          env:
+            - name: PLANTATION_ENVIRONMENT
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+            - name: PLANTATION_MONGODB_URI
+              valueFrom:
+                secretKeyRef:
+                  name: mongodb-secrets
+                  key: uri
+            - name: PLANTATION_MONGODB_DATABASE
+              value: "plantation"
+            - name: PLANTATION_LOG_LEVEL
+              value: "INFO"
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "100m"
+            limits:
+              memory: "512Mi"
+              cpu: "500m"
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 10
+            periodSeconds: 15
+            timeoutSeconds: 5
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /ready
+              port: 8000
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 1000
+            readOnlyRootFilesystem: true
+            allowPrivilegeEscalation: false
+      serviceAccountName: plantation-model
+---
+# Service for HTTP traffic
+apiVersion: v1
+kind: Service
+metadata:
+  name: plantation-model
+  labels:
+    app: plantation-model
+spec:
+  type: ClusterIP
+  ports:
+    - name: http
+      port: 80
+      targetPort: 8000
+      protocol: TCP
+    - name: grpc
+      port: 50051
+      targetPort: 50051
+      protocol: TCP
+  selector:
+    app: plantation-model
+---
+# Service Account
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: plantation-model
+  labels:
+    app: plantation-model
