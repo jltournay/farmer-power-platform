@@ -1,9 +1,13 @@
-"""Unit tests for MongoDB infrastructure."""
+"""Unit tests for Plantation Model MongoDB infrastructure."""
 
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 from pymongo.errors import ConnectionFailure, ServerSelectionTimeoutError
+
+# Import will be updated once plantation-model is installable
+import sys
+sys.path.insert(0, str(__file__).replace("tests/unit/plantation/test_mongodb.py", "services/plantation-model/src"))
 
 from plantation_model.infrastructure.mongodb import (
     check_mongodb_connection,
@@ -13,6 +17,7 @@ from plantation_model.infrastructure.mongodb import (
 )
 
 
+@pytest.mark.unit
 class TestGetMongoDBClient:
     """Tests for get_mongodb_client function."""
 
@@ -57,6 +62,7 @@ class TestGetMongoDBClient:
             assert mock_constructor.call_count == 1
 
 
+@pytest.mark.unit
 class TestGetDatabase:
     """Tests for get_database function."""
 
@@ -85,6 +91,7 @@ class TestGetDatabase:
             assert db is mock_db
 
 
+@pytest.mark.unit
 class TestCheckMongoDBConnection:
     """Tests for check_mongodb_connection function."""
 
@@ -126,6 +133,7 @@ class TestCheckMongoDBConnection:
                 await check_mongodb_connection()
 
 
+@pytest.mark.unit
 class TestCloseMongoDBConnection:
     """Tests for close_mongodb_connection function."""
 

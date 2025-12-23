@@ -298,12 +298,8 @@ Claude Opus 4.5 (claude-opus-4-5-20251101)
 - `deploy/kubernetes/components/dapr/statestore.yaml` - MongoDB state store
 - `deploy/kubernetes/components/dapr/pubsub.yaml` - Redis pub/sub
 
-**Test Files:**
-- `services/plantation-model/tests/__init__.py`
-- `services/plantation-model/tests/conftest.py` - Pytest fixtures
-- `services/plantation-model/tests/unit/__init__.py`
-- `services/plantation-model/tests/unit/test_config.py`
-- `services/plantation-model/tests/unit/test_health.py`
-- `services/plantation-model/tests/unit/test_mongodb.py`
-- `services/plantation-model/tests/integration/__init__.py`
-- `services/plantation-model/tests/integration/test_app.py`
+**Test Files (global tests folder per test-design-system-level.md):**
+- `tests/unit/plantation/test_config.py` - Configuration tests
+- `tests/unit/plantation/test_health.py` - Health endpoint tests
+- `tests/unit/plantation/test_mongodb.py` - MongoDB connection tests
+- `tests/integration/test_plantation_app.py` - Full application integration tests

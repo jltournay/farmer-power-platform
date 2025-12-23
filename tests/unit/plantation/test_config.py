@@ -1,13 +1,19 @@
-"""Unit tests for service configuration."""
+"""Unit tests for Plantation Model service configuration."""
 
 import os
 from unittest.mock import patch
 
 import pytest
 
+# Import will be updated once plantation-model is installable
+# For now, add path for imports
+import sys
+sys.path.insert(0, str(__file__).replace("tests/unit/plantation/test_config.py", "services/plantation-model/src"))
+
 from plantation_model.config import Settings
 
 
+@pytest.mark.unit
 class TestSettings:
     """Tests for Settings configuration class."""
 

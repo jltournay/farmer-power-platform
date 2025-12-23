@@ -1,10 +1,14 @@
-"""Unit tests for health endpoints."""
+"""Unit tests for Plantation Model health endpoints."""
 
-from unittest.mock import AsyncMock, patch
+from unittest.mock import AsyncMock
 
 import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
+
+# Import will be updated once plantation-model is installable
+import sys
+sys.path.insert(0, str(__file__).replace("tests/unit/plantation/test_health.py", "services/plantation-model/src"))
 
 from plantation_model.api.health import router, set_mongodb_check
 
@@ -23,6 +27,7 @@ def client(app: FastAPI) -> TestClient:
     return TestClient(app)
 
 
+@pytest.mark.unit
 class TestHealthEndpoint:
     """Tests for /health endpoint."""
 
@@ -45,6 +50,7 @@ class TestHealthEndpoint:
         assert "version" in data
 
 
+@pytest.mark.unit
 class TestReadyEndpoint:
     """Tests for /ready endpoint."""
 
