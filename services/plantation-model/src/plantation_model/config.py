@@ -47,6 +47,9 @@ class Settings(BaseSettings):
     otel_exporter_insecure: bool = True  # Set False in production for TLS
     otel_service_namespace: str = "farmer-power"
 
+    # Google APIs configuration
+    google_elevation_api_key: str = ""  # Required for altitude auto-population
+
 
 # Global settings instance
 settings = Settings()

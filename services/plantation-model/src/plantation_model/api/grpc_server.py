@@ -5,7 +5,18 @@ from grpc_health.v1 import health, health_pb2, health_pb2_grpc
 from grpc_reflection.v1alpha import reflection
 import structlog
 
+from fp_proto.plantation.v1 import plantation_pb2, plantation_pb2_grpc
 from plantation_model.config import settings
+from plantation_model.api.plantation_service import PlantationServiceServicer
+from plantation_model.domain.models.id_generator import IDGenerator
+from plantation_model.infrastructure.mongodb import get_database
+from plantation_model.infrastructure.repositories.factory_repository import (
+    FactoryRepository,
+)
+from plantation_model.infrastructure.repositories.collection_point_repository import (
+    CollectionPointRepository,
+)
+from plantation_model.infrastructure.google_elevation import GoogleElevationClient
 
 logger = structlog.get_logger(__name__)
 
@@ -25,6 +36,7 @@ class GrpcServer:
         """Start the gRPC server.
 
         Configures:
+        - PlantationService (Factory/CollectionPoint CRUD)
         - Health checking service (grpc.health.v1.Health)
         - Server reflection for debugging
         - Concurrent request handling
@@ -36,6 +48,28 @@ class GrpcServer:
                 ("grpc.keepalive_time_ms", 30000),
                 ("grpc.keepalive_timeout_ms", 10000),
             ],
+        )
+
+        # Initialize dependencies
+        db = await get_database()
+        factory_repo = FactoryRepository(db)
+        cp_repo = CollectionPointRepository(db)
+        id_generator = IDGenerator(db)
+        elevation_client = GoogleElevationClient(settings.google_elevation_api_key)
+
+        # Ensure indexes are created
+        await factory_repo.ensure_indexes()
+        await cp_repo.ensure_indexes()
+
+        # Add PlantationService
+        plantation_servicer = PlantationServiceServicer(
+            factory_repo=factory_repo,
+            collection_point_repo=cp_repo,
+            id_generator=id_generator,
+            elevation_client=elevation_client,
+        )
+        plantation_pb2_grpc.add_PlantationServiceServicer_to_server(
+            plantation_servicer, self._server
         )
 
         # Add health checking service
@@ -56,6 +90,7 @@ class GrpcServer:
 
         # Enable server reflection for debugging with grpcurl/grpcui
         service_names = (
+            plantation_pb2.DESCRIPTOR.services_by_name["PlantationService"].full_name,
             health_pb2.DESCRIPTOR.services_by_name["Health"].full_name,
             reflection.SERVICE_NAME,
         )

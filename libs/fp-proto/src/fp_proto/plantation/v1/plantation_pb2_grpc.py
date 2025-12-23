@@ -81,6 +81,11 @@ class PlantationServiceStub(object):
                 request_serializer=plantation_dot_v1_dot_plantation__pb2.UpdateFactoryRequest.SerializeToString,
                 response_deserializer=plantation_dot_v1_dot_plantation__pb2.Factory.FromString,
                 _registered_method=True)
+        self.DeleteFactory = channel.unary_unary(
+                '/farmer_power.plantation.v1.PlantationService/DeleteFactory',
+                request_serializer=plantation_dot_v1_dot_plantation__pb2.DeleteFactoryRequest.SerializeToString,
+                response_deserializer=plantation_dot_v1_dot_plantation__pb2.DeleteFactoryResponse.FromString,
+                _registered_method=True)
         self.GetFarmer = channel.unary_unary(
                 '/farmer_power.plantation.v1.PlantationService/GetFarmer',
                 request_serializer=plantation_dot_v1_dot_plantation__pb2.GetFarmerRequest.SerializeToString,
@@ -100,6 +105,31 @@ class PlantationServiceStub(object):
                 '/farmer_power.plantation.v1.PlantationService/UpdateFarmer',
                 request_serializer=plantation_dot_v1_dot_plantation__pb2.UpdateFarmerRequest.SerializeToString,
                 response_deserializer=plantation_dot_v1_dot_plantation__pb2.Farmer.FromString,
+                _registered_method=True)
+        self.GetCollectionPoint = channel.unary_unary(
+                '/farmer_power.plantation.v1.PlantationService/GetCollectionPoint',
+                request_serializer=plantation_dot_v1_dot_plantation__pb2.GetCollectionPointRequest.SerializeToString,
+                response_deserializer=plantation_dot_v1_dot_plantation__pb2.CollectionPoint.FromString,
+                _registered_method=True)
+        self.ListCollectionPoints = channel.unary_unary(
+                '/farmer_power.plantation.v1.PlantationService/ListCollectionPoints',
+                request_serializer=plantation_dot_v1_dot_plantation__pb2.ListCollectionPointsRequest.SerializeToString,
+                response_deserializer=plantation_dot_v1_dot_plantation__pb2.ListCollectionPointsResponse.FromString,
+                _registered_method=True)
+        self.CreateCollectionPoint = channel.unary_unary(
+                '/farmer_power.plantation.v1.PlantationService/CreateCollectionPoint',
+                request_serializer=plantation_dot_v1_dot_plantation__pb2.CreateCollectionPointRequest.SerializeToString,
+                response_deserializer=plantation_dot_v1_dot_plantation__pb2.CollectionPoint.FromString,
+                _registered_method=True)
+        self.UpdateCollectionPoint = channel.unary_unary(
+                '/farmer_power.plantation.v1.PlantationService/UpdateCollectionPoint',
+                request_serializer=plantation_dot_v1_dot_plantation__pb2.UpdateCollectionPointRequest.SerializeToString,
+                response_deserializer=plantation_dot_v1_dot_plantation__pb2.CollectionPoint.FromString,
+                _registered_method=True)
+        self.DeleteCollectionPoint = channel.unary_unary(
+                '/farmer_power.plantation.v1.PlantationService/DeleteCollectionPoint',
+                request_serializer=plantation_dot_v1_dot_plantation__pb2.DeleteCollectionPointRequest.SerializeToString,
+                response_deserializer=plantation_dot_v1_dot_plantation__pb2.DeleteCollectionPointResponse.FromString,
                 _registered_method=True)
         self.GetPerformanceSummary = channel.unary_unary(
                 '/farmer_power.plantation.v1.PlantationService/GetPerformanceSummary',
@@ -168,6 +198,12 @@ class PlantationServiceServicer(object):
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
+    def DeleteFactory(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
     def GetFarmer(self, request, context):
         """Farmer operations
         """
@@ -188,6 +224,37 @@ class PlantationServiceServicer(object):
         raise NotImplementedError('Method not implemented!')
 
     def UpdateFarmer(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def GetCollectionPoint(self, request, context):
+        """Collection Point operations
+        """
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def ListCollectionPoints(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def CreateCollectionPoint(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def UpdateCollectionPoint(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def DeleteCollectionPoint(self, request, context):
         """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
@@ -243,6 +310,11 @@ def add_PlantationServiceServicer_to_server(servicer, server):
                     request_deserializer=plantation_dot_v1_dot_plantation__pb2.UpdateFactoryRequest.FromString,
                     response_serializer=plantation_dot_v1_dot_plantation__pb2.Factory.SerializeToString,
             ),
+            'DeleteFactory': grpc.unary_unary_rpc_method_handler(
+                    servicer.DeleteFactory,
+                    request_deserializer=plantation_dot_v1_dot_plantation__pb2.DeleteFactoryRequest.FromString,
+                    response_serializer=plantation_dot_v1_dot_plantation__pb2.DeleteFactoryResponse.SerializeToString,
+            ),
             'GetFarmer': grpc.unary_unary_rpc_method_handler(
                     servicer.GetFarmer,
                     request_deserializer=plantation_dot_v1_dot_plantation__pb2.GetFarmerRequest.FromString,
@@ -262,6 +334,31 @@ def add_PlantationServiceServicer_to_server(servicer, server):
                     servicer.UpdateFarmer,
                     request_deserializer=plantation_dot_v1_dot_plantation__pb2.UpdateFarmerRequest.FromString,
                     response_serializer=plantation_dot_v1_dot_plantation__pb2.Farmer.SerializeToString,
+            ),
+            'GetCollectionPoint': grpc.unary_unary_rpc_method_handler(
+                    servicer.GetCollectionPoint,
+                    request_deserializer=plantation_dot_v1_dot_plantation__pb2.GetCollectionPointRequest.FromString,
+                    response_serializer=plantation_dot_v1_dot_plantation__pb2.CollectionPoint.SerializeToString,
+            ),
+            'ListCollectionPoints': grpc.unary_unary_rpc_method_handler(
+                    servicer.ListCollectionPoints,
+                    request_deserializer=plantation_dot_v1_dot_plantation__pb2.ListCollectionPointsRequest.FromString,
+                    response_serializer=plantation_dot_v1_dot_plantation__pb2.ListCollectionPointsResponse.SerializeToString,
+            ),
+            'CreateCollectionPoint': grpc.unary_unary_rpc_method_handler(
+                    servicer.CreateCollectionPoint,
+                    request_deserializer=plantation_dot_v1_dot_plantation__pb2.CreateCollectionPointRequest.FromString,
+                    response_serializer=plantation_dot_v1_dot_plantation__pb2.CollectionPoint.SerializeToString,
+            ),
+            'UpdateCollectionPoint': grpc.unary_unary_rpc_method_handler(
+                    servicer.UpdateCollectionPoint,
+                    request_deserializer=plantation_dot_v1_dot_plantation__pb2.UpdateCollectionPointRequest.FromString,
+                    response_serializer=plantation_dot_v1_dot_plantation__pb2.CollectionPoint.SerializeToString,
+            ),
+            'DeleteCollectionPoint': grpc.unary_unary_rpc_method_handler(
+                    servicer.DeleteCollectionPoint,
+                    request_deserializer=plantation_dot_v1_dot_plantation__pb2.DeleteCollectionPointRequest.FromString,
+                    response_serializer=plantation_dot_v1_dot_plantation__pb2.DeleteCollectionPointResponse.SerializeToString,
             ),
             'GetPerformanceSummary': grpc.unary_unary_rpc_method_handler(
                     servicer.GetPerformanceSummary,
@@ -503,6 +600,33 @@ class PlantationService(object):
             _registered_method=True)
 
     @staticmethod
+    def DeleteFactory(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/farmer_power.plantation.v1.PlantationService/DeleteFactory',
+            plantation_dot_v1_dot_plantation__pb2.DeleteFactoryRequest.SerializeToString,
+            plantation_dot_v1_dot_plantation__pb2.DeleteFactoryResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
     def GetFarmer(request,
             target,
             options=(),
@@ -600,6 +724,141 @@ class PlantationService(object):
             '/farmer_power.plantation.v1.PlantationService/UpdateFarmer',
             plantation_dot_v1_dot_plantation__pb2.UpdateFarmerRequest.SerializeToString,
             plantation_dot_v1_dot_plantation__pb2.Farmer.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def GetCollectionPoint(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/farmer_power.plantation.v1.PlantationService/GetCollectionPoint',
+            plantation_dot_v1_dot_plantation__pb2.GetCollectionPointRequest.SerializeToString,
+            plantation_dot_v1_dot_plantation__pb2.CollectionPoint.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def ListCollectionPoints(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/farmer_power.plantation.v1.PlantationService/ListCollectionPoints',
+            plantation_dot_v1_dot_plantation__pb2.ListCollectionPointsRequest.SerializeToString,
+            plantation_dot_v1_dot_plantation__pb2.ListCollectionPointsResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def CreateCollectionPoint(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/farmer_power.plantation.v1.PlantationService/CreateCollectionPoint',
+            plantation_dot_v1_dot_plantation__pb2.CreateCollectionPointRequest.SerializeToString,
+            plantation_dot_v1_dot_plantation__pb2.CollectionPoint.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def UpdateCollectionPoint(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/farmer_power.plantation.v1.PlantationService/UpdateCollectionPoint',
+            plantation_dot_v1_dot_plantation__pb2.UpdateCollectionPointRequest.SerializeToString,
+            plantation_dot_v1_dot_plantation__pb2.CollectionPoint.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def DeleteCollectionPoint(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/farmer_power.plantation.v1.PlantationService/DeleteCollectionPoint',
+            plantation_dot_v1_dot_plantation__pb2.DeleteCollectionPointRequest.SerializeToString,
+            plantation_dot_v1_dot_plantation__pb2.DeleteCollectionPointResponse.FromString,
             options,
             channel_credentials,
             insecure,

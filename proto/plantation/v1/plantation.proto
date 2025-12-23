@@ -26,12 +26,20 @@ service PlantationService {
   rpc ListFactories(ListFactoriesRequest) returns (ListFactoriesResponse);
   rpc CreateFactory(CreateFactoryRequest) returns (Factory);
   rpc UpdateFactory(UpdateFactoryRequest) returns (Factory);
+  rpc DeleteFactory(DeleteFactoryRequest) returns (DeleteFactoryResponse);
 
   // Farmer operations
   rpc GetFarmer(GetFarmerRequest) returns (Farmer);
   rpc ListFarmers(ListFarmersRequest) returns (ListFarmersResponse);
   rpc CreateFarmer(CreateFarmerRequest) returns (Farmer);
   rpc UpdateFarmer(UpdateFarmerRequest) returns (Farmer);
+
+  // Collection Point operations
+  rpc GetCollectionPoint(GetCollectionPointRequest) returns (CollectionPoint);
+  rpc ListCollectionPoints(ListCollectionPointsRequest) returns (ListCollectionPointsResponse);
+  rpc CreateCollectionPoint(CreateCollectionPointRequest) returns (CollectionPoint);
+  rpc UpdateCollectionPoint(UpdateCollectionPointRequest) returns (CollectionPoint);
+  rpc DeleteCollectionPoint(DeleteCollectionPointRequest) returns (DeleteCollectionPointResponse);
 
   // Performance summary operations
   rpc GetPerformanceSummary(GetPerformanceSummaryRequest) returns (PerformanceSummary);
@@ -151,6 +159,97 @@ message UpdateFactoryRequest {
   optional ContactInfo contact = 5;
   optional int32 processing_capacity_kg = 6;
   optional bool is_active = 7;
+}
+
+message DeleteFactoryRequest {
+  string id = 1;
+}
+
+message DeleteFactoryResponse {
+  bool success = 1;
+}
+
+// ============================================================================
+// Collection Point Messages
+// ============================================================================
+
+message OperatingHours {
+  string weekdays = 1;   // e.g., "06:00-10:00"
+  string weekends = 2;   // e.g., "07:00-09:00"
+}
+
+message CollectionPointCapacity {
+  int32 max_daily_kg = 1;
+  string storage_type = 2;       // "covered_shed", "open_air", "refrigerated"
+  bool has_weighing_scale = 3;
+  bool has_qc_device = 4;
+}
+
+message CollectionPoint {
+  string id = 1;                                    // Format: {region}-cp-XXX
+  string name = 2;
+  string factory_id = 3;
+  GeoLocation location = 4;
+  string region_id = 5;
+  string clerk_id = 6;
+  string clerk_phone = 7;
+  OperatingHours operating_hours = 8;
+  repeated string collection_days = 9;             // ["mon", "wed", "fri", "sat"]
+  CollectionPointCapacity capacity = 10;
+  string status = 11;                              // "active", "inactive", "seasonal"
+  google.protobuf.Timestamp created_at = 12;
+  google.protobuf.Timestamp updated_at = 13;
+}
+
+message GetCollectionPointRequest {
+  string id = 1;
+}
+
+message ListCollectionPointsRequest {
+  int32 page_size = 1;
+  string page_token = 2;
+  string factory_id = 3;
+  string region_id = 4;
+  string status = 5;
+  bool active_only = 6;
+}
+
+message ListCollectionPointsResponse {
+  repeated CollectionPoint collection_points = 1;
+  string next_page_token = 2;
+  int32 total_count = 3;
+}
+
+message CreateCollectionPointRequest {
+  string name = 1;
+  string factory_id = 2;
+  GeoLocation location = 3;
+  string region_id = 4;
+  string clerk_id = 5;
+  string clerk_phone = 6;
+  OperatingHours operating_hours = 7;
+  repeated string collection_days = 8;
+  CollectionPointCapacity capacity = 9;
+  string status = 10;
+}
+
+message UpdateCollectionPointRequest {
+  string id = 1;
+  optional string name = 2;
+  optional string clerk_id = 3;
+  optional string clerk_phone = 4;
+  optional OperatingHours operating_hours = 5;
+  repeated string collection_days = 6;
+  optional CollectionPointCapacity capacity = 7;
+  optional string status = 8;
+}
+
+message DeleteCollectionPointRequest {
+  string id = 1;
+}
+
+message DeleteCollectionPointResponse {
+  bool success = 1;
 }
 
 // ============================================================================

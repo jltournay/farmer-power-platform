@@ -998,6 +998,7 @@ This file contains critical rules. For detailed decisions not covered here:
 | Component specifications | `_bmad-output/ux-design-specification/6-component-strategy.md` |
 | UX consistency patterns | `_bmad-output/ux-design-specification/7-ux-consistency-patterns.md` |
 | Responsive & accessibility | `_bmad-output/ux-design-specification/8-responsive-design-accessibility.md` |
+| **Lessons Learned** | `_bmad-output/lessons-learned/` (code review findings, common mistakes) |
 
 **When to look up more detail:**
 - Implementing a specific domain model feature (Plantation, Collection, etc.)
@@ -1005,6 +1006,7 @@ This file contains critical rules. For detailed decisions not covered here:
 - Need the "why" behind a decision, not just the "what"
 - **Implementing frontend components** - See UX Design Specification for visual patterns, component specs, and accessibility requirements
 - **Writing tests** - See Test Architecture for fixtures, golden samples, and test patterns
+- **Implementing gRPC services** - See Lessons Learned for common mistakes (referential integrity, input validation, mock patterns)
 
 ---
 
