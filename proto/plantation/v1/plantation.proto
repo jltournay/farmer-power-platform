@@ -1,0 +1,243 @@
+// Plantation Model Service - gRPC API Definition
+// Master data registry for the Farmer Power Platform
+
+syntax = "proto3";
+
+package farmer_power.plantation.v1;
+
+import "google/protobuf/timestamp.proto";
+
+// Note: Health checking uses standard grpc.health.v1.Health (grpc-health-checking package)
+// No custom HealthService defined here to avoid duplication.
+
+// ============================================================================
+// Plantation Service - Core Operations
+// ============================================================================
+
+service PlantationService {
+  // Region operations
+  rpc GetRegion(GetRegionRequest) returns (Region);
+  rpc ListRegions(ListRegionsRequest) returns (ListRegionsResponse);
+  rpc CreateRegion(CreateRegionRequest) returns (Region);
+  rpc UpdateRegion(UpdateRegionRequest) returns (Region);
+
+  // Factory operations
+  rpc GetFactory(GetFactoryRequest) returns (Factory);
+  rpc ListFactories(ListFactoriesRequest) returns (ListFactoriesResponse);
+  rpc CreateFactory(CreateFactoryRequest) returns (Factory);
+  rpc UpdateFactory(UpdateFactoryRequest) returns (Factory);
+
+  // Farmer operations
+  rpc GetFarmer(GetFarmerRequest) returns (Farmer);
+  rpc ListFarmers(ListFarmersRequest) returns (ListFarmersResponse);
+  rpc CreateFarmer(CreateFarmerRequest) returns (Farmer);
+  rpc UpdateFarmer(UpdateFarmerRequest) returns (Farmer);
+
+  // Performance summary operations
+  rpc GetPerformanceSummary(GetPerformanceSummaryRequest) returns (PerformanceSummary);
+}
+
+// ============================================================================
+// Common Types
+// ============================================================================
+
+message GeoLocation {
+  double latitude = 1;
+  double longitude = 2;
+  double altitude_meters = 3;
+}
+
+message ContactInfo {
+  string phone = 1;
+  string email = 2;
+  string address = 3;
+}
+
+// ============================================================================
+// Region Messages
+// ============================================================================
+
+message Region {
+  string id = 1;
+  string name = 2;
+  string code = 3;
+  GeoLocation center = 4;
+  string parent_region_id = 5;
+  bool is_active = 6;
+  google.protobuf.Timestamp created_at = 7;
+  google.protobuf.Timestamp updated_at = 8;
+}
+
+message GetRegionRequest {
+  string id = 1;
+}
+
+message ListRegionsRequest {
+  int32 page_size = 1;
+  string page_token = 2;
+  string parent_region_id = 3;
+  bool active_only = 4;
+}
+
+message ListRegionsResponse {
+  repeated Region regions = 1;
+  string next_page_token = 2;
+  int32 total_count = 3;
+}
+
+message CreateRegionRequest {
+  string name = 1;
+  string code = 2;
+  GeoLocation center = 3;
+  string parent_region_id = 4;
+}
+
+message UpdateRegionRequest {
+  string id = 1;
+  optional string name = 2;
+  optional string code = 3;
+  optional GeoLocation center = 4;
+  optional bool is_active = 5;
+}
+
+// ============================================================================
+// Factory Messages
+// ============================================================================
+
+message Factory {
+  string id = 1;
+  string name = 2;
+  string code = 3;
+  string region_id = 4;
+  GeoLocation location = 5;
+  ContactInfo contact = 6;
+  int32 processing_capacity_kg = 7;
+  bool is_active = 8;
+  google.protobuf.Timestamp created_at = 9;
+  google.protobuf.Timestamp updated_at = 10;
+}
+
+message GetFactoryRequest {
+  string id = 1;
+}
+
+message ListFactoriesRequest {
+  int32 page_size = 1;
+  string page_token = 2;
+  string region_id = 3;
+  bool active_only = 4;
+}
+
+message ListFactoriesResponse {
+  repeated Factory factories = 1;
+  string next_page_token = 2;
+  int32 total_count = 3;
+}
+
+message CreateFactoryRequest {
+  string name = 1;
+  string code = 2;
+  string region_id = 3;
+  GeoLocation location = 4;
+  ContactInfo contact = 5;
+  int32 processing_capacity_kg = 6;
+}
+
+message UpdateFactoryRequest {
+  string id = 1;
+  optional string name = 2;
+  optional string code = 3;
+  optional GeoLocation location = 4;
+  optional ContactInfo contact = 5;
+  optional int32 processing_capacity_kg = 6;
+  optional bool is_active = 7;
+}
+
+// ============================================================================
+// Farmer Messages
+// ============================================================================
+
+message Farmer {
+  string id = 1;
+  string grower_number = 2;
+  string first_name = 3;
+  string last_name = 4;
+  string region_id = 5;
+  string factory_id = 6;
+  GeoLocation farm_location = 7;
+  ContactInfo contact = 8;
+  double farm_size_hectares = 9;
+  google.protobuf.Timestamp registration_date = 10;
+  bool is_active = 11;
+  google.protobuf.Timestamp created_at = 12;
+  google.protobuf.Timestamp updated_at = 13;
+}
+
+message GetFarmerRequest {
+  string id = 1;
+}
+
+message ListFarmersRequest {
+  int32 page_size = 1;
+  string page_token = 2;
+  string region_id = 3;
+  string factory_id = 4;
+  bool active_only = 5;
+}
+
+message ListFarmersResponse {
+  repeated Farmer farmers = 1;
+  string next_page_token = 2;
+  int32 total_count = 3;
+}
+
+message CreateFarmerRequest {
+  string grower_number = 1;
+  string first_name = 2;
+  string last_name = 3;
+  string region_id = 4;
+  string factory_id = 5;
+  GeoLocation farm_location = 6;
+  ContactInfo contact = 7;
+  double farm_size_hectares = 8;
+}
+
+message UpdateFarmerRequest {
+  string id = 1;
+  optional string first_name = 2;
+  optional string last_name = 3;
+  optional string factory_id = 4;
+  optional GeoLocation farm_location = 5;
+  optional ContactInfo contact = 6;
+  optional double farm_size_hectares = 7;
+  optional bool is_active = 8;
+}
+
+// ============================================================================
+// Performance Summary Messages
+// ============================================================================
+
+message PerformanceSummary {
+  string id = 1;
+  string entity_type = 2;  // "farmer", "factory", "region"
+  string entity_id = 3;
+  string period = 4;  // "daily", "weekly", "monthly", "yearly"
+  google.protobuf.Timestamp period_start = 5;
+  google.protobuf.Timestamp period_end = 6;
+
+  // Aggregated metrics
+  double total_green_leaf_kg = 7;
+  double total_made_tea_kg = 8;
+  int32 collection_count = 9;
+  double average_quality_score = 10;
+
+  google.protobuf.Timestamp created_at = 11;
+  google.protobuf.Timestamp updated_at = 12;
+}
+
+message GetPerformanceSummaryRequest {
+  string entity_type = 1;
+  string entity_id = 2;
+  string period = 3;
+  google.protobuf.Timestamp period_start = 4;
+}

@@ -1,0 +1,24 @@
+[tool.poetry]
+name = "fp-proto"
+version = "0.1.0"
+description = "Generated Protocol Buffer stubs for Farmer Power Platform"
+authors = ["Farmer Power Team"]
+readme = "README.md"
+packages = [{include = "fp_proto", from = "src"}]
+
+[tool.poetry.dependencies]
+python = "^3.11"
+grpcio = "^1.60.0"
+protobuf = ">=6.31.1,<7.0.0"
+
+[tool.poetry.group.dev.dependencies]
+grpcio-tools = "^1.60.0"
+mypy-protobuf = "^3.5.0"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.mypy]
+python_version = "3.11"
+strict = true
