@@ -1,0 +1,127 @@
+{
+  "agent_name": "qc_event_extractor",
+  "agent_type": "extractor",
+  "version": "1.0.0",
+  "created_at": "2025-12-23T00:00:00Z",
+  "samples": [
+    {
+      "input": {
+        "source": "qc-analyzer",
+        "event_type": "END_BAG",
+        "timestamp": "2025-12-23T10:30:00Z",
+        "raw_data": {
+          "farmer_code": "WM-4521",
+          "leaf_count": 150,
+          "moisture_percent": 72.5,
+          "defects": ["yellow_leaves", "insect_damage"],
+          "assigned_grade": "B"
+        },
+        "image_url": "https://storage.example.com/images/bag-12345.jpg"
+      },
+      "expected_output": {
+        "farmer_id": "WM-4521",
+        "grade": "B",
+        "quality_score": 78.0,
+        "leaf_count": 150,
+        "moisture_percent": 72.5,
+        "defects": ["yellow_leaves", "insect_damage"],
+        "validation_warnings": [],
+        "extraction_confidence": 0.95
+      },
+      "acceptable_variance": {
+        "quality_score": 5.0,
+        "extraction_confidence": 0.1
+      },
+      "metadata": {
+        "sample_id": "GS-qc-001",
+        "agent_name": "qc_event_extractor",
+        "agent_type": "extractor",
+        "description": "Standard B-grade extraction with defects",
+        "source": "manual",
+        "validated_by": "Agronomist Jane",
+        "validated_at": "2025-12-20T00:00:00Z",
+        "tags": ["standard", "b-grade", "defects"],
+        "priority": "P0"
+      }
+    },
+    {
+      "input": {
+        "source": "qc-analyzer",
+        "event_type": "END_BAG",
+        "timestamp": "2025-12-23T11:00:00Z",
+        "raw_data": {
+          "farmer_code": "WM-1234",
+          "leaf_count": 200,
+          "moisture_percent": 68.0,
+          "defects": [],
+          "assigned_grade": "A"
+        },
+        "image_url": "https://storage.example.com/images/bag-12346.jpg"
+      },
+      "expected_output": {
+        "farmer_id": "WM-1234",
+        "grade": "A",
+        "quality_score": 92.0,
+        "leaf_count": 200,
+        "moisture_percent": 68.0,
+        "defects": [],
+        "validation_warnings": [],
+        "extraction_confidence": 0.98
+      },
+      "acceptable_variance": {
+        "quality_score": 3.0,
+        "extraction_confidence": 0.05
+      },
+      "metadata": {
+        "sample_id": "GS-qc-002",
+        "agent_name": "qc_event_extractor",
+        "agent_type": "extractor",
+        "description": "High quality A-grade extraction - no defects",
+        "source": "manual",
+        "validated_by": "Agronomist Jane",
+        "validated_at": "2025-12-20T00:00:00Z",
+        "tags": ["premium", "a-grade", "no-defects"],
+        "priority": "P0"
+      }
+    },
+    {
+      "input": {
+        "source": "qc-analyzer",
+        "event_type": "END_BAG",
+        "timestamp": "2025-12-23T12:00:00Z",
+        "raw_data": {
+          "leaf_count": 80,
+          "moisture_percent": 85.0,
+          "defects": ["wilting", "brown_spots", "insect_damage"],
+          "assigned_grade": "Reject"
+        },
+        "image_url": "https://storage.example.com/images/bag-12347.jpg"
+      },
+      "expected_output": {
+        "farmer_id": null,
+        "grade": "Reject",
+        "quality_score": 25.0,
+        "leaf_count": 80,
+        "moisture_percent": 85.0,
+        "defects": ["wilting", "brown_spots", "insect_damage"],
+        "validation_warnings": ["missing_farmer_id"],
+        "extraction_confidence": 0.90
+      },
+      "acceptable_variance": {
+        "quality_score": 5.0,
+        "extraction_confidence": 0.1
+      },
+      "metadata": {
+        "sample_id": "GS-qc-003",
+        "agent_name": "qc_event_extractor",
+        "agent_type": "extractor",
+        "description": "Rejected quality with missing farmer ID - should store with warning",
+        "source": "manual",
+        "validated_by": "Agronomist Jane",
+        "validated_at": "2025-12-20T00:00:00Z",
+        "tags": ["rejection", "missing-farmer", "warning"],
+        "priority": "P0"
+      }
+    }
+  ]
+}

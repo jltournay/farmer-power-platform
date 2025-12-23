@@ -248,43 +248,139 @@ _This file contains critical rules and patterns that AI agents must follow when 
 ### Test Organization
 
 - Tests live in `tests/` directory mirroring `src/` structure
-- Unit tests: `tests/unit/`
+- Unit tests: `tests/unit/{model_name}/`
 - Integration tests: `tests/integration/`
-- Golden samples: `tests/golden/`
+- Golden samples: `tests/golden/{agent_name}/`
+- Contract tests: `tests/contracts/`
+- Fixtures: `tests/fixtures/`
+
+### Test Directory Structure
+
+```
+tests/
+├── conftest.py              # Core fixtures (ALWAYS import from here)
+├── unit/
+│   ├── collection/          # Collection Model unit tests
+│   ├── plantation/          # Plantation Model unit tests
+│   ├── knowledge/           # Knowledge Model unit tests
+│   ├── action_plan/         # Action Plan Model unit tests
+│   ├── notification/        # Notification Model unit tests
+│   ├── market_analysis/     # Market Analysis unit tests
+│   ├── ai_model/            # AI Model unit tests
+│   └── conversational_ai/   # Conversational AI unit tests
+├── integration/             # Cross-model integration tests
+├── golden/
+│   ├── framework.py         # Golden sample validation framework
+│   ├── qc_event_extractor/  # QC extraction golden samples
+│   ├── quality_triage/      # Triage classification samples
+│   ├── disease_diagnosis/   # Diagnosis accuracy samples
+│   └── action_plan_generator/
+├── contracts/               # DAPR event schema validation
+└── fixtures/
+    ├── llm_responses/       # Recorded LLM responses
+    ├── mongodb_data/        # Test data fixtures
+    └── external_api_mocks/  # Starfish, Weather, AT mocks
+```
+
+### Core Test Fixtures (conftest.py)
+
+| Fixture | Purpose | Usage |
+|---------|---------|-------|
+| `mock_dapr_client` | Mock DAPR service invocation & pub/sub | `await mock_dapr_client.publish_event(...)` |
+| `mock_llm_client` | Mock OpenRouter with record/replay | `mock_llm_client.set_default_response({...})` |
+| `mock_mongodb_client` | In-memory MongoDB mock | `db = mock_mongodb_client["collection_model"]` |
+| `mock_collection_mcp` | Mock Collection Model MCP tools | `mock_collection_mcp.configure_tool_response(...)` |
+| `mock_plantation_mcp` | Mock Plantation Model MCP tools | Same pattern as above |
+| `mock_knowledge_mcp` | Mock Knowledge Model MCP tools | Same pattern as above |
+| `mock_starfish_api` | Mock Starfish Network API | External API mock |
+| `mock_weather_api` | Mock Weather API | External API mock |
+| `mock_africas_talking_api` | Mock Africa's Talking SMS/Voice | External API mock |
+| `test_data_factory` | Factory for test data | `test_data_factory.create_farmer(name="John")` |
+| `golden_sample_loader` | Load golden samples | `golden_sample_loader.load_samples("agent_name")` |
+| `sample_qc_payload` | Pre-built QC event payload | Direct use in tests |
+| `sample_farmer` | Pre-built farmer data | Direct use in tests |
 
 ### Agent Testing Strategy
 
-| Test Type | Purpose | Mocking |
-|-----------|---------|---------|
-| Unit | Individual node functions | Mock LLM, MCP, MongoDB |
-| Golden Sample | End-to-end agent accuracy | Real LLM, mock external data |
-| Integration | Cross-model workflows | Mock external APIs only |
+| Test Type | Purpose | Mocking | Location |
+|-----------|---------|---------|----------|
+| Unit | Individual node functions | Mock LLM, MCP, MongoDB | `tests/unit/` |
+| Golden Sample | End-to-end agent accuracy | Real LLM, mock external data | `tests/golden/` |
+| Integration | Cross-model workflows | Mock external APIs only | `tests/integration/` |
+| Contract | DAPR event schema validation | None | `tests/contracts/` |
 
 ### Golden Sample Testing (Critical)
 
-- ALWAYS maintain golden samples for each agent
-- Store in `tests/golden/{agent_name}/`
+- **ALWAYS** maintain golden samples for each AI agent
+- Store in `tests/golden/{agent_name}/samples.json`
 - Include: input payload, expected output, acceptable variance
 - Run golden tests on every PR that touches agent code
-- Use `farmer-cli test golden --agent {name}` to run
+- Minimum samples per agent:
+
+| Agent | Minimum Samples | Priority |
+|-------|-----------------|----------|
+| `qc_event_extractor` | 100+ | P0 |
+| `quality_triage` | 100+ | P0 |
+| `disease_diagnosis` | 50+ | P0 |
+| `weather_impact_analyzer` | 30+ | P1 |
+| `technique_assessment` | 30+ | P1 |
+| `action_plan_generator` | 20+ | P1 |
+
+### Test Markers
+
+| Marker | Purpose | Run Command |
+|--------|---------|-------------|
+| `@pytest.mark.unit` | Fast, isolated unit tests | `pytest -m unit` |
+| `@pytest.mark.integration` | Cross-model tests | `pytest -m integration` |
+| `@pytest.mark.golden` | Golden sample accuracy tests | `pytest -m golden` |
+| `@pytest.mark.contract` | Schema validation tests | `pytest -m contract` |
+| `@pytest.mark.slow` | Slow tests (skip in CI fast mode) | `pytest -m "not slow"` |
 
 ### LLM Mocking
 
-- Use `unittest.mock` with recorded responses for unit tests
-- Store LLM response fixtures in `tests/fixtures/llm_responses/`
-- NEVER mock LLM in golden sample tests (defeats purpose)
+- Use `mock_llm_client` fixture from conftest.py
+- Configure responses with `mock_llm_client.set_default_response({...})`
+- Store recorded responses in `tests/fixtures/llm_responses/`
+- **NEVER** mock LLM in golden sample tests (defeats purpose)
 
 ### MCP Tool Mocking
 
-- Mock MCP tool responses at the client level
-- Use `pytest-asyncio` for async test functions
-- Create reusable fixtures for common MCP responses
+- Use `mock_collection_mcp`, `mock_plantation_mcp`, `mock_knowledge_mcp` fixtures
+- Configure responses: `mock_collection_mcp.configure_tool_response("get_document", {...})`
+- Check calls: `mock_collection_mcp.get_tool_calls("get_document")`
+
+### Test Data Factory Usage
+
+```python
+# Create test farmer with defaults
+farmer = test_data_factory.create_farmer()
+
+# Create with overrides
+farmer = test_data_factory.create_farmer(
+    name="John Kamau",
+    region="Nandi-Medium",
+)
+
+# Create QC event
+event = test_data_factory.create_qc_event(grade="B", quality_score=78.0)
+```
 
 ### Test Naming
 
 - Test files: `test_{module_name}.py`
 - Test functions: `test_{function_name}_{scenario}`
 - Example: `test_triage_agent_routes_to_disease_analyzer`
+
+### Running Tests
+
+```bash
+pytest tests/                      # All tests
+pytest tests/unit/                 # Unit tests only
+pytest tests/golden/ -m golden     # Golden sample tests
+pytest tests/ -m "not slow"        # Skip slow tests
+pytest tests/ --cov=src            # With coverage
+pytest tests/ -x                   # Stop on first failure
+```
 
 ---
 
@@ -538,8 +634,9 @@ This file contains critical rules. For detailed decisions not covered here:
 | Need | Document |
 |------|----------|
 | Decision inventory + traceability | `_bmad-output/architecture-decision-index.md` |
-| Full architectural rationale | `_bmad-output/architecture.md` |
+| Full architectural rationale | `_bmad-output/architecture/index.md` |
 | AI Model implementation details | `_bmad-output/ai-model-developer-guide.md` |
+| **Test Architecture & Strategy** | `_bmad-output/test-design-system-level.md` |
 | **UX Design Specification** | `_bmad-output/ux-design-specification/index.md` |
 | Component specifications | `_bmad-output/ux-design-specification/6-component-strategy.md` |
 | UX consistency patterns | `_bmad-output/ux-design-specification/7-ux-consistency-patterns.md` |
@@ -550,6 +647,7 @@ This file contains critical rules. For detailed decisions not covered here:
 - Unsure about a pattern not explicitly covered here
 - Need the "why" behind a decision, not just the "what"
 - **Implementing frontend components** - See UX Design Specification for visual patterns, component specs, and accessibility requirements
+- **Writing tests** - See Test Architecture for fixtures, golden samples, and test patterns
 
 ---
 
