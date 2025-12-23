@@ -1,0 +1,127 @@
+  # Sprint Status - farmer-power-platform
+# generated: 2025-12-23
+# project: farmer-power-platform
+# tracking_system: file-system
+# story_location: _bmad-output/sprint-artifacts
+
+# STATUS DEFINITIONS:
+# ==================
+# Epic Status:
+#   - backlog: Epic not yet started
+#   - in-progress: Epic actively being worked on
+#   - done: All stories in epic completed
+#
+# Epic Status Transitions:
+#   - backlog → in-progress: Automatically when first story is created (via create-story)
+#   - in-progress → done: Manually when all stories reach 'done' status
+#
+# Story Status:
+#   - backlog: Story only exists in epic file
+#   - ready-for-dev: Story file created in stories folder
+#   - in-progress: Developer actively working on implementation
+#   - review: Ready for code review (via Dev's code-review workflow)
+#   - done: Story completed
+#
+# Retrospective Status:
+#   - optional: Can be completed but not required
+#   - done: Retrospective has been completed
+#
+# WORKFLOW NOTES:
+# ===============
+# - Epic transitions to 'in-progress' automatically when first story is created
+# - Stories can be worked in parallel if team capacity allows
+# - SM typically creates next story after previous one is 'done' to incorporate learnings
+# - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
+
+generated: 2025-12-23
+project: farmer-power-platform
+tracking_system: file-system
+story_location: _bmad-output/sprint-artifacts
+
+development_status:
+  # Epic 1: Farmer Registration & Data Foundation
+  epic-1: in-progress
+  1-1-plantation-model-service-setup: ready-for-dev
+  1-2-factory-and-collection-point-management: backlog
+  1-3-farmer-registration: backlog
+  1-4-farmer-performance-history-structure: backlog
+  1-5-farmer-communication-preferences: backlog
+  1-6-plantation-model-mcp-server: backlog
+  epic-1-retrospective: optional
+
+  # Epic 2: Quality Data Ingestion
+  epic-2: backlog
+  2-1-collection-model-service-setup: backlog
+  2-2-end-bag-event-ingestion-api: backlog
+  2-3-tbk-grading-result-storage: backlog
+  2-4-batch-upload-for-intermittent-connectivity: backlog
+  2-5-poor-quality-detected-event-handling: backlog
+  2-6-weather-data-pull-mode: backlog
+  2-7-image-evidence-storage: backlog
+  2-8-collection-model-mcp-server: backlog
+  epic-2-retrospective: optional
+
+  # Epic 3: Factory Manager Dashboard
+  epic-3: backlog
+  3-1-dashboard-bff-setup: backlog
+  3-2-farmer-quality-overview-grid: backlog
+  3-3-farmer-categorization: backlog
+  3-4-dashboard-filtering: backlog
+  3-5-one-click-farmer-contact: backlog
+  3-6-daily-report-auto-generation: backlog
+  3-7-dashboard-performance-optimization: backlog
+  epic-3-retrospective: optional
+
+  # Epic 4: Farmer SMS Feedback
+  epic-4: backlog
+  4-1-notification-model-service-setup: backlog
+  4-2-sms-message-generation: backlog
+  4-3-sms-cost-optimization: backlog
+  4-4-sms-delivery-assurance: backlog
+  4-5-lead-farmer-escalation: backlog
+  4-6-inbound-keyword-handling: backlog
+  4-7-group-and-regional-messaging: backlog
+  epic-4-retrospective: optional
+
+  # Epic 5: Quality Diagnosis AI
+  epic-5: backlog
+  5-1-knowledge-model-service-setup: backlog
+  5-2-event-aggregation-engine: backlog
+  5-3-triage-agent: backlog
+  5-4-disease-detection-agent: backlog
+  5-5-weather-impact-analyzer: backlog
+  5-6-technique-assessment-agent: backlog
+  5-7-trend-analysis-agent: backlog
+  5-8-rag-knowledge-base: backlog
+  5-9-knowledge-model-mcp-server: backlog
+  epic-5-retrospective: optional
+
+  # Epic 6: Weekly Action Plans
+  epic-6: backlog
+  6-1-action-plan-model-service-setup: backlog
+  6-2-weekly-action-plan-generation: backlog
+  6-3-farm-scale-aware-recommendations: backlog
+  6-4-dual-format-output: backlog
+  6-5-multilingual-translation: backlog
+  6-6-action-plan-mcp-server: backlog
+  epic-6-retrospective: optional
+
+  # Epic 7: Voice IVR Experience
+  epic-7: backlog
+  7-1-voice-ivr-service-setup: backlog
+  7-2-caller-id-farmer-identification: backlog
+  7-3-language-selection-menu: backlog
+  7-4-action-plan-tts-playback: backlog
+  7-5-navigation-and-help-options: backlog
+  epic-7-retrospective: optional
+
+  # Epic 8: Voice Quality Advisor (Conversational AI)
+  epic-8: backlog
+  8-1-conversational-ai-service-setup: backlog
+  8-2-swahili-speech-to-text: backlog
+  8-3-intent-classification: backlog
+  8-4-personalized-response-generation: backlog
+  8-5-guided-dialogue-flow: backlog
+  8-6-streaming-response-delivery: backlog
+  8-7-sms-fallback-handling: backlog
+  epic-8-retrospective: optional
