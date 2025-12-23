@@ -8,6 +8,18 @@ The Action Plan Model is the **prescription engine** that transforms diagnoses f
 
 **Does NOT:** Diagnose problems, collect data, or deliver messages (SMS delivery is infrastructure).
 
+## Document Boundaries
+
+> **This document defines WHAT to generate and WHEN.** For HOW generator agents are implemented (LLM config, prompts, workflows), see [`ai-model-architecture.md`](./ai-model-architecture.md).
+
+| This Document Owns | AI Model Architecture Owns |
+|-------------------|---------------------------|
+| Output requirements (dual-format: report + farmer message) | Generator Agent implementation |
+| Schedule (weekly) and trigger conditions | LLM selection and prompting |
+| Translation and simplification requirements | Prompt engineering for translation |
+| Farm-scale-aware recommendation guidelines | Scale-specific prompt templates |
+| Notification infrastructure (SMS, Voice, channels) | N/A (notification is infrastructure, not AI) |
+
 ## Architecture Diagram
 
 ```
@@ -116,6 +128,75 @@ The Action Plan Generator queries Plantation MCP for farmer profile including:
 - **pref_channel:** SMS, Voice, WhatsApp - determines output format
 - **pref_lang:** Swahili, Kikuyu, English, etc. - determines translation target
 - **literacy_lvl:** Low, Medium, High - determines simplification level
+
+## Farm-Scale-Aware Recommendations
+
+The Action Plan Generator receives `farm_size_hectares` and `farm_scale` from Plantation MCP and tailors recommendations accordingly.
+
+### Farm Scale Context
+
+| Scale | Hectares | Recommendation Focus |
+|-------|----------|---------------------|
+| **Smallholder** | < 1 ha | Manual techniques, low-cost inputs, family labor optimization |
+| **Medium** | 1-5 ha | Balance of technique + modest equipment ROI, seasonal labor planning |
+| **Estate** | > 5 ha | Equipment investment, batch processing, labor management, efficiency at scale |
+
+### Scale-Specific Recommendation Principles
+
+The same treatment recommendation adapts based on farm scale:
+
+| Aspect | Smallholder (<1 ha) | Medium (1-5 ha) | Estate (>5 ha) |
+|--------|---------------------|-----------------|----------------|
+| **Equipment** | Knapsack sprayer | Motorized sprayer | Tractor-mounted |
+| **Labor** | Family members | 1-2 day laborers | Team leads per section |
+| **Cost focus** | Low-cost alternatives | Bulk cooperative purchase | Supplier contracts |
+| **Timing** | Single session | 2-day application window | Block-by-block schedule |
+| **Documentation** | Verbal reminder | Basic tracking | Compliance documentation |
+
+> **Implementation:** Scale-specific prompt templates are defined in [`ai-model-architecture.md`](./ai-model-architecture.md).
+
+### Yield Performance Context
+
+The Action Plan Generator also receives normalized yield metrics to provide context-aware feedback:
+
+```yaml
+# farmer_context from Plantation MCP
+farmer_context:
+  farmer_id: "WM-4521"
+  farm_size_hectares: 1.5
+  farm_scale: "medium"
+
+  performance:
+    yield_kg_per_hectare_30d: 120
+    yield_vs_regional_avg: 0.85      # 85% of regional average
+    yield_percentile: 42             # 42nd percentile among medium farms
+    improvement_trend: "improving"
+```
+
+This enables recommendations like:
+- "Your yield is 15% below regional average - focusing on plucking technique could help"
+- "You're in the top 25% of medium farms in your region - maintain current practices"
+- "Yield improving steadily - your recent changes are working"
+
+### Action Plan Output with Scale Context
+
+```json
+{
+    "farmer_id": "WM-4521",
+    "farm_scale": "medium",
+    "farm_size_hectares": 1.5,
+
+    "detailed_report": {
+        "content": "# Weekly Action Plan for WM-4521\n\n## Farm Context\nMedium-scale farm (1.5 ha), yield at 85% of regional average.\n\n## Priority Actions\n1. **Fungal Treatment** (scaled for 1.5 ha)...",
+        "scale_specific_notes": "Recommendations optimized for medium-scale operation"
+    },
+
+    "farmer_message": {
+        "content": "Habari! Shamba lako la hekta 1.5 linahitaji...",
+        "includes_yield_context": true
+    }
+}
+```
 
 ## Translation and Simplification
 

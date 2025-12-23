@@ -42,7 +42,8 @@ This section documents key use cases traced through the architecture to validate
 │                          ▼                                              │
 │  DAPR PUB/SUB: N events emitted                                         │
 │  topic: "collection.poor_quality_detected"                              │
-│  { doc_id, farmer_id, factory_id, grade, quality_score, image_url }     │
+│  { doc_id, farmer_id, factory_id, collection_point_id,                  │
+│    classification: "secondary", leaf_type_distribution, image_url }     │
 │                                                                         │
 └─────────────────────────────────────────────────────────────────────────┘
 ```
@@ -120,7 +121,8 @@ endpoints:
 ├─────────────────────────────────────────────────────────────────────────┤
 │                                                                         │
 │  EVENT: "collection.poor_quality_detected"                              │
-│  { doc_id: "doc-001", farmer_id: "WM-4521", grade: "D", image_url }     │
+│  { doc_id: "doc-001", farmer_id: "WM-4521", collection_point_id: "nyeri-cp-001", │
+│    classification: "secondary", leaf_type_distribution: {...}, image_url }      │
 │                          │                                              │
 │                          ▼                                              │
 │  AI MODEL - disease-diagnosis agent (Explorer/LangGraph)                │
@@ -134,20 +136,26 @@ endpoints:
 │  │     │ • get_farmer_documents(farmer_id, 30d) → history         │ │   │
 │  │     │                                                          │ │   │
 │  │     │ Plantation MCP:                                          │ │   │
-│  │     │ • get_farmer(farmer_id) → region, farm_size              │ │   │
-│  │     │ • get_farmer_summary(farmer_id) → trends, past issues    │ │   │
+│  │     │ • get_farmer(farmer_id) → region, farm_size_hectares,   │ │   │
+│  │     │                           farm_scale (smallholder/       │ │   │
+│  │     │                           medium/estate)                 │ │   │
+│  │     │ • get_farmer_summary(farmer_id) → trends, past issues,  │ │   │
+│  │     │                                   yield_kg_per_hectare,  │ │   │
+│  │     │                                   yield_vs_regional_avg  │ │   │
+│  │     │ • get_collection_point(cp_id) → factory, operating_hours│ │   │
 │  │     └─────────────────────────────────────────────────────────┘ │   │
 │  │                                                                  │   │
 │  │  2. RAG QUERY (Pinecone)                                         │   │
-│  │     Query: "tea leaf disease symptoms {grade} {quality_issues}"  │   │
+│  │     Query: "tea leaf disease {classification} {leaf_types}"      │   │
 │  │     Returns: Expert knowledge about diseases, treatments         │   │
 │  │                                                                  │   │
 │  │  3. VISION LLM ANALYSIS (Claude Sonnet)                          │   │
 │  │     ┌─────────────────────────────────────────────────────────┐ │   │
 │  │     │ Input:                                                   │ │   │
 │  │     │ • [IMAGE] - tea leaf photo                               │ │   │
-│  │     │ • Metadata: grade D, score 35, moisture_excess           │ │   │
-│  │     │ • Farmer: Nyeri region, declining trend, 2 past fungal   │ │   │
+│  │     │ • TBK Classification: secondary (80% primary)            │ │   │
+│  │     │ • Leaf types: coarse_leaf (15), banji (5)                │ │   │
+│  │     │ • Farmer: Nyeri, smallholder (0.8 ha), declining yield   │ │   │
 │  │     │ • RAG: Disease symptoms, regional patterns               │ │   │
 │  │     │                                                          │ │   │
 │  │     │ Output:                                                  │ │   │
@@ -156,7 +164,7 @@ endpoints:
 │  │     │ • confidence: 0.87                                       │ │   │
 │  │     │ • severity: "high"                                       │ │   │
 │  │     │ • visual_evidence: ["brown spots", "yellow margins"]     │ │   │
-│  │     │ • metadata_evidence: ["grade D aligns with fungal..."]   │ │   │
+│  │     │ • metadata_evidence: ["coarse_leaf elevated suggests..."]│ │   │
 │  │     │ • recommendations: ["copper fungicide within 48h"]       │ │   │
 │  │     └─────────────────────────────────────────────────────────┘ │   │
 │  │                                                                  │   │
@@ -168,7 +176,8 @@ endpoints:
 │                          │                                              │
 │                          ▼                                              │
 │  EVENT: "ai.diagnosis.complete"                                         │
-│  { doc_id, farmer_id, diagnosis: { condition, confidence, ... } }       │
+│  { doc_id, farmer_id, collection_point_id,                              │
+│    diagnosis: { condition, confidence, ... } }                          │
 │                          │                                              │
 │                          ▼                                              │
 │  KNOWLEDGE MODEL                                                        │
@@ -255,12 +264,13 @@ output_schema:
 │  │                                                                  │   │
 │  │  ┌─────────┐   ┌─────────┐   ┌─────────┐   ┌─────────────────┐  │   │
 │  │  │ Fetch   │──▶│ Fetch   │──▶│ Priori- │──▶│ Generate Report │  │   │
-│  │  │Diagnoses│   │ Context │   │  tize   │   │   (Detailed)    │  │   │
+│  │  │Diagnoses│   │ Context │   │  tize   │   │ (Scale-Aware)   │  │   │
 │  │  └─────────┘   └─────────┘   └─────────┘   └────────┬────────┘  │   │
 │  │       │             │             │                  │           │   │
 │  │  Knowledge     Plantation     By severity           │           │   │
 │  │  MCP           MCP            & urgency              │           │   │
-│  │  (3 diagnoses) (profile,                             │           │   │
+│  │  (3 diagnoses) (farm_scale,                          │           │   │
+│  │                 yield metrics,                       │           │   │
 │  │                 pref_lang)                           │           │   │
 │  │                                                      ▼           │   │
 │  │                                          ┌─────────────────────┐ │   │
@@ -327,9 +337,11 @@ agent:
 
   mcp_sources:
     - server: knowledge
-      tools: [get_farmer_analyses]
+      tools: [get_farmer_analyses, get_recent_diagnoses]
     - server: plantation
       tools: [get_farmer, get_farmer_summary, get_farmer_context]
+      # Returns: farm_scale, farm_size_hectares, yield_kg_per_hectare,
+      #          yield_vs_regional_avg, yield_percentile
 
   llm:
     task_type: "generation"
@@ -339,6 +351,21 @@ agent:
   rag:
     enabled: true
     knowledge_domains: [tea_cultivation, regional_practices, treatment_protocols]
+
+  # Farm-Scale-Aware Recommendations
+  # Recommendations are adapted based on farm_scale:
+  scale_adaptations:
+    smallholder:        # <1 ha
+      - Focus on low-cost, manual solutions
+      - Emphasize timing over equipment
+      - Simple, actionable steps only
+    medium:             # 1-5 ha
+      - Balance cost vs efficiency
+      - Include labor optimization tips
+    estate:             # >5 ha
+      - Include mechanization options
+      - Reference bulk purchasing
+      - Suggest systematic monitoring
 
   outputs:
     detailed_report:
@@ -377,24 +404,168 @@ agent:
 
 ---
 
+## Use Case 4: Weather Data Pull and Correlation
+
+**Scenario:** The platform proactively fetches weather data from external APIs (pull mode) to correlate with quality issues. When poor quality is detected, the system checks weather history to determine if weather events contributed to the problem.
+
+**Flow:**
+
+```
+┌─────────────────────────────────────────────────────────────────────────┐
+│                    WEATHER PULL MODE FLOW                               │
+├─────────────────────────────────────────────────────────────────────────┤
+│                                                                         │
+│  STEP 1: Scheduled Weather Fetch (Daily 5 AM via DAPR Jobs)            │
+│  ┌─────────────────────────────────────────────────────────────────┐   │
+│  │  Collection Model (Pull Mode)                                    │   │
+│  │  1. Query configured weather sources for all factory regions    │   │
+│  │  2. For each region:                                             │   │
+│  │     GET https://api.openmeteo.com/v1/forecast?...                │   │
+│  │     → temperature, precipitation, humidity, wind                 │   │
+│  │  3. Store weather documents → MongoDB (weather_observations)    │   │
+│  │  4. Emit event: "collection.weather.updated"                     │   │
+│  │     { region_id, date, weather_summary }                         │   │
+│  └─────────────────────────────────────────────────────────────────┘   │
+│                                                                         │
+│  STEP 2: Weather Impact Analysis (triggered by poor quality event)     │
+│  ┌─────────────────────────────────────────────────────────────────┐   │
+│  │  EVENT: "collection.poor_quality_detected"                       │   │
+│  │  { farmer_id: "WM-4521", collection_point_id: "nyeri-cp-001",   │   │
+│  │    classification: "secondary", ... }                            │   │
+│  │                          │                                       │   │
+│  │                          ▼                                       │   │
+│  │  AI MODEL - Weather Analyzer Agent (LangGraph)                   │   │
+│  │  ┌─────────────────────────────────────────────────────────────┐ │   │
+│  │  │ 1. FETCH DATA (via MCP)                                      │ │   │
+│  │  │    Collection MCP:                                           │ │   │
+│  │  │    • get_weather_history(region_id, days=7)                  │ │   │
+│  │  │      → Returns: precipitation, frost events, humidity        │ │   │
+│  │  │                                                              │ │   │
+│  │  │ 2. APPLY LAG CORRELATION                                     │ │   │
+│  │  │    ┌─────────────────────────────────────────────────────┐   │ │   │
+│  │  │    │ Weather Event │ Impact Window │ Quality Impact      │   │ │   │
+│  │  │    │───────────────│───────────────│─────────────────────│   │ │   │
+│  │  │    │ Heavy rain    │ Days 3-5      │ Moisture, fungal    │   │ │   │
+│  │  │    │ Frost (<2°C)  │ Days 3-5      │ Leaf damage         │   │ │   │
+│  │  │    │ Drought       │ Days 4-7      │ Stress, stunting    │   │ │   │
+│  │  │    │ High humidity │ Days 2-4      │ Fungal, pests       │   │ │   │
+│  │  │    └─────────────────────────────────────────────────────┘   │ │   │
+│  │  │                                                              │ │   │
+│  │  │ 3. OUTPUT                                                    │ │   │
+│  │  │    • weather_correlation: true/false                         │ │   │
+│  │  │    • contributing_event: "heavy_rain_52mm_4days_ago"         │ │   │
+│  │  │    • confidence: 0.78                                        │ │   │
+│  │  └─────────────────────────────────────────────────────────────┘ │   │
+│  └─────────────────────────────────────────────────────────────────┘   │
+│                          │                                              │
+│                          ▼                                              │
+│  EVENT: "ai.weather_impact.complete"                                   │
+│  { farmer_id, collection_point_id, weather_correlation,               │
+│    contributing_event, confidence }                                    │
+│                          │                                              │
+│                          ▼                                              │
+│  KNOWLEDGE MODEL                                                        │
+│  Stores weather impact analysis in Analysis DB                         │
+│  (Enriches disease diagnosis with weather context)                     │
+│                                                                         │
+└─────────────────────────────────────────────────────────────────────────┘
+```
+
+**Pull Source Configuration (Collection Model):**
+
+```yaml
+pull_sources:
+  weather-openmeteo:
+    schedule: "0 5 * * *"        # Daily 5 AM
+    regions_from: plantation     # Get regions from Plantation Model
+
+    api:
+      base_url: https://api.open-meteo.com/v1/forecast
+      params:
+        hourly: temperature_2m,precipitation,relative_humidity_2m
+        past_days: 7
+        forecast_days: 3
+
+    processing:
+      normalize: true
+      aggregate_to: daily
+
+    storage:
+      mongo_collection: weather_observations
+      ttl_days: 90
+
+    events:
+      on_complete:
+        topic: "collection.weather.updated"
+```
+
+**Weather Analyzer Agent Configuration:**
+
+```yaml
+agent:
+  id: "weather-impact-analyzer"
+  type: analyzer                    # LangGraph
+
+  trigger:
+    event: "collection.poor_quality_detected"
+    # Runs in parallel with disease-diagnosis agent
+
+  mcp_sources:
+    - server: collection
+      tools: [get_weather_history]
+    - server: plantation
+      tools: [get_farmer]           # For region lookup
+
+  llm:
+    task_type: "analysis"
+    model_override: null            # Use default (Haiku for cost)
+
+  correlation:
+    lag_window_days: 7
+    day_weights:                    # 3-5 day lag strongest
+      day_0: 0.05
+      day_1: 0.10
+      day_2: 0.20
+      day_3: 0.35
+      day_4: 0.35
+      day_5: 0.30
+      day_6: 0.15
+      day_7: 0.05
+```
+
+---
+
 ## Use Case Summary
 
 | Use Case | Trigger | Models Involved | Key Features |
 |----------|---------|-----------------|--------------|
 | **Batch ZIP Upload** | HTTP (QC Analyzer) | Collection | Resumable upload, checksum, expand to documents |
-| **Image Diagnosis** | Event (per image) | Collection → AI → Knowledge | Vision LLM, RAG, confidence retry |
-| **Weekly Action Plan** | Schedule (Monday 6 AM) | Action Plan → AI → Notification | Dual output, translation, length check |
+| **Image Diagnosis** | Event (per image) | Collection → AI → Knowledge | Vision LLM, RAG, TBK classification |
+| **Weekly Action Plan** | Schedule (Monday 6 AM) | Action Plan → AI → Notification | Farm-scale-aware, translation, length check |
+| **Weather Pull & Correlation** | Schedule (5 AM) + Event | Collection (pull) → AI → Knowledge | Lag correlation, weather impact enrichment |
 
 ## Event Flow Summary
 
 ```
-BATCH UPLOAD:
+BATCH UPLOAD (Push Mode):
 QC Analyzer ──HTTP──▶ Collection ──event──▶ DAPR Pub/Sub (N events)
 
-DIAGNOSIS:
+WEATHER FETCH (Pull Mode):
+DAPR Jobs (5 AM) ──▶ Collection ──API──▶ Weather Service
+                          │
+                          └──event──▶ "collection.weather.updated"
+
+DIAGNOSIS (parallel analyzers):
 Collection event ──▶ AI Model ──MCP──▶ Collection, Plantation
-                         │
-                         └──event──▶ Knowledge (stores)
+  "poor_quality"         │
+                    ┌────┴────┐
+                    ▼         ▼
+              Disease    Weather
+              Analyzer   Analyzer
+                    │         │
+                    └────┬────┘
+                         ▼
+                    Knowledge (stores merged diagnosis)
 
 ACTION PLAN:
 DAPR Jobs ──▶ Action Plan ──event──▶ AI Model ──MCP──▶ Knowledge, Plantation

@@ -110,4 +110,39 @@ Consider formal CQRS migration if:
 
 **Current architecture supports:** ~1,000 writes/sec, ~10,000 reads/sec, < 100ms replica lag.
 
+## Implementation Examples
+
+The implicit CQRS pattern is applied across the platform. Key implementations:
+
+| Model | Command Side (Writes) | Query Side (Reads) | Reference |
+|-------|----------------------|-------------------|-----------|
+| **Plantation Model** | Collection Model writes raw deliveries | `farmer_performance`, `factory_performance`, `cp_performance` summaries | [`plantation-model-architecture.md`](./plantation-model-architecture.md#performance-summary-computation-hybrid-approach) |
+| **Knowledge Model** | Analyzers write diagnoses | Pre-computed analysis summaries for Action Plan queries | `knowledge-model-architecture.md` |
+| **Collection Model** | QC Analyzer writes raw events | Event stream for downstream consumers | `collection-model-architecture.md` |
+
+**Plantation Model Example:**
+
+```
+COMMAND SIDE                          QUERY SIDE
+─────────────                         ──────────
+Collection Model                      Plantation Model
+┌─────────────────┐                   ┌─────────────────┐
+│ Raw deliveries  │                   │ farmer_performance │
+│ - farmer_id     │    Batch job      │ - avg_grade_30d    │
+│ - weight_kg     │ ───────────────►  │ - yield_per_hectare│
+│ - grade         │    (daily 2AM)    │ - improvement_trend│
+│ - timestamp     │                   │                    │
+│ - cp_id         │    Streaming      │ today:             │
+└─────────────────┘ ───────────────►  │ - deliveries       │
+                      (real-time)     │ - total_kg         │
+                                      └─────────────────────┘
+                                              │
+                                              ▼
+                                      MCP Tools (read-only)
+                                      - get_farmer_summary
+                                      - get_farmer_context
+```
+
+AI agents never query the Collection Model for historical data — they read from optimized Plantation Model projections.
+
 ---
