@@ -21,15 +21,41 @@ services/plantation-model/
 
 ## Quick Start
 
+### Local Development Setup
+
 ```bash
-# Install dependencies
+# From repository root, install shared libraries first
+pip install -e libs/fp-proto
+
+# Install this service in editable mode (required for IDE imports)
+pip install -e services/plantation-model
+
+# Or use Poetry from service directory
+cd services/plantation-model
 poetry install
+```
 
-# Run locally
+### Run Locally
+
+```bash
+# Run the service (requires MongoDB running)
+uvicorn plantation_model.main:app --reload --port 8000
+
+# Or with Poetry
 poetry run uvicorn plantation_model.main:app --reload
+```
 
-# Run tests
-poetry run pytest
+### Run Tests
+
+```bash
+pytest tests/unit/plantation/
+```
+
+### Run with Docker Compose
+
+```bash
+# From repository root - starts MongoDB, Redis, DAPR, and this service
+docker-compose -f deploy/docker/docker-compose.yml up
 ```
 
 ## API Endpoints

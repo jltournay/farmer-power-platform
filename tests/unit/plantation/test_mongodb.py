@@ -5,10 +5,6 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 from pymongo.errors import ConnectionFailure, ServerSelectionTimeoutError
 
-# Import will be updated once plantation-model is installable
-import sys
-sys.path.insert(0, str(__file__).replace("tests/unit/plantation/test_mongodb.py", "services/plantation-model/src"))
-
 from plantation_model.infrastructure.mongodb import (
     check_mongodb_connection,
     close_mongodb_connection,

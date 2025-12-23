@@ -1,0 +1,21 @@
+apiVersion: dapr.io/v1alpha1
+kind: Component
+metadata:
+  name: statestore
+  namespace: default
+spec:
+  type: state.mongodb
+  version: v1
+  metadata:
+    - name: host
+      value: mongodb:27017
+    - name: username
+      value: admin
+    - name: password
+      value: password
+    - name: databaseName
+      value: farmer_power
+    - name: collectionName
+      value: dapr_state
+    - name: actorStateStore
+      value: "true"

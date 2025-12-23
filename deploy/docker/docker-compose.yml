@@ -1,0 +1,105 @@
+version: '3.8'
+
+# Farmer Power Platform - Local Development Stack
+# Usage: docker-compose -f deploy/docker/docker-compose.yml up
+
+services:
+  # ==========================================================================
+  # Infrastructure Services
+  # ==========================================================================
+
+  mongodb:
+    image: mongo:7.0
+    container_name: fp-mongodb
+    ports:
+      - "27018:27017"  # Use 27018 to avoid conflict with existing MongoDB
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: password
+      MONGO_INITDB_DATABASE: farmer_power
+    volumes:
+      - mongodb_data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  redis:
+    image: redis:7-alpine
+    container_name: fp-redis
+    ports:
+      - "6380:6379"  # Use 6380 to avoid conflict with existing Redis
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ==========================================================================
+  # DAPR Placement Service (for actors)
+  # ==========================================================================
+
+  placement:
+    image: daprio/dapr:1.12.0
+    container_name: fp-dapr-placement
+    command: ["./placement", "-port", "50007"]
+    ports:
+      - "50007:50007"
+
+  # ==========================================================================
+  # Plantation Model Service
+  # ==========================================================================
+
+  plantation-model:
+    build:
+      context: ../..
+      dockerfile: services/plantation-model/Dockerfile
+    container_name: fp-plantation-model
+    ports:
+      - "8001:8000"   # FastAPI HTTP
+      - "50051:50051" # gRPC
+    environment:
+      - PLANTATION_MONGODB_URI=mongodb://admin:password@mongodb:27017/farmer_power?authSource=admin
+      - PLANTATION_MONGODB_DATABASE=farmer_power
+      - PLANTATION_LOG_LEVEL=DEBUG
+      - PLANTATION_OTEL_ENABLED=false
+    depends_on:
+      mongodb:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    networks:
+      - default
+
+  # Plantation Model DAPR Sidecar
+  plantation-model-dapr:
+    image: daprio/daprd:1.12.0
+    container_name: fp-plantation-model-dapr
+    command: [
+      "./daprd",
+      "-app-id", "plantation-model",
+      "-app-port", "8000",
+      "-dapr-http-port", "3500",
+      "-dapr-grpc-port", "50001",
+      "-placement-host-address", "placement:50007",
+      "-components-path", "/components"
+    ]
+    volumes:
+      - ./dapr-components:/components
+    network_mode: "service:plantation-model"
+    depends_on:
+      - plantation-model
+      - placement
+
+volumes:
+  mongodb_data:
+
+networks:
+  default:
+    driver: bridge

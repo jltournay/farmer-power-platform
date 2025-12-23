@@ -6,10 +6,6 @@ import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
-# Import will be updated once plantation-model is installable
-import sys
-sys.path.insert(0, str(__file__).replace("tests/unit/plantation/test_health.py", "services/plantation-model/src"))
-
 from plantation_model.api.health import router, set_mongodb_check
 
 

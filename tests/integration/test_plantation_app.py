@@ -5,9 +5,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 from fastapi.testclient import TestClient
 
-# Import will be updated once plantation-model is installable
-import sys
-sys.path.insert(0, str(__file__).replace("tests/integration/test_plantation_app.py", "services/plantation-model/src"))
+from plantation_model.main import app
 
 
 @pytest.mark.integration
