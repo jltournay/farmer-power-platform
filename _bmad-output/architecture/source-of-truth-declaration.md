@@ -26,7 +26,7 @@
 | 4 | Action Plan Model | Recommendation generation | [Link](#action-plan-model-architecture) |
 | 5 | Market Analysis Model | Buyer matching, market intel | [Link](#market-analysis-model-architecture) |
 | 6 | AI Model | LLM orchestration, RAG | [Link](#ai-model-architecture) |
-| 7 | Notification Model | SMS, WhatsApp, Voice IVR (one-way) | [Link](#notification-model-architecture) |
+| 7 | Notification Model | SMS, WhatsApp, Voice IVR (one-way) | [Link](./notification-model-architecture.md) |
 | 8 | Conversational AI Model | Two-way dialogue across channels | [Link](#conversational-ai-model-architecture) |
 
 ---
