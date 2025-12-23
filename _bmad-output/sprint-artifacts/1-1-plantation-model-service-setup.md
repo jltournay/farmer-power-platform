@@ -1,6 +1,6 @@
 # Story 1.1: Plantation Model Service Setup
 
-**Status:** dev-complete
+**Status:** done
 
 ---
 
