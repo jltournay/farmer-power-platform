@@ -5,8 +5,6 @@ syntax = "proto3";
 
 package farmer_power.plantation.v1;
 
-option python_package = "plantation_model.proto.plantation.v1";
-
 import "google/protobuf/timestamp.proto";
 
 // Note: Health checking uses standard grpc.health.v1.Health (grpc-health-checking package)

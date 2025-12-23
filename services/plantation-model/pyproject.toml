@@ -25,6 +25,7 @@ opentelemetry-exporter-otlp = "^1.22.0"
 opentelemetry-instrumentation-fastapi = "^0.43b0"
 opentelemetry-instrumentation-grpc = "^0.43b0"
 opentelemetry-instrumentation-pymongo = "^0.43b0"
+fp-proto = { path = "../../libs/fp-proto" }
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^7.4.0"
