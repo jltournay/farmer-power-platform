@@ -51,3 +51,20 @@ class IDGenerator:
             return_document=ReturnDocument.AFTER,
         )
         return f"{region_id}-cp-{result['seq']:03d}"
+
+    async def generate_farmer_id(self) -> str:
+        """Generate a new farmer ID in format WM-XXXX.
+
+        The WM prefix stands for "Wanjiku Mama" - the tea farmer persona.
+        IDs are zero-padded 4-digit numbers (e.g., WM-0001, WM-1234).
+
+        Returns:
+            A unique farmer ID string.
+        """
+        result = await self._counters.find_one_and_update(
+            {"_id": "farmer"},
+            {"$inc": {"seq": 1}},
+            upsert=True,
+            return_document=ReturnDocument.AFTER,
+        )
+        return f"WM-{result['seq']:04d}"

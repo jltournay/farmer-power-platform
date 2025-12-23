@@ -15,6 +15,7 @@ VALID_COLLECTION_DAYS: Set[str] = {"mon", "tue", "wed", "thu", "fri", "sat", "su
 from fp_proto.plantation.v1 import plantation_pb2, plantation_pb2_grpc
 from plantation_model.domain.models.factory import Factory
 from plantation_model.domain.models.collection_point import CollectionPoint
+from plantation_model.domain.models.farmer import Farmer, FarmScale
 from plantation_model.domain.models.value_objects import (
     CollectionPointCapacity,
     ContactInfo,
@@ -28,7 +29,16 @@ from plantation_model.infrastructure.repositories.factory_repository import (
 from plantation_model.infrastructure.repositories.collection_point_repository import (
     CollectionPointRepository,
 )
-from plantation_model.infrastructure.google_elevation import GoogleElevationClient
+from plantation_model.infrastructure.repositories.farmer_repository import (
+    FarmerRepository,
+)
+from plantation_model.infrastructure.google_elevation import (
+    GoogleElevationClient,
+    assign_region_from_altitude,
+)
+from plantation_model.infrastructure.dapr_client import DaprPubSubClient
+from plantation_model.domain.events.farmer_events import FarmerRegisteredEvent
+from plantation_model.config import settings
 
 logger = logging.getLogger(__name__)
 
@@ -52,21 +62,27 @@ class PlantationServiceServicer(plantation_pb2_grpc.PlantationServiceServicer):
         self,
         factory_repo: FactoryRepository,
         collection_point_repo: CollectionPointRepository,
+        farmer_repo: FarmerRepository,
         id_generator: IDGenerator,
         elevation_client: GoogleElevationClient,
+        dapr_client: DaprPubSubClient | None = None,
     ) -> None:
         """Initialize the servicer.
 
         Args:
             factory_repo: Factory repository instance.
             collection_point_repo: Collection point repository instance.
+            farmer_repo: Farmer repository instance.
             id_generator: ID generator instance.
             elevation_client: Google Elevation API client.
+            dapr_client: Optional Dapr pub/sub client for event publishing.
         """
         self._factory_repo = factory_repo
         self._cp_repo = collection_point_repo
+        self._farmer_repo = farmer_repo
         self._id_generator = id_generator
         self._elevation_client = elevation_client
+        self._dapr_client = dapr_client or DaprPubSubClient()
 
     # =========================================================================
     # Factory Operations
@@ -547,3 +563,286 @@ class PlantationServiceServicer(plantation_pb2_grpc.PlantationServiceServicer):
 
         logger.info("Deleted collection point %s", request.id)
         return plantation_pb2.DeleteCollectionPointResponse(success=True)
+
+    # =========================================================================
+    # Farmer Operations
+    # =========================================================================
+
+    def _farm_scale_to_proto(self, farm_scale: FarmScale) -> plantation_pb2.FarmScale:
+        """Convert FarmScale domain enum to protobuf enum."""
+        mapping = {
+            FarmScale.SMALLHOLDER: plantation_pb2.FARM_SCALE_SMALLHOLDER,
+            FarmScale.MEDIUM: plantation_pb2.FARM_SCALE_MEDIUM,
+            FarmScale.ESTATE: plantation_pb2.FARM_SCALE_ESTATE,
+        }
+        return mapping.get(farm_scale, plantation_pb2.FARM_SCALE_UNSPECIFIED)
+
+    def _farmer_to_proto(self, farmer: Farmer) -> plantation_pb2.Farmer:
+        """Convert Farmer domain model to protobuf message."""
+        return plantation_pb2.Farmer(
+            id=farmer.id,
+            grower_number=farmer.grower_number or "",
+            first_name=farmer.first_name,
+            last_name=farmer.last_name,
+            region_id=farmer.region_id,
+            collection_point_id=farmer.collection_point_id,
+            farm_location=plantation_pb2.GeoLocation(
+                latitude=farmer.farm_location.latitude,
+                longitude=farmer.farm_location.longitude,
+                altitude_meters=farmer.farm_location.altitude_meters,
+            ),
+            contact=plantation_pb2.ContactInfo(
+                phone=farmer.contact.phone,
+                email=farmer.contact.email,
+                address=farmer.contact.address,
+            ),
+            farm_size_hectares=farmer.farm_size_hectares,
+            farm_scale=self._farm_scale_to_proto(farmer.farm_scale),
+            national_id=farmer.national_id,
+            registration_date=datetime_to_timestamp(farmer.registration_date),
+            is_active=farmer.is_active,
+            created_at=datetime_to_timestamp(farmer.created_at),
+            updated_at=datetime_to_timestamp(farmer.updated_at),
+        )
+
+    async def GetFarmer(
+        self,
+        request: plantation_pb2.GetFarmerRequest,
+        context: grpc.aio.ServicerContext,
+    ) -> plantation_pb2.Farmer:
+        """Get a farmer by ID."""
+        farmer = await self._farmer_repo.get_by_id(request.id)
+        if farmer is None:
+            await context.abort(
+                grpc.StatusCode.NOT_FOUND,
+                f"Farmer {request.id} not found",
+            )
+        return self._farmer_to_proto(farmer)
+
+    async def GetFarmerByPhone(
+        self,
+        request: plantation_pb2.GetFarmerByPhoneRequest,
+        context: grpc.aio.ServicerContext,
+    ) -> plantation_pb2.Farmer:
+        """Get a farmer by phone number.
+
+        Used for duplicate detection during registration.
+        """
+        farmer = await self._farmer_repo.get_by_phone(request.phone)
+        if farmer is None:
+            await context.abort(
+                grpc.StatusCode.NOT_FOUND,
+                f"No farmer found with phone {request.phone}",
+            )
+        return self._farmer_to_proto(farmer)
+
+    async def ListFarmers(
+        self,
+        request: plantation_pb2.ListFarmersRequest,
+        context: grpc.aio.ServicerContext,
+    ) -> plantation_pb2.ListFarmersResponse:
+        """List farmers with optional filtering."""
+        filters = {}
+        if request.region_id:
+            filters["region_id"] = request.region_id
+        if request.collection_point_id:
+            filters["collection_point_id"] = request.collection_point_id
+        if request.active_only:
+            filters["is_active"] = True
+
+        page_size = request.page_size if request.page_size > 0 else 100
+        page_token = request.page_token if request.page_token else None
+
+        farmers, next_token, total = await self._farmer_repo.list(
+            filters=filters if filters else None,
+            page_size=page_size,
+            page_token=page_token,
+        )
+
+        return plantation_pb2.ListFarmersResponse(
+            farmers=[self._farmer_to_proto(f) for f in farmers],
+            next_page_token=next_token or "",
+            total_count=total,
+        )
+
+    async def CreateFarmer(
+        self,
+        request: plantation_pb2.CreateFarmerRequest,
+        context: grpc.aio.ServicerContext,
+    ) -> plantation_pb2.Farmer:
+        """Create a new farmer.
+
+        AC #1: Register farmer with name, phone, national_id, farm_size, gps_location
+        AC #2: Duplicate phone detection returns existing farmer_id
+        """
+        # Check for duplicate phone
+        existing_by_phone = await self._farmer_repo.get_by_phone(request.contact.phone)
+        if existing_by_phone:
+            await context.abort(
+                grpc.StatusCode.ALREADY_EXISTS,
+                f"Phone number already registered. Existing farmer_id: {existing_by_phone.id}",
+            )
+
+        # Check for duplicate national ID
+        existing_by_national_id = await self._farmer_repo.get_by_national_id(
+            request.national_id
+        )
+        if existing_by_national_id:
+            await context.abort(
+                grpc.StatusCode.ALREADY_EXISTS,
+                f"National ID already registered. Existing farmer_id: {existing_by_national_id.id}",
+            )
+
+        # Validate collection point exists
+        cp = await self._cp_repo.get_by_id(request.collection_point_id)
+        if cp is None:
+            await context.abort(
+                grpc.StatusCode.INVALID_ARGUMENT,
+                f"Collection point {request.collection_point_id} not found",
+            )
+
+        # Generate unique farmer ID (format: WM-XXXX)
+        farmer_id = await self._id_generator.generate_farmer_id()
+
+        # Fetch altitude from Google Elevation API
+        altitude = await self._get_altitude_for_location(
+            request.farm_location.latitude,
+            request.farm_location.longitude,
+        )
+
+        # Auto-assign region based on GPS + altitude
+        region_id = assign_region_from_altitude(
+            request.farm_location.latitude,
+            request.farm_location.longitude,
+            altitude,
+        )
+
+        # Auto-calculate farm scale from hectares
+        farm_scale = FarmScale.from_hectares(request.farm_size_hectares)
+
+        # Create farmer
+        now = datetime.now(timezone.utc)
+        farmer = Farmer(
+            id=farmer_id,
+            grower_number=request.grower_number if request.grower_number else None,
+            first_name=request.first_name,
+            last_name=request.last_name,
+            region_id=region_id,
+            collection_point_id=request.collection_point_id,
+            farm_location=GeoLocation(
+                latitude=request.farm_location.latitude,
+                longitude=request.farm_location.longitude,
+                altitude_meters=altitude,
+            ),
+            contact=ContactInfo(
+                phone=request.contact.phone,
+                email=request.contact.email if request.contact.email else "",
+                address=request.contact.address if request.contact.address else "",
+            ),
+            farm_size_hectares=request.farm_size_hectares,
+            farm_scale=farm_scale,
+            national_id=request.national_id,
+            registration_date=now,
+            is_active=True,
+            created_at=now,
+            updated_at=now,
+        )
+
+        await self._farmer_repo.create(farmer)
+        logger.info(
+            "Created farmer %s (%s %s) at collection point %s",
+            farmer.id,
+            farmer.first_name,
+            farmer.last_name,
+            farmer.collection_point_id,
+        )
+
+        # Publish farmer registered event (AC #4)
+        event = FarmerRegisteredEvent(
+            farmer_id=farmer.id,
+            phone=farmer.contact.phone,
+            collection_point_id=farmer.collection_point_id,
+            factory_id=cp.factory_id,  # Derived from collection point
+            region_id=farmer.region_id,
+            farm_scale=farmer.farm_scale.value,
+        )
+        await self._dapr_client.publish_event(
+            pubsub_name=settings.dapr_pubsub_name,
+            topic=settings.dapr_farmer_events_topic,
+            data=event,
+        )
+
+        return self._farmer_to_proto(farmer)
+
+    async def UpdateFarmer(
+        self,
+        request: plantation_pb2.UpdateFarmerRequest,
+        context: grpc.aio.ServicerContext,
+    ) -> plantation_pb2.Farmer:
+        """Update an existing farmer."""
+        # Build updates dict from optional fields
+        updates = {}
+
+        if request.HasField("first_name"):
+            updates["first_name"] = request.first_name
+        if request.HasField("last_name"):
+            updates["last_name"] = request.last_name
+        if request.HasField("farm_location"):
+            # Fetch new altitude for updated location
+            altitude = await self._get_altitude_for_location(
+                request.farm_location.latitude,
+                request.farm_location.longitude,
+            )
+            updates["farm_location"] = GeoLocation(
+                latitude=request.farm_location.latitude,
+                longitude=request.farm_location.longitude,
+                altitude_meters=altitude,
+            ).model_dump()
+            # Recalculate region if location changed
+            updates["region_id"] = assign_region_from_altitude(
+                request.farm_location.latitude,
+                request.farm_location.longitude,
+                altitude,
+            )
+        if request.HasField("contact"):
+            # Check for duplicate phone if phone is being updated
+            if request.contact.phone:
+                existing = await self._farmer_repo.get_by_phone(request.contact.phone)
+                if existing and existing.id != request.id:
+                    await context.abort(
+                        grpc.StatusCode.ALREADY_EXISTS,
+                        f"Phone number already registered to farmer {existing.id}",
+                    )
+            updates["contact"] = ContactInfo(
+                phone=request.contact.phone,
+                email=request.contact.email,
+                address=request.contact.address,
+            ).model_dump()
+        if request.HasField("farm_size_hectares"):
+            updates["farm_size_hectares"] = request.farm_size_hectares
+            # Recalculate farm scale
+            updates["farm_scale"] = FarmScale.from_hectares(
+                request.farm_size_hectares
+            ).value
+        if request.HasField("is_active"):
+            updates["is_active"] = request.is_active
+
+        if not updates:
+            # No updates, just return current farmer
+            farmer = await self._farmer_repo.get_by_id(request.id)
+            if farmer is None:
+                await context.abort(
+                    grpc.StatusCode.NOT_FOUND,
+                    f"Farmer {request.id} not found",
+                )
+            return self._farmer_to_proto(farmer)
+
+        farmer = await self._farmer_repo.update(request.id, updates)
+        if farmer is None:
+            await context.abort(
+                grpc.StatusCode.NOT_FOUND,
+                f"Farmer {request.id} not found",
+            )
+
+        logger.info("Updated farmer %s", farmer.id)
+        return self._farmer_to_proto(farmer)

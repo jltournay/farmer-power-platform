@@ -7,9 +7,13 @@ from plantation_model.infrastructure.repositories.factory_repository import (
 from plantation_model.infrastructure.repositories.collection_point_repository import (
     CollectionPointRepository,
 )
+from plantation_model.infrastructure.repositories.farmer_repository import (
+    FarmerRepository,
+)
 
 __all__ = [
     "BaseRepository",
     "FactoryRepository",
     "CollectionPointRepository",
+    "FarmerRepository",
 ]

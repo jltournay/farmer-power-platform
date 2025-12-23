@@ -34,8 +34,11 @@ class Settings(BaseSettings):
     mongodb_max_pool_size: int = 50
 
     # DAPR configuration
+    dapr_host: str = "localhost"
     dapr_http_port: int = 3500
     dapr_grpc_port: int = 50001
+    dapr_pubsub_name: str = "pubsub"
+    dapr_farmer_events_topic: str = "farmer-events"
 
     # Logging configuration
     log_level: str = "INFO"

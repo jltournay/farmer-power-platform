@@ -16,6 +16,9 @@ from plantation_model.infrastructure.repositories.factory_repository import (
 from plantation_model.infrastructure.repositories.collection_point_repository import (
     CollectionPointRepository,
 )
+from plantation_model.infrastructure.repositories.farmer_repository import (
+    FarmerRepository,
+)
 from plantation_model.infrastructure.google_elevation import GoogleElevationClient
 
 logger = structlog.get_logger(__name__)
@@ -54,17 +57,20 @@ class GrpcServer:
         db = await get_database()
         factory_repo = FactoryRepository(db)
         cp_repo = CollectionPointRepository(db)
+        farmer_repo = FarmerRepository(db)
         id_generator = IDGenerator(db)
         elevation_client = GoogleElevationClient(settings.google_elevation_api_key)
 
         # Ensure indexes are created
         await factory_repo.ensure_indexes()
         await cp_repo.ensure_indexes()
+        await farmer_repo.ensure_indexes()
 
         # Add PlantationService
         plantation_servicer = PlantationServiceServicer(
             factory_repo=factory_repo,
             collection_point_repo=cp_repo,
+            farmer_repo=farmer_repo,
             id_generator=id_generator,
             elevation_client=elevation_client,
         )

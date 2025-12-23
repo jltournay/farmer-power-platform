@@ -30,6 +30,7 @@ service PlantationService {
 
   // Farmer operations
   rpc GetFarmer(GetFarmerRequest) returns (Farmer);
+  rpc GetFarmerByPhone(GetFarmerByPhoneRequest) returns (Farmer);
   rpc ListFarmers(ListFarmersRequest) returns (ListFarmersResponse);
   rpc CreateFarmer(CreateFarmerRequest) returns (Farmer);
   rpc UpdateFarmer(UpdateFarmerRequest) returns (Farmer);
@@ -256,31 +257,45 @@ message DeleteCollectionPointResponse {
 // Farmer Messages
 // ============================================================================
 
+// Farm scale classification based on hectares
+enum FarmScale {
+  FARM_SCALE_UNSPECIFIED = 0;
+  FARM_SCALE_SMALLHOLDER = 1;   // < 1 hectare
+  FARM_SCALE_MEDIUM = 2;        // 1-5 hectares
+  FARM_SCALE_ESTATE = 3;        // > 5 hectares
+}
+
 message Farmer {
-  string id = 1;
-  string grower_number = 2;
+  string id = 1;                                    // Format: WM-XXXX (e.g., WM-0001)
+  string grower_number = 2;                         // External/legacy ID if any
   string first_name = 3;
   string last_name = 4;
-  string region_id = 5;
-  string factory_id = 6;
+  string region_id = 5;                             // Auto-assigned based on GPS + altitude
+  string collection_point_id = 6;                   // Primary registration collection point
   GeoLocation farm_location = 7;
   ContactInfo contact = 8;
   double farm_size_hectares = 9;
-  google.protobuf.Timestamp registration_date = 10;
-  bool is_active = 11;
-  google.protobuf.Timestamp created_at = 12;
-  google.protobuf.Timestamp updated_at = 13;
+  FarmScale farm_scale = 10;                        // Auto-calculated from farm_size_hectares
+  string national_id = 11;                          // Government ID
+  google.protobuf.Timestamp registration_date = 12;
+  bool is_active = 13;
+  google.protobuf.Timestamp created_at = 14;
+  google.protobuf.Timestamp updated_at = 15;
 }
 
 message GetFarmerRequest {
   string id = 1;
 }
 
+message GetFarmerByPhoneRequest {
+  string phone = 1;
+}
+
 message ListFarmersRequest {
   int32 page_size = 1;
   string page_token = 2;
   string region_id = 3;
-  string factory_id = 4;
+  string collection_point_id = 4;
   bool active_only = 5;
 }
 
@@ -291,25 +306,24 @@ message ListFarmersResponse {
 }
 
 message CreateFarmerRequest {
-  string grower_number = 1;
-  string first_name = 2;
-  string last_name = 3;
-  string region_id = 4;
-  string factory_id = 5;
-  GeoLocation farm_location = 6;
-  ContactInfo contact = 7;
-  double farm_size_hectares = 8;
+  string first_name = 1;
+  string last_name = 2;
+  string collection_point_id = 3;                   // Primary registration collection point
+  GeoLocation farm_location = 4;
+  ContactInfo contact = 5;
+  double farm_size_hectares = 6;
+  string national_id = 7;                           // Government ID (required)
+  string grower_number = 8;                         // External/legacy ID (optional)
 }
 
 message UpdateFarmerRequest {
   string id = 1;
   optional string first_name = 2;
   optional string last_name = 3;
-  optional string factory_id = 4;
-  optional GeoLocation farm_location = 5;
-  optional ContactInfo contact = 6;
-  optional double farm_size_hectares = 7;
-  optional bool is_active = 8;
+  optional GeoLocation farm_location = 4;
+  optional ContactInfo contact = 5;
+  optional double farm_size_hectares = 6;
+  optional bool is_active = 7;
 }
 
 // ============================================================================
