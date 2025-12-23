@@ -1,10 +1,10 @@
 ---
 project_name: 'farmer-power-platform'
 user_name: 'Jeanlouistournay'
-date: '2025-12-17'
-sections_completed: ['technology_stack', 'python_rules', 'framework_rules', 'architecture_rules', 'testing_rules', 'critical_rules']
+date: '2025-12-23'
+sections_completed: ['technology_stack', 'python_rules', 'framework_rules', 'architecture_rules', 'testing_rules', 'ui_ux_rules', 'critical_rules']
 status: 'complete'
-rule_count: 136
+rule_count: 176
 optimized_for_llm: true
 ---
 
@@ -288,6 +288,126 @@ _This file contains critical rules and patterns that AI agents must follow when 
 
 ---
 
+## UI/UX Rules
+
+### Design System Stack
+
+| Technology | Purpose | Critical Notes |
+|------------|---------|----------------|
+| Tailwind CSS | Utility-first styling | Purge unused CSS for Kenya network conditions |
+| shadcn/ui | Component library | Copy-paste components, Radix primitives with ARIA built-in |
+| MUI v6 | DataGrid, Charts, Forms | Use with custom theme configuration |
+| Inter | Typography | Clean, professional font family |
+
+### Design Tokens (Mandatory)
+
+| Token | Value | Usage |
+|-------|-------|-------|
+| `--color-win` | #22C55E | Primary ≥85%, success states |
+| `--color-watch` | #F59E0B | Primary 70-84%, warnings |
+| `--color-action` | #EF4444 | Primary <70%, errors, alerts |
+| `--color-primary` | #16A34A | Brand, Forest Green, agriculture theme |
+| `--color-secondary` | #5C4033 | Earth Brown |
+| `--spacing-unit` | 4px | Base spacing multiplier |
+| `--radius-default` | 6px | Cards and containers |
+| `--radius-badge` | 16px | Status badges |
+
+### Status Badge Pattern (Critical)
+
+| Status | Color | Icon | Background | Threshold |
+|--------|-------|------|------------|-----------|
+| WIN | Forest Green `#1B4332` | ✅ | `#D8F3DC` | ≥85% Primary |
+| WATCH | Harvest Gold `#D4A03A` | ⚠️ | `#FFF8E7` | 70-84% Primary |
+| ACTION | Warm Red `#C1292E` | 🔴 | `#FFE5E5` | <70% Primary |
+
+**Rule**: ALWAYS use color + icon + text label for status (color independence for accessibility)
+
+### Custom Components Required
+
+| Component | Purpose | Notes |
+|-----------|---------|-------|
+| StatusBadge | Quality category display | WIN/WATCH/ACTION variants |
+| TrendIndicator | Quality trajectory | ↑ up, ↓ down, → stable |
+| FarmerCard | Single farmer overview | Avatar, Primary %, trend, quick actions |
+| LeafTypeTag | Issue identification | Coaching tooltips on hover/focus |
+| ActionStrip | Dashboard header counts | Clickable category filters |
+| SMSPreview | Template editing | Phone mockup with character count |
+
+### Responsive Breakpoints (MUI v6)
+
+| Breakpoint | Width | Layout |
+|------------|-------|--------|
+| xs | 0-599px | Single column, bottom navigation, stacked cards |
+| sm | 600-899px | Optional 2-column, side-by-side buttons |
+| md | 900-1199px | 2-column master-detail, filter sidebar |
+| lg | 1200-1535px | Full Command Center, 3-column dashboard |
+| xl | 1536px+ | 4-column capability, side-by-side comparison |
+
+**Rule**: Mobile-first CSS, desktop-optimized for Factory/Admin dashboards
+
+### Touch & Accessibility Requirements
+
+| Requirement | Standard | Notes |
+|-------------|----------|-------|
+| Touch targets | 48x48px minimum | Buttons, icons, list items |
+| Focus ring | 3px Forest Green outline | All interactive elements |
+| WCAG level | 2.1 AA | Target compliance |
+| Contrast ratio | 4.5:1 minimum | Text on backgrounds |
+
+### Accessibility Patterns
+
+- **Focus management**: Return focus to trigger after modal close
+- **Skip links**: "Skip to main content" on Tab
+- **ARIA labels**: `role="status"` for badges, `aria-live="polite"` for updates
+- **Keyboard**: Tab navigation, Escape closes modals, Arrow keys in menus
+- **Reduced motion**: Respect `prefers-reduced-motion` media query
+
+### Multi-Channel Consistency
+
+| Channel | Format | Rules |
+|---------|--------|-------|
+| Dashboard | StatusBadge components | WIN/WATCH/ACTION with icons |
+| SMS | Emoji + text (160 chars) | ✅ for WIN, ⚠️ for WATCH, 🔴 for ACTION |
+| Voice IVR | Spoken audio | Numbered menus, 0.8s pauses between options |
+
+**SMS Template Pattern**:
+```
+[Name], chai yako:
+[Status Emoji] [Primary %] daraja la kwanza
+Tatizo: [Leaf Type Issue]
+[Action Tip]
+```
+
+### UI Anti-Patterns to Avoid
+
+- **NO hardcoded colors** - Always use design tokens
+- **NO status without icons** - Color alone is not accessible
+- **NO touch targets < 48px** - Field officers use mobile in field conditions
+- **NO hover-only interactions** - Must work with touch
+- **NO blocking modals for confirmations** - Use toast/snackbar for success
+- **NO infinite scroll without pagination fallback** - Kenya network conditions
+
+### Form Patterns
+
+| Pattern | Rule |
+|---------|------|
+| Required fields | Red asterisk (*) after label |
+| Validation | Inline below field on blur, summary at top on submit |
+| Error state | `#C1292E` border + ✕ icon + error text |
+| Phone format | Auto-format to +254 XXX XXX XXX |
+
+### Loading & Empty States
+
+| Context | Pattern |
+|---------|---------|
+| Initial page load | Skeleton screens (match actual layout) |
+| Data refresh | Spinner in header after 500ms |
+| Button action | Inline spinner after 200ms |
+| No results | Illustration + message + action button |
+| No farmers need action | "No farmers need action today 🎉" (celebration) |
+
+---
+
 ## Critical Don't-Miss Rules
 
 ### Anti-Patterns to Avoid
@@ -420,11 +540,16 @@ This file contains critical rules. For detailed decisions not covered here:
 | Decision inventory + traceability | `_bmad-output/architecture-decision-index.md` |
 | Full architectural rationale | `_bmad-output/architecture.md` |
 | AI Model implementation details | `_bmad-output/ai-model-developer-guide.md` |
+| **UX Design Specification** | `_bmad-output/ux-design-specification/index.md` |
+| Component specifications | `_bmad-output/ux-design-specification/6-component-strategy.md` |
+| UX consistency patterns | `_bmad-output/ux-design-specification/7-ux-consistency-patterns.md` |
+| Responsive & accessibility | `_bmad-output/ux-design-specification/8-responsive-design-accessibility.md` |
 
 **When to look up more detail:**
 - Implementing a specific domain model feature (Plantation, Collection, etc.)
 - Unsure about a pattern not explicitly covered here
 - Need the "why" behind a decision, not just the "what"
+- **Implementing frontend components** - See UX Design Specification for visual patterns, component specs, and accessibility requirements
 
 ---
 
@@ -447,4 +572,4 @@ This file contains critical rules. For detailed decisions not covered here:
 
 ---
 
-_Last Updated: 2025-12-20_
+_Last Updated: 2025-12-23_
