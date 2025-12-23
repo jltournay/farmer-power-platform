@@ -49,7 +49,7 @@ def setup_tracing() -> None:
     # Configure OTLP exporter
     otlp_exporter = OTLPSpanExporter(
         endpoint=settings.otel_exporter_endpoint,
-        insecure=True,  # Use TLS in production
+        insecure=settings.otel_exporter_insecure,
     )
 
     # Add batch span processor for efficient export

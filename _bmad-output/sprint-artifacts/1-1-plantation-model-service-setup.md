@@ -280,7 +280,9 @@ Claude Opus 4.5 (claude-opus-4-5-20251101)
 **Service Files:**
 - `services/plantation-model/pyproject.toml` - Dependencies with Poetry
 - `services/plantation-model/Dockerfile` - Multi-stage build
+- `services/plantation-model/README.md` - Service documentation
 - `services/plantation-model/src/plantation_model/__init__.py`
+- `services/plantation-model/src/plantation_model/domain/__init__.py` - Domain layer placeholder
 - `services/plantation-model/src/plantation_model/main.py` - FastAPI entrypoint
 - `services/plantation-model/src/plantation_model/config.py` - Pydantic Settings
 - `services/plantation-model/src/plantation_model/api/__init__.py`
@@ -303,3 +305,11 @@ Claude Opus 4.5 (claude-opus-4-5-20251101)
 - `tests/unit/plantation/test_health.py` - Health endpoint tests
 - `tests/unit/plantation/test_mongodb.py` - MongoDB connection tests
 - `tests/integration/test_plantation_app.py` - Full application integration tests
+
+### Review Follow-ups (AI Code Review)
+
+The following items are OUT OF SCOPE for Story 1.1 (Service Setup) and should be addressed in future stories:
+
+- [ ] [Future Story] Implement PlantationService gRPC methods (GetFarmer, ListFarmers, etc.) - proto definitions ready
+- [ ] [Future Story] Generate Python stubs from proto to `libs/fp-proto/`
+- [ ] [Future Story] Add `fp-common`, `fp-proto`, `fp-testing` shared library dependencies when libraries are implemented

@@ -4,7 +4,7 @@ Master data registry for the Farmer Power Platform. Stores core entities (region
 
 ## Status
 
-**Story 1.1:** In Progress
+**Story 1.1:** Complete (Service Setup)
 
 ## Structure
 

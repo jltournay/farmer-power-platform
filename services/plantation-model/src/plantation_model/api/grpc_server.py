@@ -1,8 +1,5 @@
 """gRPC server implementation for Plantation Model service."""
 
-import asyncio
-from concurrent import futures
-
 import grpc
 from grpc_health.v1 import health, health_pb2, health_pb2_grpc
 from grpc_reflection.v1alpha import reflection
@@ -33,7 +30,6 @@ class GrpcServer:
         - Concurrent request handling
         """
         self._server = grpc.aio.server(
-            futures.ThreadPoolExecutor(max_workers=10),
             options=[
                 ("grpc.max_send_message_length", 50 * 1024 * 1024),  # 50MB
                 ("grpc.max_receive_message_length", 50 * 1024 * 1024),  # 50MB

@@ -7,35 +7,10 @@ package farmer_power.plantation.v1;
 
 option python_package = "plantation_model.proto.plantation.v1";
 
-import "google/protobuf/empty.proto";
 import "google/protobuf/timestamp.proto";
 
-// ============================================================================
-// Health Check Service
-// ============================================================================
-
-service HealthService {
-  // Check if the service is alive (liveness probe)
-  rpc Check(HealthCheckRequest) returns (HealthCheckResponse);
-
-  // Watch for health status changes (streaming)
-  rpc Watch(HealthCheckRequest) returns (stream HealthCheckResponse);
-}
-
-message HealthCheckRequest {
-  // Optional service name to check
-  string service = 1;
-}
-
-message HealthCheckResponse {
-  enum ServingStatus {
-    UNKNOWN = 0;
-    SERVING = 1;
-    NOT_SERVING = 2;
-    SERVICE_UNKNOWN = 3;
-  }
-  ServingStatus status = 1;
-}
+// Note: Health checking uses standard grpc.health.v1.Health (grpc-health-checking package)
+// No custom HealthService defined here to avoid duplication.
 
 // ============================================================================
 // Plantation Service - Core Operations

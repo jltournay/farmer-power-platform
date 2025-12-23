@@ -44,6 +44,7 @@ class Settings(BaseSettings):
     # OpenTelemetry configuration
     otel_enabled: bool = True
     otel_exporter_endpoint: str = "http://localhost:4317"
+    otel_exporter_insecure: bool = True  # Set False in production for TLS
     otel_service_namespace: str = "farmer-power"
 
 
