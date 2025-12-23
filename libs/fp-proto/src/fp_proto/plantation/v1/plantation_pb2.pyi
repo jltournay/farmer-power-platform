@@ -189,6 +189,156 @@ class UpdateFactoryRequest(_message.Message):
     is_active: bool
     def __init__(self, id: _Optional[str] = ..., name: _Optional[str] = ..., code: _Optional[str] = ..., location: _Optional[_Union[GeoLocation, _Mapping]] = ..., contact: _Optional[_Union[ContactInfo, _Mapping]] = ..., processing_capacity_kg: _Optional[int] = ..., is_active: bool = ...) -> None: ...
 
+class DeleteFactoryRequest(_message.Message):
+    __slots__ = ("id",)
+    ID_FIELD_NUMBER: _ClassVar[int]
+    id: str
+    def __init__(self, id: _Optional[str] = ...) -> None: ...
+
+class DeleteFactoryResponse(_message.Message):
+    __slots__ = ("success",)
+    SUCCESS_FIELD_NUMBER: _ClassVar[int]
+    success: bool
+    def __init__(self, success: bool = ...) -> None: ...
+
+class OperatingHours(_message.Message):
+    __slots__ = ("weekdays", "weekends")
+    WEEKDAYS_FIELD_NUMBER: _ClassVar[int]
+    WEEKENDS_FIELD_NUMBER: _ClassVar[int]
+    weekdays: str
+    weekends: str
+    def __init__(self, weekdays: _Optional[str] = ..., weekends: _Optional[str] = ...) -> None: ...
+
+class CollectionPointCapacity(_message.Message):
+    __slots__ = ("max_daily_kg", "storage_type", "has_weighing_scale", "has_qc_device")
+    MAX_DAILY_KG_FIELD_NUMBER: _ClassVar[int]
+    STORAGE_TYPE_FIELD_NUMBER: _ClassVar[int]
+    HAS_WEIGHING_SCALE_FIELD_NUMBER: _ClassVar[int]
+    HAS_QC_DEVICE_FIELD_NUMBER: _ClassVar[int]
+    max_daily_kg: int
+    storage_type: str
+    has_weighing_scale: bool
+    has_qc_device: bool
+    def __init__(self, max_daily_kg: _Optional[int] = ..., storage_type: _Optional[str] = ..., has_weighing_scale: bool = ..., has_qc_device: bool = ...) -> None: ...
+
+class CollectionPoint(_message.Message):
+    __slots__ = ("id", "name", "factory_id", "location", "region_id", "clerk_id", "clerk_phone", "operating_hours", "collection_days", "capacity", "status", "created_at", "updated_at")
+    ID_FIELD_NUMBER: _ClassVar[int]
+    NAME_FIELD_NUMBER: _ClassVar[int]
+    FACTORY_ID_FIELD_NUMBER: _ClassVar[int]
+    LOCATION_FIELD_NUMBER: _ClassVar[int]
+    REGION_ID_FIELD_NUMBER: _ClassVar[int]
+    CLERK_ID_FIELD_NUMBER: _ClassVar[int]
+    CLERK_PHONE_FIELD_NUMBER: _ClassVar[int]
+    OPERATING_HOURS_FIELD_NUMBER: _ClassVar[int]
+    COLLECTION_DAYS_FIELD_NUMBER: _ClassVar[int]
+    CAPACITY_FIELD_NUMBER: _ClassVar[int]
+    STATUS_FIELD_NUMBER: _ClassVar[int]
+    CREATED_AT_FIELD_NUMBER: _ClassVar[int]
+    UPDATED_AT_FIELD_NUMBER: _ClassVar[int]
+    id: str
+    name: str
+    factory_id: str
+    location: GeoLocation
+    region_id: str
+    clerk_id: str
+    clerk_phone: str
+    operating_hours: OperatingHours
+    collection_days: _containers.RepeatedScalarFieldContainer[str]
+    capacity: CollectionPointCapacity
+    status: str
+    created_at: _timestamp_pb2.Timestamp
+    updated_at: _timestamp_pb2.Timestamp
+    def __init__(self, id: _Optional[str] = ..., name: _Optional[str] = ..., factory_id: _Optional[str] = ..., location: _Optional[_Union[GeoLocation, _Mapping]] = ..., region_id: _Optional[str] = ..., clerk_id: _Optional[str] = ..., clerk_phone: _Optional[str] = ..., operating_hours: _Optional[_Union[OperatingHours, _Mapping]] = ..., collection_days: _Optional[_Iterable[str]] = ..., capacity: _Optional[_Union[CollectionPointCapacity, _Mapping]] = ..., status: _Optional[str] = ..., created_at: _Optional[_Union[datetime.datetime, _timestamp_pb2.Timestamp, _Mapping]] = ..., updated_at: _Optional[_Union[datetime.datetime, _timestamp_pb2.Timestamp, _Mapping]] = ...) -> None: ...
+
+class GetCollectionPointRequest(_message.Message):
+    __slots__ = ("id",)
+    ID_FIELD_NUMBER: _ClassVar[int]
+    id: str
+    def __init__(self, id: _Optional[str] = ...) -> None: ...
+
+class ListCollectionPointsRequest(_message.Message):
+    __slots__ = ("page_size", "page_token", "factory_id", "region_id", "status", "active_only")
+    PAGE_SIZE_FIELD_NUMBER: _ClassVar[int]
+    PAGE_TOKEN_FIELD_NUMBER: _ClassVar[int]
+    FACTORY_ID_FIELD_NUMBER: _ClassVar[int]
+    REGION_ID_FIELD_NUMBER: _ClassVar[int]
+    STATUS_FIELD_NUMBER: _ClassVar[int]
+    ACTIVE_ONLY_FIELD_NUMBER: _ClassVar[int]
+    page_size: int
+    page_token: str
+    factory_id: str
+    region_id: str
+    status: str
+    active_only: bool
+    def __init__(self, page_size: _Optional[int] = ..., page_token: _Optional[str] = ..., factory_id: _Optional[str] = ..., region_id: _Optional[str] = ..., status: _Optional[str] = ..., active_only: bool = ...) -> None: ...
+
+class ListCollectionPointsResponse(_message.Message):
+    __slots__ = ("collection_points", "next_page_token", "total_count")
+    COLLECTION_POINTS_FIELD_NUMBER: _ClassVar[int]
+    NEXT_PAGE_TOKEN_FIELD_NUMBER: _ClassVar[int]
+    TOTAL_COUNT_FIELD_NUMBER: _ClassVar[int]
+    collection_points: _containers.RepeatedCompositeFieldContainer[CollectionPoint]
+    next_page_token: str
+    total_count: int
+    def __init__(self, collection_points: _Optional[_Iterable[_Union[CollectionPoint, _Mapping]]] = ..., next_page_token: _Optional[str] = ..., total_count: _Optional[int] = ...) -> None: ...
+
+class CreateCollectionPointRequest(_message.Message):
+    __slots__ = ("name", "factory_id", "location", "region_id", "clerk_id", "clerk_phone", "operating_hours", "collection_days", "capacity", "status")
+    NAME_FIELD_NUMBER: _ClassVar[int]
+    FACTORY_ID_FIELD_NUMBER: _ClassVar[int]
+    LOCATION_FIELD_NUMBER: _ClassVar[int]
+    REGION_ID_FIELD_NUMBER: _ClassVar[int]
+    CLERK_ID_FIELD_NUMBER: _ClassVar[int]
+    CLERK_PHONE_FIELD_NUMBER: _ClassVar[int]
+    OPERATING_HOURS_FIELD_NUMBER: _ClassVar[int]
+    COLLECTION_DAYS_FIELD_NUMBER: _ClassVar[int]
+    CAPACITY_FIELD_NUMBER: _ClassVar[int]
+    STATUS_FIELD_NUMBER: _ClassVar[int]
+    name: str
+    factory_id: str
+    location: GeoLocation
+    region_id: str
+    clerk_id: str
+    clerk_phone: str
+    operating_hours: OperatingHours
+    collection_days: _containers.RepeatedScalarFieldContainer[str]
+    capacity: CollectionPointCapacity
+    status: str
+    def __init__(self, name: _Optional[str] = ..., factory_id: _Optional[str] = ..., location: _Optional[_Union[GeoLocation, _Mapping]] = ..., region_id: _Optional[str] = ..., clerk_id: _Optional[str] = ..., clerk_phone: _Optional[str] = ..., operating_hours: _Optional[_Union[OperatingHours, _Mapping]] = ..., collection_days: _Optional[_Iterable[str]] = ..., capacity: _Optional[_Union[CollectionPointCapacity, _Mapping]] = ..., status: _Optional[str] = ...) -> None: ...
+
+class UpdateCollectionPointRequest(_message.Message):
+    __slots__ = ("id", "name", "clerk_id", "clerk_phone", "operating_hours", "collection_days", "capacity", "status")
+    ID_FIELD_NUMBER: _ClassVar[int]
+    NAME_FIELD_NUMBER: _ClassVar[int]
+    CLERK_ID_FIELD_NUMBER: _ClassVar[int]
+    CLERK_PHONE_FIELD_NUMBER: _ClassVar[int]
+    OPERATING_HOURS_FIELD_NUMBER: _ClassVar[int]
+    COLLECTION_DAYS_FIELD_NUMBER: _ClassVar[int]
+    CAPACITY_FIELD_NUMBER: _ClassVar[int]
+    STATUS_FIELD_NUMBER: _ClassVar[int]
+    id: str
+    name: str
+    clerk_id: str
+    clerk_phone: str
+    operating_hours: OperatingHours
+    collection_days: _containers.RepeatedScalarFieldContainer[str]
+    capacity: CollectionPointCapacity
+    status: str
+    def __init__(self, id: _Optional[str] = ..., name: _Optional[str] = ..., clerk_id: _Optional[str] = ..., clerk_phone: _Optional[str] = ..., operating_hours: _Optional[_Union[OperatingHours, _Mapping]] = ..., collection_days: _Optional[_Iterable[str]] = ..., capacity: _Optional[_Union[CollectionPointCapacity, _Mapping]] = ..., status: _Optional[str] = ...) -> None: ...
+
+class DeleteCollectionPointRequest(_message.Message):
+    __slots__ = ("id",)
+    ID_FIELD_NUMBER: _ClassVar[int]
+    id: str
+    def __init__(self, id: _Optional[str] = ...) -> None: ...
+
+class DeleteCollectionPointResponse(_message.Message):
+    __slots__ = ("success",)
+    SUCCESS_FIELD_NUMBER: _ClassVar[int]
+    success: bool
+    def __init__(self, success: bool = ...) -> None: ...
+
 class Farmer(_message.Message):
     __slots__ = ("id", "grower_number", "first_name", "last_name", "region_id", "factory_id", "farm_location", "contact", "farm_size_hectares", "registration_date", "is_active", "created_at", "updated_at")
     ID_FIELD_NUMBER: _ClassVar[int]

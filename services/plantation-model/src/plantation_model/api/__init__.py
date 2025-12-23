@@ -10,6 +10,7 @@ from plantation_model.api.grpc_server import (
     start_grpc_server,
     stop_grpc_server,
 )
+from plantation_model.api.plantation_service import PlantationServiceServicer
 
 __all__ = [
     "health_router",
@@ -17,4 +18,5 @@ __all__ = [
     "get_grpc_server",
     "start_grpc_server",
     "stop_grpc_server",
+    "PlantationServiceServicer",
 ]
