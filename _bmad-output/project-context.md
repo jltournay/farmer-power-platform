@@ -2,15 +2,115 @@
 project_name: 'farmer-power-platform'
 user_name: 'Jeanlouistournay'
 date: '2025-12-23'
-sections_completed: ['technology_stack', 'python_rules', 'framework_rules', 'architecture_rules', 'testing_rules', 'ui_ux_rules', 'critical_rules']
+sections_completed: ['technology_stack', 'python_rules', 'code_design_principles', 'framework_rules', 'architecture_rules', 'testing_rules', 'ui_ux_rules', 'critical_rules']
 status: 'complete'
-rule_count: 176
+rule_count: 192
 optimized_for_llm: true
 ---
 
 # Project Context for AI Agents
 
 _This file contains critical rules and patterns that AI agents must follow when implementing code in this project. Focus on unobvious details that agents might otherwise miss._
+
+---
+
+## Repository Structure
+
+> **Full Details:** See `_bmad-output/architecture/repository-structure.md`
+
+### Top-Level Layout (Monorepo)
+
+```
+farmer-power-platform/
+├── services/                    # All microservices (8 domain models + BFF)
+│   ├── collection-model/
+│   ├── plantation-model/
+│   ├── knowledge-model/
+│   ├── action-plan-model/
+│   ├── notification-model/
+│   ├── market-analysis-model/
+│   ├── ai-model/
+│   ├── conversational-ai/
+│   └── bff/
+├── mcp-servers/                 # MCP Server implementations
+│   ├── collection-mcp/
+│   ├── plantation-mcp/
+│   ├── knowledge-mcp/
+│   └── action-plan-mcp/
+├── proto/                       # Shared Protocol Buffer definitions
+│   ├── collection/v1/
+│   ├── plantation/v1/
+│   ├── common/v1/
+│   └── ...
+├── libs/                        # Shared Python libraries
+│   ├── fp-common/               # Common utilities (config, tracing, dapr)
+│   ├── fp-proto/                # Generated proto stubs
+│   └── fp-testing/              # Test utilities and fixtures
+├── deploy/                      # Deployment configurations
+│   ├── kubernetes/              # Kustomize base + overlays (qa/preprod/prod)
+│   └── docker/                  # Dockerfiles, docker-compose
+├── tests/                       # Cross-service tests
+│   ├── unit/                    # Per-domain-model unit tests
+│   ├── integration/             # Cross-model integration tests
+│   ├── golden/                  # Golden sample tests (CRITICAL for AI)
+│   ├── contracts/               # DAPR event and MCP contract tests
+│   └── fixtures/                # Test data, LLM responses, API mocks
+└── scripts/                     # Build, deploy, proto-gen scripts
+```
+
+### Service Folder Template
+
+```
+services/{service-name}/
+├── src/{service_name}/          # Python package (snake_case)
+│   ├── main.py                  # Entrypoint
+│   ├── config.py                # Service configuration
+│   ├── api/                     # gRPC/REST handlers
+│   ├── domain/                  # Business logic, models
+│   └── infrastructure/          # MongoDB, DAPR, external APIs
+├── tests/                       # Service-specific tests
+├── Dockerfile
+└── pyproject.toml
+```
+
+### Naming Conventions
+
+| Element | Convention | Example |
+|---------|------------|---------|
+| Service folder | kebab-case | `collection-model/` |
+| Python package | snake_case | `collection_model/` |
+| gRPC service | PascalCase | `CollectionService` |
+| Proto package | snake_case | `farmer_power.collection.v1` |
+| Docker image | kebab-case | `farmer-power/collection-model` |
+| K8s deployment | kebab-case | `collection-model` |
+
+### Shared Library Usage
+
+```python
+# In service's pyproject.toml
+[tool.poetry.dependencies]
+fp-common = { path = "../../libs/fp-common" }
+fp-proto = { path = "../../libs/fp-proto" }
+fp-testing = { path = "../../libs/fp-testing", optional = true }
+
+# In code
+from fp_common.config import load_config
+from fp_common.dapr import DaprClient
+from fp_proto.collection.v1 import collection_pb2
+```
+
+### Where to Put Code
+
+| Need | Location |
+|------|----------|
+| New domain model service | `services/{model-name}/` |
+| New MCP server | `mcp-servers/{model-name}-mcp/` |
+| Shared utility | `libs/fp-common/fp_common/` |
+| Proto definition | `proto/{domain}/v1/{domain}.proto` |
+| Unit test | `tests/unit/{model_name}/` OR `services/{model}/tests/` |
+| Golden sample | `tests/golden/{agent-name}/samples.json` |
+| K8s manifest | `deploy/kubernetes/base/services/` |
+| Environment overlay | `deploy/kubernetes/overlays/{env}/` |
 
 ---
 
@@ -72,6 +172,262 @@ _This file contains critical rules and patterns that AI agents must follow when 
 - Absolute imports only (no relative imports)
 - Group: stdlib, third-party, local
 - One class/function per import line for clarity
+
+---
+
+## Code Design Principles
+
+### Open/Closed Principle (OCP) - MANDATORY
+
+Code must be **open for extension, closed for modification**. When adding new variants (channels, analyzers, grading types), you MUST NOT modify existing code.
+
+### When OCP Applies
+
+| Scenario | Use OCP Pattern |
+|----------|-----------------|
+| Adding new delivery channel (SMS, WhatsApp, Voice) | Channel Adapter |
+| Adding new analyzer type (disease, weather, technique) | Analyzer Strategy |
+| Adding new agent type (extractor, explorer, generator) | Agent Base Class |
+| Adding new grading model | Configurable via MongoDB |
+| Adding new data source | Ingestion Adapter |
+
+### Pattern 1: Channel Adapter (Notification Model)
+
+```python
+# domain/channels/base.py - CLOSED (never modify)
+from abc import ABC, abstractmethod
+from pydantic import BaseModel
+
+class DeliveryResult(BaseModel):
+    success: bool
+    channel: str
+    message_id: str | None = None
+    error: str | None = None
+
+class ChannelAdapter(ABC):
+    """Base adapter - extend this, never modify."""
+
+    @abstractmethod
+    async def send(self, recipient: str, message: str) -> DeliveryResult:
+        """Send message via this channel."""
+        pass
+
+    @abstractmethod
+    def supports_media(self) -> bool:
+        """Whether channel supports images/audio."""
+        pass
+```
+
+```python
+# domain/channels/sms.py - OPEN (add new adapters here)
+from .base import ChannelAdapter, DeliveryResult
+
+class SMSAdapter(ChannelAdapter):
+    """SMS delivery via Africa's Talking."""
+
+    def __init__(self, client: AfricasTalkingClient):
+        self._client = client
+
+    async def send(self, recipient: str, message: str) -> DeliveryResult:
+        result = await self._client.send_sms(recipient, message)
+        return DeliveryResult(
+            success=result.status == "sent",
+            channel="sms",
+            message_id=result.message_id,
+        )
+
+    def supports_media(self) -> bool:
+        return False
+```
+
+```python
+# domain/channels/whatsapp.py - Adding new channel = new file only
+class WhatsAppAdapter(ChannelAdapter):
+    """WhatsApp delivery - added without touching SMSAdapter."""
+
+    async def send(self, recipient: str, message: str) -> DeliveryResult:
+        # Implementation here
+        pass
+
+    def supports_media(self) -> bool:
+        return True  # WhatsApp supports images
+```
+
+```python
+# domain/channels/registry.py - Registry pattern for discovery
+class ChannelRegistry:
+    """Register adapters - add new channels without modifying existing."""
+
+    _adapters: dict[str, type[ChannelAdapter]] = {}
+
+    @classmethod
+    def register(cls, channel_name: str):
+        def decorator(adapter_cls: type[ChannelAdapter]):
+            cls._adapters[channel_name] = adapter_cls
+            return adapter_cls
+        return decorator
+
+    @classmethod
+    def get(cls, channel_name: str) -> ChannelAdapter:
+        return cls._adapters[channel_name]()
+
+# Usage: @ChannelRegistry.register("whatsapp")
+```
+
+### Pattern 2: Analyzer Strategy (Knowledge Model)
+
+```python
+# domain/analyzers/base.py - CLOSED
+from abc import ABC, abstractmethod
+from pydantic import BaseModel
+
+class AnalysisResult(BaseModel):
+    category: str
+    confidence: float
+    findings: list[str]
+    recommendations: list[str]
+
+class Analyzer(ABC):
+    """Base analyzer - extend for new analysis types."""
+
+    @property
+    @abstractmethod
+    def category(self) -> str:
+        """Analyzer category (disease, weather, technique, etc.)"""
+        pass
+
+    @abstractmethod
+    async def analyze(self, context: dict) -> AnalysisResult:
+        """Perform analysis and return findings."""
+        pass
+```
+
+```python
+# domain/analyzers/disease.py - OPEN
+class DiseaseAnalyzer(Analyzer):
+    """Analyzes quality issues related to plant diseases."""
+
+    @property
+    def category(self) -> str:
+        return "disease"
+
+    async def analyze(self, context: dict) -> AnalysisResult:
+        # Use LLM via AI Model to diagnose disease
+        diagnosis = await self._ai_client.diagnose_disease(context)
+        return AnalysisResult(
+            category=self.category,
+            confidence=diagnosis.confidence,
+            findings=diagnosis.findings,
+            recommendations=diagnosis.actions,
+        )
+```
+
+```python
+# domain/analyzers/weather.py - Adding new analyzer = new file only
+class WeatherAnalyzer(Analyzer):
+    """Correlates quality issues with recent weather patterns."""
+
+    @property
+    def category(self) -> str:
+        return "weather"
+
+    async def analyze(self, context: dict) -> AnalysisResult:
+        # Fetch weather data via Plantation MCP
+        weather = await self._plantation_mcp.get_weather_history(
+            region=context["region"],
+            days=7,  # 3-7 day lookback for lag correlation
+        )
+        # Analyze correlation
+        ...
+```
+
+### Pattern 3: Agent Base Class (AI Model)
+
+```python
+# domain/agents/base.py - CLOSED
+from abc import ABC, abstractmethod
+from typing import TypedDict
+
+class AgentConfig(BaseModel):
+    name: str
+    model: str  # e.g., "haiku", "sonnet"
+    max_tokens: int
+    temperature: float = 0.0
+
+class BaseAgent(ABC):
+    """Base agent class - extend for new agent types."""
+
+    def __init__(self, config: AgentConfig):
+        self.config = config
+
+    @abstractmethod
+    async def execute(self, input_data: dict) -> dict:
+        """Execute the agent's primary task."""
+        pass
+
+    async def _call_llm(self, prompt: str) -> str:
+        """Call LLM via OpenRouter - shared by all agents."""
+        return await self._openrouter.complete(
+            model=self.config.model,
+            prompt=prompt,
+            max_tokens=self.config.max_tokens,
+        )
+```
+
+```python
+# domain/agents/extractor.py - OPEN
+class ExtractorAgent(BaseAgent):
+    """Extracts structured data from unstructured input."""
+
+    async def execute(self, input_data: dict) -> dict:
+        prompt = await self._load_prompt("extractor", input_data)
+        response = await self._call_llm(prompt)
+        return self._parse_response(response)
+```
+
+### Code Clarity Rules
+
+| Rule | Why | Example |
+|------|-----|---------|
+| One class per file | Easy to find, easy to extend | `sms.py`, `whatsapp.py`, not `channels.py` |
+| Descriptive names | Self-documenting | `WeatherImpactAnalyzer` not `Analyzer2` |
+| Type hints everywhere | IDE support, catch errors | `async def send(self, recipient: str) -> DeliveryResult` |
+| Docstrings on public methods | Explain intent | `"""Correlates quality issues with weather."""` |
+| Small functions (< 20 lines) | Easy to understand | Extract helpers for complex logic |
+| No magic numbers | Named constants | `LOOKBACK_DAYS = 7` not `7` |
+
+### OCP Anti-Patterns to AVOID
+
+```python
+# BAD: Modifying existing code for new channels
+class NotificationService:
+    async def send(self, channel: str, message: str):
+        if channel == "sms":
+            return await self._send_sms(message)
+        elif channel == "whatsapp":  # Adding this = modifying existing code!
+            return await self._send_whatsapp(message)
+        elif channel == "voice":  # More modifications!
+            return await self._send_voice(message)
+```
+
+```python
+# GOOD: Extend via new adapter classes
+class NotificationService:
+    def __init__(self, registry: ChannelRegistry):
+        self._registry = registry
+
+    async def send(self, channel: str, message: str):
+        adapter = self._registry.get(channel)  # No modification needed
+        return await adapter.send(message)
+```
+
+### When NOT to Use OCP
+
+- **Simple utilities**: No variants expected (e.g., date formatting)
+- **One-off scripts**: Not production code
+- **Obvious single implementation**: Only one way to do it
+
+**Rule of thumb**: If you see `if/elif/elif` based on a type/category, refactor to OCP.
 
 ---
 
@@ -633,9 +989,10 @@ This file contains critical rules. For detailed decisions not covered here:
 
 | Need | Document |
 |------|----------|
+| **Repository Structure** | `_bmad-output/architecture/repository-structure.md` |
 | Decision inventory + traceability | `_bmad-output/architecture-decision-index.md` |
 | Full architectural rationale | `_bmad-output/architecture/index.md` |
-| AI Model implementation details | `_bmad-output/ai-model-developer-guide.md` |
+| AI Model implementation details | `_bmad-output/ai-model-developer-guide/index.md` |
 | **Test Architecture & Strategy** | `_bmad-output/test-design-system-level.md` |
 | **UX Design Specification** | `_bmad-output/ux-design-specification/index.md` |
 | Component specifications | `_bmad-output/ux-design-specification/6-component-strategy.md` |
