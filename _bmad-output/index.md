@@ -13,6 +13,10 @@ _Single entry point for all platform documentation. This index ensures coherence
 | **Decision Traceability** | `architecture-decision-index.md` | Maps decisions to documentation coverage |
 | **AI Implementation** | `ai-model-developer-guide/index.md` | Detailed AI/LLM development patterns |
 | **User Experience** | `ux-design-specification/index.md` | UI/UX patterns and user journeys |
+| **Epics & Stories** | `epics.md` | Implementation backlog and user stories |
+| **Test Strategy** | `test-design-system-level.md` | System-level test design and validation approach |
+| **Product Vision** | `analysis/product-brief-*.md` | Point-in-time product requirements |
+| **Domain Specification** | `analysis/tbk-kenya-tea-grading-model-specification.md` | TBK Kenya tea grading domain knowledge |
 
 **Rule:** When documents conflict, `architecture/index.md` is the authoritative source for technical decisions.
 
@@ -46,18 +50,21 @@ _Single entry point for all platform documentation. This index ensures coherence
 | [`architecture-decision-index.md`](./architecture-decision-index.md) | Decision traceability matrix | 2025-12-20 |
 | [`ai-model-developer-guide/index.md`](./ai-model-developer-guide/index.md) | AI/LLM development patterns (12 sections) | 2025-12-23 |
 | [`ux-design-specification/index.md`](./ux-design-specification/index.md) | User experience design (15 sections) | 2025-12-23 |
+| [`epics.md`](./epics.md) | Epics and user stories for implementation | 2025-12-23 |
+| [`test-design-system-level.md`](./test-design-system-level.md) | System-level test strategy and design | 2025-12-23 |
 
 **AI Agent Loading Strategy:**
 1. **Always load first:** `project-context.md` (17 KB - critical rules)
 2. **Load by task:** Navigate via index files to load only relevant sections
 3. **Never load:** Full sharded folders at once
 
-### Product Briefs (Point-in-Time Snapshots)
+### Product Briefs & Domain Specifications (Point-in-Time Snapshots)
 
 | Document | Scope | Date | Models Referenced |
 |----------|-------|------|-------------------|
 | [`analysis/product-brief-farmer-power-platform-2025-12-16.md`](./analysis/product-brief-farmer-power-platform-2025-12-16.md) | Full platform | 2025-12-16 | 6 (pre-Notification/Conversational) |
 | [`analysis/product-brief-voice-quality-advisor-2025-12-20.md`](./analysis/product-brief-voice-quality-advisor-2025-12-20.md) | Voice Quality Advisor feature | 2025-12-20 | 8 (includes Conversational AI) |
+| [`analysis/tbk-kenya-tea-grading-model-specification.md`](./analysis/tbk-kenya-tea-grading-model-specification.md) | TBK Kenya Tea Grading Model | 2025-12-20 | Domain specification for Knowledge Model |
 
 ### Analysis & Research
 
@@ -76,33 +83,35 @@ _Single entry point for all platform documentation. This index ensures coherence
 ## Document Relationships
 
 ```
-                    ┌─────────────────────────────────────┐
-                    │           index.md                  │
-                    │    (Navigation & Coherence)         │
-                    └──────────────┬──────────────────────┘
-                                   │
-         ┌─────────────────────────┼─────────────────────────┐
-         │                         │                         │
-         ▼                         ▼                         ▼
-┌─────────────────────┐  ┌─────────────────────┐  ┌─────────────────┐
-│ architecture/       │  │ project-context.md  │  │ Product Briefs  │
-│ (12 sharded files)  │  │ (AI Agent Rules)    │  │ (Point-in-Time) │
-│ Source of Truth     │  │ LOAD FIRST - 17KB   │  │                 │
-└─────────┬───────────┘  └──────────┬──────────┘  └─────────────────┘
-          │                         │
-          │ Traces to               │ Derived from
-          ▼                         ▼
+                              ┌─────────────────────────────────────┐
+                              │           index.md                  │
+                              │    (Navigation & Coherence)         │
+                              └──────────────┬──────────────────────┘
+                                             │
+       ┌──────────────┬──────────────┬───────┼───────┬──────────────┬──────────────┐
+       │              │              │               │              │              │
+       ▼              ▼              ▼               ▼              ▼              ▼
+┌─────────────┐ ┌───────────┐ ┌───────────┐ ┌─────────────┐ ┌───────────┐ ┌───────────┐
+│architecture/│ │ project-  │ │ Product   │ │   epics.md  │ │test-design│ │   ux-     │
+│(12 sharded) │ │context.md │ │ Briefs    │ │(User Stories│ │system-    │ │design-    │
+│Source Truth │ │AI Rules   │ │+ TBK Spec │ │ & Backlog)  │ │level.md   │ │spec/      │
+└──────┬──────┘ └─────┬─────┘ └───────────┘ └─────────────┘ └───────────┘ └───────────┘
+       │              │
+       │ Traces to    │ Derived from
+       ▼              ▼
 ┌─────────────────────┐  ┌─────────────────────────────┐
 │ architecture-       │  │ ai-model-developer-guide/   │
 │ decision-index.md   │  │ (12 sharded files)          │
 │ (Decision Matrix)   │  │                             │
 └─────────────────────┘  └─────────────────────────────┘
-                                    │
-                                    ▼
-                         ┌─────────────────────────────┐
-                         │ ux-design-specification/    │
-                         │ (15 sharded files)          │
-                         └─────────────────────────────┘
+```
+
+### Traceability Flow
+
+```
+Product Brief → Architecture → Epics → Stories → Test Design → Implementation
+     ↓              ↓           ↓        ↓            ↓
+  Vision      Decisions    Features  Tasks      Validation
 ```
 
 ---
@@ -167,6 +176,7 @@ When making significant changes, verify:
 | 1.0 | 2025-12-16 | Initial platform with 6 core models |
 | 1.1 | 2025-12-20 | Added Notification Model (explicit), Conversational AI Model (8th model) |
 | 1.2 | 2025-12-23 | Sharded large documents for AI agent efficiency (architecture, ai-model-developer-guide, ux-design-specification) |
+| 1.3 | 2025-12-23 | Complete traceability: Added epics.md, test-design-system-level.md, TBK specification to index |
 
 ---
 
