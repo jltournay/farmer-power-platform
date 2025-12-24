@@ -44,6 +44,15 @@ service PlantationService {
 
   // Performance summary operations
   rpc GetPerformanceSummary(GetPerformanceSummaryRequest) returns (PerformanceSummary);
+
+  // Grading Model operations
+  rpc CreateGradingModel(CreateGradingModelRequest) returns (GradingModel);
+  rpc GetGradingModel(GetGradingModelRequest) returns (GradingModel);
+  rpc GetFactoryGradingModel(GetFactoryGradingModelRequest) returns (GradingModel);
+  rpc AssignGradingModelToFactory(AssignGradingModelToFactoryRequest) returns (GradingModel);
+
+  // Farmer Performance operations
+  rpc GetFarmerSummary(GetFarmerSummaryRequest) returns (FarmerSummary);
 }
 
 // ============================================================================
@@ -353,4 +362,173 @@ message GetPerformanceSummaryRequest {
   string entity_id = 2;
   string period = 3;
   google.protobuf.Timestamp period_start = 4;
+}
+
+// ============================================================================
+// Grading Model Messages
+// ============================================================================
+
+// Grading type classification
+enum GradingType {
+  GRADING_TYPE_UNSPECIFIED = 0;
+  GRADING_TYPE_BINARY = 1;       // Accept/Reject (Primary/Secondary)
+  GRADING_TYPE_TERNARY = 2;      // Premium/Standard/Reject
+  GRADING_TYPE_MULTI_LEVEL = 3;  // A/B/C/D or custom levels
+}
+
+// Trend direction for performance metrics
+enum TrendDirection {
+  TREND_DIRECTION_UNSPECIFIED = 0;
+  TREND_DIRECTION_IMPROVING = 1;
+  TREND_DIRECTION_STABLE = 2;
+  TREND_DIRECTION_DECLINING = 3;
+}
+
+// Definition of a single attribute in the grading model
+message GradingAttribute {
+  int32 num_classes = 1;           // Number of classes for this attribute
+  repeated string classes = 2;      // Class labels in order
+}
+
+// Conditional rejection rule
+message ConditionalReject {
+  string if_attribute = 1;          // Attribute to check first
+  string if_value = 2;              // Value that triggers the condition
+  string then_attribute = 3;        // Second attribute to check
+  repeated string reject_values = 4; // Values that cause rejection
+}
+
+// Rules for determining final grade from attributes
+message GradeRules {
+  map<string, StringList> reject_conditions = 1;  // Always-reject attribute values
+  repeated ConditionalReject conditional_reject = 2;
+}
+
+// Helper message for map of string lists (protobuf doesn't support map<string, repeated string>)
+message StringList {
+  repeated string values = 1;
+}
+
+// Complete grading model definition
+message GradingModel {
+  string model_id = 1;
+  string model_version = 2;
+  string regulatory_authority = 3;  // Optional: regulatory body
+  string crops_name = 4;
+  string market_name = 5;
+  GradingType grading_type = 6;
+  map<string, GradingAttribute> attributes = 7;
+  GradeRules grade_rules = 8;
+  map<string, string> grade_labels = 9;  // Internal grade → display label
+  repeated string active_at_factory = 10;
+  google.protobuf.Timestamp created_at = 11;
+  google.protobuf.Timestamp updated_at = 12;
+}
+
+message GetGradingModelRequest {
+  string model_id = 1;
+}
+
+message GetFactoryGradingModelRequest {
+  string factory_id = 1;
+}
+
+message CreateGradingModelRequest {
+  string model_id = 1;
+  string model_version = 2;
+  string regulatory_authority = 3;
+  string crops_name = 4;
+  string market_name = 5;
+  GradingType grading_type = 6;
+  map<string, GradingAttribute> attributes = 7;
+  GradeRules grade_rules = 8;
+  map<string, string> grade_labels = 9;
+  repeated string active_at_factory = 10;
+}
+
+message AssignGradingModelToFactoryRequest {
+  string model_id = 1;
+  string factory_id = 2;
+}
+
+// ============================================================================
+// Farmer Performance Messages
+// ============================================================================
+
+// Distribution counts (for map support)
+message DistributionCounts {
+  map<string, int32> counts = 1;
+}
+
+// Historical performance metrics (computed by batch jobs)
+message HistoricalMetrics {
+  // Grade-level distributions
+  map<string, int32> grade_distribution_30d = 1;
+  map<string, int32> grade_distribution_90d = 2;
+  map<string, int32> grade_distribution_year = 3;
+
+  // Attribute-level distributions (attribute → class → count)
+  map<string, DistributionCounts> attribute_distributions_30d = 4;
+  map<string, DistributionCounts> attribute_distributions_90d = 5;
+  map<string, DistributionCounts> attribute_distributions_year = 6;
+
+  // Derived convenience metrics
+  double primary_percentage_30d = 7;
+  double primary_percentage_90d = 8;
+  double primary_percentage_year = 9;
+
+  // Volume metrics
+  double total_kg_30d = 10;
+  double total_kg_90d = 11;
+  double total_kg_year = 12;
+
+  // Yield metrics
+  double yield_kg_per_hectare_30d = 13;
+  double yield_kg_per_hectare_90d = 14;
+  double yield_kg_per_hectare_year = 15;
+
+  // Trend
+  TrendDirection improvement_trend = 16;
+  google.protobuf.Timestamp computed_at = 17;
+}
+
+// Today's performance metrics (updated by streaming events)
+message TodayMetrics {
+  int32 deliveries = 1;
+  double total_kg = 2;
+  map<string, int32> grade_counts = 3;
+  map<string, DistributionCounts> attribute_counts = 4;
+  google.protobuf.Timestamp last_delivery = 5;
+  string metrics_date = 6;  // ISO date string (YYYY-MM-DD)
+}
+
+// Farmer summary with performance details (AC #4)
+message FarmerSummary {
+  string farmer_id = 1;
+
+  // Farmer basic info
+  string first_name = 2;
+  string last_name = 3;
+  string phone = 4;
+  string collection_point_id = 5;
+  double farm_size_hectares = 6;
+  FarmScale farm_scale = 7;
+
+  // Grading model reference
+  string grading_model_id = 8;
+  string grading_model_version = 9;
+
+  // Performance metrics
+  HistoricalMetrics historical = 10;
+  TodayMetrics today = 11;
+
+  // Overall trend (convenience field)
+  TrendDirection trend_direction = 12;
+
+  google.protobuf.Timestamp created_at = 13;
+  google.protobuf.Timestamp updated_at = 14;
+}
+
+message GetFarmerSummaryRequest {
+  string farmer_id = 1;
 }

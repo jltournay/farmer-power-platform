@@ -32,6 +32,25 @@ from plantation_model.infrastructure.repositories.collection_point_repository im
 from plantation_model.infrastructure.repositories.farmer_repository import (
     FarmerRepository,
 )
+from plantation_model.infrastructure.repositories.grading_model_repository import (
+    GradingModelRepository,
+)
+from plantation_model.infrastructure.repositories.farmer_performance_repository import (
+    FarmerPerformanceRepository,
+)
+from plantation_model.domain.models.grading_model import (
+    ConditionalReject,
+    GradeRules,
+    GradingAttribute,
+    GradingModel,
+    GradingType,
+)
+from plantation_model.domain.models.farmer_performance import (
+    FarmerPerformance,
+    HistoricalMetrics,
+    TodayMetrics,
+    TrendDirection,
+)
 from plantation_model.infrastructure.google_elevation import (
     GoogleElevationClient,
     assign_region_from_altitude,
@@ -66,6 +85,8 @@ class PlantationServiceServicer(plantation_pb2_grpc.PlantationServiceServicer):
         id_generator: IDGenerator,
         elevation_client: GoogleElevationClient,
         dapr_client: DaprPubSubClient | None = None,
+        grading_model_repo: GradingModelRepository | None = None,
+        farmer_performance_repo: FarmerPerformanceRepository | None = None,
     ) -> None:
         """Initialize the servicer.
 
@@ -76,6 +97,8 @@ class PlantationServiceServicer(plantation_pb2_grpc.PlantationServiceServicer):
             id_generator: ID generator instance.
             elevation_client: Google Elevation API client.
             dapr_client: Optional Dapr pub/sub client for event publishing.
+            grading_model_repo: Optional grading model repository instance.
+            farmer_performance_repo: Optional farmer performance repository instance.
         """
         self._factory_repo = factory_repo
         self._cp_repo = collection_point_repo
@@ -83,6 +106,8 @@ class PlantationServiceServicer(plantation_pb2_grpc.PlantationServiceServicer):
         self._id_generator = id_generator
         self._elevation_client = elevation_client
         self._dapr_client = dapr_client or DaprPubSubClient()
+        self._grading_model_repo = grading_model_repo
+        self._farmer_performance_repo = farmer_performance_repo
 
     # =========================================================================
     # Factory Operations
@@ -772,6 +797,23 @@ class PlantationServiceServicer(plantation_pb2_grpc.PlantationServiceServicer):
             data=event,
         )
 
+        # Auto-initialize farmer performance (Story 1.4, AC #3)
+        if self._grading_model_repo and self._farmer_performance_repo:
+            grading_model = await self._grading_model_repo.get_by_factory(cp.factory_id)
+            if grading_model:
+                await self._farmer_performance_repo.initialize_for_farmer(
+                    farmer_id=farmer.id,
+                    farm_size_hectares=farmer.farm_size_hectares,
+                    farm_scale=farmer.farm_scale,
+                    grading_model_id=grading_model.model_id,
+                    grading_model_version=grading_model.model_version,
+                )
+                logger.info(
+                    "Initialized performance for farmer %s with grading model %s",
+                    farmer.id,
+                    grading_model.model_id,
+                )
+
         return self._farmer_to_proto(farmer)
 
     async def UpdateFarmer(
@@ -846,3 +888,353 @@ class PlantationServiceServicer(plantation_pb2_grpc.PlantationServiceServicer):
 
         logger.info("Updated farmer %s", farmer.id)
         return self._farmer_to_proto(farmer)
+
+    # =========================================================================
+    # Grading Model Operations
+    # =========================================================================
+
+    def _grading_type_to_proto(
+        self, grading_type: GradingType
+    ) -> plantation_pb2.GradingType:
+        """Convert GradingType domain enum to protobuf enum."""
+        mapping = {
+            GradingType.BINARY: plantation_pb2.GRADING_TYPE_BINARY,
+            GradingType.TERNARY: plantation_pb2.GRADING_TYPE_TERNARY,
+            GradingType.MULTI_LEVEL: plantation_pb2.GRADING_TYPE_MULTI_LEVEL,
+        }
+        return mapping.get(grading_type, plantation_pb2.GRADING_TYPE_UNSPECIFIED)
+
+    def _grading_type_from_proto(
+        self, grading_type: plantation_pb2.GradingType
+    ) -> GradingType:
+        """Convert protobuf GradingType enum to domain enum."""
+        mapping = {
+            plantation_pb2.GRADING_TYPE_BINARY: GradingType.BINARY,
+            plantation_pb2.GRADING_TYPE_TERNARY: GradingType.TERNARY,
+            plantation_pb2.GRADING_TYPE_MULTI_LEVEL: GradingType.MULTI_LEVEL,
+        }
+        return mapping.get(grading_type, GradingType.BINARY)
+
+    def _grading_model_to_proto(
+        self, model: GradingModel
+    ) -> plantation_pb2.GradingModel:
+        """Convert GradingModel domain model to protobuf message."""
+        # Convert attributes
+        proto_attrs = {}
+        for name, attr in model.attributes.items():
+            proto_attrs[name] = plantation_pb2.GradingAttribute(
+                num_classes=attr.num_classes,
+                classes=attr.classes,
+            )
+
+        # Convert grade rules
+        proto_reject_conditions = {}
+        for attr_name, values in model.grade_rules.reject_conditions.items():
+            proto_reject_conditions[attr_name] = plantation_pb2.StringList(
+                values=values
+            )
+
+        proto_conditional = [
+            plantation_pb2.ConditionalReject(
+                if_attribute=cr.if_attribute,
+                if_value=cr.if_value,
+                then_attribute=cr.then_attribute,
+                reject_values=cr.reject_values,
+            )
+            for cr in model.grade_rules.conditional_reject
+        ]
+
+        proto_rules = plantation_pb2.GradeRules(
+            reject_conditions=proto_reject_conditions,
+            conditional_reject=proto_conditional,
+        )
+
+        return plantation_pb2.GradingModel(
+            model_id=model.model_id,
+            model_version=model.model_version,
+            regulatory_authority=model.regulatory_authority or "",
+            crops_name=model.crops_name,
+            market_name=model.market_name,
+            grading_type=self._grading_type_to_proto(model.grading_type),
+            attributes=proto_attrs,
+            grade_rules=proto_rules,
+            grade_labels=model.grade_labels,
+            active_at_factory=model.active_at_factory,
+            created_at=datetime_to_timestamp(model.created_at),
+            updated_at=datetime_to_timestamp(model.updated_at),
+        )
+
+    async def CreateGradingModel(
+        self,
+        request: plantation_pb2.CreateGradingModelRequest,
+        context: grpc.aio.ServicerContext,
+    ) -> plantation_pb2.GradingModel:
+        """Create a new grading model (AC #1)."""
+        if not self._grading_model_repo:
+            await context.abort(
+                grpc.StatusCode.UNIMPLEMENTED,
+                "Grading model repository not configured",
+            )
+
+        # Check for duplicate model_id
+        existing = await self._grading_model_repo.get_by_id(request.model_id)
+        if existing:
+            await context.abort(
+                grpc.StatusCode.ALREADY_EXISTS,
+                f"Grading model {request.model_id} already exists",
+            )
+
+        # Convert attributes
+        attributes = {}
+        for name, proto_attr in request.attributes.items():
+            attributes[name] = GradingAttribute(
+                num_classes=proto_attr.num_classes,
+                classes=list(proto_attr.classes),
+            )
+
+        # Convert grade rules
+        reject_conditions = {}
+        for attr_name, string_list in request.grade_rules.reject_conditions.items():
+            reject_conditions[attr_name] = list(string_list.values)
+
+        conditional_reject = [
+            ConditionalReject(
+                if_attribute=cr.if_attribute,
+                if_value=cr.if_value,
+                then_attribute=cr.then_attribute,
+                reject_values=list(cr.reject_values),
+            )
+            for cr in request.grade_rules.conditional_reject
+        ]
+
+        grade_rules = GradeRules(
+            reject_conditions=reject_conditions,
+            conditional_reject=conditional_reject,
+        )
+
+        # Create grading model
+        model = GradingModel(
+            model_id=request.model_id,
+            model_version=request.model_version,
+            regulatory_authority=request.regulatory_authority or None,
+            crops_name=request.crops_name,
+            market_name=request.market_name,
+            grading_type=self._grading_type_from_proto(request.grading_type),
+            attributes=attributes,
+            grade_rules=grade_rules,
+            grade_labels=dict(request.grade_labels),
+            active_at_factory=list(request.active_at_factory),
+        )
+
+        await self._grading_model_repo.create(model)
+        logger.info("Created grading model %s", model.model_id)
+
+        return self._grading_model_to_proto(model)
+
+    async def GetGradingModel(
+        self,
+        request: plantation_pb2.GetGradingModelRequest,
+        context: grpc.aio.ServicerContext,
+    ) -> plantation_pb2.GradingModel:
+        """Get a grading model by ID."""
+        if not self._grading_model_repo:
+            await context.abort(
+                grpc.StatusCode.UNIMPLEMENTED,
+                "Grading model repository not configured",
+            )
+
+        model = await self._grading_model_repo.get_by_id(request.model_id)
+        if model is None:
+            await context.abort(
+                grpc.StatusCode.NOT_FOUND,
+                f"Grading model {request.model_id} not found",
+            )
+
+        return self._grading_model_to_proto(model)
+
+    async def GetFactoryGradingModel(
+        self,
+        request: plantation_pb2.GetFactoryGradingModelRequest,
+        context: grpc.aio.ServicerContext,
+    ) -> plantation_pb2.GradingModel:
+        """Get the grading model assigned to a factory (AC #2)."""
+        if not self._grading_model_repo:
+            await context.abort(
+                grpc.StatusCode.UNIMPLEMENTED,
+                "Grading model repository not configured",
+            )
+
+        model = await self._grading_model_repo.get_by_factory(request.factory_id)
+        if model is None:
+            await context.abort(
+                grpc.StatusCode.NOT_FOUND,
+                f"No grading model found for factory {request.factory_id}",
+            )
+
+        return self._grading_model_to_proto(model)
+
+    async def AssignGradingModelToFactory(
+        self,
+        request: plantation_pb2.AssignGradingModelToFactoryRequest,
+        context: grpc.aio.ServicerContext,
+    ) -> plantation_pb2.GradingModel:
+        """Assign a grading model to a factory."""
+        if not self._grading_model_repo:
+            await context.abort(
+                grpc.StatusCode.UNIMPLEMENTED,
+                "Grading model repository not configured",
+            )
+
+        # Verify factory exists
+        factory = await self._factory_repo.get_by_id(request.factory_id)
+        if factory is None:
+            await context.abort(
+                grpc.StatusCode.NOT_FOUND,
+                f"Factory {request.factory_id} not found",
+            )
+
+        # Add assignment
+        model = await self._grading_model_repo.add_factory_assignment(
+            request.model_id, request.factory_id
+        )
+        if model is None:
+            await context.abort(
+                grpc.StatusCode.NOT_FOUND,
+                f"Grading model {request.model_id} not found",
+            )
+
+        logger.info(
+            "Assigned grading model %s to factory %s",
+            model.model_id,
+            request.factory_id,
+        )
+        return self._grading_model_to_proto(model)
+
+    # =========================================================================
+    # Farmer Performance Operations
+    # =========================================================================
+
+    def _trend_direction_to_proto(
+        self, trend: TrendDirection
+    ) -> plantation_pb2.TrendDirection:
+        """Convert TrendDirection domain enum to protobuf enum."""
+        mapping = {
+            TrendDirection.IMPROVING: plantation_pb2.TREND_DIRECTION_IMPROVING,
+            TrendDirection.STABLE: plantation_pb2.TREND_DIRECTION_STABLE,
+            TrendDirection.DECLINING: plantation_pb2.TREND_DIRECTION_DECLINING,
+        }
+        return mapping.get(trend, plantation_pb2.TREND_DIRECTION_UNSPECIFIED)
+
+    def _farmer_summary_to_proto(
+        self, farmer: Farmer, performance: FarmerPerformance
+    ) -> plantation_pb2.FarmerSummary:
+        """Convert Farmer and FarmerPerformance to FarmerSummary proto (AC #4)."""
+        # Convert historical metrics
+        hist = performance.historical
+        proto_hist_attr_30d = {}
+        for attr_name, class_counts in hist.attribute_distributions_30d.items():
+            proto_hist_attr_30d[attr_name] = plantation_pb2.DistributionCounts(
+                counts=class_counts
+            )
+        proto_hist_attr_90d = {}
+        for attr_name, class_counts in hist.attribute_distributions_90d.items():
+            proto_hist_attr_90d[attr_name] = plantation_pb2.DistributionCounts(
+                counts=class_counts
+            )
+        proto_hist_attr_year = {}
+        for attr_name, class_counts in hist.attribute_distributions_year.items():
+            proto_hist_attr_year[attr_name] = plantation_pb2.DistributionCounts(
+                counts=class_counts
+            )
+
+        proto_historical = plantation_pb2.HistoricalMetrics(
+            grade_distribution_30d=hist.grade_distribution_30d,
+            grade_distribution_90d=hist.grade_distribution_90d,
+            grade_distribution_year=hist.grade_distribution_year,
+            attribute_distributions_30d=proto_hist_attr_30d,
+            attribute_distributions_90d=proto_hist_attr_90d,
+            attribute_distributions_year=proto_hist_attr_year,
+            primary_percentage_30d=hist.primary_percentage_30d,
+            primary_percentage_90d=hist.primary_percentage_90d,
+            primary_percentage_year=hist.primary_percentage_year,
+            total_kg_30d=hist.total_kg_30d,
+            total_kg_90d=hist.total_kg_90d,
+            total_kg_year=hist.total_kg_year,
+            yield_kg_per_hectare_30d=hist.yield_kg_per_hectare_30d,
+            yield_kg_per_hectare_90d=hist.yield_kg_per_hectare_90d,
+            yield_kg_per_hectare_year=hist.yield_kg_per_hectare_year,
+            improvement_trend=self._trend_direction_to_proto(hist.improvement_trend),
+            computed_at=datetime_to_timestamp(hist.computed_at)
+            if hist.computed_at
+            else None,
+        )
+
+        # Convert today metrics
+        today = performance.today
+        proto_today_attr = {}
+        for attr_name, class_counts in today.attribute_counts.items():
+            proto_today_attr[attr_name] = plantation_pb2.DistributionCounts(
+                counts=class_counts
+            )
+
+        proto_today = plantation_pb2.TodayMetrics(
+            deliveries=today.deliveries,
+            total_kg=today.total_kg,
+            grade_counts=today.grade_counts,
+            attribute_counts=proto_today_attr,
+            last_delivery=datetime_to_timestamp(today.last_delivery)
+            if today.last_delivery
+            else None,
+            metrics_date=today.metrics_date.isoformat(),
+        )
+
+        return plantation_pb2.FarmerSummary(
+            farmer_id=farmer.id,
+            first_name=farmer.first_name,
+            last_name=farmer.last_name,
+            phone=farmer.contact.phone,
+            collection_point_id=farmer.collection_point_id,
+            farm_size_hectares=farmer.farm_size_hectares,
+            farm_scale=self._farm_scale_to_proto(farmer.farm_scale),
+            grading_model_id=performance.grading_model_id,
+            grading_model_version=performance.grading_model_version,
+            historical=proto_historical,
+            today=proto_today,
+            trend_direction=self._trend_direction_to_proto(
+                performance.historical.improvement_trend
+            ),
+            created_at=datetime_to_timestamp(performance.created_at),
+            updated_at=datetime_to_timestamp(performance.updated_at),
+        )
+
+    async def GetFarmerSummary(
+        self,
+        request: plantation_pb2.GetFarmerSummaryRequest,
+        context: grpc.aio.ServicerContext,
+    ) -> plantation_pb2.FarmerSummary:
+        """Get farmer summary with performance details (AC #4)."""
+        if not self._farmer_performance_repo:
+            await context.abort(
+                grpc.StatusCode.UNIMPLEMENTED,
+                "Farmer performance repository not configured",
+            )
+
+        # Get farmer
+        farmer = await self._farmer_repo.get_by_id(request.farmer_id)
+        if farmer is None:
+            await context.abort(
+                grpc.StatusCode.NOT_FOUND,
+                f"Farmer {request.farmer_id} not found",
+            )
+
+        # Get performance
+        performance = await self._farmer_performance_repo.get_by_farmer_id(
+            request.farmer_id
+        )
+        if performance is None:
+            await context.abort(
+                grpc.StatusCode.NOT_FOUND,
+                f"Performance data for farmer {request.farmer_id} not found",
+            )
+
+        return self._farmer_summary_to_proto(farmer, performance)

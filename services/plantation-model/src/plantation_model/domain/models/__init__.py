@@ -18,6 +18,19 @@ from plantation_model.domain.models.farmer import (
     FarmerUpdate,
     FarmScale,
 )
+from plantation_model.domain.models.grading_model import (
+    ConditionalReject,
+    GradeRules,
+    GradingAttribute,
+    GradingModel,
+    GradingType,
+)
+from plantation_model.domain.models.farmer_performance import (
+    FarmerPerformance,
+    HistoricalMetrics,
+    TodayMetrics,
+    TrendDirection,
+)
 
 __all__ = [
     "CollectionPointCapacity",
@@ -34,4 +47,13 @@ __all__ = [
     "FarmerCreate",
     "FarmerUpdate",
     "FarmScale",
+    "ConditionalReject",
+    "GradeRules",
+    "GradingAttribute",
+    "GradingModel",
+    "GradingType",
+    "FarmerPerformance",
+    "HistoricalMetrics",
+    "TodayMetrics",
+    "TrendDirection",
 ]

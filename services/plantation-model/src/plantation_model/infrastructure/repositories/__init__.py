@@ -10,10 +10,18 @@ from plantation_model.infrastructure.repositories.collection_point_repository im
 from plantation_model.infrastructure.repositories.farmer_repository import (
     FarmerRepository,
 )
+from plantation_model.infrastructure.repositories.grading_model_repository import (
+    GradingModelRepository,
+)
+from plantation_model.infrastructure.repositories.farmer_performance_repository import (
+    FarmerPerformanceRepository,
+)
 
 __all__ = [
     "BaseRepository",
     "FactoryRepository",
     "CollectionPointRepository",
     "FarmerRepository",
+    "GradingModelRepository",
+    "FarmerPerformanceRepository",
 ]
