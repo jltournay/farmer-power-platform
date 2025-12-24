@@ -16,10 +16,32 @@ class FarmScale(int, metaclass=_enum_type_wrapper.EnumTypeWrapper):
     FARM_SCALE_SMALLHOLDER: _ClassVar[FarmScale]
     FARM_SCALE_MEDIUM: _ClassVar[FarmScale]
     FARM_SCALE_ESTATE: _ClassVar[FarmScale]
+
+class GradingType(int, metaclass=_enum_type_wrapper.EnumTypeWrapper):
+    __slots__ = ()
+    GRADING_TYPE_UNSPECIFIED: _ClassVar[GradingType]
+    GRADING_TYPE_BINARY: _ClassVar[GradingType]
+    GRADING_TYPE_TERNARY: _ClassVar[GradingType]
+    GRADING_TYPE_MULTI_LEVEL: _ClassVar[GradingType]
+
+class TrendDirection(int, metaclass=_enum_type_wrapper.EnumTypeWrapper):
+    __slots__ = ()
+    TREND_DIRECTION_UNSPECIFIED: _ClassVar[TrendDirection]
+    TREND_DIRECTION_IMPROVING: _ClassVar[TrendDirection]
+    TREND_DIRECTION_STABLE: _ClassVar[TrendDirection]
+    TREND_DIRECTION_DECLINING: _ClassVar[TrendDirection]
 FARM_SCALE_UNSPECIFIED: FarmScale
 FARM_SCALE_SMALLHOLDER: FarmScale
 FARM_SCALE_MEDIUM: FarmScale
 FARM_SCALE_ESTATE: FarmScale
+GRADING_TYPE_UNSPECIFIED: GradingType
+GRADING_TYPE_BINARY: GradingType
+GRADING_TYPE_TERNARY: GradingType
+GRADING_TYPE_MULTI_LEVEL: GradingType
+TREND_DIRECTION_UNSPECIFIED: TrendDirection
+TREND_DIRECTION_IMPROVING: TrendDirection
+TREND_DIRECTION_STABLE: TrendDirection
+TREND_DIRECTION_DECLINING: TrendDirection
 
 class GeoLocation(_message.Message):
     __slots__ = ("latitude", "longitude", "altitude_meters")
@@ -498,3 +520,305 @@ class GetPerformanceSummaryRequest(_message.Message):
     period: str
     period_start: _timestamp_pb2.Timestamp
     def __init__(self, entity_type: _Optional[str] = ..., entity_id: _Optional[str] = ..., period: _Optional[str] = ..., period_start: _Optional[_Union[datetime.datetime, _timestamp_pb2.Timestamp, _Mapping]] = ...) -> None: ...
+
+class GradingAttribute(_message.Message):
+    __slots__ = ("num_classes", "classes")
+    NUM_CLASSES_FIELD_NUMBER: _ClassVar[int]
+    CLASSES_FIELD_NUMBER: _ClassVar[int]
+    num_classes: int
+    classes: _containers.RepeatedScalarFieldContainer[str]
+    def __init__(self, num_classes: _Optional[int] = ..., classes: _Optional[_Iterable[str]] = ...) -> None: ...
+
+class ConditionalReject(_message.Message):
+    __slots__ = ("if_attribute", "if_value", "then_attribute", "reject_values")
+    IF_ATTRIBUTE_FIELD_NUMBER: _ClassVar[int]
+    IF_VALUE_FIELD_NUMBER: _ClassVar[int]
+    THEN_ATTRIBUTE_FIELD_NUMBER: _ClassVar[int]
+    REJECT_VALUES_FIELD_NUMBER: _ClassVar[int]
+    if_attribute: str
+    if_value: str
+    then_attribute: str
+    reject_values: _containers.RepeatedScalarFieldContainer[str]
+    def __init__(self, if_attribute: _Optional[str] = ..., if_value: _Optional[str] = ..., then_attribute: _Optional[str] = ..., reject_values: _Optional[_Iterable[str]] = ...) -> None: ...
+
+class GradeRules(_message.Message):
+    __slots__ = ("reject_conditions", "conditional_reject")
+    class RejectConditionsEntry(_message.Message):
+        __slots__ = ("key", "value")
+        KEY_FIELD_NUMBER: _ClassVar[int]
+        VALUE_FIELD_NUMBER: _ClassVar[int]
+        key: str
+        value: StringList
+        def __init__(self, key: _Optional[str] = ..., value: _Optional[_Union[StringList, _Mapping]] = ...) -> None: ...
+    REJECT_CONDITIONS_FIELD_NUMBER: _ClassVar[int]
+    CONDITIONAL_REJECT_FIELD_NUMBER: _ClassVar[int]
+    reject_conditions: _containers.MessageMap[str, StringList]
+    conditional_reject: _containers.RepeatedCompositeFieldContainer[ConditionalReject]
+    def __init__(self, reject_conditions: _Optional[_Mapping[str, StringList]] = ..., conditional_reject: _Optional[_Iterable[_Union[ConditionalReject, _Mapping]]] = ...) -> None: ...
+
+class StringList(_message.Message):
+    __slots__ = ("values",)
+    VALUES_FIELD_NUMBER: _ClassVar[int]
+    values: _containers.RepeatedScalarFieldContainer[str]
+    def __init__(self, values: _Optional[_Iterable[str]] = ...) -> None: ...
+
+class GradingModel(_message.Message):
+    __slots__ = ("model_id", "model_version", "regulatory_authority", "crops_name", "market_name", "grading_type", "attributes", "grade_rules", "grade_labels", "active_at_factory", "created_at", "updated_at")
+    class AttributesEntry(_message.Message):
+        __slots__ = ("key", "value")
+        KEY_FIELD_NUMBER: _ClassVar[int]
+        VALUE_FIELD_NUMBER: _ClassVar[int]
+        key: str
+        value: GradingAttribute
+        def __init__(self, key: _Optional[str] = ..., value: _Optional[_Union[GradingAttribute, _Mapping]] = ...) -> None: ...
+    class GradeLabelsEntry(_message.Message):
+        __slots__ = ("key", "value")
+        KEY_FIELD_NUMBER: _ClassVar[int]
+        VALUE_FIELD_NUMBER: _ClassVar[int]
+        key: str
+        value: str
+        def __init__(self, key: _Optional[str] = ..., value: _Optional[str] = ...) -> None: ...
+    MODEL_ID_FIELD_NUMBER: _ClassVar[int]
+    MODEL_VERSION_FIELD_NUMBER: _ClassVar[int]
+    REGULATORY_AUTHORITY_FIELD_NUMBER: _ClassVar[int]
+    CROPS_NAME_FIELD_NUMBER: _ClassVar[int]
+    MARKET_NAME_FIELD_NUMBER: _ClassVar[int]
+    GRADING_TYPE_FIELD_NUMBER: _ClassVar[int]
+    ATTRIBUTES_FIELD_NUMBER: _ClassVar[int]
+    GRADE_RULES_FIELD_NUMBER: _ClassVar[int]
+    GRADE_LABELS_FIELD_NUMBER: _ClassVar[int]
+    ACTIVE_AT_FACTORY_FIELD_NUMBER: _ClassVar[int]
+    CREATED_AT_FIELD_NUMBER: _ClassVar[int]
+    UPDATED_AT_FIELD_NUMBER: _ClassVar[int]
+    model_id: str
+    model_version: str
+    regulatory_authority: str
+    crops_name: str
+    market_name: str
+    grading_type: GradingType
+    attributes: _containers.MessageMap[str, GradingAttribute]
+    grade_rules: GradeRules
+    grade_labels: _containers.ScalarMap[str, str]
+    active_at_factory: _containers.RepeatedScalarFieldContainer[str]
+    created_at: _timestamp_pb2.Timestamp
+    updated_at: _timestamp_pb2.Timestamp
+    def __init__(self, model_id: _Optional[str] = ..., model_version: _Optional[str] = ..., regulatory_authority: _Optional[str] = ..., crops_name: _Optional[str] = ..., market_name: _Optional[str] = ..., grading_type: _Optional[_Union[GradingType, str]] = ..., attributes: _Optional[_Mapping[str, GradingAttribute]] = ..., grade_rules: _Optional[_Union[GradeRules, _Mapping]] = ..., grade_labels: _Optional[_Mapping[str, str]] = ..., active_at_factory: _Optional[_Iterable[str]] = ..., created_at: _Optional[_Union[datetime.datetime, _timestamp_pb2.Timestamp, _Mapping]] = ..., updated_at: _Optional[_Union[datetime.datetime, _timestamp_pb2.Timestamp, _Mapping]] = ...) -> None: ...
+
+class GetGradingModelRequest(_message.Message):
+    __slots__ = ("model_id",)
+    MODEL_ID_FIELD_NUMBER: _ClassVar[int]
+    model_id: str
+    def __init__(self, model_id: _Optional[str] = ...) -> None: ...
+
+class GetFactoryGradingModelRequest(_message.Message):
+    __slots__ = ("factory_id",)
+    FACTORY_ID_FIELD_NUMBER: _ClassVar[int]
+    factory_id: str
+    def __init__(self, factory_id: _Optional[str] = ...) -> None: ...
+
+class CreateGradingModelRequest(_message.Message):
+    __slots__ = ("model_id", "model_version", "regulatory_authority", "crops_name", "market_name", "grading_type", "attributes", "grade_rules", "grade_labels", "active_at_factory")
+    class AttributesEntry(_message.Message):
+        __slots__ = ("key", "value")
+        KEY_FIELD_NUMBER: _ClassVar[int]
+        VALUE_FIELD_NUMBER: _ClassVar[int]
+        key: str
+        value: GradingAttribute
+        def __init__(self, key: _Optional[str] = ..., value: _Optional[_Union[GradingAttribute, _Mapping]] = ...) -> None: ...
+    class GradeLabelsEntry(_message.Message):
+        __slots__ = ("key", "value")
+        KEY_FIELD_NUMBER: _ClassVar[int]
+        VALUE_FIELD_NUMBER: _ClassVar[int]
+        key: str
+        value: str
+        def __init__(self, key: _Optional[str] = ..., value: _Optional[str] = ...) -> None: ...
+    MODEL_ID_FIELD_NUMBER: _ClassVar[int]
+    MODEL_VERSION_FIELD_NUMBER: _ClassVar[int]
+    REGULATORY_AUTHORITY_FIELD_NUMBER: _ClassVar[int]
+    CROPS_NAME_FIELD_NUMBER: _ClassVar[int]
+    MARKET_NAME_FIELD_NUMBER: _ClassVar[int]
+    GRADING_TYPE_FIELD_NUMBER: _ClassVar[int]
+    ATTRIBUTES_FIELD_NUMBER: _ClassVar[int]
+    GRADE_RULES_FIELD_NUMBER: _ClassVar[int]
+    GRADE_LABELS_FIELD_NUMBER: _ClassVar[int]
+    ACTIVE_AT_FACTORY_FIELD_NUMBER: _ClassVar[int]
+    model_id: str
+    model_version: str
+    regulatory_authority: str
+    crops_name: str
+    market_name: str
+    grading_type: GradingType
+    attributes: _containers.MessageMap[str, GradingAttribute]
+    grade_rules: GradeRules
+    grade_labels: _containers.ScalarMap[str, str]
+    active_at_factory: _containers.RepeatedScalarFieldContainer[str]
+    def __init__(self, model_id: _Optional[str] = ..., model_version: _Optional[str] = ..., regulatory_authority: _Optional[str] = ..., crops_name: _Optional[str] = ..., market_name: _Optional[str] = ..., grading_type: _Optional[_Union[GradingType, str]] = ..., attributes: _Optional[_Mapping[str, GradingAttribute]] = ..., grade_rules: _Optional[_Union[GradeRules, _Mapping]] = ..., grade_labels: _Optional[_Mapping[str, str]] = ..., active_at_factory: _Optional[_Iterable[str]] = ...) -> None: ...
+
+class AssignGradingModelToFactoryRequest(_message.Message):
+    __slots__ = ("model_id", "factory_id")
+    MODEL_ID_FIELD_NUMBER: _ClassVar[int]
+    FACTORY_ID_FIELD_NUMBER: _ClassVar[int]
+    model_id: str
+    factory_id: str
+    def __init__(self, model_id: _Optional[str] = ..., factory_id: _Optional[str] = ...) -> None: ...
+
+class DistributionCounts(_message.Message):
+    __slots__ = ("counts",)
+    class CountsEntry(_message.Message):
+        __slots__ = ("key", "value")
+        KEY_FIELD_NUMBER: _ClassVar[int]
+        VALUE_FIELD_NUMBER: _ClassVar[int]
+        key: str
+        value: int
+        def __init__(self, key: _Optional[str] = ..., value: _Optional[int] = ...) -> None: ...
+    COUNTS_FIELD_NUMBER: _ClassVar[int]
+    counts: _containers.ScalarMap[str, int]
+    def __init__(self, counts: _Optional[_Mapping[str, int]] = ...) -> None: ...
+
+class HistoricalMetrics(_message.Message):
+    __slots__ = ("grade_distribution_30d", "grade_distribution_90d", "grade_distribution_year", "attribute_distributions_30d", "attribute_distributions_90d", "attribute_distributions_year", "primary_percentage_30d", "primary_percentage_90d", "primary_percentage_year", "total_kg_30d", "total_kg_90d", "total_kg_year", "yield_kg_per_hectare_30d", "yield_kg_per_hectare_90d", "yield_kg_per_hectare_year", "improvement_trend", "computed_at")
+    class GradeDistribution30dEntry(_message.Message):
+        __slots__ = ("key", "value")
+        KEY_FIELD_NUMBER: _ClassVar[int]
+        VALUE_FIELD_NUMBER: _ClassVar[int]
+        key: str
+        value: int
+        def __init__(self, key: _Optional[str] = ..., value: _Optional[int] = ...) -> None: ...
+    class GradeDistribution90dEntry(_message.Message):
+        __slots__ = ("key", "value")
+        KEY_FIELD_NUMBER: _ClassVar[int]
+        VALUE_FIELD_NUMBER: _ClassVar[int]
+        key: str
+        value: int
+        def __init__(self, key: _Optional[str] = ..., value: _Optional[int] = ...) -> None: ...
+    class GradeDistributionYearEntry(_message.Message):
+        __slots__ = ("key", "value")
+        KEY_FIELD_NUMBER: _ClassVar[int]
+        VALUE_FIELD_NUMBER: _ClassVar[int]
+        key: str
+        value: int
+        def __init__(self, key: _Optional[str] = ..., value: _Optional[int] = ...) -> None: ...
+    class AttributeDistributions30dEntry(_message.Message):
+        __slots__ = ("key", "value")
+        KEY_FIELD_NUMBER: _ClassVar[int]
+        VALUE_FIELD_NUMBER: _ClassVar[int]
+        key: str
+        value: DistributionCounts
+        def __init__(self, key: _Optional[str] = ..., value: _Optional[_Union[DistributionCounts, _Mapping]] = ...) -> None: ...
+    class AttributeDistributions90dEntry(_message.Message):
+        __slots__ = ("key", "value")
+        KEY_FIELD_NUMBER: _ClassVar[int]
+        VALUE_FIELD_NUMBER: _ClassVar[int]
+        key: str
+        value: DistributionCounts
+        def __init__(self, key: _Optional[str] = ..., value: _Optional[_Union[DistributionCounts, _Mapping]] = ...) -> None: ...
+    class AttributeDistributionsYearEntry(_message.Message):
+        __slots__ = ("key", "value")
+        KEY_FIELD_NUMBER: _ClassVar[int]
+        VALUE_FIELD_NUMBER: _ClassVar[int]
+        key: str
+        value: DistributionCounts
+        def __init__(self, key: _Optional[str] = ..., value: _Optional[_Union[DistributionCounts, _Mapping]] = ...) -> None: ...
+    GRADE_DISTRIBUTION_30D_FIELD_NUMBER: _ClassVar[int]
+    GRADE_DISTRIBUTION_90D_FIELD_NUMBER: _ClassVar[int]
+    GRADE_DISTRIBUTION_YEAR_FIELD_NUMBER: _ClassVar[int]
+    ATTRIBUTE_DISTRIBUTIONS_30D_FIELD_NUMBER: _ClassVar[int]
+    ATTRIBUTE_DISTRIBUTIONS_90D_FIELD_NUMBER: _ClassVar[int]
+    ATTRIBUTE_DISTRIBUTIONS_YEAR_FIELD_NUMBER: _ClassVar[int]
+    PRIMARY_PERCENTAGE_30D_FIELD_NUMBER: _ClassVar[int]
+    PRIMARY_PERCENTAGE_90D_FIELD_NUMBER: _ClassVar[int]
+    PRIMARY_PERCENTAGE_YEAR_FIELD_NUMBER: _ClassVar[int]
+    TOTAL_KG_30D_FIELD_NUMBER: _ClassVar[int]
+    TOTAL_KG_90D_FIELD_NUMBER: _ClassVar[int]
+    TOTAL_KG_YEAR_FIELD_NUMBER: _ClassVar[int]
+    YIELD_KG_PER_HECTARE_30D_FIELD_NUMBER: _ClassVar[int]
+    YIELD_KG_PER_HECTARE_90D_FIELD_NUMBER: _ClassVar[int]
+    YIELD_KG_PER_HECTARE_YEAR_FIELD_NUMBER: _ClassVar[int]
+    IMPROVEMENT_TREND_FIELD_NUMBER: _ClassVar[int]
+    COMPUTED_AT_FIELD_NUMBER: _ClassVar[int]
+    grade_distribution_30d: _containers.ScalarMap[str, int]
+    grade_distribution_90d: _containers.ScalarMap[str, int]
+    grade_distribution_year: _containers.ScalarMap[str, int]
+    attribute_distributions_30d: _containers.MessageMap[str, DistributionCounts]
+    attribute_distributions_90d: _containers.MessageMap[str, DistributionCounts]
+    attribute_distributions_year: _containers.MessageMap[str, DistributionCounts]
+    primary_percentage_30d: float
+    primary_percentage_90d: float
+    primary_percentage_year: float
+    total_kg_30d: float
+    total_kg_90d: float
+    total_kg_year: float
+    yield_kg_per_hectare_30d: float
+    yield_kg_per_hectare_90d: float
+    yield_kg_per_hectare_year: float
+    improvement_trend: TrendDirection
+    computed_at: _timestamp_pb2.Timestamp
+    def __init__(self, grade_distribution_30d: _Optional[_Mapping[str, int]] = ..., grade_distribution_90d: _Optional[_Mapping[str, int]] = ..., grade_distribution_year: _Optional[_Mapping[str, int]] = ..., attribute_distributions_30d: _Optional[_Mapping[str, DistributionCounts]] = ..., attribute_distributions_90d: _Optional[_Mapping[str, DistributionCounts]] = ..., attribute_distributions_year: _Optional[_Mapping[str, DistributionCounts]] = ..., primary_percentage_30d: _Optional[float] = ..., primary_percentage_90d: _Optional[float] = ..., primary_percentage_year: _Optional[float] = ..., total_kg_30d: _Optional[float] = ..., total_kg_90d: _Optional[float] = ..., total_kg_year: _Optional[float] = ..., yield_kg_per_hectare_30d: _Optional[float] = ..., yield_kg_per_hectare_90d: _Optional[float] = ..., yield_kg_per_hectare_year: _Optional[float] = ..., improvement_trend: _Optional[_Union[TrendDirection, str]] = ..., computed_at: _Optional[_Union[datetime.datetime, _timestamp_pb2.Timestamp, _Mapping]] = ...) -> None: ...
+
+class TodayMetrics(_message.Message):
+    __slots__ = ("deliveries", "total_kg", "grade_counts", "attribute_counts", "last_delivery", "metrics_date")
+    class GradeCountsEntry(_message.Message):
+        __slots__ = ("key", "value")
+        KEY_FIELD_NUMBER: _ClassVar[int]
+        VALUE_FIELD_NUMBER: _ClassVar[int]
+        key: str
+        value: int
+        def __init__(self, key: _Optional[str] = ..., value: _Optional[int] = ...) -> None: ...
+    class AttributeCountsEntry(_message.Message):
+        __slots__ = ("key", "value")
+        KEY_FIELD_NUMBER: _ClassVar[int]
+        VALUE_FIELD_NUMBER: _ClassVar[int]
+        key: str
+        value: DistributionCounts
+        def __init__(self, key: _Optional[str] = ..., value: _Optional[_Union[DistributionCounts, _Mapping]] = ...) -> None: ...
+    DELIVERIES_FIELD_NUMBER: _ClassVar[int]
+    TOTAL_KG_FIELD_NUMBER: _ClassVar[int]
+    GRADE_COUNTS_FIELD_NUMBER: _ClassVar[int]
+    ATTRIBUTE_COUNTS_FIELD_NUMBER: _ClassVar[int]
+    LAST_DELIVERY_FIELD_NUMBER: _ClassVar[int]
+    METRICS_DATE_FIELD_NUMBER: _ClassVar[int]
+    deliveries: int
+    total_kg: float
+    grade_counts: _containers.ScalarMap[str, int]
+    attribute_counts: _containers.MessageMap[str, DistributionCounts]
+    last_delivery: _timestamp_pb2.Timestamp
+    metrics_date: str
+    def __init__(self, deliveries: _Optional[int] = ..., total_kg: _Optional[float] = ..., grade_counts: _Optional[_Mapping[str, int]] = ..., attribute_counts: _Optional[_Mapping[str, DistributionCounts]] = ..., last_delivery: _Optional[_Union[datetime.datetime, _timestamp_pb2.Timestamp, _Mapping]] = ..., metrics_date: _Optional[str] = ...) -> None: ...
+
+class FarmerSummary(_message.Message):
+    __slots__ = ("farmer_id", "first_name", "last_name", "phone", "collection_point_id", "farm_size_hectares", "farm_scale", "grading_model_id", "grading_model_version", "historical", "today", "trend_direction", "created_at", "updated_at")
+    FARMER_ID_FIELD_NUMBER: _ClassVar[int]
+    FIRST_NAME_FIELD_NUMBER: _ClassVar[int]
+    LAST_NAME_FIELD_NUMBER: _ClassVar[int]
+    PHONE_FIELD_NUMBER: _ClassVar[int]
+    COLLECTION_POINT_ID_FIELD_NUMBER: _ClassVar[int]
+    FARM_SIZE_HECTARES_FIELD_NUMBER: _ClassVar[int]
+    FARM_SCALE_FIELD_NUMBER: _ClassVar[int]
+    GRADING_MODEL_ID_FIELD_NUMBER: _ClassVar[int]
+    GRADING_MODEL_VERSION_FIELD_NUMBER: _ClassVar[int]
+    HISTORICAL_FIELD_NUMBER: _ClassVar[int]
+    TODAY_FIELD_NUMBER: _ClassVar[int]
+    TREND_DIRECTION_FIELD_NUMBER: _ClassVar[int]
+    CREATED_AT_FIELD_NUMBER: _ClassVar[int]
+    UPDATED_AT_FIELD_NUMBER: _ClassVar[int]
+    farmer_id: str
+    first_name: str
+    last_name: str
+    phone: str
+    collection_point_id: str
+    farm_size_hectares: float
+    farm_scale: FarmScale
+    grading_model_id: str
+    grading_model_version: str
+    historical: HistoricalMetrics
+    today: TodayMetrics
+    trend_direction: TrendDirection
+    created_at: _timestamp_pb2.Timestamp
+    updated_at: _timestamp_pb2.Timestamp
+    def __init__(self, farmer_id: _Optional[str] = ..., first_name: _Optional[str] = ..., last_name: _Optional[str] = ..., phone: _Optional[str] = ..., collection_point_id: _Optional[str] = ..., farm_size_hectares: _Optional[float] = ..., farm_scale: _Optional[_Union[FarmScale, str]] = ..., grading_model_id: _Optional[str] = ..., grading_model_version: _Optional[str] = ..., historical: _Optional[_Union[HistoricalMetrics, _Mapping]] = ..., today: _Optional[_Union[TodayMetrics, _Mapping]] = ..., trend_direction: _Optional[_Union[TrendDirection, str]] = ..., created_at: _Optional[_Union[datetime.datetime, _timestamp_pb2.Timestamp, _Mapping]] = ..., updated_at: _Optional[_Union[datetime.datetime, _timestamp_pb2.Timestamp, _Mapping]] = ...) -> None: ...
+
+class GetFarmerSummaryRequest(_message.Message):
+    __slots__ = ("farmer_id",)
+    FARMER_ID_FIELD_NUMBER: _ClassVar[int]
+    farmer_id: str
+    def __init__(self, farmer_id: _Optional[str] = ...) -> None: ...

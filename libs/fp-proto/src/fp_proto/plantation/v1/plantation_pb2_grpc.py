@@ -141,6 +141,31 @@ class PlantationServiceStub(object):
                 request_serializer=plantation_dot_v1_dot_plantation__pb2.GetPerformanceSummaryRequest.SerializeToString,
                 response_deserializer=plantation_dot_v1_dot_plantation__pb2.PerformanceSummary.FromString,
                 _registered_method=True)
+        self.CreateGradingModel = channel.unary_unary(
+                '/farmer_power.plantation.v1.PlantationService/CreateGradingModel',
+                request_serializer=plantation_dot_v1_dot_plantation__pb2.CreateGradingModelRequest.SerializeToString,
+                response_deserializer=plantation_dot_v1_dot_plantation__pb2.GradingModel.FromString,
+                _registered_method=True)
+        self.GetGradingModel = channel.unary_unary(
+                '/farmer_power.plantation.v1.PlantationService/GetGradingModel',
+                request_serializer=plantation_dot_v1_dot_plantation__pb2.GetGradingModelRequest.SerializeToString,
+                response_deserializer=plantation_dot_v1_dot_plantation__pb2.GradingModel.FromString,
+                _registered_method=True)
+        self.GetFactoryGradingModel = channel.unary_unary(
+                '/farmer_power.plantation.v1.PlantationService/GetFactoryGradingModel',
+                request_serializer=plantation_dot_v1_dot_plantation__pb2.GetFactoryGradingModelRequest.SerializeToString,
+                response_deserializer=plantation_dot_v1_dot_plantation__pb2.GradingModel.FromString,
+                _registered_method=True)
+        self.AssignGradingModelToFactory = channel.unary_unary(
+                '/farmer_power.plantation.v1.PlantationService/AssignGradingModelToFactory',
+                request_serializer=plantation_dot_v1_dot_plantation__pb2.AssignGradingModelToFactoryRequest.SerializeToString,
+                response_deserializer=plantation_dot_v1_dot_plantation__pb2.GradingModel.FromString,
+                _registered_method=True)
+        self.GetFarmerSummary = channel.unary_unary(
+                '/farmer_power.plantation.v1.PlantationService/GetFarmerSummary',
+                request_serializer=plantation_dot_v1_dot_plantation__pb2.GetFarmerSummaryRequest.SerializeToString,
+                response_deserializer=plantation_dot_v1_dot_plantation__pb2.FarmerSummary.FromString,
+                _registered_method=True)
 
 
 class PlantationServiceServicer(object):
@@ -278,6 +303,38 @@ class PlantationServiceServicer(object):
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
+    def CreateGradingModel(self, request, context):
+        """Grading Model operations
+        """
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def GetGradingModel(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def GetFactoryGradingModel(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def AssignGradingModelToFactory(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def GetFarmerSummary(self, request, context):
+        """Farmer Performance operations
+        """
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
 
 def add_PlantationServiceServicer_to_server(servicer, server):
     rpc_method_handlers = {
@@ -380,6 +437,31 @@ def add_PlantationServiceServicer_to_server(servicer, server):
                     servicer.GetPerformanceSummary,
                     request_deserializer=plantation_dot_v1_dot_plantation__pb2.GetPerformanceSummaryRequest.FromString,
                     response_serializer=plantation_dot_v1_dot_plantation__pb2.PerformanceSummary.SerializeToString,
+            ),
+            'CreateGradingModel': grpc.unary_unary_rpc_method_handler(
+                    servicer.CreateGradingModel,
+                    request_deserializer=plantation_dot_v1_dot_plantation__pb2.CreateGradingModelRequest.FromString,
+                    response_serializer=plantation_dot_v1_dot_plantation__pb2.GradingModel.SerializeToString,
+            ),
+            'GetGradingModel': grpc.unary_unary_rpc_method_handler(
+                    servicer.GetGradingModel,
+                    request_deserializer=plantation_dot_v1_dot_plantation__pb2.GetGradingModelRequest.FromString,
+                    response_serializer=plantation_dot_v1_dot_plantation__pb2.GradingModel.SerializeToString,
+            ),
+            'GetFactoryGradingModel': grpc.unary_unary_rpc_method_handler(
+                    servicer.GetFactoryGradingModel,
+                    request_deserializer=plantation_dot_v1_dot_plantation__pb2.GetFactoryGradingModelRequest.FromString,
+                    response_serializer=plantation_dot_v1_dot_plantation__pb2.GradingModel.SerializeToString,
+            ),
+            'AssignGradingModelToFactory': grpc.unary_unary_rpc_method_handler(
+                    servicer.AssignGradingModelToFactory,
+                    request_deserializer=plantation_dot_v1_dot_plantation__pb2.AssignGradingModelToFactoryRequest.FromString,
+                    response_serializer=plantation_dot_v1_dot_plantation__pb2.GradingModel.SerializeToString,
+            ),
+            'GetFarmerSummary': grpc.unary_unary_rpc_method_handler(
+                    servicer.GetFarmerSummary,
+                    request_deserializer=plantation_dot_v1_dot_plantation__pb2.GetFarmerSummaryRequest.FromString,
+                    response_serializer=plantation_dot_v1_dot_plantation__pb2.FarmerSummary.SerializeToString,
             ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
@@ -929,6 +1011,141 @@ class PlantationService(object):
             '/farmer_power.plantation.v1.PlantationService/GetPerformanceSummary',
             plantation_dot_v1_dot_plantation__pb2.GetPerformanceSummaryRequest.SerializeToString,
             plantation_dot_v1_dot_plantation__pb2.PerformanceSummary.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def CreateGradingModel(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/farmer_power.plantation.v1.PlantationService/CreateGradingModel',
+            plantation_dot_v1_dot_plantation__pb2.CreateGradingModelRequest.SerializeToString,
+            plantation_dot_v1_dot_plantation__pb2.GradingModel.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def GetGradingModel(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/farmer_power.plantation.v1.PlantationService/GetGradingModel',
+            plantation_dot_v1_dot_plantation__pb2.GetGradingModelRequest.SerializeToString,
+            plantation_dot_v1_dot_plantation__pb2.GradingModel.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def GetFactoryGradingModel(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/farmer_power.plantation.v1.PlantationService/GetFactoryGradingModel',
+            plantation_dot_v1_dot_plantation__pb2.GetFactoryGradingModelRequest.SerializeToString,
+            plantation_dot_v1_dot_plantation__pb2.GradingModel.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def AssignGradingModelToFactory(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/farmer_power.plantation.v1.PlantationService/AssignGradingModelToFactory',
+            plantation_dot_v1_dot_plantation__pb2.AssignGradingModelToFactoryRequest.SerializeToString,
+            plantation_dot_v1_dot_plantation__pb2.GradingModel.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def GetFarmerSummary(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/farmer_power.plantation.v1.PlantationService/GetFarmerSummary',
+            plantation_dot_v1_dot_plantation__pb2.GetFarmerSummaryRequest.SerializeToString,
+            plantation_dot_v1_dot_plantation__pb2.FarmerSummary.FromString,
             options,
             channel_credentials,
             insecure,

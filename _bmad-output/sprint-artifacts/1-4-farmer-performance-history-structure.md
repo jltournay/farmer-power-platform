@@ -1,6 +1,6 @@
 # Story 1.4: Farmer Performance History Structure
 
-**Status:** ready-for-dev
+**Status:** review
 
 ---
 
@@ -34,76 +34,76 @@ So that I can identify trends, understand root causes, and target improvement ef
 
 ## Tasks / Subtasks
 
-- [ ] **Task 1: Define GradingModel Pydantic models** (AC: #1, #2)
-  - [ ] 1.1 Create `domain/models/grading_model.py` with GradingModel model
-  - [ ] 1.2 Define GradingAttribute model (num_classes, classes list)
-  - [ ] 1.3 Define GradeRules model (reject_conditions, conditional_reject)
-  - [ ] 1.4 Define GradingType enum (BINARY, TERNARY, MULTI_LEVEL)
-  - [ ] 1.5 Add factory methods for validation and serialization
+- [x] **Task 1: Define GradingModel Pydantic models** (AC: #1, #2)
+  - [x] 1.1 Create `domain/models/grading_model.py` with GradingModel model
+  - [x] 1.2 Define GradingAttribute model (num_classes, classes list)
+  - [x] 1.3 Define GradeRules model (reject_conditions, conditional_reject)
+  - [x] 1.4 Define GradingType enum (BINARY, TERNARY, MULTI_LEVEL)
+  - [x] 1.5 Add factory methods for validation and serialization
 
-- [ ] **Task 2: Define FarmerPerformance Pydantic models** (AC: #3, #4)
-  - [ ] 2.1 Create `domain/models/farmer_performance.py` with FarmerPerformance model
-  - [ ] 2.2 Define HistoricalMetrics with grade_distribution and attribute_distributions per period (30d/90d/year)
-  - [ ] 2.3 Define TodayMetrics with grade counts, attribute counts, and grading_model reference
-  - [ ] 2.4 Define TrendDirection enum (IMPROVING, STABLE, DECLINING)
-  - [ ] 2.5 Add factory methods for default/empty performance initialization
+- [x] **Task 2: Define FarmerPerformance Pydantic models** (AC: #3, #4)
+  - [x] 2.1 Create `domain/models/farmer_performance.py` with FarmerPerformance model
+  - [x] 2.2 Define HistoricalMetrics with grade_distribution and attribute_distributions per period (30d/90d/year)
+  - [x] 2.3 Define TodayMetrics with grade counts, attribute counts, and grading_model reference
+  - [x] 2.4 Define TrendDirection enum (IMPROVING, STABLE, DECLINING)
+  - [x] 2.5 Add factory methods for default/empty performance initialization
 
-- [ ] **Task 3: Update Proto definitions** (AC: #1, #2, #3, #4)
-  - [ ] 3.1 Add `GradingModel` message to plantation.proto
-  - [ ] 3.2 Add `GradingAttribute` message with classes repeated field
-  - [ ] 3.3 Add `GradeRules` message with reject_conditions and conditional_reject
-  - [ ] 3.4 Add `GradingType` enum (GRADING_TYPE_BINARY, GRADING_TYPE_TERNARY, GRADING_TYPE_MULTI_LEVEL)
-  - [ ] 3.5 Add `FarmerPerformance` message with attribute_distributions
-  - [ ] 3.6 Add `HistoricalMetrics` message with grade_distribution and attribute_distributions maps
-  - [ ] 3.7 Add `TrendDirection` enum
-  - [ ] 3.8 Add `CreateGradingModelRequest/Response` messages
-  - [ ] 3.9 Add `GetFactoryGradingModelRequest/Response` messages
-  - [ ] 3.10 Add `GetFarmerSummaryRequest` and `FarmerSummary` response message
-  - [ ] 3.11 Add RPCs: CreateGradingModel, GetGradingModel, GetFactoryGradingModel, GetFarmerSummary
-  - [ ] 3.12 Regenerate Python stubs via `./scripts/proto-gen.sh`
+- [x] **Task 3: Update Proto definitions** (AC: #1, #2, #3, #4)
+  - [x] 3.1 Add `GradingModel` message to plantation.proto
+  - [x] 3.2 Add `GradingAttribute` message with classes repeated field
+  - [x] 3.3 Add `GradeRules` message with reject_conditions and conditional_reject
+  - [x] 3.4 Add `GradingType` enum (GRADING_TYPE_BINARY, GRADING_TYPE_TERNARY, GRADING_TYPE_MULTI_LEVEL)
+  - [x] 3.5 Add `FarmerPerformance` message with attribute_distributions
+  - [x] 3.6 Add `HistoricalMetrics` message with grade_distribution and attribute_distributions maps
+  - [x] 3.7 Add `TrendDirection` enum
+  - [x] 3.8 Add `CreateGradingModelRequest/Response` messages
+  - [x] 3.9 Add `GetFactoryGradingModelRequest/Response` messages
+  - [x] 3.10 Add `GetFarmerSummaryRequest` and `FarmerSummary` response message
+  - [x] 3.11 Add RPCs: CreateGradingModel, GetGradingModel, GetFactoryGradingModel, GetFarmerSummary
+  - [x] 3.12 Regenerate Python stubs via `./scripts/proto-gen.sh`
 
-- [ ] **Task 4: Implement GradingModelRepository** (AC: #1, #2)
-  - [ ] 4.1 Create `infrastructure/repositories/grading_model_repository.py`
-  - [ ] 4.2 Implement `create()` - store new grading model
-  - [ ] 4.3 Implement `get_by_id()` - fetch grading model by model_id + version
-  - [ ] 4.4 Implement `get_active_for_factory()` - fetch grading model assigned to factory
-  - [ ] 4.5 Implement `update()` - update grading model (new version)
-  - [ ] 4.6 Implement `list_all()` - list all grading models
-  - [ ] 4.7 Add indexes on model_id, active_at_factory
+- [x] **Task 4: Implement GradingModelRepository** (AC: #1, #2)
+  - [x] 4.1 Create `infrastructure/repositories/grading_model_repository.py`
+  - [x] 4.2 Implement `create()` - store new grading model
+  - [x] 4.3 Implement `get_by_id()` - fetch grading model by model_id + version
+  - [x] 4.4 Implement `get_active_for_factory()` - fetch grading model assigned to factory
+  - [x] 4.5 Implement `update()` - update grading model (new version)
+  - [x] 4.6 Implement `list_all()` - list all grading models
+  - [x] 4.7 Add indexes on model_id, active_at_factory
 
-- [ ] **Task 5: Implement FarmerPerformanceRepository** (AC: #3, #4)
-  - [ ] 5.1 Create `infrastructure/repositories/farmer_performance_repository.py`
-  - [ ] 5.2 Implement `get_by_farmer_id()` - fetch performance for a farmer
-  - [ ] 5.3 Implement `upsert()` - create or update performance data
-  - [ ] 5.4 Implement `initialize_for_farmer()` - create default performance on farmer registration
-  - [ ] 5.5 Add indexes on farmer_id, updated_at
+- [x] **Task 5: Implement FarmerPerformanceRepository** (AC: #3, #4)
+  - [x] 5.1 Create `infrastructure/repositories/farmer_performance_repository.py`
+  - [x] 5.2 Implement `get_by_farmer_id()` - fetch performance for a farmer
+  - [x] 5.3 Implement `upsert()` - create or update performance data
+  - [x] 5.4 Implement `initialize_for_farmer()` - create default performance on farmer registration
+  - [x] 5.5 Add indexes on farmer_id, updated_at
 
-- [ ] **Task 6: Implement gRPC methods** (AC: #1, #2, #4)
-  - [ ] 6.1 Add CreateGradingModel to PlantationServiceServicer
-  - [ ] 6.2 Add GetGradingModel to PlantationServiceServicer
-  - [ ] 6.3 Add GetFactoryGradingModel to PlantationServiceServicer
-  - [ ] 6.4 Add GetFarmerSummary to PlantationServiceServicer
-  - [ ] 6.5 Return combined farmer profile + performance data in GetFarmerSummary
-  - [ ] 6.6 Handle NOT_FOUND when farmer/grading_model doesn't exist
-  - [ ] 6.7 Return default performance metrics if no performance data yet
+- [x] **Task 6: Implement gRPC methods** (AC: #1, #2, #4)
+  - [x] 6.1 Add CreateGradingModel to PlantationServiceServicer
+  - [x] 6.2 Add GetGradingModel to PlantationServiceServicer
+  - [x] 6.3 Add GetFactoryGradingModel to PlantationServiceServicer
+  - [x] 6.4 Add GetFarmerSummary to PlantationServiceServicer
+  - [x] 6.5 Return combined farmer profile + performance data in GetFarmerSummary
+  - [x] 6.6 Handle NOT_FOUND when farmer/grading_model doesn't exist
+  - [x] 6.7 Return default performance metrics if no performance data yet
 
-- [ ] **Task 7: Auto-initialize performance on farmer registration** (AC: #3)
-  - [ ] 7.1 Hook into farmer creation in PlantationServiceServicer.CreateFarmer
-  - [ ] 7.2 Lookup factory's grading model to get grading_model_id
-  - [ ] 7.3 Call FarmerPerformanceRepository.initialize_for_farmer() after farmer creation
-  - [ ] 7.4 Initialize with empty/default values for all metrics, referencing the grading model
+- [x] **Task 7: Auto-initialize performance on farmer registration** (AC: #3)
+  - [x] 7.1 Hook into farmer creation in PlantationServiceServicer.CreateFarmer
+  - [x] 7.2 Lookup factory's grading model to get grading_model_id
+  - [x] 7.3 Call FarmerPerformanceRepository.initialize_for_farmer() after farmer creation
+  - [x] 7.4 Initialize with empty/default values for all metrics, referencing the grading model
 
-- [ ] **Task 8: Write unit tests** (AC: #1, #2, #3, #4)
-  - [ ] 8.1 Test GradingModel model validation (attributes, rules, labels)
-  - [ ] 8.2 Test FarmerPerformance model validation
-  - [ ] 8.3 Test GradingModelRepository CRUD operations
-  - [ ] 8.4 Test FarmerPerformanceRepository CRUD operations
-  - [ ] 8.5 Test CreateGradingModel gRPC method
-  - [ ] 8.6 Test GetFactoryGradingModel gRPC method
-  - [ ] 8.7 Test GetFarmerSummary gRPC method
-  - [ ] 8.8 Test auto-initialization on farmer registration
+- [x] **Task 8: Write unit tests** (AC: #1, #2, #3, #4)
+  - [x] 8.1 Test GradingModel model validation (attributes, rules, labels)
+  - [x] 8.2 Test FarmerPerformance model validation
+  - [x] 8.3 Test GradingModelRepository CRUD operations
+  - [x] 8.4 Test FarmerPerformanceRepository CRUD operations
+  - [x] 8.5 Test CreateGradingModel gRPC method
+  - [x] 8.6 Test GetFactoryGradingModel gRPC method
+  - [x] 8.7 Test GetFarmerSummary gRPC method
+  - [x] 8.8 Test auto-initialization on farmer registration
 
-- [ ] **Task 9: Integration tests**
+- [ ] **Task 9: Integration tests** (deferred - requires MongoDB)
   - [ ] 9.1 Test grading model creation and retrieval flow
   - [ ] 9.2 Test farmer registration creates performance record with correct grading_model_id
   - [ ] 9.3 Test GetFarmerSummary returns complete performance data
