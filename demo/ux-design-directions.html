@@ -1,0 +1,2845 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Farmer Power Platform - Design Directions</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            /* Earth & Growth Theme - Base Palette */
+            --forest-green: #1B4332;
+            --forest-green-light: #2D6A4F;
+            --earth-brown: #5C4033;
+            --harvest-gold: #D4A03A;
+            --warm-white: #FFFDF9;
+            --pure-white: #FFFFFF;
+            --light-sage: #E8F0E8;
+
+            /* Semantic Colors */
+            --win-green: #1B4332;
+            --win-bg: #D8F3DC;
+            --watch-gold: #D4A03A;
+            --watch-bg: #FFF8E7;
+            --action-red: #C1292E;
+            --action-bg: #FFE5E5;
+            --neutral-slate: #4A5568;
+            --neutral-bg: #F7FAFC;
+
+            /* Typography */
+            --font-primary: 'Inter', system-ui, -apple-system, sans-serif;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: var(--font-primary);
+            background: #1a1a2e;
+            color: #fff;
+            line-height: 1.5;
+        }
+
+        /* Navigation */
+        .nav-header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            background: rgba(26, 26, 46, 0.95);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            padding: 1rem 2rem;
+            z-index: 1000;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .nav-header h1 {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: var(--harvest-gold);
+        }
+
+        .nav-tabs {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+
+        .nav-tab {
+            padding: 0.5rem 1rem;
+            border: none;
+            background: transparent;
+            color: rgba(255,255,255,0.6);
+            font-family: inherit;
+            font-size: 0.875rem;
+            cursor: pointer;
+            border-radius: 6px;
+            transition: all 0.2s;
+        }
+
+        .nav-tab:hover {
+            background: rgba(255,255,255,0.1);
+            color: #fff;
+        }
+
+        .nav-tab.active {
+            background: var(--forest-green);
+            color: #fff;
+        }
+
+        /* Main Content */
+        .main-content {
+            padding-top: 80px;
+        }
+
+        /* Direction Section */
+        .direction-section {
+            display: none;
+            min-height: 100vh;
+            padding: 2rem;
+        }
+
+        .direction-section.active {
+            display: block;
+        }
+
+        .direction-header {
+            max-width: 1400px;
+            margin: 0 auto 2rem;
+            padding: 2rem;
+            background: rgba(255,255,255,0.05);
+            border-radius: 16px;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .direction-header h2 {
+            font-size: 1.75rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            color: var(--harvest-gold);
+        }
+
+        .direction-header p {
+            color: rgba(255,255,255,0.7);
+            font-size: 1rem;
+            max-width: 800px;
+        }
+
+        .direction-tags {
+            display: flex;
+            gap: 0.5rem;
+            margin-top: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .direction-tag {
+            padding: 0.25rem 0.75rem;
+            background: rgba(27, 67, 50, 0.3);
+            border: 1px solid var(--forest-green);
+            border-radius: 100px;
+            font-size: 0.75rem;
+            color: var(--win-bg);
+        }
+
+        /* Mockup Container */
+        .mockup-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: var(--warm-white);
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5);
+        }
+
+        /* ============================================
+           DIRECTION 1: COMMAND CENTER (Action-First)
+           ============================================ */
+        .d1-header {
+            background: var(--forest-green);
+            padding: 1rem 1.5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .d1-logo {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            color: #fff;
+            font-weight: 600;
+            font-size: 1.125rem;
+        }
+
+        .d1-logo-icon {
+            width: 32px;
+            height: 32px;
+            background: var(--harvest-gold);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .d1-nav {
+            display: flex;
+            gap: 0.25rem;
+        }
+
+        .d1-nav-item {
+            padding: 0.5rem 1rem;
+            color: rgba(255,255,255,0.7);
+            font-size: 0.875rem;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .d1-nav-item:hover, .d1-nav-item.active {
+            background: rgba(255,255,255,0.15);
+            color: #fff;
+        }
+
+        .d1-user {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: #fff;
+            font-size: 0.875rem;
+        }
+
+        .d1-avatar {
+            width: 32px;
+            height: 32px;
+            background: var(--earth-brown);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            font-size: 0.75rem;
+        }
+
+        .d1-main {
+            padding: 1.5rem;
+            background: var(--neutral-bg);
+            min-height: 600px;
+        }
+
+        .d1-action-strip {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .d1-action-card {
+            background: #fff;
+            border-radius: 12px;
+            padding: 1.25rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: 2px solid transparent;
+        }
+
+        .d1-action-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+        }
+
+        .d1-action-card.action-needed {
+            border-left: 4px solid var(--action-red);
+        }
+
+        .d1-action-card.watch {
+            border-left: 4px solid var(--watch-gold);
+        }
+
+        .d1-action-card.wins {
+            border-left: 4px solid var(--win-green);
+        }
+
+        .d1-action-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 0.75rem;
+        }
+
+        .d1-action-badge {
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.6875rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .d1-action-badge.red { background: var(--action-bg); color: var(--action-red); }
+        .d1-action-badge.gold { background: var(--watch-bg); color: #92710C; }
+        .d1-action-badge.green { background: var(--win-bg); color: var(--win-green); }
+
+        .d1-action-count {
+            font-size: 2.5rem;
+            font-weight: 700;
+            line-height: 1;
+            margin-bottom: 0.25rem;
+        }
+
+        .d1-action-count.red { color: var(--action-red); }
+        .d1-action-count.gold { color: var(--watch-gold); }
+        .d1-action-count.green { color: var(--win-green); }
+
+        .d1-action-label {
+            font-size: 0.875rem;
+            color: var(--neutral-slate);
+        }
+
+        .d1-action-sublabel {
+            font-size: 0.75rem;
+            color: rgba(74, 85, 104, 0.6);
+            margin-top: 0.25rem;
+        }
+
+        .d1-content-grid {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 1.5rem;
+        }
+
+        .d1-farmers-panel {
+            background: #fff;
+            border-radius: 12px;
+            overflow: hidden;
+        }
+
+        .d1-panel-header {
+            padding: 1rem 1.25rem;
+            border-bottom: 1px solid var(--light-sage);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .d1-panel-title {
+            font-size: 1rem;
+            font-weight: 600;
+            color: var(--forest-green);
+        }
+
+        .d1-farmer-row {
+            padding: 1rem 1.25rem;
+            border-bottom: 1px solid var(--light-sage);
+            display: grid;
+            grid-template-columns: 2fr 1fr 1fr 1fr;
+            gap: 1rem;
+            align-items: center;
+            transition: background 0.2s;
+        }
+
+        .d1-farmer-row:hover {
+            background: var(--neutral-bg);
+        }
+
+        .d1-farmer-info h4 {
+            font-size: 0.9375rem;
+            font-weight: 600;
+            color: var(--earth-brown);
+            margin-bottom: 0.125rem;
+        }
+
+        .d1-farmer-info span {
+            font-size: 0.75rem;
+            color: var(--neutral-slate);
+        }
+
+        .d1-primary-pct {
+            font-size: 1.5rem;
+            font-weight: 700;
+        }
+
+        .d1-primary-pct.red { color: var(--action-red); }
+        .d1-primary-pct.gold { color: var(--watch-gold); }
+        .d1-primary-pct.green { color: var(--win-green); }
+
+        .d1-issue-tag {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.25rem;
+            padding: 0.25rem 0.5rem;
+            background: var(--action-bg);
+            color: var(--action-red);
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 500;
+        }
+
+        .d1-btn-row {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .d1-btn {
+            padding: 0.375rem 0.75rem;
+            border: none;
+            border-radius: 6px;
+            font-size: 0.75rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .d1-btn-primary {
+            background: var(--forest-green);
+            color: #fff;
+        }
+
+        .d1-btn-primary:hover {
+            background: var(--forest-green-light);
+        }
+
+        .d1-btn-secondary {
+            background: var(--neutral-bg);
+            color: var(--neutral-slate);
+        }
+
+        .d1-stats-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .d1-stat-card {
+            background: #fff;
+            border-radius: 12px;
+            padding: 1.25rem;
+        }
+
+        .d1-stat-card h4 {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--neutral-slate);
+            margin-bottom: 0.75rem;
+        }
+
+        .d1-stat-value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--forest-green);
+        }
+
+        .d1-stat-trend {
+            font-size: 0.875rem;
+            margin-top: 0.25rem;
+        }
+
+        .d1-stat-trend.up { color: var(--win-green); }
+
+        .d1-chart-placeholder {
+            height: 120px;
+            background: var(--neutral-bg);
+            border-radius: 8px;
+            margin-top: 0.75rem;
+            display: flex;
+            align-items: flex-end;
+            padding: 0.5rem;
+            gap: 0.25rem;
+        }
+
+        .d1-chart-bar {
+            flex: 1;
+            background: var(--forest-green);
+            border-radius: 4px 4px 0 0;
+            transition: height 0.3s;
+        }
+
+        /* ============================================
+           DIRECTION 2: DATA DASHBOARD (Analytics-First)
+           ============================================ */
+        .d2-layout {
+            display: grid;
+            grid-template-columns: 240px 1fr;
+            min-height: 600px;
+        }
+
+        .d2-sidebar {
+            background: var(--forest-green);
+            padding: 1.5rem 0;
+        }
+
+        .d2-logo {
+            padding: 0 1.25rem 1.5rem;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            margin-bottom: 1rem;
+        }
+
+        .d2-logo h3 {
+            color: #fff;
+            font-size: 1rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .d2-logo-icon {
+            width: 28px;
+            height: 28px;
+            background: var(--harvest-gold);
+            border-radius: 6px;
+        }
+
+        .d2-nav-section {
+            padding: 0 0.75rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .d2-nav-label {
+            font-size: 0.6875rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: rgba(255,255,255,0.4);
+            padding: 0 0.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .d2-nav-item {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.625rem 0.75rem;
+            color: rgba(255,255,255,0.7);
+            font-size: 0.875rem;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .d2-nav-item:hover {
+            background: rgba(255,255,255,0.1);
+            color: #fff;
+        }
+
+        .d2-nav-item.active {
+            background: rgba(255,255,255,0.15);
+            color: #fff;
+        }
+
+        .d2-nav-icon {
+            width: 20px;
+            height: 20px;
+            background: rgba(255,255,255,0.2);
+            border-radius: 4px;
+        }
+
+        .d2-main {
+            background: var(--neutral-bg);
+            padding: 1.5rem;
+        }
+
+        .d2-topbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .d2-topbar h1 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--forest-green);
+        }
+
+        .d2-date-picker {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1rem;
+            background: #fff;
+            border: 1px solid var(--light-sage);
+            border-radius: 8px;
+            font-size: 0.875rem;
+            color: var(--neutral-slate);
+        }
+
+        .d2-metrics-row {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .d2-metric-card {
+            background: #fff;
+            border-radius: 12px;
+            padding: 1.25rem;
+            border: 1px solid var(--light-sage);
+        }
+
+        .d2-metric-label {
+            font-size: 0.75rem;
+            color: var(--neutral-slate);
+            margin-bottom: 0.5rem;
+        }
+
+        .d2-metric-value {
+            font-size: 1.75rem;
+            font-weight: 700;
+            color: var(--forest-green);
+        }
+
+        .d2-metric-change {
+            font-size: 0.8125rem;
+            margin-top: 0.25rem;
+        }
+
+        .d2-metric-change.up { color: var(--win-green); }
+        .d2-metric-change.down { color: var(--action-red); }
+
+        .d2-charts-grid {
+            display: grid;
+            grid-template-columns: 1.5fr 1fr;
+            gap: 1rem;
+        }
+
+        .d2-chart-card {
+            background: #fff;
+            border-radius: 12px;
+            padding: 1.25rem;
+            border: 1px solid var(--light-sage);
+        }
+
+        .d2-chart-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .d2-chart-title {
+            font-size: 1rem;
+            font-weight: 600;
+            color: var(--earth-brown);
+        }
+
+        .d2-chart-area {
+            height: 200px;
+            background: var(--neutral-bg);
+            border-radius: 8px;
+            display: flex;
+            align-items: flex-end;
+            padding: 1rem;
+            gap: 1rem;
+        }
+
+        .d2-chart-column {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .d2-chart-stack {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .d2-stack-win {
+            background: var(--win-green);
+            border-radius: 4px 4px 0 0;
+        }
+
+        .d2-stack-watch {
+            background: var(--watch-gold);
+        }
+
+        .d2-stack-action {
+            background: var(--action-red);
+            border-radius: 0 0 4px 4px;
+        }
+
+        .d2-chart-label {
+            font-size: 0.6875rem;
+            color: var(--neutral-slate);
+        }
+
+        /* Distribution pie representation */
+        .d2-donut {
+            width: 160px;
+            height: 160px;
+            border-radius: 50%;
+            background: conic-gradient(
+                var(--win-green) 0deg 198deg,
+                var(--watch-gold) 198deg 306deg,
+                var(--action-red) 306deg 360deg
+            );
+            position: relative;
+            margin: 1rem auto;
+        }
+
+        .d2-donut-center {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 80px;
+            height: 80px;
+            background: #fff;
+            border-radius: 50%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .d2-donut-value {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--forest-green);
+        }
+
+        .d2-donut-label {
+            font-size: 0.6875rem;
+            color: var(--neutral-slate);
+        }
+
+        .d2-legend {
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+
+        .d2-legend-item {
+            display: flex;
+            align-items: center;
+            gap: 0.375rem;
+            font-size: 0.75rem;
+            color: var(--neutral-slate);
+        }
+
+        .d2-legend-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+        }
+
+        /* ============================================
+           DIRECTION 3: CARD-CENTRIC (Mobile-First)
+           ============================================ */
+        .d3-container {
+            max-width: 480px;
+            margin: 0 auto;
+            background: var(--neutral-bg);
+            min-height: 700px;
+        }
+
+        .d3-header {
+            background: var(--forest-green);
+            padding: 1rem 1.25rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .d3-header h1 {
+            color: #fff;
+            font-size: 1.125rem;
+            font-weight: 600;
+        }
+
+        .d3-avatar {
+            width: 36px;
+            height: 36px;
+            background: var(--earth-brown);
+            border-radius: 50%;
+            border: 2px solid rgba(255,255,255,0.3);
+        }
+
+        .d3-summary-card {
+            margin: -1rem 1rem 1rem;
+            background: #fff;
+            border-radius: 16px;
+            padding: 1.25rem;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+            position: relative;
+            z-index: 10;
+        }
+
+        .d3-summary-title {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--neutral-slate);
+            margin-bottom: 0.75rem;
+        }
+
+        .d3-summary-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 0.75rem;
+            text-align: center;
+        }
+
+        .d3-summary-item {
+            padding: 0.75rem;
+            border-radius: 12px;
+            background: var(--neutral-bg);
+        }
+
+        .d3-summary-item.action { background: var(--action-bg); }
+        .d3-summary-item.watch { background: var(--watch-bg); }
+        .d3-summary-item.win { background: var(--win-bg); }
+
+        .d3-summary-count {
+            font-size: 1.75rem;
+            font-weight: 700;
+            line-height: 1;
+        }
+
+        .d3-summary-count.action { color: var(--action-red); }
+        .d3-summary-count.watch { color: var(--watch-gold); }
+        .d3-summary-count.win { color: var(--win-green); }
+
+        .d3-summary-label {
+            font-size: 0.6875rem;
+            color: var(--neutral-slate);
+            margin-top: 0.25rem;
+        }
+
+        .d3-section {
+            padding: 0 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .d3-section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.75rem;
+        }
+
+        .d3-section-title {
+            font-size: 1rem;
+            font-weight: 600;
+            color: var(--earth-brown);
+        }
+
+        .d3-see-all {
+            font-size: 0.8125rem;
+            color: var(--forest-green);
+            font-weight: 500;
+        }
+
+        .d3-farmer-card {
+            background: #fff;
+            border-radius: 12px;
+            padding: 1rem;
+            margin-bottom: 0.75rem;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+        }
+
+        .d3-farmer-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 0.75rem;
+        }
+
+        .d3-farmer-avatar {
+            width: 44px;
+            height: 44px;
+            background: var(--light-sage);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            font-size: 0.875rem;
+            color: var(--forest-green);
+        }
+
+        .d3-farmer-info {
+            flex: 1;
+            margin-left: 0.75rem;
+        }
+
+        .d3-farmer-name {
+            font-size: 0.9375rem;
+            font-weight: 600;
+            color: var(--earth-brown);
+        }
+
+        .d3-farmer-location {
+            font-size: 0.75rem;
+            color: var(--neutral-slate);
+        }
+
+        .d3-farmer-grade {
+            text-align: right;
+        }
+
+        .d3-grade-value {
+            font-size: 1.5rem;
+            font-weight: 700;
+        }
+
+        .d3-grade-value.action { color: var(--action-red); }
+        .d3-grade-value.watch { color: var(--watch-gold); }
+
+        .d3-grade-label {
+            font-size: 0.6875rem;
+            color: var(--neutral-slate);
+        }
+
+        .d3-issue-row {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 0.75rem;
+            background: var(--action-bg);
+            border-radius: 8px;
+            margin-bottom: 0.75rem;
+        }
+
+        .d3-issue-icon {
+            width: 20px;
+            height: 20px;
+            background: var(--action-red);
+            border-radius: 50%;
+        }
+
+        .d3-issue-text {
+            font-size: 0.8125rem;
+            color: var(--action-red);
+            font-weight: 500;
+        }
+
+        .d3-action-buttons {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.5rem;
+        }
+
+        .d3-action-btn {
+            padding: 0.625rem;
+            border: none;
+            border-radius: 8px;
+            font-size: 0.8125rem;
+            font-weight: 500;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.375rem;
+        }
+
+        .d3-action-btn.primary {
+            background: var(--forest-green);
+            color: #fff;
+        }
+
+        .d3-action-btn.secondary {
+            background: var(--neutral-bg);
+            color: var(--neutral-slate);
+        }
+
+        .d3-bottom-nav {
+            position: sticky;
+            bottom: 0;
+            background: #fff;
+            border-top: 1px solid var(--light-sage);
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            padding: 0.5rem 0;
+        }
+
+        .d3-nav-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.25rem;
+            padding: 0.5rem;
+            color: var(--neutral-slate);
+            font-size: 0.625rem;
+        }
+
+        .d3-nav-item.active {
+            color: var(--forest-green);
+        }
+
+        .d3-nav-icon {
+            width: 24px;
+            height: 24px;
+            background: currentColor;
+            border-radius: 4px;
+            opacity: 0.3;
+        }
+
+        .d3-nav-item.active .d3-nav-icon {
+            opacity: 1;
+        }
+
+        /* ============================================
+           DIRECTION 4: DENSE PROFESSIONAL (Data-Rich)
+           ============================================ */
+        .d4-header {
+            background: #fff;
+            border-bottom: 1px solid var(--light-sage);
+            padding: 0.75rem 1.5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .d4-logo {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-weight: 600;
+            color: var(--forest-green);
+        }
+
+        .d4-logo-mark {
+            width: 28px;
+            height: 28px;
+            background: var(--forest-green);
+            border-radius: 6px;
+        }
+
+        .d4-breadcrumb {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.8125rem;
+            color: var(--neutral-slate);
+        }
+
+        .d4-breadcrumb strong {
+            color: var(--earth-brown);
+        }
+
+        .d4-actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .d4-btn {
+            padding: 0.375rem 0.75rem;
+            border: 1px solid var(--light-sage);
+            background: #fff;
+            border-radius: 6px;
+            font-size: 0.8125rem;
+            color: var(--neutral-slate);
+            cursor: pointer;
+        }
+
+        .d4-btn:hover {
+            background: var(--neutral-bg);
+        }
+
+        .d4-main {
+            display: grid;
+            grid-template-columns: 1fr 320px;
+            min-height: 600px;
+        }
+
+        .d4-content {
+            padding: 1.25rem;
+            background: var(--neutral-bg);
+        }
+
+        .d4-toolbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .d4-filters {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .d4-filter {
+            padding: 0.375rem 0.75rem;
+            background: #fff;
+            border: 1px solid var(--light-sage);
+            border-radius: 6px;
+            font-size: 0.75rem;
+            color: var(--neutral-slate);
+            cursor: pointer;
+        }
+
+        .d4-filter.active {
+            background: var(--forest-green);
+            border-color: var(--forest-green);
+            color: #fff;
+        }
+
+        .d4-search {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.375rem 0.75rem;
+            background: #fff;
+            border: 1px solid var(--light-sage);
+            border-radius: 6px;
+            font-size: 0.8125rem;
+            color: var(--neutral-slate);
+            width: 240px;
+        }
+
+        .d4-table {
+            background: #fff;
+            border-radius: 8px;
+            overflow: hidden;
+            border: 1px solid var(--light-sage);
+        }
+
+        .d4-table-header {
+            display: grid;
+            grid-template-columns: 2fr 0.8fr 1fr 1fr 1.2fr;
+            padding: 0.75rem 1rem;
+            background: var(--neutral-bg);
+            border-bottom: 1px solid var(--light-sage);
+            font-size: 0.6875rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--neutral-slate);
+            font-weight: 600;
+        }
+
+        .d4-table-row {
+            display: grid;
+            grid-template-columns: 2fr 0.8fr 1fr 1fr 1.2fr;
+            padding: 0.625rem 1rem;
+            border-bottom: 1px solid var(--light-sage);
+            font-size: 0.8125rem;
+            align-items: center;
+            transition: background 0.2s;
+        }
+
+        .d4-table-row:hover {
+            background: var(--neutral-bg);
+        }
+
+        .d4-farmer-cell {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .d4-farmer-avatar {
+            width: 28px;
+            height: 28px;
+            background: var(--light-sage);
+            border-radius: 50%;
+            font-size: 0.625rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            color: var(--forest-green);
+        }
+
+        .d4-farmer-name {
+            font-weight: 500;
+            color: var(--earth-brown);
+        }
+
+        .d4-farmer-id {
+            font-size: 0.6875rem;
+            color: var(--neutral-slate);
+        }
+
+        .d4-grade-cell {
+            font-weight: 700;
+            font-size: 0.9375rem;
+        }
+
+        .d4-grade-cell.action { color: var(--action-red); }
+        .d4-grade-cell.watch { color: var(--watch-gold); }
+        .d4-grade-cell.win { color: var(--win-green); }
+
+        .d4-trend-cell {
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
+            font-size: 0.75rem;
+        }
+
+        .d4-trend-cell.up { color: var(--win-green); }
+        .d4-trend-cell.down { color: var(--action-red); }
+
+        .d4-issue-cell {
+            display: inline-flex;
+            padding: 0.125rem 0.375rem;
+            background: var(--action-bg);
+            color: var(--action-red);
+            border-radius: 4px;
+            font-size: 0.6875rem;
+            font-weight: 500;
+        }
+
+        .d4-actions-cell {
+            display: flex;
+            gap: 0.375rem;
+        }
+
+        .d4-action-btn {
+            padding: 0.25rem 0.5rem;
+            border: none;
+            border-radius: 4px;
+            font-size: 0.6875rem;
+            cursor: pointer;
+        }
+
+        .d4-action-btn.call {
+            background: var(--forest-green);
+            color: #fff;
+        }
+
+        .d4-action-btn.assign {
+            background: var(--neutral-bg);
+            color: var(--neutral-slate);
+        }
+
+        .d4-sidebar {
+            background: #fff;
+            border-left: 1px solid var(--light-sage);
+            padding: 1.25rem;
+        }
+
+        .d4-sidebar-section {
+            margin-bottom: 1.5rem;
+        }
+
+        .d4-sidebar-title {
+            font-size: 0.6875rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--neutral-slate);
+            margin-bottom: 0.75rem;
+            font-weight: 600;
+        }
+
+        .d4-stat-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.5rem 0;
+            border-bottom: 1px solid var(--light-sage);
+        }
+
+        .d4-stat-label {
+            font-size: 0.8125rem;
+            color: var(--neutral-slate);
+        }
+
+        .d4-stat-value {
+            font-size: 0.9375rem;
+            font-weight: 600;
+            color: var(--forest-green);
+        }
+
+        .d4-mini-chart {
+            height: 80px;
+            background: var(--neutral-bg);
+            border-radius: 6px;
+            margin-top: 0.75rem;
+            display: flex;
+            align-items: flex-end;
+            padding: 0.5rem;
+            gap: 3px;
+        }
+
+        .d4-mini-bar {
+            flex: 1;
+            background: var(--forest-green);
+            border-radius: 2px;
+            opacity: 0.7;
+        }
+
+        /* ============================================
+           DIRECTION 5: SPLIT VIEW (Detail-Focused)
+           ============================================ */
+        .d5-layout {
+            display: grid;
+            grid-template-columns: 360px 1fr;
+            min-height: 600px;
+        }
+
+        .d5-list-panel {
+            background: #fff;
+            border-right: 1px solid var(--light-sage);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .d5-list-header {
+            padding: 1rem 1.25rem;
+            border-bottom: 1px solid var(--light-sage);
+        }
+
+        .d5-list-title {
+            font-size: 1.125rem;
+            font-weight: 600;
+            color: var(--forest-green);
+            margin-bottom: 0.75rem;
+        }
+
+        .d5-search {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 0.75rem;
+            background: var(--neutral-bg);
+            border-radius: 8px;
+            font-size: 0.875rem;
+            color: var(--neutral-slate);
+        }
+
+        .d5-tabs {
+            display: flex;
+            padding: 0 1.25rem;
+            border-bottom: 1px solid var(--light-sage);
+        }
+
+        .d5-tab {
+            padding: 0.75rem 0;
+            margin-right: 1.5rem;
+            font-size: 0.8125rem;
+            color: var(--neutral-slate);
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+            transition: all 0.2s;
+        }
+
+        .d5-tab:hover {
+            color: var(--forest-green);
+        }
+
+        .d5-tab.active {
+            color: var(--forest-green);
+            border-bottom-color: var(--forest-green);
+        }
+
+        .d5-tab .count {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 20px;
+            height: 20px;
+            padding: 0 6px;
+            border-radius: 10px;
+            font-size: 0.6875rem;
+            font-weight: 600;
+            margin-left: 0.5rem;
+        }
+
+        .d5-tab .count.action { background: var(--action-bg); color: var(--action-red); }
+        .d5-tab .count.watch { background: var(--watch-bg); color: #92710C; }
+        .d5-tab .count.win { background: var(--win-bg); color: var(--win-green); }
+
+        .d5-list-scroll {
+            flex: 1;
+            overflow-y: auto;
+        }
+
+        .d5-list-item {
+            padding: 1rem 1.25rem;
+            border-bottom: 1px solid var(--light-sage);
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .d5-list-item:hover {
+            background: var(--neutral-bg);
+        }
+
+        .d5-list-item.selected {
+            background: var(--win-bg);
+            border-left: 3px solid var(--forest-green);
+        }
+
+        .d5-item-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 0.375rem;
+        }
+
+        .d5-item-name {
+            font-size: 0.9375rem;
+            font-weight: 600;
+            color: var(--earth-brown);
+        }
+
+        .d5-item-grade {
+            font-size: 1.125rem;
+            font-weight: 700;
+        }
+
+        .d5-item-grade.action { color: var(--action-red); }
+        .d5-item-grade.watch { color: var(--watch-gold); }
+
+        .d5-item-meta {
+            font-size: 0.75rem;
+            color: var(--neutral-slate);
+        }
+
+        .d5-item-issue {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.25rem;
+            margin-top: 0.5rem;
+            padding: 0.25rem 0.5rem;
+            background: var(--action-bg);
+            color: var(--action-red);
+            border-radius: 4px;
+            font-size: 0.6875rem;
+            font-weight: 500;
+        }
+
+        .d5-detail-panel {
+            background: var(--neutral-bg);
+            padding: 1.5rem;
+        }
+
+        .d5-detail-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 1.5rem;
+        }
+
+        .d5-detail-avatar {
+            width: 64px;
+            height: 64px;
+            background: var(--light-sage);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: var(--forest-green);
+            margin-right: 1rem;
+        }
+
+        .d5-detail-info h2 {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: var(--earth-brown);
+            margin-bottom: 0.25rem;
+        }
+
+        .d5-detail-info p {
+            font-size: 0.875rem;
+            color: var(--neutral-slate);
+        }
+
+        .d5-detail-actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .d5-detail-btn {
+            padding: 0.5rem 1rem;
+            border: none;
+            border-radius: 8px;
+            font-size: 0.875rem;
+            font-weight: 500;
+            cursor: pointer;
+        }
+
+        .d5-detail-btn.primary {
+            background: var(--forest-green);
+            color: #fff;
+        }
+
+        .d5-detail-btn.secondary {
+            background: #fff;
+            color: var(--neutral-slate);
+            border: 1px solid var(--light-sage);
+        }
+
+        .d5-detail-cards {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .d5-card {
+            background: #fff;
+            border-radius: 12px;
+            padding: 1.25rem;
+        }
+
+        .d5-card-title {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--neutral-slate);
+            margin-bottom: 0.75rem;
+        }
+
+        .d5-card-value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--action-red);
+        }
+
+        .d5-card-trend {
+            font-size: 0.8125rem;
+            color: var(--action-red);
+            margin-top: 0.25rem;
+        }
+
+        .d5-breakdown {
+            background: #fff;
+            border-radius: 12px;
+            padding: 1.25rem;
+        }
+
+        .d5-breakdown-title {
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: var(--earth-brown);
+            margin-bottom: 1rem;
+        }
+
+        .d5-breakdown-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.5rem 0;
+            border-bottom: 1px solid var(--light-sage);
+        }
+
+        .d5-breakdown-label {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.8125rem;
+            color: var(--neutral-slate);
+        }
+
+        .d5-breakdown-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+        }
+
+        .d5-breakdown-dot.primary { background: var(--win-green); }
+        .d5-breakdown-dot.secondary { background: var(--action-red); }
+
+        .d5-breakdown-value {
+            font-size: 0.9375rem;
+            font-weight: 600;
+            color: var(--earth-brown);
+        }
+
+        .d5-breakdown-bar {
+            height: 8px;
+            background: var(--neutral-bg);
+            border-radius: 4px;
+            margin-top: 0.75rem;
+            overflow: hidden;
+        }
+
+        .d5-breakdown-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--win-green) 58%, var(--action-red) 58%);
+            border-radius: 4px;
+        }
+
+        /* ============================================
+           DIRECTION 6: KANBAN WORKFLOW (Task-Oriented)
+           ============================================ */
+        .d6-header {
+            background: var(--forest-green);
+            padding: 1rem 1.5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .d6-logo {
+            color: #fff;
+            font-size: 1.125rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .d6-logo-icon {
+            width: 32px;
+            height: 32px;
+            background: var(--harvest-gold);
+            border-radius: 8px;
+        }
+
+        .d6-header-stats {
+            display: flex;
+            gap: 2rem;
+            color: #fff;
+        }
+
+        .d6-stat {
+            text-align: center;
+        }
+
+        .d6-stat-value {
+            font-size: 1.5rem;
+            font-weight: 700;
+        }
+
+        .d6-stat-label {
+            font-size: 0.6875rem;
+            opacity: 0.7;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .d6-board {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1.5rem;
+            padding: 1.5rem;
+            background: var(--neutral-bg);
+            min-height: 550px;
+        }
+
+        .d6-column {
+            background: rgba(255,255,255,0.5);
+            border-radius: 12px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .d6-column-header {
+            padding: 1rem;
+            border-bottom: 2px solid;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .d6-column.action .d6-column-header { border-color: var(--action-red); }
+        .d6-column.watch .d6-column-header { border-color: var(--watch-gold); }
+        .d6-column.win .d6-column-header { border-color: var(--win-green); }
+
+        .d6-column-title {
+            font-size: 0.875rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .d6-column.action .d6-column-title { color: var(--action-red); }
+        .d6-column.watch .d6-column-title { color: var(--watch-gold); }
+        .d6-column.win .d6-column-title { color: var(--win-green); }
+
+        .d6-column-count {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .d6-column.action .d6-column-count { background: var(--action-bg); color: var(--action-red); }
+        .d6-column.watch .d6-column-count { background: var(--watch-bg); color: #92710C; }
+        .d6-column.win .d6-column-count { background: var(--win-bg); color: var(--win-green); }
+
+        .d6-column-cards {
+            flex: 1;
+            padding: 0.75rem;
+            overflow-y: auto;
+        }
+
+        .d6-card {
+            background: #fff;
+            border-radius: 8px;
+            padding: 0.875rem;
+            margin-bottom: 0.75rem;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+            cursor: grab;
+            transition: all 0.2s;
+        }
+
+        .d6-card:hover {
+            box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+            transform: translateY(-1px);
+        }
+
+        .d6-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 0.5rem;
+        }
+
+        .d6-card-name {
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: var(--earth-brown);
+        }
+
+        .d6-card-grade {
+            font-size: 1rem;
+            font-weight: 700;
+        }
+
+        .d6-column.action .d6-card-grade { color: var(--action-red); }
+        .d6-column.watch .d6-card-grade { color: var(--watch-gold); }
+        .d6-column.win .d6-card-grade { color: var(--win-green); }
+
+        .d6-card-issue {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.25rem;
+            padding: 0.1875rem 0.375rem;
+            background: var(--action-bg);
+            color: var(--action-red);
+            border-radius: 4px;
+            font-size: 0.625rem;
+            font-weight: 500;
+            margin-bottom: 0.5rem;
+        }
+
+        .d6-card-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-top: 0.5rem;
+            border-top: 1px solid var(--light-sage);
+        }
+
+        .d6-card-meta {
+            font-size: 0.6875rem;
+            color: var(--neutral-slate);
+        }
+
+        .d6-card-actions {
+            display: flex;
+            gap: 0.25rem;
+        }
+
+        .d6-icon-btn {
+            width: 24px;
+            height: 24px;
+            border: none;
+            background: var(--neutral-bg);
+            border-radius: 4px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.75rem;
+            color: var(--neutral-slate);
+        }
+
+        .d6-icon-btn:hover {
+            background: var(--forest-green);
+            color: #fff;
+        }
+
+        /* ============================================
+           COMPARISON VIEW
+           ============================================ */
+        .comparison-section {
+            padding: 2rem;
+        }
+
+        .comparison-header {
+            max-width: 1400px;
+            margin: 0 auto 2rem;
+            text-align: center;
+        }
+
+        .comparison-header h2 {
+            font-size: 1.75rem;
+            color: var(--harvest-gold);
+            margin-bottom: 0.5rem;
+        }
+
+        .comparison-header p {
+            color: rgba(255,255,255,0.7);
+        }
+
+        .comparison-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1.5rem;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        @media (max-width: 1024px) {
+            .comparison-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        @media (max-width: 640px) {
+            .comparison-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .comparison-card {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 16px;
+            padding: 1.5rem;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .comparison-card:hover {
+            background: rgba(255,255,255,0.08);
+            border-color: var(--harvest-gold);
+            transform: translateY(-4px);
+        }
+
+        .comparison-card h3 {
+            font-size: 1.125rem;
+            color: #fff;
+            margin-bottom: 0.5rem;
+        }
+
+        .comparison-card p {
+            font-size: 0.875rem;
+            color: rgba(255,255,255,0.6);
+            margin-bottom: 1rem;
+        }
+
+        .comparison-preview {
+            height: 180px;
+            background: var(--warm-white);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .comparison-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            margin-top: 1rem;
+        }
+
+        .comparison-tag {
+            padding: 0.25rem 0.5rem;
+            background: rgba(27, 67, 50, 0.3);
+            border: 1px solid var(--forest-green);
+            border-radius: 4px;
+            font-size: 0.625rem;
+            color: var(--win-bg);
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation Header -->
+    <header class="nav-header">
+        <h1>Farmer Power - Design Directions</h1>
+        <nav class="nav-tabs">
+            <button class="nav-tab active" onclick="showDirection('overview')">Overview</button>
+            <button class="nav-tab" onclick="showDirection('d1')">1. Command</button>
+            <button class="nav-tab" onclick="showDirection('d2')">2. Analytics</button>
+            <button class="nav-tab" onclick="showDirection('d3')">3. Mobile</button>
+            <button class="nav-tab" onclick="showDirection('d4')">4. Dense</button>
+            <button class="nav-tab" onclick="showDirection('d5')">5. Split</button>
+            <button class="nav-tab" onclick="showDirection('d6')">6. Kanban</button>
+        </nav>
+    </header>
+
+    <main class="main-content">
+        <!-- Overview Section -->
+        <section id="overview" class="direction-section active comparison-section">
+            <div class="comparison-header">
+                <h2>Choose Your Design Direction</h2>
+                <p>Six distinct visual approaches for Joseph's Factory Dashboard. Click any card to explore the full mockup.</p>
+            </div>
+
+            <div class="comparison-grid">
+                <div class="comparison-card" onclick="showDirection('d1')">
+                    <h3>1. Command Center</h3>
+                    <p>Action-first layout with prominent WIN/WATCH/ACTION cards. Optimized for "What should I do today?"</p>
+                    <div class="comparison-preview" style="background: linear-gradient(135deg, var(--forest-green) 0%, var(--forest-green-light) 100%);"></div>
+                    <div class="comparison-tags">
+                        <span class="comparison-tag">Action-Oriented</span>
+                        <span class="comparison-tag">High Contrast</span>
+                        <span class="comparison-tag">Quick Scanning</span>
+                    </div>
+                </div>
+
+                <div class="comparison-card" onclick="showDirection('d2')">
+                    <h3>2. Analytics Dashboard</h3>
+                    <p>Data-rich layout with sidebar navigation. Comprehensive metrics and trend visualization.</p>
+                    <div class="comparison-preview" style="background: linear-gradient(135deg, var(--neutral-bg) 0%, #fff 100%);"></div>
+                    <div class="comparison-tags">
+                        <span class="comparison-tag">Data-Rich</span>
+                        <span class="comparison-tag">Sidebar Nav</span>
+                        <span class="comparison-tag">Charts</span>
+                    </div>
+                </div>
+
+                <div class="comparison-card" onclick="showDirection('d3')">
+                    <h3>3. Mobile-First Cards</h3>
+                    <p>Touch-optimized card-based interface. Works on tablets in the field.</p>
+                    <div class="comparison-preview" style="background: linear-gradient(135deg, var(--forest-green) 0%, var(--light-sage) 100%);"></div>
+                    <div class="comparison-tags">
+                        <span class="comparison-tag">Touch-Friendly</span>
+                        <span class="comparison-tag">Card-Based</span>
+                        <span class="comparison-tag">Portable</span>
+                    </div>
+                </div>
+
+                <div class="comparison-card" onclick="showDirection('d4')">
+                    <h3>4. Dense Professional</h3>
+                    <p>Maximum information density with table-based layout. For power users managing many farmers.</p>
+                    <div class="comparison-preview" style="background: linear-gradient(135deg, #fff 0%, var(--neutral-bg) 100%);"></div>
+                    <div class="comparison-tags">
+                        <span class="comparison-tag">High Density</span>
+                        <span class="comparison-tag">Table View</span>
+                        <span class="comparison-tag">Power User</span>
+                    </div>
+                </div>
+
+                <div class="comparison-card" onclick="showDirection('d5')">
+                    <h3>5. Split View</h3>
+                    <p>Master-detail layout with farmer list and detailed profile panel. Deep farmer insights.</p>
+                    <div class="comparison-preview" style="background: linear-gradient(135deg, #fff 30%, var(--neutral-bg) 30%);"></div>
+                    <div class="comparison-tags">
+                        <span class="comparison-tag">Master-Detail</span>
+                        <span class="comparison-tag">Farmer Focus</span>
+                        <span class="comparison-tag">Deep Drill</span>
+                    </div>
+                </div>
+
+                <div class="comparison-card" onclick="showDirection('d6')">
+                    <h3>6. Kanban Workflow</h3>
+                    <p>Task-oriented board view. Drag farmers between ACTION/WATCH/WIN columns.</p>
+                    <div class="comparison-preview" style="background: linear-gradient(90deg, var(--action-bg) 33%, var(--watch-bg) 33% 66%, var(--win-bg) 66%);"></div>
+                    <div class="comparison-tags">
+                        <span class="comparison-tag">Workflow</span>
+                        <span class="comparison-tag">Drag-Drop</span>
+                        <span class="comparison-tag">Progress Track</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Direction 1: Command Center -->
+        <section id="d1" class="direction-section">
+            <div class="direction-header">
+                <h2>Direction 1: Command Center</h2>
+                <p>Action-first layout designed to answer "What should I do today?" in 5 seconds. Prominent status cards with direct action buttons. Optimized for quick decision-making and immediate farmer outreach.</p>
+                <div class="direction-tags">
+                    <span class="direction-tag">Action-Oriented</span>
+                    <span class="direction-tag">High Contrast Status</span>
+                    <span class="direction-tag">Quick Scanning</span>
+                    <span class="direction-tag">One-Click Actions</span>
+                </div>
+            </div>
+
+            <div class="mockup-container">
+                <header class="d1-header">
+                    <div class="d1-logo">
+                        <div class="d1-logo-icon"></div>
+                        FARMER POWER
+                    </div>
+                    <nav class="d1-nav">
+                        <div class="d1-nav-item active">Dashboard</div>
+                        <div class="d1-nav-item">Farmers</div>
+                        <div class="d1-nav-item">Patterns</div>
+                        <div class="d1-nav-item">Reports</div>
+                    </nav>
+                    <div class="d1-user">
+                        <span>Kericho Tea Factory</span>
+                        <div class="d1-avatar">JK</div>
+                    </div>
+                </header>
+
+                <main class="d1-main">
+                    <div class="d1-action-strip">
+                        <div class="d1-action-card action-needed">
+                            <div class="d1-action-card-header">
+                                <span class="d1-action-badge red">ACTION NEEDED</span>
+                            </div>
+                            <div class="d1-action-count red">7</div>
+                            <div class="d1-action-label">Farmers need attention</div>
+                            <div class="d1-action-sublabel">&lt;70% Primary</div>
+                        </div>
+
+                        <div class="d1-action-card watch">
+                            <div class="d1-action-card-header">
+                                <span class="d1-action-badge gold">WATCH</span>
+                            </div>
+                            <div class="d1-action-count gold">12</div>
+                            <div class="d1-action-label">Monitor closely</div>
+                            <div class="d1-action-sublabel">70-84% Primary</div>
+                        </div>
+
+                        <div class="d1-action-card wins">
+                            <div class="d1-action-card-header">
+                                <span class="d1-action-badge green">WINS</span>
+                            </div>
+                            <div class="d1-action-count green">23</div>
+                            <div class="d1-action-label">Performing well</div>
+                            <div class="d1-action-sublabel">&ge;85% Primary</div>
+                        </div>
+                    </div>
+
+                    <div class="d1-content-grid">
+                        <div class="d1-farmers-panel">
+                            <div class="d1-panel-header">
+                                <span class="d1-panel-title">ACTION NEEDED - Priority Farmers</span>
+                                <button class="d1-btn d1-btn-secondary">View All</button>
+                            </div>
+
+                            <div class="d1-farmer-row">
+                                <div class="d1-farmer-info">
+                                    <h4>Mama Wanjiku M.</h4>
+                                    <span>WM-4521 &bull; Kericho Region</span>
+                                </div>
+                                <div class="d1-primary-pct red">58%</div>
+                                <span class="d1-issue-tag">3+ leaves</span>
+                                <div class="d1-btn-row">
+                                    <button class="d1-btn d1-btn-primary">Call</button>
+                                    <button class="d1-btn d1-btn-secondary">Assign</button>
+                                </div>
+                            </div>
+
+                            <div class="d1-farmer-row">
+                                <div class="d1-farmer-info">
+                                    <h4>Baba James K.</h4>
+                                    <span>JK-8832 &bull; Nandi Hills</span>
+                                </div>
+                                <div class="d1-primary-pct red">62%</div>
+                                <span class="d1-issue-tag">coarse leaf</span>
+                                <div class="d1-btn-row">
+                                    <button class="d1-btn d1-btn-primary">Call</button>
+                                    <button class="d1-btn d1-btn-secondary">Assign</button>
+                                </div>
+                            </div>
+
+                            <div class="d1-farmer-row">
+                                <div class="d1-farmer-info">
+                                    <h4>Mama Grace C.</h4>
+                                    <span>GC-1129 &bull; Bomet</span>
+                                </div>
+                                <div class="d1-primary-pct red">65%</div>
+                                <span class="d1-issue-tag">hard banji</span>
+                                <div class="d1-btn-row">
+                                    <button class="d1-btn d1-btn-primary">Call</button>
+                                    <button class="d1-btn d1-btn-secondary">Assign</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="d1-stats-panel">
+                            <div class="d1-stat-card">
+                                <h4>Today's Intake</h4>
+                                <div class="d1-stat-value">847</div>
+                                <div class="d1-stat-trend up">bags graded</div>
+                            </div>
+
+                            <div class="d1-stat-card">
+                                <h4>Factory Average</h4>
+                                <div class="d1-stat-value">78%</div>
+                                <div class="d1-stat-trend up">+3% vs yesterday</div>
+                            </div>
+
+                            <div class="d1-stat-card">
+                                <h4>Primary % Trend (7 days)</h4>
+                                <div class="d1-chart-placeholder">
+                                    <div class="d1-chart-bar" style="height: 60%;"></div>
+                                    <div class="d1-chart-bar" style="height: 65%;"></div>
+                                    <div class="d1-chart-bar" style="height: 58%;"></div>
+                                    <div class="d1-chart-bar" style="height: 72%;"></div>
+                                    <div class="d1-chart-bar" style="height: 75%;"></div>
+                                    <div class="d1-chart-bar" style="height: 78%;"></div>
+                                    <div class="d1-chart-bar" style="height: 80%;"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </main>
+            </div>
+        </section>
+
+        <!-- Direction 2: Analytics Dashboard -->
+        <section id="d2" class="direction-section">
+            <div class="direction-header">
+                <h2>Direction 2: Analytics Dashboard</h2>
+                <p>Data-rich layout with comprehensive metrics and trend visualization. Sidebar navigation provides quick access to different analysis views. Ideal for understanding patterns and making data-driven decisions.</p>
+                <div class="direction-tags">
+                    <span class="direction-tag">Data-Rich</span>
+                    <span class="direction-tag">Sidebar Navigation</span>
+                    <span class="direction-tag">Charts & Trends</span>
+                    <span class="direction-tag">Comprehensive Metrics</span>
+                </div>
+            </div>
+
+            <div class="mockup-container">
+                <div class="d2-layout">
+                    <aside class="d2-sidebar">
+                        <div class="d2-logo">
+                            <h3><div class="d2-logo-icon"></div> Farmer Power</h3>
+                        </div>
+
+                        <div class="d2-nav-section">
+                            <div class="d2-nav-label">Overview</div>
+                            <div class="d2-nav-item active"><div class="d2-nav-icon"></div> Dashboard</div>
+                            <div class="d2-nav-item"><div class="d2-nav-icon"></div> Analytics</div>
+                        </div>
+
+                        <div class="d2-nav-section">
+                            <div class="d2-nav-label">Management</div>
+                            <div class="d2-nav-item"><div class="d2-nav-icon"></div> Farmers</div>
+                            <div class="d2-nav-item"><div class="d2-nav-icon"></div> Collection Points</div>
+                            <div class="d2-nav-item"><div class="d2-nav-icon"></div> Extension Team</div>
+                        </div>
+
+                        <div class="d2-nav-section">
+                            <div class="d2-nav-label">Reports</div>
+                            <div class="d2-nav-item"><div class="d2-nav-icon"></div> Quality Trends</div>
+                            <div class="d2-nav-item"><div class="d2-nav-icon"></div> Patterns</div>
+                            <div class="d2-nav-item"><div class="d2-nav-icon"></div> Export</div>
+                        </div>
+                    </aside>
+
+                    <main class="d2-main">
+                        <div class="d2-topbar">
+                            <h1>Quality Dashboard</h1>
+                            <div class="d2-date-picker">Dec 16 - Dec 23, 2025</div>
+                        </div>
+
+                        <div class="d2-metrics-row">
+                            <div class="d2-metric-card">
+                                <div class="d2-metric-label">Factory Primary %</div>
+                                <div class="d2-metric-value">78.4%</div>
+                                <div class="d2-metric-change up">+4.2% vs last week</div>
+                            </div>
+                            <div class="d2-metric-card">
+                                <div class="d2-metric-label">Bags Graded Today</div>
+                                <div class="d2-metric-value">847</div>
+                                <div class="d2-metric-change up">+12% vs average</div>
+                            </div>
+                            <div class="d2-metric-card">
+                                <div class="d2-metric-label">Action Needed</div>
+                                <div class="d2-metric-value" style="color: var(--action-red);">7</div>
+                                <div class="d2-metric-change down">-3 from yesterday</div>
+                            </div>
+                            <div class="d2-metric-card">
+                                <div class="d2-metric-label">WIN Farmers</div>
+                                <div class="d2-metric-value" style="color: var(--win-green);">23</div>
+                                <div class="d2-metric-change up">+5 this week</div>
+                            </div>
+                        </div>
+
+                        <div class="d2-charts-grid">
+                            <div class="d2-chart-card">
+                                <div class="d2-chart-header">
+                                    <span class="d2-chart-title">Weekly Primary % by Category</span>
+                                </div>
+                                <div class="d2-chart-area">
+                                    <div class="d2-chart-column">
+                                        <div class="d2-chart-stack">
+                                            <div class="d2-stack-win" style="height: 80px;"></div>
+                                            <div class="d2-stack-watch" style="height: 50px;"></div>
+                                            <div class="d2-stack-action" style="height: 30px;"></div>
+                                        </div>
+                                        <span class="d2-chart-label">Mon</span>
+                                    </div>
+                                    <div class="d2-chart-column">
+                                        <div class="d2-chart-stack">
+                                            <div class="d2-stack-win" style="height: 90px;"></div>
+                                            <div class="d2-stack-watch" style="height: 45px;"></div>
+                                            <div class="d2-stack-action" style="height: 25px;"></div>
+                                        </div>
+                                        <span class="d2-chart-label">Tue</span>
+                                    </div>
+                                    <div class="d2-chart-column">
+                                        <div class="d2-chart-stack">
+                                            <div class="d2-stack-win" style="height: 85px;"></div>
+                                            <div class="d2-stack-watch" style="height: 48px;"></div>
+                                            <div class="d2-stack-action" style="height: 27px;"></div>
+                                        </div>
+                                        <span class="d2-chart-label">Wed</span>
+                                    </div>
+                                    <div class="d2-chart-column">
+                                        <div class="d2-chart-stack">
+                                            <div class="d2-stack-win" style="height: 70px;"></div>
+                                            <div class="d2-stack-watch" style="height: 55px;"></div>
+                                            <div class="d2-stack-action" style="height: 35px;"></div>
+                                        </div>
+                                        <span class="d2-chart-label">Thu</span>
+                                    </div>
+                                    <div class="d2-chart-column">
+                                        <div class="d2-chart-stack">
+                                            <div class="d2-stack-win" style="height: 95px;"></div>
+                                            <div class="d2-stack-watch" style="height: 40px;"></div>
+                                            <div class="d2-stack-action" style="height: 20px;"></div>
+                                        </div>
+                                        <span class="d2-chart-label">Fri</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="d2-chart-card">
+                                <div class="d2-chart-header">
+                                    <span class="d2-chart-title">Farmer Distribution</span>
+                                </div>
+                                <div class="d2-donut">
+                                    <div class="d2-donut-center">
+                                        <span class="d2-donut-value">42</span>
+                                        <span class="d2-donut-label">Farmers</span>
+                                    </div>
+                                </div>
+                                <div class="d2-legend">
+                                    <div class="d2-legend-item">
+                                        <div class="d2-legend-dot" style="background: var(--win-green);"></div>
+                                        WIN (55%)
+                                    </div>
+                                    <div class="d2-legend-item">
+                                        <div class="d2-legend-dot" style="background: var(--watch-gold);"></div>
+                                        WATCH (30%)
+                                    </div>
+                                    <div class="d2-legend-item">
+                                        <div class="d2-legend-dot" style="background: var(--action-red);"></div>
+                                        ACTION (15%)
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </main>
+                </div>
+            </div>
+        </section>
+
+        <!-- Direction 3: Mobile-First Cards -->
+        <section id="d3" class="direction-section">
+            <div class="direction-header">
+                <h2>Direction 3: Mobile-First Cards</h2>
+                <p>Touch-optimized card-based interface designed for tablets and mobile devices. Perfect for Joseph when he's walking the factory floor or visiting collection points. Large touch targets and swipeable interactions.</p>
+                <div class="direction-tags">
+                    <span class="direction-tag">Touch-Friendly</span>
+                    <span class="direction-tag">Card-Based</span>
+                    <span class="direction-tag">Portable</span>
+                    <span class="direction-tag">Field-Ready</span>
+                </div>
+            </div>
+
+            <div class="mockup-container">
+                <div class="d3-container">
+                    <header class="d3-header">
+                        <h1>Farmer Power</h1>
+                        <div class="d3-avatar"></div>
+                    </header>
+
+                    <div class="d3-summary-card">
+                        <div class="d3-summary-title">Today's Status</div>
+                        <div class="d3-summary-grid">
+                            <div class="d3-summary-item action">
+                                <div class="d3-summary-count action">7</div>
+                                <div class="d3-summary-label">Action</div>
+                            </div>
+                            <div class="d3-summary-item watch">
+                                <div class="d3-summary-count watch">12</div>
+                                <div class="d3-summary-label">Watch</div>
+                            </div>
+                            <div class="d3-summary-item win">
+                                <div class="d3-summary-count win">23</div>
+                                <div class="d3-summary-label">Win</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="d3-section">
+                        <div class="d3-section-header">
+                            <span class="d3-section-title">Needs Attention</span>
+                            <span class="d3-see-all">See all</span>
+                        </div>
+
+                        <div class="d3-farmer-card">
+                            <div class="d3-farmer-header">
+                                <div class="d3-farmer-avatar">WM</div>
+                                <div class="d3-farmer-info">
+                                    <div class="d3-farmer-name">Mama Wanjiku M.</div>
+                                    <div class="d3-farmer-location">Kericho Region</div>
+                                </div>
+                                <div class="d3-farmer-grade">
+                                    <div class="d3-grade-value action">58%</div>
+                                    <div class="d3-grade-label">Primary</div>
+                                </div>
+                            </div>
+                            <div class="d3-issue-row">
+                                <div class="d3-issue-icon"></div>
+                                <span class="d3-issue-text">Top issue: 3+ leaves per bud</span>
+                            </div>
+                            <div class="d3-action-buttons">
+                                <button class="d3-action-btn primary">Call Farmer</button>
+                                <button class="d3-action-btn secondary">Assign Officer</button>
+                            </div>
+                        </div>
+
+                        <div class="d3-farmer-card">
+                            <div class="d3-farmer-header">
+                                <div class="d3-farmer-avatar">JK</div>
+                                <div class="d3-farmer-info">
+                                    <div class="d3-farmer-name">Baba James K.</div>
+                                    <div class="d3-farmer-location">Nandi Hills</div>
+                                </div>
+                                <div class="d3-farmer-grade">
+                                    <div class="d3-grade-value watch">72%</div>
+                                    <div class="d3-grade-label">Primary</div>
+                                </div>
+                            </div>
+                            <div class="d3-action-buttons">
+                                <button class="d3-action-btn primary">Call Farmer</button>
+                                <button class="d3-action-btn secondary">View Details</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <nav class="d3-bottom-nav">
+                        <div class="d3-nav-item active">
+                            <div class="d3-nav-icon"></div>
+                            Home
+                        </div>
+                        <div class="d3-nav-item">
+                            <div class="d3-nav-icon"></div>
+                            Farmers
+                        </div>
+                        <div class="d3-nav-item">
+                            <div class="d3-nav-icon"></div>
+                            Patterns
+                        </div>
+                        <div class="d3-nav-item">
+                            <div class="d3-nav-icon"></div>
+                            Profile
+                        </div>
+                    </nav>
+                </div>
+            </div>
+        </section>
+
+        <!-- Direction 4: Dense Professional -->
+        <section id="d4" class="direction-section">
+            <div class="direction-header">
+                <h2>Direction 4: Dense Professional</h2>
+                <p>Maximum information density with table-based layout for power users managing hundreds of farmers. Sortable columns, inline actions, and efficient data scanning. Professional enterprise aesthetic.</p>
+                <div class="direction-tags">
+                    <span class="direction-tag">High Density</span>
+                    <span class="direction-tag">Table View</span>
+                    <span class="direction-tag">Power User</span>
+                    <span class="direction-tag">Enterprise</span>
+                </div>
+            </div>
+
+            <div class="mockup-container">
+                <header class="d4-header">
+                    <div class="d4-logo">
+                        <div class="d4-logo-mark"></div>
+                        Farmer Power
+                    </div>
+                    <div class="d4-breadcrumb">
+                        Kericho Tea Factory &rarr; <strong>Farmer Management</strong>
+                    </div>
+                    <div class="d4-actions">
+                        <button class="d4-btn">Export</button>
+                        <button class="d4-btn">Settings</button>
+                    </div>
+                </header>
+
+                <div class="d4-main">
+                    <div class="d4-content">
+                        <div class="d4-toolbar">
+                            <div class="d4-filters">
+                                <button class="d4-filter active">All (42)</button>
+                                <button class="d4-filter">Action (7)</button>
+                                <button class="d4-filter">Watch (12)</button>
+                                <button class="d4-filter">Win (23)</button>
+                            </div>
+                            <div class="d4-search">Search farmers...</div>
+                        </div>
+
+                        <div class="d4-table">
+                            <div class="d4-table-header">
+                                <span>Farmer</span>
+                                <span>Primary %</span>
+                                <span>Trend</span>
+                                <span>Top Issue</span>
+                                <span>Actions</span>
+                            </div>
+
+                            <div class="d4-table-row">
+                                <div class="d4-farmer-cell">
+                                    <div class="d4-farmer-avatar">WM</div>
+                                    <div>
+                                        <div class="d4-farmer-name">Mama Wanjiku M.</div>
+                                        <div class="d4-farmer-id">WM-4521</div>
+                                    </div>
+                                </div>
+                                <div class="d4-grade-cell action">58%</div>
+                                <div class="d4-trend-cell down">&darr; 12%</div>
+                                <span class="d4-issue-cell">3+ leaves</span>
+                                <div class="d4-actions-cell">
+                                    <button class="d4-action-btn call">Call</button>
+                                    <button class="d4-action-btn assign">Assign</button>
+                                </div>
+                            </div>
+
+                            <div class="d4-table-row">
+                                <div class="d4-farmer-cell">
+                                    <div class="d4-farmer-avatar">JK</div>
+                                    <div>
+                                        <div class="d4-farmer-name">Baba James K.</div>
+                                        <div class="d4-farmer-id">JK-8832</div>
+                                    </div>
+                                </div>
+                                <div class="d4-grade-cell action">62%</div>
+                                <div class="d4-trend-cell down">&darr; 8%</div>
+                                <span class="d4-issue-cell">coarse leaf</span>
+                                <div class="d4-actions-cell">
+                                    <button class="d4-action-btn call">Call</button>
+                                    <button class="d4-action-btn assign">Assign</button>
+                                </div>
+                            </div>
+
+                            <div class="d4-table-row">
+                                <div class="d4-farmer-cell">
+                                    <div class="d4-farmer-avatar">GC</div>
+                                    <div>
+                                        <div class="d4-farmer-name">Mama Grace C.</div>
+                                        <div class="d4-farmer-id">GC-1129</div>
+                                    </div>
+                                </div>
+                                <div class="d4-grade-cell watch">74%</div>
+                                <div class="d4-trend-cell up">&uarr; 4%</div>
+                                <span class="d4-issue-cell">hard banji</span>
+                                <div class="d4-actions-cell">
+                                    <button class="d4-action-btn call">Call</button>
+                                    <button class="d4-action-btn assign">Assign</button>
+                                </div>
+                            </div>
+
+                            <div class="d4-table-row">
+                                <div class="d4-farmer-cell">
+                                    <div class="d4-farmer-avatar">PO</div>
+                                    <div>
+                                        <div class="d4-farmer-name">Baba Peter O.</div>
+                                        <div class="d4-farmer-id">PO-2231</div>
+                                    </div>
+                                </div>
+                                <div class="d4-grade-cell win">88%</div>
+                                <div class="d4-trend-cell up">&uarr; 6%</div>
+                                <span style="color: var(--neutral-slate); font-size: 0.75rem;">None</span>
+                                <div class="d4-actions-cell">
+                                    <button class="d4-action-btn call">Call</button>
+                                    <button class="d4-action-btn assign">View</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <aside class="d4-sidebar">
+                        <div class="d4-sidebar-section">
+                            <div class="d4-sidebar-title">Factory Summary</div>
+                            <div class="d4-stat-row">
+                                <span class="d4-stat-label">Factory Primary %</span>
+                                <span class="d4-stat-value">78.4%</span>
+                            </div>
+                            <div class="d4-stat-row">
+                                <span class="d4-stat-label">Bags Today</span>
+                                <span class="d4-stat-value">847</span>
+                            </div>
+                            <div class="d4-stat-row">
+                                <span class="d4-stat-label">Farmers Active</span>
+                                <span class="d4-stat-value">42</span>
+                            </div>
+                        </div>
+
+                        <div class="d4-sidebar-section">
+                            <div class="d4-sidebar-title">7-Day Trend</div>
+                            <div class="d4-mini-chart">
+                                <div class="d4-mini-bar" style="height: 50%;"></div>
+                                <div class="d4-mini-bar" style="height: 55%;"></div>
+                                <div class="d4-mini-bar" style="height: 48%;"></div>
+                                <div class="d4-mini-bar" style="height: 62%;"></div>
+                                <div class="d4-mini-bar" style="height: 68%;"></div>
+                                <div class="d4-mini-bar" style="height: 72%;"></div>
+                                <div class="d4-mini-bar" style="height: 78%;"></div>
+                            </div>
+                        </div>
+                    </aside>
+                </div>
+            </div>
+        </section>
+
+        <!-- Direction 5: Split View -->
+        <section id="d5" class="direction-section">
+            <div class="direction-header">
+                <h2>Direction 5: Split View (Master-Detail)</h2>
+                <p>Master-detail layout with farmer list on the left and detailed profile panel on the right. Perfect for deep-diving into individual farmer performance and history. Maintains context while exploring details.</p>
+                <div class="direction-tags">
+                    <span class="direction-tag">Master-Detail</span>
+                    <span class="direction-tag">Farmer Focus</span>
+                    <span class="direction-tag">Deep Insights</span>
+                    <span class="direction-tag">Context Preservation</span>
+                </div>
+            </div>
+
+            <div class="mockup-container">
+                <div class="d5-layout">
+                    <div class="d5-list-panel">
+                        <div class="d5-list-header">
+                            <h2 class="d5-list-title">Farmers</h2>
+                            <div class="d5-search">Search by name or ID...</div>
+                        </div>
+
+                        <div class="d5-tabs">
+                            <div class="d5-tab">All <span class="count" style="background: var(--neutral-bg); color: var(--neutral-slate);">42</span></div>
+                            <div class="d5-tab active">Action <span class="count action">7</span></div>
+                            <div class="d5-tab">Watch <span class="count watch">12</span></div>
+                            <div class="d5-tab">Win <span class="count win">23</span></div>
+                        </div>
+
+                        <div class="d5-list-scroll">
+                            <div class="d5-list-item selected">
+                                <div class="d5-item-header">
+                                    <span class="d5-item-name">Mama Wanjiku M.</span>
+                                    <span class="d5-item-grade action">58%</span>
+                                </div>
+                                <div class="d5-item-meta">WM-4521 &bull; Kericho Region</div>
+                                <span class="d5-item-issue">3+ leaves per bud</span>
+                            </div>
+
+                            <div class="d5-list-item">
+                                <div class="d5-item-header">
+                                    <span class="d5-item-name">Baba James K.</span>
+                                    <span class="d5-item-grade action">62%</span>
+                                </div>
+                                <div class="d5-item-meta">JK-8832 &bull; Nandi Hills</div>
+                                <span class="d5-item-issue">coarse leaf</span>
+                            </div>
+
+                            <div class="d5-list-item">
+                                <div class="d5-item-header">
+                                    <span class="d5-item-name">Mama Grace C.</span>
+                                    <span class="d5-item-grade action">65%</span>
+                                </div>
+                                <div class="d5-item-meta">GC-1129 &bull; Bomet</div>
+                                <span class="d5-item-issue">hard banji</span>
+                            </div>
+
+                            <div class="d5-list-item">
+                                <div class="d5-item-header">
+                                    <span class="d5-item-name">Baba Samuel N.</span>
+                                    <span class="d5-item-grade watch">68%</span>
+                                </div>
+                                <div class="d5-item-meta">SN-9921 &bull; Kisii</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="d5-detail-panel">
+                        <div class="d5-detail-header">
+                            <div style="display: flex; align-items: center;">
+                                <div class="d5-detail-avatar">WM</div>
+                                <div class="d5-detail-info">
+                                    <h2>Mama Wanjiku Muthoni</h2>
+                                    <p>WM-4521 &bull; Kericho Region &bull; +254 712 345 678</p>
+                                </div>
+                            </div>
+                            <div class="d5-detail-actions">
+                                <button class="d5-detail-btn primary">Call Farmer</button>
+                                <button class="d5-detail-btn secondary">Assign Officer</button>
+                            </div>
+                        </div>
+
+                        <div class="d5-detail-cards">
+                            <div class="d5-card">
+                                <div class="d5-card-title">Current Primary %</div>
+                                <div class="d5-card-value">58%</div>
+                                <div class="d5-card-trend">&darr; 12% from 2 weeks ago</div>
+                            </div>
+                            <div class="d5-card">
+                                <div class="d5-card-title">Category</div>
+                                <div class="d5-card-value" style="color: var(--action-red); font-size: 1.25rem;">ACTION NEEDED</div>
+                                <div class="d5-card-trend" style="color: var(--neutral-slate);">Requires immediate attention</div>
+                            </div>
+                        </div>
+
+                        <div class="d5-breakdown">
+                            <div class="d5-breakdown-title">Leaf Type Breakdown (Last Delivery)</div>
+
+                            <div class="d5-breakdown-row">
+                                <span class="d5-breakdown-label"><span class="d5-breakdown-dot primary"></span> Primary Leaves</span>
+                                <span class="d5-breakdown-value">58%</span>
+                            </div>
+                            <div class="d5-breakdown-row">
+                                <span class="d5-breakdown-label" style="padding-left: 1rem;">bud</span>
+                                <span class="d5-breakdown-value" style="color: var(--neutral-slate);">5%</span>
+                            </div>
+                            <div class="d5-breakdown-row">
+                                <span class="d5-breakdown-label" style="padding-left: 1rem;">one leaf + bud</span>
+                                <span class="d5-breakdown-value" style="color: var(--neutral-slate);">18%</span>
+                            </div>
+                            <div class="d5-breakdown-row">
+                                <span class="d5-breakdown-label" style="padding-left: 1rem;">two leaves + bud</span>
+                                <span class="d5-breakdown-value" style="color: var(--neutral-slate);">30%</span>
+                            </div>
+                            <div class="d5-breakdown-row">
+                                <span class="d5-breakdown-label"><span class="d5-breakdown-dot secondary"></span> Secondary Leaves</span>
+                                <span class="d5-breakdown-value">42%</span>
+                            </div>
+                            <div class="d5-breakdown-row" style="background: var(--action-bg);">
+                                <span class="d5-breakdown-label" style="padding-left: 1rem; color: var(--action-red); font-weight: 500;">3+ leaves (TOP ISSUE)</span>
+                                <span class="d5-breakdown-value" style="color: var(--action-red);">28%</span>
+                            </div>
+                            <div class="d5-breakdown-row">
+                                <span class="d5-breakdown-label" style="padding-left: 1rem;">coarse leaf</span>
+                                <span class="d5-breakdown-value" style="color: var(--neutral-slate);">10%</span>
+                            </div>
+
+                            <div class="d5-breakdown-bar">
+                                <div class="d5-breakdown-fill"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Direction 6: Kanban Workflow -->
+        <section id="d6" class="direction-section">
+            <div class="direction-header">
+                <h2>Direction 6: Kanban Workflow</h2>
+                <p>Task-oriented board view where farmers flow between ACTION/WATCH/WIN columns. Visual progress tracking with drag-and-drop capability. Gamifies the improvement process and shows team progress at a glance.</p>
+                <div class="direction-tags">
+                    <span class="direction-tag">Workflow Board</span>
+                    <span class="direction-tag">Drag & Drop</span>
+                    <span class="direction-tag">Progress Tracking</span>
+                    <span class="direction-tag">Team View</span>
+                </div>
+            </div>
+
+            <div class="mockup-container">
+                <header class="d6-header">
+                    <div class="d6-logo">
+                        <div class="d6-logo-icon"></div>
+                        Farmer Power
+                    </div>
+                    <div class="d6-header-stats">
+                        <div class="d6-stat">
+                            <div class="d6-stat-value">78%</div>
+                            <div class="d6-stat-label">Factory Avg</div>
+                        </div>
+                        <div class="d6-stat">
+                            <div class="d6-stat-value">847</div>
+                            <div class="d6-stat-label">Bags Today</div>
+                        </div>
+                        <div class="d6-stat">
+                            <div class="d6-stat-value">+5</div>
+                            <div class="d6-stat-label">Moved to WIN</div>
+                        </div>
+                    </div>
+                </header>
+
+                <div class="d6-board">
+                    <div class="d6-column action">
+                        <div class="d6-column-header">
+                            <span class="d6-column-title">ACTION NEEDED</span>
+                            <span class="d6-column-count">7</span>
+                        </div>
+                        <div class="d6-column-cards">
+                            <div class="d6-card">
+                                <div class="d6-card-header">
+                                    <span class="d6-card-name">Mama Wanjiku M.</span>
+                                    <span class="d6-card-grade">58%</span>
+                                </div>
+                                <span class="d6-card-issue">3+ leaves</span>
+                                <div class="d6-card-footer">
+                                    <span class="d6-card-meta">WM-4521</span>
+                                    <div class="d6-card-actions">
+                                        <button class="d6-icon-btn">C</button>
+                                        <button class="d6-icon-btn">A</button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="d6-card">
+                                <div class="d6-card-header">
+                                    <span class="d6-card-name">Baba James K.</span>
+                                    <span class="d6-card-grade">62%</span>
+                                </div>
+                                <span class="d6-card-issue">coarse leaf</span>
+                                <div class="d6-card-footer">
+                                    <span class="d6-card-meta">JK-8832</span>
+                                    <div class="d6-card-actions">
+                                        <button class="d6-icon-btn">C</button>
+                                        <button class="d6-icon-btn">A</button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="d6-card">
+                                <div class="d6-card-header">
+                                    <span class="d6-card-name">Mama Grace C.</span>
+                                    <span class="d6-card-grade">65%</span>
+                                </div>
+                                <span class="d6-card-issue">hard banji</span>
+                                <div class="d6-card-footer">
+                                    <span class="d6-card-meta">GC-1129</span>
+                                    <div class="d6-card-actions">
+                                        <button class="d6-icon-btn">C</button>
+                                        <button class="d6-icon-btn">A</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="d6-column watch">
+                        <div class="d6-column-header">
+                            <span class="d6-column-title">WATCH</span>
+                            <span class="d6-column-count">12</span>
+                        </div>
+                        <div class="d6-column-cards">
+                            <div class="d6-card">
+                                <div class="d6-card-header">
+                                    <span class="d6-card-name">Baba Samuel N.</span>
+                                    <span class="d6-card-grade">72%</span>
+                                </div>
+                                <div class="d6-card-footer">
+                                    <span class="d6-card-meta">SN-9921 &bull; up 4%</span>
+                                    <div class="d6-card-actions">
+                                        <button class="d6-icon-btn">C</button>
+                                        <button class="d6-icon-btn">A</button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="d6-card">
+                                <div class="d6-card-header">
+                                    <span class="d6-card-name">Mama Faith N.</span>
+                                    <span class="d6-card-grade">78%</span>
+                                </div>
+                                <div class="d6-card-footer">
+                                    <span class="d6-card-meta">FN-3312 &bull; up 8%</span>
+                                    <div class="d6-card-actions">
+                                        <button class="d6-icon-btn">C</button>
+                                        <button class="d6-icon-btn">A</button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="d6-card">
+                                <div class="d6-card-header">
+                                    <span class="d6-card-name">Baba David M.</span>
+                                    <span class="d6-card-grade">81%</span>
+                                </div>
+                                <div class="d6-card-footer">
+                                    <span class="d6-card-meta">DM-4421 &bull; up 12%</span>
+                                    <div class="d6-card-actions">
+                                        <button class="d6-icon-btn">C</button>
+                                        <button class="d6-icon-btn">A</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="d6-column win">
+                        <div class="d6-column-header">
+                            <span class="d6-column-title">WIN</span>
+                            <span class="d6-column-count">23</span>
+                        </div>
+                        <div class="d6-column-cards">
+                            <div class="d6-card">
+                                <div class="d6-card-header">
+                                    <span class="d6-card-name">Baba Peter O.</span>
+                                    <span class="d6-card-grade">91%</span>
+                                </div>
+                                <div class="d6-card-footer">
+                                    <span class="d6-card-meta">PO-2231 &bull; up 3%</span>
+                                    <div class="d6-card-actions">
+                                        <button class="d6-icon-btn">C</button>
+                                        <button class="d6-icon-btn">V</button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="d6-card">
+                                <div class="d6-card-header">
+                                    <span class="d6-card-name">Mama Rose K.</span>
+                                    <span class="d6-card-grade">88%</span>
+                                </div>
+                                <div class="d6-card-footer">
+                                    <span class="d6-card-meta">RK-1182 &bull; stable</span>
+                                    <div class="d6-card-actions">
+                                        <button class="d6-icon-btn">C</button>
+                                        <button class="d6-icon-btn">V</button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="d6-card">
+                                <div class="d6-card-header">
+                                    <span class="d6-card-name">Baba John W.</span>
+                                    <span class="d6-card-grade">86%</span>
+                                </div>
+                                <div class="d6-card-footer">
+                                    <span class="d6-card-meta">JW-8821 &bull; up 18%</span>
+                                    <div class="d6-card-actions">
+                                        <button class="d6-icon-btn">C</button>
+                                        <button class="d6-icon-btn">V</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <script>
+        function showDirection(id) {
+            document.querySelectorAll('.direction-section').forEach(section => {
+                section.classList.remove('active');
+            });
+            document.getElementById(id).classList.add('active');
+
+            document.querySelectorAll('.nav-tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            event.target.classList.add('active');
+
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+    </script>
+</body>
+</html>
