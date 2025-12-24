@@ -1212,7 +1212,11 @@ class PlantationServiceServicer(plantation_pb2_grpc.PlantationServiceServicer):
         request: plantation_pb2.GetFarmerSummaryRequest,
         context: grpc.aio.ServicerContext,
     ) -> plantation_pb2.FarmerSummary:
-        """Get farmer summary with performance details (AC #4)."""
+        """Get farmer summary with performance details (AC #4).
+
+        Returns default/empty performance metrics if no performance data exists
+        yet for the farmer (Task 6.7).
+        """
         if not self._farmer_performance_repo:
             await context.abort(
                 grpc.StatusCode.UNIMPLEMENTED,
@@ -1227,14 +1231,30 @@ class PlantationServiceServicer(plantation_pb2_grpc.PlantationServiceServicer):
                 f"Farmer {request.farmer_id} not found",
             )
 
-        # Get performance
+        # Get performance - return defaults if not found (Task 6.7)
         performance = await self._farmer_performance_repo.get_by_farmer_id(
             request.farmer_id
         )
         if performance is None:
-            await context.abort(
-                grpc.StatusCode.NOT_FOUND,
-                f"Performance data for farmer {request.farmer_id} not found",
+            # Return default empty performance metrics
+            # Get grading model from farmer's collection point's factory
+            cp = await self._cp_repo.get_by_id(farmer.collection_point_id)
+            grading_model_id = ""
+            grading_model_version = ""
+            if cp and self._grading_model_repo:
+                grading_model = await self._grading_model_repo.get_by_factory(
+                    cp.factory_id
+                )
+                if grading_model:
+                    grading_model_id = grading_model.model_id
+                    grading_model_version = grading_model.model_version
+
+            performance = FarmerPerformance.initialize_for_farmer(
+                farmer_id=farmer.id,
+                farm_size_hectares=farmer.farm_size_hectares,
+                farm_scale=farmer.farm_scale,
+                grading_model_id=grading_model_id,
+                grading_model_version=grading_model_version,
             )
 
         return self._farmer_summary_to_proto(farmer, performance)

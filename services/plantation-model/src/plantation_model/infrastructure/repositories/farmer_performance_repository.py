@@ -107,6 +107,30 @@ class FarmerPerformanceRepository(BaseRepository[FarmerPerformance]):
         await self.create(performance)
         return performance
 
+    async def upsert(self, entity: FarmerPerformance) -> FarmerPerformance:
+        """Create or update a farmer performance record atomically.
+
+        Uses MongoDB's upsert to atomically create if not exists,
+        or replace if exists.
+
+        Args:
+            entity: The farmer performance to create or update.
+
+        Returns:
+            The upserted farmer performance.
+        """
+        doc = entity.model_dump()
+        doc["_id"] = doc["farmer_id"]
+        doc["updated_at"] = datetime.now(timezone.utc)
+
+        await self._collection.replace_one(
+            {"_id": doc["farmer_id"]},
+            doc,
+            upsert=True,
+        )
+        logger.debug("Upserted farmer performance for %s", entity.farmer_id)
+        return entity
+
     async def update_historical(
         self, farmer_id: str, historical: HistoricalMetrics
     ) -> Optional[FarmerPerformance]:
@@ -207,7 +231,7 @@ class FarmerPerformanceRepository(BaseRepository[FarmerPerformance]):
             for attr_name, class_counts in attribute_counts.items():
                 for class_name, count in class_counts.items():
                     update["$inc"][
-                        f"today.attribute_counts.{attr_name}.counts.{class_name}"
+                        f"today.attribute_counts.{attr_name}.{class_name}"
                     ] = count
 
         result = await self._collection.find_one_and_update(
@@ -313,6 +337,7 @@ class FarmerPerformanceRepository(BaseRepository[FarmerPerformance]):
         - grading_model_id: List by grading model
         - farm_scale: Filter by farm scale
         - historical.improvement_trend: Filter by trend
+        - updated_at: Sort and filter by update time
         """
         await self._collection.create_index(
             [("farmer_id", ASCENDING)],
@@ -330,5 +355,9 @@ class FarmerPerformanceRepository(BaseRepository[FarmerPerformance]):
         await self._collection.create_index(
             [("historical.improvement_trend", ASCENDING)],
             name="idx_farmer_perf_trend",
+        )
+        await self._collection.create_index(
+            [("updated_at", ASCENDING)],
+            name="idx_farmer_perf_updated_at",
         )
         logger.info("Farmer performance indexes created")

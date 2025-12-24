@@ -218,6 +218,34 @@ class TestFarmerPerformanceRepository:
         assert total == 1
 
     @pytest.mark.asyncio
+    async def test_upsert_creates_new(
+        self, farmer_perf_repo: FarmerPerformanceRepository, sample_farmer_performance: FarmerPerformance
+    ) -> None:
+        """Test upsert creates a new performance record."""
+        farmer_perf_repo._collection.replace_one = AsyncMock()
+
+        result = await farmer_perf_repo.upsert(sample_farmer_performance)
+
+        farmer_perf_repo._collection.replace_one.assert_called_once()
+        call_args = farmer_perf_repo._collection.replace_one.call_args
+        assert call_args[1]["upsert"] is True
+        assert result.farmer_id == sample_farmer_performance.farmer_id
+
+    @pytest.mark.asyncio
+    async def test_upsert_updates_existing(
+        self, farmer_perf_repo: FarmerPerformanceRepository, sample_farmer_performance: FarmerPerformance
+    ) -> None:
+        """Test upsert updates an existing performance record."""
+        farmer_perf_repo._collection.replace_one = AsyncMock()
+
+        # Modify performance and upsert
+        sample_farmer_performance.today.deliveries = 5
+        result = await farmer_perf_repo.upsert(sample_farmer_performance)
+
+        farmer_perf_repo._collection.replace_one.assert_called_once()
+        assert result.today.deliveries == 5
+
+    @pytest.mark.asyncio
     async def test_ensure_indexes(
         self, farmer_perf_repo: FarmerPerformanceRepository
     ) -> None:
@@ -226,5 +254,5 @@ class TestFarmerPerformanceRepository:
 
         await farmer_perf_repo.ensure_indexes()
 
-        # Should create at least the farmer_id and grading_model_id indexes
-        assert farmer_perf_repo._collection.create_index.call_count >= 2
+        # Should create indexes for farmer_id, grading_model_id, farm_scale, trend, and updated_at
+        assert farmer_perf_repo._collection.create_index.call_count >= 5

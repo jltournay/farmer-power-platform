@@ -154,6 +154,96 @@ class TestGradingModelRepository:
         assert "factory-001" not in result.active_at_factory
 
     @pytest.mark.asyncio
+    async def test_update_grading_model(
+        self, grading_model_repo: GradingModelRepository, sample_grading_model: GradingModel
+    ) -> None:
+        """Test updating a grading model."""
+        updated_doc = sample_grading_model.model_dump()
+        updated_doc["_id"] = sample_grading_model.model_id
+        updated_doc["model_version"] = "1.1.0"
+        grading_model_repo._collection.find_one_and_update = AsyncMock(return_value=updated_doc)
+
+        result = await grading_model_repo.update(
+            sample_grading_model.model_id,
+            {"model_version": "1.1.0"},
+        )
+
+        assert result is not None
+        assert result.model_version == "1.1.0"
+        grading_model_repo._collection.find_one_and_update.assert_called_once()
+
+    @pytest.mark.asyncio
+    async def test_update_grading_model_not_found(
+        self, grading_model_repo: GradingModelRepository
+    ) -> None:
+        """Test updating a non-existent grading model."""
+        grading_model_repo._collection.find_one_and_update = AsyncMock(return_value=None)
+
+        result = await grading_model_repo.update("nonexistent", {"model_version": "2.0.0"})
+
+        assert result is None
+
+    @pytest.mark.asyncio
+    async def test_update_empty_updates(
+        self, grading_model_repo: GradingModelRepository, sample_grading_model: GradingModel
+    ) -> None:
+        """Test updating with empty updates returns current model."""
+        mock_doc = sample_grading_model.model_dump()
+        mock_doc["_id"] = sample_grading_model.model_id
+        grading_model_repo._collection.find_one = AsyncMock(return_value=mock_doc)
+
+        result = await grading_model_repo.update(sample_grading_model.model_id, {})
+
+        assert result is not None
+        assert result.model_id == sample_grading_model.model_id
+
+    @pytest.mark.asyncio
+    async def test_list_all_grading_models(
+        self, grading_model_repo: GradingModelRepository, sample_grading_model: GradingModel
+    ) -> None:
+        """Test listing all grading models."""
+        mock_doc = sample_grading_model.model_dump()
+        mock_doc["_id"] = sample_grading_model.model_id
+
+        # Mock cursor
+        mock_cursor = MagicMock()
+        mock_cursor.sort = MagicMock(return_value=mock_cursor)
+        mock_cursor.limit = MagicMock(return_value=mock_cursor)
+        mock_cursor.to_list = AsyncMock(return_value=[mock_doc])
+        grading_model_repo._collection.find = MagicMock(return_value=mock_cursor)
+        grading_model_repo._collection.count_documents = AsyncMock(return_value=1)
+
+        result, next_token, total = await grading_model_repo.list_all()
+
+        assert len(result) == 1
+        assert result[0].model_id == sample_grading_model.model_id
+        assert total == 1
+        assert next_token is None
+
+    @pytest.mark.asyncio
+    async def test_list_all_with_filters(
+        self, grading_model_repo: GradingModelRepository, sample_grading_model: GradingModel
+    ) -> None:
+        """Test listing grading models with filters."""
+        mock_doc = sample_grading_model.model_dump()
+        mock_doc["_id"] = sample_grading_model.model_id
+
+        mock_cursor = MagicMock()
+        mock_cursor.sort = MagicMock(return_value=mock_cursor)
+        mock_cursor.limit = MagicMock(return_value=mock_cursor)
+        mock_cursor.to_list = AsyncMock(return_value=[mock_doc])
+        grading_model_repo._collection.find = MagicMock(return_value=mock_cursor)
+        grading_model_repo._collection.count_documents = AsyncMock(return_value=1)
+
+        result, next_token, total = await grading_model_repo.list_all(
+            filters={"market_name": "Kenya_TBK"}
+        )
+
+        assert len(result) == 1
+        # Verify filter was applied
+        grading_model_repo._collection.count_documents.assert_called_once()
+
+    @pytest.mark.asyncio
     async def test_ensure_indexes(
         self, grading_model_repo: GradingModelRepository
     ) -> None:

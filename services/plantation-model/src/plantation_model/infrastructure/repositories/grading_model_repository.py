@@ -139,6 +139,78 @@ class GradingModelRepository(BaseRepository[GradingModel]):
         )
         return GradingModel.model_validate(result)
 
+    async def update(
+        self, model_id: str, updates: dict
+    ) -> Optional[GradingModel]:
+        """Update a grading model.
+
+        Updates the specified fields in the grading model.
+
+        Args:
+            model_id: The grading model's unique identifier.
+            updates: Dictionary of fields to update.
+
+        Returns:
+            The updated grading model if found, None otherwise.
+        """
+        if not updates:
+            return await self.get_by_id(model_id)
+
+        updates["updated_at"] = datetime.now(timezone.utc)
+        result = await self._collection.find_one_and_update(
+            {"_id": model_id},
+            {"$set": updates},
+            return_document=True,
+        )
+        if result is None:
+            return None
+        result.pop("_id", None)
+        logger.info("Updated grading model %s", model_id)
+        return GradingModel.model_validate(result)
+
+    async def list_all(
+        self,
+        page_size: int = 100,
+        page_token: Optional[str] = None,
+        filters: Optional[dict] = None,
+    ) -> tuple[list[GradingModel], Optional[str], int]:
+        """List all grading models with optional filtering.
+
+        Args:
+            page_size: Number of results per page.
+            page_token: Token for the next page.
+            filters: Optional filters (e.g., {"market_name": "Kenya_TBK"}).
+
+        Returns:
+            Tuple of (grading_models, next_page_token, total_count).
+        """
+        query = filters.copy() if filters else {}
+
+        # Get total count
+        total_count = await self._collection.count_documents(query)
+
+        # Add pagination if page_token provided
+        if page_token:
+            query["_id"] = {"$gt": page_token}
+
+        # Execute query
+        cursor = self._collection.find(query).sort("_id", 1).limit(page_size + 1)
+        docs = await cursor.to_list(length=page_size + 1)
+
+        # Check if there are more results
+        next_page_token = None
+        if len(docs) > page_size:
+            docs = docs[:page_size]
+            next_page_token = docs[-1]["_id"] if docs else None
+
+        # Convert to models
+        models = []
+        for doc in docs:
+            doc.pop("_id", None)
+            models.append(GradingModel.model_validate(doc))
+
+        return models, next_page_token, total_count
+
     async def ensure_indexes(self) -> None:
         """Create indexes for the grading_models collection.
 
