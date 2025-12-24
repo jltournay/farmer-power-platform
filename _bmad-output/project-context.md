@@ -565,13 +565,36 @@ class NotificationService:
 - **NEVER hardcode grade labels** (A, B, C, D, Premium, Standard, Rejected, etc.)
 - Grading models are fully configurable per factory/regulatory authority
 - Types: binary (Accept/Reject), ternary (Premium/Standard/Reject), multi-level (A/B/C/D)
-- Always include `grading_model_id` reference for label lookup
+- Always include `grading_model_id` + `grading_model_version` reference for label lookup
+- **Full grading model definition stored in Plantation Model** (not just reference)
+
+**Grading Model Structure (stored in Plantation Model):**
+```yaml
+grading_model:
+  model_id: "tbk_kenya_tea_v1"
+  model_version: "1.0.0"
+  grading_type: "binary"  # binary | ternary | multi_level
+  attributes:
+    leaf_type: { num_classes: 7, classes: ["bud", "one_leaf_bud", ...] }
+    coarse_subtype: { num_classes: 4, classes: ["none", "double_luck", ...] }
+    banji_hardness: { num_classes: 2, classes: ["soft", "hard"] }
+  grade_rules:
+    reject_conditions: { leaf_type: ["three_plus_leaves_bud", "coarse_leaf"] }
+    conditional_reject: [{ if_attribute: "leaf_type", if_value: "banji", then_attribute: "banji_hardness", reject_values: ["hard"] }]
+  grade_labels: { ACCEPT: "Primary", REJECT: "Secondary" }
+  active_at_factory: ["factory-001"]
+```
+
+**Attribute-Level Tracking (in FarmerPerformance):**
+- Track attribute distributions, not just final grades
+- Enables root-cause analysis: "Your coarse_leaf count increased from 8% to 15%"
+- Structure: `attribute_distributions_30d: { "leaf_type": { "bud": 15, "coarse_leaf": 10 }, "banji_hardness": { "soft": 3, "hard": 2 } }`
 
 **Grade Calculation:**
-- Grades are computed from **weighted attributes** defined in the Grading Model
-- Attributes: moisture %, leaf count, defect count, bean size, color score, etc.
-- Each attribute has a weight; final score = weighted sum normalized to 0.0-1.0
-- Grade thresholds map score ranges to labels (e.g., 0.8+ = Premium, 0.5-0.8 = Standard)
+- Grades are computed from **attribute values** defined in the Grading Model
+- Attributes are discrete classes (e.g., leaf_type = "two_leaves_bud"), not weighted scores
+- Grade rules define rejection conditions based on attribute values
+- Factory-specific display labels via `grade_labels` mapping
 
 | Pattern | Usage | Example |
 |---------|-------|---------|

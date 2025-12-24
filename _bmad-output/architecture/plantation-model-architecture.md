@@ -1,10 +1,10 @@
-# Plantation Model Architecture
+    # Plantation Model Architecture
 
 ## Overview
 
-The Plantation Model is the **master data registry** for the Farmer Power Cloud Platform. It stores core entities (regions, farmers, factories), configuration (payment policies, grading model references), and pre-computed performance summaries.
+The Plantation Model is the **master data registry** for the Farmer Power Cloud Platform. It stores core entities (regions, farmers, factories), configuration (payment policies, grading models), and pre-computed performance summaries.
 
-**Core Responsibility:** Manage master data, store configuration, provide pre-computed summaries.
+**Core Responsibility:** Manage master data, store grading model definitions, provide pre-computed summaries.
 
 **Does NOT:** Collect raw data, perform analysis, or generate action plans.
 
@@ -45,10 +45,12 @@ The Plantation Model is the **master data registry** for the Farmer Power Cloud 
 │  │ • soil_type │        └── assigned by altitude                       │
 │  │ • typical   │                                                       │
 │  │   _diseases │  ┌─────────────────────────────────────────┐          │
-│  │ • weather   │  │  GRADING MODEL REF                      │          │
-│  │   _api_loc  │  │  • model_id, version                    │          │
-│  └─────────────┘  │  • active_at_factory[]                  │          │
-│                   │  (Definition in farmer-power-training)  │          │
+│  │ • weather   │  │  GRADING MODEL (Full Definition)        │          │
+│  │   _api_loc  │  │  • model_id, version, grading_type      │          │
+│  └─────────────┘  │  • attributes: {name: {classes: [...]}} │          │
+│                   │  • grade_rules: reject_conditions, etc  │          │
+│                   │  • grade_labels: {internal: display}    │          │
+│                   │  • active_at_factory[]                  │          │
 │                   └─────────────────────────────────────────┘          │
 │                                                                         │
 │  COMPUTED DATA (via Scheduler - daily batch):                           │
@@ -322,24 +324,146 @@ def suggest_nearby_collection_points(farmer_gps: GPS, max_distance_km: float = 1
     return plantation_model.find_cps_near(farmer_gps, max_distance_km, status="active")
 ```
 
+## Grading Model Entity
+
+The Grading Model is the **complete definition of how quality grades are determined** for a specific crop and market. The Plantation Model stores the full grading model definition (not just a reference) to enable:
+
+- Dynamic UI rendering with correct attribute labels and class values
+- Attribute-level performance tracking for root-cause analysis
+- Factory-specific grade label display (Primary/Secondary vs Accept/Reject)
+
+**Key Design Decision:** Grading models are fully configurable per regulatory authority and market. The cloud platform stores the complete definition to decouple from the training/inference pipeline and enable rich analytics.
+
+```yaml
+# Grading Model Entity Schema
+# MongoDB: grading_models
+grading_model:
+  # ═══════════════════════════════════════════════════════════════════
+  # IDENTITY
+  # ═══════════════════════════════════════════════════════════════════
+  model_id: "tbk_kenya_tea_v1"            # Unique identifier
+  model_version: "1.0.0"                  # Semantic version
+  regulatory_authority: "Tea Board of Kenya (TBK)"
+  crops_name: "Tea"
+  market_name: "Kenya_TBK"
+  grading_type: "binary"                  # binary | ternary | multi_level
+
+  # ═══════════════════════════════════════════════════════════════════
+  # ATTRIBUTE STRUCTURE
+  # Defines what attributes the CV model outputs and their possible values
+  # ═══════════════════════════════════════════════════════════════════
+  attributes:
+    leaf_type:
+      num_classes: 7
+      classes:
+        - "bud"
+        - "one_leaf_bud"
+        - "two_leaves_bud"
+        - "three_plus_leaves_bud"
+        - "single_soft_leaf"
+        - "coarse_leaf"
+        - "banji"
+    coarse_subtype:
+      num_classes: 4
+      classes:
+        - "none"
+        - "double_luck"
+        - "maintenance_leaf"
+        - "hard_leaf"
+    banji_hardness:
+      num_classes: 2
+      classes:
+        - "soft"
+        - "hard"
+
+  # ═══════════════════════════════════════════════════════════════════
+  # GRADE CALCULATION RULES
+  # Defines how attribute values map to final grades
+  # ═══════════════════════════════════════════════════════════════════
+  grade_rules:
+    # Attribute values that ALWAYS result in rejection
+    reject_conditions:
+      leaf_type:
+        - "three_plus_leaves_bud"
+        - "coarse_leaf"
+
+    # Conditional rejection rules
+    conditional_reject:
+      - if_attribute: "leaf_type"
+        if_value: "banji"
+        then_attribute: "banji_hardness"
+        reject_values: ["hard"]
+
+  # ═══════════════════════════════════════════════════════════════════
+  # DISPLAY LABELS
+  # Maps internal grade values to factory-specific display labels
+  # ═══════════════════════════════════════════════════════════════════
+  grade_labels:
+    ACCEPT: "Primary"                     # Could be "Grade A", "Premium", etc.
+    REJECT: "Secondary"                   # Could be "Grade B", "Standard", etc.
+
+  # ═══════════════════════════════════════════════════════════════════
+  # DEPLOYMENT
+  # ═══════════════════════════════════════════════════════════════════
+  active_at_factory:
+    - "factory-nyeri-main"
+    - "factory-mombasa-001"
+
+  # ═══════════════════════════════════════════════════════════════════
+  # TIMESTAMPS
+  # ═══════════════════════════════════════════════════════════════════
+  created_at: datetime
+  updated_at: datetime
+```
+
+**Grading Type Definitions:**
+
+| Grading Type | Final Grades | Example Use Case |
+|--------------|--------------|------------------|
+| **Binary** | ACCEPT / REJECT | TBK Kenya Tea (Primary/Secondary) |
+| **Ternary** | PREMIUM / STANDARD / REJECT | Uganda Coffee |
+| **Multi-Level** | A / B / C / D / REJECT | Rwanda Specialty Coffee |
+
+**Why Store Full Definition (Not Just Reference):**
+
+| Need | How Full Definition Helps |
+|------|---------------------------|
+| **Attribute-level analytics** | Track distribution of `leaf_type`, `banji_hardness` over time |
+| **Root-cause analysis** | "Your coarse_leaf count increased from 8% to 15%" |
+| **Dynamic UI rendering** | Dropdown options, chart labels from `attributes.classes` |
+| **Grade label display** | Show "Primary" vs "ACCEPT" based on factory preference |
+| **Offline capability** | QC Analyzer can operate without cloud connection |
+
+**Grading Model → Factory Assignment:**
+
+A factory has exactly ONE active grading model at any time. When the factory's grading model is updated, the `active_at_factory` list is modified and a new version is created (grading models are immutable once deployed).
+
+```python
+def get_factory_grading_model(factory_id: str) -> GradingModel:
+    """
+    Returns the grading model active at the specified factory.
+    """
+    return grading_model_repo.find_one({"active_at_factory": factory_id})
+```
+
 ## Data Ownership
 
-| Entity | Writer | Mechanism | Frequency |
-|--------|--------|-----------|-----------|
-| Region | Admin UI | REST API (manual) | On region setup |
-| Farmer | Admin UI | REST API (manual) | On registration/update |
-| Factory | Admin UI | REST API (manual) | On setup/config change |
-| Collection Point | Admin UI | REST API (manual) | On CP setup/update |
-| Grading Model Ref | Admin UI | REST API (manual) | On model deployment |
-| Farmer Performance | Scheduler | Batch job (automated) | Daily |
-| Factory Performance | Scheduler | Batch job (automated) | Daily |
-| CP Performance | Scheduler | Batch job (automated) | Daily |
-| Regional Weather | Collection Model | Scheduled job | Daily per region |
+| Entity | Writer             | Mechanism | Frequency |
+|--------|--------------------|-----------|-----------|
+| Region | Admin UI           | REST API (manual) | On region setup |
+| Farmer | Admin UI           | REST API (manual) | On registration/update |
+| Factory | Admin UI           | REST API (manual) | On setup/config change |
+| Collection Point | Admin UI           | REST API (manual) | On CP setup/update |
+| Grading Model | Admin UI / Sync    | gRPC API | On model deployment/update |
+| Farmer Performance | Scheduler          | Batch job (automated) | Daily |
+| Factory Performance | Scheduler          | Batch job (automated) | Daily |
+| CP Performance | Scheduler          | Batch job (automated) | Daily |
+| Regional Weather | Collection Model   | Scheduled job | Daily per region |
 | Buyer Profiles | Market Analysis Model | Internal API (automated) | On market analysis |
 
 ## Farmer Power Ecosystem Context
 
-The Plantation Model references grading models but does NOT store their definitions:
+The Plantation Model stores the **complete grading model definition** to enable rich analytics and attribute-level tracking:
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────┐
@@ -350,10 +474,19 @@ The Plantation Model references grading models but does NOT store their definiti
 │  │  CLOUD PLATFORM │  │  QC ANALYZER    │  │  CV TRAINING    │         │
 │  │  (this project) │  │  (edge device)  │  │  (ML pipeline)  │         │
 │  │                 │  │                 │  │                 │         │
-│  │  Plantation     │  │  Uses grading   │  │  Defines grading│         │
-│  │  stores REF to  │  │  model for      │  │  model (weights,│         │
+│  │  Plantation     │  │  Uses grading   │  │  Creates grading│         │
+│  │  stores FULL    │◀─│  model for      │◀─│  model (weights,│         │
 │  │  grading model  │  │  inference      │  │  thresholds)    │         │
+│  │  definition for │  │                 │  │                 │         │
+│  │  analytics      │  │  Syncs model    │  │  Exports model  │         │
+│  │                 │  │  from cloud     │  │  definition     │         │
 │  └─────────────────┘  └─────────────────┘  └─────────────────┘         │
+│                                                                         │
+│  Grading Model Flow:                                                    │
+│  1. Training pipeline creates model with attributes + rules             │
+│  2. Model definition synced to Cloud Platform (Plantation Model)        │
+│  3. QC Analyzer fetches model from cloud for inference                  │
+│  4. Cloud Platform tracks attribute-level performance for analytics     │
 │                                                                         │
 │  github.com/farmerpower-ai/farmer-power-platform                        │
 │  github.com/farmerpower-ai/farmer-power-qc-analyzer                     │
@@ -408,9 +541,13 @@ The system uses a **hybrid approach** combining batch processing for historical 
 **Farmer Performance Schema:**
 
 ```yaml
-# MongoDB: farmer_performance (embedded in farmer document or separate collection)
+# MongoDB: farmer_performance (separate collection)
 farmer_performance:
   farmer_id: string
+
+  # Grading model reference (for interpreting distributions)
+  grading_model_id: string       # Reference to grading model definition
+  grading_model_version: string  # Semantic version of the grading model
 
   # Farm context (denormalized for efficient computation)
   farm_size_hectares: number     # Copied from farmer profile for yield calculations
@@ -418,17 +555,33 @@ farmer_performance:
 
   # Historical (updated by batch job)
   historical:
-    # Absolute metrics
-    avg_grade_30d: number
-    avg_grade_90d: number
-    avg_grade_year: number
-    delivery_count_30d: number
-    delivery_count_90d: number
+    # Grade-level distributions (enables trend analysis)
+    grade_distribution_30d: object   # {"Primary": 120, "Secondary": 30}
+    grade_distribution_90d: object
+    grade_distribution_year: object
+
+    # Attribute-level distributions (enables root-cause analysis)
+    # Structure: {"attribute_name": {"class_name": count, ...}, ...}
+    attribute_distributions_30d: object
+    # Example: {
+    #   "leaf_type": {"bud": 15, "one_leaf_bud": 45, "coarse_leaf": 15, ...},
+    #   "coarse_subtype": {"double_luck": 3, "maintenance_leaf": 7, ...},
+    #   "banji_hardness": {"soft": 3, "hard": 2}
+    # }
+    attribute_distributions_90d: object
+    attribute_distributions_year: object
+
+    # Derived convenience metrics
+    primary_percentage_30d: number   # Computed from grade_distribution
+    primary_percentage_90d: number
+    primary_percentage_year: number
+
+    # Volume metrics
     total_kg_30d: number
     total_kg_90d: number
     total_kg_year: number
 
-    # Normalized yield metrics (NEW)
+    # Normalized yield metrics
     yield_kg_per_hectare_30d: number    # total_kg_30d / farm_size_hectares
     yield_kg_per_hectare_90d: number
     yield_kg_per_hectare_year: number
@@ -438,18 +591,25 @@ farmer_performance:
     improvement_trend: enum      # "improving" | "stable" | "declining"
     computed_at: datetime        # When batch job ran
 
-  # Today (updated by streaming)
+  # Today (updated by streaming - when Collection Model exists)
   today:
     deliveries: number
     total_kg: number             # Today's total kg delivered
-    grades: object               # Dynamic map keyed by Grading Model labels
-                                 # Example A/B/C/D: { "A": 2, "B": 1, "C": 0, "D": 0 }
-                                 # Example ternary: { "premium": 3, "standard": 2, "rejected": 0 }
-    avg_score: number            # Normalized 0.0-1.0 (not grade label)
+    grade_counts: object         # Dynamic map: {"Primary": 5, "Secondary": 2}
+    attribute_counts: object     # Same structure as attribute_distributions
+                                 # Tracks today's attribute class counts
     last_delivery: datetime
     date: date                   # Resets when date changes
-    grading_model_id: string     # Reference to Grading Model for label lookup
 ```
+
+**Attribute-Level Tracking Benefits:**
+
+| Use Case | How Attribute Tracking Helps |
+|----------|------------------------------|
+| **Root-cause analysis** | "Your coarse_leaf count increased from 8% to 15%" |
+| **Targeted coaching** | "Focus on harvesting dormant shoots earlier - hard banji ratio went up" |
+| **Trend detection** | Compare 30d vs 90d attribute distributions to spot emerging issues |
+| **Quality improvement** | Identify which specific attributes are dragging down grades |
 
 **Farm Scale Classification:**
 
@@ -547,6 +707,9 @@ PUT    /api/v1/internal/buyer-profiles/{id}     # Market Analysis writes
 | `list_collection_points` | Collection points for a factory or near GPS | `factory_id?`, `near_gps?`, `max_km?` |
 | `get_farmer_collection_points` | CPs where farmer has delivered (by frequency) | `farmer_id` |
 | `get_cp_performance` | Collection point performance metrics | `cp_id`, `period?` |
+| `get_grading_model` | Full grading model definition | `model_id`, `version?` |
+| `get_factory_grading_model` | Grading model active at factory | `factory_id` |
+| `list_grading_models` | All grading models with summary | `market_name?`, `grading_type?` |
 
 **Primary Consumer:** Action Plan Model queries via MCP for complete farmer context when generating recommendations.
 
@@ -591,7 +754,7 @@ farmer_context:
 | **Performance Summaries** | Pre-computed (daily batch) | Fast access, no real-time computation |
 | **Yield Normalization** | kg/hectare + percentile ranking | Fair comparison across different farm sizes |
 | **Farm Scale Classification** | smallholder/medium/estate | Enables scale-appropriate recommendations |
-| **Grading Model** | Reference only | Definition in separate training project |
+| **Grading Model** | Full definition stored | Enables attribute-level analytics, root-cause analysis, dynamic UI |
 | **Buyer Profiles** | Stored here, written by Market Analysis | Centralized profile storage |
 | **MCP Server** | Yes | AI agents need rich farmer/factory context |
 | **Data Ownership** | Clear per-entity | Admin UI, Scheduler, Market Analysis |

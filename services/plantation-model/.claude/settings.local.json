@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "mcp__github__create_issue",
+      "mcp__github__create_branch"
+    ]
+  },
+  "enableAllProjectMcpServers": true,
+  "enabledMcpjsonServers": [
+    "agentvibes"
+  ]
+}
