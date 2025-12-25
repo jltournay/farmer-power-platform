@@ -90,9 +90,7 @@ class PlantationClient:
             if e.code() == grpc.StatusCode.NOT_FOUND:
                 raise NotFoundError(f"Farmer not found: {farmer_id}") from e
             if e.code() == grpc.StatusCode.UNAVAILABLE:
-                raise ServiceUnavailableError(
-                    f"Plantation service unavailable: {e.details()}"
-                ) from e
+                raise ServiceUnavailableError(f"Plantation service unavailable: {e.details()}") from e
             raise
 
     @retry(
@@ -127,9 +125,7 @@ class PlantationClient:
             if e.code() == grpc.StatusCode.NOT_FOUND:
                 raise NotFoundError(f"Farmer summary not found: {farmer_id}") from e
             if e.code() == grpc.StatusCode.UNAVAILABLE:
-                raise ServiceUnavailableError(
-                    f"Plantation service unavailable: {e.details()}"
-                ) from e
+                raise ServiceUnavailableError(f"Plantation service unavailable: {e.details()}") from e
             raise
 
     @retry(
@@ -161,9 +157,7 @@ class PlantationClient:
 
         except grpc.aio.AioRpcError as e:
             if e.code() == grpc.StatusCode.UNAVAILABLE:
-                raise ServiceUnavailableError(
-                    f"Plantation service unavailable: {e.details()}"
-                ) from e
+                raise ServiceUnavailableError(f"Plantation service unavailable: {e.details()}") from e
             raise
 
     @retry(
@@ -172,9 +166,7 @@ class PlantationClient:
         wait=wait_exponential(multiplier=1, min=1, max=10),
         reraise=True,
     )
-    async def get_farmers_by_collection_point(
-        self, collection_point_id: str
-    ) -> list[dict[str, Any]]:
+    async def get_farmers_by_collection_point(self, collection_point_id: str) -> list[dict[str, Any]]:
         """Get farmers at a collection point.
 
         Args:
@@ -188,9 +180,7 @@ class PlantationClient:
         """
         try:
             stub = await self._get_stub()
-            request = plantation_pb2.ListFarmersRequest(
-                collection_point_id=collection_point_id
-            )
+            request = plantation_pb2.ListFarmersRequest(collection_point_id=collection_point_id)
             metadata = [("dapr-app-id", settings.plantation_app_id)]
 
             response = await stub.ListFarmers(request, metadata=metadata)
@@ -199,9 +189,7 @@ class PlantationClient:
 
         except grpc.aio.AioRpcError as e:
             if e.code() == grpc.StatusCode.UNAVAILABLE:
-                raise ServiceUnavailableError(
-                    f"Plantation service unavailable: {e.details()}"
-                ) from e
+                raise ServiceUnavailableError(f"Plantation service unavailable: {e.details()}") from e
             raise
 
     def _farmer_to_dict(self, farmer: plantation_pb2.Farmer) -> dict[str, Any]:
@@ -215,19 +203,13 @@ class PlantationClient:
             "farm_scale": plantation_pb2.FarmScale.Name(farmer.farm_scale),
             "region_id": farmer.region_id,
             "collection_point_id": farmer.collection_point_id,
-            "notification_channel": plantation_pb2.NotificationChannel.Name(
-                farmer.notification_channel
-            ),
-            "interaction_pref": plantation_pb2.InteractionPreference.Name(
-                farmer.interaction_pref
-            ),
+            "notification_channel": plantation_pb2.NotificationChannel.Name(farmer.notification_channel),
+            "interaction_pref": plantation_pb2.InteractionPreference.Name(farmer.interaction_pref),
             "pref_lang": plantation_pb2.PreferredLanguage.Name(farmer.pref_lang),
             "is_active": farmer.is_active,
         }
 
-    def _farmer_summary_to_dict(
-        self, summary: plantation_pb2.FarmerSummary
-    ) -> dict[str, Any]:
+    def _farmer_summary_to_dict(self, summary: plantation_pb2.FarmerSummary) -> dict[str, Any]:
         """Convert FarmerSummary proto to dict."""
         result: dict[str, Any] = {
             "farmer_id": summary.farmer_id,
@@ -239,15 +221,9 @@ class PlantationClient:
             "farm_scale": plantation_pb2.FarmScale.Name(summary.farm_scale),
             "grading_model_id": summary.grading_model_id,
             "grading_model_version": summary.grading_model_version,
-            "trend_direction": plantation_pb2.TrendDirection.Name(
-                summary.trend_direction
-            ),
-            "notification_channel": plantation_pb2.NotificationChannel.Name(
-                summary.notification_channel
-            ),
-            "interaction_pref": plantation_pb2.InteractionPreference.Name(
-                summary.interaction_pref
-            ),
+            "trend_direction": plantation_pb2.TrendDirection.Name(summary.trend_direction),
+            "notification_channel": plantation_pb2.NotificationChannel.Name(summary.notification_channel),
+            "interaction_pref": plantation_pb2.InteractionPreference.Name(summary.interaction_pref),
             "pref_lang": plantation_pb2.PreferredLanguage.Name(summary.pref_lang),
         }
 
@@ -258,9 +234,7 @@ class PlantationClient:
                 "avg_grade": hist.avg_grade,
                 "total_kg": hist.total_kg,
                 "delivery_count": hist.delivery_count,
-                "improvement_trend": plantation_pb2.TrendDirection.Name(
-                    hist.improvement_trend
-                ),
+                "improvement_trend": plantation_pb2.TrendDirection.Name(hist.improvement_trend),
             }
 
         # Add today metrics if present
@@ -275,9 +249,7 @@ class PlantationClient:
 
         return result
 
-    def _collection_point_to_dict(
-        self, cp: plantation_pb2.CollectionPoint
-    ) -> dict[str, Any]:
+    def _collection_point_to_dict(self, cp: plantation_pb2.CollectionPoint) -> dict[str, Any]:
         """Convert CollectionPoint proto to dict."""
         return {
             "collection_point_id": cp.id,

@@ -185,9 +185,7 @@ class TestCollectionPointGrpcService:
         """Test CreateCollectionPoint creates CP with generated ID."""
         mock_factory_repo.get_by_id = AsyncMock(return_value=sample_factory)
         mock_cp_repo.create = AsyncMock()
-        mock_id_generator.generate_collection_point_id = AsyncMock(
-            return_value="test-region-cp-001"
-        )
+        mock_id_generator.generate_collection_point_id = AsyncMock(return_value="test-region-cp-001")
         mock_elevation_client.get_altitude = AsyncMock(return_value=1600.0)
 
         request = plantation_pb2.CreateCollectionPointRequest(
@@ -370,9 +368,7 @@ class TestCollectionPointGrpcService:
         """Test CreateCollectionPoint uses defaults for optional fields."""
         mock_factory_repo.get_by_id = AsyncMock(return_value=sample_factory)
         mock_cp_repo.create = AsyncMock()
-        mock_id_generator.generate_collection_point_id = AsyncMock(
-            return_value="test-region-cp-001"
-        )
+        mock_id_generator.generate_collection_point_id = AsyncMock(return_value="test-region-cp-001")
         mock_elevation_client.get_altitude = AsyncMock(return_value=None)
 
         request = plantation_pb2.CreateCollectionPointRequest(

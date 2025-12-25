@@ -3,9 +3,8 @@
 from datetime import UTC, datetime
 from enum import Enum
 
-from pydantic import BaseModel, Field
-
 from plantation_model.domain.models.value_objects import ContactInfo, GeoLocation
+from pydantic import BaseModel, Field
 
 
 class FarmScale(str, Enum):
@@ -120,28 +119,16 @@ class Farmer(BaseModel):
     """
 
     id: str = Field(description="Unique farmer ID (format: WM-XXXX)")
-    grower_number: str | None = Field(
-        default=None, description="External/legacy grower number"
-    )
+    grower_number: str | None = Field(default=None, description="External/legacy grower number")
     first_name: str = Field(min_length=1, max_length=100, description="First name")
     last_name: str = Field(min_length=1, max_length=100, description="Last name")
     region_id: str = Field(description="Auto-assigned region based on GPS + altitude")
-    collection_point_id: str = Field(
-        description="Primary registration collection point"
-    )
+    collection_point_id: str = Field(description="Primary registration collection point")
     farm_location: GeoLocation = Field(description="Farm GPS coordinates with altitude")
-    contact: ContactInfo = Field(
-        default_factory=ContactInfo, description="Contact information (phone required)"
-    )
-    farm_size_hectares: float = Field(
-        ge=0.01, le=1000.0, description="Farm size in hectares"
-    )
-    farm_scale: FarmScale = Field(
-        description="Auto-calculated from farm_size_hectares"
-    )
-    national_id: str = Field(
-        min_length=1, max_length=20, description="Government-issued national ID"
-    )
+    contact: ContactInfo = Field(default_factory=ContactInfo, description="Contact information (phone required)")
+    farm_size_hectares: float = Field(ge=0.01, le=1000.0, description="Farm size in hectares")
+    farm_scale: FarmScale = Field(description="Auto-calculated from farm_size_hectares")
+    national_id: str = Field(min_length=1, max_length=20, description="Government-issued national ID")
     registration_date: datetime = Field(
         default_factory=lambda: datetime.now(UTC),
         description="Registration timestamp",
@@ -216,9 +203,7 @@ class FarmerCreate(BaseModel):
     latitude: float = Field(ge=-90, le=90, description="Farm latitude")
     longitude: float = Field(ge=-180, le=180, description="Farm longitude")
     collection_point_id: str = Field(description="Primary collection point")
-    grower_number: str | None = Field(
-        default=None, description="External/legacy grower number"
-    )
+    grower_number: str | None = Field(default=None, description="External/legacy grower number")
 
 
 class FarmerUpdate(BaseModel):
@@ -239,6 +224,4 @@ class FarmerUpdate(BaseModel):
     interaction_pref: InteractionPreference | None = Field(
         default=None, description="Preferred mode for consuming information"
     )
-    pref_lang: PreferredLanguage | None = Field(
-        default=None, description="Preferred language for communications"
-    )
+    pref_lang: PreferredLanguage | None = Field(default=None, description="Preferred language for communications")

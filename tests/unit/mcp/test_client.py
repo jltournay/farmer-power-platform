@@ -41,9 +41,7 @@ class TestGrpcMcpClientCallTool:
 
         # Create mock response
         mock_response = MagicMock()
-        mock_response.data = self._create_success_response(
-            {"farmer_id": "WM-4521", "name": "John Kamau"}
-        )
+        mock_response.data = self._create_success_response({"farmer_id": "WM-4521", "name": "John Kamau"})
 
         with patch.object(client, "_invoke_method_sync", return_value=mock_response):
             result = await client.call_tool(
@@ -125,9 +123,7 @@ class TestGrpcMcpClientCallTool:
         )
         return response.SerializeToString()
 
-    def _create_failure_response(
-        self, error_code: ErrorCode, error_message: str
-    ) -> bytes:
+    def _create_failure_response(self, error_code: ErrorCode, error_message: str) -> bytes:
         """Create a serialized ToolCallResponse for failure case."""
         from fp_proto.mcp.v1 import mcp_tool_pb2
 
@@ -148,20 +144,22 @@ class TestGrpcMcpClientListTools:
         client = GrpcMcpClient(app_id="plantation-mcp")
 
         mock_response = MagicMock()
-        mock_response.data = self._create_list_tools_response([
-            {
-                "name": "get_farmer_by_id",
-                "description": "Get farmer by ID",
-                "input_schema_json": '{"type": "object", "properties": {"farmer_id": {"type": "string"}}}',
-                "category": "query",
-            },
-            {
-                "name": "search_farmers",
-                "description": "Search farmers",
-                "input_schema_json": '{"type": "object", "properties": {"query": {"type": "string"}}}',
-                "category": "search",
-            },
-        ])
+        mock_response.data = self._create_list_tools_response(
+            [
+                {
+                    "name": "get_farmer_by_id",
+                    "description": "Get farmer by ID",
+                    "input_schema_json": '{"type": "object", "properties": {"farmer_id": {"type": "string"}}}',
+                    "category": "query",
+                },
+                {
+                    "name": "search_farmers",
+                    "description": "Search farmers",
+                    "input_schema_json": '{"type": "object", "properties": {"query": {"type": "string"}}}',
+                    "category": "search",
+                },
+            ]
+        )
 
         with patch.object(client, "_invoke_method_sync", return_value=mock_response):
             tools = await client.list_tools()

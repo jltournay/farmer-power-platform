@@ -19,9 +19,9 @@ from plantation_model.infrastructure.repositories.grading_model_repository impor
 
 __all__ = [
     "BaseRepository",
-    "FactoryRepository",
     "CollectionPointRepository",
+    "FactoryRepository",
+    "FarmerPerformanceRepository",
     "FarmerRepository",
     "GradingModelRepository",
-    "FarmerPerformanceRepository",
 ]

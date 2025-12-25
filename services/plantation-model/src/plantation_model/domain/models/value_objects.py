@@ -36,9 +36,7 @@ class OperatingHours(BaseModel):
     """
 
     # Regex pattern for validating time range format (HH:MM-HH:MM)
-    TIME_RANGE_PATTERN: ClassVar[re.Pattern] = re.compile(
-        r"^([01]\d|2[0-3]):([0-5]\d)-([01]\d|2[0-3]):([0-5]\d)$"
-    )
+    TIME_RANGE_PATTERN: ClassVar[re.Pattern] = re.compile(r"^([01]\d|2[0-3]):([0-5]\d)-([01]\d|2[0-3]):([0-5]\d)$")
 
     weekdays: str = Field(default="06:00-10:00", description="Weekday operating hours (HH:MM-HH:MM)")
     weekends: str = Field(default="07:00-09:00", description="Weekend operating hours (HH:MM-HH:MM)")
@@ -48,9 +46,7 @@ class OperatingHours(BaseModel):
     def validate_time_range_format(cls, v: str) -> str:
         """Validate that the time range is in correct format."""
         if not cls.TIME_RANGE_PATTERN.match(v):
-            raise ValueError(
-                f"Invalid time range format '{v}'. Expected format: HH:MM-HH:MM (e.g., '06:00-10:00')"
-            )
+            raise ValueError(f"Invalid time range format '{v}'. Expected format: HH:MM-HH:MM (e.g., '06:00-10:00')")
         return v
 
 

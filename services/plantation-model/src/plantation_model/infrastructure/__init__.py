@@ -14,14 +14,14 @@ from plantation_model.infrastructure.tracing import (
 )
 
 __all__ = [
-    # MongoDB
-    "get_mongodb_client",
-    "get_database",
     "check_mongodb_connection",
     "close_mongodb_connection",
+    "get_database",
+    # MongoDB
+    "get_mongodb_client",
+    "get_tracer",
+    "instrument_fastapi",
     # Tracing
     "setup_tracing",
-    "instrument_fastapi",
-    "get_tracer",
     "shutdown_tracing",
 ]

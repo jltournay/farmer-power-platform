@@ -35,14 +35,10 @@ class TestDaprPubSubClientPublish:
         mock_response = MagicMock()
         mock_response.raise_for_status = MagicMock()
 
-        with patch(
-            "plantation_model.infrastructure.dapr_client.httpx.AsyncClient"
-        ) as mock_client_class:
+        with patch("plantation_model.infrastructure.dapr_client.httpx.AsyncClient") as mock_client_class:
             mock_client = AsyncMock()
             mock_client.post = AsyncMock(return_value=mock_response)
-            mock_client_class.return_value.__aenter__ = AsyncMock(
-                return_value=mock_client
-            )
+            mock_client_class.return_value.__aenter__ = AsyncMock(return_value=mock_client)
             mock_client_class.return_value.__aexit__ = AsyncMock(return_value=None)
 
             result = await dapr_client.publish_event(
@@ -54,9 +50,7 @@ class TestDaprPubSubClientPublish:
             assert result is True
             mock_client.post.assert_called_once()
             call_args = mock_client.post.call_args
-            assert "http://localhost:3500/v1.0/publish/pubsub/farmer-events" in str(
-                call_args
-            )
+            assert "http://localhost:3500/v1.0/publish/pubsub/farmer-events" in str(call_args)
 
     @pytest.mark.asyncio
     async def test_publish_event_with_dict_data(
@@ -73,14 +67,10 @@ class TestDaprPubSubClientPublish:
         mock_response = MagicMock()
         mock_response.raise_for_status = MagicMock()
 
-        with patch(
-            "plantation_model.infrastructure.dapr_client.httpx.AsyncClient"
-        ) as mock_client_class:
+        with patch("plantation_model.infrastructure.dapr_client.httpx.AsyncClient") as mock_client_class:
             mock_client = AsyncMock()
             mock_client.post = AsyncMock(return_value=mock_response)
-            mock_client_class.return_value.__aenter__ = AsyncMock(
-                return_value=mock_client
-            )
+            mock_client_class.return_value.__aenter__ = AsyncMock(return_value=mock_client)
             mock_client_class.return_value.__aexit__ = AsyncMock(return_value=None)
 
             result = await dapr_client.publish_event(
@@ -106,16 +96,10 @@ class TestDaprPubSubClientPublish:
             farm_scale="medium",
         )
 
-        with patch(
-            "plantation_model.infrastructure.dapr_client.httpx.AsyncClient"
-        ) as mock_client_class:
+        with patch("plantation_model.infrastructure.dapr_client.httpx.AsyncClient") as mock_client_class:
             mock_client = AsyncMock()
-            mock_client.post = AsyncMock(
-                side_effect=httpx.ConnectError("Connection refused")
-            )
-            mock_client_class.return_value.__aenter__ = AsyncMock(
-                return_value=mock_client
-            )
+            mock_client.post = AsyncMock(side_effect=httpx.ConnectError("Connection refused"))
+            mock_client_class.return_value.__aenter__ = AsyncMock(return_value=mock_client)
             mock_client_class.return_value.__aexit__ = AsyncMock(return_value=None)
 
             result = await dapr_client.publish_event(
@@ -142,9 +126,7 @@ class TestDaprPubSubClientPublish:
             farm_scale="medium",
         )
 
-        with patch(
-            "plantation_model.infrastructure.dapr_client.httpx.AsyncClient"
-        ) as mock_client_class:
+        with patch("plantation_model.infrastructure.dapr_client.httpx.AsyncClient") as mock_client_class:
             mock_client = AsyncMock()
 
             # Create mock response that raises on raise_for_status
@@ -160,9 +142,7 @@ class TestDaprPubSubClientPublish:
 
             mock_response.raise_for_status = raise_for_status
             mock_client.post = AsyncMock(return_value=mock_response)
-            mock_client_class.return_value.__aenter__ = AsyncMock(
-                return_value=mock_client
-            )
+            mock_client_class.return_value.__aenter__ = AsyncMock(return_value=mock_client)
             mock_client_class.return_value.__aexit__ = AsyncMock(return_value=None)
 
             result = await dapr_client.publish_event(
@@ -189,14 +169,10 @@ class TestDaprPubSubClientPublish:
             farm_scale="medium",
         )
 
-        with patch(
-            "plantation_model.infrastructure.dapr_client.httpx.AsyncClient"
-        ) as mock_client_class:
+        with patch("plantation_model.infrastructure.dapr_client.httpx.AsyncClient") as mock_client_class:
             mock_client = AsyncMock()
             mock_client.post = AsyncMock(side_effect=Exception("Unexpected error"))
-            mock_client_class.return_value.__aenter__ = AsyncMock(
-                return_value=mock_client
-            )
+            mock_client_class.return_value.__aenter__ = AsyncMock(return_value=mock_client)
             mock_client_class.return_value.__aexit__ = AsyncMock(return_value=None)
 
             result = await dapr_client.publish_event(
@@ -226,14 +202,10 @@ class TestDaprPubSubClientPublish:
         mock_response = MagicMock()
         mock_response.raise_for_status = MagicMock()
 
-        with patch(
-            "plantation_model.infrastructure.dapr_client.httpx.AsyncClient"
-        ) as mock_client_class:
+        with patch("plantation_model.infrastructure.dapr_client.httpx.AsyncClient") as mock_client_class:
             mock_client = AsyncMock()
             mock_client.post = AsyncMock(return_value=mock_response)
-            mock_client_class.return_value.__aenter__ = AsyncMock(
-                return_value=mock_client
-            )
+            mock_client_class.return_value.__aenter__ = AsyncMock(return_value=mock_client)
             mock_client_class.return_value.__aexit__ = AsyncMock(return_value=None)
 
             result = await dapr_client.publish_event(

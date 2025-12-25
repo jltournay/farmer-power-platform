@@ -1,6 +1,6 @@
 # Story 0.3: CI Lint Configuration Unification
 
-**Status:** ready-for-dev
+**Status:** in-progress
 
 ---
 

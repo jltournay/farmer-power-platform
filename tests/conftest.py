@@ -376,11 +376,7 @@ class MockMongoCollection:
 
     async def find(self, filter: dict[str, Any]) -> MockMongoCursor:
         """Mock find operation returning cursor."""
-        matching = [
-            doc.copy()
-            for doc in self._documents.values()
-            if all(doc.get(k) == v for k, v in filter.items())
-        ]
+        matching = [doc.copy() for doc in self._documents.values() if all(doc.get(k) == v for k, v in filter.items())]
         return MockMongoCursor(matching)
 
     async def update_one(
@@ -390,7 +386,7 @@ class MockMongoCollection:
         upsert: bool = False,
     ) -> MagicMock:
         """Mock update_one operation."""
-        for doc_id, doc in self._documents.items():
+        for _doc_id, doc in self._documents.items():
             if all(doc.get(k) == v for k, v in filter.items()):
                 if "$set" in update:
                     doc.update(update["$set"])
@@ -427,11 +423,7 @@ class MockMongoCollection:
 
     async def count_documents(self, filter: dict[str, Any]) -> int:
         """Mock count_documents operation."""
-        return sum(
-            1
-            for doc in self._documents.values()
-            if all(doc.get(k) == v for k, v in filter.items())
-        )
+        return sum(1 for doc in self._documents.values() if all(doc.get(k) == v for k, v in filter.items()))
 
     def reset(self) -> None:
         """Clear all documents."""
@@ -671,12 +663,15 @@ def mock_weather_api() -> MockExternalAPIClient:
     """Mock Weather API client."""
     client = MockExternalAPIClient("https://api.weather.service")
     # Configure default weather response
-    client.configure_response("/v1/forecast", {
-        "temperature": 25.0,
-        "humidity": 70,
-        "rainfall_mm": 0,
-        "conditions": "partly_cloudy",
-    })
+    client.configure_response(
+        "/v1/forecast",
+        {
+            "temperature": 25.0,
+            "humidity": 70,
+            "rainfall_mm": 0,
+            "conditions": "partly_cloudy",
+        },
+    )
     return client
 
 
@@ -685,12 +680,15 @@ def mock_africas_talking_api() -> MockExternalAPIClient:
     """Mock Africa's Talking API client."""
     client = MockExternalAPIClient("https://api.africastalking.com")
     # Configure default SMS response
-    client.configure_response("/version1/messaging", {
-        "SMSMessageData": {
-            "Message": "Sent to 1/1 Total Cost: KES 0.80",
-            "Recipients": [{"status": "Success", "messageId": "mock-123"}],
-        }
-    })
+    client.configure_response(
+        "/version1/messaging",
+        {
+            "SMSMessageData": {
+                "Message": "Sent to 1/1 Total Cost: KES 0.80",
+                "Recipients": [{"status": "Success", "messageId": "mock-123"}],
+            }
+        },
+    )
     return client
 
 
@@ -891,10 +889,7 @@ class GoldenSample:
                 variance = self.acceptable_variance[key]
                 if isinstance(expected_value, (int, float)) and isinstance(actual_value, (int, float)):
                     if abs(expected_value - actual_value) > variance:
-                        errors.append(
-                            f"Key '{key}': expected {expected_value} "
-                            f"(+/- {variance}), got {actual_value}"
-                        )
+                        errors.append(f"Key '{key}': expected {expected_value} (+/- {variance}), got {actual_value}")
                     continue
 
             # Exact match required
@@ -945,12 +940,14 @@ class GoldenSampleLoader:
             data = {"samples": [], "metadata": {"agent": agent_name, "created_at": datetime.now(UTC).isoformat()}}
 
         # Add new sample
-        data["samples"].append({
-            "input": sample.input_data,
-            "expected_output": sample.expected_output,
-            "metadata": sample.metadata,
-            "acceptable_variance": sample.acceptable_variance,
-        })
+        data["samples"].append(
+            {
+                "input": sample.input_data,
+                "expected_output": sample.expected_output,
+                "metadata": sample.metadata,
+                "acceptable_variance": sample.acceptable_variance,
+            }
+        )
 
         samples_file.write_text(json.dumps(data, indent=2))
 

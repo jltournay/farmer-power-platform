@@ -13,6 +13,7 @@ class ErrorCode(int, metaclass=_enum_type_wrapper.EnumTypeWrapper):
     ERROR_CODE_SERVICE_UNAVAILABLE: _ClassVar[ErrorCode]
     ERROR_CODE_TOOL_NOT_FOUND: _ClassVar[ErrorCode]
     ERROR_CODE_INTERNAL_ERROR: _ClassVar[ErrorCode]
+
 ERROR_CODE_UNSPECIFIED: ErrorCode
 ERROR_CODE_INVALID_ARGUMENTS: ErrorCode
 ERROR_CODE_SERVICE_UNAVAILABLE: ErrorCode
@@ -41,7 +42,13 @@ class ToolDefinition(_message.Message):
     description: str
     input_schema_json: str
     category: str
-    def __init__(self, name: str | None = ..., description: str | None = ..., input_schema_json: str | None = ..., category: str | None = ...) -> None: ...
+    def __init__(
+        self,
+        name: str | None = ...,
+        description: str | None = ...,
+        input_schema_json: str | None = ...,
+        category: str | None = ...,
+    ) -> None: ...
 
 class ToolCallRequest(_message.Message):
     __slots__ = ("arguments_json", "caller_agent_id", "tool_name", "trace_id")
@@ -53,7 +60,13 @@ class ToolCallRequest(_message.Message):
     arguments_json: str
     trace_id: str
     caller_agent_id: str
-    def __init__(self, tool_name: str | None = ..., arguments_json: str | None = ..., trace_id: str | None = ..., caller_agent_id: str | None = ...) -> None: ...
+    def __init__(
+        self,
+        tool_name: str | None = ...,
+        arguments_json: str | None = ...,
+        trace_id: str | None = ...,
+        caller_agent_id: str | None = ...,
+    ) -> None: ...
 
 class ToolCallResponse(_message.Message):
     __slots__ = ("error_code", "error_message", "result_json", "success")
@@ -65,4 +78,10 @@ class ToolCallResponse(_message.Message):
     result_json: str
     error_code: ErrorCode
     error_message: str
-    def __init__(self, success: bool = ..., result_json: str | None = ..., error_code: ErrorCode | str | None = ..., error_message: str | None = ...) -> None: ...
+    def __init__(
+        self,
+        success: bool = ...,
+        result_json: str | None = ...,
+        error_code: ErrorCode | str | None = ...,
+        error_message: str | None = ...,
+    ) -> None: ...

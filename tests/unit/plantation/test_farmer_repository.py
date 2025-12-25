@@ -259,9 +259,7 @@ class TestFarmerRepositoryList:
         cursor_mock.to_list = AsyncMock(return_value=[sample_farmer_doc.copy()])
         collection.find = MagicMock(return_value=cursor_mock)
 
-        farmers, next_token, total = await farmer_repository.list_by_collection_point(
-            "nyeri-highland-cp-001"
-        )
+        farmers, next_token, total = await farmer_repository.list_by_collection_point("nyeri-highland-cp-001")
 
         assert len(farmers) == 1
         assert farmers[0].collection_point_id == "nyeri-highland-cp-001"
@@ -289,9 +287,7 @@ class TestFarmerRepositoryList:
         cursor_mock.to_list = AsyncMock(return_value=[sample_farmer_doc.copy()])
         collection.find = MagicMock(return_value=cursor_mock)
 
-        farmers, next_token, total = await farmer_repository.list_by_region(
-            "nyeri-highland"
-        )
+        farmers, next_token, total = await farmer_repository.list_by_region("nyeri-highland")
 
         assert len(farmers) == 1
         assert farmers[0].region_id == "nyeri-highland"
@@ -315,9 +311,7 @@ class TestFarmerRepositoryList:
         cursor_mock.to_list = AsyncMock(return_value=[sample_farmer_doc.copy()])
         collection.find = MagicMock(return_value=cursor_mock)
 
-        farmers, next_token, total = await farmer_repository.list_by_farm_scale(
-            "medium"
-        )
+        farmers, next_token, total = await farmer_repository.list_by_farm_scale("medium")
 
         assert len(farmers) == 1
         assert farmers[0].farm_scale == FarmScale.MEDIUM
@@ -395,10 +389,7 @@ class TestFarmerRepositoryIndexes:
         assert collection.create_index.call_count == 7
 
         # Verify specific indexes were created
-        index_names = [
-            call.kwargs["name"]
-            for call in collection.create_index.call_args_list
-        ]
+        index_names = [call.kwargs["name"] for call in collection.create_index.call_args_list]
         assert "idx_farmer_id" in index_names
         assert "idx_farmer_phone" in index_names
         assert "idx_farmer_national_id" in index_names

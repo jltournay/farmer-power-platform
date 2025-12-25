@@ -48,9 +48,7 @@ class TestFactoryCRUDFlow:
     ) -> None:
         """Test complete Factory create -> read -> update -> delete flow."""
         # Setup mocks for ID generation
-        mock_db["id_counters"].find_one_and_update = AsyncMock(
-            return_value={"_id": "factory", "seq": 1}
-        )
+        mock_db["id_counters"].find_one_and_update = AsyncMock(return_value={"_id": "factory", "seq": 1})
 
         # 1. Generate ID
         factory_id = await id_generator.generate_factory_id()

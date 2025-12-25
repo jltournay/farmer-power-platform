@@ -24,9 +24,7 @@ class GoogleElevationClient:
         """
         self._api_key = api_key
 
-    async def get_altitude(
-        self, latitude: float, longitude: float
-    ) -> float | None:
+    async def get_altitude(self, latitude: float, longitude: float) -> float | None:
         """Fetch altitude in meters for given GPS coordinates.
 
         Args:
@@ -37,9 +35,7 @@ class GoogleElevationClient:
             Altitude in meters, or None if the API call fails.
         """
         if not self._api_key:
-            logger.warning(
-                "Google Elevation API key not configured, returning default altitude"
-            )
+            logger.warning("Google Elevation API key not configured, returning default altitude")
             return None
 
         try:
@@ -79,9 +75,7 @@ class GoogleElevationClient:
             return None
 
 
-def assign_region_from_altitude(
-    latitude: float, longitude: float, altitude: float
-) -> str:
+def assign_region_from_altitude(latitude: float, longitude: float, altitude: float) -> str:
     """Assign a farm to a region based on location and altitude.
 
     Regions are defined by {county}-{altitude_band}:
@@ -131,8 +125,7 @@ def assign_region_from_altitude(
         # Default to nyeri for coordinates outside known regions
         county = "nyeri"
         logger.warning(
-            "Could not determine county for coordinates (%.4f, %.4f), "
-            "defaulting to 'nyeri'",
+            "Could not determine county for coordinates (%.4f, %.4f), defaulting to 'nyeri'",
             latitude,
             longitude,
         )

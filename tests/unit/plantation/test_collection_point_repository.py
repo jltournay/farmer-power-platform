@@ -131,9 +131,7 @@ class TestCollectionPointRepository:
 
         assert len(cps) == 1
         assert cps[0].factory_id == "KEN-FAC-001"
-        mock_db["collection_points"].count_documents.assert_called_with(
-            {"factory_id": "KEN-FAC-001"}
-        )
+        mock_db["collection_points"].count_documents.assert_called_with({"factory_id": "KEN-FAC-001"})
 
     @pytest.mark.asyncio
     async def test_list_by_factory_active_only(
@@ -180,9 +178,7 @@ class TestCollectionPointRepository:
         cps, _, _ = await repository.list_by_region("test-region")
 
         assert len(cps) == 1
-        mock_db["collection_points"].count_documents.assert_called_with(
-            {"region_id": "test-region"}
-        )
+        mock_db["collection_points"].count_documents.assert_called_with({"region_id": "test-region"})
 
     @pytest.mark.asyncio
     async def test_list_by_clerk(
@@ -205,9 +201,7 @@ class TestCollectionPointRepository:
         cps, _, _ = await repository.list_by_clerk("CLK-001")
 
         assert len(cps) == 1
-        mock_db["collection_points"].count_documents.assert_called_with(
-            {"clerk_id": "CLK-001"}
-        )
+        mock_db["collection_points"].count_documents.assert_called_with({"clerk_id": "CLK-001"})
 
     @pytest.mark.asyncio
     async def test_update_collection_point(
@@ -220,9 +214,7 @@ class TestCollectionPointRepository:
         updated_doc = sample_cp.model_dump()
         updated_doc["clerk_id"] = "NEW-CLK-001"
         updated_doc["_id"] = updated_doc["id"]
-        mock_db["collection_points"].find_one_and_update = AsyncMock(
-            return_value=updated_doc
-        )
+        mock_db["collection_points"].find_one_and_update = AsyncMock(return_value=updated_doc)
 
         result = await repository.update(
             "test-region-cp-001",
@@ -243,9 +235,7 @@ class TestCollectionPointRepository:
         updated_doc = sample_cp.model_dump()
         updated_doc["operating_hours"]["weekdays"] = "07:00-12:00"
         updated_doc["_id"] = updated_doc["id"]
-        mock_db["collection_points"].find_one_and_update = AsyncMock(
-            return_value=updated_doc
-        )
+        mock_db["collection_points"].find_one_and_update = AsyncMock(return_value=updated_doc)
 
         result = await repository.update(
             "test-region-cp-001",

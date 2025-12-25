@@ -4,9 +4,8 @@ import logging
 from typing import Any
 
 import httpx
-from pydantic import BaseModel
-
 from plantation_model.config import settings
+from pydantic import BaseModel
 
 logger = logging.getLogger(__name__)
 
@@ -57,10 +56,7 @@ class DaprPubSubClient:
         url = f"{self._base_url}/v1.0/publish/{pubsub_name}/{topic}"
 
         # Convert Pydantic model to dict if needed
-        if isinstance(data, BaseModel):
-            payload = data.model_dump(mode="json")
-        else:
-            payload = data
+        payload = data.model_dump(mode="json") if isinstance(data, BaseModel) else data
 
         try:
             async with httpx.AsyncClient() as client:

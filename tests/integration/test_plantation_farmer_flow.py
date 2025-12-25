@@ -52,9 +52,7 @@ class TestFarmerRegistrationFlow:
     ) -> None:
         """Test complete Farmer registration flow with ID generation, region assignment, and persistence."""
         # 1. Generate Farmer ID
-        mock_db["id_counters"].find_one_and_update = AsyncMock(
-            return_value={"_id": "farmer", "seq": 1}
-        )
+        mock_db["id_counters"].find_one_and_update = AsyncMock(return_value={"_id": "farmer", "seq": 1})
         farmer_id = await id_generator.generate_farmer_id()
         assert farmer_id == "WM-0001"
 
@@ -205,9 +203,7 @@ class TestFarmerRegistrationFlow:
     @pytest.mark.asyncio
     async def test_elevation_api_with_mock_response(self) -> None:
         """Test elevation client with mocked API response."""
-        with patch(
-            "plantation_model.infrastructure.google_elevation.httpx.AsyncClient"
-        ) as mock_client_class:
+        with patch("plantation_model.infrastructure.google_elevation.httpx.AsyncClient") as mock_client_class:
             mock_response = MagicMock()
             mock_response.json.return_value = {
                 "status": "OK",
@@ -217,9 +213,7 @@ class TestFarmerRegistrationFlow:
 
             mock_client = AsyncMock()
             mock_client.get = AsyncMock(return_value=mock_response)
-            mock_client_class.return_value.__aenter__ = AsyncMock(
-                return_value=mock_client
-            )
+            mock_client_class.return_value.__aenter__ = AsyncMock(return_value=mock_client)
             mock_client_class.return_value.__aexit__ = AsyncMock(return_value=None)
 
             client = GoogleElevationClient("test-api-key")
@@ -259,17 +253,13 @@ class TestFarmerRegistrationFlow:
         )
 
         # Mock successful publish
-        with patch(
-            "plantation_model.infrastructure.dapr_client.httpx.AsyncClient"
-        ) as mock_client_class:
+        with patch("plantation_model.infrastructure.dapr_client.httpx.AsyncClient") as mock_client_class:
             mock_response = MagicMock()
             mock_response.raise_for_status = MagicMock()
 
             mock_client = AsyncMock()
             mock_client.post = AsyncMock(return_value=mock_response)
-            mock_client_class.return_value.__aenter__ = AsyncMock(
-                return_value=mock_client
-            )
+            mock_client_class.return_value.__aenter__ = AsyncMock(return_value=mock_client)
             mock_client_class.return_value.__aexit__ = AsyncMock(return_value=None)
 
             result = await dapr_client.publish_event(
@@ -330,9 +320,7 @@ class TestFarmerRegistrationFlow:
         mock_db["farmers"].find = MagicMock(return_value=mock_cursor)
         mock_db["farmers"].count_documents = AsyncMock(return_value=2)
 
-        farmers, _, total = await farmer_repo.list_by_collection_point(
-            "nyeri-highland-cp-001"
-        )
+        farmers, _, total = await farmer_repo.list_by_collection_point("nyeri-highland-cp-001")
 
         assert total == 2
         assert len(farmers) == 2

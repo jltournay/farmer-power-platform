@@ -7,7 +7,7 @@ from plantation_model.domain.events.farmer_events import (
 )
 
 __all__ = [
+    "FarmerDeactivatedEvent",
     "FarmerRegisteredEvent",
     "FarmerUpdatedEvent",
-    "FarmerDeactivatedEvent",
 ]

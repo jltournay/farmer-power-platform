@@ -179,7 +179,7 @@ class TestFarmerRepository:
 
         for i in range(2):
             farmer = create_test_farmer(
-                farmer_id=f"WM-{100+i:04d}",
+                farmer_id=f"WM-{100 + i:04d}",
                 phone=f"+25472{i:07d}",
                 national_id=f"9876543{i}",
                 collection_point_id="cp-002",
@@ -247,7 +247,7 @@ class TestFarmerRepository:
 
         for i in range(2):
             farmer = create_test_farmer(
-                farmer_id=f"WM-{100+i:04d}",
+                farmer_id=f"WM-{100 + i:04d}",
                 phone=f"+25472{i:07d}",
                 national_id=f"9876543{i}",
                 region_id="kericho-midland",

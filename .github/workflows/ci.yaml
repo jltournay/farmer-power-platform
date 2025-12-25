@@ -13,22 +13,21 @@ env:
   PYTHON_VERSION: "3.12"
 
 jobs:
-  # TODO: Re-enable lint job after fixing ruff configuration across all pyproject.toml files
-  # lint:
-  #   name: Lint
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #     - uses: actions/checkout@v4
-  #     - name: Set up Python
-  #       uses: actions/setup-python@v5
-  #       with:
-  #         python-version: ${{ env.PYTHON_VERSION }}
-  #     - name: Install linting dependencies
-  #       run: pip install ruff mypy
-  #     - name: Run ruff check
-  #       run: ruff check .
-  #     - name: Run ruff format check
-  #       run: ruff format --check .
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+      - name: Install linting dependencies
+        run: pip install ruff
+      - name: Run ruff check
+        run: ruff check .
+      - name: Run ruff format check
+        run: ruff format --check .
 
   unit-tests:
     name: Unit Tests
@@ -106,7 +105,7 @@ jobs:
 
   all-tests-pass:
     name: All Tests Pass
-    needs: [unit-tests, integration-tests]  # TODO: Add lint back when fixed
+    needs: [lint, unit-tests, integration-tests]
     runs-on: ubuntu-latest
     steps:
       - name: All checks passed

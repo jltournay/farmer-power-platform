@@ -232,7 +232,9 @@ ignore = [
     "B008",   # Do not perform function calls in argument defaults
     "B904",   # Allow raise without from in except
     "ARG001", # Unused function argument (common in fixtures)
+    "ARG002", # Unused method argument (common in gRPC servicers)
     "N802",   # gRPC method names are PascalCase (required by proto)
+    "UP046",  # Keep Generic[T] syntax for Python 3.11 compatibility
 ]
 
 [tool.ruff.lint.per-file-ignores]
@@ -241,10 +243,17 @@ ignore = [
     "S101",   # Assert is expected in tests
     "RUF059", # Unused unpacked variables (common in test assertions)
     "ERA001", # Allow explanatory comments that look like code
+    "TC001",  # Test imports don't need type-checking blocks
+    "TC003",  # Test imports don't need type-checking blocks
+    "F841",   # Unused variables in tests (result = await ...)
+    "B017",   # Blind exception assertions acceptable in tests
 ]
 "libs/fp-proto/src/fp_proto/**/__init__.py" = [
     "F403",   # Star imports used for re-exporting proto symbols
     "F401",   # Imported but unused (re-exports)
+]
+"**/api/*_service.py" = [
+    "ARG002", # gRPC context parameter required by interface
 ]
 
 [tool.ruff.lint.isort]

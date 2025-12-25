@@ -203,14 +203,8 @@ class GoldenSampleValidator:
 
             # Handle nested dictionaries
             if isinstance(expected_value, dict) and isinstance(actual_value, dict):
-                nested_variance = {
-                    k.replace(f"{key}.", ""): v
-                    for k, v in variance.items()
-                    if k.startswith(f"{key}.")
-                }
-                results.extend(
-                    self.validate(expected_value, actual_value, nested_variance, field_path)
-                )
+                nested_variance = {k.replace(f"{key}.", ""): v for k, v in variance.items() if k.startswith(f"{key}.")}
+                results.extend(self.validate(expected_value, actual_value, nested_variance, field_path))
                 continue
 
             # Handle lists
@@ -220,9 +214,7 @@ class GoldenSampleValidator:
 
             # Handle numeric values with variance
             if key in variance and isinstance(expected_value, (int, float)):
-                result = self._validate_with_variance(
-                    field_path, expected_value, actual_value, variance[key]
-                )
+                result = self._validate_with_variance(field_path, expected_value, actual_value, variance[key])
                 results.append(result)
                 continue
 
@@ -303,8 +295,8 @@ class GoldenSampleValidator:
             )
 
         # Check if all expected items exist in actual (order-independent)
-        expected_set = set(str(e) for e in expected)
-        actual_set = set(str(a) for a in actual)
+        expected_set = {str(e) for e in expected}
+        actual_set = {str(a) for a in actual}
 
         if expected_set == actual_set:
             return FieldValidation(
@@ -395,10 +387,7 @@ class GoldenSampleRunner:
             )
 
             # Determine overall pass/fail
-            passed = all(
-                v.result in (ValidationResult.PASS, ValidationResult.VARIANCE)
-                for v in validations
-            )
+            passed = all(v.result in (ValidationResult.PASS, ValidationResult.VARIANCE) for v in validations)
 
             execution_time = (time.perf_counter() - start_time) * 1000
 
@@ -466,7 +455,7 @@ class GoldenSampleRunner:
             "GOLDEN SAMPLE TEST REPORT",
             "=" * 60,
             f"Total: {total} | Passed: {passed} | Failed: {failed}",
-            f"Pass Rate: {(passed/total*100):.1f}%" if total > 0 else "No samples",
+            f"Pass Rate: {(passed / total * 100):.1f}%" if total > 0 else "No samples",
             "-" * 60,
         ]
 
@@ -579,17 +568,14 @@ def save_golden_sample(
     if sample.metadata.sample_id in existing_ids:
         # Update existing sample
         collection.samples = [
-            s if s.metadata.sample_id != sample.metadata.sample_id else sample
-            for s in collection.samples
+            s if s.metadata.sample_id != sample.metadata.sample_id else sample for s in collection.samples
         ]
     else:
         # Add new sample
         collection.samples.append(sample)
 
     # Save to disk
-    samples_file.write_text(
-        json.dumps(collection.model_dump(), indent=2, default=str)
-    )
+    samples_file.write_text(json.dumps(collection.model_dump(), indent=2, default=str))
 
     return samples_file
 

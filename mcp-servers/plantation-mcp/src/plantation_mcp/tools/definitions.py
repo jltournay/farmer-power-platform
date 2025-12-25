@@ -37,8 +37,7 @@ TOOL_REGISTRY: dict[str, ToolDefinition] = {
     "get_farmer_summary": ToolDefinition(
         name="get_farmer_summary",
         description=(
-            "Get farmer performance summary including quality history, trends, "
-            "yield metrics, and last delivery date."
+            "Get farmer performance summary including quality history, trends, yield metrics, and last delivery date."
         ),
         input_schema={
             "type": "object",

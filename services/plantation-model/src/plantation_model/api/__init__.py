@@ -13,10 +13,10 @@ from plantation_model.api.health import router as health_router
 from plantation_model.api.plantation_service import PlantationServiceServicer
 
 __all__ = [
-    "health_router",
     "GrpcServer",
+    "PlantationServiceServicer",
     "get_grpc_server",
+    "health_router",
     "start_grpc_server",
     "stop_grpc_server",
-    "PlantationServiceServicer",
 ]

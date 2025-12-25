@@ -20,9 +20,12 @@ import logging
 import os
 import uuid
 from contextlib import asynccontextmanager
-from typing import AsyncGenerator, Optional
+from typing import TYPE_CHECKING
 
 from motor.motor_asyncio import AsyncIOMotorClient, AsyncIOMotorDatabase
+
+if TYPE_CHECKING:
+    from collections.abc import AsyncGenerator
 
 logger = logging.getLogger(__name__)
 
@@ -51,7 +54,7 @@ class MongoTestClient:
 
     def __init__(
         self,
-        uri: Optional[str] = None,
+        uri: str | None = None,
         max_connect_attempts: int = 30,
         connect_retry_delay: float = 1.0,
     ) -> None:
@@ -65,10 +68,10 @@ class MongoTestClient:
         self.uri = uri or os.environ.get("MONGODB_TEST_URI", DEFAULT_MONGODB_URI)
         self.max_connect_attempts = max_connect_attempts
         self.connect_retry_delay = connect_retry_delay
-        self._client: Optional[AsyncIOMotorClient] = None
+        self._client: AsyncIOMotorClient | None = None
         self._created_databases: list[str] = []
 
-    async def __aenter__(self) -> "MongoTestClient":
+    async def __aenter__(self) -> MongoTestClient:
         """Connect to MongoDB when entering context."""
         await self.connect()
         return self
@@ -174,7 +177,7 @@ class MongoTestClient:
 
 @asynccontextmanager
 async def create_test_database(
-    uri: Optional[str] = None,
+    uri: str | None = None,
     prefix: str = "test",
 ) -> AsyncGenerator[AsyncIOMotorDatabase, None]:
     """Context manager to create and cleanup a test database.
@@ -201,7 +204,7 @@ async def create_test_database(
 
 
 async def wait_for_mongodb(
-    uri: Optional[str] = None,
+    uri: str | None = None,
     max_attempts: int = 30,
     delay: float = 1.0,
 ) -> bool:
@@ -242,8 +245,8 @@ async def wait_for_mongodb(
 
 # Re-export key utilities
 __all__ = [
+    "DEFAULT_MONGODB_URI",
     "MongoTestClient",
     "create_test_database",
     "wait_for_mongodb",
-    "DEFAULT_MONGODB_URI",
 ]

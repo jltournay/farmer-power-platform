@@ -4,10 +4,9 @@ import logging
 from datetime import UTC, datetime
 
 from motor.motor_asyncio import AsyncIOMotorDatabase
-from pymongo import ASCENDING
-
 from plantation_model.domain.models.grading_model import GradingModel
 from plantation_model.infrastructure.repositories.base import BaseRepository
+from pymongo import ASCENDING
 
 logger = logging.getLogger(__name__)
 
@@ -80,9 +79,7 @@ class GradingModelRepository(BaseRepository[GradingModel]):
         doc.pop("_id", None)
         return GradingModel.model_validate(doc)
 
-    async def add_factory_assignment(
-        self, model_id: str, factory_id: str
-    ) -> GradingModel | None:
+    async def add_factory_assignment(self, model_id: str, factory_id: str) -> GradingModel | None:
         """Assign a grading model to a factory.
 
         Adds the factory_id to the model's active_at_factory list.
@@ -108,9 +105,7 @@ class GradingModelRepository(BaseRepository[GradingModel]):
         logger.info("Assigned grading model %s to factory %s", model_id, factory_id)
         return GradingModel.model_validate(result)
 
-    async def remove_factory_assignment(
-        self, model_id: str, factory_id: str
-    ) -> GradingModel | None:
+    async def remove_factory_assignment(self, model_id: str, factory_id: str) -> GradingModel | None:
         """Remove a factory assignment from a grading model.
 
         Removes the factory_id from the model's active_at_factory list.
@@ -133,14 +128,10 @@ class GradingModelRepository(BaseRepository[GradingModel]):
         if result is None:
             return None
         result.pop("_id", None)
-        logger.info(
-            "Removed factory %s from grading model %s", factory_id, model_id
-        )
+        logger.info("Removed factory %s from grading model %s", factory_id, model_id)
         return GradingModel.model_validate(result)
 
-    async def update(
-        self, model_id: str, updates: dict
-    ) -> GradingModel | None:
+    async def update(self, model_id: str, updates: dict) -> GradingModel | None:
         """Update a grading model.
 
         Updates the specified fields in the grading model.

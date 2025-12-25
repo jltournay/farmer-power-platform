@@ -326,9 +326,7 @@ class TestGradingModelGrpcService:
         sample_grading_model: GradingModel,
     ) -> None:
         """Test GetFactoryGradingModel returns model assigned to factory."""
-        mock_grading_model_repo.get_by_factory = AsyncMock(
-            return_value=sample_grading_model
-        )
+        mock_grading_model_repo.get_by_factory = AsyncMock(return_value=sample_grading_model)
 
         request = plantation_pb2.GetFactoryGradingModelRequest(factory_id="KEN-FAC-001")
         result = await servicer.GetFactoryGradingModel(request, mock_context)
@@ -372,9 +370,7 @@ class TestGradingModelGrpcService:
     ) -> None:
         """Test AssignGradingModelToFactory assigns model successfully."""
         mock_factory_repo.get_by_id = AsyncMock(return_value=sample_factory)
-        mock_grading_model_repo.add_factory_assignment = AsyncMock(
-            return_value=sample_grading_model
-        )
+        mock_grading_model_repo.add_factory_assignment = AsyncMock(return_value=sample_grading_model)
 
         request = plantation_pb2.AssignGradingModelToFactoryRequest(
             model_id="tbk_kenya_tea_v1",
@@ -383,9 +379,7 @@ class TestGradingModelGrpcService:
         result = await servicer.AssignGradingModelToFactory(request, mock_context)
 
         assert result.model_id == "tbk_kenya_tea_v1"
-        mock_grading_model_repo.add_factory_assignment.assert_called_once_with(
-            "tbk_kenya_tea_v1", "KEN-FAC-001"
-        )
+        mock_grading_model_repo.add_factory_assignment.assert_called_once_with("tbk_kenya_tea_v1", "KEN-FAC-001")
 
     @pytest.mark.asyncio
     async def test_assign_grading_model_factory_not_found(

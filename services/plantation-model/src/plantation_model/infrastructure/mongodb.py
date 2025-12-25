@@ -2,6 +2,7 @@
 
 import structlog
 from motor.motor_asyncio import AsyncIOMotorClient, AsyncIOMotorDatabase
+from plantation_model.config import settings
 from pymongo.errors import ConnectionFailure, ServerSelectionTimeoutError
 from tenacity import (
     retry,
@@ -9,8 +10,6 @@ from tenacity import (
     stop_after_attempt,
     wait_exponential,
 )
-
-from plantation_model.config import settings
 
 logger = structlog.get_logger(__name__)
 

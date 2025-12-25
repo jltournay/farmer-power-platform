@@ -52,9 +52,7 @@ class ConditionalReject(BaseModel):
     if_attribute: str = Field(description="Attribute to check first")
     if_value: str = Field(description="Value that triggers the condition")
     then_attribute: str = Field(description="Second attribute to check")
-    reject_values: list[str] = Field(
-        description="Values in then_attribute that cause rejection"
-    )
+    reject_values: list[str] = Field(description="Values in then_attribute that cause rejection")
 
 
 class GradeRules(BaseModel):
@@ -98,17 +96,13 @@ class GradingModel(BaseModel):
     grading_type: GradingType = Field(description="Type of grading system")
 
     # Attribute structure
-    attributes: dict[str, GradingAttribute] = Field(
-        description="Attribute definitions keyed by attribute name"
-    )
+    attributes: dict[str, GradingAttribute] = Field(description="Attribute definitions keyed by attribute name")
 
     # Grade calculation rules
     grade_rules: GradeRules = Field(default_factory=GradeRules)
 
     # Display labels
-    grade_labels: dict[str, str] = Field(
-        description="Internal grade → display label mapping"
-    )
+    grade_labels: dict[str, str] = Field(description="Internal grade → display label mapping")
 
     # Deployment
     active_at_factory: list[str] = Field(

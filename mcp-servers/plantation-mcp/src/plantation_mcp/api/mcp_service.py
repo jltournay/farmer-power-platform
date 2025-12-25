@@ -6,8 +6,7 @@ from typing import Any
 import grpc
 import structlog
 from fp_proto.mcp.v1 import mcp_tool_pb2, mcp_tool_pb2_grpc
-from jsonschema import ValidationError as JsonSchemaValidationError
-from jsonschema import validate
+from jsonschema import ValidationError as JsonSchemaValidationError, validate
 from opentelemetry import trace
 
 from plantation_mcp.infrastructure.plantation_client import (
@@ -208,9 +207,7 @@ class McpToolServiceServicer(mcp_tool_pb2_grpc.McpToolServiceServicer):
         farmer_id = arguments["farmer_id"]
         return await self._plantation_client.get_farmer(farmer_id)
 
-    async def _handle_get_farmer_summary(
-        self, arguments: dict[str, Any]
-    ) -> dict[str, Any]:
+    async def _handle_get_farmer_summary(self, arguments: dict[str, Any]) -> dict[str, Any]:
         """Handle get_farmer_summary tool call.
 
         Args:
@@ -222,9 +219,7 @@ class McpToolServiceServicer(mcp_tool_pb2_grpc.McpToolServiceServicer):
         farmer_id = arguments["farmer_id"]
         return await self._plantation_client.get_farmer_summary(farmer_id)
 
-    async def _handle_get_collection_points(
-        self, arguments: dict[str, Any]
-    ) -> dict[str, Any]:
+    async def _handle_get_collection_points(self, arguments: dict[str, Any]) -> dict[str, Any]:
         """Handle get_collection_points tool call.
 
         Args:
@@ -234,14 +229,10 @@ class McpToolServiceServicer(mcp_tool_pb2_grpc.McpToolServiceServicer):
             Dict with list of collection points.
         """
         factory_id = arguments["factory_id"]
-        collection_points = await self._plantation_client.get_collection_points(
-            factory_id
-        )
+        collection_points = await self._plantation_client.get_collection_points(factory_id)
         return {"collection_points": collection_points}
 
-    async def _handle_get_farmers_by_collection_point(
-        self, arguments: dict[str, Any]
-    ) -> dict[str, Any]:
+    async def _handle_get_farmers_by_collection_point(self, arguments: dict[str, Any]) -> dict[str, Any]:
         """Handle get_farmers_by_collection_point tool call.
 
         Args:
@@ -251,7 +242,5 @@ class McpToolServiceServicer(mcp_tool_pb2_grpc.McpToolServiceServicer):
             Dict with list of farmers.
         """
         collection_point_id = arguments["collection_point_id"]
-        farmers = await self._plantation_client.get_farmers_by_collection_point(
-            collection_point_id
-        )
+        farmers = await self._plantation_client.get_farmers_by_collection_point(collection_point_id)
         return {"farmers": farmers}

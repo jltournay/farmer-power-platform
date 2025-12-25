@@ -7,15 +7,15 @@ __version__ = "0.1.0"
 
 # MongoDB test utilities
 from fp_testing.mongodb import (
+    DEFAULT_MONGODB_URI,
     MongoTestClient,
     create_test_database,
     wait_for_mongodb,
-    DEFAULT_MONGODB_URI,
 )
 
 __all__ = [
+    "DEFAULT_MONGODB_URI",
     "MongoTestClient",
     "create_test_database",
     "wait_for_mongodb",
-    "DEFAULT_MONGODB_URI",
 ]

@@ -1,6 +1,5 @@
 """Unit tests for Farmer domain model."""
 
-
 import pytest
 from plantation_model.domain.models.farmer import (
     Farmer,

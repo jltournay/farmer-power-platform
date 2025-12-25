@@ -22,54 +22,38 @@ class TestIDGenerator:
         return IDGenerator(mock_db)
 
     @pytest.mark.asyncio
-    async def test_generate_factory_id_first(
-        self, id_generator: IDGenerator, mock_db: MagicMock
-    ) -> None:
+    async def test_generate_factory_id_first(self, id_generator: IDGenerator, mock_db: MagicMock) -> None:
         """Test generating the first factory ID."""
         # Mock the counter returning seq=1
-        mock_db["id_counters"].find_one_and_update = AsyncMock(
-            return_value={"_id": "factory", "seq": 1}
-        )
+        mock_db["id_counters"].find_one_and_update = AsyncMock(return_value={"_id": "factory", "seq": 1})
 
         factory_id = await id_generator.generate_factory_id()
 
         assert factory_id == "KEN-FAC-001"
 
     @pytest.mark.asyncio
-    async def test_generate_factory_id_sequence(
-        self, id_generator: IDGenerator, mock_db: MagicMock
-    ) -> None:
+    async def test_generate_factory_id_sequence(self, id_generator: IDGenerator, mock_db: MagicMock) -> None:
         """Test factory ID sequence numbering."""
         # Mock counter returning seq=42
-        mock_db["id_counters"].find_one_and_update = AsyncMock(
-            return_value={"_id": "factory", "seq": 42}
-        )
+        mock_db["id_counters"].find_one_and_update = AsyncMock(return_value={"_id": "factory", "seq": 42})
 
         factory_id = await id_generator.generate_factory_id()
 
         assert factory_id == "KEN-FAC-042"
 
     @pytest.mark.asyncio
-    async def test_generate_factory_id_triple_digits(
-        self, id_generator: IDGenerator, mock_db: MagicMock
-    ) -> None:
+    async def test_generate_factory_id_triple_digits(self, id_generator: IDGenerator, mock_db: MagicMock) -> None:
         """Test factory ID with triple-digit sequence."""
-        mock_db["id_counters"].find_one_and_update = AsyncMock(
-            return_value={"_id": "factory", "seq": 999}
-        )
+        mock_db["id_counters"].find_one_and_update = AsyncMock(return_value={"_id": "factory", "seq": 999})
 
         factory_id = await id_generator.generate_factory_id()
 
         assert factory_id == "KEN-FAC-999"
 
     @pytest.mark.asyncio
-    async def test_generate_collection_point_id_first(
-        self, id_generator: IDGenerator, mock_db: MagicMock
-    ) -> None:
+    async def test_generate_collection_point_id_first(self, id_generator: IDGenerator, mock_db: MagicMock) -> None:
         """Test generating the first collection point ID for a region."""
-        mock_db["id_counters"].find_one_and_update = AsyncMock(
-            return_value={"_id": "cp_nyeri-highland", "seq": 1}
-        )
+        mock_db["id_counters"].find_one_and_update = AsyncMock(return_value={"_id": "cp_nyeri-highland", "seq": 1})
 
         cp_id = await id_generator.generate_collection_point_id("nyeri-highland")
 
@@ -81,41 +65,29 @@ class TestIDGenerator:
     ) -> None:
         """Test collection point IDs are unique per region."""
         # First region
-        mock_db["id_counters"].find_one_and_update = AsyncMock(
-            return_value={"_id": "cp_region-a", "seq": 5}
-        )
+        mock_db["id_counters"].find_one_and_update = AsyncMock(return_value={"_id": "cp_region-a", "seq": 5})
         cp_id_a = await id_generator.generate_collection_point_id("region-a")
 
         # Second region (reset sequence)
-        mock_db["id_counters"].find_one_and_update = AsyncMock(
-            return_value={"_id": "cp_region-b", "seq": 1}
-        )
+        mock_db["id_counters"].find_one_and_update = AsyncMock(return_value={"_id": "cp_region-b", "seq": 1})
         cp_id_b = await id_generator.generate_collection_point_id("region-b")
 
         assert cp_id_a == "region-a-cp-005"
         assert cp_id_b == "region-b-cp-001"
 
     @pytest.mark.asyncio
-    async def test_generate_collection_point_id_sequence(
-        self, id_generator: IDGenerator, mock_db: MagicMock
-    ) -> None:
+    async def test_generate_collection_point_id_sequence(self, id_generator: IDGenerator, mock_db: MagicMock) -> None:
         """Test collection point ID sequence numbering."""
-        mock_db["id_counters"].find_one_and_update = AsyncMock(
-            return_value={"_id": "cp_test-region", "seq": 123}
-        )
+        mock_db["id_counters"].find_one_and_update = AsyncMock(return_value={"_id": "cp_test-region", "seq": 123})
 
         cp_id = await id_generator.generate_collection_point_id("test-region")
 
         assert cp_id == "test-region-cp-123"
 
     @pytest.mark.asyncio
-    async def test_factory_id_format(
-        self, id_generator: IDGenerator, mock_db: MagicMock
-    ) -> None:
+    async def test_factory_id_format(self, id_generator: IDGenerator, mock_db: MagicMock) -> None:
         """Test factory ID format is correct (KEN-FAC-XXX)."""
-        mock_db["id_counters"].find_one_and_update = AsyncMock(
-            return_value={"_id": "factory", "seq": 7}
-        )
+        mock_db["id_counters"].find_one_and_update = AsyncMock(return_value={"_id": "factory", "seq": 7})
 
         factory_id = await id_generator.generate_factory_id()
 
@@ -125,13 +97,9 @@ class TestIDGenerator:
         assert factory_id[-3:].isdigit()
 
     @pytest.mark.asyncio
-    async def test_collection_point_id_format(
-        self, id_generator: IDGenerator, mock_db: MagicMock
-    ) -> None:
+    async def test_collection_point_id_format(self, id_generator: IDGenerator, mock_db: MagicMock) -> None:
         """Test collection point ID format is correct ({region}-cp-XXX)."""
-        mock_db["id_counters"].find_one_and_update = AsyncMock(
-            return_value={"_id": "cp_test", "seq": 15}
-        )
+        mock_db["id_counters"].find_one_and_update = AsyncMock(return_value={"_id": "cp_test", "seq": 15})
 
         cp_id = await id_generator.generate_collection_point_id("test")
 
@@ -141,9 +109,7 @@ class TestIDGenerator:
         assert "-cp-" in cp_id
 
     @pytest.mark.asyncio
-    async def test_mongodb_upsert_called(
-        self, id_generator: IDGenerator, mock_db: MagicMock
-    ) -> None:
+    async def test_mongodb_upsert_called(self, id_generator: IDGenerator, mock_db: MagicMock) -> None:
         """Test that MongoDB upsert is called correctly."""
         mock_update = AsyncMock(return_value={"_id": "factory", "seq": 1})
         mock_db["id_counters"].find_one_and_update = mock_update
@@ -162,52 +128,36 @@ class TestIDGenerator:
     # =========================================================================
 
     @pytest.mark.asyncio
-    async def test_generate_farmer_id_first(
-        self, id_generator: IDGenerator, mock_db: MagicMock
-    ) -> None:
+    async def test_generate_farmer_id_first(self, id_generator: IDGenerator, mock_db: MagicMock) -> None:
         """Test generating the first farmer ID."""
-        mock_db["id_counters"].find_one_and_update = AsyncMock(
-            return_value={"_id": "farmer", "seq": 1}
-        )
+        mock_db["id_counters"].find_one_and_update = AsyncMock(return_value={"_id": "farmer", "seq": 1})
 
         farmer_id = await id_generator.generate_farmer_id()
 
         assert farmer_id == "WM-0001"
 
     @pytest.mark.asyncio
-    async def test_generate_farmer_id_sequence(
-        self, id_generator: IDGenerator, mock_db: MagicMock
-    ) -> None:
+    async def test_generate_farmer_id_sequence(self, id_generator: IDGenerator, mock_db: MagicMock) -> None:
         """Test farmer ID sequence numbering."""
-        mock_db["id_counters"].find_one_and_update = AsyncMock(
-            return_value={"_id": "farmer", "seq": 42}
-        )
+        mock_db["id_counters"].find_one_and_update = AsyncMock(return_value={"_id": "farmer", "seq": 42})
 
         farmer_id = await id_generator.generate_farmer_id()
 
         assert farmer_id == "WM-0042"
 
     @pytest.mark.asyncio
-    async def test_generate_farmer_id_four_digits(
-        self, id_generator: IDGenerator, mock_db: MagicMock
-    ) -> None:
+    async def test_generate_farmer_id_four_digits(self, id_generator: IDGenerator, mock_db: MagicMock) -> None:
         """Test farmer ID with four-digit sequence."""
-        mock_db["id_counters"].find_one_and_update = AsyncMock(
-            return_value={"_id": "farmer", "seq": 9999}
-        )
+        mock_db["id_counters"].find_one_and_update = AsyncMock(return_value={"_id": "farmer", "seq": 9999})
 
         farmer_id = await id_generator.generate_farmer_id()
 
         assert farmer_id == "WM-9999"
 
     @pytest.mark.asyncio
-    async def test_farmer_id_format(
-        self, id_generator: IDGenerator, mock_db: MagicMock
-    ) -> None:
+    async def test_farmer_id_format(self, id_generator: IDGenerator, mock_db: MagicMock) -> None:
         """Test farmer ID format is correct (WM-XXXX)."""
-        mock_db["id_counters"].find_one_and_update = AsyncMock(
-            return_value={"_id": "farmer", "seq": 7}
-        )
+        mock_db["id_counters"].find_one_and_update = AsyncMock(return_value={"_id": "farmer", "seq": 7})
 
         farmer_id = await id_generator.generate_farmer_id()
 
@@ -217,30 +167,20 @@ class TestIDGenerator:
         assert farmer_id[-4:].isdigit()
 
     @pytest.mark.asyncio
-    async def test_farmer_id_zero_padding(
-        self, id_generator: IDGenerator, mock_db: MagicMock
-    ) -> None:
+    async def test_farmer_id_zero_padding(self, id_generator: IDGenerator, mock_db: MagicMock) -> None:
         """Test farmer ID is zero-padded correctly."""
         # Single digit
-        mock_db["id_counters"].find_one_and_update = AsyncMock(
-            return_value={"_id": "farmer", "seq": 1}
-        )
+        mock_db["id_counters"].find_one_and_update = AsyncMock(return_value={"_id": "farmer", "seq": 1})
         assert await id_generator.generate_farmer_id() == "WM-0001"
 
         # Double digit
-        mock_db["id_counters"].find_one_and_update = AsyncMock(
-            return_value={"_id": "farmer", "seq": 12}
-        )
+        mock_db["id_counters"].find_one_and_update = AsyncMock(return_value={"_id": "farmer", "seq": 12})
         assert await id_generator.generate_farmer_id() == "WM-0012"
 
         # Triple digit
-        mock_db["id_counters"].find_one_and_update = AsyncMock(
-            return_value={"_id": "farmer", "seq": 123}
-        )
+        mock_db["id_counters"].find_one_and_update = AsyncMock(return_value={"_id": "farmer", "seq": 123})
         assert await id_generator.generate_farmer_id() == "WM-0123"
 
         # Four digits
-        mock_db["id_counters"].find_one_and_update = AsyncMock(
-            return_value={"_id": "farmer", "seq": 1234}
-        )
+        mock_db["id_counters"].find_one_and_update = AsyncMock(return_value={"_id": "farmer", "seq": 1234})
         assert await id_generator.generate_farmer_id() == "WM-1234"

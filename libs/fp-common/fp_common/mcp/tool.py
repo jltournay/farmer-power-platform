@@ -6,12 +6,12 @@ Provides GrpcMcpTool for integrating MCP tools with LangChain agents.
 from __future__ import annotations
 
 import json
-from typing import Any, Optional, Type
+from typing import Any
 
 from langchain_core.tools import BaseTool
 from pydantic import BaseModel, ConfigDict, Field
 
-from fp_common.mcp.client import GrpcMcpClient
+from fp_common.mcp.client import GrpcMcpClient  # noqa: TC001
 from fp_common.mcp.errors import McpToolError
 
 
@@ -34,7 +34,7 @@ class GrpcMcpTool(BaseTool):
     name: str = Field(description="Tool name")
     description: str = Field(description="Tool description for LLM")
     mcp_client: GrpcMcpClient = Field(exclude=True)
-    args_schema: Optional[Type[BaseModel]] = None
+    args_schema: type[BaseModel] | None = None
     raise_on_error: bool = Field(
         default=False,
         description="If True, raise McpToolError instead of returning error JSON",
@@ -61,11 +61,13 @@ class GrpcMcpTool(BaseTool):
         except McpToolError as e:
             if self.raise_on_error:
                 raise
-            return json.dumps({
-                "error": True,
-                "error_code": e.error_code.name,
-                "message": e.message,
-            })
+            return json.dumps(
+                {
+                    "error": True,
+                    "error_code": e.error_code.name,
+                    "message": e.message,
+                }
+            )
 
     def _run(self, **kwargs: Any) -> str:
         """Sync execution not supported.

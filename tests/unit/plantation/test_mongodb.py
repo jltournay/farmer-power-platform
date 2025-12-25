@@ -116,14 +116,15 @@ class TestCheckMongoDBConnection:
     async def test_raises_on_connection_failure(self) -> None:
         """Test that ConnectionFailure is raised on connection failure."""
         mock_client = MagicMock()
-        mock_client.admin.command = AsyncMock(
-            side_effect=ConnectionFailure("Connection refused")
-        )
+        mock_client.admin.command = AsyncMock(side_effect=ConnectionFailure("Connection refused"))
 
-        with patch(
-            "plantation_model.infrastructure.mongodb.AsyncIOMotorClient",
-            return_value=mock_client,
-        ), pytest.raises(ConnectionFailure):
+        with (
+            patch(
+                "plantation_model.infrastructure.mongodb.AsyncIOMotorClient",
+                return_value=mock_client,
+            ),
+            pytest.raises(ConnectionFailure),
+        ):
             await check_mongodb_connection()
 
 

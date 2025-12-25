@@ -9,7 +9,6 @@ from opentelemetry.instrumentation.pymongo import PymongoInstrumentor
 from opentelemetry.sdk.resources import Resource
 from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import BatchSpanProcessor
-
 from plantation_model.config import settings
 
 logger = structlog.get_logger(__name__)

@@ -11,7 +11,6 @@ from contextlib import asynccontextmanager
 import structlog
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-
 from plantation_model.api import health
 from plantation_model.api.grpc_server import start_grpc_server, stop_grpc_server
 from plantation_model.config import settings
@@ -73,7 +72,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
 
     # Start gRPC server
     try:
-        grpc_server = await start_grpc_server()
+        await start_grpc_server()
         logger.info("gRPC server started", port=settings.grpc_port)
     except Exception as e:
         logger.warning("gRPC server failed to start", error=str(e))

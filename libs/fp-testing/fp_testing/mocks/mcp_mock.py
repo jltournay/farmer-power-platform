@@ -6,13 +6,14 @@ AI agents that use MCP tools.
 
 from __future__ import annotations
 
-from collections.abc import Generator
-from typing import Any, Callable, Optional, cast
+from typing import TYPE_CHECKING, Any, cast
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
-
 from fp_common.mcp.errors import ErrorCode, McpToolError
+
+if TYPE_CHECKING:
+    from collections.abc import Callable, Generator
 
 
 class MockMcpServer:
@@ -98,7 +99,7 @@ class MockMcpServer:
         self,
         name: str,
         description: str,
-        input_schema: Optional[dict[str, Any]] = None,
+        input_schema: dict[str, Any] | None = None,
         category: str = "query",
     ) -> None:
         """Register a tool definition for list_tools.
@@ -109,12 +110,14 @@ class MockMcpServer:
             input_schema: JSON Schema for tool arguments
             category: Tool category
         """
-        self._tools.append({
-            "name": name,
-            "description": description,
-            "input_schema": input_schema or {},
-            "category": category,
-        })
+        self._tools.append(
+            {
+                "name": name,
+                "description": description,
+                "input_schema": input_schema or {},
+                "category": category,
+            }
+        )
 
     async def call_tool(
         self,
@@ -151,14 +154,14 @@ class MockMcpServer:
                     app_id=self.app_id,
                     tool_name=tool_name,
                 )
-            return cast(dict[str, Any], response)
+            return cast("dict[str, Any]", response)
 
         # Default: return empty response
         return {}
 
     async def list_tools(
         self,
-        category: Optional[str] = None,
+        category: str | None = None,
     ) -> list[dict[str, Any]]:
         """List registered tools.
 

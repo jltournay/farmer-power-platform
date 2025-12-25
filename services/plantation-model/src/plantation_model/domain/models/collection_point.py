@@ -2,13 +2,12 @@
 
 from datetime import UTC, datetime
 
-from pydantic import BaseModel, Field
-
 from plantation_model.domain.models.value_objects import (
     CollectionPointCapacity,
     GeoLocation,
     OperatingHours,
 )
+from pydantic import BaseModel, Field
 
 
 class CollectionPoint(BaseModel):
@@ -25,9 +24,7 @@ class CollectionPoint(BaseModel):
     region_id: str = Field(description="Region ID for this collection point")
     clerk_id: str | None = Field(default=None, description="Assigned clerk ID")
     clerk_phone: str | None = Field(default=None, description="Clerk phone number")
-    operating_hours: OperatingHours = Field(
-        default_factory=OperatingHours, description="Operating hours"
-    )
+    operating_hours: OperatingHours = Field(default_factory=OperatingHours, description="Operating hours")
     collection_days: list[str] = Field(
         default_factory=lambda: ["mon", "wed", "fri", "sat"],
         description="Days when collection happens",

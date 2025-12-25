@@ -2,9 +2,8 @@
 
 from datetime import UTC, datetime
 
-from pydantic import BaseModel, Field
-
 from plantation_model.domain.models.value_objects import ContactInfo, GeoLocation
+from pydantic import BaseModel, Field
 
 
 class Factory(BaseModel):
@@ -19,12 +18,8 @@ class Factory(BaseModel):
     code: str = Field(min_length=1, max_length=20, description="Unique factory code")
     region_id: str = Field(description="Region where factory is located")
     location: GeoLocation = Field(description="Geographic location with altitude")
-    contact: ContactInfo = Field(
-        default_factory=ContactInfo, description="Contact information"
-    )
-    processing_capacity_kg: int = Field(
-        default=0, ge=0, description="Daily processing capacity in kg"
-    )
+    contact: ContactInfo = Field(default_factory=ContactInfo, description="Contact information")
+    processing_capacity_kg: int = Field(default=0, ge=0, description="Daily processing capacity in kg")
     is_active: bool = Field(default=True, description="Whether factory is active")
     created_at: datetime = Field(
         default_factory=lambda: datetime.now(UTC),

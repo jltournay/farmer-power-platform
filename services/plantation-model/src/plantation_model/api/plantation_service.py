@@ -6,7 +6,6 @@ from datetime import UTC, datetime
 import grpc
 from fp_proto.plantation.v1 import plantation_pb2, plantation_pb2_grpc
 from google.protobuf.timestamp_pb2 import Timestamp
-
 from plantation_model.config import settings
 from plantation_model.domain.events.farmer_events import FarmerRegisteredEvent
 from plantation_model.domain.models.collection_point import CollectionPoint
@@ -139,9 +138,7 @@ class PlantationServiceServicer(plantation_pb2_grpc.PlantationServiceServicer):
             updated_at=datetime_to_timestamp(factory.updated_at),
         )
 
-    async def _get_altitude_for_location(
-        self, latitude: float, longitude: float
-    ) -> float:
+    async def _get_altitude_for_location(self, latitude: float, longitude: float) -> float:
         """Fetch altitude from Google Elevation API.
 
         Args:
@@ -315,7 +312,7 @@ class PlantationServiceServicer(plantation_pb2_grpc.PlantationServiceServicer):
     ) -> plantation_pb2.DeleteFactoryResponse:
         """Delete a factory by ID."""
         # Check if factory has any collection points
-        cps, _, count = await self._cp_repo.list(
+        _cps, _, count = await self._cp_repo.list(
             filters={"factory_id": request.id},
             page_size=1,
         )
@@ -426,12 +423,15 @@ class PlantationServiceServicer(plantation_pb2_grpc.PlantationServiceServicer):
                 grpc.StatusCode.INVALID_ARGUMENT,
                 f"Invalid status '{request.status}'. Must be one of: {', '.join(sorted(VALID_CP_STATUSES))}",
             )
-        if request.capacity and request.capacity.storage_type:
-            if request.capacity.storage_type not in VALID_STORAGE_TYPES:
-                await context.abort(
-                    grpc.StatusCode.INVALID_ARGUMENT,
-                    f"Invalid storage_type '{request.capacity.storage_type}'. Must be one of: {', '.join(sorted(VALID_STORAGE_TYPES))}",
-                )
+        if (
+            request.capacity
+            and request.capacity.storage_type
+            and request.capacity.storage_type not in VALID_STORAGE_TYPES
+        ):
+            await context.abort(
+                grpc.StatusCode.INVALID_ARGUMENT,
+                f"Invalid storage_type '{request.capacity.storage_type}'. Must be one of: {', '.join(sorted(VALID_STORAGE_TYPES))}",
+            )
         if request.collection_days:
             invalid_days = set(request.collection_days) - VALID_COLLECTION_DAYS
             if invalid_days:
@@ -483,7 +483,9 @@ class PlantationServiceServicer(plantation_pb2_grpc.PlantationServiceServicer):
             if request.collection_days
             else CollectionPoint.model_fields["collection_days"].default_factory(),
             capacity=CollectionPointCapacity(
-                max_daily_kg=request.capacity.max_daily_kg if request.capacity else CollectionPointCapacity().max_daily_kg,
+                max_daily_kg=request.capacity.max_daily_kg
+                if request.capacity
+                else CollectionPointCapacity().max_daily_kg,
                 storage_type=request.capacity.storage_type
                 if request.capacity and request.capacity.storage_type
                 else CollectionPointCapacity().storage_type,
@@ -516,12 +518,15 @@ class PlantationServiceServicer(plantation_pb2_grpc.PlantationServiceServicer):
                 grpc.StatusCode.INVALID_ARGUMENT,
                 f"Invalid status '{request.status}'. Must be one of: {', '.join(sorted(VALID_CP_STATUSES))}",
             )
-        if request.HasField("capacity") and request.capacity.storage_type:
-            if request.capacity.storage_type not in VALID_STORAGE_TYPES:
-                await context.abort(
-                    grpc.StatusCode.INVALID_ARGUMENT,
-                    f"Invalid storage_type '{request.capacity.storage_type}'. Must be one of: {', '.join(sorted(VALID_STORAGE_TYPES))}",
-                )
+        if (
+            request.HasField("capacity")
+            and request.capacity.storage_type
+            and request.capacity.storage_type not in VALID_STORAGE_TYPES
+        ):
+            await context.abort(
+                grpc.StatusCode.INVALID_ARGUMENT,
+                f"Invalid storage_type '{request.capacity.storage_type}'. Must be one of: {', '.join(sorted(VALID_STORAGE_TYPES))}",
+            )
         if request.collection_days:
             invalid_days = set(request.collection_days) - VALID_COLLECTION_DAYS
             if invalid_days:
@@ -605,9 +610,7 @@ class PlantationServiceServicer(plantation_pb2_grpc.PlantationServiceServicer):
         }
         return mapping.get(farm_scale, plantation_pb2.FARM_SCALE_UNSPECIFIED)
 
-    def _notification_channel_to_proto(
-        self, channel: NotificationChannel
-    ) -> plantation_pb2.NotificationChannel:
+    def _notification_channel_to_proto(self, channel: NotificationChannel) -> plantation_pb2.NotificationChannel:
         """Convert NotificationChannel domain enum to protobuf enum."""
         mapping = {
             NotificationChannel.SMS: plantation_pb2.NOTIFICATION_CHANNEL_SMS,
@@ -615,9 +618,7 @@ class PlantationServiceServicer(plantation_pb2_grpc.PlantationServiceServicer):
         }
         return mapping.get(channel, plantation_pb2.NOTIFICATION_CHANNEL_UNSPECIFIED)
 
-    def _notification_channel_from_proto(
-        self, channel: plantation_pb2.NotificationChannel
-    ) -> NotificationChannel:
+    def _notification_channel_from_proto(self, channel: plantation_pb2.NotificationChannel) -> NotificationChannel:
         """Convert protobuf NotificationChannel enum to domain enum."""
         mapping = {
             plantation_pb2.NOTIFICATION_CHANNEL_SMS: NotificationChannel.SMS,
@@ -625,9 +626,7 @@ class PlantationServiceServicer(plantation_pb2_grpc.PlantationServiceServicer):
         }
         return mapping.get(channel, NotificationChannel.SMS)
 
-    def _interaction_pref_to_proto(
-        self, pref: InteractionPreference
-    ) -> plantation_pb2.InteractionPreference:
+    def _interaction_pref_to_proto(self, pref: InteractionPreference) -> plantation_pb2.InteractionPreference:
         """Convert InteractionPreference domain enum to protobuf enum."""
         mapping = {
             InteractionPreference.TEXT: plantation_pb2.INTERACTION_PREFERENCE_TEXT,
@@ -635,9 +634,7 @@ class PlantationServiceServicer(plantation_pb2_grpc.PlantationServiceServicer):
         }
         return mapping.get(pref, plantation_pb2.INTERACTION_PREFERENCE_UNSPECIFIED)
 
-    def _interaction_pref_from_proto(
-        self, pref: plantation_pb2.InteractionPreference
-    ) -> InteractionPreference:
+    def _interaction_pref_from_proto(self, pref: plantation_pb2.InteractionPreference) -> InteractionPreference:
         """Convert protobuf InteractionPreference enum to domain enum."""
         mapping = {
             plantation_pb2.INTERACTION_PREFERENCE_TEXT: InteractionPreference.TEXT,
@@ -645,9 +642,7 @@ class PlantationServiceServicer(plantation_pb2_grpc.PlantationServiceServicer):
         }
         return mapping.get(pref, InteractionPreference.TEXT)
 
-    def _pref_lang_to_proto(
-        self, lang: PreferredLanguage
-    ) -> plantation_pb2.PreferredLanguage:
+    def _pref_lang_to_proto(self, lang: PreferredLanguage) -> plantation_pb2.PreferredLanguage:
         """Convert PreferredLanguage domain enum to protobuf enum."""
         mapping = {
             PreferredLanguage.SWAHILI: plantation_pb2.PREFERRED_LANGUAGE_SW,
@@ -657,9 +652,7 @@ class PlantationServiceServicer(plantation_pb2_grpc.PlantationServiceServicer):
         }
         return mapping.get(lang, plantation_pb2.PREFERRED_LANGUAGE_UNSPECIFIED)
 
-    def _pref_lang_from_proto(
-        self, lang: plantation_pb2.PreferredLanguage
-    ) -> PreferredLanguage:
+    def _pref_lang_from_proto(self, lang: plantation_pb2.PreferredLanguage) -> PreferredLanguage:
         """Convert protobuf PreferredLanguage enum to domain enum."""
         mapping = {
             plantation_pb2.PREFERRED_LANGUAGE_SW: PreferredLanguage.SWAHILI,
@@ -779,9 +772,7 @@ class PlantationServiceServicer(plantation_pb2_grpc.PlantationServiceServicer):
             )
 
         # Check for duplicate national ID
-        existing_by_national_id = await self._farmer_repo.get_by_national_id(
-            request.national_id
-        )
+        existing_by_national_id = await self._farmer_repo.get_by_national_id(request.national_id)
         if existing_by_national_id:
             await context.abort(
                 grpc.StatusCode.ALREADY_EXISTS,
@@ -933,9 +924,7 @@ class PlantationServiceServicer(plantation_pb2_grpc.PlantationServiceServicer):
         if request.HasField("farm_size_hectares"):
             updates["farm_size_hectares"] = request.farm_size_hectares
             # Recalculate farm scale
-            updates["farm_scale"] = FarmScale.from_hectares(
-                request.farm_size_hectares
-            ).value
+            updates["farm_scale"] = FarmScale.from_hectares(request.farm_size_hectares).value
         if request.HasField("is_active"):
             updates["is_active"] = request.is_active
 
@@ -963,9 +952,7 @@ class PlantationServiceServicer(plantation_pb2_grpc.PlantationServiceServicer):
     # Grading Model Operations
     # =========================================================================
 
-    def _grading_type_to_proto(
-        self, grading_type: GradingType
-    ) -> plantation_pb2.GradingType:
+    def _grading_type_to_proto(self, grading_type: GradingType) -> plantation_pb2.GradingType:
         """Convert GradingType domain enum to protobuf enum."""
         mapping = {
             GradingType.BINARY: plantation_pb2.GRADING_TYPE_BINARY,
@@ -974,9 +961,7 @@ class PlantationServiceServicer(plantation_pb2_grpc.PlantationServiceServicer):
         }
         return mapping.get(grading_type, plantation_pb2.GRADING_TYPE_UNSPECIFIED)
 
-    def _grading_type_from_proto(
-        self, grading_type: plantation_pb2.GradingType
-    ) -> GradingType:
+    def _grading_type_from_proto(self, grading_type: plantation_pb2.GradingType) -> GradingType:
         """Convert protobuf GradingType enum to domain enum."""
         mapping = {
             plantation_pb2.GRADING_TYPE_BINARY: GradingType.BINARY,
@@ -985,9 +970,7 @@ class PlantationServiceServicer(plantation_pb2_grpc.PlantationServiceServicer):
         }
         return mapping.get(grading_type, GradingType.BINARY)
 
-    def _grading_model_to_proto(
-        self, model: GradingModel
-    ) -> plantation_pb2.GradingModel:
+    def _grading_model_to_proto(self, model: GradingModel) -> plantation_pb2.GradingModel:
         """Convert GradingModel domain model to protobuf message."""
         # Convert attributes
         proto_attrs = {}
@@ -1000,9 +983,7 @@ class PlantationServiceServicer(plantation_pb2_grpc.PlantationServiceServicer):
         # Convert grade rules
         proto_reject_conditions = {}
         for attr_name, values in model.grade_rules.reject_conditions.items():
-            proto_reject_conditions[attr_name] = plantation_pb2.StringList(
-                values=values
-            )
+            proto_reject_conditions[attr_name] = plantation_pb2.StringList(values=values)
 
         proto_conditional = [
             plantation_pb2.ConditionalReject(
@@ -1164,9 +1145,7 @@ class PlantationServiceServicer(plantation_pb2_grpc.PlantationServiceServicer):
             )
 
         # Add assignment
-        model = await self._grading_model_repo.add_factory_assignment(
-            request.model_id, request.factory_id
-        )
+        model = await self._grading_model_repo.add_factory_assignment(request.model_id, request.factory_id)
         if model is None:
             await context.abort(
                 grpc.StatusCode.NOT_FOUND,
@@ -1184,9 +1163,7 @@ class PlantationServiceServicer(plantation_pb2_grpc.PlantationServiceServicer):
     # Farmer Performance Operations
     # =========================================================================
 
-    def _trend_direction_to_proto(
-        self, trend: TrendDirection
-    ) -> plantation_pb2.TrendDirection:
+    def _trend_direction_to_proto(self, trend: TrendDirection) -> plantation_pb2.TrendDirection:
         """Convert TrendDirection domain enum to protobuf enum."""
         mapping = {
             TrendDirection.IMPROVING: plantation_pb2.TREND_DIRECTION_IMPROVING,
@@ -1195,27 +1172,19 @@ class PlantationServiceServicer(plantation_pb2_grpc.PlantationServiceServicer):
         }
         return mapping.get(trend, plantation_pb2.TREND_DIRECTION_UNSPECIFIED)
 
-    def _farmer_summary_to_proto(
-        self, farmer: Farmer, performance: FarmerPerformance
-    ) -> plantation_pb2.FarmerSummary:
+    def _farmer_summary_to_proto(self, farmer: Farmer, performance: FarmerPerformance) -> plantation_pb2.FarmerSummary:
         """Convert Farmer and FarmerPerformance to FarmerSummary proto (AC #4)."""
         # Convert historical metrics
         hist = performance.historical
         proto_hist_attr_30d = {}
         for attr_name, class_counts in hist.attribute_distributions_30d.items():
-            proto_hist_attr_30d[attr_name] = plantation_pb2.DistributionCounts(
-                counts=class_counts
-            )
+            proto_hist_attr_30d[attr_name] = plantation_pb2.DistributionCounts(counts=class_counts)
         proto_hist_attr_90d = {}
         for attr_name, class_counts in hist.attribute_distributions_90d.items():
-            proto_hist_attr_90d[attr_name] = plantation_pb2.DistributionCounts(
-                counts=class_counts
-            )
+            proto_hist_attr_90d[attr_name] = plantation_pb2.DistributionCounts(counts=class_counts)
         proto_hist_attr_year = {}
         for attr_name, class_counts in hist.attribute_distributions_year.items():
-            proto_hist_attr_year[attr_name] = plantation_pb2.DistributionCounts(
-                counts=class_counts
-            )
+            proto_hist_attr_year[attr_name] = plantation_pb2.DistributionCounts(counts=class_counts)
 
         proto_historical = plantation_pb2.HistoricalMetrics(
             grade_distribution_30d=hist.grade_distribution_30d,
@@ -1234,27 +1203,21 @@ class PlantationServiceServicer(plantation_pb2_grpc.PlantationServiceServicer):
             yield_kg_per_hectare_90d=hist.yield_kg_per_hectare_90d,
             yield_kg_per_hectare_year=hist.yield_kg_per_hectare_year,
             improvement_trend=self._trend_direction_to_proto(hist.improvement_trend),
-            computed_at=datetime_to_timestamp(hist.computed_at)
-            if hist.computed_at
-            else None,
+            computed_at=datetime_to_timestamp(hist.computed_at) if hist.computed_at else None,
         )
 
         # Convert today metrics
         today = performance.today
         proto_today_attr = {}
         for attr_name, class_counts in today.attribute_counts.items():
-            proto_today_attr[attr_name] = plantation_pb2.DistributionCounts(
-                counts=class_counts
-            )
+            proto_today_attr[attr_name] = plantation_pb2.DistributionCounts(counts=class_counts)
 
         proto_today = plantation_pb2.TodayMetrics(
             deliveries=today.deliveries,
             total_kg=today.total_kg,
             grade_counts=today.grade_counts,
             attribute_counts=proto_today_attr,
-            last_delivery=datetime_to_timestamp(today.last_delivery)
-            if today.last_delivery
-            else None,
+            last_delivery=datetime_to_timestamp(today.last_delivery) if today.last_delivery else None,
             metrics_date=today.metrics_date.isoformat(),
         )
 
@@ -1270,9 +1233,7 @@ class PlantationServiceServicer(plantation_pb2_grpc.PlantationServiceServicer):
             grading_model_version=performance.grading_model_version,
             historical=proto_historical,
             today=proto_today,
-            trend_direction=self._trend_direction_to_proto(
-                performance.historical.improvement_trend
-            ),
+            trend_direction=self._trend_direction_to_proto(performance.historical.improvement_trend),
             created_at=datetime_to_timestamp(performance.created_at),
             updated_at=datetime_to_timestamp(performance.updated_at),
             notification_channel=self._notification_channel_to_proto(farmer.notification_channel),
@@ -1305,9 +1266,7 @@ class PlantationServiceServicer(plantation_pb2_grpc.PlantationServiceServicer):
             )
 
         # Get performance - return defaults if not found (Task 6.7)
-        performance = await self._farmer_performance_repo.get_by_farmer_id(
-            request.farmer_id
-        )
+        performance = await self._farmer_performance_repo.get_by_farmer_id(request.farmer_id)
         if performance is None:
             # Return default empty performance metrics
             # Get grading model from farmer's collection point's factory
@@ -1315,9 +1274,7 @@ class PlantationServiceServicer(plantation_pb2_grpc.PlantationServiceServicer):
             grading_model_id = ""
             grading_model_version = ""
             if cp and self._grading_model_repo:
-                grading_model = await self._grading_model_repo.get_by_factory(
-                    cp.factory_id
-                )
+                grading_model = await self._grading_model_repo.get_by_factory(cp.factory_id)
                 if grading_model:
                     grading_model_id = grading_model.model_id
                     grading_model_version = grading_model.model_version

@@ -209,9 +209,7 @@ class TestFarmerSummaryGrpcService:
     ) -> None:
         """Test GetFarmerSummary returns farmer with performance data."""
         mock_farmer_repo.get_by_id = AsyncMock(return_value=sample_farmer)
-        mock_farmer_performance_repo.get_by_farmer_id = AsyncMock(
-            return_value=sample_farmer_performance
-        )
+        mock_farmer_performance_repo.get_by_farmer_id = AsyncMock(return_value=sample_farmer_performance)
 
         request = plantation_pb2.GetFarmerSummaryRequest(farmer_id="WM-0001")
         result = await servicer.GetFarmerSummary(request, mock_context)
@@ -259,9 +257,7 @@ class TestFarmerSummaryGrpcService:
         mock_farmer_repo.get_by_id = AsyncMock(return_value=sample_farmer)
         mock_farmer_performance_repo.get_by_farmer_id = AsyncMock(return_value=None)
         mock_cp_repo.get_by_id = AsyncMock(return_value=sample_collection_point)
-        mock_grading_model_repo.get_by_factory = AsyncMock(
-            return_value=sample_grading_model
-        )
+        mock_grading_model_repo.get_by_factory = AsyncMock(return_value=sample_grading_model)
 
         request = plantation_pb2.GetFarmerSummaryRequest(farmer_id="WM-0001")
         result = await servicer.GetFarmerSummary(request, mock_context)
@@ -284,9 +280,7 @@ class TestFarmerSummaryGrpcService:
     ) -> None:
         """Test GetFarmerSummary includes attribute distributions for root-cause analysis."""
         mock_farmer_repo.get_by_id = AsyncMock(return_value=sample_farmer)
-        mock_farmer_performance_repo.get_by_farmer_id = AsyncMock(
-            return_value=sample_farmer_performance
-        )
+        mock_farmer_performance_repo.get_by_farmer_id = AsyncMock(return_value=sample_farmer_performance)
 
         request = plantation_pb2.GetFarmerSummaryRequest(farmer_id="WM-0001")
         result = await servicer.GetFarmerSummary(request, mock_context)
@@ -309,9 +303,7 @@ class TestFarmerSummaryGrpcService:
     ) -> None:
         """Test GetFarmerSummary includes trend direction (AC #4)."""
         mock_farmer_repo.get_by_id = AsyncMock(return_value=sample_farmer)
-        mock_farmer_performance_repo.get_by_farmer_id = AsyncMock(
-            return_value=sample_farmer_performance
-        )
+        mock_farmer_performance_repo.get_by_farmer_id = AsyncMock(return_value=sample_farmer_performance)
 
         request = plantation_pb2.GetFarmerSummaryRequest(farmer_id="WM-0001")
         result = await servicer.GetFarmerSummary(request, mock_context)
@@ -449,9 +441,7 @@ class TestFarmerPerformanceAutoInit:
         mock_farmer_repo.create = AsyncMock()
         mock_id_generator.generate_farmer_id = AsyncMock(return_value="WM-0001")
         mock_elevation_client.get_altitude = AsyncMock(return_value=1800.0)
-        mock_grading_model_repo.get_by_factory = AsyncMock(
-            return_value=sample_grading_model
-        )
+        mock_grading_model_repo.get_by_factory = AsyncMock(return_value=sample_grading_model)
         mock_farmer_performance_repo.initialize_for_farmer = AsyncMock()
 
         # Create farmer request

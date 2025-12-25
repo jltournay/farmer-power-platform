@@ -5,7 +5,6 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 from fp_proto.mcp.v1 import mcp_tool_pb2
-
 from plantation_mcp.api.mcp_service import McpToolServiceServicer
 from plantation_mcp.infrastructure.plantation_client import (
     NotFoundError,
@@ -181,9 +180,7 @@ class TestGetFarmerTool:
         mock_context: MagicMock,
     ) -> None:
         """get_farmer with non-existent farmer returns error."""
-        mock_plantation_client.get_farmer = AsyncMock(
-            side_effect=NotFoundError("Farmer not found: WM-9999")
-        )
+        mock_plantation_client.get_farmer = AsyncMock(side_effect=NotFoundError("Farmer not found: WM-9999"))
 
         request = mcp_tool_pb2.ToolCallRequest(
             tool_name="get_farmer",
@@ -209,9 +206,7 @@ class TestGetFarmerSummaryTool:
         sample_farmer_summary: dict,
     ) -> None:
         """AC #2: get_farmer_summary returns performance metrics."""
-        mock_plantation_client.get_farmer_summary = AsyncMock(
-            return_value=sample_farmer_summary
-        )
+        mock_plantation_client.get_farmer_summary = AsyncMock(return_value=sample_farmer_summary)
 
         request = mcp_tool_pb2.ToolCallRequest(
             tool_name="get_farmer_summary",
@@ -286,9 +281,7 @@ class TestGetFarmersByCollectionPointTool:
         sample_farmer: dict,
     ) -> None:
         """AC #4: get_farmers_by_collection_point returns farmers."""
-        mock_plantation_client.get_farmers_by_collection_point = AsyncMock(
-            return_value=[sample_farmer]
-        )
+        mock_plantation_client.get_farmers_by_collection_point = AsyncMock(return_value=[sample_farmer])
 
         request = mcp_tool_pb2.ToolCallRequest(
             tool_name="get_farmers_by_collection_point",

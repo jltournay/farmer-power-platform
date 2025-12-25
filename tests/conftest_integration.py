@@ -22,19 +22,20 @@ import logging
 import os
 import uuid
 from collections.abc import AsyncGenerator
+from typing import TYPE_CHECKING
 
-import pytest
 import pytest_asyncio
 from motor.motor_asyncio import AsyncIOMotorClient, AsyncIOMotorDatabase
+
+if TYPE_CHECKING:
+    import pytest
 
 logger = logging.getLogger(__name__)
 
 # MongoDB connection settings from environment or defaults
 MONGODB_TEST_HOST = os.environ.get("MONGODB_TEST_HOST", "localhost")
 MONGODB_TEST_PORT = int(os.environ.get("MONGODB_TEST_PORT", "27018"))
-MONGODB_TEST_URI = os.environ.get(
-    "MONGODB_TEST_URI", f"mongodb://{MONGODB_TEST_HOST}:{MONGODB_TEST_PORT}"
-)
+MONGODB_TEST_URI = os.environ.get("MONGODB_TEST_URI", f"mongodb://{MONGODB_TEST_HOST}:{MONGODB_TEST_PORT}")
 
 
 def pytest_configure(config: pytest.Config) -> None:

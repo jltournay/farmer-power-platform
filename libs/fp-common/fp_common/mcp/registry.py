@@ -7,7 +7,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
-from typing import Any, Optional
+from typing import Any
 
 from fp_common.mcp.client import GrpcMcpClient
 from fp_common.mcp.tool import GrpcMcpTool
@@ -46,7 +46,7 @@ class McpToolRegistry:
     async def discover_tools(
         self,
         app_id: str,
-        category: Optional[str] = None,
+        category: str | None = None,
         refresh: bool = False,
     ) -> list[dict[str, Any]]:
         """Discover available tools from an MCP server.
@@ -99,11 +99,9 @@ class McpToolRegistry:
 
         # Use asyncio.gather for concurrent discovery (per project-context.md)
         app_ids = list(self._servers)
-        results = await asyncio.gather(
-            *[self.discover_tools(app_id, refresh=refresh) for app_id in app_ids]
-        )
+        results = await asyncio.gather(*[self.discover_tools(app_id, refresh=refresh) for app_id in app_ids])
 
-        all_tools = dict(zip(app_ids, results))
+        all_tools = dict(zip(app_ids, results, strict=False))
         logger.debug("Discovered tools from %d servers", len(all_tools))
         return all_tools
 
@@ -126,9 +124,7 @@ class McpToolRegistry:
         # Look for tool in cache
         cache_key = f"{app_id}:all"
         if cache_key not in self._tools_cache:
-            raise ValueError(
-                f"No tools cached for '{app_id}'. Call discover_tools first."
-            )
+            raise ValueError(f"No tools cached for '{app_id}'. Call discover_tools first.")
 
         tools = self._tools_cache[cache_key]
         tool_def = next((t for t in tools if t["name"] == tool_name), None)

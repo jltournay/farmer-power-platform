@@ -81,9 +81,7 @@ class TestGradingModelRepository:
         assert result.model_version == sample_grading_model.model_version
 
     @pytest.mark.asyncio
-    async def test_get_by_id_not_found(
-        self, grading_model_repo: GradingModelRepository
-    ) -> None:
+    async def test_get_by_id_not_found(self, grading_model_repo: GradingModelRepository) -> None:
         """Test retrieving a non-existent grading model."""
         grading_model_repo._collection.find_one = AsyncMock(return_value=None)
 
@@ -107,9 +105,7 @@ class TestGradingModelRepository:
         assert result.model_id == sample_grading_model.model_id
 
     @pytest.mark.asyncio
-    async def test_get_by_factory_not_found(
-        self, grading_model_repo: GradingModelRepository
-    ) -> None:
+    async def test_get_by_factory_not_found(self, grading_model_repo: GradingModelRepository) -> None:
         """Test retrieving grading model for factory with no assignment."""
         grading_model_repo._collection.find_one = AsyncMock(return_value=None)
 
@@ -127,9 +123,7 @@ class TestGradingModelRepository:
         mock_doc["active_at_factory"] = ["factory-001", "factory-002"]
         grading_model_repo._collection.find_one_and_update = AsyncMock(return_value=mock_doc)
 
-        result = await grading_model_repo.add_factory_assignment(
-            sample_grading_model.model_id, "factory-002"
-        )
+        result = await grading_model_repo.add_factory_assignment(sample_grading_model.model_id, "factory-002")
 
         assert result is not None
         assert "factory-002" in result.active_at_factory
@@ -144,9 +138,7 @@ class TestGradingModelRepository:
         mock_doc["active_at_factory"] = []
         grading_model_repo._collection.find_one_and_update = AsyncMock(return_value=mock_doc)
 
-        result = await grading_model_repo.remove_factory_assignment(
-            sample_grading_model.model_id, "factory-001"
-        )
+        result = await grading_model_repo.remove_factory_assignment(sample_grading_model.model_id, "factory-001")
 
         assert result is not None
         assert "factory-001" not in result.active_at_factory
@@ -171,9 +163,7 @@ class TestGradingModelRepository:
         grading_model_repo._collection.find_one_and_update.assert_called_once()
 
     @pytest.mark.asyncio
-    async def test_update_grading_model_not_found(
-        self, grading_model_repo: GradingModelRepository
-    ) -> None:
+    async def test_update_grading_model_not_found(self, grading_model_repo: GradingModelRepository) -> None:
         """Test updating a non-existent grading model."""
         grading_model_repo._collection.find_one_and_update = AsyncMock(return_value=None)
 
@@ -233,18 +223,14 @@ class TestGradingModelRepository:
         grading_model_repo._collection.find = MagicMock(return_value=mock_cursor)
         grading_model_repo._collection.count_documents = AsyncMock(return_value=1)
 
-        result, next_token, total = await grading_model_repo.list_all(
-            filters={"market_name": "Kenya_TBK"}
-        )
+        result, next_token, total = await grading_model_repo.list_all(filters={"market_name": "Kenya_TBK"})
 
         assert len(result) == 1
         # Verify filter was applied
         grading_model_repo._collection.count_documents.assert_called_once()
 
     @pytest.mark.asyncio
-    async def test_ensure_indexes(
-        self, grading_model_repo: GradingModelRepository
-    ) -> None:
+    async def test_ensure_indexes(self, grading_model_repo: GradingModelRepository) -> None:
         """Test index creation."""
         grading_model_repo._collection.create_index = AsyncMock()
 

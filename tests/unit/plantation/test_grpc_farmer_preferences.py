@@ -102,9 +102,7 @@ class TestFarmerCommunicationPreferences:
             last_name="Mwangi",
             collection_point_id="nyeri-highland-cp-001",
             region_id="nyeri-highland",
-            farm_location=GeoLocation(
-                latitude=-0.4, longitude=36.9, altitude_meters=1800.0
-            ),
+            farm_location=GeoLocation(latitude=-0.4, longitude=36.9, altitude_meters=1800.0),
             contact=ContactInfo(phone="+254712345678"),
             farm_size_hectares=1.5,
             farm_scale=FarmScale.MEDIUM,
@@ -124,9 +122,7 @@ class TestFarmerCommunicationPreferences:
             last_name="Mwangi",
             collection_point_id="nyeri-highland-cp-001",
             region_id="nyeri-highland",
-            farm_location=GeoLocation(
-                latitude=-0.4, longitude=36.9, altitude_meters=1800.0
-            ),
+            farm_location=GeoLocation(latitude=-0.4, longitude=36.9, altitude_meters=1800.0),
             contact=ContactInfo(phone="+254712345678"),
             farm_size_hectares=1.5,
             farm_scale=FarmScale.MEDIUM,

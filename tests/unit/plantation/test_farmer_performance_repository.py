@@ -80,9 +80,7 @@ class TestFarmerPerformanceRepository:
         assert result.grading_model_id == sample_farmer_performance.grading_model_id
 
     @pytest.mark.asyncio
-    async def test_get_by_farmer_id_not_found(
-        self, farmer_perf_repo: FarmerPerformanceRepository
-    ) -> None:
+    async def test_get_by_farmer_id_not_found(self, farmer_perf_repo: FarmerPerformanceRepository) -> None:
         """Test retrieving a non-existent farmer performance."""
         farmer_perf_repo._collection.find_one = AsyncMock(return_value=None)
 
@@ -91,9 +89,7 @@ class TestFarmerPerformanceRepository:
         assert result is None
 
     @pytest.mark.asyncio
-    async def test_initialize_for_farmer(
-        self, farmer_perf_repo: FarmerPerformanceRepository
-    ) -> None:
+    async def test_initialize_for_farmer(self, farmer_perf_repo: FarmerPerformanceRepository) -> None:
         """Test initializing performance for a new farmer."""
         farmer_perf_repo._collection.insert_one = AsyncMock()
 
@@ -125,9 +121,7 @@ class TestFarmerPerformanceRepository:
             grade_distribution_30d={"Primary": 150, "Secondary": 25},
             primary_percentage_30d=85.7,
         )
-        result = await farmer_perf_repo.update_historical(
-            sample_farmer_performance.farmer_id, new_historical
-        )
+        result = await farmer_perf_repo.update_historical(sample_farmer_performance.farmer_id, new_historical)
 
         assert result is not None
         assert result.historical.grade_distribution_30d["Primary"] == 150
@@ -148,9 +142,7 @@ class TestFarmerPerformanceRepository:
             total_kg=60.0,
             grade_counts={"Primary": 3},
         )
-        result = await farmer_perf_repo.update_today(
-            sample_farmer_performance.farmer_id, new_today
-        )
+        result = await farmer_perf_repo.update_today(sample_farmer_performance.farmer_id, new_today)
 
         assert result is not None
         assert result.today.deliveries == 3
@@ -244,9 +236,7 @@ class TestFarmerPerformanceRepository:
         assert result.today.deliveries == 5
 
     @pytest.mark.asyncio
-    async def test_ensure_indexes(
-        self, farmer_perf_repo: FarmerPerformanceRepository
-    ) -> None:
+    async def test_ensure_indexes(self, farmer_perf_repo: FarmerPerformanceRepository) -> None:
         """Test index creation."""
         farmer_perf_repo._collection.create_index = AsyncMock()
 

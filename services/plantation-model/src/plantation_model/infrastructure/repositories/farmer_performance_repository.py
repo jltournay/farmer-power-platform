@@ -5,8 +5,6 @@ import logging
 from datetime import datetime
 
 from motor.motor_asyncio import AsyncIOMotorDatabase
-from pymongo import ASCENDING
-
 from plantation_model.domain.models.farmer import FarmScale
 from plantation_model.domain.models.farmer_performance import (
     FarmerPerformance,
@@ -14,6 +12,7 @@ from plantation_model.domain.models.farmer_performance import (
     TodayMetrics,
 )
 from plantation_model.infrastructure.repositories.base import BaseRepository
+from pymongo import ASCENDING
 
 logger = logging.getLogger(__name__)
 
@@ -132,9 +131,7 @@ class FarmerPerformanceRepository(BaseRepository[FarmerPerformance]):
         logger.debug("Upserted farmer performance for %s", entity.farmer_id)
         return entity
 
-    async def update_historical(
-        self, farmer_id: str, historical: HistoricalMetrics
-    ) -> FarmerPerformance | None:
+    async def update_historical(self, farmer_id: str, historical: HistoricalMetrics) -> FarmerPerformance | None:
         """Update the historical metrics for a farmer.
 
         Called by batch jobs that aggregate quality events.
@@ -162,9 +159,7 @@ class FarmerPerformanceRepository(BaseRepository[FarmerPerformance]):
         logger.debug("Updated historical metrics for farmer %s", farmer_id)
         return FarmerPerformance.model_validate(result)
 
-    async def update_today(
-        self, farmer_id: str, today: TodayMetrics
-    ) -> FarmerPerformance | None:
+    async def update_today(self, farmer_id: str, today: TodayMetrics) -> FarmerPerformance | None:
         """Update today's metrics for a farmer.
 
         Args:
@@ -231,9 +226,7 @@ class FarmerPerformanceRepository(BaseRepository[FarmerPerformance]):
         if attribute_counts:
             for attr_name, class_counts in attribute_counts.items():
                 for class_name, count in class_counts.items():
-                    update["$inc"][
-                        f"today.attribute_counts.{attr_name}.{class_name}"
-                    ] = count
+                    update["$inc"][f"today.attribute_counts.{attr_name}.{class_name}"] = count
 
         result = await self._collection.find_one_and_update(
             {"_id": farmer_id},

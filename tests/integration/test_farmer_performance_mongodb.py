@@ -76,9 +76,7 @@ class TestFarmerPerformanceRepository:
         assert stored is not None
         assert stored.grading_model_id == "tbk_kenya_tea_v1"
 
-    async def test_performance_record_has_correct_grading_model_reference(
-        self, test_db
-    ) -> None:
+    async def test_performance_record_has_correct_grading_model_reference(self, test_db) -> None:
         """Test performance record has correct grading_model_id reference.
 
         Story 1-4, Task 9.2 continued: Validate grading model reference integrity.

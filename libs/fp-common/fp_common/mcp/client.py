@@ -8,12 +8,12 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
-from typing import Any, Optional
+from typing import Any
 
 from dapr.clients import DaprClient
+from fp_proto.mcp.v1 import mcp_tool_pb2
 from opentelemetry import trace
 
-from fp_proto.mcp.v1 import mcp_tool_pb2
 from fp_common.mcp.errors import ErrorCode, McpToolError
 
 logger = logging.getLogger(__name__)
@@ -61,7 +61,7 @@ class GrpcMcpClient:
         self,
         tool_name: str,
         arguments: dict[str, Any],
-        caller_agent_id: Optional[str] = None,
+        caller_agent_id: str | None = None,
     ) -> dict[str, Any]:
         """Invoke an MCP tool and return the result.
 
@@ -144,7 +144,7 @@ class GrpcMcpClient:
                 span.set_status(trace.Status(trace.StatusCode.ERROR, str(e)))
                 raise
 
-    async def list_tools(self, category: Optional[str] = None) -> list[dict[str, Any]]:
+    async def list_tools(self, category: str | None = None) -> list[dict[str, Any]]:
         """List available tools from the MCP server.
 
         Args:

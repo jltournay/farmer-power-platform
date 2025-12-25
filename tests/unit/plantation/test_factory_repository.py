@@ -240,9 +240,7 @@ class TestFactoryRepository:
         )
 
         assert len(factories) == 1
-        mock_db["factories"].count_documents.assert_called_with(
-            {"region_id": "test-region", "is_active": True}
-        )
+        mock_db["factories"].count_documents.assert_called_with({"region_id": "test-region", "is_active": True})
 
     @pytest.mark.asyncio
     async def test_ensure_indexes(

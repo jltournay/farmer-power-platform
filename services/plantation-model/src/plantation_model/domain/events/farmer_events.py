@@ -26,16 +26,10 @@ class FarmerRegisteredEvent(BaseModel):
     )
     farmer_id: str = Field(description="Unique farmer ID (WM-XXXX format)")
     phone: str = Field(description="Farmer's phone number")
-    collection_point_id: str = Field(
-        description="Collection point where farmer registered"
-    )
-    factory_id: str = Field(
-        description="Factory ID (derived from collection point's parent factory)"
-    )
+    collection_point_id: str = Field(description="Collection point where farmer registered")
+    factory_id: str = Field(description="Factory ID (derived from collection point's parent factory)")
     region_id: str = Field(description="Assigned region based on GPS + altitude")
-    farm_scale: str = Field(
-        description="Farm scale classification (smallholder/medium/estate)"
-    )
+    farm_scale: str = Field(description="Farm scale classification (smallholder/medium/estate)")
     timestamp: datetime = Field(
         default_factory=lambda: datetime.now(UTC),
         description="Event timestamp",
@@ -69,9 +63,7 @@ class FarmerUpdatedEvent(BaseModel):
         description="Event type identifier",
     )
     farmer_id: str = Field(description="Unique farmer ID (WM-XXXX format)")
-    updated_fields: list[str] = Field(
-        description="List of field names that were updated"
-    )
+    updated_fields: list[str] = Field(description="List of field names that were updated")
     timestamp: datetime = Field(
         default_factory=lambda: datetime.now(UTC),
         description="Event timestamp",

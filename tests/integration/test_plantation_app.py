@@ -24,18 +24,23 @@ class TestPlantationModelApplication:
     @pytest.fixture
     def client(self, mock_dependencies: dict) -> TestClient:
         """Create test client with mocked dependencies."""
-        with patch(
-            "plantation_model.infrastructure.mongodb.AsyncIOMotorClient",
-            return_value=mock_dependencies["mongodb_client"],
-        ), patch(
-            "plantation_model.infrastructure.tracing.setup_tracing",
-            return_value=None,
-        ), patch(
-            "plantation_model.infrastructure.tracing.instrument_fastapi",
-            return_value=None,
-        ), patch(
-            "plantation_model.api.grpc_server.GrpcServer.start",
-            new_callable=AsyncMock,
+        with (
+            patch(
+                "plantation_model.infrastructure.mongodb.AsyncIOMotorClient",
+                return_value=mock_dependencies["mongodb_client"],
+            ),
+            patch(
+                "plantation_model.infrastructure.tracing.setup_tracing",
+                return_value=None,
+            ),
+            patch(
+                "plantation_model.infrastructure.tracing.instrument_fastapi",
+                return_value=None,
+            ),
+            patch(
+                "plantation_model.api.grpc_server.GrpcServer.start",
+                new_callable=AsyncMock,
+            ),
         ):
             from plantation_model.main import app
 

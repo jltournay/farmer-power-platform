@@ -5,7 +5,6 @@ import structlog
 from fp_proto.plantation.v1 import plantation_pb2, plantation_pb2_grpc
 from grpc_health.v1 import health, health_pb2, health_pb2_grpc
 from grpc_reflection.v1alpha import reflection
-
 from plantation_model.api.plantation_service import PlantationServiceServicer
 from plantation_model.config import settings
 from plantation_model.domain.models.id_generator import IDGenerator
@@ -74,15 +73,11 @@ class GrpcServer:
             id_generator=id_generator,
             elevation_client=elevation_client,
         )
-        plantation_pb2_grpc.add_PlantationServiceServicer_to_server(
-            plantation_servicer, self._server
-        )
+        plantation_pb2_grpc.add_PlantationServiceServicer_to_server(plantation_servicer, self._server)
 
         # Add health checking service
         self._health_servicer = health.HealthServicer()
-        health_pb2_grpc.add_HealthServicer_to_server(
-            self._health_servicer, self._server
-        )
+        health_pb2_grpc.add_HealthServicer_to_server(self._health_servicer, self._server)
 
         # Set initial health status
         self._health_servicer.set(
@@ -151,11 +146,7 @@ class GrpcServer:
             serving: True if service is healthy, False otherwise.
         """
         if self._health_servicer:
-            status = (
-                health_pb2.HealthCheckResponse.SERVING
-                if serving
-                else health_pb2.HealthCheckResponse.NOT_SERVING
-            )
+            status = health_pb2.HealthCheckResponse.SERVING if serving else health_pb2.HealthCheckResponse.NOT_SERVING
             self._health_servicer.set(SERVICE_NAME, status)
             self._health_servicer.set("", status)
 

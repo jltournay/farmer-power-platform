@@ -48,9 +48,7 @@ class TestHealthEndpoint:
 class TestReadyEndpoint:
     """Tests for /ready endpoint."""
 
-    def test_ready_without_mongodb_check_returns_not_configured(
-        self, client: TestClient
-    ) -> None:
+    def test_ready_without_mongodb_check_returns_not_configured(self, client: TestClient) -> None:
         """Test that ready returns not_configured when MongoDB check not set."""
         # Reset the check function
         set_mongodb_check(None)

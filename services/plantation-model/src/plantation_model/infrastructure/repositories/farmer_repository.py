@@ -3,10 +3,9 @@
 import logging
 
 from motor.motor_asyncio import AsyncIOMotorDatabase
-from pymongo import ASCENDING
-
 from plantation_model.domain.models.farmer import Farmer
 from plantation_model.infrastructure.repositories.base import BaseRepository
+from pymongo import ASCENDING
 
 logger = logging.getLogger(__name__)
 

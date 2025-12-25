@@ -270,9 +270,7 @@ class TestFactoryGrpcService:
         sample_factory: Factory,
     ) -> None:
         """Test ListFactories returns list of factories."""
-        mock_factory_repo.list = AsyncMock(
-            return_value=([sample_factory], None, 1)
-        )
+        mock_factory_repo.list = AsyncMock(return_value=([sample_factory], None, 1))
 
         request = plantation_pb2.ListFactoriesRequest(page_size=10)
         result = await servicer.ListFactories(request, mock_context)
@@ -290,9 +288,7 @@ class TestFactoryGrpcService:
         sample_factory: Factory,
     ) -> None:
         """Test ListFactories filters by region."""
-        mock_factory_repo.list = AsyncMock(
-            return_value=([sample_factory], None, 1)
-        )
+        mock_factory_repo.list = AsyncMock(return_value=([sample_factory], None, 1))
 
         request = plantation_pb2.ListFactoriesRequest(
             region_id="test-region",

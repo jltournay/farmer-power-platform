@@ -54,9 +54,7 @@ class TestCollectionPointCRUDFlow:
     ) -> None:
         """Test complete CollectionPoint create -> read -> update -> delete flow."""
         # Setup mocks for ID generation
-        mock_db["id_counters"].find_one_and_update = AsyncMock(
-            return_value={"_id": "cp_nyeri-highland", "seq": 1}
-        )
+        mock_db["id_counters"].find_one_and_update = AsyncMock(return_value={"_id": "cp_nyeri-highland", "seq": 1})
 
         # 1. Generate ID
         cp_id = await id_generator.generate_collection_point_id("nyeri-highland")
@@ -109,9 +107,7 @@ class TestCollectionPointCRUDFlow:
         updated_doc["clerk_id"] = "CLK-002"
         updated_doc["status"] = "inactive"
         updated_doc["_id"] = updated_doc["id"]
-        mock_db["collection_points"].find_one_and_update = AsyncMock(
-            return_value=updated_doc
-        )
+        mock_db["collection_points"].find_one_and_update = AsyncMock(return_value=updated_doc)
 
         updated = await cp_repo.update(
             cp_id,
@@ -254,14 +250,10 @@ class TestCollectionPointCRUDFlow:
     ) -> None:
         """Test that collection point IDs are region-specific."""
         # Generate IDs for different regions
-        mock_db["id_counters"].find_one_and_update = AsyncMock(
-            return_value={"_id": "cp_region-a", "seq": 5}
-        )
+        mock_db["id_counters"].find_one_and_update = AsyncMock(return_value={"_id": "cp_region-a", "seq": 5})
         cp_id_a = await id_generator.generate_collection_point_id("region-a")
 
-        mock_db["id_counters"].find_one_and_update = AsyncMock(
-            return_value={"_id": "cp_region-b", "seq": 1}
-        )
+        mock_db["id_counters"].find_one_and_update = AsyncMock(return_value={"_id": "cp_region-b", "seq": 1})
         cp_id_b = await id_generator.generate_collection_point_id("region-b")
 
         # IDs should include region prefix
@@ -304,9 +296,7 @@ class TestCollectionPointCRUDFlow:
         assert cps[0].clerk_id == "CLK-001"
 
         # Verify correct filter
-        mock_db["collection_points"].count_documents.assert_called_with(
-            {"clerk_id": "CLK-001"}
-        )
+        mock_db["collection_points"].count_documents.assert_called_with({"clerk_id": "CLK-001"})
 
     @pytest.mark.asyncio
     async def test_collection_point_capacity_and_equipment(
@@ -365,9 +355,7 @@ class TestCollectionPointCRUDFlow:
         updated_doc["operating_hours"]["weekends"] = "06:00-10:00"
         updated_doc["_id"] = updated_doc["id"]
 
-        mock_db["collection_points"].find_one_and_update = AsyncMock(
-            return_value=updated_doc
-        )
+        mock_db["collection_points"].find_one_and_update = AsyncMock(return_value=updated_doc)
 
         result = await cp_repo.update(
             "region-cp-001",

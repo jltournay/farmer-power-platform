@@ -1,6 +1,5 @@
 """Unit tests for Factory domain model."""
 
-
 import pytest
 from plantation_model.domain.models.factory import Factory, FactoryCreate, FactoryUpdate
 from plantation_model.domain.models.value_objects import ContactInfo, GeoLocation

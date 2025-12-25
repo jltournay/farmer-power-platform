@@ -7,7 +7,6 @@ Matches proto enum definitions in proto/mcp/v1/mcp_tool.proto.
 from __future__ import annotations
 
 from enum import IntEnum
-from typing import Optional
 
 
 class ErrorCode(IntEnum):
@@ -39,8 +38,8 @@ class McpToolError(Exception):
         error_code: ErrorCode,
         message: str,
         trace_id: str,
-        app_id: Optional[str] = None,
-        tool_name: Optional[str] = None,
+        app_id: str | None = None,
+        tool_name: str | None = None,
     ) -> None:
         """Initialize McpToolError.
 
