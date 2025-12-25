@@ -51,7 +51,7 @@ development_status:
   1-3-farmer-registration: done
   1-4-farmer-performance-history-structure: done
   1-5-farmer-communication-preferences: done
-  1-6-plantation-model-mcp-server: backlog  # blocked by 0-1
+  1-6-plantation-model-mcp-server: ready-for-dev  # github_issue: 13
   epic-1-retrospective: optional
 
   # Epic 2: Quality Data Ingestion
