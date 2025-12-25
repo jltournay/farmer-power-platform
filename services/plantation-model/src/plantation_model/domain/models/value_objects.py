@@ -1,6 +1,9 @@
 """Value objects for the Plantation Model service."""
 
-from pydantic import BaseModel, Field
+import re
+from typing import ClassVar
+
+from pydantic import BaseModel, Field, field_validator
 
 
 class GeoLocation(BaseModel):
@@ -27,10 +30,28 @@ class ContactInfo(BaseModel):
 
 
 class OperatingHours(BaseModel):
-    """Operating hours for a collection point."""
+    """Operating hours for a collection point.
 
-    weekdays: str = Field(default="06:00-10:00", description="Weekday operating hours")
-    weekends: str = Field(default="07:00-09:00", description="Weekend operating hours")
+    Hours must be in format "HH:MM-HH:MM" (e.g., "06:00-10:00").
+    """
+
+    # Regex pattern for validating time range format (HH:MM-HH:MM)
+    TIME_RANGE_PATTERN: ClassVar[re.Pattern] = re.compile(
+        r"^([01]\d|2[0-3]):([0-5]\d)-([01]\d|2[0-3]):([0-5]\d)$"
+    )
+
+    weekdays: str = Field(default="06:00-10:00", description="Weekday operating hours (HH:MM-HH:MM)")
+    weekends: str = Field(default="07:00-09:00", description="Weekend operating hours (HH:MM-HH:MM)")
+
+    @field_validator("weekdays", "weekends")
+    @classmethod
+    def validate_time_range_format(cls, v: str) -> str:
+        """Validate that the time range is in correct format."""
+        if not cls.TIME_RANGE_PATTERN.match(v):
+            raise ValueError(
+                f"Invalid time range format '{v}'. Expected format: HH:MM-HH:MM (e.g., '06:00-10:00')"
+            )
+        return v
 
 
 class CollectionPointCapacity(BaseModel):

@@ -1,6 +1,6 @@
 # Story 1.2: Factory and Collection Point Management
 
-**Status:** review
+**Status:** done
 
 ---
 
@@ -526,7 +526,7 @@ Claude Opus 4.5 (claude-opus-4-5-20251101)
 
 6. **gRPC Service**: Created `PlantationServiceServicer` with full CRUD operations for both Factory and CollectionPoint. Proper error handling with gRPC status codes (NOT_FOUND, ALREADY_EXISTS, INVALID_ARGUMENT).
 
-7. **Testing**: All 139 tests passing (121 unit + 18 integration). Test coverage includes:
+7. **Testing**: All Story 1.2 tests passing (94 unit + 12 integration = 106 tests). Test coverage includes:
    - Model validation and serialization
    - ID generation format and sequencing
    - Repository CRUD operations with mock MongoDB
@@ -578,3 +578,36 @@ Claude Opus 4.5 (claude-opus-4-5-20251101)
 - `libs/fp-proto/src/fp_proto/plantation/v1/plantation_pb2.py`
 - `libs/fp-proto/src/fp_proto/plantation/v1/plantation_pb2.pyi`
 - `libs/fp-proto/src/fp_proto/plantation/v1/plantation_pb2_grpc.py`
+
+---
+
+## Code Review Notes (2025-12-25)
+
+### Issues Found and Fixed
+
+**MEDIUM - Fixed:**
+
+1. **Default value duplication** (`plantation_service.py:471-494`)
+   - **Before:** Hardcoded defaults like `"06:00-10:00"` in service layer
+   - **After:** Using domain model defaults via `OperatingHours().weekdays`, `CollectionPoint.model_fields["collection_days"].default_factory()`, etc.
+   - **Impact:** DRY compliance - single source of truth for defaults
+
+2. **Operating hours format not validated** (`value_objects.py`)
+   - **Before:** No validation on time range format
+   - **After:** Added `field_validator` with regex pattern `^([01]\d|2[0-3]):([0-5]\d)-([01]\d|2[0-3]):([0-5]\d)$`
+   - **Impact:** Invalid formats like `"hello-world"` now rejected with clear error message
+
+3. **Test count discrepancy**
+   - **Before:** Story claimed "139 tests"
+   - **After:** Updated to "106 tests" (94 unit + 12 integration for Story 1.2 specifically)
+
+### New Tests Added
+
+- `test_operating_hours_valid_formats` - 4 assertions for valid time ranges
+- `test_operating_hours_invalid_formats` - 6 assertions for invalid formats
+
+### Final Test Results
+
+```
+======================== 106 passed, 1 warning in 1.20s ========================
+```

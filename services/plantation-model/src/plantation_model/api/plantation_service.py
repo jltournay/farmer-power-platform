@@ -470,28 +470,28 @@ class PlantationServiceServicer(plantation_pb2_grpc.PlantationServiceServicer):
             clerk_phone=request.clerk_phone if request.clerk_phone else None,
             operating_hours=OperatingHours(
                 weekdays=request.operating_hours.weekdays
-                if request.operating_hours
-                else "06:00-10:00",
+                if request.operating_hours and request.operating_hours.weekdays
+                else OperatingHours().weekdays,
                 weekends=request.operating_hours.weekends
-                if request.operating_hours
-                else "07:00-09:00",
+                if request.operating_hours and request.operating_hours.weekends
+                else OperatingHours().weekends,
             ),
             collection_days=list(request.collection_days)
             if request.collection_days
-            else ["mon", "wed", "fri", "sat"],
+            else CollectionPoint.model_fields["collection_days"].default_factory(),
             capacity=CollectionPointCapacity(
-                max_daily_kg=request.capacity.max_daily_kg if request.capacity else 0,
+                max_daily_kg=request.capacity.max_daily_kg if request.capacity else CollectionPointCapacity().max_daily_kg,
                 storage_type=request.capacity.storage_type
-                if request.capacity
-                else "covered_shed",
+                if request.capacity and request.capacity.storage_type
+                else CollectionPointCapacity().storage_type,
                 has_weighing_scale=request.capacity.has_weighing_scale
                 if request.capacity
-                else False,
+                else CollectionPointCapacity().has_weighing_scale,
                 has_qc_device=request.capacity.has_qc_device
                 if request.capacity
-                else False,
+                else CollectionPointCapacity().has_qc_device,
             ),
-            status=request.status if request.status else "active",
+            status=request.status if request.status else CollectionPoint.model_fields["status"].default,
             created_at=now,
             updated_at=now,
         )

@@ -224,6 +224,56 @@ class TestValueObjects:
         assert hours.weekdays == "06:00-10:00"
         assert hours.weekends == "07:00-09:00"
 
+    def test_operating_hours_valid_formats(self) -> None:
+        """Test OperatingHours accepts valid time range formats."""
+        # Standard hours
+        hours = OperatingHours(weekdays="06:00-10:00", weekends="07:00-09:00")
+        assert hours.weekdays == "06:00-10:00"
+
+        # Early morning start
+        hours = OperatingHours(weekdays="05:00-12:00")
+        assert hours.weekdays == "05:00-12:00"
+
+        # Late hours
+        hours = OperatingHours(weekdays="14:00-23:59")
+        assert hours.weekdays == "14:00-23:59"
+
+        # Edge case: midnight boundary
+        hours = OperatingHours(weekdays="00:00-23:59")
+        assert hours.weekdays == "00:00-23:59"
+
+    def test_operating_hours_invalid_formats(self) -> None:
+        """Test OperatingHours rejects invalid time range formats."""
+        # Invalid format - missing dash
+        with pytest.raises(ValidationError) as exc_info:
+            OperatingHours(weekdays="06:00 10:00")
+        assert "Invalid time range format" in str(exc_info.value)
+
+        # Invalid format - garbage text
+        with pytest.raises(ValidationError) as exc_info:
+            OperatingHours(weekdays="hello-world")
+        assert "Invalid time range format" in str(exc_info.value)
+
+        # Invalid format - single time
+        with pytest.raises(ValidationError) as exc_info:
+            OperatingHours(weekdays="06:00")
+        assert "Invalid time range format" in str(exc_info.value)
+
+        # Invalid hour (24:00)
+        with pytest.raises(ValidationError) as exc_info:
+            OperatingHours(weekdays="24:00-10:00")
+        assert "Invalid time range format" in str(exc_info.value)
+
+        # Invalid minute (60)
+        with pytest.raises(ValidationError) as exc_info:
+            OperatingHours(weekdays="06:60-10:00")
+        assert "Invalid time range format" in str(exc_info.value)
+
+        # Invalid for weekends too
+        with pytest.raises(ValidationError) as exc_info:
+            OperatingHours(weekends="bad-format")
+        assert "Invalid time range format" in str(exc_info.value)
+
     def test_collection_point_capacity_validation(self) -> None:
         """Test CollectionPointCapacity validation."""
         capacity = CollectionPointCapacity(
