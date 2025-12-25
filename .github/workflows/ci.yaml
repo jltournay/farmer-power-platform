@@ -79,15 +79,20 @@ jobs:
 
       - name: Install dependencies
         run: |
-          pip install pytest pytest-asyncio motor pydantic pydantic-settings grpcio grpcio-tools tenacity
+          pip install pytest pytest-asyncio motor pymongo pydantic pydantic-settings grpcio grpcio-tools tenacity
 
       - name: Wait for MongoDB
         run: |
-          until mongosh --host localhost --port 27018 --eval "db.adminCommand('ping')" > /dev/null 2>&1; do
-            echo "Waiting for MongoDB..."
+          for i in {1..30}; do
+            if python -c "from pymongo import MongoClient; MongoClient('mongodb://localhost:27018', serverSelectionTimeoutMS=2000).admin.command('ping')" 2>/dev/null; then
+              echo "MongoDB is ready"
+              exit 0
+            fi
+            echo "Waiting for MongoDB... ($i/30)"
             sleep 2
           done
-          echo "MongoDB is ready"
+          echo "MongoDB failed to start"
+          exit 1
 
       - name: Run integration tests
         env:

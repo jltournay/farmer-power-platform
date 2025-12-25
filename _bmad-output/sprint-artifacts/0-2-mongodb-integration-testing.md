@@ -1,6 +1,6 @@
 # Story 0.2: MongoDB Integration Testing Infrastructure
 
-**Status:** review
+**Status:** done
 
 ---
 
