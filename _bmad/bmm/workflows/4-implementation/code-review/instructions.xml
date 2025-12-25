@@ -222,4 +222,28 @@
     </output>
   </step>
 
+  <step n="6" goal="Update GitHub issue with review results">
+    <critical>Always update the linked GitHub issue with review results!</critical>
+
+    <action>Extract GitHub issue number from story metadata (e.g., "GitHub Issue: #12")</action>
+
+    <check if="GitHub issue number found in story">
+      <action>Add comment to GitHub issue with review summary:
+        - Review outcome (passed/failed)
+        - Issues found and fixed (table format)
+        - Test verification results
+        - Final story status
+      </action>
+      <output>📝 GitHub issue #{{issue_number}} updated with review results</output>
+    </check>
+
+    <check if="no GitHub issue linked">
+      <output>⚠️ No GitHub issue linked to this story - skipping issue update</output>
+    </check>
+
+    <check if="{{new_status}} == 'done'">
+      <ask>Story is done. Would you like me to close GitHub issue #{{issue_number}}? [y/n]</ask>
+    </check>
+  </step>
+
 </workflow>
