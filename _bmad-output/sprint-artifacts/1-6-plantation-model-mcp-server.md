@@ -24,7 +24,7 @@ This story implements the first MCP server in the platform, using the gRPC MCP i
 
 2. **Given** a farmer_id exists
    **When** an AI agent calls `get_farmer_summary(farmer_id)`
-   **Then** the response includes: performance metrics, trend, yield_vs_regional_avg, last_delivery_date, historical quality data
+   **Then** the response includes: performance metrics, trend_direction, grading info, historical quality data (avg_grade, total_kg, delivery_count), and communication preferences
 
 3. **Given** a factory_id exists
    **When** an AI agent calls `get_collection_points(factory_id)`
@@ -76,8 +76,8 @@ This story implements the first MCP server in the platform, using the gRPC MCP i
 - [x] **Task 4: Create PlantationService client** (AC: #1, #2, #3, #4, #7)
   - [x] 4.1 Create `src/plantation_mcp/infrastructure/plantation_client.py`
   - [x] 4.2 Implement gRPC client via DAPR service invocation
-  - [x] 4.3 Add retry logic with exponential backoff
-  - [x] 4.4 Add circuit breaker for service unavailable
+  - [x] 4.3 Add retry logic with exponential backoff (tenacity)
+  - [x] 4.4 Add error translation for service unavailable/not found
 
 - [x] **Task 5: Create tool definitions** (AC: #1, #2, #3, #4)
   - [x] 5.1 Create `src/plantation_mcp/tools/definitions.py`
@@ -165,22 +165,19 @@ mcp-servers/plantation-mcp/
 │   ├── config.py                  # Service configuration
 │   ├── api/
 │   │   ├── __init__.py
-│   │   └── mcp_service.py         # McpToolService implementation
+│   │   └── mcp_service.py         # McpToolService + tool handlers
 │   ├── tools/
 │   │   ├── __init__.py
-│   │   ├── definitions.py         # Tool schemas and registry
-│   │   ├── get_farmer.py
-│   │   ├── get_farmer_summary.py
-│   │   ├── get_collection_points.py
-│   │   └── get_farmers_by_collection_point.py
+│   │   └── definitions.py         # Tool schemas and registry
 │   └── infrastructure/
 │       ├── __init__.py
 │       └── plantation_client.py   # PlantationService gRPC client
 ├── tests/
+│   ├── __init__.py
+│   ├── conftest.py
 │   └── unit/
 │       ├── __init__.py
-│       ├── test_mcp_service.py
-│       └── test_tools.py
+│       └── test_mcp_service.py    # 12 unit tests
 ├── Dockerfile
 └── pyproject.toml
 
