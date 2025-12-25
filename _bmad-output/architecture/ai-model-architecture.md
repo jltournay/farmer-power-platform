@@ -105,10 +105,13 @@ The AI Model is the **6th Domain Model** - the centralized intelligence layer fo
 │                             └──────────────────────┘                   │
 │                                                                         │
 │  ┌─────────────────────────────────────────────────────────────────┐   │
-│  │                    MCP CLIENTS                                   │   │
+│  │                    MCP CLIENTS (gRPC via DAPR)                   │   │
 │  │  • Collection MCP (fetch documents)                              │   │
 │  │  • Plantation MCP (fetch farmer context)                         │   │
 │  │  • Knowledge MCP (fetch analyses)                                │   │
+│  │                                                                  │   │
+│  │  Protocol: gRPC (not JSON-RPC) - see infrastructure-decisions   │   │
+│  │  Transport: DAPR service invocation                              │   │
 │  └─────────────────────────────────────────────────────────────────┘   │
 │                                                                         │
 │  Persistence: STATELESS (results published via events)                  │

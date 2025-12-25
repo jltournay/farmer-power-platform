@@ -35,3 +35,4 @@ desktop.ini
 /manager.sh
 /deploy/config_files/components/worker-specific/
 /prompt/
+.claude/settings.local.json

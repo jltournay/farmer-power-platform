@@ -63,7 +63,7 @@ farmer-power-platform/
 │   │       └── notification.proto
 │   ├── mcp/
 │   │   └── v1/
-│   │       └── mcp_tools.proto
+│   │       └── mcp_tool.proto  # gRPC MCP service (not JSON-RPC)
 │   └── common/
 │       └── v1/
 │           ├── pagination.proto
@@ -298,7 +298,7 @@ proto/
 │
 ├── mcp/
 │   └── v1/
-│       └── mcp_tools.proto      # MCP tool definitions
+│       └── mcp_tool.proto       # gRPC MCP service (see infrastructure-decisions.md)
 │
 └── common/
     └── v1/
@@ -394,6 +394,12 @@ libs/fp-common/
     │   ├── client.py       # Dapr client wrapper
     │   ├── pubsub.py       # Pub/sub helpers
     │   └── state.py        # State store helpers
+    ├── mcp/                 # MCP client utilities (gRPC-based)
+    │   ├── __init__.py
+    │   ├── client.py       # GrpcMcpClient - DAPR service invocation wrapper
+    │   ├── tool.py         # GrpcMcpTool - LangChain BaseTool wrapper
+    │   ├── registry.py     # Tool discovery and registration
+    │   └── errors.py       # McpToolError, error codes
     └── health/
         ├── __init__.py
         └── checks.py       # Health check utilities
@@ -414,6 +420,12 @@ libs/fp-proto/
     │       ├── collection_pb2.py
     │       ├── collection_pb2_grpc.py
     │       └── collection_pb2.pyi
+    ├── mcp/                          # MCP gRPC stubs (shared by all MCP servers)
+    │   └── v1/
+    │       ├── __init__.py
+    │       ├── mcp_tool_pb2.py       # Message types
+    │       ├── mcp_tool_pb2_grpc.py  # Service stubs
+    │       └── mcp_tool_pb2.pyi      # Type hints
     └── common/
         └── v1/
             └── ...
@@ -441,6 +453,7 @@ libs/fp-testing/
     │   ├── mongodb_mock.py      # Mock MongoDB (testcontainers integration)
     │   ├── llm_mock.py          # Mock LLM with record/replay
     │   ├── pinecone_mock.py     # In-memory vector DB mock
+    │   ├── mcp_mock.py          # Mock MCP servers (gRPC service mock)
     │   └── external_apis.py     # Starfish, Weather, Africa's Talking mocks
     └── assertions.py            # Custom assertions for AI output validation
 ```
@@ -918,6 +931,8 @@ ALWAYS REAL:
 | Test framework | pytest + pytest-asyncio | Modern Python testing |
 | AI testing | Golden sample framework | Critical for LLM accuracy validation |
 | Mock boundaries | External always mocked | Deterministic, fast tests |
+| MCP protocol | gRPC (not JSON-RPC) | Unified protocol, DAPR integration (see infrastructure-decisions.md) |
+| MCP client code | Shared in `libs/fp-common/mcp/` | Reusable across AI Model and tests |
 
 ---
 

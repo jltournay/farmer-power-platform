@@ -73,6 +73,219 @@ spec:
 - HPA scales based on CPU and request rate
 - Each MCP server (Collection, Plantation, Knowledge) scales independently
 
+## MCP Protocol Decision: gRPC over JSON-RPC
+
+**Decision:** MCP servers use gRPC protocol (not standard JSON-RPC) to maintain unified internal communication through DAPR.
+
+### Context
+
+The [Model Context Protocol (MCP)](https://modelcontextprotocol.io/specification/2025-11-25) standard defines JSON-RPC 2.0 as the wire protocol, typically transported over stdio or HTTP+SSE. However, our architecture mandates gRPC for all internal service communication via DAPR sidecars.
+
+### Problem Statement
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                    PROTOCOL TENSION                                          │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│  Standard MCP                          Our Architecture                     │
+│  ┌─────────────────┐                  ┌─────────────────┐                  │
+│  │ JSON-RPC 2.0    │                  │ gRPC via DAPR   │                  │
+│  │ over HTTP/stdio │       vs         │ for all internal│                  │
+│  │                 │                  │ communication   │                  │
+│  └─────────────────┘                  └─────────────────┘                  │
+│                                                                             │
+│  Options Evaluated:                                                         │
+│  A) JSON-RPC bypassing DAPR  → Loses observability, mTLS, circuit breaker  │
+│  B) JSON-RPC through DAPR    → Mixed protocols, added complexity           │
+│  C) gRPC native (chosen)     → Unified protocol, full DAPR benefits        │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+### Decision: gRPC-Native MCP (Option C)
+
+We adopt the **MCP conceptual model** (tools, resources) but implement it with **gRPC transport**:
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                    gRPC-NATIVE MCP ARCHITECTURE                              │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│  AI Model                                          MCP Server               │
+│  ┌─────────────────┐                              ┌─────────────────┐      │
+│  │  LangChain/     │                              │  gRPC Service   │      │
+│  │  LangGraph      │                              │                 │      │
+│  │                 │                              │  Implements:    │      │
+│  │  GrpcMcpTool    │                              │  McpToolService │      │
+│  │  (wrapper)      │                              │                 │      │
+│  └────────┬────────┘                              └────────▲────────┘      │
+│           │                                                │                │
+│           │ gRPC                                     gRPC  │                │
+│           ▼                                                │                │
+│  ┌─────────────────┐        gRPC            ┌─────────────────┐            │
+│  │  DAPR Sidecar   │ ─────────────────────▶ │  DAPR Sidecar   │            │
+│  │  :50001         │   (sidecar-to-sidecar) │  :50001         │            │
+│  └─────────────────┘                        └─────────────────┘            │
+│                                                                             │
+│  Benefits:                                                                  │
+│  ✓ Unified protocol (gRPC everywhere)                                      │
+│  ✓ All traffic through DAPR sidecars                                       │
+│  ✓ mTLS, observability, retries, circuit breaking                          │
+│  ✓ Strong typing via proto definitions                                     │
+│  ✓ Streaming support for large results                                     │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+### Proto Definition
+
+MCP tool calls are defined in `proto/mcp/v1/mcp_tool.proto`:
+
+```protobuf
+syntax = "proto3";
+package farmer_power.mcp.v1;
+
+// McpToolService provides tool invocation for AI agents
+service McpToolService {
+  // List available tools with their schemas
+  rpc ListTools(ListToolsRequest) returns (ListToolsResponse);
+
+  // Invoke a specific tool
+  rpc CallTool(ToolCallRequest) returns (ToolCallResponse);
+}
+
+message ListToolsRequest {
+  // Optional filter by tool category
+  string category = 1;
+}
+
+message ListToolsResponse {
+  repeated ToolDefinition tools = 1;
+}
+
+message ToolDefinition {
+  string name = 1;                    // e.g., "get_farmer_by_id"
+  string description = 2;             // Human-readable description
+  string input_schema_json = 3;       // JSON Schema for tool arguments
+  string category = 4;                // e.g., "query", "search"
+}
+
+message ToolCallRequest {
+  string tool_name = 1;               // Tool to invoke
+  string arguments_json = 2;          // JSON-encoded arguments
+  string trace_id = 3;                // OpenTelemetry trace ID
+  string caller_agent_id = 4;         // For audit logging
+}
+
+message ToolCallResponse {
+  bool success = 1;
+  string result_json = 2;             // JSON-encoded result
+  string error_message = 3;           // Error details if success=false
+  string error_code = 4;              // Machine-readable error code
+}
+```
+
+### LangChain Integration
+
+The AI Model wraps gRPC calls in LangChain-compatible tools:
+
+```python
+# ai-model/src/ai_model/tools/grpc_mcp_tool.py
+from langchain.tools import BaseTool
+from dapr.clients import DaprClient
+
+class GrpcMcpTool(BaseTool):
+    """Wraps gRPC MCP call as LangChain tool."""
+
+    name: str
+    description: str
+    mcp_server_app_id: str  # DAPR app-id
+
+    async def _arun(self, **kwargs) -> str:
+        async with DaprClient() as client:
+            request = ToolCallRequest(
+                tool_name=self.name,
+                arguments_json=json.dumps(kwargs),
+                trace_id=get_current_trace_id(),
+                caller_agent_id=get_current_agent_id()
+            )
+
+            response = await client.invoke_method(
+                app_id=self.mcp_server_app_id,
+                method_name="CallTool",
+                data=request.SerializeToString(),
+                content_type="application/grpc"
+            )
+
+            result = ToolCallResponse.FromString(response.data)
+            if not result.success:
+                raise ToolExecutionError(result.error_message)
+            return result.result_json
+```
+
+### Trade-offs
+
+| Factor | gRPC Native | Standard MCP (JSON-RPC) |
+|--------|-------------|-------------------------|
+| **DAPR Integration** | ✅ Native | ⚠️ Requires app-protocol: http |
+| **Protocol Consistency** | ✅ Unified gRPC | ❌ Mixed protocols |
+| **Type Safety** | ✅ Proto definitions | ⚠️ Runtime validation |
+| **Streaming** | ✅ Native support | ❌ Not in JSON-RPC |
+| **Claude Desktop/ChatGPT** | ❌ Incompatible | ✅ Works directly |
+| **MCP Inspector Tool** | ❌ Won't work | ✅ Full support |
+| **External MCP Servers** | ❌ Need adapter | ✅ Direct connection |
+| **Development Effort** | ⚠️ +13-16h per server | ✅ Use SDK |
+
+### When Standard MCP Compatibility is Needed
+
+If future requirements demand standard MCP compatibility (e.g., external developers building tools), add an **MCP Adapter Gateway**:
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                    FUTURE: MCP ADAPTER (if needed)                           │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│  External MCP Client                              Internal gRPC MCP         │
+│  (Claude Desktop, etc.)                                                     │
+│  ┌─────────────────┐                              ┌─────────────────┐      │
+│  │  JSON-RPC 2.0   │                              │  gRPC Service   │      │
+│  │  over HTTP      │                              │  (unchanged)    │      │
+│  └────────┬────────┘                              └────────▲────────┘      │
+│           │                                                │                │
+│           │ JSON-RPC                                 gRPC  │                │
+│           ▼                                                │                │
+│  ┌─────────────────────────────────────────────────────────┘               │
+│  │  MCP Adapter Gateway                                                    │
+│  │  ┌─────────────────────────────────────────────────────────────────┐   │
+│  │  │  - Translates JSON-RPC ↔ gRPC                                    │   │
+│  │  │  - Implements MCP initialization handshake                       │   │
+│  │  │  - Routes to appropriate internal MCP server                     │   │
+│  │  │  - Effort: ~8 hours to implement                                 │   │
+│  │  └─────────────────────────────────────────────────────────────────┘   │
+│  └─────────────────────────────────────────────────────────────────────────┘
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+**Estimated effort for adapter:** ~8 hours (deferred until needed)
+
+### Decision Summary
+
+| Aspect | Decision |
+|--------|----------|
+| **Protocol** | gRPC (not JSON-RPC) |
+| **Transport** | DAPR service invocation |
+| **Conceptual Model** | MCP (tools, resources) |
+| **Standard Compliance** | No (internal only) |
+| **Future Compatibility** | Adapter pattern if needed |
+
+### References
+
+- [MCP Specification](https://modelcontextprotocol.io/specification/2025-11-25)
+- [Anthropic MCP Introduction](https://www.anthropic.com/news/model-context-protocol)
+- [DAPR Service Invocation](https://docs.dapr.io/developing-applications/building-blocks/service-invocation/)
+
 ## External API Resiliency (DAPR Circuit Breaker)
 
 **Decision:** Use DAPR's built-in resiliency policies for external API calls (Starfish Network, Weather APIs, Google Elevation API).
