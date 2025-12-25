@@ -5,7 +5,6 @@ from unittest.mock import AsyncMock
 import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
-
 from plantation_model.api.health import router, set_mongodb_check
 
 

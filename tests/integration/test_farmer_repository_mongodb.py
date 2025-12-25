@@ -12,12 +12,11 @@ Usage:
 """
 
 import pytest
-
 from plantation_model.domain.models.farmer import (
     Farmer,
     FarmScale,
-    NotificationChannel,
     InteractionPreference,
+    NotificationChannel,
     PreferredLanguage,
 )
 from plantation_model.domain.models.value_objects import ContactInfo, GeoLocation

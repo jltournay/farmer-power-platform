@@ -1,7 +1,6 @@
 """Collection Point domain model."""
 
-from datetime import datetime, timezone
-from typing import Optional
+from datetime import UTC, datetime
 
 from pydantic import BaseModel, Field
 
@@ -24,8 +23,8 @@ class CollectionPoint(BaseModel):
     factory_id: str = Field(description="Parent factory ID")
     location: GeoLocation = Field(description="Geographic location with altitude")
     region_id: str = Field(description="Region ID for this collection point")
-    clerk_id: Optional[str] = Field(default=None, description="Assigned clerk ID")
-    clerk_phone: Optional[str] = Field(default=None, description="Clerk phone number")
+    clerk_id: str | None = Field(default=None, description="Assigned clerk ID")
+    clerk_phone: str | None = Field(default=None, description="Clerk phone number")
     operating_hours: OperatingHours = Field(
         default_factory=OperatingHours, description="Operating hours"
     )
@@ -42,11 +41,11 @@ class CollectionPoint(BaseModel):
         description="Status: active, inactive, seasonal",
     )
     created_at: datetime = Field(
-        default_factory=lambda: datetime.now(timezone.utc),
+        default_factory=lambda: datetime.now(UTC),
         description="Creation timestamp",
     )
     updated_at: datetime = Field(
-        default_factory=lambda: datetime.now(timezone.utc),
+        default_factory=lambda: datetime.now(UTC),
         description="Last update timestamp",
     )
 
@@ -88,21 +87,21 @@ class CollectionPointCreate(BaseModel):
     factory_id: str
     location: GeoLocation
     region_id: str
-    clerk_id: Optional[str] = None
-    clerk_phone: Optional[str] = None
-    operating_hours: Optional[OperatingHours] = None
-    collection_days: Optional[list[str]] = None
-    capacity: Optional[CollectionPointCapacity] = None
+    clerk_id: str | None = None
+    clerk_phone: str | None = None
+    operating_hours: OperatingHours | None = None
+    collection_days: list[str] | None = None
+    capacity: CollectionPointCapacity | None = None
     status: str = Field(default="active")
 
 
 class CollectionPointUpdate(BaseModel):
     """Data for updating an existing collection point."""
 
-    name: Optional[str] = Field(default=None, min_length=1, max_length=100)
-    clerk_id: Optional[str] = None
-    clerk_phone: Optional[str] = None
-    operating_hours: Optional[OperatingHours] = None
-    collection_days: Optional[list[str]] = None
-    capacity: Optional[CollectionPointCapacity] = None
-    status: Optional[str] = None
+    name: str | None = Field(default=None, min_length=1, max_length=100)
+    clerk_id: str | None = None
+    clerk_phone: str | None = None
+    operating_hours: OperatingHours | None = None
+    collection_days: list[str] | None = None
+    capacity: CollectionPointCapacity | None = None
+    status: str | None = None

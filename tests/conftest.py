@@ -18,11 +18,11 @@ from __future__ import annotations
 
 import asyncio
 import json
-import os
-from datetime import datetime, timezone
+from collections.abc import AsyncGenerator, Generator
+from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any, AsyncGenerator, Generator, Optional
-from unittest.mock import AsyncMock, MagicMock, patch
+from typing import Any
+from unittest.mock import MagicMock
 
 import pytest
 from pydantic import BaseModel
@@ -79,7 +79,7 @@ class MockDaprClient:
         self,
         app_id: str,
         method_name: str,
-        data: Optional[dict[str, Any]] = None,
+        data: dict[str, Any] | None = None,
         http_verb: str = "POST",
     ) -> dict[str, Any]:
         """Mock service invocation via DAPR."""
@@ -88,7 +88,7 @@ class MockDaprClient:
             "method_name": method_name,
             "data": data,
             "http_verb": http_verb,
-            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "timestamp": datetime.now(UTC).isoformat(),
         }
         self.invoked_methods.append(invocation)
 
@@ -109,7 +109,7 @@ class MockDaprClient:
             "topic_name": topic_name,
             "data": data,
             "data_content_type": data_content_type,
-            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "timestamp": datetime.now(UTC).isoformat(),
         }
         self.published_events.append(event)
 
@@ -126,7 +126,7 @@ class MockDaprClient:
         self,
         store_name: str,
         key: str,
-    ) -> Optional[Any]:
+    ) -> Any | None:
         """Mock state store get."""
         return self._state_store.get(f"{store_name}:{key}")
 
@@ -147,13 +147,13 @@ class MockDaprClient:
         self._method_responses.clear()
         self._state_store.clear()
 
-    def get_published_events(self, topic: Optional[str] = None) -> list[dict[str, Any]]:
+    def get_published_events(self, topic: str | None = None) -> list[dict[str, Any]]:
         """Get published events, optionally filtered by topic."""
         if topic:
             return [e for e in self.published_events if e["topic_name"] == topic]
         return self.published_events
 
-    def get_invocations(self, app_id: Optional[str] = None) -> list[dict[str, Any]]:
+    def get_invocations(self, app_id: str | None = None) -> list[dict[str, Any]]:
         """Get method invocations, optionally filtered by app_id."""
         if app_id:
             return [i for i in self.invoked_methods if i["app_id"] == app_id]
@@ -205,12 +205,12 @@ class MockLLMClient:
     - Custom response configuration for specific prompts
     """
 
-    def __init__(self, fixtures_path: Optional[Path] = None) -> None:
+    def __init__(self, fixtures_path: Path | None = None) -> None:
         self.fixtures_path = fixtures_path or Path("tests/fixtures/llm_responses")
         self._responses: dict[str, LLMResponse] = {}
         self._calls: list[dict[str, Any]] = []
         self._record_mode: bool = False
-        self._default_response: Optional[LLMResponse] = None
+        self._default_response: LLMResponse | None = None
 
     async def chat_completion(
         self,
@@ -218,7 +218,7 @@ class MockLLMClient:
         messages: list[dict[str, str]],
         temperature: float = 0.1,
         max_tokens: int = 2000,
-        response_format: Optional[dict[str, str]] = None,
+        response_format: dict[str, str] | None = None,
     ) -> LLMResponse:
         """Mock chat completion API call."""
         call = {
@@ -227,7 +227,7 @@ class MockLLMClient:
             "temperature": temperature,
             "max_tokens": max_tokens,
             "response_format": response_format,
-            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "timestamp": datetime.now(UTC).isoformat(),
         }
         self._calls.append(call)
 
@@ -278,7 +278,7 @@ class MockLLMClient:
             usage={"prompt_tokens": 100, "completion_tokens": 50, "total_tokens": 150},
         )
 
-    def get_calls(self, model: Optional[str] = None) -> list[dict[str, Any]]:
+    def get_calls(self, model: str | None = None) -> list[dict[str, Any]]:
         """Get all LLM calls, optionally filtered by model."""
         if model:
             return [c for c in self._calls if c["model"] == model]
@@ -296,7 +296,7 @@ class MockLLMClient:
         serialized = json.dumps(messages, sort_keys=True)
         return str(hash(serialized))
 
-    def _load_recorded_response(self, cache_key: str, model: str) -> Optional[LLMResponse]:
+    def _load_recorded_response(self, cache_key: str, model: str) -> LLMResponse | None:
         """Load recorded response from fixtures if available."""
         fixture_file = self.fixtures_path / f"{cache_key}.json"
         if fixture_file.exists():
@@ -367,14 +367,14 @@ class MockMongoCollection:
         result.inserted_ids = inserted_ids
         return result
 
-    async def find_one(self, filter: dict[str, Any]) -> Optional[dict[str, Any]]:
+    async def find_one(self, filter: dict[str, Any]) -> dict[str, Any] | None:
         """Mock find_one operation."""
         for doc in self._documents.values():
             if all(doc.get(k) == v for k, v in filter.items()):
                 return doc.copy()
         return None
 
-    async def find(self, filter: dict[str, Any]) -> "MockMongoCursor":
+    async def find(self, filter: dict[str, Any]) -> MockMongoCursor:
         """Mock find operation returning cursor."""
         matching = [
             doc.copy()
@@ -446,7 +446,7 @@ class MockMongoCursor:
         self._documents = documents
         self._index = 0
 
-    def __aiter__(self) -> "MockMongoCursor":
+    def __aiter__(self) -> MockMongoCursor:
         return self
 
     async def __anext__(self) -> dict[str, Any]:
@@ -456,21 +456,21 @@ class MockMongoCursor:
         self._index += 1
         return doc
 
-    async def to_list(self, length: Optional[int] = None) -> list[dict[str, Any]]:
+    async def to_list(self, length: int | None = None) -> list[dict[str, Any]]:
         """Convert cursor to list."""
         if length:
             return self._documents[:length]
         return self._documents
 
-    def skip(self, n: int) -> "MockMongoCursor":
+    def skip(self, n: int) -> MockMongoCursor:
         """Skip n documents."""
         return MockMongoCursor(self._documents[n:])
 
-    def limit(self, n: int) -> "MockMongoCursor":
+    def limit(self, n: int) -> MockMongoCursor:
         """Limit to n documents."""
         return MockMongoCursor(self._documents[:n])
 
-    def sort(self, key_or_list: Any) -> "MockMongoCursor":
+    def sort(self, key_or_list: Any) -> MockMongoCursor:
         """Mock sort - returns self for chaining."""
         return self
 
@@ -568,7 +568,7 @@ class MockMCPClient:
             "server": self.server_name,
             "tool": tool_name,
             "arguments": arguments,
-            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "timestamp": datetime.now(UTC).isoformat(),
         }
         self._tool_calls.append(call)
 
@@ -579,7 +579,7 @@ class MockMCPClient:
         """Configure response for a specific tool."""
         self._tool_responses[tool_name] = response
 
-    def get_tool_calls(self, tool_name: Optional[str] = None) -> list[dict[str, Any]]:
+    def get_tool_calls(self, tool_name: str | None = None) -> list[dict[str, Any]]:
         """Get tool calls, optionally filtered by tool name."""
         if tool_name:
             return [c for c in self._tool_calls if c["tool"] == tool_name]
@@ -626,8 +626,8 @@ class MockExternalAPIClient:
         self,
         method: str,
         path: str,
-        data: Optional[dict[str, Any]] = None,
-        headers: Optional[dict[str, str]] = None,
+        data: dict[str, Any] | None = None,
+        headers: dict[str, str] | None = None,
     ) -> dict[str, Any]:
         """Mock HTTP request."""
         request = {
@@ -635,7 +635,7 @@ class MockExternalAPIClient:
             "path": path,
             "data": data,
             "headers": headers,
-            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "timestamp": datetime.now(UTC).isoformat(),
         }
         self._requests.append(request)
         return self._responses.get(path, {"status": "success"})
@@ -644,7 +644,7 @@ class MockExternalAPIClient:
         """Configure response for a specific path."""
         self._responses[path] = response
 
-    def get_requests(self, path: Optional[str] = None) -> list[dict[str, Any]]:
+    def get_requests(self, path: str | None = None) -> list[dict[str, Any]]:
         """Get requests, optionally filtered by path."""
         if path:
             return [r for r in self._requests if r["path"] == path]
@@ -713,11 +713,11 @@ class TestDataFactory:
     @classmethod
     def create_farmer(
         cls,
-        farmer_id: Optional[str] = None,
-        name: Optional[str] = None,
-        phone: Optional[str] = None,
-        region: Optional[str] = None,
-        factory_id: Optional[str] = None,
+        farmer_id: str | None = None,
+        name: str | None = None,
+        phone: str | None = None,
+        region: str | None = None,
+        factory_id: str | None = None,
         **overrides: Any,
     ) -> dict[str, Any]:
         """Create a test farmer with sensible defaults."""
@@ -731,17 +731,17 @@ class TestDataFactory:
             "altitude_band": "high",
             "communication_preference": "sms",
             "language": "sw",
-            "created_at": datetime.now(timezone.utc).isoformat(),
+            "created_at": datetime.now(UTC).isoformat(),
             **overrides,
         }
 
     @classmethod
     def create_factory(
         cls,
-        factory_id: Optional[str] = None,
-        name: Optional[str] = None,
-        region: Optional[str] = None,
-        grading_model_id: Optional[str] = None,
+        factory_id: str | None = None,
+        name: str | None = None,
+        region: str | None = None,
+        grading_model_id: str | None = None,
         **overrides: Any,
     ) -> dict[str, Any]:
         """Create a test factory with sensible defaults."""
@@ -751,14 +751,14 @@ class TestDataFactory:
             "name": name or f"Test Factory {cls._factory_counter}",
             "region": region or "Kericho",
             "grading_model_id": grading_model_id or "GM-TERNARY",
-            "created_at": datetime.now(timezone.utc).isoformat(),
+            "created_at": datetime.now(UTC).isoformat(),
             **overrides,
         }
 
     @classmethod
     def create_qc_event(
         cls,
-        farmer_id: Optional[str] = None,
+        farmer_id: str | None = None,
         grade: str = "B",
         quality_score: float = 78.0,
         source: str = "qc-analyzer",
@@ -773,7 +773,7 @@ class TestDataFactory:
             "event_type": "END_BAG",
             "grade": grade,
             "quality_score": quality_score,
-            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "timestamp": datetime.now(UTC).isoformat(),
             "validation_warnings": [],
             **overrides,
         }
@@ -781,7 +781,7 @@ class TestDataFactory:
     @classmethod
     def create_diagnosis(
         cls,
-        farmer_id: Optional[str] = None,
+        farmer_id: str | None = None,
         condition: str = "tea_blister_blight",
         confidence: float = 0.85,
         severity: str = "moderate",
@@ -800,14 +800,14 @@ class TestDataFactory:
                 "Apply fungicide treatment",
                 "Improve drainage",
             ],
-            "created_at": datetime.now(timezone.utc).isoformat(),
+            "created_at": datetime.now(UTC).isoformat(),
             **overrides,
         }
 
     @classmethod
     def create_action_plan(
         cls,
-        farmer_id: Optional[str] = None,
+        farmer_id: str | None = None,
         priority: str = "high",
         **overrides: Any,
     ) -> dict[str, Any]:
@@ -823,7 +823,7 @@ class TestDataFactory:
                 "main_actions": ["Kagua majani", "Weka mbolea"],
                 "closing": "Asante",
             },
-            "created_at": datetime.now(timezone.utc).isoformat(),
+            "created_at": datetime.now(UTC).isoformat(),
             **overrides,
         }
 
@@ -862,8 +862,8 @@ class GoldenSample:
         self,
         input_data: dict[str, Any],
         expected_output: dict[str, Any],
-        metadata: Optional[dict[str, Any]] = None,
-        acceptable_variance: Optional[dict[str, float]] = None,
+        metadata: dict[str, Any] | None = None,
+        acceptable_variance: dict[str, float] | None = None,
     ) -> None:
         self.input_data = input_data
         self.expected_output = expected_output
@@ -907,7 +907,7 @@ class GoldenSample:
 class GoldenSampleLoader:
     """Loader for golden sample test cases."""
 
-    def __init__(self, base_path: Optional[Path] = None) -> None:
+    def __init__(self, base_path: Path | None = None) -> None:
         self.base_path = base_path or Path("tests/golden")
 
     def load_samples(self, agent_name: str) -> list[GoldenSample]:
@@ -942,7 +942,7 @@ class GoldenSampleLoader:
         if samples_file.exists():
             data = json.loads(samples_file.read_text())
         else:
-            data = {"samples": [], "metadata": {"agent": agent_name, "created_at": datetime.now(timezone.utc).isoformat()}}
+            data = {"samples": [], "metadata": {"agent": agent_name, "created_at": datetime.now(UTC).isoformat()}}
 
         # Add new sample
         data["samples"].append({

@@ -1,10 +1,9 @@
 """Unit tests for Factory repository."""
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
-
 from plantation_model.domain.models.factory import Factory
 from plantation_model.domain.models.value_objects import ContactInfo, GeoLocation
 from plantation_model.infrastructure.repositories.factory_repository import (
@@ -47,8 +46,8 @@ class TestFactoryRepository:
             ),
             processing_capacity_kg=50000,
             is_active=True,
-            created_at=datetime.now(timezone.utc),
-            updated_at=datetime.now(timezone.utc),
+            created_at=datetime.now(UTC),
+            updated_at=datetime.now(UTC),
         )
 
     @pytest.mark.asyncio

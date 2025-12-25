@@ -4,14 +4,13 @@ from typing import Any
 
 import grpc
 import structlog
+from fp_proto.plantation.v1 import plantation_pb2, plantation_pb2_grpc
 from tenacity import (
     retry,
     retry_if_exception_type,
     stop_after_attempt,
     wait_exponential,
 )
-
-from fp_proto.plantation.v1 import plantation_pb2, plantation_pb2_grpc
 
 from plantation_mcp.config import settings
 

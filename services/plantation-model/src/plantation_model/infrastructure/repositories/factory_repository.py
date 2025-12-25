@@ -1,7 +1,6 @@
 """Factory repository for MongoDB persistence."""
 
 import logging
-from typing import Optional
 
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from pymongo import ASCENDING
@@ -25,7 +24,7 @@ class FactoryRepository(BaseRepository[Factory]):
         """
         super().__init__(db, self.COLLECTION_NAME, Factory)
 
-    async def get_by_code(self, code: str) -> Optional[Factory]:
+    async def get_by_code(self, code: str) -> Factory | None:
         """Get a factory by its unique code.
 
         Args:
@@ -45,8 +44,8 @@ class FactoryRepository(BaseRepository[Factory]):
         region_id: str,
         active_only: bool = True,
         page_size: int = 100,
-        page_token: Optional[str] = None,
-    ) -> tuple[list[Factory], Optional[str], int]:
+        page_token: str | None = None,
+    ) -> tuple[list[Factory], str | None, int]:
         """List factories in a specific region.
 
         Args:
@@ -66,8 +65,8 @@ class FactoryRepository(BaseRepository[Factory]):
     async def list_active(
         self,
         page_size: int = 100,
-        page_token: Optional[str] = None,
-    ) -> tuple[list[Factory], Optional[str], int]:
+        page_token: str | None = None,
+    ) -> tuple[list[Factory], str | None, int]:
         """List all active factories.
 
         Args:

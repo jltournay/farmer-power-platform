@@ -1,18 +1,16 @@
 """Integration tests for CollectionPoint CRUD flow."""
 
-from datetime import datetime, timezone
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
-
 from plantation_model.domain.models.collection_point import CollectionPoint
 from plantation_model.domain.models.factory import Factory
+from plantation_model.domain.models.id_generator import IDGenerator
 from plantation_model.domain.models.value_objects import (
     CollectionPointCapacity,
     GeoLocation,
     OperatingHours,
 )
-from plantation_model.domain.models.id_generator import IDGenerator
 from plantation_model.infrastructure.repositories.collection_point_repository import (
     CollectionPointRepository,
 )

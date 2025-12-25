@@ -7,7 +7,6 @@ Tests cover:
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
-
 from fp_common.mcp.registry import McpToolRegistry
 
 

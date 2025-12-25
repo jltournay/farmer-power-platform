@@ -1,12 +1,10 @@
 """Unit tests for Factory domain model."""
 
-from datetime import datetime, timezone
 
 import pytest
-from pydantic import ValidationError
-
 from plantation_model.domain.models.factory import Factory, FactoryCreate, FactoryUpdate
 from plantation_model.domain.models.value_objects import ContactInfo, GeoLocation
+from pydantic import ValidationError
 
 
 class TestFactory:

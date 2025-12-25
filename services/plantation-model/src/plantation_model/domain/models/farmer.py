@@ -1,8 +1,7 @@
 """Farmer domain model."""
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from enum import Enum
-from typing import Optional
 
 from pydantic import BaseModel, Field
 
@@ -121,7 +120,7 @@ class Farmer(BaseModel):
     """
 
     id: str = Field(description="Unique farmer ID (format: WM-XXXX)")
-    grower_number: Optional[str] = Field(
+    grower_number: str | None = Field(
         default=None, description="External/legacy grower number"
     )
     first_name: str = Field(min_length=1, max_length=100, description="First name")
@@ -144,7 +143,7 @@ class Farmer(BaseModel):
         min_length=1, max_length=20, description="Government-issued national ID"
     )
     registration_date: datetime = Field(
-        default_factory=lambda: datetime.now(timezone.utc),
+        default_factory=lambda: datetime.now(UTC),
         description="Registration timestamp",
     )
     is_active: bool = Field(default=True, description="Whether farmer is active")
@@ -161,11 +160,11 @@ class Farmer(BaseModel):
         description="Preferred language for communications",
     )
     created_at: datetime = Field(
-        default_factory=lambda: datetime.now(timezone.utc),
+        default_factory=lambda: datetime.now(UTC),
         description="Creation timestamp",
     )
     updated_at: datetime = Field(
-        default_factory=lambda: datetime.now(timezone.utc),
+        default_factory=lambda: datetime.now(UTC),
         description="Last update timestamp",
     )
 
@@ -217,7 +216,7 @@ class FarmerCreate(BaseModel):
     latitude: float = Field(ge=-90, le=90, description="Farm latitude")
     longitude: float = Field(ge=-180, le=180, description="Farm longitude")
     collection_point_id: str = Field(description="Primary collection point")
-    grower_number: Optional[str] = Field(
+    grower_number: str | None = Field(
         default=None, description="External/legacy grower number"
     )
 
@@ -229,17 +228,17 @@ class FarmerUpdate(BaseModel):
     region_id cannot be changed after registration.
     """
 
-    first_name: Optional[str] = Field(default=None, min_length=1, max_length=100)
-    last_name: Optional[str] = Field(default=None, min_length=1, max_length=100)
-    phone: Optional[str] = Field(default=None, min_length=10, max_length=15)
-    farm_size_hectares: Optional[float] = Field(default=None, ge=0.01, le=1000.0)
-    is_active: Optional[bool] = None
-    notification_channel: Optional[NotificationChannel] = Field(
+    first_name: str | None = Field(default=None, min_length=1, max_length=100)
+    last_name: str | None = Field(default=None, min_length=1, max_length=100)
+    phone: str | None = Field(default=None, min_length=10, max_length=15)
+    farm_size_hectares: float | None = Field(default=None, ge=0.01, le=1000.0)
+    is_active: bool | None = None
+    notification_channel: NotificationChannel | None = Field(
         default=None, description="Channel for pushing notifications"
     )
-    interaction_pref: Optional[InteractionPreference] = Field(
+    interaction_pref: InteractionPreference | None = Field(
         default=None, description="Preferred mode for consuming information"
     )
-    pref_lang: Optional[PreferredLanguage] = Field(
+    pref_lang: PreferredLanguage | None = Field(
         default=None, description="Preferred language for communications"
     )

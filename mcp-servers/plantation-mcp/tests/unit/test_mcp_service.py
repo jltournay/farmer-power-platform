@@ -4,7 +4,6 @@ import json
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
-
 from fp_proto.mcp.v1 import mcp_tool_pb2
 
 from plantation_mcp.api.mcp_service import McpToolServiceServicer

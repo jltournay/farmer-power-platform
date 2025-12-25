@@ -1,10 +1,8 @@
 """Unit tests for FarmerPerformanceRepository."""
 
-from datetime import datetime, timezone
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
-
 from plantation_model.domain.models.farmer import FarmScale
 from plantation_model.domain.models.farmer_performance import (
     FarmerPerformance,

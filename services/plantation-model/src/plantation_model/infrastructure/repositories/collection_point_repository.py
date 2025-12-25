@@ -1,7 +1,6 @@
 """Collection Point repository for MongoDB persistence."""
 
 import logging
-from typing import Optional
 
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from pymongo import ASCENDING
@@ -30,8 +29,8 @@ class CollectionPointRepository(BaseRepository[CollectionPoint]):
         factory_id: str,
         active_only: bool = False,
         page_size: int = 100,
-        page_token: Optional[str] = None,
-    ) -> tuple[list[CollectionPoint], Optional[str], int]:
+        page_token: str | None = None,
+    ) -> tuple[list[CollectionPoint], str | None, int]:
         """List collection points for a specific factory.
 
         Args:
@@ -51,10 +50,10 @@ class CollectionPointRepository(BaseRepository[CollectionPoint]):
     async def list_by_region(
         self,
         region_id: str,
-        status: Optional[str] = None,
+        status: str | None = None,
         page_size: int = 100,
-        page_token: Optional[str] = None,
-    ) -> tuple[list[CollectionPoint], Optional[str], int]:
+        page_token: str | None = None,
+    ) -> tuple[list[CollectionPoint], str | None, int]:
         """List collection points in a specific region.
 
         Args:
@@ -75,8 +74,8 @@ class CollectionPointRepository(BaseRepository[CollectionPoint]):
         self,
         clerk_id: str,
         page_size: int = 100,
-        page_token: Optional[str] = None,
-    ) -> tuple[list[CollectionPoint], Optional[str], int]:
+        page_token: str | None = None,
+    ) -> tuple[list[CollectionPoint], str | None, int]:
         """List collection points assigned to a specific clerk.
 
         Args:
@@ -93,8 +92,8 @@ class CollectionPointRepository(BaseRepository[CollectionPoint]):
         self,
         status: str,
         page_size: int = 100,
-        page_token: Optional[str] = None,
-    ) -> tuple[list[CollectionPoint], Optional[str], int]:
+        page_token: str | None = None,
+    ) -> tuple[list[CollectionPoint], str | None, int]:
         """List collection points by status.
 
         Args:

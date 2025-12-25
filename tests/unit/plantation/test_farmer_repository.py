@@ -1,10 +1,9 @@
 """Unit tests for FarmerRepository."""
 
-from datetime import datetime, timezone
-from unittest.mock import AsyncMock, MagicMock, patch
+from datetime import UTC, datetime
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
-
 from plantation_model.domain.models.farmer import Farmer, FarmScale
 from plantation_model.domain.models.value_objects import ContactInfo, GeoLocation
 from plantation_model.infrastructure.repositories.farmer_repository import (
@@ -54,8 +53,8 @@ def sample_farmer_doc() -> dict:
         "national_id": "12345678",
         "is_active": True,
         "grower_number": None,
-        "created_at": datetime(2025, 12, 23, 10, 0, 0, tzinfo=timezone.utc),
-        "updated_at": datetime(2025, 12, 23, 10, 0, 0, tzinfo=timezone.utc),
+        "created_at": datetime(2025, 12, 23, 10, 0, 0, tzinfo=UTC),
+        "updated_at": datetime(2025, 12, 23, 10, 0, 0, tzinfo=UTC),
     }
 
 

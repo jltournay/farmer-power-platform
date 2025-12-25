@@ -4,7 +4,8 @@ Events are published via Dapr pub/sub when significant farmer lifecycle
 events occur. Downstream services can subscribe to these events.
 """
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
+
 from pydantic import BaseModel, Field
 
 
@@ -36,7 +37,7 @@ class FarmerRegisteredEvent(BaseModel):
         description="Farm scale classification (smallholder/medium/estate)"
     )
     timestamp: datetime = Field(
-        default_factory=lambda: datetime.now(timezone.utc),
+        default_factory=lambda: datetime.now(UTC),
         description="Event timestamp",
     )
 
@@ -72,7 +73,7 @@ class FarmerUpdatedEvent(BaseModel):
         description="List of field names that were updated"
     )
     timestamp: datetime = Field(
-        default_factory=lambda: datetime.now(timezone.utc),
+        default_factory=lambda: datetime.now(UTC),
         description="Event timestamp",
     )
 
@@ -91,6 +92,6 @@ class FarmerDeactivatedEvent(BaseModel):
     farmer_id: str = Field(description="Unique farmer ID (WM-XXXX format)")
     reason: str = Field(default="", description="Reason for deactivation")
     timestamp: datetime = Field(
-        default_factory=lambda: datetime.now(timezone.utc),
+        default_factory=lambda: datetime.now(UTC),
         description="Event timestamp",
     )

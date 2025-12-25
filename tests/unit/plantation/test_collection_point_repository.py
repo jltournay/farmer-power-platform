@@ -1,10 +1,9 @@
 """Unit tests for CollectionPoint repository."""
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
-
 from plantation_model.domain.models.collection_point import CollectionPoint
 from plantation_model.domain.models.value_objects import (
     CollectionPointCapacity,
@@ -58,8 +57,8 @@ class TestCollectionPointRepository:
                 has_qc_device=False,
             ),
             status="active",
-            created_at=datetime.now(timezone.utc),
-            updated_at=datetime.now(timezone.utc),
+            created_at=datetime.now(UTC),
+            updated_at=datetime.now(UTC),
         )
 
     @pytest.mark.asyncio

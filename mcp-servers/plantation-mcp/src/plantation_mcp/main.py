@@ -6,6 +6,7 @@ from concurrent import futures
 
 import grpc
 import structlog
+from fp_proto.mcp.v1 import mcp_tool_pb2, mcp_tool_pb2_grpc
 from grpc_health.v1 import health, health_pb2, health_pb2_grpc
 from grpc_reflection.v1alpha import reflection
 from opentelemetry import trace
@@ -14,8 +15,6 @@ from opentelemetry.instrumentation.grpc import GrpcAioInstrumentorServer
 from opentelemetry.sdk.resources import Resource
 from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import BatchSpanProcessor
-
-from fp_proto.mcp.v1 import mcp_tool_pb2, mcp_tool_pb2_grpc
 
 from plantation_mcp.api.mcp_service import McpToolServiceServicer
 from plantation_mcp.config import settings

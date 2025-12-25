@@ -1,10 +1,8 @@
 """Unit tests for FarmerPerformance domain model."""
 
-from datetime import date, datetime, timezone
+from datetime import UTC, date, datetime
 
 import pytest
-from pydantic import ValidationError
-
 from plantation_model.domain.models.farmer import FarmScale
 from plantation_model.domain.models.farmer_performance import (
     FarmerPerformance,
@@ -12,6 +10,7 @@ from plantation_model.domain.models.farmer_performance import (
     TodayMetrics,
     TrendDirection,
 )
+from pydantic import ValidationError
 
 
 class TestTrendDirection:
@@ -101,7 +100,7 @@ class TestHistoricalMetrics:
         """Test historical metrics with improvement trend."""
         metrics = HistoricalMetrics(
             improvement_trend=TrendDirection.IMPROVING,
-            computed_at=datetime.now(timezone.utc),
+            computed_at=datetime.now(UTC),
         )
 
         assert metrics.improvement_trend == TrendDirection.IMPROVING
@@ -146,7 +145,7 @@ class TestTodayMetrics:
 
     def test_today_metrics_with_last_delivery(self) -> None:
         """Test today metrics with last delivery timestamp."""
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         metrics = TodayMetrics(
             deliveries=1,
             last_delivery=now,

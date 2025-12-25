@@ -2,13 +2,13 @@
 
 import structlog
 from motor.motor_asyncio import AsyncIOMotorClient, AsyncIOMotorDatabase
+from pymongo.errors import ConnectionFailure, ServerSelectionTimeoutError
 from tenacity import (
     retry,
+    retry_if_exception_type,
     stop_after_attempt,
     wait_exponential,
-    retry_if_exception_type,
 )
-from pymongo.errors import ConnectionFailure, ServerSelectionTimeoutError
 
 from plantation_model.config import settings
 

@@ -3,7 +3,6 @@
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
-
 from plantation_model.domain.models.id_generator import IDGenerator
 
 

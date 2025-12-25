@@ -7,7 +7,6 @@ Tests cover:
 """
 
 import pytest
-
 from fp_common.mcp.errors import ErrorCode, McpToolError
 
 

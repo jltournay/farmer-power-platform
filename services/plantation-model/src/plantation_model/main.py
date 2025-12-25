@@ -5,27 +5,26 @@ Stores core entities (regions, farmers, factories), configuration,
 and pre-computed performance summaries.
 """
 
-import structlog
+from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
-from typing import AsyncGenerator
 
+import structlog
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from plantation_model.config import settings
 from plantation_model.api import health
-from plantation_model.api.grpc_server import start_grpc_server, stop_grpc_server, get_grpc_server
+from plantation_model.api.grpc_server import start_grpc_server, stop_grpc_server
+from plantation_model.config import settings
 from plantation_model.infrastructure.mongodb import (
     check_mongodb_connection,
     close_mongodb_connection,
     get_mongodb_client,
 )
 from plantation_model.infrastructure.tracing import (
-    setup_tracing,
     instrument_fastapi,
+    setup_tracing,
     shutdown_tracing,
 )
-
 
 # Configure structured logging
 structlog.configure(

@@ -1,8 +1,6 @@
 """Unit tests for GradingModel domain model."""
 
 import pytest
-from pydantic import ValidationError
-
 from plantation_model.domain.models.grading_model import (
     ConditionalReject,
     GradeRules,
@@ -10,6 +8,7 @@ from plantation_model.domain.models.grading_model import (
     GradingModel,
     GradingType,
 )
+from pydantic import ValidationError
 
 
 class TestGradingType:

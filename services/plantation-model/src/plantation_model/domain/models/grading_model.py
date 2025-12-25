@@ -12,9 +12,8 @@ Key concepts:
 - GradeLabels: Factory-specific display labels (internal → display)
 """
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from enum import Enum
-from typing import Optional
 
 from pydantic import BaseModel, Field
 
@@ -90,7 +89,7 @@ class GradingModel(BaseModel):
     # Identity
     model_id: str = Field(description="Unique identifier for this grading model")
     model_version: str = Field(description="Semantic version (e.g., 1.0.0)")
-    regulatory_authority: Optional[str] = Field(
+    regulatory_authority: str | None = Field(
         default=None,
         description="Regulatory body that defines this grading standard",
     )
@@ -119,11 +118,11 @@ class GradingModel(BaseModel):
 
     # Timestamps
     created_at: datetime = Field(
-        default_factory=lambda: datetime.now(timezone.utc),
+        default_factory=lambda: datetime.now(UTC),
         description="Creation timestamp",
     )
     updated_at: datetime = Field(
-        default_factory=lambda: datetime.now(timezone.utc),
+        default_factory=lambda: datetime.now(UTC),
         description="Last update timestamp",
     )
 

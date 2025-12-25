@@ -1,22 +1,20 @@
 """Integration tests for Farmer registration flow."""
 
-from datetime import datetime, timezone
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
-
+from plantation_model.domain.events.farmer_events import FarmerRegisteredEvent
 from plantation_model.domain.models.farmer import Farmer, FarmScale
-from plantation_model.domain.models.value_objects import ContactInfo, GeoLocation
 from plantation_model.domain.models.id_generator import IDGenerator
-from plantation_model.infrastructure.repositories.farmer_repository import (
-    FarmerRepository,
-)
+from plantation_model.domain.models.value_objects import ContactInfo, GeoLocation
+from plantation_model.infrastructure.dapr_client import DaprPubSubClient
 from plantation_model.infrastructure.google_elevation import (
     GoogleElevationClient,
     assign_region_from_altitude,
 )
-from plantation_model.infrastructure.dapr_client import DaprPubSubClient
-from plantation_model.domain.events.farmer_events import FarmerRegisteredEvent
+from plantation_model.infrastructure.repositories.farmer_repository import (
+    FarmerRepository,
+)
 
 
 @pytest.mark.integration

@@ -1,8 +1,8 @@
 """Base repository class with common CRUD operations."""
 
 import logging
-from datetime import datetime, timezone
-from typing import Generic, Optional, TypeVar
+from datetime import UTC, datetime
+from typing import Generic, TypeVar
 
 from motor.motor_asyncio import AsyncIOMotorCollection, AsyncIOMotorDatabase
 from pydantic import BaseModel
@@ -51,7 +51,7 @@ class BaseRepository(Generic[T]):
         logger.debug("Created %s with id %s", self._model_class.__name__, doc["id"])
         return entity
 
-    async def get_by_id(self, entity_id: str) -> Optional[T]:
+    async def get_by_id(self, entity_id: str) -> T | None:
         """Get an entity by its ID.
 
         Args:
@@ -66,7 +66,7 @@ class BaseRepository(Generic[T]):
         doc.pop("_id", None)
         return self._model_class.model_validate(doc)
 
-    async def update(self, entity_id: str, updates: dict) -> Optional[T]:
+    async def update(self, entity_id: str, updates: dict) -> T | None:
         """Update an entity.
 
         Args:
@@ -77,7 +77,7 @@ class BaseRepository(Generic[T]):
             The updated entity if found, None otherwise.
         """
         # Add updated_at timestamp
-        updates["updated_at"] = datetime.now(timezone.utc)
+        updates["updated_at"] = datetime.now(UTC)
 
         result = await self._collection.find_one_and_update(
             {"_id": entity_id},
@@ -103,10 +103,10 @@ class BaseRepository(Generic[T]):
 
     async def list(
         self,
-        filters: Optional[dict] = None,
+        filters: dict | None = None,
         page_size: int = 100,
-        page_token: Optional[str] = None,
-    ) -> tuple[list[T], Optional[str], int]:
+        page_token: str | None = None,
+    ) -> tuple[list[T], str | None, int]:
         """List entities with optional filtering and pagination.
 
         Args:

@@ -12,13 +12,12 @@ Usage:
 """
 
 import pytest
-
 from plantation_model.domain.models.grading_model import (
+    ConditionalReject,
+    GradeRules,
     GradingAttribute,
     GradingModel,
     GradingType,
-    GradeRules,
-    ConditionalReject,
 )
 from plantation_model.infrastructure.repositories.grading_model_repository import (
     GradingModelRepository,

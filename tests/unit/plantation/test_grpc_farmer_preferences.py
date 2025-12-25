@@ -5,12 +5,11 @@ Design Decision: Split notification channel from interaction preference
 - interaction_pref: How farmer prefers to CONSUME information (text, voice)
 """
 
-from datetime import datetime, timezone
 from unittest.mock import AsyncMock, MagicMock
 
 import grpc
 import pytest
-
+from fp_proto.plantation.v1 import plantation_pb2
 from plantation_model.api.plantation_service import PlantationServiceServicer
 from plantation_model.domain.models.farmer import (
     Farmer,
@@ -19,20 +18,19 @@ from plantation_model.domain.models.farmer import (
     NotificationChannel,
     PreferredLanguage,
 )
+from plantation_model.domain.models.id_generator import IDGenerator
 from plantation_model.domain.models.value_objects import ContactInfo, GeoLocation
-from plantation_model.infrastructure.repositories.factory_repository import (
-    FactoryRepository,
-)
+from plantation_model.infrastructure.dapr_client import DaprPubSubClient
+from plantation_model.infrastructure.google_elevation import GoogleElevationClient
 from plantation_model.infrastructure.repositories.collection_point_repository import (
     CollectionPointRepository,
+)
+from plantation_model.infrastructure.repositories.factory_repository import (
+    FactoryRepository,
 )
 from plantation_model.infrastructure.repositories.farmer_repository import (
     FarmerRepository,
 )
-from plantation_model.domain.models.id_generator import IDGenerator
-from plantation_model.infrastructure.google_elevation import GoogleElevationClient
-from plantation_model.infrastructure.dapr_client import DaprPubSubClient
-from fp_proto.plantation.v1 import plantation_pb2
 
 
 class TestFarmerCommunicationPreferences:
@@ -521,6 +519,8 @@ class TestFarmerCommunicationPreferences:
         sample_farmer: Farmer,
     ) -> None:
         """AC #3: GetFarmerSummary returns notification_channel, interaction_pref, pref_lang for Notification Model."""
+        from datetime import date
+
         from plantation_model.domain.models.farmer_performance import (
             FarmerPerformance,
             HistoricalMetrics,
@@ -533,7 +533,6 @@ class TestFarmerCommunicationPreferences:
         from plantation_model.infrastructure.repositories.grading_model_repository import (
             GradingModelRepository,
         )
-        from datetime import date
 
         # Create servicer with performance repo
         mock_perf_repo = MagicMock(spec=FarmerPerformanceRepository)

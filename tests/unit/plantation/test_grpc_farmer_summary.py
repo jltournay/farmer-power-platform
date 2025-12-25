@@ -1,11 +1,11 @@
 """Unit tests for GetFarmerSummary gRPC service method and auto-init."""
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from unittest.mock import AsyncMock, MagicMock
 
 import grpc
 import pytest
-
+from fp_proto.plantation.v1 import plantation_pb2
 from plantation_model.api.plantation_service import PlantationServiceServicer
 from plantation_model.domain.models.collection_point import CollectionPoint
 from plantation_model.domain.models.farmer import Farmer, FarmScale
@@ -20,26 +20,25 @@ from plantation_model.domain.models.grading_model import (
     GradingModel,
     GradingType,
 )
+from plantation_model.domain.models.id_generator import IDGenerator
 from plantation_model.domain.models.value_objects import ContactInfo, GeoLocation, OperatingHours
+from plantation_model.infrastructure.dapr_client import DaprPubSubClient
+from plantation_model.infrastructure.google_elevation import GoogleElevationClient
 from plantation_model.infrastructure.repositories.collection_point_repository import (
     CollectionPointRepository,
 )
 from plantation_model.infrastructure.repositories.factory_repository import (
     FactoryRepository,
 )
-from plantation_model.infrastructure.repositories.farmer_repository import (
-    FarmerRepository,
-)
 from plantation_model.infrastructure.repositories.farmer_performance_repository import (
     FarmerPerformanceRepository,
+)
+from plantation_model.infrastructure.repositories.farmer_repository import (
+    FarmerRepository,
 )
 from plantation_model.infrastructure.repositories.grading_model_repository import (
     GradingModelRepository,
 )
-from plantation_model.domain.models.id_generator import IDGenerator
-from plantation_model.infrastructure.google_elevation import GoogleElevationClient
-from plantation_model.infrastructure.dapr_client import DaprPubSubClient
-from fp_proto.plantation.v1 import plantation_pb2
 
 
 class TestFarmerSummaryGrpcService:
@@ -131,8 +130,8 @@ class TestFarmerSummaryGrpcService:
             farm_scale=FarmScale.MEDIUM,
             national_id="12345678",
             is_active=True,
-            created_at=datetime.now(timezone.utc),
-            updated_at=datetime.now(timezone.utc),
+            created_at=datetime.now(UTC),
+            updated_at=datetime.now(UTC),
         )
 
     @pytest.fixture
@@ -190,8 +189,8 @@ class TestFarmerSummaryGrpcService:
                 total_kg=25.0,
                 grade_counts={"Primary": 2},
             ),
-            created_at=datetime.now(timezone.utc),
-            updated_at=datetime.now(timezone.utc),
+            created_at=datetime.now(UTC),
+            updated_at=datetime.now(UTC),
         )
 
     # =========================================================================

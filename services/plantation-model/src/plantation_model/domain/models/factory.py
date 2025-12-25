@@ -1,7 +1,6 @@
 """Factory domain model."""
 
-from datetime import datetime, timezone
-from typing import Optional
+from datetime import UTC, datetime
 
 from pydantic import BaseModel, Field
 
@@ -28,11 +27,11 @@ class Factory(BaseModel):
     )
     is_active: bool = Field(default=True, description="Whether factory is active")
     created_at: datetime = Field(
-        default_factory=lambda: datetime.now(timezone.utc),
+        default_factory=lambda: datetime.now(UTC),
         description="Creation timestamp",
     )
     updated_at: datetime = Field(
-        default_factory=lambda: datetime.now(timezone.utc),
+        default_factory=lambda: datetime.now(UTC),
         description="Last update timestamp",
     )
 
@@ -67,16 +66,16 @@ class FactoryCreate(BaseModel):
     code: str = Field(min_length=1, max_length=20)
     region_id: str
     location: GeoLocation
-    contact: Optional[ContactInfo] = None
+    contact: ContactInfo | None = None
     processing_capacity_kg: int = Field(default=0, ge=0)
 
 
 class FactoryUpdate(BaseModel):
     """Data for updating an existing factory."""
 
-    name: Optional[str] = Field(default=None, min_length=1, max_length=100)
-    code: Optional[str] = Field(default=None, min_length=1, max_length=20)
-    location: Optional[GeoLocation] = None
-    contact: Optional[ContactInfo] = None
-    processing_capacity_kg: Optional[int] = Field(default=None, ge=0)
-    is_active: Optional[bool] = None
+    name: str | None = Field(default=None, min_length=1, max_length=100)
+    code: str | None = Field(default=None, min_length=1, max_length=20)
+    location: GeoLocation | None = None
+    contact: ContactInfo | None = None
+    processing_capacity_kg: int | None = Field(default=None, ge=0)
+    is_active: bool | None = None

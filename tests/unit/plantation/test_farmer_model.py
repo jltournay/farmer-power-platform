@@ -1,10 +1,7 @@
 """Unit tests for Farmer domain model."""
 
-from datetime import datetime, timezone
 
 import pytest
-from pydantic import ValidationError
-
 from plantation_model.domain.models.farmer import (
     Farmer,
     FarmerCreate,
@@ -12,6 +9,7 @@ from plantation_model.domain.models.farmer import (
     FarmScale,
 )
 from plantation_model.domain.models.value_objects import ContactInfo, GeoLocation
+from pydantic import ValidationError
 
 
 class TestFarmScale:

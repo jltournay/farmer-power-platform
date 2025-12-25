@@ -1,27 +1,26 @@
 """Unit tests for Factory gRPC service methods."""
 
-from datetime import datetime, timezone
-from unittest.mock import AsyncMock, MagicMock, patch
+from datetime import UTC, datetime
+from unittest.mock import AsyncMock, MagicMock
 
 import grpc
 import pytest
-
+from fp_proto.plantation.v1 import plantation_pb2
 from plantation_model.api.plantation_service import PlantationServiceServicer
 from plantation_model.domain.models.factory import Factory
+from plantation_model.domain.models.id_generator import IDGenerator
 from plantation_model.domain.models.value_objects import ContactInfo, GeoLocation
-from plantation_model.infrastructure.repositories.factory_repository import (
-    FactoryRepository,
-)
+from plantation_model.infrastructure.dapr_client import DaprPubSubClient
+from plantation_model.infrastructure.google_elevation import GoogleElevationClient
 from plantation_model.infrastructure.repositories.collection_point_repository import (
     CollectionPointRepository,
+)
+from plantation_model.infrastructure.repositories.factory_repository import (
+    FactoryRepository,
 )
 from plantation_model.infrastructure.repositories.farmer_repository import (
     FarmerRepository,
 )
-from plantation_model.domain.models.id_generator import IDGenerator
-from plantation_model.infrastructure.google_elevation import GoogleElevationClient
-from plantation_model.infrastructure.dapr_client import DaprPubSubClient
-from fp_proto.plantation.v1 import plantation_pb2
 
 
 class TestFactoryGrpcService:
@@ -105,8 +104,8 @@ class TestFactoryGrpcService:
             ),
             processing_capacity_kg=50000,
             is_active=True,
-            created_at=datetime.now(timezone.utc),
-            updated_at=datetime.now(timezone.utc),
+            created_at=datetime.now(UTC),
+            updated_at=datetime.now(UTC),
         )
 
     @pytest.mark.asyncio
@@ -224,7 +223,7 @@ class TestFactoryGrpcService:
             processing_capacity_kg=75000,
             is_active=True,
             created_at=sample_factory.created_at,
-            updated_at=datetime.now(timezone.utc),
+            updated_at=datetime.now(UTC),
         )
         mock_factory_repo.update = AsyncMock(return_value=updated_factory)
         mock_factory_repo.get_by_code = AsyncMock(return_value=None)

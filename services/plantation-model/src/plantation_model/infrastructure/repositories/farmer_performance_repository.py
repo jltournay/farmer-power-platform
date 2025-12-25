@@ -2,8 +2,7 @@
 
 import datetime as dt
 import logging
-from datetime import datetime, timezone
-from typing import Optional
+from datetime import datetime
 
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from pymongo import ASCENDING
@@ -60,7 +59,7 @@ class FarmerPerformanceRepository(BaseRepository[FarmerPerformance]):
         logger.debug("Created farmer performance for %s", entity.farmer_id)
         return entity
 
-    async def get_by_farmer_id(self, farmer_id: str) -> Optional[FarmerPerformance]:
+    async def get_by_farmer_id(self, farmer_id: str) -> FarmerPerformance | None:
         """Get a farmer performance by farmer ID.
 
         Args:
@@ -123,7 +122,7 @@ class FarmerPerformanceRepository(BaseRepository[FarmerPerformance]):
         # Use mode="json" to serialize enums and dates as strings for MongoDB
         doc = entity.model_dump(mode="json")
         doc["_id"] = doc["farmer_id"]
-        doc["updated_at"] = datetime.now(timezone.utc).isoformat()
+        doc["updated_at"] = datetime.now(dt.UTC).isoformat()
 
         await self._collection.replace_one(
             {"_id": doc["farmer_id"]},
@@ -135,7 +134,7 @@ class FarmerPerformanceRepository(BaseRepository[FarmerPerformance]):
 
     async def update_historical(
         self, farmer_id: str, historical: HistoricalMetrics
-    ) -> Optional[FarmerPerformance]:
+    ) -> FarmerPerformance | None:
         """Update the historical metrics for a farmer.
 
         Called by batch jobs that aggregate quality events.
@@ -152,7 +151,7 @@ class FarmerPerformanceRepository(BaseRepository[FarmerPerformance]):
             {
                 "$set": {
                     "historical": historical.model_dump(mode="json"),
-                    "updated_at": datetime.now(timezone.utc),
+                    "updated_at": datetime.now(dt.UTC),
                 },
             },
             return_document=True,
@@ -165,7 +164,7 @@ class FarmerPerformanceRepository(BaseRepository[FarmerPerformance]):
 
     async def update_today(
         self, farmer_id: str, today: TodayMetrics
-    ) -> Optional[FarmerPerformance]:
+    ) -> FarmerPerformance | None:
         """Update today's metrics for a farmer.
 
         Args:
@@ -180,7 +179,7 @@ class FarmerPerformanceRepository(BaseRepository[FarmerPerformance]):
             {
                 "$set": {
                     "today": today.model_dump(mode="json"),
-                    "updated_at": datetime.now(timezone.utc),
+                    "updated_at": datetime.now(dt.UTC),
                 },
             },
             return_document=True,
@@ -196,8 +195,8 @@ class FarmerPerformanceRepository(BaseRepository[FarmerPerformance]):
         farmer_id: str,
         kg_amount: float,
         grade: str,
-        attribute_counts: Optional[dict[str, dict[str, int]]] = None,
-    ) -> Optional[FarmerPerformance]:
+        attribute_counts: dict[str, dict[str, int]] | None = None,
+    ) -> FarmerPerformance | None:
         """Atomically increment today's delivery metrics.
 
         Called when a new quality event arrives for a farmer.
@@ -211,7 +210,7 @@ class FarmerPerformanceRepository(BaseRepository[FarmerPerformance]):
         Returns:
             The updated farmer performance if found, None otherwise.
         """
-        now = datetime.now(timezone.utc)
+        now = datetime.now(dt.UTC)
         today_str = dt.date.today().isoformat()
 
         # Build atomic update
@@ -252,7 +251,7 @@ class FarmerPerformanceRepository(BaseRepository[FarmerPerformance]):
         )
         return FarmerPerformance.model_validate(result)
 
-    async def reset_today(self, farmer_id: str) -> Optional[FarmerPerformance]:
+    async def reset_today(self, farmer_id: str) -> FarmerPerformance | None:
         """Reset today's metrics for a new day.
 
         Called when the date changes or at the start of each day.
@@ -277,7 +276,7 @@ class FarmerPerformanceRepository(BaseRepository[FarmerPerformance]):
                         "last_delivery": None,
                         "metrics_date": today_str,
                     },
-                    "updated_at": datetime.now(timezone.utc),
+                    "updated_at": datetime.now(dt.UTC),
                 },
             },
             return_document=True,
@@ -292,8 +291,8 @@ class FarmerPerformanceRepository(BaseRepository[FarmerPerformance]):
         self,
         grading_model_id: str,
         page_size: int = 100,
-        page_token: Optional[str] = None,
-    ) -> tuple[list[FarmerPerformance], Optional[str], int]:
+        page_token: str | None = None,
+    ) -> tuple[list[FarmerPerformance], str | None, int]:
         """List farmer performances using a specific grading model.
 
         Args:

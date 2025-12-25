@@ -3,14 +3,13 @@
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
-from pymongo.errors import ConnectionFailure, ServerSelectionTimeoutError
-
 from plantation_model.infrastructure.mongodb import (
     check_mongodb_connection,
     close_mongodb_connection,
     get_database,
     get_mongodb_client,
 )
+from pymongo.errors import ConnectionFailure
 
 
 @pytest.mark.unit
@@ -124,9 +123,8 @@ class TestCheckMongoDBConnection:
         with patch(
             "plantation_model.infrastructure.mongodb.AsyncIOMotorClient",
             return_value=mock_client,
-        ):
-            with pytest.raises(ConnectionFailure):
-                await check_mongodb_connection()
+        ), pytest.raises(ConnectionFailure):
+            await check_mongodb_connection()
 
 
 @pytest.mark.unit

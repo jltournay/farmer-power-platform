@@ -8,7 +8,6 @@ import json
 from unittest.mock import AsyncMock, patch
 
 import pytest
-
 from fp_common.mcp.client import GrpcMcpClient
 from fp_common.mcp.errors import ErrorCode, McpToolError
 from fp_common.mcp.tool import GrpcMcpTool

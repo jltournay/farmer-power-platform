@@ -1,8 +1,6 @@
 """Unit tests for CollectionPoint domain model."""
 
 import pytest
-from pydantic import ValidationError
-
 from plantation_model.domain.models.collection_point import (
     CollectionPoint,
     CollectionPointCreate,
@@ -13,6 +11,7 @@ from plantation_model.domain.models.value_objects import (
     GeoLocation,
     OperatingHours,
 )
+from pydantic import ValidationError
 
 
 class TestCollectionPoint:

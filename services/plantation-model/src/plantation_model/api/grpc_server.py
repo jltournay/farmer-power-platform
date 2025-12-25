@@ -1,25 +1,25 @@
 """gRPC server implementation for Plantation Model service."""
 
 import grpc
+import structlog
+from fp_proto.plantation.v1 import plantation_pb2, plantation_pb2_grpc
 from grpc_health.v1 import health, health_pb2, health_pb2_grpc
 from grpc_reflection.v1alpha import reflection
-import structlog
 
-from fp_proto.plantation.v1 import plantation_pb2, plantation_pb2_grpc
-from plantation_model.config import settings
 from plantation_model.api.plantation_service import PlantationServiceServicer
+from plantation_model.config import settings
 from plantation_model.domain.models.id_generator import IDGenerator
+from plantation_model.infrastructure.google_elevation import GoogleElevationClient
 from plantation_model.infrastructure.mongodb import get_database
-from plantation_model.infrastructure.repositories.factory_repository import (
-    FactoryRepository,
-)
 from plantation_model.infrastructure.repositories.collection_point_repository import (
     CollectionPointRepository,
+)
+from plantation_model.infrastructure.repositories.factory_repository import (
+    FactoryRepository,
 )
 from plantation_model.infrastructure.repositories.farmer_repository import (
     FarmerRepository,
 )
-from plantation_model.infrastructure.google_elevation import GoogleElevationClient
 
 logger = structlog.get_logger(__name__)
 

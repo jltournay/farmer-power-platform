@@ -1,10 +1,8 @@
 """Unit tests for GradingModelRepository."""
 
-from datetime import datetime, timezone
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
-
 from plantation_model.domain.models.grading_model import (
     GradeRules,
     GradingAttribute,

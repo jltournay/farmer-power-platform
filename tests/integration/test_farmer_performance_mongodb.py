@@ -11,9 +11,9 @@ Usage:
         pytest tests/integration/test_farmer_performance_mongodb.py -v
 """
 
-import pytest
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
+import pytest
 from plantation_model.domain.models.farmer import FarmScale
 from plantation_model.domain.models.farmer_performance import (
     FarmerPerformance,
@@ -133,7 +133,7 @@ class TestFarmerPerformanceRepository:
                 total_kg_90d=500.0,
                 yield_kg_per_hectare_30d=150.0,
                 improvement_trend=TrendDirection.IMPROVING,
-                computed_at=datetime.now(timezone.utc),
+                computed_at=datetime.now(UTC),
             ),
             today=TodayMetrics(
                 deliveries=3,
@@ -216,7 +216,7 @@ class TestFarmerPerformanceRepository:
             grade_distribution_30d={"Primary": 100, "Secondary": 10},
             primary_percentage_30d=90.9,
             improvement_trend=TrendDirection.IMPROVING,
-            computed_at=datetime.now(timezone.utc),
+            computed_at=datetime.now(UTC),
         )
         updated = await repo.update_historical("WM-0006", new_historical)
 
@@ -243,7 +243,7 @@ class TestFarmerPerformanceRepository:
             deliveries=5,
             total_kg=75.0,
             grade_counts={"Primary": 4, "Secondary": 1},
-            last_delivery=datetime.now(timezone.utc),
+            last_delivery=datetime.now(UTC),
         )
         updated = await repo.update_today("WM-0007", new_today)
 

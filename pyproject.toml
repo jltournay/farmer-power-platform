@@ -205,6 +205,12 @@ target-version = "py312"
 line-length = 120
 fix = true
 
+# Exclude auto-generated protobuf files
+exclude = [
+    "libs/fp-proto/src/fp_proto/**/*_pb2.py",
+    "libs/fp-proto/src/fp_proto/**/*_pb2_grpc.py",
+]
+
 [tool.ruff.lint]
 select = [
     "E",      # pycodestyle errors
@@ -226,12 +232,19 @@ ignore = [
     "B008",   # Do not perform function calls in argument defaults
     "B904",   # Allow raise without from in except
     "ARG001", # Unused function argument (common in fixtures)
+    "N802",   # gRPC method names are PascalCase (required by proto)
 ]
 
 [tool.ruff.lint.per-file-ignores]
 "tests/**/*.py" = [
     "ARG",    # Unused arguments are common in test fixtures
     "S101",   # Assert is expected in tests
+    "RUF059", # Unused unpacked variables (common in test assertions)
+    "ERA001", # Allow explanatory comments that look like code
+]
+"libs/fp-proto/src/fp_proto/**/__init__.py" = [
+    "F403",   # Star imports used for re-exporting proto symbols
+    "F401",   # Imported but unused (re-exports)
 ]
 
 [tool.ruff.lint.isort]

@@ -5,11 +5,10 @@ from typing import Any
 
 import grpc
 import structlog
+from fp_proto.mcp.v1 import mcp_tool_pb2, mcp_tool_pb2_grpc
 from jsonschema import ValidationError as JsonSchemaValidationError
 from jsonschema import validate
 from opentelemetry import trace
-
-from fp_proto.mcp.v1 import mcp_tool_pb2, mcp_tool_pb2_grpc
 
 from plantation_mcp.infrastructure.plantation_client import (
     NotFoundError,

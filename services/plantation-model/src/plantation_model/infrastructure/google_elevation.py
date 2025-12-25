@@ -1,7 +1,6 @@
 """Google Elevation API client for fetching altitude data."""
 
 import logging
-from typing import Optional
 
 import httpx
 
@@ -27,7 +26,7 @@ class GoogleElevationClient:
 
     async def get_altitude(
         self, latitude: float, longitude: float
-    ) -> Optional[float]:
+    ) -> float | None:
         """Fetch altitude in meters for given GPS coordinates.
 
         Args:

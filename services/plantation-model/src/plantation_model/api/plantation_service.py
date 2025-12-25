@@ -1,49 +1,26 @@
 """PlantationService gRPC implementation."""
 
 import logging
-from datetime import datetime, timezone
-from typing import Optional, Set
+from datetime import UTC, datetime
 
 import grpc
+from fp_proto.plantation.v1 import plantation_pb2, plantation_pb2_grpc
 from google.protobuf.timestamp_pb2 import Timestamp
 
-# Valid values for enum-like fields
-VALID_CP_STATUSES: Set[str] = {"active", "inactive", "seasonal"}
-VALID_STORAGE_TYPES: Set[str] = {"covered_shed", "open_air", "refrigerated"}
-VALID_COLLECTION_DAYS: Set[str] = {"mon", "tue", "wed", "thu", "fri", "sat", "sun"}
-
-from fp_proto.plantation.v1 import plantation_pb2, plantation_pb2_grpc
-from plantation_model.domain.models.factory import Factory
+from plantation_model.config import settings
+from plantation_model.domain.events.farmer_events import FarmerRegisteredEvent
 from plantation_model.domain.models.collection_point import CollectionPoint
+from plantation_model.domain.models.factory import Factory
 from plantation_model.domain.models.farmer import (
     Farmer,
     FarmScale,
-    FarmerUpdate,
     InteractionPreference,
     NotificationChannel,
     PreferredLanguage,
 )
-from plantation_model.domain.models.value_objects import (
-    CollectionPointCapacity,
-    ContactInfo,
-    GeoLocation,
-    OperatingHours,
-)
-from plantation_model.domain.models.id_generator import IDGenerator
-from plantation_model.infrastructure.repositories.factory_repository import (
-    FactoryRepository,
-)
-from plantation_model.infrastructure.repositories.collection_point_repository import (
-    CollectionPointRepository,
-)
-from plantation_model.infrastructure.repositories.farmer_repository import (
-    FarmerRepository,
-)
-from plantation_model.infrastructure.repositories.grading_model_repository import (
-    GradingModelRepository,
-)
-from plantation_model.infrastructure.repositories.farmer_performance_repository import (
-    FarmerPerformanceRepository,
+from plantation_model.domain.models.farmer_performance import (
+    FarmerPerformance,
+    TrendDirection,
 )
 from plantation_model.domain.models.grading_model import (
     ConditionalReject,
@@ -52,21 +29,40 @@ from plantation_model.domain.models.grading_model import (
     GradingModel,
     GradingType,
 )
-from plantation_model.domain.models.farmer_performance import (
-    FarmerPerformance,
-    HistoricalMetrics,
-    TodayMetrics,
-    TrendDirection,
+from plantation_model.domain.models.id_generator import IDGenerator
+from plantation_model.domain.models.value_objects import (
+    CollectionPointCapacity,
+    ContactInfo,
+    GeoLocation,
+    OperatingHours,
 )
+from plantation_model.infrastructure.dapr_client import DaprPubSubClient
 from plantation_model.infrastructure.google_elevation import (
     GoogleElevationClient,
     assign_region_from_altitude,
 )
-from plantation_model.infrastructure.dapr_client import DaprPubSubClient
-from plantation_model.domain.events.farmer_events import FarmerRegisteredEvent
-from plantation_model.config import settings
+from plantation_model.infrastructure.repositories.collection_point_repository import (
+    CollectionPointRepository,
+)
+from plantation_model.infrastructure.repositories.factory_repository import (
+    FactoryRepository,
+)
+from plantation_model.infrastructure.repositories.farmer_performance_repository import (
+    FarmerPerformanceRepository,
+)
+from plantation_model.infrastructure.repositories.farmer_repository import (
+    FarmerRepository,
+)
+from plantation_model.infrastructure.repositories.grading_model_repository import (
+    GradingModelRepository,
+)
 
 logger = logging.getLogger(__name__)
+
+# Valid values for enum-like fields
+VALID_CP_STATUSES: set[str] = {"active", "inactive", "seasonal"}
+VALID_STORAGE_TYPES: set[str] = {"covered_shed", "open_air", "refrigerated"}
+VALID_COLLECTION_DAYS: set[str] = {"mon", "tue", "wed", "thu", "fri", "sat", "sun"}
 
 
 def datetime_to_timestamp(dt: datetime) -> Timestamp:
@@ -78,7 +74,7 @@ def datetime_to_timestamp(dt: datetime) -> Timestamp:
 
 def timestamp_to_datetime(ts: Timestamp) -> datetime:
     """Convert protobuf Timestamp to datetime."""
-    return ts.ToDatetime().replace(tzinfo=timezone.utc)
+    return ts.ToDatetime().replace(tzinfo=UTC)
 
 
 class PlantationServiceServicer(plantation_pb2_grpc.PlantationServiceServicer):
@@ -223,7 +219,7 @@ class PlantationServiceServicer(plantation_pb2_grpc.PlantationServiceServicer):
         )
 
         # Create factory
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         factory = Factory(
             id=factory_id,
             name=request.name,
@@ -462,7 +458,7 @@ class PlantationServiceServicer(plantation_pb2_grpc.PlantationServiceServicer):
         )
 
         # Create collection point
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         cp = CollectionPoint(
             id=cp_id,
             name=request.name,
@@ -820,7 +816,7 @@ class PlantationServiceServicer(plantation_pb2_grpc.PlantationServiceServicer):
         farm_scale = FarmScale.from_hectares(request.farm_size_hectares)
 
         # Create farmer
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         farmer = Farmer(
             id=farmer_id,
             grower_number=request.grower_number if request.grower_number else None,

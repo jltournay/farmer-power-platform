@@ -1,8 +1,6 @@
 """Unit tests for Farmer domain events."""
 
-from datetime import datetime, timezone
-
-import pytest
+from datetime import UTC, datetime
 
 from plantation_model.domain.events.farmer_events import (
     FarmerDeactivatedEvent,
@@ -47,7 +45,7 @@ class TestFarmerRegisteredEvent:
 
     def test_event_has_auto_timestamp(self) -> None:
         """Test FarmerRegisteredEvent auto-generates timestamp."""
-        before = datetime.now(timezone.utc)
+        before = datetime.now(UTC)
 
         event = FarmerRegisteredEvent(
             farmer_id="WM-0001",
@@ -58,7 +56,7 @@ class TestFarmerRegisteredEvent:
             farm_scale="medium",
         )
 
-        after = datetime.now(timezone.utc)
+        after = datetime.now(UTC)
 
         assert event.timestamp is not None
         assert before <= event.timestamp <= after

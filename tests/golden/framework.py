@@ -22,16 +22,16 @@ Architecture Reference:
 
 from __future__ import annotations
 
-import json
 import hashlib
+import json
+from collections.abc import Callable
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from enum import Enum
 from pathlib import Path
-from typing import Any, Callable, Optional
+from typing import Any
 
 from pydantic import BaseModel, Field
-
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # TYPES AND MODELS
@@ -64,8 +64,8 @@ class FieldValidation:
     expected: Any
     actual: Any
     result: ValidationResult
-    variance: Optional[float] = None
-    message: Optional[str] = None
+    variance: float | None = None
+    message: str | None = None
 
 
 @dataclass
@@ -76,7 +76,7 @@ class GoldenSampleResult:
     passed: bool
     field_validations: list[FieldValidation] = field(default_factory=list)
     execution_time_ms: float = 0.0
-    error: Optional[str] = None
+    error: str | None = None
     metadata: dict[str, Any] = field(default_factory=dict)
 
 
@@ -89,7 +89,7 @@ class GoldenSampleMetadata(BaseModel):
     description: str = Field(default="", description="Human-readable description")
     source: str = Field(default="manual", description="How the sample was created")
     validated_by: str = Field(default="", description="Who validated this sample")
-    validated_at: Optional[str] = Field(default=None, description="When validation occurred")
+    validated_at: str | None = Field(default=None, description="When validation occurred")
     tags: list[str] = Field(default_factory=list, description="Tags for filtering")
     priority: str = Field(default="P1", description="Test priority (P0-P3)")
 
@@ -112,7 +112,7 @@ class GoldenSampleCollection(BaseModel):
     agent_name: str
     agent_type: AgentType
     version: str = "1.0.0"
-    created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+    created_at: str = Field(default_factory=lambda: datetime.now(UTC).isoformat())
     samples: list[GoldenSampleSchema] = Field(default_factory=list)
 
 
@@ -151,7 +151,7 @@ class GoldenSampleValidator:
         self,
         expected: dict[str, Any],
         actual: dict[str, Any],
-        acceptable_variance: Optional[dict[str, float]] = None,
+        acceptable_variance: dict[str, float] | None = None,
         path: str = "",
     ) -> list[FieldValidation]:
         """
@@ -243,7 +243,7 @@ class GoldenSampleValidator:
                         expected=expected_value,
                         actual=actual_value,
                         result=ValidationResult.FAIL,
-                        message=f"Value mismatch",
+                        message="Value mismatch",
                     )
                 )
 
@@ -344,7 +344,7 @@ class GoldenSampleRunner:
     def __init__(
         self,
         base_path: Path = Path("tests/golden"),
-        validator: Optional[GoldenSampleValidator] = None,
+        validator: GoldenSampleValidator | None = None,
     ) -> None:
         self.base_path = base_path
         self.validator = validator or GoldenSampleValidator()
@@ -424,8 +424,8 @@ class GoldenSampleRunner:
         self,
         agent_name: str,
         agent_fn: Callable[..., Any],
-        filter_tags: Optional[list[str]] = None,
-        filter_priority: Optional[str] = None,
+        filter_tags: list[str] | None = None,
+        filter_priority: str | None = None,
     ) -> list[GoldenSampleResult]:
         """
         Run all golden samples for an agent.
@@ -506,8 +506,8 @@ def create_golden_sample(
     expected_output: dict[str, Any],
     description: str = "",
     validated_by: str = "",
-    tags: Optional[list[str]] = None,
-    acceptable_variance: Optional[dict[str, float]] = None,
+    tags: list[str] | None = None,
+    acceptable_variance: dict[str, float] | None = None,
 ) -> GoldenSampleSchema:
     """
     Create a new golden sample.
@@ -538,7 +538,7 @@ def create_golden_sample(
             description=description,
             source="manual",
             validated_by=validated_by,
-            validated_at=datetime.now(timezone.utc).isoformat(),
+            validated_at=datetime.now(UTC).isoformat(),
             tags=tags or [],
             priority="P1",
         ),

@@ -4,7 +4,6 @@ import os
 from unittest.mock import patch
 
 import pytest
-
 from plantation_model.config import Settings
 
 

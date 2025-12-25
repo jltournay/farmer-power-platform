@@ -11,9 +11,8 @@ Key relationships:
 """
 
 import datetime as dt
-from datetime import datetime, timezone
+from datetime import datetime
 from enum import Enum
-from typing import Optional
 
 from pydantic import BaseModel, Field
 
@@ -129,7 +128,7 @@ class HistoricalMetrics(BaseModel):
         default=TrendDirection.STABLE,
         description="Quality trend direction",
     )
-    computed_at: Optional[datetime] = Field(
+    computed_at: datetime | None = Field(
         default=None,
         description="When these metrics were last computed",
     )
@@ -166,7 +165,7 @@ class TodayMetrics(BaseModel):
         description="Attribute class counts for today",
     )
 
-    last_delivery: Optional[datetime] = Field(
+    last_delivery: datetime | None = Field(
         default=None,
         description="Timestamp of last delivery today",
     )
@@ -211,11 +210,11 @@ class FarmerPerformance(BaseModel):
 
     # Timestamps
     created_at: datetime = Field(
-        default_factory=lambda: datetime.now(timezone.utc),
+        default_factory=lambda: datetime.now(dt.UTC),
         description="Creation timestamp",
     )
     updated_at: datetime = Field(
-        default_factory=lambda: datetime.now(timezone.utc),
+        default_factory=lambda: datetime.now(dt.UTC),
         description="Last update timestamp",
     )
 
@@ -255,7 +254,7 @@ class FarmerPerformance(BaseModel):
         self,
         attribute_name: str,
         class_name: str,
-    ) -> Optional[str]:
+    ) -> str | None:
         """Compare 30d vs 90d distribution for a specific attribute class.
 
         This enables insights like "Your coarse_leaf rate has been increasing"

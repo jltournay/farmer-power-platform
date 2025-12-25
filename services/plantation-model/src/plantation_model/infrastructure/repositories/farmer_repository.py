@@ -1,7 +1,6 @@
 """Farmer repository for MongoDB persistence."""
 
 import logging
-from typing import Optional
 
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from pymongo import ASCENDING
@@ -32,7 +31,7 @@ class FarmerRepository(BaseRepository[Farmer]):
         """
         super().__init__(db, self.COLLECTION_NAME, Farmer)
 
-    async def get_by_phone(self, phone: str) -> Optional[Farmer]:
+    async def get_by_phone(self, phone: str) -> Farmer | None:
         """Get a farmer by phone number.
 
         Used for duplicate detection during registration.
@@ -49,7 +48,7 @@ class FarmerRepository(BaseRepository[Farmer]):
         doc.pop("_id", None)
         return Farmer.model_validate(doc)
 
-    async def get_by_national_id(self, national_id: str) -> Optional[Farmer]:
+    async def get_by_national_id(self, national_id: str) -> Farmer | None:
         """Get a farmer by national ID.
 
         Used for duplicate detection during registration.
@@ -71,8 +70,8 @@ class FarmerRepository(BaseRepository[Farmer]):
         collection_point_id: str,
         active_only: bool = True,
         page_size: int = 100,
-        page_token: Optional[str] = None,
-    ) -> tuple[list[Farmer], Optional[str], int]:
+        page_token: str | None = None,
+    ) -> tuple[list[Farmer], str | None, int]:
         """List farmers registered at a specific collection point.
 
         Args:
@@ -94,8 +93,8 @@ class FarmerRepository(BaseRepository[Farmer]):
         region_id: str,
         active_only: bool = True,
         page_size: int = 100,
-        page_token: Optional[str] = None,
-    ) -> tuple[list[Farmer], Optional[str], int]:
+        page_token: str | None = None,
+    ) -> tuple[list[Farmer], str | None, int]:
         """List farmers in a specific region.
 
         Args:
@@ -115,11 +114,11 @@ class FarmerRepository(BaseRepository[Farmer]):
     async def list_by_farm_scale(
         self,
         farm_scale: str,
-        region_id: Optional[str] = None,
+        region_id: str | None = None,
         active_only: bool = True,
         page_size: int = 100,
-        page_token: Optional[str] = None,
-    ) -> tuple[list[Farmer], Optional[str], int]:
+        page_token: str | None = None,
+    ) -> tuple[list[Farmer], str | None, int]:
         """List farmers by farm scale classification.
 
         Args:
@@ -142,8 +141,8 @@ class FarmerRepository(BaseRepository[Farmer]):
     async def list_active(
         self,
         page_size: int = 100,
-        page_token: Optional[str] = None,
-    ) -> tuple[list[Farmer], Optional[str], int]:
+        page_token: str | None = None,
+    ) -> tuple[list[Farmer], str | None, int]:
         """List all active farmers.
 
         Args:

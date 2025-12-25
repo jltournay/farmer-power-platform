@@ -10,7 +10,6 @@ import json
 from unittest.mock import MagicMock, patch
 
 import pytest
-
 from fp_common.mcp.client import GrpcMcpClient
 from fp_common.mcp.errors import ErrorCode, McpToolError
 

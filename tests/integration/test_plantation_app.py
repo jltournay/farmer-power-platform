@@ -5,8 +5,6 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 from fastapi.testclient import TestClient
 
-from plantation_model.main import app
-
 
 @pytest.mark.integration
 class TestPlantationModelApplication:
@@ -29,23 +27,20 @@ class TestPlantationModelApplication:
         with patch(
             "plantation_model.infrastructure.mongodb.AsyncIOMotorClient",
             return_value=mock_dependencies["mongodb_client"],
+        ), patch(
+            "plantation_model.infrastructure.tracing.setup_tracing",
+            return_value=None,
+        ), patch(
+            "plantation_model.infrastructure.tracing.instrument_fastapi",
+            return_value=None,
+        ), patch(
+            "plantation_model.api.grpc_server.GrpcServer.start",
+            new_callable=AsyncMock,
         ):
-            with patch(
-                "plantation_model.infrastructure.tracing.setup_tracing",
-                return_value=None,
-            ):
-                with patch(
-                    "plantation_model.infrastructure.tracing.instrument_fastapi",
-                    return_value=None,
-                ):
-                    with patch(
-                        "plantation_model.api.grpc_server.GrpcServer.start",
-                        new_callable=AsyncMock,
-                    ):
-                        from plantation_model.main import app
+            from plantation_model.main import app
 
-                        with TestClient(app) as test_client:
-                            yield test_client
+            with TestClient(app) as test_client:
+                yield test_client
 
     def test_root_endpoint(self, client: TestClient) -> None:
         """Test root endpoint returns service info."""

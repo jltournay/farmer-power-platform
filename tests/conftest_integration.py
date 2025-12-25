@@ -21,7 +21,7 @@ import asyncio
 import logging
 import os
 import uuid
-from typing import AsyncGenerator
+from collections.abc import AsyncGenerator
 
 import pytest
 import pytest_asyncio
@@ -166,9 +166,9 @@ async def plantation_test_db(
 
 # Re-export wait_for_mongodb for use in tests
 __all__ = [
-    "mongodb_client",
-    "test_db",
-    "plantation_test_db",
-    "wait_for_mongodb",
     "MONGODB_TEST_URI",
+    "mongodb_client",
+    "plantation_test_db",
+    "test_db",
+    "wait_for_mongodb",
 ]

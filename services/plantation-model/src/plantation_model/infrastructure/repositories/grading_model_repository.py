@@ -1,8 +1,7 @@
 """GradingModel repository for MongoDB persistence."""
 
 import logging
-from datetime import datetime, timezone
-from typing import Optional
+from datetime import UTC, datetime
 
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from pymongo import ASCENDING
@@ -49,7 +48,7 @@ class GradingModelRepository(BaseRepository[GradingModel]):
         logger.debug("Created grading model %s", entity.model_id)
         return entity
 
-    async def get_by_id(self, model_id: str) -> Optional[GradingModel]:
+    async def get_by_id(self, model_id: str) -> GradingModel | None:
         """Get a grading model by its ID.
 
         Args:
@@ -64,7 +63,7 @@ class GradingModelRepository(BaseRepository[GradingModel]):
         doc.pop("_id", None)
         return GradingModel.model_validate(doc)
 
-    async def get_by_factory(self, factory_id: str) -> Optional[GradingModel]:
+    async def get_by_factory(self, factory_id: str) -> GradingModel | None:
         """Get the grading model assigned to a factory.
 
         A factory can have only one active grading model.
@@ -83,7 +82,7 @@ class GradingModelRepository(BaseRepository[GradingModel]):
 
     async def add_factory_assignment(
         self, model_id: str, factory_id: str
-    ) -> Optional[GradingModel]:
+    ) -> GradingModel | None:
         """Assign a grading model to a factory.
 
         Adds the factory_id to the model's active_at_factory list.
@@ -99,7 +98,7 @@ class GradingModelRepository(BaseRepository[GradingModel]):
             {"_id": model_id},
             {
                 "$addToSet": {"active_at_factory": factory_id},
-                "$set": {"updated_at": datetime.now(timezone.utc)},
+                "$set": {"updated_at": datetime.now(UTC)},
             },
             return_document=True,
         )
@@ -111,7 +110,7 @@ class GradingModelRepository(BaseRepository[GradingModel]):
 
     async def remove_factory_assignment(
         self, model_id: str, factory_id: str
-    ) -> Optional[GradingModel]:
+    ) -> GradingModel | None:
         """Remove a factory assignment from a grading model.
 
         Removes the factory_id from the model's active_at_factory list.
@@ -127,7 +126,7 @@ class GradingModelRepository(BaseRepository[GradingModel]):
             {"_id": model_id},
             {
                 "$pull": {"active_at_factory": factory_id},
-                "$set": {"updated_at": datetime.now(timezone.utc)},
+                "$set": {"updated_at": datetime.now(UTC)},
             },
             return_document=True,
         )
@@ -141,7 +140,7 @@ class GradingModelRepository(BaseRepository[GradingModel]):
 
     async def update(
         self, model_id: str, updates: dict
-    ) -> Optional[GradingModel]:
+    ) -> GradingModel | None:
         """Update a grading model.
 
         Updates the specified fields in the grading model.
@@ -156,7 +155,7 @@ class GradingModelRepository(BaseRepository[GradingModel]):
         if not updates:
             return await self.get_by_id(model_id)
 
-        updates["updated_at"] = datetime.now(timezone.utc)
+        updates["updated_at"] = datetime.now(UTC)
         result = await self._collection.find_one_and_update(
             {"_id": model_id},
             {"$set": updates},
@@ -171,9 +170,9 @@ class GradingModelRepository(BaseRepository[GradingModel]):
     async def list_all(
         self,
         page_size: int = 100,
-        page_token: Optional[str] = None,
-        filters: Optional[dict] = None,
-    ) -> tuple[list[GradingModel], Optional[str], int]:
+        page_token: str | None = None,
+        filters: dict | None = None,
+    ) -> tuple[list[GradingModel], str | None, int]:
         """List all grading models with optional filtering.
 
         Args:

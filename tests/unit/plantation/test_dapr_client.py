@@ -4,7 +4,6 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import httpx
 import pytest
-
 from plantation_model.domain.events.farmer_events import FarmerRegisteredEvent
 from plantation_model.infrastructure.dapr_client import DaprPubSubClient
 
