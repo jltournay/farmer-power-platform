@@ -112,6 +112,31 @@ This story implements the first MCP server in the platform, using the gRPC MCP i
 
 ## Dev Notes
 
+### Phase 1 Scope
+
+This story implements **4 core tools** for the Plantation MCP Server. The architecture defines 17 total tools, but we're delivering in phases based on epic dependencies:
+
+**Phase 1 (This Story):** Farmer-centric queries for Action Plan Generator
+- `get_farmer` - Farmer profile with preferences
+- `get_farmer_summary` - Performance metrics and trends
+- `get_collection_points` - Collection points by factory
+- `get_farmers_by_collection_point` - Farmers at a collection point
+
+**Deferred to Future Stories:**
+| Tool | Needed By | Epic |
+|------|-----------|------|
+| `get_factory`, `get_factory_config` | Admin UI, Market Analysis | Epic 2, 4 |
+| `get_region`, `list_regions`, `get_region_weather`, `get_current_flush` | Weather Analyzer | Epic 3 |
+| `get_regional_yield_benchmark` | Action Plan Generator (advanced) | Epic 3 |
+| `get_buyer_profiles` | Market Analysis Model | Epic 4 |
+| `get_grading_model`, `list_grading_models`, `get_factory_grading_model` | Collection Model, Admin UI | Epic 2 |
+| `get_farmer_context` | Action Plan Generator (convenience wrapper) | Epic 3 |
+| `get_collection_point`, `list_collection_points`, `get_cp_performance` | Admin UI, Reports | Epic 5 |
+
+This phased approach allows us to deliver value early while deferring complexity until needed.
+
+---
+
 ### Architecture Overview
 
 ```
