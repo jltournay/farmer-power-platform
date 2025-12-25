@@ -53,6 +53,9 @@ service PlantationService {
 
   // Farmer Performance operations
   rpc GetFarmerSummary(GetFarmerSummaryRequest) returns (FarmerSummary);
+
+  // Communication Preferences operations (Story 1.5)
+  rpc UpdateCommunicationPreferences(UpdateCommunicationPreferencesRequest) returns (UpdateCommunicationPreferencesResponse);
 }
 
 // ============================================================================
@@ -274,6 +277,31 @@ enum FarmScale {
   FARM_SCALE_ESTATE = 3;        // > 5 hectares
 }
 
+// Channel for pushing notifications to farmers (Story 1.5)
+// Distinct from InteractionPreference which controls consumption mode
+enum NotificationChannel {
+  NOTIFICATION_CHANNEL_UNSPECIFIED = 0;
+  NOTIFICATION_CHANNEL_SMS = 1;       // Text messages via Africa's Talking (default)
+  NOTIFICATION_CHANNEL_WHATSAPP = 2;  // WhatsApp messages
+}
+
+// Preferred mode for consuming detailed information (Story 1.5)
+// Even voice-preferring farmers receive SMS triggers; they call IVR to listen
+enum InteractionPreference {
+  INTERACTION_PREFERENCE_UNSPECIFIED = 0;
+  INTERACTION_PREFERENCE_TEXT = 1;   // Prefers reading SMS/WhatsApp (default)
+  INTERACTION_PREFERENCE_VOICE = 2;  // Prefers listening via IVR/Voice AI
+}
+
+// Preferred language for farmer communications (Story 1.5)
+enum PreferredLanguage {
+  PREFERRED_LANGUAGE_UNSPECIFIED = 0;
+  PREFERRED_LANGUAGE_SW = 1;   // Swahili (default)
+  PREFERRED_LANGUAGE_KI = 2;   // Kikuyu
+  PREFERRED_LANGUAGE_LUO = 3;  // Luo
+  PREFERRED_LANGUAGE_EN = 4;   // English
+}
+
 message Farmer {
   string id = 1;                                    // Format: WM-XXXX (e.g., WM-0001)
   string grower_number = 2;                         // External/legacy ID if any
@@ -290,6 +318,9 @@ message Farmer {
   bool is_active = 13;
   google.protobuf.Timestamp created_at = 14;
   google.protobuf.Timestamp updated_at = 15;
+  NotificationChannel notification_channel = 16;    // Notification delivery channel (Story 1.5)
+  InteractionPreference interaction_pref = 17;      // Information consumption mode (Story 1.5)
+  PreferredLanguage pref_lang = 18;                 // Language preference (Story 1.5)
 }
 
 message GetFarmerRequest {
@@ -527,8 +558,28 @@ message FarmerSummary {
 
   google.protobuf.Timestamp created_at = 13;
   google.protobuf.Timestamp updated_at = 14;
+
+  // Communication preferences (Story 1.5)
+  NotificationChannel notification_channel = 15;
+  InteractionPreference interaction_pref = 16;
+  PreferredLanguage pref_lang = 17;
 }
 
 message GetFarmerSummaryRequest {
   string farmer_id = 1;
+}
+
+// ============================================================================
+// Communication Preferences Messages (Story 1.5)
+// ============================================================================
+
+message UpdateCommunicationPreferencesRequest {
+  string farmer_id = 1;
+  NotificationChannel notification_channel = 2;
+  InteractionPreference interaction_pref = 3;
+  PreferredLanguage pref_lang = 4;
+}
+
+message UpdateCommunicationPreferencesResponse {
+  Farmer farmer = 1;
 }

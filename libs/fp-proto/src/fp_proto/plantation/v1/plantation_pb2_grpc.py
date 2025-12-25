@@ -166,6 +166,11 @@ class PlantationServiceStub(object):
                 request_serializer=plantation_dot_v1_dot_plantation__pb2.GetFarmerSummaryRequest.SerializeToString,
                 response_deserializer=plantation_dot_v1_dot_plantation__pb2.FarmerSummary.FromString,
                 _registered_method=True)
+        self.UpdateCommunicationPreferences = channel.unary_unary(
+                '/farmer_power.plantation.v1.PlantationService/UpdateCommunicationPreferences',
+                request_serializer=plantation_dot_v1_dot_plantation__pb2.UpdateCommunicationPreferencesRequest.SerializeToString,
+                response_deserializer=plantation_dot_v1_dot_plantation__pb2.UpdateCommunicationPreferencesResponse.FromString,
+                _registered_method=True)
 
 
 class PlantationServiceServicer(object):
@@ -335,6 +340,13 @@ class PlantationServiceServicer(object):
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
+    def UpdateCommunicationPreferences(self, request, context):
+        """Communication Preferences operations (Story 1.5)
+        """
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
 
 def add_PlantationServiceServicer_to_server(servicer, server):
     rpc_method_handlers = {
@@ -462,6 +474,11 @@ def add_PlantationServiceServicer_to_server(servicer, server):
                     servicer.GetFarmerSummary,
                     request_deserializer=plantation_dot_v1_dot_plantation__pb2.GetFarmerSummaryRequest.FromString,
                     response_serializer=plantation_dot_v1_dot_plantation__pb2.FarmerSummary.SerializeToString,
+            ),
+            'UpdateCommunicationPreferences': grpc.unary_unary_rpc_method_handler(
+                    servicer.UpdateCommunicationPreferences,
+                    request_deserializer=plantation_dot_v1_dot_plantation__pb2.UpdateCommunicationPreferencesRequest.FromString,
+                    response_serializer=plantation_dot_v1_dot_plantation__pb2.UpdateCommunicationPreferencesResponse.SerializeToString,
             ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
@@ -1146,6 +1163,33 @@ class PlantationService(object):
             '/farmer_power.plantation.v1.PlantationService/GetFarmerSummary',
             plantation_dot_v1_dot_plantation__pb2.GetFarmerSummaryRequest.SerializeToString,
             plantation_dot_v1_dot_plantation__pb2.FarmerSummary.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def UpdateCommunicationPreferences(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/farmer_power.plantation.v1.PlantationService/UpdateCommunicationPreferences',
+            plantation_dot_v1_dot_plantation__pb2.UpdateCommunicationPreferencesRequest.SerializeToString,
+            plantation_dot_v1_dot_plantation__pb2.UpdateCommunicationPreferencesResponse.FromString,
             options,
             channel_credentials,
             insecure,

@@ -17,6 +17,26 @@ class FarmScale(int, metaclass=_enum_type_wrapper.EnumTypeWrapper):
     FARM_SCALE_MEDIUM: _ClassVar[FarmScale]
     FARM_SCALE_ESTATE: _ClassVar[FarmScale]
 
+class NotificationChannel(int, metaclass=_enum_type_wrapper.EnumTypeWrapper):
+    __slots__ = ()
+    NOTIFICATION_CHANNEL_UNSPECIFIED: _ClassVar[NotificationChannel]
+    NOTIFICATION_CHANNEL_SMS: _ClassVar[NotificationChannel]
+    NOTIFICATION_CHANNEL_WHATSAPP: _ClassVar[NotificationChannel]
+
+class InteractionPreference(int, metaclass=_enum_type_wrapper.EnumTypeWrapper):
+    __slots__ = ()
+    INTERACTION_PREFERENCE_UNSPECIFIED: _ClassVar[InteractionPreference]
+    INTERACTION_PREFERENCE_TEXT: _ClassVar[InteractionPreference]
+    INTERACTION_PREFERENCE_VOICE: _ClassVar[InteractionPreference]
+
+class PreferredLanguage(int, metaclass=_enum_type_wrapper.EnumTypeWrapper):
+    __slots__ = ()
+    PREFERRED_LANGUAGE_UNSPECIFIED: _ClassVar[PreferredLanguage]
+    PREFERRED_LANGUAGE_SW: _ClassVar[PreferredLanguage]
+    PREFERRED_LANGUAGE_KI: _ClassVar[PreferredLanguage]
+    PREFERRED_LANGUAGE_LUO: _ClassVar[PreferredLanguage]
+    PREFERRED_LANGUAGE_EN: _ClassVar[PreferredLanguage]
+
 class GradingType(int, metaclass=_enum_type_wrapper.EnumTypeWrapper):
     __slots__ = ()
     GRADING_TYPE_UNSPECIFIED: _ClassVar[GradingType]
@@ -34,6 +54,17 @@ FARM_SCALE_UNSPECIFIED: FarmScale
 FARM_SCALE_SMALLHOLDER: FarmScale
 FARM_SCALE_MEDIUM: FarmScale
 FARM_SCALE_ESTATE: FarmScale
+NOTIFICATION_CHANNEL_UNSPECIFIED: NotificationChannel
+NOTIFICATION_CHANNEL_SMS: NotificationChannel
+NOTIFICATION_CHANNEL_WHATSAPP: NotificationChannel
+INTERACTION_PREFERENCE_UNSPECIFIED: InteractionPreference
+INTERACTION_PREFERENCE_TEXT: InteractionPreference
+INTERACTION_PREFERENCE_VOICE: InteractionPreference
+PREFERRED_LANGUAGE_UNSPECIFIED: PreferredLanguage
+PREFERRED_LANGUAGE_SW: PreferredLanguage
+PREFERRED_LANGUAGE_KI: PreferredLanguage
+PREFERRED_LANGUAGE_LUO: PreferredLanguage
+PREFERRED_LANGUAGE_EN: PreferredLanguage
 GRADING_TYPE_UNSPECIFIED: GradingType
 GRADING_TYPE_BINARY: GradingType
 GRADING_TYPE_TERNARY: GradingType
@@ -374,7 +405,7 @@ class DeleteCollectionPointResponse(_message.Message):
     def __init__(self, success: bool = ...) -> None: ...
 
 class Farmer(_message.Message):
-    __slots__ = ("id", "grower_number", "first_name", "last_name", "region_id", "collection_point_id", "farm_location", "contact", "farm_size_hectares", "farm_scale", "national_id", "registration_date", "is_active", "created_at", "updated_at")
+    __slots__ = ("id", "grower_number", "first_name", "last_name", "region_id", "collection_point_id", "farm_location", "contact", "farm_size_hectares", "farm_scale", "national_id", "registration_date", "is_active", "created_at", "updated_at", "notification_channel", "interaction_pref", "pref_lang")
     ID_FIELD_NUMBER: _ClassVar[int]
     GROWER_NUMBER_FIELD_NUMBER: _ClassVar[int]
     FIRST_NAME_FIELD_NUMBER: _ClassVar[int]
@@ -390,6 +421,9 @@ class Farmer(_message.Message):
     IS_ACTIVE_FIELD_NUMBER: _ClassVar[int]
     CREATED_AT_FIELD_NUMBER: _ClassVar[int]
     UPDATED_AT_FIELD_NUMBER: _ClassVar[int]
+    NOTIFICATION_CHANNEL_FIELD_NUMBER: _ClassVar[int]
+    INTERACTION_PREF_FIELD_NUMBER: _ClassVar[int]
+    PREF_LANG_FIELD_NUMBER: _ClassVar[int]
     id: str
     grower_number: str
     first_name: str
@@ -405,7 +439,10 @@ class Farmer(_message.Message):
     is_active: bool
     created_at: _timestamp_pb2.Timestamp
     updated_at: _timestamp_pb2.Timestamp
-    def __init__(self, id: _Optional[str] = ..., grower_number: _Optional[str] = ..., first_name: _Optional[str] = ..., last_name: _Optional[str] = ..., region_id: _Optional[str] = ..., collection_point_id: _Optional[str] = ..., farm_location: _Optional[_Union[GeoLocation, _Mapping]] = ..., contact: _Optional[_Union[ContactInfo, _Mapping]] = ..., farm_size_hectares: _Optional[float] = ..., farm_scale: _Optional[_Union[FarmScale, str]] = ..., national_id: _Optional[str] = ..., registration_date: _Optional[_Union[datetime.datetime, _timestamp_pb2.Timestamp, _Mapping]] = ..., is_active: bool = ..., created_at: _Optional[_Union[datetime.datetime, _timestamp_pb2.Timestamp, _Mapping]] = ..., updated_at: _Optional[_Union[datetime.datetime, _timestamp_pb2.Timestamp, _Mapping]] = ...) -> None: ...
+    notification_channel: NotificationChannel
+    interaction_pref: InteractionPreference
+    pref_lang: PreferredLanguage
+    def __init__(self, id: _Optional[str] = ..., grower_number: _Optional[str] = ..., first_name: _Optional[str] = ..., last_name: _Optional[str] = ..., region_id: _Optional[str] = ..., collection_point_id: _Optional[str] = ..., farm_location: _Optional[_Union[GeoLocation, _Mapping]] = ..., contact: _Optional[_Union[ContactInfo, _Mapping]] = ..., farm_size_hectares: _Optional[float] = ..., farm_scale: _Optional[_Union[FarmScale, str]] = ..., national_id: _Optional[str] = ..., registration_date: _Optional[_Union[datetime.datetime, _timestamp_pb2.Timestamp, _Mapping]] = ..., is_active: bool = ..., created_at: _Optional[_Union[datetime.datetime, _timestamp_pb2.Timestamp, _Mapping]] = ..., updated_at: _Optional[_Union[datetime.datetime, _timestamp_pb2.Timestamp, _Mapping]] = ..., notification_channel: _Optional[_Union[NotificationChannel, str]] = ..., interaction_pref: _Optional[_Union[InteractionPreference, str]] = ..., pref_lang: _Optional[_Union[PreferredLanguage, str]] = ...) -> None: ...
 
 class GetFarmerRequest(_message.Message):
     __slots__ = ("id",)
@@ -786,7 +823,7 @@ class TodayMetrics(_message.Message):
     def __init__(self, deliveries: _Optional[int] = ..., total_kg: _Optional[float] = ..., grade_counts: _Optional[_Mapping[str, int]] = ..., attribute_counts: _Optional[_Mapping[str, DistributionCounts]] = ..., last_delivery: _Optional[_Union[datetime.datetime, _timestamp_pb2.Timestamp, _Mapping]] = ..., metrics_date: _Optional[str] = ...) -> None: ...
 
 class FarmerSummary(_message.Message):
-    __slots__ = ("farmer_id", "first_name", "last_name", "phone", "collection_point_id", "farm_size_hectares", "farm_scale", "grading_model_id", "grading_model_version", "historical", "today", "trend_direction", "created_at", "updated_at")
+    __slots__ = ("farmer_id", "first_name", "last_name", "phone", "collection_point_id", "farm_size_hectares", "farm_scale", "grading_model_id", "grading_model_version", "historical", "today", "trend_direction", "created_at", "updated_at", "notification_channel", "interaction_pref", "pref_lang")
     FARMER_ID_FIELD_NUMBER: _ClassVar[int]
     FIRST_NAME_FIELD_NUMBER: _ClassVar[int]
     LAST_NAME_FIELD_NUMBER: _ClassVar[int]
@@ -801,6 +838,9 @@ class FarmerSummary(_message.Message):
     TREND_DIRECTION_FIELD_NUMBER: _ClassVar[int]
     CREATED_AT_FIELD_NUMBER: _ClassVar[int]
     UPDATED_AT_FIELD_NUMBER: _ClassVar[int]
+    NOTIFICATION_CHANNEL_FIELD_NUMBER: _ClassVar[int]
+    INTERACTION_PREF_FIELD_NUMBER: _ClassVar[int]
+    PREF_LANG_FIELD_NUMBER: _ClassVar[int]
     farmer_id: str
     first_name: str
     last_name: str
@@ -815,10 +855,31 @@ class FarmerSummary(_message.Message):
     trend_direction: TrendDirection
     created_at: _timestamp_pb2.Timestamp
     updated_at: _timestamp_pb2.Timestamp
-    def __init__(self, farmer_id: _Optional[str] = ..., first_name: _Optional[str] = ..., last_name: _Optional[str] = ..., phone: _Optional[str] = ..., collection_point_id: _Optional[str] = ..., farm_size_hectares: _Optional[float] = ..., farm_scale: _Optional[_Union[FarmScale, str]] = ..., grading_model_id: _Optional[str] = ..., grading_model_version: _Optional[str] = ..., historical: _Optional[_Union[HistoricalMetrics, _Mapping]] = ..., today: _Optional[_Union[TodayMetrics, _Mapping]] = ..., trend_direction: _Optional[_Union[TrendDirection, str]] = ..., created_at: _Optional[_Union[datetime.datetime, _timestamp_pb2.Timestamp, _Mapping]] = ..., updated_at: _Optional[_Union[datetime.datetime, _timestamp_pb2.Timestamp, _Mapping]] = ...) -> None: ...
+    notification_channel: NotificationChannel
+    interaction_pref: InteractionPreference
+    pref_lang: PreferredLanguage
+    def __init__(self, farmer_id: _Optional[str] = ..., first_name: _Optional[str] = ..., last_name: _Optional[str] = ..., phone: _Optional[str] = ..., collection_point_id: _Optional[str] = ..., farm_size_hectares: _Optional[float] = ..., farm_scale: _Optional[_Union[FarmScale, str]] = ..., grading_model_id: _Optional[str] = ..., grading_model_version: _Optional[str] = ..., historical: _Optional[_Union[HistoricalMetrics, _Mapping]] = ..., today: _Optional[_Union[TodayMetrics, _Mapping]] = ..., trend_direction: _Optional[_Union[TrendDirection, str]] = ..., created_at: _Optional[_Union[datetime.datetime, _timestamp_pb2.Timestamp, _Mapping]] = ..., updated_at: _Optional[_Union[datetime.datetime, _timestamp_pb2.Timestamp, _Mapping]] = ..., notification_channel: _Optional[_Union[NotificationChannel, str]] = ..., interaction_pref: _Optional[_Union[InteractionPreference, str]] = ..., pref_lang: _Optional[_Union[PreferredLanguage, str]] = ...) -> None: ...
 
 class GetFarmerSummaryRequest(_message.Message):
     __slots__ = ("farmer_id",)
     FARMER_ID_FIELD_NUMBER: _ClassVar[int]
     farmer_id: str
     def __init__(self, farmer_id: _Optional[str] = ...) -> None: ...
+
+class UpdateCommunicationPreferencesRequest(_message.Message):
+    __slots__ = ("farmer_id", "notification_channel", "interaction_pref", "pref_lang")
+    FARMER_ID_FIELD_NUMBER: _ClassVar[int]
+    NOTIFICATION_CHANNEL_FIELD_NUMBER: _ClassVar[int]
+    INTERACTION_PREF_FIELD_NUMBER: _ClassVar[int]
+    PREF_LANG_FIELD_NUMBER: _ClassVar[int]
+    farmer_id: str
+    notification_channel: NotificationChannel
+    interaction_pref: InteractionPreference
+    pref_lang: PreferredLanguage
+    def __init__(self, farmer_id: _Optional[str] = ..., notification_channel: _Optional[_Union[NotificationChannel, str]] = ..., interaction_pref: _Optional[_Union[InteractionPreference, str]] = ..., pref_lang: _Optional[_Union[PreferredLanguage, str]] = ...) -> None: ...
+
+class UpdateCommunicationPreferencesResponse(_message.Message):
+    __slots__ = ("farmer",)
+    FARMER_FIELD_NUMBER: _ClassVar[int]
+    farmer: Farmer
+    def __init__(self, farmer: _Optional[_Union[Farmer, _Mapping]] = ...) -> None: ...

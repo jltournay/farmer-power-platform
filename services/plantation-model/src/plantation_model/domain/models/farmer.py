@@ -40,6 +40,74 @@ class FarmScale(str, Enum):
             return cls.ESTATE
 
 
+class NotificationChannel(str, Enum):
+    """Channel for pushing notifications to farmers (action plans, alerts).
+
+    Channels:
+    - SMS: Text messages via Africa's Talking (most common, default)
+    - WHATSAPP: WhatsApp messages (requires WhatsApp registration)
+
+    Note: This is distinct from InteractionPreference which controls how
+    farmers consume detailed information (text vs voice).
+    """
+
+    SMS = "sms"
+    WHATSAPP = "whatsapp"
+
+
+class InteractionPreference(str, Enum):
+    """Preferred mode for consuming detailed information.
+
+    Preferences:
+    - TEXT: Prefers reading SMS/WhatsApp messages (default, most common)
+    - VOICE: Prefers listening via IVR/Voice AI (for low-literacy farmers)
+
+    Note: Even voice-preferring farmers receive SMS triggers; they then
+    call IVR to listen to their action plans.
+    """
+
+    TEXT = "text"
+    VOICE = "voice"
+
+
+# Backwards compatibility aliases
+PreferredChannel = NotificationChannel
+
+
+class PreferredLanguage(str, Enum):
+    """Preferred language for farmer communications.
+
+    Languages supported in Kenya:
+    - SW: Swahili (national language, default)
+    - KI: Kikuyu (Central Kenya)
+    - LUO: Luo (Western Kenya)
+    - EN: English (formal communications)
+    """
+
+    SWAHILI = "sw"
+    KIKUYU = "ki"
+    LUO = "luo"
+    ENGLISH = "en"
+
+    @classmethod
+    def get_display_name(cls, value: str) -> str:
+        """Get human-readable language name.
+
+        Args:
+            value: Language code (sw, ki, luo, en).
+
+        Returns:
+            Human-readable language name.
+        """
+        names = {
+            "sw": "Swahili",
+            "ki": "Kikuyu",
+            "luo": "Luo",
+            "en": "English",
+        }
+        return names.get(value, value)
+
+
 class Farmer(BaseModel):
     """Farmer entity - tea producer registered at a collection point.
 
@@ -80,6 +148,18 @@ class Farmer(BaseModel):
         description="Registration timestamp",
     )
     is_active: bool = Field(default=True, description="Whether farmer is active")
+    notification_channel: NotificationChannel = Field(
+        default=NotificationChannel.SMS,
+        description="Channel for pushing notifications (sms, whatsapp)",
+    )
+    interaction_pref: InteractionPreference = Field(
+        default=InteractionPreference.TEXT,
+        description="Preferred mode for consuming information (text, voice)",
+    )
+    pref_lang: PreferredLanguage = Field(
+        default=PreferredLanguage.SWAHILI,
+        description="Preferred language for communications",
+    )
     created_at: datetime = Field(
         default_factory=lambda: datetime.now(timezone.utc),
         description="Creation timestamp",
@@ -112,6 +192,9 @@ class Farmer(BaseModel):
                 "farm_scale": "medium",
                 "national_id": "12345678",
                 "is_active": True,
+                "notification_channel": "sms",
+                "interaction_pref": "text",
+                "pref_lang": "sw",
             }
         }
     }
@@ -151,3 +234,12 @@ class FarmerUpdate(BaseModel):
     phone: Optional[str] = Field(default=None, min_length=10, max_length=15)
     farm_size_hectares: Optional[float] = Field(default=None, ge=0.01, le=1000.0)
     is_active: Optional[bool] = None
+    notification_channel: Optional[NotificationChannel] = Field(
+        default=None, description="Channel for pushing notifications"
+    )
+    interaction_pref: Optional[InteractionPreference] = Field(
+        default=None, description="Preferred mode for consuming information"
+    )
+    pref_lang: Optional[PreferredLanguage] = Field(
+        default=None, description="Preferred language for communications"
+    )

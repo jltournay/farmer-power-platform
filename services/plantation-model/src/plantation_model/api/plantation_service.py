@@ -15,7 +15,14 @@ VALID_COLLECTION_DAYS: Set[str] = {"mon", "tue", "wed", "thu", "fri", "sat", "su
 from fp_proto.plantation.v1 import plantation_pb2, plantation_pb2_grpc
 from plantation_model.domain.models.factory import Factory
 from plantation_model.domain.models.collection_point import CollectionPoint
-from plantation_model.domain.models.farmer import Farmer, FarmScale
+from plantation_model.domain.models.farmer import (
+    Farmer,
+    FarmScale,
+    FarmerUpdate,
+    InteractionPreference,
+    NotificationChannel,
+    PreferredLanguage,
+)
 from plantation_model.domain.models.value_objects import (
     CollectionPointCapacity,
     ContactInfo,
@@ -602,6 +609,70 @@ class PlantationServiceServicer(plantation_pb2_grpc.PlantationServiceServicer):
         }
         return mapping.get(farm_scale, plantation_pb2.FARM_SCALE_UNSPECIFIED)
 
+    def _notification_channel_to_proto(
+        self, channel: NotificationChannel
+    ) -> plantation_pb2.NotificationChannel:
+        """Convert NotificationChannel domain enum to protobuf enum."""
+        mapping = {
+            NotificationChannel.SMS: plantation_pb2.NOTIFICATION_CHANNEL_SMS,
+            NotificationChannel.WHATSAPP: plantation_pb2.NOTIFICATION_CHANNEL_WHATSAPP,
+        }
+        return mapping.get(channel, plantation_pb2.NOTIFICATION_CHANNEL_UNSPECIFIED)
+
+    def _notification_channel_from_proto(
+        self, channel: plantation_pb2.NotificationChannel
+    ) -> NotificationChannel:
+        """Convert protobuf NotificationChannel enum to domain enum."""
+        mapping = {
+            plantation_pb2.NOTIFICATION_CHANNEL_SMS: NotificationChannel.SMS,
+            plantation_pb2.NOTIFICATION_CHANNEL_WHATSAPP: NotificationChannel.WHATSAPP,
+        }
+        return mapping.get(channel, NotificationChannel.SMS)
+
+    def _interaction_pref_to_proto(
+        self, pref: InteractionPreference
+    ) -> plantation_pb2.InteractionPreference:
+        """Convert InteractionPreference domain enum to protobuf enum."""
+        mapping = {
+            InteractionPreference.TEXT: plantation_pb2.INTERACTION_PREFERENCE_TEXT,
+            InteractionPreference.VOICE: plantation_pb2.INTERACTION_PREFERENCE_VOICE,
+        }
+        return mapping.get(pref, plantation_pb2.INTERACTION_PREFERENCE_UNSPECIFIED)
+
+    def _interaction_pref_from_proto(
+        self, pref: plantation_pb2.InteractionPreference
+    ) -> InteractionPreference:
+        """Convert protobuf InteractionPreference enum to domain enum."""
+        mapping = {
+            plantation_pb2.INTERACTION_PREFERENCE_TEXT: InteractionPreference.TEXT,
+            plantation_pb2.INTERACTION_PREFERENCE_VOICE: InteractionPreference.VOICE,
+        }
+        return mapping.get(pref, InteractionPreference.TEXT)
+
+    def _pref_lang_to_proto(
+        self, lang: PreferredLanguage
+    ) -> plantation_pb2.PreferredLanguage:
+        """Convert PreferredLanguage domain enum to protobuf enum."""
+        mapping = {
+            PreferredLanguage.SWAHILI: plantation_pb2.PREFERRED_LANGUAGE_SW,
+            PreferredLanguage.KIKUYU: plantation_pb2.PREFERRED_LANGUAGE_KI,
+            PreferredLanguage.LUO: plantation_pb2.PREFERRED_LANGUAGE_LUO,
+            PreferredLanguage.ENGLISH: plantation_pb2.PREFERRED_LANGUAGE_EN,
+        }
+        return mapping.get(lang, plantation_pb2.PREFERRED_LANGUAGE_UNSPECIFIED)
+
+    def _pref_lang_from_proto(
+        self, lang: plantation_pb2.PreferredLanguage
+    ) -> PreferredLanguage:
+        """Convert protobuf PreferredLanguage enum to domain enum."""
+        mapping = {
+            plantation_pb2.PREFERRED_LANGUAGE_SW: PreferredLanguage.SWAHILI,
+            plantation_pb2.PREFERRED_LANGUAGE_KI: PreferredLanguage.KIKUYU,
+            plantation_pb2.PREFERRED_LANGUAGE_LUO: PreferredLanguage.LUO,
+            plantation_pb2.PREFERRED_LANGUAGE_EN: PreferredLanguage.ENGLISH,
+        }
+        return mapping.get(lang, PreferredLanguage.SWAHILI)
+
     def _farmer_to_proto(self, farmer: Farmer) -> plantation_pb2.Farmer:
         """Convert Farmer domain model to protobuf message."""
         return plantation_pb2.Farmer(
@@ -628,6 +699,9 @@ class PlantationServiceServicer(plantation_pb2_grpc.PlantationServiceServicer):
             is_active=farmer.is_active,
             created_at=datetime_to_timestamp(farmer.created_at),
             updated_at=datetime_to_timestamp(farmer.updated_at),
+            notification_channel=self._notification_channel_to_proto(farmer.notification_channel),
+            interaction_pref=self._interaction_pref_to_proto(farmer.interaction_pref),
+            pref_lang=self._pref_lang_to_proto(farmer.pref_lang),
         )
 
     async def GetFarmer(
@@ -1205,6 +1279,9 @@ class PlantationServiceServicer(plantation_pb2_grpc.PlantationServiceServicer):
             ),
             created_at=datetime_to_timestamp(performance.created_at),
             updated_at=datetime_to_timestamp(performance.updated_at),
+            notification_channel=self._notification_channel_to_proto(farmer.notification_channel),
+            interaction_pref=self._interaction_pref_to_proto(farmer.interaction_pref),
+            pref_lang=self._pref_lang_to_proto(farmer.pref_lang),
         )
 
     async def GetFarmerSummary(
@@ -1258,3 +1335,99 @@ class PlantationServiceServicer(plantation_pb2_grpc.PlantationServiceServicer):
             )
 
         return self._farmer_summary_to_proto(farmer, performance)
+
+    # =========================================================================
+    # Communication Preferences Operations (Story 1.5)
+    # =========================================================================
+
+    async def UpdateCommunicationPreferences(
+        self,
+        request: plantation_pb2.UpdateCommunicationPreferencesRequest,
+        context: grpc.aio.ServicerContext,
+    ) -> plantation_pb2.UpdateCommunicationPreferencesResponse:
+        """Update farmer communication preferences (Story 1.5).
+
+        Args:
+            request: Contains farmer_id, notification_channel, interaction_pref, pref_lang
+            context: gRPC context
+
+        Returns:
+            UpdateCommunicationPreferencesResponse with updated Farmer
+
+        Raises:
+            NOT_FOUND: If farmer doesn't exist
+            INVALID_ARGUMENT: If channel, interaction preference, or language is invalid
+        """
+        # Validate farmer exists
+        farmer = await self._farmer_repo.get_by_id(request.farmer_id)
+        if farmer is None:
+            await context.abort(
+                grpc.StatusCode.NOT_FOUND,
+                f"Farmer not found: {request.farmer_id}",
+            )
+
+        # Validate notification channel (must be one of the valid proto enum values)
+        valid_channels = {
+            plantation_pb2.NOTIFICATION_CHANNEL_SMS,
+            plantation_pb2.NOTIFICATION_CHANNEL_WHATSAPP,
+        }
+        if request.notification_channel not in valid_channels:
+            await context.abort(
+                grpc.StatusCode.INVALID_ARGUMENT,
+                "Invalid notification channel. Valid options: sms, whatsapp",
+            )
+
+        # Validate interaction preference
+        valid_interaction_prefs = {
+            plantation_pb2.INTERACTION_PREFERENCE_TEXT,
+            plantation_pb2.INTERACTION_PREFERENCE_VOICE,
+        }
+        if request.interaction_pref not in valid_interaction_prefs:
+            await context.abort(
+                grpc.StatusCode.INVALID_ARGUMENT,
+                "Invalid interaction preference. Valid options: text, voice",
+            )
+
+        # Validate language (must be one of the valid proto enum values)
+        valid_langs = {
+            plantation_pb2.PREFERRED_LANGUAGE_SW,
+            plantation_pb2.PREFERRED_LANGUAGE_KI,
+            plantation_pb2.PREFERRED_LANGUAGE_LUO,
+            plantation_pb2.PREFERRED_LANGUAGE_EN,
+        }
+        if request.pref_lang not in valid_langs:
+            await context.abort(
+                grpc.StatusCode.INVALID_ARGUMENT,
+                "Invalid language. Valid options: sw (Swahili), ki (Kikuyu), luo (Luo), en (English)",
+            )
+
+        # Map proto enums to domain enums
+        domain_channel = self._notification_channel_from_proto(request.notification_channel)
+        domain_interaction = self._interaction_pref_from_proto(request.interaction_pref)
+        domain_lang = self._pref_lang_from_proto(request.pref_lang)
+
+        # Convert to dict for repository update
+        updates = {
+            "notification_channel": domain_channel.value,
+            "interaction_pref": domain_interaction.value,
+            "pref_lang": domain_lang.value,
+        }
+
+        updated_farmer = await self._farmer_repo.update(request.farmer_id, updates)
+        if updated_farmer is None:
+            await context.abort(
+                grpc.StatusCode.NOT_FOUND,
+                f"Farmer not found: {request.farmer_id}",
+            )
+
+        logger.info(
+            "Updated communication preferences for farmer %s: channel=%s, interaction=%s, lang=%s",
+            request.farmer_id,
+            domain_channel.value,
+            domain_interaction.value,
+            domain_lang.value,
+        )
+
+        return plantation_pb2.UpdateCommunicationPreferencesResponse(
+            farmer=self._farmer_to_proto(updated_farmer),
+        )
