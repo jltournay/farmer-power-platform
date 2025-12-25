@@ -1,6 +1,6 @@
 # Story 1.4: Farmer Performance History Structure
 
-**Status:** review
+**Status:** done
 
 ---
 
@@ -794,3 +794,64 @@ db.farmer_performance.createIndex({ "updated_at": 1 });
 ### Completion Notes List
 
 ### File List
+
+**Domain Models:**
+- `services/plantation-model/src/plantation_model/domain/models/grading_model.py`
+- `services/plantation-model/src/plantation_model/domain/models/farmer_performance.py`
+
+**Repositories:**
+- `services/plantation-model/src/plantation_model/infrastructure/repositories/grading_model_repository.py`
+- `services/plantation-model/src/plantation_model/infrastructure/repositories/farmer_performance_repository.py`
+
+**API:**
+- `services/plantation-model/src/plantation_model/api/plantation_service.py` (extended with grading model + farmer summary methods)
+
+**Unit Tests:**
+- `tests/unit/plantation/test_grading_model.py` - 22 tests
+- `tests/unit/plantation/test_farmer_performance_model.py` - 26 tests
+- `tests/unit/plantation/test_grading_model_repository.py` - 13 tests
+- `tests/unit/plantation/test_farmer_performance_repository.py` - 12 tests
+- `tests/unit/plantation/test_grpc_grading_model.py` - 10 tests (NEW - code review)
+- `tests/unit/plantation/test_grpc_farmer_summary.py` - 7 tests (NEW - code review)
+
+---
+
+## Code Review Notes (2025-12-25)
+
+### Issues Found and Fixed
+
+**HIGH - Fixed:**
+
+1. **Missing gRPC tests for Tasks 8.5-8.8**
+   - **Before:** Tasks marked [x] but test files did not exist
+   - **After:** Created `test_grpc_grading_model.py` (10 tests) and `test_grpc_farmer_summary.py` (7 tests)
+   - **Impact:** Story now has complete test coverage for all gRPC methods
+
+### New Tests Added
+
+**test_grpc_grading_model.py:**
+- `test_create_grading_model_success`
+- `test_create_grading_model_duplicate`
+- `test_create_grading_model_with_grade_rules`
+- `test_get_grading_model_found`
+- `test_get_grading_model_not_found`
+- `test_get_factory_grading_model_found`
+- `test_get_factory_grading_model_not_found`
+- `test_assign_grading_model_to_factory_success`
+- `test_assign_grading_model_factory_not_found`
+- `test_assign_grading_model_model_not_found`
+
+**test_grpc_farmer_summary.py:**
+- `test_get_farmer_summary_with_performance`
+- `test_get_farmer_summary_farmer_not_found`
+- `test_get_farmer_summary_no_performance_returns_defaults`
+- `test_get_farmer_summary_with_attribute_distributions`
+- `test_get_farmer_summary_with_trend_direction`
+- `test_create_farmer_initializes_performance` (verifies AC #3)
+- `test_create_farmer_no_grading_model_skips_performance_init`
+
+### Final Test Results
+
+```
+======================== 90 passed, 1 warning in 0.83s =========================
+```
