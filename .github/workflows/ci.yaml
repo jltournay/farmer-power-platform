@@ -43,7 +43,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          pip install pytest pytest-asyncio pytest-cov pydantic pydantic-settings motor grpcio grpcio-tools tenacity opentelemetry-api opentelemetry-sdk
+          pip install pytest pytest-asyncio pytest-cov pydantic pydantic-settings motor grpcio grpcio-tools tenacity opentelemetry-api opentelemetry-sdk structlog httpx aiohttp fastapi uvicorn
 
       - name: Run unit tests
         run: |
@@ -73,7 +73,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          pip install pytest pytest-asyncio motor pymongo pydantic pydantic-settings grpcio grpcio-tools tenacity
+          pip install pytest pytest-asyncio motor pymongo pydantic pydantic-settings grpcio grpcio-tools tenacity structlog httpx aiohttp fastapi uvicorn opentelemetry-api opentelemetry-sdk
 
       - name: Wait for MongoDB
         run: |
