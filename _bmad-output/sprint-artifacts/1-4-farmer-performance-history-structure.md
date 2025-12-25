@@ -103,10 +103,10 @@ So that I can identify trends, understand root causes, and target improvement ef
   - [x] 8.7 Test GetFarmerSummary gRPC method
   - [x] 8.8 Test auto-initialization on farmer registration
 
-- [ ] **Task 9: Integration tests** (deferred - requires MongoDB)
-  - [ ] 9.1 Test grading model creation and retrieval flow
-  - [ ] 9.2 Test farmer registration creates performance record with correct grading_model_id
-  - [ ] 9.3 Test GetFarmerSummary returns complete performance data
+- [x] **Task 9: Integration tests** (implemented in Story 0-2)
+  - [x] 9.1 Test grading model creation and retrieval flow
+  - [x] 9.2 Test farmer registration creates performance record with correct grading_model_id
+  - [x] 9.3 Test GetFarmerSummary returns complete performance data
 
 ---
 

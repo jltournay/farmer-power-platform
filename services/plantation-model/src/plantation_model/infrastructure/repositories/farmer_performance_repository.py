@@ -53,7 +53,8 @@ class FarmerPerformanceRepository(BaseRepository[FarmerPerformance]):
         Returns:
             The created farmer performance.
         """
-        doc = entity.model_dump()
+        # Use mode="json" to serialize enums and dates as strings for MongoDB
+        doc = entity.model_dump(mode="json")
         doc["_id"] = doc["farmer_id"]
         await self._collection.insert_one(doc)
         logger.debug("Created farmer performance for %s", entity.farmer_id)
@@ -119,9 +120,10 @@ class FarmerPerformanceRepository(BaseRepository[FarmerPerformance]):
         Returns:
             The upserted farmer performance.
         """
-        doc = entity.model_dump()
+        # Use mode="json" to serialize enums and dates as strings for MongoDB
+        doc = entity.model_dump(mode="json")
         doc["_id"] = doc["farmer_id"]
-        doc["updated_at"] = datetime.now(timezone.utc)
+        doc["updated_at"] = datetime.now(timezone.utc).isoformat()
 
         await self._collection.replace_one(
             {"_id": doc["farmer_id"]},
@@ -149,7 +151,7 @@ class FarmerPerformanceRepository(BaseRepository[FarmerPerformance]):
             {"_id": farmer_id},
             {
                 "$set": {
-                    "historical": historical.model_dump(),
+                    "historical": historical.model_dump(mode="json"),
                     "updated_at": datetime.now(timezone.utc),
                 },
             },
@@ -177,7 +179,7 @@ class FarmerPerformanceRepository(BaseRepository[FarmerPerformance]):
             {"_id": farmer_id},
             {
                 "$set": {
-                    "today": today.model_dump(),
+                    "today": today.model_dump(mode="json"),
                     "updated_at": datetime.now(timezone.utc),
                 },
             },

@@ -1,6 +1,6 @@
 # Story 0.2: MongoDB Integration Testing Infrastructure
 
-**Status:** ready-for-dev
+**Status:** review
 
 ---
 
@@ -55,46 +55,46 @@ So that I can catch database integration issues early in the development cycle r
 
 ## Tasks / Subtasks
 
-- [ ] **Task 1: Set up MongoDB test infrastructure** (AC: #1, #4)
-  - [ ] 1.1 Add `docker-compose.test.yaml` with MongoDB service (mongo:7.0)
-  - [ ] 1.2 Create `tests/conftest_integration.py` with MongoDB fixture
-  - [ ] 1.3 Implement async fixture that connects to MongoDB and cleans up
-  - [ ] 1.4 Add pytest marker `@pytest.mark.mongodb` for real MongoDB tests
-  - [ ] 1.5 Create helper to wait for MongoDB readiness
+- [x] **Task 1: Set up MongoDB test infrastructure** (AC: #1, #4)
+  - [x] 1.1 Add `docker-compose.test.yaml` with MongoDB service (mongo:7.0)
+  - [x] 1.2 Create `tests/conftest_integration.py` with MongoDB fixture
+  - [x] 1.3 Implement async fixture that connects to MongoDB and cleans up
+  - [x] 1.4 Add pytest marker `@pytest.mark.mongodb` for real MongoDB tests
+  - [x] 1.5 Create helper to wait for MongoDB readiness
 
-- [ ] **Task 2: Create base test utilities** (AC: #2)
-  - [ ] 2.1 Add `libs/fp-testing/fp_testing/mongodb.py` with test utilities
-  - [ ] 2.2 Create `MongoTestClient` class with async context manager
-  - [ ] 2.3 Add `create_test_database()` that creates unique DB per test run
-  - [ ] 2.4 Add `cleanup_test_database()` to drop test databases
+- [x] **Task 2: Create base test utilities** (AC: #2)
+  - [x] 2.1 Add `libs/fp-testing/fp_testing/mongodb.py` with test utilities
+  - [x] 2.2 Create `MongoTestClient` class with async context manager
+  - [x] 2.3 Add `create_test_database()` that creates unique DB per test run
+  - [x] 2.4 Add `cleanup_test_database()` to drop test databases
 
-- [ ] **Task 3: Implement Story 1-4 deferred tests** (AC: #3)
-  - [ ] 3.1 Create `tests/integration/test_grading_model_mongodb.py`
-  - [ ] 3.2 Test grading model creation persists to MongoDB correctly
-  - [ ] 3.3 Test grading model retrieval returns correct data types
-  - [ ] 3.4 Test factory grading model lookup works with indexes
-  - [ ] 3.5 Create `tests/integration/test_farmer_performance_mongodb.py`
-  - [ ] 3.6 Test farmer registration auto-creates performance record
-  - [ ] 3.7 Test performance record has correct grading_model_id reference
-  - [ ] 3.8 Test GetFarmerSummary returns complete performance data
-  - [ ] 3.9 Test FarmerPerformance upsert operations
+- [x] **Task 3: Implement Story 1-4 deferred tests** (AC: #3)
+  - [x] 3.1 Create `tests/integration/test_grading_model_mongodb.py`
+  - [x] 3.2 Test grading model creation persists to MongoDB correctly
+  - [x] 3.3 Test grading model retrieval returns correct data types
+  - [x] 3.4 Test factory grading model lookup works with indexes
+  - [x] 3.5 Create `tests/integration/test_farmer_performance_mongodb.py`
+  - [x] 3.6 Test farmer registration auto-creates performance record
+  - [x] 3.7 Test performance record has correct grading_model_id reference
+  - [x] 3.8 Test GetFarmerSummary returns complete performance data
+  - [x] 3.9 Test FarmerPerformance upsert operations
 
-- [ ] **Task 4: Validate repository operations** (AC: #2)
-  - [ ] 4.1 Test GradingModelRepository with real MongoDB
-  - [ ] 4.2 Test FarmerPerformanceRepository with real MongoDB
-  - [ ] 4.3 Test FarmerRepository with real MongoDB
-  - [ ] 4.4 Test index creation happens correctly
-  - [ ] 4.5 Test unique constraints work (duplicate phone rejection)
+- [x] **Task 4: Validate repository operations** (AC: #2)
+  - [x] 4.1 Test GradingModelRepository with real MongoDB
+  - [x] 4.2 Test FarmerPerformanceRepository with real MongoDB
+  - [x] 4.3 Test FarmerRepository with real MongoDB
+  - [x] 4.4 Test index creation happens correctly
+  - [x] 4.5 Test unique constraints work (duplicate phone rejection)
 
-- [ ] **Task 5: CI pipeline integration** (AC: #5)
-  - [ ] 5.1 Add MongoDB service to GitHub Actions workflow
-  - [ ] 5.2 Create separate test stage for integration tests
-  - [ ] 5.3 Add retry logic for MongoDB connection in CI
-  - [ ] 5.4 Document how to run integration tests locally
+- [x] **Task 5: CI pipeline integration** (AC: #5)
+  - [x] 5.1 Add MongoDB service to GitHub Actions workflow
+  - [x] 5.2 Create separate test stage for integration tests
+  - [x] 5.3 Add retry logic for MongoDB connection in CI
+  - [x] 5.4 Document how to run integration tests locally
 
-- [ ] **Task 6: Update Story 1-4 status** (AC: #3)
-  - [ ] 6.1 Mark Task 9 as complete in story 1-4 file
-  - [ ] 6.2 Update sprint-status.yaml if needed
+- [x] **Task 6: Update Story 1-4 status** (AC: #3)
+  - [x] 6.1 Mark Task 9 as complete in story 1-4 file
+  - [x] 6.2 Update sprint-status.yaml if needed
 
 ---
 

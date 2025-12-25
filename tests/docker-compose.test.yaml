@@ -1,0 +1,25 @@
+# Docker Compose for Integration Tests
+# Provides MongoDB for real database integration testing
+#
+# Usage:
+#   docker-compose -f tests/docker-compose.test.yaml up -d
+#   pytest tests/integration/ -m mongodb -v
+#   docker-compose -f tests/docker-compose.test.yaml down
+
+services:
+  mongodb-test:
+    image: mongo:7.0
+    container_name: fp-mongodb-test
+    ports:
+      - "27018:27017"  # Different port to avoid conflicts with dev MongoDB
+    environment:
+      MONGO_INITDB_DATABASE: test_plantation
+    tmpfs:
+      - /data/db  # RAM disk for speed
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    restart: unless-stopped

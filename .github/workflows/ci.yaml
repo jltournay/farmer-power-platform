@@ -1,0 +1,106 @@
+# CI Pipeline for Farmer Power Platform
+# Runs unit tests, integration tests (with MongoDB), and linting
+
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+env:
+  PYTHON_VERSION: "3.12"
+
+jobs:
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install linting dependencies
+        run: |
+          pip install ruff mypy
+
+      - name: Run ruff check
+        run: |
+          ruff check .
+
+      - name: Run ruff format check
+        run: |
+          ruff format --check .
+
+  unit-tests:
+    name: Unit Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install dependencies
+        run: |
+          pip install pytest pytest-asyncio pytest-cov pydantic pydantic-settings motor grpcio grpcio-tools tenacity opentelemetry-api opentelemetry-sdk
+
+      - name: Run unit tests
+        run: |
+          PYTHONPATH="${PYTHONPATH}:libs/fp-common:libs/fp-proto/src:libs/fp-testing:services/plantation-model/src" \
+            pytest tests/unit/ -v --cov=services --cov-report=term-missing
+
+  integration-tests:
+    name: Integration Tests (MongoDB)
+    runs-on: ubuntu-latest
+    services:
+      mongodb:
+        image: mongo:7.0
+        ports:
+          - 27018:27017
+        options: >-
+          --health-cmd "mongosh --eval 'db.adminCommand(\"ping\")'"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install dependencies
+        run: |
+          pip install pytest pytest-asyncio motor pydantic pydantic-settings grpcio grpcio-tools tenacity
+
+      - name: Wait for MongoDB
+        run: |
+          until mongosh --host localhost --port 27018 --eval "db.adminCommand('ping')" > /dev/null 2>&1; do
+            echo "Waiting for MongoDB..."
+            sleep 2
+          done
+          echo "MongoDB is ready"
+
+      - name: Run integration tests
+        env:
+          MONGODB_TEST_URI: "mongodb://localhost:27018"
+          MONGODB_TEST_PORT: "27018"
+        run: |
+          PYTHONPATH="${PYTHONPATH}:libs/fp-common:libs/fp-proto/src:libs/fp-testing:services/plantation-model/src" \
+            pytest tests/integration/ -v -m mongodb --tb=short
+
+  all-tests-pass:
+    name: All Tests Pass
+    needs: [lint, unit-tests, integration-tests]
+    runs-on: ubuntu-latest
+    steps:
+      - name: All checks passed
+        run: echo "All CI checks passed successfully!"

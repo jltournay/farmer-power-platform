@@ -39,6 +39,7 @@ def pytest_configure(config: pytest.Config) -> None:
     config.addinivalue_line("markers", "golden: mark as golden sample test")
     config.addinivalue_line("markers", "contract: mark as contract test")
     config.addinivalue_line("markers", "unit: mark as unit test")
+    config.addinivalue_line("markers", "mongodb: mark test as requiring real MongoDB connection")
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
