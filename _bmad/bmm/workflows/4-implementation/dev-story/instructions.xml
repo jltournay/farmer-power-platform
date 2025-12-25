@@ -4,7 +4,7 @@
   <critical>Communicate all responses in {communication_language} and language MUST be tailored to {user_skill_level}</critical>
   <critical>Generate all documents in {document_output_language}</critical>
   <critical>Only modify the story file in these areas: Tasks/Subtasks checkboxes, Dev Agent Record (Debug Log, Completion Notes), File List,
-    Change Log, and Status</critical>
+    Change Log, Status, and GitHub Issue (for traceability linking)</critical>
   <critical>Execute ALL steps in exact order; do NOT skip steps</critical>
   <critical>Absolutely DO NOT stop because of "milestones", "significant progress", or "session boundaries". Continue in a single execution
     until the story is COMPLETE (all ACs satisfied and all tasks/subtasks checked) UNLESS a HALT condition is triggered or the USER gives
@@ -219,6 +219,76 @@
       <output>ℹ️ No sprint status file exists - story progress will be tracked in story file only</output>
       <action>Set {{current_sprint_status}} = "no-sprint-tracking"</action>
     </check>
+  </step>
+
+  <step n="4b" goal="Create or link GitHub issue for traceability" tag="github-traceability">
+    <critical>Ensure story is linked to a GitHub issue for commit traceability</critical>
+
+    <!-- Check for existing GitHub issue -->
+    <action>Search story file for existing "**GitHub Issue:**" field</action>
+
+    <check if="GitHub Issue field exists and has valid issue number">
+      <action>Extract issue number (e.g., #15 -> 15)</action>
+      <action>Store {{github_issue_number}} for use in commits</action>
+      <output>🔗 Story linked to existing GitHub Issue #{{github_issue_number}}</output>
+    </check>
+
+    <check if="GitHub Issue field does NOT exist or is empty">
+      <output>📝 No GitHub issue linked - creating one for traceability...</output>
+
+      <!-- Extract repository info -->
+      <action>Run: git remote get-url origin</action>
+      <action>Parse github_owner and github_repo from remote URL</action>
+
+      <!-- Extract story info for issue -->
+      <action>Extract story title from # heading</action>
+      <action>Extract story description (As a... I want... So that...)</action>
+      <action>Extract acceptance criteria section</action>
+      <action>Get relative path to story file from repository root</action>
+
+      <!-- Determine labels -->
+      <action>Extract epic number from story_key (e.g., "1-3-farmer-registration" -> "1")</action>
+      <action>Set labels: ["story", "epic-{{epic_number}}"]</action>
+
+      <!-- Create issue -->
+      <action>Use mcp__github__create_issue with:
+        - owner: {{github_owner}}
+        - repo: {{github_repo}}
+        - title: "Story {{story_key}}: {{story_title}}"
+        - body: formatted with story description, acceptance criteria, and file path
+        - labels: {{labels}}
+      </action>
+
+      <check if="issue creation succeeds">
+        <action>Store returned issue number as {{github_issue_number}}</action>
+
+        <!-- Update story file -->
+        <action>Find "**Status:**" line in story file</action>
+        <action>Add "**GitHub Issue:** #{{github_issue_number}}" on new line after Status</action>
+        <action>Save story file</action>
+
+        <!-- Update sprint-status if exists -->
+        <check if="{{sprint_status}} file exists">
+          <action>Add github_issue field to story entry in sprint-status.yaml</action>
+        </check>
+
+        <output>✅ Created GitHub Issue #{{github_issue_number}}
+          URL: https://github.com/{{github_owner}}/{{github_repo}}/issues/{{github_issue_number}}
+
+          📌 **Commit Reference:** Include "Relates to #{{github_issue_number}}" in commit messages
+        </output>
+      </check>
+
+      <check if="issue creation fails">
+        <output>⚠️ Could not create GitHub issue (API error or missing permissions)
+          Continuing without GitHub issue linking...
+        </output>
+        <action>Set {{github_issue_number}} = null</action>
+      </check>
+    </check>
+
+    <!-- Store for later use in commits -->
+    <action>Store {{github_issue_number}} in session for commit message formatting</action>
   </step>
 
   <step n="5" goal="Implement task following red-green-refactor cycle">

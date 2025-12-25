@@ -1,6 +1,7 @@
 # Story {{epic_num}}.{{story_num}}: {{story_title}}
 
-Status: ready-for-dev
+**Status:** ready-for-dev
+**GitHub Issue:** <!-- Auto-created by dev-story workflow -->
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 

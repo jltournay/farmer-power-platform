@@ -1,6 +1,7 @@
 # Story 0.1: MCP gRPC Infrastructure
 
 **Status:** done
+**GitHub Issue:** #11
 
 ---
 
