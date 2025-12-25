@@ -1,6 +1,6 @@
 # Story 1.5: Farmer Communication Preferences
 
-**Status:** review
+**Status:** done
 **GitHub Issue:** #12
 
 ---
@@ -17,17 +17,18 @@ So that I receive feedback in a way I can understand.
 
 1. **Given** a farmer is registered
    **When** the farmer record is created
-   **Then** default preferences are set: pref_channel = "sms", pref_lang = "sw" (Swahili)
+   **Then** default preferences are set: notification_channel = "sms", interaction_pref = "text", pref_lang = "sw" (Swahili)
 
 2. **Given** a farmer exists
    **When** I update communication preferences via API
-   **Then** pref_channel can be set to: "sms", "whatsapp", "voice"
+   **Then** notification_channel can be set to: "sms", "whatsapp" (how we PUSH notifications)
+   **And** interaction_pref can be set to: "text", "voice" (how farmer CONSUMES information)
    **And** pref_lang can be set to: "sw" (Swahili), "ki" (Kikuyu), "luo" (Luo), "en" (English)
    **And** changes are persisted immediately
 
 3. **Given** a farmer's preferences are updated
    **When** the Notification Model queries farmer preferences
-   **Then** the current pref_channel and pref_lang are returned
+   **Then** the current notification_channel, interaction_pref, and pref_lang are returned
 
 4. **Given** an invalid preference value is provided
    **When** I attempt to update preferences
@@ -484,7 +485,7 @@ interaction_pref: text | voice
 - **AC #2:** UpdateCommunicationPreferences gRPC method with all combinations supported
 - **AC #3:** GetFarmer and GetFarmerSummary return notification_channel, interaction_pref, and pref_lang
 - **AC #4:** Invalid values return INVALID_ARGUMENT with descriptive error messages
-- **Tests:** 16 unit tests covering all scenarios including low-literacy and smartphone farmer use cases
+- **Tests:** 16 unit tests covering all scenarios including low-literacy and smartphone farmer use cases, plus GetFarmerSummary preferences
 - **Design Revision:** Split pref_channel into notification_channel + interaction_pref per party mode discussion
 
 ### File List
@@ -519,10 +520,13 @@ interaction_pref: text | voice
   - Updated `_farmer_to_proto()` and `_farmer_summary_to_proto()`
   - Implemented `UpdateCommunicationPreferences()` with 3-field validation
 
-**Unit Tests (New):**
+**Unit Tests (New/Updated):**
 - `tests/unit/plantation/test_grpc_farmer_preferences.py` - 16 tests including:
   - Default preferences validation
   - Update preferences (various combinations)
   - Validation errors (invalid channel, interaction, language)
   - Low-literacy farmer scenario (sms + voice)
   - Smartphone farmer scenario (whatsapp + text)
+  - GetFarmerSummary returns preferences (AC #3)
+- `tests/unit/plantation/test_grpc_farmer_summary.py` - Updated to work with new preference proto fields
+- `tests/unit/plantation/test_grpc_grading_model.py` - Updated to work with new preference proto fields

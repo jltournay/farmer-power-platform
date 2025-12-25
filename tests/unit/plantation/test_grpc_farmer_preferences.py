@@ -506,3 +506,86 @@ class TestFarmerCommunicationPreferences:
         assert farmer.notification_channel == NotificationChannel.WHATSAPP
         assert farmer.interaction_pref == InteractionPreference.TEXT
         # This farmer receives full action plan via WhatsApp and reads it
+
+    # =========================================================================
+    # AC #3: GetFarmerSummary returns preferences (for Notification Model)
+    # =========================================================================
+
+    @pytest.mark.asyncio
+    async def test_get_farmer_summary_includes_preferences(
+        self,
+        servicer: PlantationServiceServicer,
+        mock_farmer_repo: MagicMock,
+        mock_cp_repo: MagicMock,
+        mock_context: MagicMock,
+        sample_farmer: Farmer,
+    ) -> None:
+        """AC #3: GetFarmerSummary returns notification_channel, interaction_pref, pref_lang for Notification Model."""
+        from plantation_model.domain.models.farmer_performance import (
+            FarmerPerformance,
+            HistoricalMetrics,
+            TodayMetrics,
+            TrendDirection,
+        )
+        from plantation_model.infrastructure.repositories.farmer_performance_repository import (
+            FarmerPerformanceRepository,
+        )
+        from plantation_model.infrastructure.repositories.grading_model_repository import (
+            GradingModelRepository,
+        )
+        from datetime import date
+
+        # Create servicer with performance repo
+        mock_perf_repo = MagicMock(spec=FarmerPerformanceRepository)
+        mock_grading_repo = MagicMock(spec=GradingModelRepository)
+
+        servicer_with_perf = PlantationServiceServicer(
+            factory_repo=servicer._factory_repo,
+            collection_point_repo=mock_cp_repo,
+            farmer_repo=mock_farmer_repo,
+            id_generator=servicer._id_generator,
+            elevation_client=servicer._elevation_client,
+            dapr_client=servicer._dapr_client,
+            grading_model_repo=mock_grading_repo,
+            farmer_performance_repo=mock_perf_repo,
+        )
+
+        # Create farmer with non-default preferences
+        farmer_with_prefs = Farmer(
+            id="WM-0001",
+            first_name="John",
+            last_name="Mwangi",
+            collection_point_id="nyeri-highland-cp-001",
+            region_id="nyeri-highland",
+            farm_location=GeoLocation(latitude=-0.4, longitude=36.9, altitude_meters=1800.0),
+            contact=ContactInfo(phone="+254712345678"),
+            farm_size_hectares=1.5,
+            farm_scale=FarmScale.MEDIUM,
+            national_id="12345678",
+            is_active=True,
+            notification_channel=NotificationChannel.WHATSAPP,
+            interaction_pref=InteractionPreference.VOICE,
+            pref_lang=PreferredLanguage.KIKUYU,
+        )
+
+        # Create performance data
+        performance = FarmerPerformance(
+            farmer_id="WM-0001",
+            farm_size_hectares=1.5,
+            farm_scale=FarmScale.MEDIUM,
+            grading_model_id="tbk_kenya_tea_v1",
+            grading_model_version="1.0.0",
+            historical=HistoricalMetrics(improvement_trend=TrendDirection.STABLE),
+            today=TodayMetrics(metrics_date=date.today()),
+        )
+
+        mock_farmer_repo.get_by_id = AsyncMock(return_value=farmer_with_prefs)
+        mock_perf_repo.get_by_farmer_id = AsyncMock(return_value=performance)
+
+        request = plantation_pb2.GetFarmerSummaryRequest(farmer_id="WM-0001")
+        result = await servicer_with_perf.GetFarmerSummary(request, mock_context)
+
+        # Verify preferences are returned in FarmerSummary
+        assert result.notification_channel == plantation_pb2.NOTIFICATION_CHANNEL_WHATSAPP
+        assert result.interaction_pref == plantation_pb2.INTERACTION_PREFERENCE_VOICE
+        assert result.pref_lang == plantation_pb2.PREFERRED_LANGUAGE_KI
