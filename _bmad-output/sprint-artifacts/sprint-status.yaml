@@ -43,7 +43,7 @@ development_status:
   epic-0: in-progress
   0-1-mcp-grpc-infrastructure: done  # github_issue: 11
   0-2-mongodb-integration-testing: done  # github_issue: 14
-  0-3-ci-lint-configuration: in-progress  # github_issue: 15
+  0-3-ci-lint-configuration: done  # github_issue: 15
   epic-0-retrospective: optional
 
   # Epic 1: Farmer Registration & Data Foundation

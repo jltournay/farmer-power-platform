@@ -1,6 +1,6 @@
 # Story 0.3: CI Lint Configuration Unification
 
-**Status:** in-progress
+**Status:** done
 
 ---
 
@@ -54,38 +54,38 @@ So that CI lint checks pass consistently and code quality is enforced automatica
 
 ## Tasks / Subtasks
 
-- [ ] **Task 1: Audit pyproject.toml files** (AC: #1)
-  - [ ] 1.1 List all pyproject.toml files with ruff settings
-  - [ ] 1.2 Document current settings and conflicts
-  - [ ] 1.3 Identify which settings should be centralized
+- [x] **Task 1: Audit pyproject.toml files** (AC: #1)
+  - [x] 1.1 List all pyproject.toml files with ruff settings
+  - [x] 1.2 Document current settings and conflicts
+  - [x] 1.3 Identify which settings should be centralized
 
-- [ ] **Task 2: Consolidate ruff configuration** (AC: #1, #2, #3)
-  - [ ] 2.1 Remove `[tool.ruff]` and `[tool.ruff.lint]` from service pyproject.toml files
-  - [ ] 2.2 Update root pyproject.toml with comprehensive configuration
-  - [ ] 2.3 Add `extend` or `extend-exclude` patterns if needed
-  - [ ] 2.4 Standardize line-length to 120 across all projects
+- [x] **Task 2: Consolidate ruff configuration** (AC: #1, #2, #3)
+  - [x] 2.1 Remove `[tool.ruff]` and `[tool.ruff.lint]` from service pyproject.toml files
+  - [x] 2.2 Update root pyproject.toml with comprehensive configuration
+  - [x] 2.3 Add `extend` or `extend-exclude` patterns if needed
+  - [x] 2.4 Standardize line-length to 120 across all projects
 
-- [ ] **Task 3: Configure exclusions** (AC: #2, #3)
-  - [ ] 3.1 Exclude generated proto files (`*_pb2.py`, `*_pb2_grpc.py`)
-  - [ ] 3.2 Add per-file-ignores for proto `__init__.py` files (F403, F401)
-  - [ ] 3.3 Add N802 ignore for gRPC service files (PascalCase methods)
-  - [ ] 3.4 Configure test file ignores (ARG, RUF059, ERA001)
+- [x] **Task 3: Configure exclusions** (AC: #2, #3)
+  - [x] 3.1 Exclude generated proto files (`*_pb2.py`, `*_pb2_grpc.py`)
+  - [x] 3.2 Add per-file-ignores for proto `__init__.py` files (F403, F401)
+  - [x] 3.3 Add N802 ignore for gRPC service files (PascalCase methods)
+  - [x] 3.4 Configure test file ignores (ARG, RUF059, ERA001, B017, TC001, TC003, F841)
 
-- [ ] **Task 4: Fix remaining lint errors** (AC: #4)
-  - [ ] 4.1 Run `ruff check .` and capture errors
-  - [ ] 4.2 Fix auto-fixable errors with `ruff check . --fix`
-  - [ ] 4.3 Manually fix remaining errors
-  - [ ] 4.4 Run `ruff format --check .` and fix formatting
+- [x] **Task 4: Fix remaining lint errors** (AC: #4)
+  - [x] 4.1 Run `ruff check .` and capture errors
+  - [x] 4.2 Fix auto-fixable errors with `ruff check . --fix`
+  - [x] 4.3 Manually fix remaining errors (SIM102 nested ifs)
+  - [x] 4.4 Run `ruff format --check .` and fix formatting
 
-- [ ] **Task 5: Re-enable CI lint job** (AC: #4, #5)
-  - [ ] 5.1 Uncomment lint job in `.github/workflows/ci.yaml`
-  - [ ] 5.2 Add lint to `needs` array in `all-tests-pass` job
-  - [ ] 5.3 Verify lint job uses correct Python version
+- [x] **Task 5: Re-enable CI lint job** (AC: #4, #5)
+  - [x] 5.1 Uncomment lint job in `.github/workflows/ci.yaml`
+  - [x] 5.2 Add lint to `needs` array in `all-tests-pass` job
+  - [x] 5.3 Verify lint job uses correct Python version (3.12)
 
-- [ ] **Task 6: Verify CI passes** (AC: #5)
-  - [ ] 6.1 Push changes and verify CI pipeline
-  - [ ] 6.2 Fix any remaining issues
-  - [ ] 6.3 Update story status to done
+- [x] **Task 6: Verify CI passes** (AC: #5)
+  - [x] 6.1 Push changes and verify CI pipeline
+  - [x] 6.2 Fix any remaining issues (Generic[T] for Python 3.11, TC001 import)
+  - [x] 6.3 Update story status to done
 
 ---
 
