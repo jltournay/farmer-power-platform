@@ -39,6 +39,11 @@ tracking_system: file-system
 story_location: _bmad-output/sprint-artifacts
 
 development_status:
+  # Epic 0: Platform Infrastructure Foundation
+  epic-0: in-progress
+  0-1-mcp-grpc-infrastructure: done
+  epic-0-retrospective: optional
+
   # Epic 1: Farmer Registration & Data Foundation
   epic-1: in-progress
   1-1-plantation-model-service-setup: done
@@ -46,7 +51,7 @@ development_status:
   1-3-farmer-registration: done
   1-4-farmer-performance-history-structure: review
   1-5-farmer-communication-preferences: backlog
-  1-6-plantation-model-mcp-server: backlog
+  1-6-plantation-model-mcp-server: backlog  # blocked by 0-1
   epic-1-retrospective: optional
 
   # Epic 2: Quality Data Ingestion
@@ -58,7 +63,7 @@ development_status:
   2-5-poor-quality-detected-event-handling: backlog
   2-6-weather-data-pull-mode: backlog
   2-7-image-evidence-storage: backlog
-  2-8-collection-model-mcp-server: backlog
+  2-8-collection-model-mcp-server: backlog  # blocked by 0-1
   epic-2-retrospective: optional
 
   # Epic 3: Factory Manager Dashboard
@@ -93,7 +98,7 @@ development_status:
   5-6-technique-assessment-agent: backlog
   5-7-trend-analysis-agent: backlog
   5-8-rag-knowledge-base: backlog
-  5-9-knowledge-model-mcp-server: backlog
+  5-9-knowledge-model-mcp-server: backlog  # blocked by 0-1
   epic-5-retrospective: optional
 
   # Epic 6: Weekly Action Plans
@@ -103,7 +108,7 @@ development_status:
   6-3-farm-scale-aware-recommendations: backlog
   6-4-dual-format-output: backlog
   6-5-multilingual-translation: backlog
-  6-6-action-plan-mcp-server: backlog
+  6-6-action-plan-mcp-server: backlog  # blocked by 0-1
   epic-6-retrospective: optional
 
   # Epic 7: Voice IVR Experience

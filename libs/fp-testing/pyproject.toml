@@ -1,0 +1,29 @@
+[tool.poetry]
+name = "fp-testing"
+version = "0.1.0"
+description = "Test utilities and mocks for Farmer Power Platform"
+authors = ["Farmer Power Team"]
+packages = [{include = "fp_testing"}]
+
+[tool.poetry.dependencies]
+python = "^3.12"
+pytest = "^7.4.0"
+pytest-asyncio = "^0.23.0"
+fp-common = { path = "../fp-common" }
+
+[tool.poetry.group.dev.dependencies]
+mypy = "^1.8.0"
+ruff = "^0.1.0"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+ignore_missing_imports = true
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"

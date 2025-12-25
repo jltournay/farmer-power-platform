@@ -1,0 +1,54 @@
+// MCP Tool Service - gRPC API Definition
+// Infrastructure for AI agents to invoke MCP servers via DAPR
+
+syntax = "proto3";
+
+package farmer_power.mcp.v1;
+
+// Error codes for tool execution failures
+enum ErrorCode {
+  ERROR_CODE_UNSPECIFIED = 0;
+  ERROR_CODE_INVALID_ARGUMENTS = 1;
+  ERROR_CODE_SERVICE_UNAVAILABLE = 2;
+  ERROR_CODE_TOOL_NOT_FOUND = 3;
+  ERROR_CODE_INTERNAL_ERROR = 4;
+}
+
+// McpToolService provides tool invocation for AI agents
+service McpToolService {
+  // List available tools with their schemas
+  rpc ListTools(ListToolsRequest) returns (ListToolsResponse);
+
+  // Invoke a specific tool
+  rpc CallTool(ToolCallRequest) returns (ToolCallResponse);
+}
+
+message ListToolsRequest {
+  // Optional filter by tool category
+  string category = 1;
+}
+
+message ListToolsResponse {
+  repeated ToolDefinition tools = 1;
+}
+
+message ToolDefinition {
+  string name = 1;                    // e.g., "get_farmer_by_id"
+  string description = 2;             // Human-readable description
+  string input_schema_json = 3;       // JSON Schema for tool arguments
+  string category = 4;                // e.g., "query", "search"
+}
+
+message ToolCallRequest {
+  string tool_name = 1;               // Tool to invoke
+  string arguments_json = 2;          // JSON-encoded arguments
+  string trace_id = 3;                // OpenTelemetry trace ID
+  string caller_agent_id = 4;         // For audit logging
+}
+
+message ToolCallResponse {
+  bool success = 1;
+  string result_json = 2;             // JSON-encoded result
+  ErrorCode error_code = 3;           // Error code if success=false
+  string error_message = 4;           // Error details if success=false
+}

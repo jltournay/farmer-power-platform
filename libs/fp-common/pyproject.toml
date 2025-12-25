@@ -1,0 +1,34 @@
+[tool.poetry]
+name = "fp-common"
+version = "0.1.0"
+description = "Common utilities for Farmer Power Platform services"
+authors = ["Farmer Power Team"]
+packages = [{include = "fp_common"}]
+
+[tool.poetry.dependencies]
+python = "^3.12"
+dapr = "^1.12.0"
+grpcio = "^1.60.0"
+langchain-core = "^0.3.0"
+opentelemetry-api = "^1.22.0"
+pydantic = "^2.0.0"
+fp-proto = { path = "../fp-proto" }
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^7.4.0"
+pytest-asyncio = "^0.23.0"
+mypy = "^1.8.0"
+ruff = "^0.1.0"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+ignore_missing_imports = true
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
