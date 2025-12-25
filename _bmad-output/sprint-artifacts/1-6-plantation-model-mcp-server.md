@@ -1,6 +1,6 @@
 # Story 1.6: Plantation Model MCP Server
 
-**Status:** review
+**Status:** done
 **GitHub Issue:** #13
 
 ---
