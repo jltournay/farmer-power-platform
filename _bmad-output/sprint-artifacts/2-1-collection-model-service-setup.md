@@ -36,7 +36,7 @@ So that quality grading data can be ingested, stored, and events emitted to down
 
 6. **Given** the service is running with Dapr sidecar
    **When** the pub/sub configuration is checked
-   **Then** Dapr pub/sub is configured for Azure Service Bus
+   **Then** Dapr pub/sub is configured for Redis
 
 7. **Given** the service is running
    **When** a quality event occurs
@@ -80,8 +80,8 @@ So that quality grading data can be ingested, stored, and events emitted to down
   - [ ] 6.2 Auto-instrument FastAPI, gRPC, and PyMongo
   - [ ] 6.3 Configure via settings (OTEL_ENABLED, OTEL_EXPORTER_ENDPOINT)
 
-- [ ] **Task 7: Configure Dapr pub/sub for Azure Service Bus** (AC: #6, #7)
-  - [ ] 7.1 Create Dapr pub/sub component YAML for Azure Service Bus
+- [ ] **Task 7: Configure Dapr pub/sub for Redis** (AC: #6, #7)
+  - [ ] 7.1 Create Dapr pub/sub component YAML for Redis (reuse from Story 1.1)
   - [ ] 7.2 Implement `infrastructure/pubsub.py` with Dapr HTTP client
   - [ ] 7.3 Create publish methods for `collection.end_bag` topic
   - [ ] 7.4 Create publish methods for `collection.poor_quality_detected` topic
@@ -135,7 +135,7 @@ services/collection-model/
 | MongoDB Driver | Motor (async) | Latest |
 | gRPC | grpcio + grpcio-reflection | Latest |
 | Service Mesh | Dapr | Latest |
-| Pub/Sub | Azure Service Bus (via Dapr) | Latest |
+| Pub/Sub | Redis (via Dapr) | Latest |
 | Tracing | OpenTelemetry | Auto |
 
 ### Critical Implementation Rules
@@ -194,25 +194,25 @@ httpx = "^0.26.0"
 fp-testing = { path = "../../libs/fp-testing" }
 ```
 
-### Dapr Pub/Sub Component (Azure Service Bus)
+### Dapr Pub/Sub Component (Redis)
 
 ```yaml
-# deploy/kubernetes/components/dapr/pubsub-servicebus.yaml
+# deploy/kubernetes/components/dapr/pubsub.yaml (reuse from Story 1.1)
 apiVersion: dapr.io/v1alpha1
 kind: Component
 metadata:
   name: pubsub
   namespace: farmer-power
 spec:
-  type: pubsub.azure.servicebus.topics
+  type: pubsub.redis
   version: v1
   metadata:
-    - name: connectionString
+    - name: redisHost
+      value: "redis:6379"
+    - name: redisPassword
       secretKeyRef:
-        name: azure-servicebus-secrets
-        key: connectionString
-    - name: consumerID
-      value: "collection-model"
+        name: redis-secrets
+        key: password
 ```
 
 ### Kubernetes Deployment with Dapr
