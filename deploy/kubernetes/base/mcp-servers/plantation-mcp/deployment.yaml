@@ -1,0 +1,61 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: plantation-mcp
+  labels:
+    app: plantation-mcp
+    component: mcp-server
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: plantation-mcp
+  template:
+    metadata:
+      labels:
+        app: plantation-mcp
+        component: mcp-server
+      annotations:
+        # DAPR sidecar injection
+        dapr.io/enabled: "true"
+        dapr.io/app-id: "plantation-mcp"
+        dapr.io/app-port: "50051"
+        dapr.io/app-protocol: "grpc"
+        dapr.io/log-level: "info"
+    spec:
+      containers:
+        - name: plantation-mcp
+          image: farmer-power/plantation-mcp:latest
+          ports:
+            - containerPort: 50051
+              name: grpc
+          env:
+            - name: PLANTATION_MCP_GRPC_PORT
+              value: "50051"
+            - name: PLANTATION_MCP_PLANTATION_APP_ID
+              value: "plantation-model"
+            - name: PLANTATION_MCP_LOG_LEVEL
+              value: "INFO"
+            - name: OTEL_EXPORTER_OTLP_ENDPOINT
+              value: "http://otel-collector:4317"
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu: "100m"
+            limits:
+              memory: "256Mi"
+              cpu: "500m"
+          livenessProbe:
+            grpc:
+              port: 50051
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          readinessProbe:
+            grpc:
+              port: 50051
+            initialDelaySeconds: 5
+            periodSeconds: 5
+            timeoutSeconds: 3
+            failureThreshold: 3

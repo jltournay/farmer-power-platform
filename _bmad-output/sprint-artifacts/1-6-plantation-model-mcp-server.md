@@ -1,6 +1,6 @@
 # Story 1.6: Plantation Model MCP Server
 
-**Status:** ready-for-dev
+**Status:** review
 **GitHub Issue:** #13
 
 ---
@@ -51,62 +51,62 @@ This story implements the first MCP server in the platform, using the gRPC MCP i
 
 ## Tasks / Subtasks
 
-- [ ] **Task 1: Create MCP Server project structure** (AC: #5)
-  - [ ] 1.1 Create `mcp-servers/plantation-mcp/` directory
-  - [ ] 1.2 Create `pyproject.toml` with dependencies (fp-common, fp-proto, grpcio)
-  - [ ] 1.3 Create `src/plantation_mcp/` package structure
-  - [ ] 1.4 Create `Dockerfile` following service pattern
-  - [ ] 1.5 Create `main.py` with gRPC server startup
+- [x] **Task 1: Create MCP Server project structure** (AC: #5)
+  - [x] 1.1 Create `mcp-servers/plantation-mcp/` directory
+  - [x] 1.2 Create `pyproject.toml` with dependencies (fp-common, fp-proto, grpcio)
+  - [x] 1.3 Create `src/plantation_mcp/` package structure
+  - [x] 1.4 Create `Dockerfile` following service pattern
+  - [x] 1.5 Create `main.py` with gRPC server startup
 
-- [ ] **Task 2: Implement McpToolService servicer** (AC: #1, #2, #3, #4, #5)
-  - [ ] 2.1 Create `src/plantation_mcp/api/mcp_service.py`
-  - [ ] 2.2 Implement `ListTools()` returning all available tools
-  - [ ] 2.3 Implement `CallTool()` with tool dispatch logic
-  - [ ] 2.4 Add OpenTelemetry tracing to all tool calls
+- [x] **Task 2: Implement McpToolService servicer** (AC: #1, #2, #3, #4, #5)
+  - [x] 2.1 Create `src/plantation_mcp/api/mcp_service.py`
+  - [x] 2.2 Implement `ListTools()` returning all available tools
+  - [x] 2.3 Implement `CallTool()` with tool dispatch logic
+  - [x] 2.4 Add OpenTelemetry tracing to all tool calls
 
-- [ ] **Task 3: Implement tool handlers** (AC: #1, #2, #3, #4, #6, #7)
-  - [ ] 3.1 Create `src/plantation_mcp/tools/` package
-  - [ ] 3.2 Implement `get_farmer` tool handler
-  - [ ] 3.3 Implement `get_farmer_summary` tool handler
-  - [ ] 3.4 Implement `get_collection_points` tool handler
-  - [ ] 3.5 Implement `get_farmers_by_collection_point` tool handler
-  - [ ] 3.6 Add input validation with JSON Schema
-  - [ ] 3.7 Add error handling for service unavailable
+- [x] **Task 3: Implement tool handlers** (AC: #1, #2, #3, #4, #6, #7)
+  - [x] 3.1 Create `src/plantation_mcp/tools/` package
+  - [x] 3.2 Implement `get_farmer` tool handler
+  - [x] 3.3 Implement `get_farmer_summary` tool handler
+  - [x] 3.4 Implement `get_collection_points` tool handler
+  - [x] 3.5 Implement `get_farmers_by_collection_point` tool handler
+  - [x] 3.6 Add input validation with JSON Schema
+  - [x] 3.7 Add error handling for service unavailable
 
-- [ ] **Task 4: Create PlantationService client** (AC: #1, #2, #3, #4, #7)
-  - [ ] 4.1 Create `src/plantation_mcp/infrastructure/plantation_client.py`
-  - [ ] 4.2 Implement gRPC client via DAPR service invocation
-  - [ ] 4.3 Add retry logic with exponential backoff
-  - [ ] 4.4 Add circuit breaker for service unavailable
+- [x] **Task 4: Create PlantationService client** (AC: #1, #2, #3, #4, #7)
+  - [x] 4.1 Create `src/plantation_mcp/infrastructure/plantation_client.py`
+  - [x] 4.2 Implement gRPC client via DAPR service invocation
+  - [x] 4.3 Add retry logic with exponential backoff
+  - [x] 4.4 Add circuit breaker for service unavailable
 
-- [ ] **Task 5: Create tool definitions** (AC: #1, #2, #3, #4)
-  - [ ] 5.1 Create `src/plantation_mcp/tools/definitions.py`
-  - [ ] 5.2 Define JSON Schema for each tool's input
-  - [ ] 5.3 Define tool descriptions for LLM consumption
-  - [ ] 5.4 Register all tools in a central registry
+- [x] **Task 5: Create tool definitions** (AC: #1, #2, #3, #4)
+  - [x] 5.1 Create `src/plantation_mcp/tools/definitions.py`
+  - [x] 5.2 Define JSON Schema for each tool's input
+  - [x] 5.3 Define tool descriptions for LLM consumption
+  - [x] 5.4 Register all tools in a central registry
 
-- [ ] **Task 6: Write unit tests** (AC: #1, #2, #3, #4, #5, #6, #7)
-  - [ ] 6.1 Create `tests/unit/plantation_mcp/` directory
-  - [ ] 6.2 Test ListTools returns all tools with schemas
-  - [ ] 6.3 Test get_farmer tool with valid farmer_id
-  - [ ] 6.4 Test get_farmer tool with non-existent farmer (NOT_FOUND)
-  - [ ] 6.5 Test get_farmer_summary tool
-  - [ ] 6.6 Test get_collection_points tool
-  - [ ] 6.7 Test get_farmers_by_collection_point tool
-  - [ ] 6.8 Test invalid arguments return INVALID_ARGUMENTS
-  - [ ] 6.9 Test service unavailable returns SERVICE_UNAVAILABLE
+- [x] **Task 6: Write unit tests** (AC: #1, #2, #3, #4, #5, #6, #7)
+  - [x] 6.1 Create `tests/unit/plantation_mcp/` directory
+  - [x] 6.2 Test ListTools returns all tools with schemas
+  - [x] 6.3 Test get_farmer tool with valid farmer_id
+  - [x] 6.4 Test get_farmer tool with non-existent farmer (NOT_FOUND)
+  - [x] 6.5 Test get_farmer_summary tool
+  - [x] 6.6 Test get_collection_points tool
+  - [x] 6.7 Test get_farmers_by_collection_point tool
+  - [x] 6.8 Test invalid arguments return INVALID_ARGUMENTS
+  - [x] 6.9 Test service unavailable returns SERVICE_UNAVAILABLE
 
-- [ ] **Task 7: Create Kubernetes deployment** (AC: #5)
-  - [ ] 7.1 Create `deploy/kubernetes/base/mcp-servers/plantation-mcp/deployment.yaml`
-  - [ ] 7.2 Create `service.yaml` for gRPC service
-  - [ ] 7.3 Create `hpa.yaml` with min=2, max=10 replicas
-  - [ ] 7.4 Add DAPR annotations for sidecar injection
-  - [ ] 7.5 Add health check and readiness probe
+- [x] **Task 7: Create Kubernetes deployment** (AC: #5)
+  - [x] 7.1 Create `deploy/kubernetes/base/mcp-servers/plantation-mcp/deployment.yaml`
+  - [x] 7.2 Create `service.yaml` for gRPC service
+  - [x] 7.3 Create `hpa.yaml` with min=2, max=10 replicas
+  - [x] 7.4 Add DAPR annotations for sidecar injection
+  - [x] 7.5 Add health check and readiness probe
 
-- [ ] **Task 8: Run validation**
-  - [ ] 8.1 Run pytest with coverage >90%
-  - [ ] 8.2 Run mypy with no errors
-  - [ ] 8.3 Run ruff check with no errors
+- [x] **Task 8: Run validation**
+  - [x] 8.1 Run pytest with coverage >90%
+  - [x] 8.2 Run mypy with no errors
+  - [x] 8.3 Run ruff check with no errors
 
 ---
 
@@ -472,9 +472,39 @@ spec:
 
 ### Agent Model Used
 
-{{agent_model_name_version}}
+Claude Opus 4.5 (claude-opus-4-5-20251101)
 
 ### Completion Notes List
 
+- Implemented complete Plantation MCP Server with 4 tools (Phase 1 scope)
+- Created McpToolService gRPC servicer with ListTools and CallTool RPCs
+- Implemented PlantationClient with retry logic (tenacity) and error handling
+- Added JSON Schema validation for all tool inputs
+- All 12 unit tests pass covering all acceptance criteria
+- Full test suite (294 tests) passes with no regressions
+- Kubernetes deployment with HPA (min 2, max 10 replicas) configured
+- OpenTelemetry tracing integrated for all tool calls
+
 ### File List
+
+**New Files:**
+- `mcp-servers/plantation-mcp/pyproject.toml` - Project dependencies
+- `mcp-servers/plantation-mcp/Dockerfile` - Container build
+- `mcp-servers/plantation-mcp/src/plantation_mcp/__init__.py`
+- `mcp-servers/plantation-mcp/src/plantation_mcp/config.py` - Service settings
+- `mcp-servers/plantation-mcp/src/plantation_mcp/main.py` - gRPC server entrypoint
+- `mcp-servers/plantation-mcp/src/plantation_mcp/api/__init__.py`
+- `mcp-servers/plantation-mcp/src/plantation_mcp/api/mcp_service.py` - McpToolService implementation
+- `mcp-servers/plantation-mcp/src/plantation_mcp/tools/__init__.py`
+- `mcp-servers/plantation-mcp/src/plantation_mcp/tools/definitions.py` - Tool schemas and registry
+- `mcp-servers/plantation-mcp/src/plantation_mcp/infrastructure/__init__.py`
+- `mcp-servers/plantation-mcp/src/plantation_mcp/infrastructure/plantation_client.py` - PlantationService client
+- `mcp-servers/plantation-mcp/tests/__init__.py`
+- `mcp-servers/plantation-mcp/tests/conftest.py`
+- `mcp-servers/plantation-mcp/tests/unit/__init__.py`
+- `mcp-servers/plantation-mcp/tests/unit/test_mcp_service.py` - 12 unit tests
+- `deploy/kubernetes/base/mcp-servers/plantation-mcp/deployment.yaml`
+- `deploy/kubernetes/base/mcp-servers/plantation-mcp/service.yaml`
+- `deploy/kubernetes/base/mcp-servers/plantation-mcp/hpa.yaml`
+- `deploy/kubernetes/base/mcp-servers/plantation-mcp/kustomization.yaml`
 
