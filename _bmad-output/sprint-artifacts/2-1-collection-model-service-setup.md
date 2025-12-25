@@ -60,7 +60,7 @@ So that quality grading data can be ingested, stored, and events emitted to down
 
 - [ ] **Task 3: Configure Dapr sidecar** (AC: #2)
   - [ ] 3.1 Create Kubernetes deployment manifest with Dapr annotations
-  - [ ] 3.2 Configure Dapr state store component for MongoDB
+  - [ ] 3.2 Verify Dapr state store component exists at `deploy/kubernetes/components/dapr/statestore.yaml` (created in Story 1.1)
   - [ ] 3.3 Verify Dapr sidecar injection in deployment
 
 - [ ] **Task 4: Implement MongoDB connection** (AC: #3)
@@ -81,14 +81,14 @@ So that quality grading data can be ingested, stored, and events emitted to down
   - [ ] 6.3 Configure via settings (OTEL_ENABLED, OTEL_EXPORTER_ENDPOINT)
 
 - [ ] **Task 7: Configure Dapr pub/sub for Redis** (AC: #6, #7)
-  - [ ] 7.1 Create Dapr pub/sub component YAML for Redis (reuse from Story 1.1)
+  - [ ] 7.1 Verify Dapr pub/sub component exists at `deploy/kubernetes/components/dapr/pubsub.yaml` (created in Story 1.1)
   - [ ] 7.2 Implement `infrastructure/pubsub.py` with Dapr HTTP client
   - [ ] 7.3 Create publish methods for `collection.end_bag` topic
   - [ ] 7.4 Create publish methods for `collection.poor_quality_detected` topic
   - [ ] 7.5 Add pub/sub health check to readiness probe
 
 - [ ] **Task 8: Write unit and integration tests**
-  - [ ] 8.1 Create test directory structure in `tests/unit/collection/`
+  - [ ] 8.1 Create test directory `tests/unit/collection/` with `__init__.py` and `conftest.py`
   - [ ] 8.2 Test health endpoint responses
   - [ ] 8.3 Test MongoDB connection with mocks
   - [ ] 8.4 Test configuration loading
@@ -147,6 +147,7 @@ services/collection-model/
 3. **ALL inter-service communication via Dapr** - No direct HTTP between services
 4. **Type hints required** - ALL function signatures MUST have type hints
 5. **Absolute imports only** - No relative imports
+6. **Environment prefix** - Use `COLLECTION_` prefix for all config env vars (e.g., `COLLECTION_MONGODB_URI`)
 
 ### MongoDB Collections Owned by Collection Model
 
@@ -184,6 +185,7 @@ grpcio-health-checking = "^1.60.0"
 structlog = "^24.1.0"
 httpx = "^0.26.0"  # For Dapr HTTP client
 dapr = "^1.13.0"
+dapr-ext-grpc = "^1.13.0"  # For Dapr gRPC integration
 fp-common = { path = "../../libs/fp-common" }
 fp-proto = { path = "../../libs/fp-proto" }
 
@@ -253,6 +255,13 @@ spec:
                 secretKeyRef:
                   name: mongodb-secrets
                   key: uri
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "100m"
+            limits:
+              memory: "512Mi"
+              cpu: "500m"
           livenessProbe:
             httpGet:
               path: /health
