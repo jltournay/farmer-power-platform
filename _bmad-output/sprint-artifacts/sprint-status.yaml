@@ -40,7 +40,7 @@ story_location: _bmad-output/sprint-artifacts
 
 development_status:
   # Epic 0: Platform Infrastructure Foundation
-  epic-0: in-progress
+  epic-0: done
   0-1-mcp-grpc-infrastructure: done  # github_issue: 11
   0-2-mongodb-integration-testing: done  # github_issue: 14
   0-3-ci-lint-configuration: done  # github_issue: 15
