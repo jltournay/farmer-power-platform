@@ -46,7 +46,7 @@ jobs:
           pip install pytest pytest-asyncio pytest-cov pydantic pydantic-settings motor grpcio grpcio-tools tenacity \
             opentelemetry-api opentelemetry-sdk opentelemetry-exporter-otlp \
             opentelemetry-instrumentation-fastapi opentelemetry-instrumentation-grpc opentelemetry-instrumentation-pymongo \
-            structlog httpx aiohttp fastapi uvicorn
+            structlog httpx aiohttp fastapi uvicorn dapr dapr-ext-grpc
 
       - name: Run unit tests
         run: |
@@ -79,7 +79,7 @@ jobs:
           pip install pytest pytest-asyncio motor pymongo pydantic pydantic-settings grpcio grpcio-tools tenacity \
             opentelemetry-api opentelemetry-sdk opentelemetry-exporter-otlp \
             opentelemetry-instrumentation-fastapi opentelemetry-instrumentation-grpc opentelemetry-instrumentation-pymongo \
-            structlog httpx aiohttp fastapi uvicorn
+            structlog httpx aiohttp fastapi uvicorn dapr dapr-ext-grpc
 
       - name: Wait for MongoDB
         run: |
