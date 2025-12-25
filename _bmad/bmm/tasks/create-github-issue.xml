@@ -126,17 +126,27 @@
 **URL:** https://github.com/{{github_owner}}/{{github_repo}}/issues/{{new_issue_number}}
 **Story:** {{story_key}}
 
-### Commit Reference
+### Commit Message Format
 
-When committing code for this story, include:
+⚠️ **IMPORTANT:** Put issue reference in the SUBJECT LINE for reliable GitHub linking!
+
+**Subject line format:**
 ```
-Relates to #{{new_issue_number}}
+{{story_key}}: {{short_description}} (Relates to #{{new_issue_number}})
 ```
 
-Or to auto-close the issue when merged:
+**Example:**
 ```
-Closes #{{new_issue_number}}
+1-5: Farmer Communication Preferences (Relates to #{{new_issue_number}})
+
+Detailed description of changes...
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>
 ```
+
+⚠️ Do NOT use "Fixes #N" or "Closes #N" until story reaches "done" status - these auto-close the issue!
       </output>
     </step>
   </flow>

@@ -12,6 +12,12 @@
   <critical>Do NOT schedule a "next session" or request review pauses unless a HALT condition applies. Only Step 6 decides completion.</critical>
   <critical>User skill level ({user_skill_level}) affects conversation style ONLY, not code updates.</critical>
   <critical>GitHub Issue Linking: Use "Relates to #N" in commits (NOT "Fixes #N" or "Closes #N") - these auto-close the issue prematurely. Only use "Fixes #N" in the final commit when story status changes to "done".</critical>
+  <critical>Commit Message Format: ALWAYS put issue reference in the SUBJECT LINE for reliable GitHub linking:
+    Subject: "{{story_key}}: {{short_description}} (Relates to #{{github_issue_number}})"
+    Example: "1-5: Farmer Communication Preferences (Relates to #12)"
+    Body: Detailed description of changes
+    Footer: 🤖 Generated with [Claude Code] + Co-Authored-By
+  </critical>
 
   <step n="1" goal="Find next ready story and load it" tag="sprint-status">
     <check if="{{story_path}} is provided">
