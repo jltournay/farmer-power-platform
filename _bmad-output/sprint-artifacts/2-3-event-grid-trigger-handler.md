@@ -1,6 +1,6 @@
 # Story 2.3: Event Grid Trigger Handler
 
-**Status:** ready-for-dev
+**Status:** review
 **GitHub Issue:** #18
 
 ---
@@ -48,51 +48,51 @@ So that new QC Analyzer uploads trigger automatic ingestion.
 ## Tasks / Subtasks
 
 ### Task 1: Create SourceConfigService for runtime config lookup (AC: #2, #3)
-- [ ] 1.1 Create `services/collection_model/source_config_service.py`
-- [ ] 1.2 Implement `get_config_by_container(container: str)` async method
-- [ ] 1.3 Implement 5-minute TTL cache for source configs (use in-memory dict, not aiocache)
-- [ ] 1.4 Add `is_enabled()` check for source config
-- [ ] 1.5 Implement `match_path_pattern(path, pattern)` for metadata extraction using regex
-- [ ] 1.6 Add `ingestion_id` (UUID) and `trace_id` to IngestionJob for observability
+- [x] 1.1 Create `services/collection_model/source_config_service.py`
+- [x] 1.2 Implement `get_config_by_container(container: str)` async method
+- [x] 1.3 Implement 5-minute TTL cache for source configs (use in-memory dict, not aiocache)
+- [x] 1.4 Add `is_enabled()` check for source config
+- [x] 1.5 Implement `match_path_pattern(path, pattern)` for metadata extraction using regex
+- [x] 1.6 Add `ingestion_id` (UUID) and `trace_id` to IngestionJob for observability
 
 ### Task 2: Implement Event Grid event processor (AC: #1, #2)
-- [ ] 2.1 Enhance `api/events.py` to process blob-created events (not just log)
-- [ ] 2.2 Parse Event Grid event payload: subject, data.url, data.contentLength, data.eTag
-- [ ] 2.3 Extract container name and blob path from subject
-- [ ] 2.4 Call SourceConfigService to find matching config
+- [x] 2.1 Enhance `api/events.py` to process blob-created events (not just log)
+- [x] 2.2 Parse Event Grid event payload: subject, data.url, data.contentLength, data.eTag
+- [x] 2.3 Extract container name and blob path from subject
+- [x] 2.4 Call SourceConfigService to find matching config
 
 ### Task 3: Implement ingestion queue mechanism (AC: #2, #3)
-- [ ] 3.1 Create `domain/ingestion_job.py` with IngestionJob Pydantic model
-- [ ] 3.2 Create `ingestion_queue` MongoDB collection
-- [ ] 3.3 Implement `queue_ingestion_job(job: IngestionJob)` method
-- [ ] 3.4 Store job with status "queued", blob_path, source_id, metadata
+- [x] 3.1 Create `domain/ingestion_job.py` with IngestionJob Pydantic model
+- [x] 3.2 Create `ingestion_queue` MongoDB collection
+- [x] 3.3 Implement `queue_ingestion_job(job: IngestionJob)` method
+- [x] 3.4 Store job with status "queued", blob_path, source_id, metadata
 
 ### Task 4: Implement path pattern metadata extraction (AC: #3)
-- [ ] 4.1 Parse path_pattern config (e.g., `results/{plantation_id}/{crop}/{market}/{batch_id}.json`)
-- [ ] 4.2 Match actual blob path against pattern
-- [ ] 4.3 Extract fields defined in `extract_fields` config
-- [ ] 4.4 Return extracted metadata dict
+- [x] 4.1 Parse path_pattern config (e.g., `results/{plantation_id}/{crop}/{market}/{batch_id}.json`)
+- [x] 4.2 Match actual blob path against pattern
+- [x] 4.3 Extract fields defined in `extract_fields` config
+- [x] 4.4 Return extracted metadata dict
 
 ### Task 5: Implement idempotency checking (AC: #5)
-- [ ] 5.1 Add unique compound index on `ingestion_queue`: (blob_path, blob_etag)
-- [ ] 5.2 Check for existing job before queuing
-- [ ] 5.3 Return early with log if duplicate detected
-- [ ] 5.4 Handle MongoDB duplicate key error gracefully
+- [x] 5.1 Add unique compound index on `ingestion_queue`: (blob_path, blob_etag)
+- [x] 5.2 Check for existing job before queuing
+- [x] 5.3 Return early with log if duplicate detected
+- [x] 5.4 Handle MongoDB duplicate key error gracefully
 
 ### Task 6: Implement unmatched event handling (AC: #4)
-- [ ] 6.1 Log warning when no source config matches container
-- [ ] 6.2 Add metric counter for unmatched events
-- [ ] 6.3 Return 202 (event received but not processed)
+- [x] 6.1 Log warning when no source config matches container
+- [x] 6.2 Add metric counter for unmatched events
+- [x] 6.3 Return 202 (event received but not processed)
 
 ### Task 7: Write unit tests
-- [ ] 7.1 Test SourceConfigService config lookup
-- [ ] 7.2 Test SourceConfigService caching behavior
-- [ ] 7.3 Test path pattern matching and metadata extraction
-- [ ] 7.4 Test Event Grid event parsing
-- [ ] 7.5 Test ingestion job queuing
-- [ ] 7.6 Test idempotency check (duplicate detection)
-- [ ] 7.7 Test unmatched container handling
-- [ ] 7.8 Test disabled source config handling
+- [x] 7.1 Test SourceConfigService config lookup
+- [x] 7.2 Test SourceConfigService caching behavior
+- [x] 7.3 Test path pattern matching and metadata extraction
+- [x] 7.4 Test Event Grid event parsing
+- [x] 7.5 Test ingestion job queuing
+- [x] 7.6 Test idempotency check (duplicate detection)
+- [x] 7.7 Test unmatched container handling
+- [x] 7.8 Test disabled source config handling
 
 ---
 
