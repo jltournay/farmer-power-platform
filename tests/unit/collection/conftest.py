@@ -6,8 +6,8 @@ import pytest
 
 
 @pytest.fixture
-def mock_mongodb_client() -> MagicMock:
-    """Mock MongoDB client."""
+def mock_motor_client() -> MagicMock:
+    """Mock Motor MongoDB client (for infrastructure tests)."""
     client = MagicMock()
     client.admin.command = AsyncMock(return_value={"ok": 1})
     return client
@@ -19,3 +19,7 @@ def mock_database() -> MagicMock:
     db = MagicMock()
     db.create_index = AsyncMock()
     return db
+
+
+# Note: mock_mongodb_client is inherited from tests/conftest.py
+# and provides MockMongoClient with proper async collection methods

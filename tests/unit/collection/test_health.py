@@ -13,9 +13,7 @@ def client() -> TestClient:
     # Mock MongoDB before importing app - patch in both places
     with (
         patch("collection_model.infrastructure.mongodb.get_mongodb_client") as mock_mongo,
-        patch(
-            "collection_model.infrastructure.mongodb.check_mongodb_connection"
-        ) as mock_check,
+        patch("collection_model.infrastructure.mongodb.check_mongodb_connection") as mock_check,
         patch("collection_model.main.check_mongodb_connection") as mock_main_check,
         patch("collection_model.infrastructure.tracing.setup_tracing"),
         patch("collection_model.infrastructure.tracing.shutdown_tracing"),
