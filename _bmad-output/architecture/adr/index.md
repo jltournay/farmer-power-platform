@@ -7,6 +7,8 @@ This folder contains Architecture Decision Records (ADRs) documenting significan
 | ID | Title | Status | Date |
 |----|-------|--------|------|
 | [ADR-001](./ADR-001-weather-api-selection.md) | Weather API Selection (Open-Meteo) | Accepted | 2025-12-26 |
+| [ADR-002](./ADR-002-frontend-architecture.md) | Frontend Architecture (4-App Hybrid) | Accepted | 2025-12-26 |
+| [ADR-003](./ADR-003-identity-access-management.md) | Identity & Access Management (Azure AD B2C) | Accepted | 2025-12-26 |
 
 ## ADR Template
 

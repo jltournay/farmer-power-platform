@@ -44,6 +44,12 @@ farmer-power-platform/
 │   ├── knowledge-mcp/
 │   └── action-plan-mcp/
 │
+├── web/                         # Frontend applications (React)
+│   ├── factory-portal/          # Factory Manager + Owner + Admin
+│   ├── platform-admin/          # Internal Farmer Power team
+│   ├── regulator/               # Tea Board of Kenya (isolated)
+│   └── registration-kiosk/      # Collection point PWA
+│
 ├── proto/                       # Shared Protocol Buffer definitions
 │   ├── collection/
 │   │   └── v1/
@@ -70,8 +76,8 @@ farmer-power-platform/
 │           ├── errors.proto
 │           └── health.proto
 │
-├── libs/                        # Shared Python libraries
-│   ├── fp-common/               # Common utilities
+├── libs/                        # Shared libraries
+│   ├── fp-common/               # Python: Common utilities
 │   │   ├── pyproject.toml
 │   │   └── fp_common/
 │   │       ├── __init__.py
@@ -79,19 +85,33 @@ farmer-power-platform/
 │   │       ├── errors.py
 │   │       ├── tracing.py
 │   │       └── dapr_client.py
-│   ├── fp-proto/                # Generated proto stubs
+│   ├── fp-proto/                # Python: Generated proto stubs
 │   │   ├── pyproject.toml
 │   │   └── fp_proto/
 │   │       ├── __init__.py
 │   │       ├── collection/
 │   │       ├── plantation/
 │   │       └── ...
-│   └── fp-testing/              # Test utilities
-│       ├── pyproject.toml
-│       └── fp_testing/
-│           ├── __init__.py
-│           ├── fixtures.py
-│           └── mocks.py
+│   ├── fp-testing/              # Python: Test utilities
+│   │   ├── pyproject.toml
+│   │   └── fp_testing/
+│   │       ├── __init__.py
+│   │       ├── fixtures.py
+│   │       └── mocks.py
+│   ├── ui-components/           # React: Shared component library
+│   │   ├── package.json         # @fp/ui-components
+│   │   └── src/
+│   │       ├── components/      # StatusBadge, FarmerCard, etc.
+│   │       ├── theme/           # MUI theme, palette, typography
+│   │       └── index.ts
+│   └── auth/                    # React: Shared auth library
+│       ├── package.json         # @fp/auth
+│       └── src/
+│           ├── AuthProvider.tsx
+│           ├── useAuth.ts
+│           ├── usePermission.ts
+│           ├── ProtectedRoute.tsx
+│           └── types.ts
 │
 ├── deploy/                      # Deployment configurations
 │   ├── kubernetes/
