@@ -62,6 +62,24 @@ farmer-power-platform/
 - Mock ALL external APIs (LLM, Starfish, Weather, Africa's Talking)
 - Use fixtures from `tests/conftest.py`
 
+### Git Commit Rules
+
+- **ALWAYS include GitHub issue reference** when working on a story (e.g., `Relates to #16` or `Fixes #16`)
+- Check `sprint-status.yaml` for the `github_issue` comment on the story being worked on
+- Commit message format:
+  ```
+  Short summary (50 chars max)
+
+  Relates to #<issue_number>
+
+  ## What changed
+  - Bullet points of changes
+
+  🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+  Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>
+  ```
+
 ## Reference Documents
 
 | Topic | Document |
