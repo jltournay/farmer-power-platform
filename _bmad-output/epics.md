@@ -303,6 +303,278 @@ Per architecture decision (see `infrastructure-decisions.md#mcp-protocol-decisio
 
 ---
 
+### Epic 0.5: Frontend & Identity Infrastructure
+
+Cross-cutting frontend and authentication infrastructure that enables all web applications. These stories establish the shared component library, authentication flow, and foundational frontend patterns.
+
+**Related ADRs:** ADR-002 (Frontend Architecture), ADR-003 (Identity & Access Management)
+
+**Scope:**
+- Shared React component library (@fp/ui-components)
+- Azure AD B2C configuration and auth library (@fp/auth)
+- Factory Portal application scaffold
+- Authentication flow (BFF pattern)
+- Theme system and design tokens
+
+---
+
+#### Story 0.5.1: Shared Component Library Setup
+
+As a **frontend developer**,
+I want a shared React component library with the design system foundation,
+So that all frontend applications have consistent UI components and styling.
+
+**Acceptance Criteria:**
+
+**Given** the monorepo structure is configured
+**When** I create the `libs/ui-components/` package
+**Then** it exports as `@fp/ui-components` via npm workspaces
+**And** TypeScript is configured with strict mode
+**And** Vitest is configured for component testing
+
+**Given** the component library is created
+**When** I implement the theme foundation
+**Then** Material UI v6 theme is configured with TBK color palette
+**And** Custom palette includes: primary (tea green), secondary (earth brown), status colors
+**And** Typography scale matches UX specification (Roboto, 14px base)
+**And** Spacing follows 8px grid system
+
+**Given** the theme is configured
+**When** I create the base components
+**Then** `StatusBadge` component is available with variants: critical, warning, improving, excellent
+**And** `TrendIndicator` shows ↑/↓/→ with color coding
+**And** `LeafTypeTag` displays leaf type with TBK color coding
+**And** All components have unit tests and TypeScript types
+
+**Given** I import from `@fp/ui-components`
+**When** I use components in a frontend app
+**Then** tree-shaking works correctly (only imported components bundled)
+**And** Theme is accessible via `ThemeProvider` wrapper
+
+**Technical Notes:**
+- Location: `libs/ui-components/`
+- Build: Vite library mode with rollup
+- Exports: ESM only, TypeScript declarations
+- Testing: Vitest + React Testing Library
+- Reference: `_bmad-output/ux-design-specification/design-system-foundation.md`
+
+**Dependencies:**
+- None (foundational)
+
+**Story Points:** 3
+
+---
+
+#### Story 0.5.2: Azure AD B2C Configuration
+
+As a **platform administrator**,
+I want Azure AD B2C configured for the Farmer Power Platform,
+So that users can authenticate securely with role-based access control.
+
+**Acceptance Criteria:**
+
+**Given** the Azure subscription is available
+**When** Azure AD B2C tenant is provisioned
+**Then** Tenant is created: `farmerpowerb2c.onmicrosoft.com`
+**And** Custom domain configured: `auth.farmerpower.co.ke`
+**And** Branding matches Farmer Power design (logo, colors)
+
+**Given** the B2C tenant is configured
+**When** user flows are created
+**Then** Sign-in flow is configured (no self-registration)
+**And** Password reset flow is available
+**And** MFA is optional (configurable per user)
+
+**Given** the tenant is configured
+**When** application registrations are created
+**Then** `factory-portal-spa` is registered (SPA, PKCE)
+**And** `platform-admin-spa` is registered (SPA, PKCE)
+**And** `bff-api` is registered (confidential client)
+**And** API scopes are defined: `Factory.Read`, `Factory.Write`, `Platform.Admin`
+
+**Given** custom claims are needed
+**When** custom user attributes are configured
+**Then** `factory_id` attribute is available
+**And** `role` attribute is available (from extension attribute)
+**And** Claims are included in ID token
+
+**Given** users need to be created
+**When** admin creates a user via Microsoft Graph API
+**Then** User is created with local account (email + password)
+**And** Role is assigned via custom attribute
+**And** Welcome email is sent with temporary password
+
+**Technical Notes:**
+- B2C tier: Free (50K MAUs included)
+- Token lifetime: 1 hour access, 14 days refresh
+- Reference: `_bmad-output/architecture/adr/ADR-003-identity-access-management.md`
+- User provisioning: Microsoft Graph API (not self-service)
+
+**Dependencies:**
+- Azure subscription
+
+**Story Points:** 5
+
+---
+
+#### Story 0.5.3: Shared Auth Library
+
+As a **frontend developer**,
+I want a shared authentication library for React applications,
+So that all frontend apps implement consistent authentication and authorization.
+
+**Acceptance Criteria:**
+
+**Given** the auth library needs to be created
+**When** I create `libs/auth/`
+**Then** it exports as `@fp/auth` via npm workspaces
+**And** MSAL React is configured as the authentication provider
+**And** TypeScript types are exported for auth context
+
+**Given** the auth library is created
+**When** I implement the `AuthProvider` component
+**Then** it wraps MSAL provider with B2C configuration
+**And** Silent token refresh is handled automatically
+**And** Login redirect flow is implemented (PKCE)
+
+**Given** the auth context is available
+**When** I use the `useAuth` hook
+**Then** `isAuthenticated` boolean is available
+**And** `user` object includes: name, email, roles[], factoryId
+**And** `login()` and `logout()` functions are available
+**And** `getAccessToken()` returns token for API calls
+
+**Given** role-based access is needed
+**When** I use the `RequireRole` component
+**Then** it renders children only if user has required role
+**And** Unauthorized users are redirected to access denied page
+**And** Loading state is handled during auth check
+
+**Given** the auth flow completes
+**When** tokens are received
+**Then** Access token is stored securely (memory, not localStorage)
+**And** Refresh token handles silent renewal
+**And** OpenTelemetry traces include user context (not PII)
+
+**Technical Notes:**
+- Location: `libs/auth/`
+- MSAL version: @azure/msal-react ^2.0
+- Token storage: In-memory with silent refresh
+- Reference: ADR-003 for B2C configuration
+
+**Dependencies:**
+- Story 0.5.2: Azure AD B2C Configuration
+
+**Story Points:** 3
+
+---
+
+#### Story 0.5.4: Factory Portal Scaffold
+
+As a **frontend developer**,
+I want the Factory Portal React application scaffolded with routing and layout,
+So that Factory Manager, Owner, and Admin screens can be built.
+
+**Acceptance Criteria:**
+
+**Given** the web folder structure exists
+**When** I create `web/factory-portal/`
+**Then** Vite + React + TypeScript project is initialized
+**And** `@fp/ui-components` and `@fp/auth` are configured as dependencies
+**And** ESLint and Prettier are configured
+
+**Given** the project is scaffolded
+**When** I configure routing
+**Then** React Router v6 is configured with:
+  - `/command-center` (Factory Manager)
+  - `/farmers/:id` (Farmer Detail)
+  - `/roi` (Factory Owner)
+  - `/settings/*` (Factory Admin)
+**And** Routes are protected by `RequireRole` component
+
+**Given** routing is configured
+**When** I implement the layout
+**Then** Sidebar navigation shows role-appropriate menu items
+**And** Header shows user name and factory name
+**And** Logout button is available
+**And** Layout is responsive (Material UI breakpoints)
+
+**Given** the app is built
+**When** I run `npm run build`
+**Then** Production bundle is generated
+**And** Bundle size is < 500KB (gzipped, excluding node_modules)
+**And** Source maps are generated for debugging
+
+**Given** the development server runs
+**When** I run `npm run dev`
+**Then** Hot module replacement works
+**And** API proxy is configured to BFF service
+
+**Technical Notes:**
+- Location: `web/factory-portal/`
+- Vite config: React plugin, path aliases
+- Proxy: `/api` → BFF service URL
+- Reference: ADR-002 for folder structure
+
+**Dependencies:**
+- Story 0.5.1: Shared Component Library
+- Story 0.5.3: Shared Auth Library
+
+**Story Points:** 3
+
+---
+
+#### Story 0.5.5: BFF Authentication Middleware
+
+As a **backend developer**,
+I want the BFF service to validate JWT tokens from Azure AD B2C,
+So that API endpoints are protected with proper authorization.
+
+**Acceptance Criteria:**
+
+**Given** the BFF service exists (from Story 3.1)
+**When** I add authentication middleware
+**Then** JWT tokens are validated against B2C JWKS endpoint
+**And** Token claims are extracted and available in request context
+**And** Invalid tokens return 401 Unauthorized
+
+**Given** the JWT is validated
+**When** the middleware extracts claims
+**Then** `user_id`, `email`, `roles[]`, `factory_id` are available
+**And** Claims are added to OpenTelemetry trace context
+**And** PII (email, name) is NOT logged
+
+**Given** role-based authorization is needed
+**When** I use the `@require_role` decorator
+**Then** Endpoints are protected by role check
+**And** Unauthorized access returns 403 Forbidden
+**And** Error message does not reveal internal details
+
+**Given** factory-level authorization is needed
+**When** I use the `@require_factory` decorator
+**Then** Users can only access their assigned factory's data
+**And** Cross-factory access returns 403 Forbidden
+**And** Platform admins bypass factory restriction
+
+**Given** a token is expired
+**When** the client sends a request
+**Then** 401 is returned with `token_expired` error code
+**And** Client can refresh and retry
+
+**Technical Notes:**
+- FastAPI middleware with python-jose
+- JWKS caching: 24 hours
+- Decorators: `@require_role`, `@require_factory`
+- Reference: ADR-003 for authorization flow
+
+**Dependencies:**
+- Story 0.5.2: Azure AD B2C Configuration
+- Story 3.1: Dashboard BFF Setup
+
+**Story Points:** 3
+
+---
+
 ### Epic 1: Farmer Registration & Data Foundation
 Factory staff can register farmers into the system. Farmers receive their unique ID and are ready to be tracked.
 
@@ -1364,6 +1636,230 @@ So that I can efficiently review quality data without waiting.
 - Materialized views for aggregations (updated every 5 min)
 - Pagination: cursor-based for large result sets
 - Error boundaries in React for graceful degradation
+
+---
+
+#### Story 3.8: Factory Owner ROI Dashboard
+
+As a **Factory Owner**,
+I want to see ROI metrics and value validation for my subscription,
+So that I can justify the platform investment to stakeholders.
+
+**Acceptance Criteria:**
+
+**Given** I am logged in as Factory Owner
+**When** I navigate to the ROI Summary page
+**Then** I see key metrics: quality improvement %, reject reduction, farmer retention
+**And** Cost savings are calculated in KES
+**And** Trend comparison shows month-over-month improvement
+**And** Page loads in < 3 seconds
+
+**Given** I am viewing ROI metrics
+**When** I click on a metric card
+**Then** I drill down to detailed breakdown (by collection point, by farmer segment)
+**And** Charts show historical trend (3, 6, 12 month views)
+**And** Export to PDF is available
+
+**Given** I want regional context
+**When** I view the Regional Benchmark page
+**Then** My factory's metrics are compared to anonymous regional averages
+**And** Ranking percentile is shown (e.g., "Top 20% in region")
+**And** No competitor factory names are revealed
+
+**Technical Notes:**
+- Location: `web/factory-portal/src/pages/owner/`
+- Components: ROISummary, ROIDrillDown, RegionalBenchmark
+- Reference: ADR-002 for factory-portal structure
+
+**Dependencies:**
+- Story 0.5.4: Factory Portal Scaffold
+- Story 3.1: Dashboard BFF Setup
+
+**Story Points:** 5
+
+---
+
+#### Story 3.9: Factory Admin Settings UI
+
+As a **Factory Administrator**,
+I want to configure payment policies, grade multipliers, and SMS templates,
+So that I can customize the platform for my factory's specific needs.
+
+**Acceptance Criteria:**
+
+**Given** I am logged in as Factory Admin
+**When** I navigate to Settings → Payment Policy
+**Then** I can configure price per kg by grade (Premium, Standard, Reject)
+**And** I can set minimum/maximum thresholds
+**And** Changes require confirmation before saving
+
+**Given** I am on the Grade Multipliers page
+**When** I configure multipliers
+**Then** I can set adjustment factors for leaf type distribution
+**And** Preview shows sample calculation with current settings
+**And** Historical multiplier changes are logged
+
+**Given** I am on the SMS Templates page
+**When** I manage templates
+**Then** I can view and edit message templates per language (EN, SW)
+**And** Character count is shown with GSM-7 compatibility check
+**And** Preview shows how message appears on feature phone
+**And** Templates use placeholders: {farmer_name}, {grade}, {tip}
+
+**Given** I want to understand financial impact
+**When** I use the Impact Calculator
+**Then** I can simulate policy changes with current data
+**And** Before/after comparison shows projected farmer payouts
+**And** Calculation is explained transparently
+
+**Technical Notes:**
+- Location: `web/factory-portal/src/pages/admin/`
+- Components: PaymentPolicy, GradeMultipliers, SMSTemplates, ImpactCalculator
+- Reference: ADR-002 for factory-portal structure
+
+**Dependencies:**
+- Story 0.5.4: Factory Portal Scaffold
+- Story 3.1: Dashboard BFF Setup
+
+**Story Points:** 5
+
+---
+
+#### Story 3.10: Command Center Screen Implementation
+
+As a **Factory Quality Manager (Joseph)**,
+I want the Command Center screen to show today's quality overview,
+So that I can identify farmers needing intervention at a glance.
+
+**Acceptance Criteria:**
+
+**Given** I am logged in as Factory Manager
+**When** I open the Command Center
+**Then** I see today's summary: total deliveries, average grade, top issues
+**And** Three sections show: "Action Needed" (red), "Watch" (amber), "Wins" (green)
+**And** Farmer cards show: name, ID, grade trend, last tip sent
+**And** Sorting defaults to most urgent first (lowest grade, declining trend)
+
+**Given** I am viewing the Command Center
+**When** I click on a farmer card
+**Then** I navigate to Farmer Detail page
+**And** Full history and action options are available
+
+**Given** I want to take quick action
+**When** I use the action strip on a farmer card
+**Then** I can trigger SMS, schedule call, or mark for follow-up
+**And** Action confirmation appears inline
+**And** Action is logged for audit
+
+**Given** I need temporal context
+**When** I click "View Patterns"
+**Then** Temporal Patterns modal shows weekly/seasonal trends
+**And** Weather correlation is highlighted if significant
+**And** Recommended intervention timing is suggested
+
+**Technical Notes:**
+- Location: `web/factory-portal/src/pages/manager/CommandCenter/`
+- Components: FarmerCard, ActionStrip, TrendChart
+- Design: "Command Center" pattern from UX spec
+- Reference: `_bmad-output/ux-design-specification/`
+
+**Dependencies:**
+- Story 0.5.4: Factory Portal Scaffold
+- Story 3.2: Farmer Quality Overview Grid
+- Story 3.3: Farmer Categorization
+
+**Story Points:** 5
+
+---
+
+#### Story 3.11: Farmer Detail Screen
+
+As a **Factory Quality Manager**,
+I want to view detailed farmer information and history,
+So that I can make informed intervention decisions.
+
+**Acceptance Criteria:**
+
+**Given** I am on the Farmer Detail page
+**When** the page loads
+**Then** I see farmer profile: name, ID, farm size, collection point
+**And** Contact info is shown with one-click actions (SMS, WhatsApp)
+**And** Performance summary shows: avg grade, trend, total deliveries
+
+**Given** I am viewing farmer details
+**When** I look at the history section
+**Then** I see a timeline of quality events (last 30 days)
+**And** Each event shows: date, grade, primary %, issues detected
+**And** Events can be filtered by date range
+
+**Given** I need AI insights
+**When** I view the Insights panel
+**Then** I see AI-generated summary: likely cause, recommended action
+**And** Weather impact correlation is shown if relevant
+**And** Comparison to similar farmers in collection point
+
+**Given** I want to send a message
+**When** I click "Compose SMS"
+**Then** SMSPreview component opens with farmer context pre-filled
+**And** Template selection with personalization
+**And** Estimated cost shown before send
+
+**Technical Notes:**
+- Location: `web/factory-portal/src/pages/manager/FarmerDetail/`
+- Components: FarmerProfile, EventTimeline, InsightsPanel, SMSPreview
+- API: GET /api/farmers/{id} with history
+
+**Dependencies:**
+- Story 0.5.4: Factory Portal Scaffold
+- Story 3.1: Dashboard BFF Setup
+
+**Story Points:** 5
+
+---
+
+#### Story 3.12: SMS Preview and Compose
+
+As a **Factory Quality Manager**,
+I want to preview and compose SMS messages to farmers,
+So that I can communicate effectively with proper personalization.
+
+**Acceptance Criteria:**
+
+**Given** I open the SMS Compose dialog
+**When** I select a template
+**Then** Template is populated with farmer context (name, grade, tip)
+**And** Preview shows exactly how message appears on phone
+**And** Character count shows: current/160 or current/320
+
+**Given** I am composing a message
+**When** I exceed 160 characters
+**Then** Warning shows: "Message will be split (2 SMS, higher cost)"
+**And** Character count turns amber
+**And** Non-GSM-7 characters are highlighted for replacement
+
+**Given** the message is ready
+**When** I click "Send"
+**Then** Confirmation dialog shows: recipient, message, estimated cost
+**And** After confirmation, message is queued for delivery
+**And** Success notification shows: "SMS queued - delivery in ~30 seconds"
+
+**Given** I want to send to multiple farmers
+**When** I select multiple farmers from Command Center
+**Then** Bulk SMS option appears in action bar
+**And** Same template is applied to all with individual personalization
+**And** Total cost estimate shown before confirmation
+
+**Technical Notes:**
+- Component: `@fp/ui-components/SMSPreview`
+- GSM-7 validation in component
+- API: POST /api/sms/send (single), POST /api/sms/bulk (multiple)
+- Integration with Story 4.1: Notification Model
+
+**Dependencies:**
+- Story 0.5.1: Shared Component Library
+- Story 3.1: Dashboard BFF Setup
+
+**Story Points:** 3
 
 ---
 
@@ -2911,23 +3407,578 @@ So that I still get help even if voice interaction fails.
 
 ---
 
+### Epic 9: Platform Admin Portal
+
+Internal Farmer Power team can onboard new factories, manage users across all factories, and monitor platform health. This is the internal operations portal.
+
+**Related ADRs:** ADR-002 (Frontend Architecture), ADR-003 (Identity & Access Management)
+
+**Scope:**
+- Platform admin web application (separate from factory-portal)
+- Factory onboarding workflow
+- Cross-factory user management
+- Platform health dashboard
+- Access restricted to internal team (VPN/internal network)
+
+---
+
+#### Story 9.1: Platform Admin Application Scaffold
+
+As a **platform developer**,
+I want the Platform Admin React application scaffolded with routing and layout,
+So that internal team screens can be built.
+
+**Acceptance Criteria:**
+
+**Given** the web folder structure exists
+**When** I create `web/platform-admin/`
+**Then** Vite + React + TypeScript project is initialized
+**And** `@fp/ui-components` and `@fp/auth` are configured as dependencies
+**And** ESLint and Prettier are configured
+
+**Given** the project is scaffolded
+**When** I configure routing
+**Then** React Router v6 is configured with:
+  - `/dashboard` (Platform Overview)
+  - `/factories` (Factory List)
+  - `/factories/new` (Factory Onboarding)
+  - `/users` (User Management)
+**And** Routes require `platform_admin` role
+
+**Given** the app is built
+**When** I access the application
+**Then** It's only accessible from internal network/VPN
+**And** Separate B2C application registration is used
+**And** No factory-specific branding (Farmer Power internal theme)
+
+**Technical Notes:**
+- Location: `web/platform-admin/`
+- Deployment: `admin.farmerpower.co.ke` (internal access only)
+- Reference: ADR-002 for folder structure
+
+**Dependencies:**
+- Story 0.5.1: Shared Component Library
+- Story 0.5.3: Shared Auth Library
+
+**Story Points:** 3
+
+---
+
+#### Story 9.2: Factory Onboarding Wizard
+
+As a **Platform Administrator**,
+I want a wizard to onboard new factories to the platform,
+So that factory setup is consistent and complete.
+
+**Acceptance Criteria:**
+
+**Given** I navigate to Factory Onboarding
+**When** I start the wizard
+**Then** Step 1 collects: factory name, location, contact person, email
+**And** Step 2 collects: collection points (name, GPS coordinates)
+**And** Step 3 configures: default payment policy, SMS templates
+**And** Step 4 creates: initial admin user for factory
+
+**Given** I complete the wizard
+**When** I click "Create Factory"
+**Then** Factory record is created in Plantation Model
+**And** Factory admin user is created in Azure AD B2C
+**And** Welcome email is sent with login credentials
+**And** Confirmation page shows summary and next steps
+
+**Given** I need to resume onboarding
+**When** I save draft partway through
+**Then** Draft is saved and can be resumed later
+**And** Draft list shows incomplete onboardings
+
+**Technical Notes:**
+- Multi-step form with validation per step
+- API: POST /api/admin/factories (creates factory + user)
+- User creation via Microsoft Graph API
+- Email via Notification Model
+
+**Dependencies:**
+- Story 9.1: Platform Admin Application Scaffold
+- Story 1.2: Factory and Collection Point Management
+
+**Story Points:** 5
+
+---
+
+#### Story 9.3: User Management Dashboard
+
+As a **Platform Administrator**,
+I want to view and manage users across all factories,
+So that I can support user administration tasks.
+
+**Acceptance Criteria:**
+
+**Given** I navigate to User Management
+**When** the page loads
+**Then** I see a table of all platform users
+**And** Columns show: name, email, factory, role, last login, status
+**And** Search and filter by factory, role, status are available
+
+**Given** I need to create a new user
+**When** I click "Add User"
+**Then** Form collects: name, email, factory (dropdown), role (dropdown)
+**And** User is created in Azure AD B2C
+**And** Welcome email is sent automatically
+
+**Given** I need to modify a user
+**When** I click on a user row
+**Then** I can edit: role, factory assignment
+**And** I can reset password (sends reset email)
+**And** I can disable/enable account
+
+**Given** a user is locked out
+**When** I reset their password
+**Then** Temporary password is generated
+**And** Email is sent with reset instructions
+**And** Audit log captures who performed the reset
+
+**Technical Notes:**
+- Users stored in Azure AD B2C (not local DB)
+- Microsoft Graph API for user operations
+- Audit log to MongoDB for compliance
+
+**Dependencies:**
+- Story 9.1: Platform Admin Application Scaffold
+- Story 0.5.2: Azure AD B2C Configuration
+
+**Story Points:** 5
+
+---
+
+#### Story 9.4: Platform Health Dashboard
+
+As a **Platform Administrator**,
+I want to see platform-wide health metrics and factory statistics,
+So that I can monitor operations and identify issues.
+
+**Acceptance Criteria:**
+
+**Given** I navigate to the Platform Dashboard
+**When** the page loads
+**Then** I see: total factories, total farmers, active users (24h)
+**And** System health indicators: API latency, error rate, queue depth
+**And** Map shows factory locations with status indicators
+
+**Given** I want to see factory details
+**When** I click on a factory card/pin
+**Then** I see: farmer count, daily delivery volume, quality trend
+**And** Link to impersonate factory admin (for support)
+**And** Recent activity log for that factory
+
+**Given** there are system issues
+**When** error rate exceeds threshold
+**Then** Alert banner shows on dashboard
+**And** Affected services are highlighted
+**And** Recent error samples are shown
+
+**Technical Notes:**
+- Aggregated metrics from OpenTelemetry
+- Health checks from each service
+- Map: Leaflet with Kenya regions
+
+**Dependencies:**
+- Story 9.1: Platform Admin Application Scaffold
+- Story 3.1: Dashboard BFF Setup (for health endpoints)
+
+**Story Points:** 5
+
+---
+
+### Epic 10: Regulator Dashboard
+
+Tea Board of Kenya officials can view national-level quality intelligence. This dashboard is completely isolated from factory data for security.
+
+**Related ADRs:** ADR-002 (Frontend Architecture), ADR-003 (Identity & Access Management)
+
+**Scope:**
+- Regulator web application (completely separate from factory systems)
+- National quality overview with regional breakdown
+- Leaf type distribution analysis
+- Export readiness indicators
+- No individual farmer PII visible
+
+---
+
+#### Story 10.1: Regulator Application Scaffold
+
+As a **platform developer**,
+I want the Regulator Dashboard React application scaffolded,
+So that TBK officials have a secure, isolated portal.
+
+**Acceptance Criteria:**
+
+**Given** the web folder structure exists
+**When** I create `web/regulator/`
+**Then** Vite + React + TypeScript project is initialized
+**And** `@fp/ui-components` and `@fp/auth` are configured as dependencies
+**And** Separate authentication configuration (B2B federation ready)
+
+**Given** the application is deployed
+**When** TBK officials access the portal
+**Then** It's hosted on separate subdomain: `regulator.farmerpower.co.ke`
+**And** No shared runtime state with factory applications
+**And** All data is pre-aggregated (no individual farmer data)
+
+**Given** authentication is configured
+**When** regulator users sign in
+**Then** They use TBK Azure AD tenant (B2B federation)
+**And** No access to factory-level or farmer-level data
+**And** Only `regulator` role has access
+
+**Technical Notes:**
+- Location: `web/regulator/`
+- Separate B2C application registration
+- B2B federation with TBK Azure AD (future)
+- Reference: ADR-002, ADR-003 for isolation requirements
+
+**Dependencies:**
+- Story 0.5.1: Shared Component Library
+- Story 0.5.3: Shared Auth Library
+
+**Story Points:** 3
+
+---
+
+#### Story 10.2: National Quality Overview
+
+As a **Tea Board of Kenya official**,
+I want to see national-level quality metrics,
+So that I can monitor tea quality across all participating factories.
+
+**Acceptance Criteria:**
+
+**Given** I am logged in as regulator
+**When** I view the National Overview page
+**Then** I see: total participating factories, total farmers, total volume (kg)
+**And** National average quality grade is shown
+**And** Trend shows quality over time (weekly/monthly)
+
+**Given** I want to understand quality distribution
+**When** I view the quality breakdown
+**Then** Chart shows: % Primary, % Secondary by region
+**And** Comparison to previous period (week/month/quarter)
+**And** Target thresholds are marked on chart
+
+**Given** I need to identify problem areas
+**When** quality falls below threshold
+**Then** Regions are highlighted with warning indicator
+**And** I can click to see regional details
+**And** No individual factory or farmer names are shown
+
+**Technical Notes:**
+- API: Aggregated data only (no factory_id in response)
+- Pre-computed aggregations (not real-time queries)
+- Data anonymized at API layer
+
+**Dependencies:**
+- Story 10.1: Regulator Application Scaffold
+
+**Story Points:** 5
+
+---
+
+#### Story 10.3: Regional Quality Comparison
+
+As a **Tea Board of Kenya official**,
+I want to compare quality metrics across regions,
+So that I can target interventions and policy.
+
+**Acceptance Criteria:**
+
+**Given** I navigate to Regional Comparison
+**When** the page loads
+**Then** Map of Kenya shows regions color-coded by quality
+**And** Table shows: region name, avg grade, volume, trend
+**And** Sorting and filtering by metric is available
+
+**Given** I select a region
+**When** I view region details
+**Then** I see: factory count (anonymized), farmer count, quality trend
+**And** Seasonal pattern analysis is shown
+**And** Weather impact correlation (if significant)
+
+**Given** I want to export data
+**When** I click "Export Report"
+**Then** PDF/Excel report is generated with selected metrics
+**And** Report is branded with TBK logo
+**And** Data export is logged for audit
+
+**Technical Notes:**
+- Map: Choropleth with Kenya county boundaries
+- Export: Server-side PDF generation
+- No factory identifiers in export
+
+**Dependencies:**
+- Story 10.1: Regulator Application Scaffold
+- Story 10.2: National Quality Overview
+
+**Story Points:** 5
+
+---
+
+#### Story 10.4: Leaf Type Distribution & Export Readiness
+
+As a **Tea Board of Kenya official**,
+I want to analyze leaf type distribution and export readiness,
+So that I can assess Kenya's tea export potential.
+
+**Acceptance Criteria:**
+
+**Given** I navigate to Leaf Type Distribution
+**When** the page loads
+**Then** I see: national breakdown by leaf_type (Purple Leaf, Fine, Coarse, etc.)
+**And** Trend over time shows seasonal patterns
+**And** Comparison to TBK quality targets
+
+**Given** I view Export Readiness
+**When** I analyze the data
+**Then** I see: % meeting export grade thresholds
+**And** Projection based on current trends
+**And** Regional breakdown of export-ready volume
+
+**Given** I need policy insights
+**When** I view recommendations panel
+**Then** AI-generated insights highlight:
+  - Regions with improvement potential
+  - Seasonal factors affecting quality
+  - Suggested intervention focus areas
+**And** Insights are based on aggregated data only
+
+**Technical Notes:**
+- Leaf type categories per TBK specification
+- Export thresholds: configurable in admin
+- AI insights: pre-generated daily (not real-time LLM calls)
+
+**Dependencies:**
+- Story 10.1: Regulator Application Scaffold
+- Story 10.2: National Quality Overview
+
+**Story Points:** 5
+
+---
+
+### Epic 11: Registration Kiosk PWA
+
+Registration clerks at collection points can enroll new farmers using dedicated tablets. The application works offline for rural areas with poor connectivity.
+
+**Related ADRs:** ADR-002 (Frontend Architecture), ADR-003 (Identity & Access Management)
+
+**Scope:**
+- Progressive Web App (PWA) for offline-first operation
+- Farmer registration workflow
+- Collection point assignment
+- ID card printing support
+- Background sync when connectivity restored
+
+---
+
+#### Story 11.1: Registration Kiosk Application Scaffold
+
+As a **platform developer**,
+I want the Registration Kiosk PWA scaffolded with offline support,
+So that registration works in rural areas with poor connectivity.
+
+**Acceptance Criteria:**
+
+**Given** the web folder structure exists
+**When** I create `web/registration-kiosk/`
+**Then** Vite + React + TypeScript project is initialized with PWA plugin
+**And** Service worker is configured for offline-first
+**And** App manifest enables "Add to Home Screen"
+
+**Given** the PWA is installed on a tablet
+**When** network is unavailable
+**Then** App shell loads from cache
+**And** "Offline mode" indicator is shown
+**And** All registration functionality works
+
+**Given** authentication is needed
+**When** clerk logs in on kiosk device
+**Then** Device Code Flow is used (no redirect)
+**And** Session persists for 8 hours
+**And** Auto-refresh keeps session alive
+
+**Technical Notes:**
+- Location: `web/registration-kiosk/`
+- PWA: Workbox for service worker
+- Offline storage: IndexedDB
+- Auth: Device Code Flow (ADR-003)
+- Reference: ADR-002 for PWA requirements
+
+**Dependencies:**
+- Story 0.5.1: Shared Component Library
+- Story 0.5.3: Shared Auth Library
+
+**Story Points:** 5
+
+---
+
+#### Story 11.2: Farmer Registration Workflow
+
+As a **Registration Clerk**,
+I want to register new farmers with their details,
+So that they can be tracked in the quality system.
+
+**Acceptance Criteria:**
+
+**Given** I open the registration form
+**When** I enter farmer details
+**Then** Form collects: name, phone, national_id, farm_size, location
+**And** GPS coordinates can be captured from device
+**And** Phone number is validated (Kenya format)
+
+**Given** I submit the registration
+**When** online
+**Then** Farmer is created immediately via API
+**And** Farmer ID is generated (e.g., WM-4521)
+**And** Confirmation screen shows farmer ID
+
+**Given** I submit the registration
+**When** offline
+**Then** Registration is queued in IndexedDB
+**And** Temporary ID is shown: "Pending sync"
+**And** Queue count badge shows on home screen
+
+**Given** I have queued registrations
+**When** network is restored
+**Then** Background sync uploads pending registrations
+**And** Temporary IDs are replaced with real IDs
+**And** Notification confirms sync complete
+
+**Technical Notes:**
+- Form: React Hook Form + Zod validation
+- Offline queue: IndexedDB with queue status
+- Sync: Background Sync API / periodic check
+- API: POST /api/farmers
+
+**Dependencies:**
+- Story 11.1: Registration Kiosk Application Scaffold
+- Story 1.3: Farmer Registration (API)
+
+**Story Points:** 5
+
+---
+
+#### Story 11.3: Collection Point Assignment
+
+As a **Registration Clerk**,
+I want to assign farmers to their collection point,
+So that deliveries are tracked correctly.
+
+**Acceptance Criteria:**
+
+**Given** I am registering a farmer
+**When** I reach collection point step
+**Then** Dropdown shows collection points for this factory
+**And** Collection points are cached offline
+**And** Default is clerk's assigned collection point
+
+**Given** the farmer needs a different collection point
+**When** I select from the list
+**Then** Map shows collection point location
+**And** Distance from farmer's GPS is calculated
+**And** Warning if distance > 10km (unusual)
+
+**Given** collection point data is stale
+**When** app syncs
+**Then** Collection point list is refreshed
+**And** Changes are merged (new points added, closed points flagged)
+**And** Last sync time is shown in UI
+
+**Technical Notes:**
+- Collection points cached in IndexedDB
+- Sync on login and every 24 hours
+- Distance: Haversine formula (client-side)
+
+**Dependencies:**
+- Story 11.1: Registration Kiosk Application Scaffold
+- Story 1.2: Factory and Collection Point Management
+
+**Story Points:** 3
+
+---
+
+#### Story 11.4: Farmer ID Card Printing
+
+As a **Registration Clerk**,
+I want to print a farmer ID card after registration,
+So that farmers have proof of registration.
+
+**Acceptance Criteria:**
+
+**Given** registration is complete
+**When** I click "Print ID Card"
+**Then** ID card preview shows: farmer name, ID, collection point, QR code
+**And** QR code contains farmer_id for quick lookup
+**And** Print dialog opens with correct page size (ID card format)
+
+**Given** printer is connected
+**When** I confirm print
+**Then** ID card prints on configured printer
+**And** Print success is logged
+**And** Reprint option is available from farmer list
+
+**Given** printer is not connected
+**When** I try to print
+**Then** Error message shows with troubleshooting steps
+**And** Option to queue for later printing
+**And** "View digital ID" alternative is offered
+
+**Given** registration was completed offline
+**When** sync completes and real ID is assigned
+**Then** Print option becomes available
+**And** ID card shows final farmer_id
+
+**Technical Notes:**
+- Web Print API (window.print)
+- ID card template: CSS @media print
+- QR code: qrcode.react library
+- Thermal printer support: ESC/POS if needed
+
+**Dependencies:**
+- Story 11.2: Farmer Registration Workflow
+
+**Story Points:** 3
+
+---
+
 ## Summary
 
 ### Epic and Story Counts
 
-| Epic | Stories | FRs Covered |
-|------|---------|-------------|
+| Epic | Stories | FRs/ADRs Covered |
+|------|---------|------------------|
+| Epic 0: Platform Infrastructure Foundation | 1 | AR1-AR12 |
+| Epic 0.5: Frontend & Identity Infrastructure | 5 | ADR-002, ADR-003 |
 | Epic 1: Farmer Registration & Data Foundation | 6 | FR34-FR38 |
 | Epic 2: Quality Data Ingestion | 8 | FR15-FR23, FR58-FR61 |
-| Epic 3: Factory Manager Dashboard | 7 | FR9-FR14 |
+| Epic 3: Factory Manager Dashboard | 12 | FR9-FR14, ADR-002 |
 | Epic 4: Farmer SMS Feedback | 7 | FR1-FR4, FR8, FR39-FR44 |
 | Epic 5: Quality Diagnosis AI | 9 | FR24-FR28, FR45-FR49 |
 | Epic 6: Weekly Action Plans | 6 | FR29-FR33 |
 | Epic 7: Voice IVR Experience | 5 | FR5-FR7 |
 | Epic 8: Voice Quality Advisor | 7 | FR50-FR57 |
-| **Total** | **55 stories** | **61 FRs** |
+| Epic 9: Platform Admin Portal | 4 | ADR-002, ADR-003 |
+| Epic 10: Regulator Dashboard | 4 | ADR-002, ADR-003 |
+| Epic 11: Registration Kiosk PWA | 4 | ADR-002, ADR-003 |
+| **Total** | **78 stories** | **61 FRs + 3 ADRs** |
 
 ### Story Index
+
+**Epic 0: Platform Infrastructure Foundation**
+- Story 0.1: MCP gRPC Infrastructure
+
+**Epic 0.5: Frontend & Identity Infrastructure**
+- Story 0.5.1: Shared Component Library Setup
+- Story 0.5.2: Azure AD B2C Configuration
+- Story 0.5.3: Shared Auth Library
+- Story 0.5.4: Factory Portal Scaffold
+- Story 0.5.5: BFF Authentication Middleware
 
 **Epic 1: Farmer Registration & Data Foundation**
 - Story 1.1: Plantation Model Service Setup
@@ -2955,6 +4006,11 @@ So that I still get help even if voice interaction fails.
 - Story 3.5: One-Click Farmer Contact
 - Story 3.6: Daily Report Auto-Generation
 - Story 3.7: Dashboard Performance Optimization
+- Story 3.8: Factory Owner ROI Dashboard
+- Story 3.9: Factory Admin Settings UI
+- Story 3.10: Command Center Screen Implementation
+- Story 3.11: Farmer Detail Screen
+- Story 3.12: SMS Preview and Compose
 
 **Epic 4: Farmer SMS Feedback**
 - Story 4.1: Notification Model Service Setup
@@ -3000,6 +4056,24 @@ So that I still get help even if voice interaction fails.
 - Story 8.6: Streaming Response Delivery
 - Story 8.7: SMS Fallback Handling
 
+**Epic 9: Platform Admin Portal**
+- Story 9.1: Platform Admin Application Scaffold
+- Story 9.2: Factory Onboarding Wizard
+- Story 9.3: User Management Dashboard
+- Story 9.4: Platform Health Dashboard
+
+**Epic 10: Regulator Dashboard**
+- Story 10.1: Regulator Application Scaffold
+- Story 10.2: National Quality Overview
+- Story 10.3: Regional Quality Comparison
+- Story 10.4: Leaf Type Distribution & Export Readiness
+
+**Epic 11: Registration Kiosk PWA**
+- Story 11.1: Registration Kiosk Application Scaffold
+- Story 11.2: Farmer Registration Workflow
+- Story 11.3: Collection Point Assignment
+- Story 11.4: Farmer ID Card Printing
+
 ---
 
-*Generated: 2025-12-23*
+*Generated: 2025-12-26 (Updated with ADR-002 & ADR-003 impact)*
