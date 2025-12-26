@@ -31,11 +31,19 @@ class Settings(BaseSettings):
     mongodb_database: str = "collection"
     mongodb_min_pool_size: int = 5
     mongodb_max_pool_size: int = 50
+    mongodb_retry_attempts: int = 3
+    mongodb_retry_min_wait: int = 1
+    mongodb_retry_max_wait: int = 10
+
+    # CORS configuration
+    cors_origins: list[str] = ["http://localhost:3000", "http://localhost:8080"]
+    cors_allow_credentials: bool = True
+    cors_allow_methods: list[str] = ["*"]
+    cors_allow_headers: list[str] = ["*"]
 
     # DAPR configuration
     dapr_host: str = "localhost"
     dapr_http_port: int = 3500
-    dapr_grpc_port: int = 50001
     dapr_pubsub_name: str = "pubsub"
     dapr_document_stored_topic: str = "collection.document.stored"
     dapr_poor_quality_topic: str = "collection.poor_quality_detected"

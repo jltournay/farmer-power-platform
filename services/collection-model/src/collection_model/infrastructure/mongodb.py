@@ -78,8 +78,12 @@ async def get_database() -> AsyncIOMotorDatabase:
 
 
 @retry(
-    stop=stop_after_attempt(3),
-    wait=wait_exponential(multiplier=1, min=1, max=10),
+    stop=stop_after_attempt(settings.mongodb_retry_attempts),
+    wait=wait_exponential(
+        multiplier=1,
+        min=settings.mongodb_retry_min_wait,
+        max=settings.mongodb_retry_max_wait,
+    ),
     retry=retry_if_exception_type((ConnectionFailure, ServerSelectionTimeoutError)),
     reraise=True,
 )

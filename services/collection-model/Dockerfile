@@ -68,8 +68,8 @@ ENV PYTHONUNBUFFERED=1
 # Switch to non-root user
 USER appuser
 
-# Expose ports
-EXPOSE 8000 50052
+# Expose HTTP port (FastAPI)
+EXPOSE 8000
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \

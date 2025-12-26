@@ -98,13 +98,13 @@ app = FastAPI(
     openapi_url="/openapi.json",
 )
 
-# Add CORS middleware
+# Add CORS middleware (configurable via COLLECTION_CORS_* env vars)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Configure appropriately for production
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_origins=settings.cors_origins,
+    allow_credentials=settings.cors_allow_credentials,
+    allow_methods=settings.cors_allow_methods,
+    allow_headers=settings.cors_allow_headers,
 )
 
 # Include routers

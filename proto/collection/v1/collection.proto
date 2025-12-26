@@ -1,5 +1,9 @@
-// Collection Model Service - gRPC API Definition
+// Collection Model Service - Protocol Buffer Definitions
 // Quality data ingestion gateway for the Farmer Power Platform
+//
+// Note: Collection Model uses HTTP/REST (FastAPI) for external endpoints
+// and DAPR pub/sub for domain events. These proto definitions are used
+// for event serialization and MCP server interfaces.
 
 syntax = "proto3";
 
@@ -7,21 +11,53 @@ package farmer_power.collection.v1;
 
 import "google/protobuf/timestamp.proto";
 
-// Note: Health checking uses standard grpc.health.v1.Health (grpc-health-checking package)
-// No custom HealthService defined here to avoid duplication.
-
 // ============================================================================
-// Collection Service - Core Operations
+// Domain Events (published via DAPR pub/sub)
 // ============================================================================
 
-service CollectionService {
-  // Placeholder for future gRPC methods (Story 2-2+)
-  // EndBag event ingestion
-  // TBK grading result storage
-  // Quality event queries
-  
-  // For now, this service exposes only health checking via grpc.health.v1.Health
-  // and server reflection for debugging
+// Event published when a document is stored
+message DocumentStoredEvent {
+  string document_id = 1;
+  string source_type = 2;  // "qc_analyzer_result", "qc_analyzer_exception", etc.
+  string farmer_id = 3;
+  string blob_path = 4;
+  string blob_etag = 5;
+  string content_hash = 6;
+  string content_type = 7;
+  int64 content_length = 8;
+  google.protobuf.Timestamp timestamp = 9;
+}
+
+// Event published when quality drops below threshold
+message PoorQualityDetectedEvent {
+  string event_id = 1;
+  string farmer_id = 2;
+  double primary_percentage = 3;
+  double threshold = 4;
+  map<string, double> leaf_type_distribution = 5;
+  string priority = 6;  // "standard" or "critical"
+  google.protobuf.Timestamp timestamp = 7;
+}
+
+// Event published when weather data is updated
+message WeatherUpdatedEvent {
+  string region_id = 1;
+  string weather_date = 2;  // YYYY-MM-DD
+  double temperature_high = 3;
+  double temperature_low = 4;
+  double rainfall_mm = 5;
+  double humidity_percent = 6;
+  google.protobuf.Timestamp timestamp = 7;
+}
+
+// Event published when market prices are updated
+message MarketPricesUpdatedEvent {
+  string commodity = 1;
+  string region = 2;
+  double price_per_kg = 3;
+  string currency = 4;
+  string price_date = 5;  // YYYY-MM-DD
+  google.protobuf.Timestamp timestamp = 6;
 }
 
 // ============================================================================
@@ -31,9 +67,10 @@ service CollectionService {
 // Event types published by Collection Model
 enum EventType {
   EVENT_TYPE_UNSPECIFIED = 0;
-  EVENT_TYPE_END_BAG = 1;
-  EVENT_TYPE_TBK_RESULT = 2;
-  EVENT_TYPE_POOR_QUALITY_DETECTED = 3;
+  EVENT_TYPE_DOCUMENT_STORED = 1;
+  EVENT_TYPE_POOR_QUALITY_DETECTED = 2;
+  EVENT_TYPE_WEATHER_UPDATED = 3;
+  EVENT_TYPE_MARKET_PRICES_UPDATED = 4;
 }
 
 // Quality grade from TBK grading
@@ -44,7 +81,7 @@ enum QualityGrade {
 }
 
 // ============================================================================
-// Event Messages (for future use)
+// Event Messages (for future MCP server use)
 // ============================================================================
 
 // Base event metadata
@@ -56,7 +93,7 @@ message EventMetadata {
   string source = 5;  // "qc_analyzer", "factory_pos", "mobile_app"
 }
 
-// End bag event from QC Analyzer (Story 2-2)
+// End bag event from QC Analyzer (Story 2-4)
 message EndBagEvent {
   EventMetadata metadata = 1;
   double weight_kg = 2;
@@ -65,16 +102,8 @@ message EndBagEvent {
   string bag_id = 5;
 }
 
-// Poor quality detected event (Story 2-5)
-message PoorQualityEvent {
-  EventMetadata metadata = 1;
-  QualityGrade quality_grade = 2;
-  string reason = 3;
-  double consecutive_secondary_count = 4;
-}
-
 // ============================================================================
-// Query Messages (placeholder for Story 2-8)
+// Query Messages (for future MCP server use)
 // ============================================================================
 
 message GetQualityEventsRequest {
