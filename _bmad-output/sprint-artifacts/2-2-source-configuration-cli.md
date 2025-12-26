@@ -156,6 +156,18 @@ So that new data sources can be onboarded without code changes and configuration
 - [x] 11.4 Test list, diff, history, rollback commands
 - [x] 11.5 Test environment isolation
 
+### Task 12: Add validation schema deployment (Post-MVP Enhancement)
+- [x] 12.1 Add `SchemaDocument` Pydantic model to source_config.py
+- [x] 12.2 Add `validation_schemas` MongoDB collection support
+- [x] 12.3 Implement `deploy_schemas()` method in deployer
+- [x] 12.4 Implement `get_schema()` method for runtime schema lookup
+- [x] 12.5 Implement `list_schemas()` method
+- [x] 12.6 Add `load_schemas_for_configs()` helper function
+- [x] 12.7 Update deploy command to deploy schemas alongside configs
+- [x] 12.8 Add `list-schemas` CLI command
+- [x] 12.9 Add `schemas_dir` setting for schema file location
+- [x] 12.10 Add 14 unit tests for schema functionality
+
 ---
 
 ## Dev Notes
@@ -613,7 +625,7 @@ fp-source-config validate
 # Validate specific config
 fp-source-config validate --file config/source-configs/qc-analyzer-result.yaml
 
-# Deploy to environment
+# Deploy to environment (configs + referenced schemas)
 fp-source-config deploy --env dev
 fp-source-config deploy --env staging
 fp-source-config deploy --env prod
@@ -626,6 +638,9 @@ fp-source-config deploy --env dev --dry-run
 
 # List deployed configs
 fp-source-config list --env dev
+
+# List deployed validation schemas
+fp-source-config list-schemas --env dev
 
 # Compare local vs deployed
 fp-source-config diff --env dev
@@ -720,9 +735,11 @@ The CLI manages configurations that the Collection Model service reads via `Sour
 - [x] `fp-source-config diff --env` command shows local vs deployed differences
 - [x] `fp-source-config history --env --source` command shows deployment history
 - [x] `fp-source-config rollback --env --source --version` command restores previous version
-- [x] Unit tests passing for all commands (51 tests)
+- [x] Unit tests passing for all commands (65 tests)
 - [x] CI passes (lint, format, tests)
 - [x] Code reviewed and merged
+- [x] Validation schemas deployed alongside source configs (post-MVP enhancement)
+- [x] `fp-source-config list-schemas --env` command works
 
 ---
 
@@ -741,8 +758,10 @@ Claude Opus 4.5 (claude-opus-4-5-20251101)
 ### Completion Notes List
 
 - All 8 ACs implemented and verified
-- 51 unit tests passing
+- 65 unit tests passing (51 original + 14 for schema deployment)
 - Code review completed with fixes
+- Post-MVP enhancement: Validation schemas now deployed to MongoDB `validation_schemas` collection
+- Deploy command automatically deploys referenced schemas alongside source configs
 
 ### File List
 
