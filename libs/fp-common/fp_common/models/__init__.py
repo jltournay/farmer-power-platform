@@ -1,7 +1,4 @@
-"""Farmer Power Platform common utilities.
-
-Provides shared infrastructure components for all services.
-"""
+"""Pydantic models for Farmer Power Platform."""
 
 from fp_common.models.source_config import (
     IngestionConfig,
@@ -17,8 +14,6 @@ from fp_common.models.source_config import (
     ZipConfig,
     generate_json_schema,
 )
-
-__version__ = "0.1.0"
 
 __all__ = [
     "IngestionConfig",

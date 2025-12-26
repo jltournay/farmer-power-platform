@@ -1,0 +1,44 @@
+source_id: qc-analyzer-result
+display_name: QC Analyzer - Bag Result
+description: Aggregated quality grading results from Starfish QC machines
+
+ingestion:
+  mode: blob_trigger
+  landing_container: qc-analyzer-landing
+  path_pattern:
+    pattern: "results/{plantation_id}/{crop}/{market}/{batch_id}.json"
+    extract_fields:
+      - plantation_id
+      - crop
+      - market
+      - batch_id
+  file_pattern: "*.json"
+  file_format: json
+  trigger_mechanism: event_grid
+  processed_file_config:
+    action: archive
+    archive_container: qc-archive
+    archive_ttl_days: 365
+
+validation:
+  schema_name: data/qc-bag-result.json
+  strict: true
+
+transformation:
+  agent: qc-result-extraction-agent
+  extract_fields:
+    - plantation_id
+    - factory_id
+    - collection_point_id
+    - grading_model_id
+    - grading_model_version
+    - batch_timestamp
+    - bag_summary
+  link_field: plantation_id
+  field_mappings:
+    plantation_id: farmer_id
+
+storage:
+  raw_container: quality-results-raw
+  index_collection: quality_results_index
+  ttl_days: 730

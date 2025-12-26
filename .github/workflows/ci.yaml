@@ -46,11 +46,12 @@ jobs:
             grpcio-health-checking grpcio-reflection \
             opentelemetry-api opentelemetry-sdk opentelemetry-exporter-otlp \
             opentelemetry-instrumentation-fastapi opentelemetry-instrumentation-grpc opentelemetry-instrumentation-pymongo \
-            structlog httpx aiohttp fastapi uvicorn dapr dapr-ext-grpc langchain-core jsonschema
+            structlog httpx aiohttp fastapi uvicorn dapr dapr-ext-grpc langchain-core jsonschema \
+            typer rich pyyaml deepdiff
 
       - name: Run unit tests
         run: |
-          PYTHONPATH="${PYTHONPATH}:libs/fp-common:libs/fp-proto/src:libs/fp-testing:services/plantation-model/src:services/collection-model/src" \
+          PYTHONPATH="${PYTHONPATH}:libs/fp-common:libs/fp-proto/src:libs/fp-testing:services/plantation-model/src:services/collection-model/src:scripts/source-config/src" \
             pytest tests/unit/ -v --cov=services --cov-report=term-missing
 
   integration-tests:

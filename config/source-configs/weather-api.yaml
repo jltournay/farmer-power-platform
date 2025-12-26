@@ -1,0 +1,41 @@
+source_id: weather-api
+display_name: Weather API - Open-Meteo
+description: Weather data for regional correlation analysis
+
+ingestion:
+  mode: scheduled_pull
+  provider: open-meteo
+  schedule: "0 6 * * *"  # Daily at 6 AM UTC
+  request:
+    base_url: https://api.open-meteo.com/v1/forecast
+    auth_type: none
+    parameters:
+      hourly: temperature_2m,relative_humidity_2m,precipitation,wind_speed_10m
+      daily: temperature_2m_max,temperature_2m_min,precipitation_sum
+      timezone: Africa/Nairobi
+    timeout_seconds: 30
+  iteration:
+    foreach: region
+    source_mcp: plantation-mcp
+    source_tool: list_active_regions
+    concurrency: 5
+  retry:
+    max_attempts: 3
+    backoff: exponential
+
+transformation:
+  agent: weather-data-extraction-agent
+  extract_fields:
+    - region_id
+    - timestamp
+    - temperature
+    - humidity
+    - precipitation
+    - wind_speed
+  link_field: region_id
+  field_mappings: {}
+
+storage:
+  raw_container: weather-data-raw
+  index_collection: weather_data_index
+  ttl_days: 365

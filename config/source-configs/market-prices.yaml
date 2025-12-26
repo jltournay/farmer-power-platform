@@ -1,0 +1,41 @@
+source_id: market-prices
+display_name: Market Prices - Starfish Network
+description: Coffee market prices from Starfish Network API
+
+ingestion:
+  mode: scheduled_pull
+  provider: starfish-network
+  schedule: "0 8 * * 1"  # Weekly on Monday at 8 AM UTC
+  request:
+    base_url: https://api.starfish-network.com/v1/prices
+    auth_type: api_key
+    auth_secret_key: STARFISH_API_KEY
+    parameters:
+      commodity: coffee
+      region: kenya
+    timeout_seconds: 60
+  iteration:
+    foreach: market
+    source_mcp: plantation-mcp
+    source_tool: list_active_markets
+    concurrency: 3
+  retry:
+    max_attempts: 5
+    backoff: exponential
+
+transformation:
+  agent: market-prices-extraction-agent
+  extract_fields:
+    - market_id
+    - commodity
+    - grade
+    - price_per_kg
+    - currency
+    - effective_date
+  link_field: market_id
+  field_mappings: {}
+
+storage:
+  raw_container: market-prices-raw
+  index_collection: market_prices_index
+  ttl_days: 730

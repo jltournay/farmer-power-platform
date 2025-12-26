@@ -1,0 +1,556 @@
+{
+  "$defs": {
+    "IngestionConfig": {
+      "description": "Ingestion configuration block.\n\nSupports two modes:\n- blob_trigger: React to files uploaded to blob storage\n- scheduled_pull: Pull data from external APIs on a schedule",
+      "properties": {
+        "mode": {
+          "description": "Ingestion mode",
+          "enum": [
+            "blob_trigger",
+            "scheduled_pull"
+          ],
+          "title": "Mode",
+          "type": "string"
+        },
+        "landing_container": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Blob container to watch for files",
+          "title": "Landing Container"
+        },
+        "path_pattern": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/PathPatternConfig"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Path pattern for metadata extraction"
+        },
+        "file_pattern": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Glob pattern for file matching",
+          "title": "File Pattern"
+        },
+        "file_format": {
+          "anyOf": [
+            {
+              "enum": [
+                "json",
+                "zip"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Expected file format",
+          "title": "File Format"
+        },
+        "trigger_mechanism": {
+          "anyOf": [
+            {
+              "const": "event_grid",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Event trigger mechanism",
+          "title": "Trigger Mechanism"
+        },
+        "processed_file_config": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ProcessedFileConfig"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Post-processing configuration"
+        },
+        "zip_config": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ZipConfig"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "ZIP handling configuration"
+        },
+        "provider": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "External data provider name",
+          "title": "Provider"
+        },
+        "schedule": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Cron schedule expression",
+          "title": "Schedule"
+        },
+        "request": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/RequestConfig"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "HTTP request configuration"
+        },
+        "iteration": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/IterationConfig"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Iteration configuration"
+        },
+        "retry": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/RetryConfig"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Retry configuration"
+        }
+      },
+      "required": [
+        "mode"
+      ],
+      "title": "IngestionConfig",
+      "type": "object"
+    },
+    "IterationConfig": {
+      "description": "Iteration configuration for scheduled pulls.\n\nDefines how to iterate over a list of items (e.g., regions, markets)\nwhen pulling data from external APIs.",
+      "properties": {
+        "foreach": {
+          "description": "Entity type to iterate over",
+          "title": "Foreach",
+          "type": "string"
+        },
+        "source_mcp": {
+          "description": "MCP server to get list from",
+          "title": "Source Mcp",
+          "type": "string"
+        },
+        "source_tool": {
+          "description": "MCP tool to call for the list",
+          "title": "Source Tool",
+          "type": "string"
+        },
+        "concurrency": {
+          "default": 5,
+          "description": "Maximum concurrent requests",
+          "title": "Concurrency",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "foreach",
+        "source_mcp",
+        "source_tool"
+      ],
+      "title": "IterationConfig",
+      "type": "object"
+    },
+    "PathPatternConfig": {
+      "description": "Path pattern extraction configuration.\n\nUsed to extract metadata from blob paths using pattern matching.",
+      "properties": {
+        "pattern": {
+          "description": "Path pattern with {field} placeholders",
+          "title": "Pattern",
+          "type": "string"
+        },
+        "extract_fields": {
+          "description": "Fields to extract from the path",
+          "items": {
+            "type": "string"
+          },
+          "title": "Extract Fields",
+          "type": "array"
+        }
+      },
+      "required": [
+        "pattern",
+        "extract_fields"
+      ],
+      "title": "PathPatternConfig",
+      "type": "object"
+    },
+    "ProcessedFileConfig": {
+      "description": "Configuration for handling files after processing.",
+      "properties": {
+        "action": {
+          "description": "Action to take after processing",
+          "enum": [
+            "archive",
+            "move",
+            "delete"
+          ],
+          "title": "Action",
+          "type": "string"
+        },
+        "archive_container": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Container to archive files to",
+          "title": "Archive Container"
+        },
+        "archive_ttl_days": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Days to retain archived files",
+          "title": "Archive Ttl Days"
+        },
+        "processed_folder": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Folder to move processed files to",
+          "title": "Processed Folder"
+        }
+      },
+      "required": [
+        "action"
+      ],
+      "title": "ProcessedFileConfig",
+      "type": "object"
+    },
+    "RequestConfig": {
+      "description": "HTTP request configuration for scheduled pulls.",
+      "properties": {
+        "base_url": {
+          "description": "Base URL for the API",
+          "title": "Base Url",
+          "type": "string"
+        },
+        "auth_type": {
+          "description": "Authentication type",
+          "enum": [
+            "none",
+            "api_key",
+            "oauth2"
+          ],
+          "title": "Auth Type",
+          "type": "string"
+        },
+        "auth_secret_key": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "DAPR secret key for authentication",
+          "title": "Auth Secret Key"
+        },
+        "parameters": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "description": "Query parameters",
+          "title": "Parameters",
+          "type": "object"
+        },
+        "timeout_seconds": {
+          "default": 30,
+          "description": "Request timeout in seconds",
+          "title": "Timeout Seconds",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "base_url",
+        "auth_type"
+      ],
+      "title": "RequestConfig",
+      "type": "object"
+    },
+    "RetryConfig": {
+      "description": "Retry configuration for failed operations.",
+      "properties": {
+        "max_attempts": {
+          "default": 3,
+          "description": "Maximum retry attempts",
+          "title": "Max Attempts",
+          "type": "integer"
+        },
+        "backoff": {
+          "default": "exponential",
+          "description": "Backoff strategy",
+          "enum": [
+            "exponential",
+            "linear"
+          ],
+          "title": "Backoff",
+          "type": "string"
+        }
+      },
+      "title": "RetryConfig",
+      "type": "object"
+    },
+    "StorageConfig": {
+      "description": "Storage configuration block.",
+      "properties": {
+        "raw_container": {
+          "description": "Container for raw data storage",
+          "title": "Raw Container",
+          "type": "string"
+        },
+        "index_collection": {
+          "description": "MongoDB collection for index",
+          "title": "Index Collection",
+          "type": "string"
+        },
+        "ttl_days": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Days to retain data",
+          "title": "Ttl Days"
+        }
+      },
+      "required": [
+        "raw_container",
+        "index_collection"
+      ],
+      "title": "StorageConfig",
+      "type": "object"
+    },
+    "TransformationConfig": {
+      "description": "Transformation configuration block.\n\nDefines how to extract and map fields from ingested data.",
+      "properties": {
+        "agent": {
+          "description": "AI agent for data extraction",
+          "title": "Agent",
+          "type": "string"
+        },
+        "extract_fields": {
+          "description": "Fields to extract from data",
+          "items": {
+            "type": "string"
+          },
+          "title": "Extract Fields",
+          "type": "array"
+        },
+        "link_field": {
+          "description": "Field to use for linking to other data",
+          "title": "Link Field",
+          "type": "string"
+        },
+        "field_mappings": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "description": "Field name mappings",
+          "title": "Field Mappings",
+          "type": "object"
+        }
+      },
+      "required": [
+        "agent",
+        "extract_fields",
+        "link_field"
+      ],
+      "title": "TransformationConfig",
+      "type": "object"
+    },
+    "ValidationConfig": {
+      "description": "Validation configuration block.",
+      "properties": {
+        "schema_name": {
+          "description": "JSON schema file name for validation",
+          "title": "Schema Name",
+          "type": "string"
+        },
+        "strict": {
+          "default": true,
+          "description": "Whether to fail on validation errors",
+          "title": "Strict",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "schema_name"
+      ],
+      "title": "ValidationConfig",
+      "type": "object"
+    },
+    "ZipConfig": {
+      "description": "ZIP file handling configuration.",
+      "properties": {
+        "manifest_file": {
+          "description": "Name of the manifest file in ZIP",
+          "title": "Manifest File",
+          "type": "string"
+        },
+        "images_folder": {
+          "description": "Folder containing images in ZIP",
+          "title": "Images Folder",
+          "type": "string"
+        },
+        "extract_images": {
+          "default": true,
+          "description": "Whether to extract images",
+          "title": "Extract Images",
+          "type": "boolean"
+        },
+        "image_storage_container": {
+          "description": "Container to store extracted images",
+          "title": "Image Storage Container",
+          "type": "string"
+        }
+      },
+      "required": [
+        "manifest_file",
+        "images_folder",
+        "image_storage_container"
+      ],
+      "title": "ZipConfig",
+      "type": "object"
+    }
+  },
+  "description": "Complete source configuration.\n\nDefines how data from a specific source is ingested, validated,\ntransformed, and stored by the Collection Model service.",
+  "properties": {
+    "source_id": {
+      "description": "Unique identifier for this source",
+      "title": "Source Id",
+      "type": "string"
+    },
+    "display_name": {
+      "description": "Human-readable name",
+      "title": "Display Name",
+      "type": "string"
+    },
+    "description": {
+      "description": "Source description",
+      "title": "Description",
+      "type": "string"
+    },
+    "enabled": {
+      "default": true,
+      "description": "Whether source is active",
+      "title": "Enabled",
+      "type": "boolean"
+    },
+    "ingestion": {
+      "$ref": "#/$defs/IngestionConfig",
+      "description": "Ingestion configuration"
+    },
+    "validation": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/ValidationConfig"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "Validation configuration"
+    },
+    "transformation": {
+      "$ref": "#/$defs/TransformationConfig",
+      "description": "Transformation configuration"
+    },
+    "storage": {
+      "$ref": "#/$defs/StorageConfig",
+      "description": "Storage configuration"
+    }
+  },
+  "required": [
+    "source_id",
+    "display_name",
+    "description",
+    "ingestion",
+    "transformation",
+    "storage"
+  ],
+  "title": "Farmer Power Source Configuration",
+  "type": "object",
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://farmerpower.io/schemas/source-config.schema.json"
+}
