@@ -1,6 +1,6 @@
 # Story 2.2: Source Configuration CLI
 
-**Status:** in-progress
+**Status:** done
 **GitHub Issue:** #17
 
 ---
