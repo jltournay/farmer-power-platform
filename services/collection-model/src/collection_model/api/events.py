@@ -2,17 +2,42 @@
 
 This module handles incoming Event Grid events when blobs are created
 in Azure Blob Storage containers (qc-analyzer-results, qc-analyzer-exceptions).
+Events are validated, matched against source configurations, and queued
+for processing.
 """
 
 from typing import Any
 
 import structlog
+from collection_model.domain.ingestion_job import IngestionJob
+from collection_model.infrastructure.ingestion_queue import IngestionQueue
+from collection_model.services.source_config_service import SourceConfigService
 from fastapi import APIRouter, Request, Response
 from pydantic import BaseModel, Field
 
 logger = structlog.get_logger(__name__)
 
 router = APIRouter(prefix="/api/events", tags=["events"])
+
+# Metrics counters (simple in-memory for now, can be replaced with proper metrics)
+_metrics: dict[str, int] = {
+    "events_received": 0,
+    "events_queued": 0,
+    "events_duplicate": 0,
+    "events_unmatched": 0,
+    "events_disabled": 0,
+}
+
+
+def get_metrics() -> dict[str, int]:
+    """Get current event processing metrics."""
+    return _metrics.copy()
+
+
+def reset_metrics() -> None:
+    """Reset metrics counters (for testing)."""
+    for key in _metrics:
+        _metrics[key] = 0
 
 
 class BlobCreatedData(BaseModel):
@@ -68,6 +93,13 @@ async def handle_blob_created(request: Request) -> Response:
     2. Blob-created events - Sent when a new blob is created in the
        monitored storage containers.
 
+    Processing flow for blob-created events:
+    1. Parse event and extract container/blob_path
+    2. Look up source config by container
+    3. If no match or disabled, log and skip
+    4. Extract metadata from path using path_pattern
+    5. Queue IngestionJob with idempotency check
+
     Args:
         request: The incoming HTTP request from Event Grid.
 
@@ -97,17 +129,35 @@ async def handle_blob_created(request: Request) -> Response:
     if event_type == "Microsoft.EventGrid.SubscriptionValidationEvent":
         return _handle_subscription_validation(first_event)
 
+    # Get services from app state
+    source_config_service: SourceConfigService | None = getattr(request.app.state, "source_config_service", None)
+    ingestion_queue: IngestionQueue | None = getattr(request.app.state, "ingestion_queue", None)
+
+    if source_config_service is None or ingestion_queue is None:
+        logger.error("Services not initialized in app state")
+        return Response(status_code=503, content="Service not ready")
+
+    # Extract trace_id from headers for distributed tracing
+    trace_id = request.headers.get("traceparent") or request.headers.get("x-trace-id")
+
     # Process blob-created events
-    processed_count = 0
+    queued_count = 0
     for event in body:
         if event.get("eventType") == "Microsoft.Storage.BlobCreated":
-            _log_blob_created_event(event)
-            processed_count += 1
+            _metrics["events_received"] += 1
+            result = await _process_blob_created_event(
+                event=event,
+                source_config_service=source_config_service,
+                ingestion_queue=ingestion_queue,
+                trace_id=trace_id,
+            )
+            if result:
+                queued_count += 1
 
     logger.info(
         "Processed Event Grid batch",
         total_events=len(body),
-        blob_created_events=processed_count,
+        queued_count=queued_count,
     )
 
     return Response(status_code=202)
@@ -133,7 +183,7 @@ def _handle_subscription_validation(event: dict[str, Any]) -> Response:
 
         logger.info(
             "Event Grid subscription validation request received",
-            validation_code=validation_code[:8] + "...",  # Log partial code for security
+            validation_code=validation_code[:8] + "...",
         )
 
         return Response(
@@ -149,14 +199,22 @@ def _handle_subscription_validation(event: dict[str, Any]) -> Response:
         return Response(status_code=400, content="Invalid validation request")
 
 
-def _log_blob_created_event(event: dict[str, Any]) -> None:
-    """Log a blob-created event for later processing.
-
-    In Story 2.1, we only log the events. Actual processing
-    (downloading, parsing, storing) is implemented in Story 2.3.
+async def _process_blob_created_event(
+    event: dict[str, Any],
+    source_config_service: SourceConfigService,
+    ingestion_queue: IngestionQueue,
+    trace_id: str | None,
+) -> bool:
+    """Process a single blob-created event.
 
     Args:
         event: The blob-created event from Event Grid.
+        source_config_service: Service for looking up source configs.
+        ingestion_queue: Queue for storing ingestion jobs.
+        trace_id: Distributed tracing ID from request headers.
+
+    Returns:
+        True if job was queued successfully, False otherwise.
 
     """
     subject = event.get("subject", "")
@@ -164,22 +222,99 @@ def _log_blob_created_event(event: dict[str, Any]) -> None:
 
     # Extract container and blob path from subject
     # Subject format: /blobServices/default/containers/{container}/blobs/{blob_path}
-    parts = subject.split("/containers/")
-    container = ""
-    blob_path = ""
-    if len(parts) > 1:
-        container_and_blob = parts[1]
-        if "/blobs/" in container_and_blob:
-            container, blob_path = container_and_blob.split("/blobs/", 1)
+    container, blob_path = _parse_event_subject(subject)
+    if not container or not blob_path:
+        logger.warning("Invalid event subject format", subject=subject)
+        return False
+
+    content_length = data.get("contentLength", 0)
+    etag = data.get("eTag", "")
 
     logger.info(
-        "Blob created event received",
+        "Processing blob-created event",
         event_id=event.get("id"),
-        event_time=event.get("eventTime"),
         container=container,
         blob_path=blob_path,
-        content_type=data.get("contentType", ""),
-        content_length=data.get("contentLength", 0),
-        blob_url=data.get("url", ""),
-        # TODO: Queue for processing in Story 2.3
+        content_length=content_length,
     )
+
+    # Look up source config by container
+    config = await source_config_service.get_config_by_container(container)
+    if config is None:
+        logger.warning(
+            "No matching source config for container",
+            container=container,
+            blob_path=blob_path,
+        )
+        _metrics["events_unmatched"] += 1
+        return False
+
+    source_id = config.get("source_id", "")
+
+    # Check if source is enabled
+    if not config.get("enabled", True):
+        logger.info(
+            "Source config is disabled",
+            source_id=source_id,
+            container=container,
+        )
+        _metrics["events_disabled"] += 1
+        return False
+
+    # Extract metadata from blob path using path_pattern
+    metadata = source_config_service.extract_path_metadata(blob_path, config)
+
+    # Create and queue ingestion job
+    job = IngestionJob(
+        blob_path=blob_path,
+        blob_etag=etag,
+        container=container,
+        source_id=source_id,
+        content_length=content_length,
+        metadata=metadata,
+        trace_id=trace_id,
+    )
+
+    queued = await ingestion_queue.queue_job(job)
+    if queued:
+        logger.info(
+            "Ingestion job queued",
+            ingestion_id=job.ingestion_id,
+            source_id=source_id,
+            blob_path=blob_path,
+            metadata=metadata,
+        )
+        _metrics["events_queued"] += 1
+        return True
+
+    logger.info(
+        "Duplicate event skipped (already processed)",
+        blob_path=blob_path,
+        etag=etag,
+    )
+    _metrics["events_duplicate"] += 1
+    return False
+
+
+def _parse_event_subject(subject: str) -> tuple[str, str]:
+    """Parse container and blob path from Event Grid subject.
+
+    Subject format: /blobServices/default/containers/{container}/blobs/{blob_path}
+
+    Args:
+        subject: The event subject string.
+
+    Returns:
+        Tuple of (container, blob_path), or ("", "") if parsing fails.
+
+    """
+    parts = subject.split("/containers/")
+    if len(parts) < 2:
+        return ("", "")
+
+    container_and_blob = parts[1]
+    if "/blobs/" not in container_and_blob:
+        return ("", "")
+
+    container, blob_path = container_and_blob.split("/blobs/", 1)
+    return (container, blob_path)

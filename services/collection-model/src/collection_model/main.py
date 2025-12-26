@@ -11,9 +11,11 @@ from contextlib import asynccontextmanager
 import structlog
 from collection_model.api import events, health
 from collection_model.config import settings
+from collection_model.infrastructure.ingestion_queue import IngestionQueue
 from collection_model.infrastructure.mongodb import (
     check_mongodb_connection,
     close_mongodb_connection,
+    get_database,
     get_mongodb_client,
 )
 from collection_model.infrastructure.pubsub import check_pubsub_health
@@ -22,6 +24,7 @@ from collection_model.infrastructure.tracing import (
     setup_tracing,
     shutdown_tracing,
 )
+from collection_model.services.source_config_service import SourceConfigService
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -61,11 +64,23 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     # Initialize OpenTelemetry tracing (must be early for other instrumentation)
     setup_tracing()
 
-    # Initialize MongoDB connection
+    # Initialize MongoDB connection and services
     try:
         await get_mongodb_client()
+        db = await get_database()
+
+        # Initialize SourceConfigService and IngestionQueue (Story 2.3)
+        app.state.source_config_service = SourceConfigService(db)
+        app.state.ingestion_queue = IngestionQueue(db)
+
+        # Ensure indexes for ingestion queue
+        await app.state.ingestion_queue.ensure_indexes()
+
         health.set_mongodb_check(check_mongodb_connection)
-        logger.info("MongoDB connection initialized")
+        logger.info(
+            "MongoDB connection and services initialized",
+            services=["SourceConfigService", "IngestionQueue"],
+        )
     except Exception as e:
         logger.warning("MongoDB connection failed at startup", error=str(e))
         # Service can still start - readiness probe will report not ready
