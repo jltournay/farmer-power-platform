@@ -10,6 +10,8 @@ lastStep: 1
 project_name: 'farmer-power-platform'
 user_name: 'Jeanlouistournay'
 date: '2025-12-16'](#stepscompleted-1-inputdocuments-bmad-outputanalysisproduct-brief-farmer-power-platform-2025-12-16md-workflowtype-architecture-laststep-1-projectname-farmer-power-platform-username-jeanlouistournay-date-2025-12-16)
+  - [Architecture Decision Records (ADRs)](./adr/index.md)
+    - [ADR-001: Weather API Selection](./adr/ADR-001-weather-api-selection.md)
   - [Source of Truth Declaration](./source-of-truth-declaration.md)
     - [Platform Model Overview (8 Models)](./source-of-truth-declaration.md#platform-model-overview-8-models)
   - [Collection Model Architecture](./collection-model-architecture.md)

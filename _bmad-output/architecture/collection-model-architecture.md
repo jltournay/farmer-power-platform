@@ -435,7 +435,7 @@ ingestion:
     parameters:
       latitude: "{region.center_lat}"
       longitude: "{region.center_lng}"
-      daily: "temperature_2m_max,temperature_2m_min,precipitation_sum,rain_sum"
+      daily: "temperature_2m_max,temperature_2m_min,precipitation_sum,rain_sum,relative_humidity_2m_mean"
       past_days: "7"
       timezone: "Africa/Nairobi"
     timeout_seconds: 30
