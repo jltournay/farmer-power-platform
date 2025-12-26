@@ -1,0 +1,72 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://farmerpower.io/schemas/data/farmer-registration.json",
+  "title": "Farmer Registration",
+  "description": "Schema for mobile app farmer registration data",
+  "type": "object",
+  "required": ["farmer_id", "name", "phone_number", "region"],
+  "properties": {
+    "farmer_id": {
+      "type": "string",
+      "description": "Unique farmer identifier"
+    },
+    "name": {
+      "type": "string",
+      "description": "Farmer's full name"
+    },
+    "phone_number": {
+      "type": "string",
+      "pattern": "^\\+254[0-9]{9}$",
+      "description": "Farmer's phone number in E.164 format (+254XXXXXXXXX)"
+    },
+    "region": {
+      "type": "string",
+      "description": "Region identifier (county + altitude band)"
+    },
+    "factory_id": {
+      "type": "string",
+      "description": "Associated factory identifier"
+    },
+    "collection_point_id": {
+      "type": "string",
+      "description": "Associated collection point identifier"
+    },
+    "farm_size_hectares": {
+      "type": "number",
+      "minimum": 0,
+      "description": "Farm size in hectares"
+    },
+    "altitude_meters": {
+      "type": "number",
+      "description": "Farm altitude in meters"
+    },
+    "preferred_language": {
+      "type": "string",
+      "enum": ["sw", "en", "ki", "luo"],
+      "default": "sw",
+      "description": "Preferred language for communications"
+    },
+    "communication_preferences": {
+      "type": "object",
+      "properties": {
+        "sms_enabled": {
+          "type": "boolean",
+          "default": true
+        },
+        "voice_enabled": {
+          "type": "boolean",
+          "default": true
+        },
+        "whatsapp_enabled": {
+          "type": "boolean",
+          "default": false
+        }
+      }
+    },
+    "registered_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Registration timestamp"
+    }
+  }
+}

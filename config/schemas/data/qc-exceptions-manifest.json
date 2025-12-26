@@ -1,0 +1,93 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://farmerpower.io/schemas/data/qc-exceptions-manifest.json",
+  "title": "QC Analyzer Exceptions Manifest",
+  "description": "Schema for ZIP manifest containing secondary leaf images",
+  "type": "object",
+  "required": ["plantation_id", "batch_id", "batch_result_ref", "exception_images"],
+  "properties": {
+    "plantation_id": {
+      "type": "string",
+      "description": "Farmer/plantation identifier"
+    },
+    "source_id": {
+      "type": "string",
+      "description": "Source identifier"
+    },
+    "batch_id": {
+      "type": "string",
+      "description": "Unique batch identifier"
+    },
+    "batch_result_ref": {
+      "type": "string",
+      "description": "Reference to the parent batch result"
+    },
+    "factory_id": {
+      "type": "string",
+      "description": "Factory where grading occurred"
+    },
+    "grading_model_id": {
+      "type": "string",
+      "description": "ML model used for grading"
+    },
+    "grading_model_version": {
+      "type": "string",
+      "description": "Version of the grading model"
+    },
+    "batch_timestamp": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When the batch was graded"
+    },
+    "exception_count": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Number of exception images"
+    },
+    "exception_images": {
+      "type": "array",
+      "description": "List of exception images with classifications",
+      "items": {
+        "type": "object",
+        "required": ["file_uri", "classification"],
+        "properties": {
+          "file_uri": {
+            "type": "string",
+            "description": "URI to the image file"
+          },
+          "mime_type": {
+            "type": "string",
+            "description": "MIME type of the image"
+          },
+          "classification": {
+            "type": "object",
+            "properties": {
+              "quality_grade": {
+                "type": "string",
+                "description": "Quality grade assigned"
+              },
+              "confidence": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1,
+                "description": "Confidence score of the classification"
+              },
+              "leaf_type": {
+                "type": "string",
+                "description": "Type of leaf detected"
+              },
+              "coarse_subtype": {
+                "type": ["string", "null"],
+                "description": "Coarse subtype if applicable"
+              },
+              "banji_hardness": {
+                "type": ["number", "null"],
+                "description": "Banji hardness score if applicable"
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

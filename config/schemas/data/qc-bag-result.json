@@ -1,0 +1,73 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://farmerpower.io/schemas/data/qc-bag-result.json",
+  "title": "QC Analyzer Bag Result",
+  "description": "Schema for QC Analyzer bag grading results",
+  "type": "object",
+  "required": ["plantation_id", "factory_id", "batch_id", "batch_timestamp", "bag_summary"],
+  "properties": {
+    "plantation_id": {
+      "type": "string",
+      "description": "Farmer/plantation identifier (maps to farmer_id)"
+    },
+    "factory_id": {
+      "type": "string",
+      "description": "Factory where grading occurred"
+    },
+    "collection_point_id": {
+      "type": "string",
+      "description": "Collection point identifier"
+    },
+    "grading_model_id": {
+      "type": "string",
+      "description": "ML model used for grading"
+    },
+    "grading_model_version": {
+      "type": "string",
+      "description": "Version of the grading model"
+    },
+    "batch_id": {
+      "type": "string",
+      "description": "Unique batch identifier"
+    },
+    "batch_timestamp": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When the batch was graded"
+    },
+    "bag_summary": {
+      "type": "object",
+      "required": ["total_weight_kg", "primary_percentage", "overall_grade"],
+      "properties": {
+        "total_weight_kg": {
+          "type": "number",
+          "description": "Total weight of the bag in kilograms"
+        },
+        "primary_percentage": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 100,
+          "description": "Percentage of primary quality leaves"
+        },
+        "secondary_percentage": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 100,
+          "description": "Percentage of secondary quality leaves"
+        },
+        "overall_grade": {
+          "type": "string",
+          "enum": ["A", "B", "C", "D", "REJECT"],
+          "description": "Overall quality grade"
+        },
+        "leaf_type_distribution": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "number"
+          },
+          "description": "Distribution of leaf types"
+        }
+      }
+    }
+  }
+}
