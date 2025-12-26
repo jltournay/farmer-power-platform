@@ -1,14 +1,12 @@
 """Unit tests for Event Grid webhook handler."""
 
 from typing import TYPE_CHECKING
-from unittest.mock import AsyncMock, MagicMock
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 from collection_model.api.events import (
     _parse_event_subject,
     _process_blob_created_event,
-    get_metrics,
-    reset_metrics,
 )
 from collection_model.infrastructure.ingestion_queue import IngestionQueue
 from collection_model.main import app
@@ -50,7 +48,6 @@ def client_with_services(
     """Create a test client with mocked services in app state."""
     app.state.source_config_service = mock_source_config_service
     app.state.ingestion_queue = mock_ingestion_queue
-    reset_metrics()
     yield TestClient(app)
     # Cleanup
     if hasattr(app.state, "source_config_service"):
@@ -200,6 +197,7 @@ class TestBlobCreatedEventProcessing:
         queued_job: IngestionJob = mock_ingestion_queue.queue_job.call_args[0][0]
         assert queued_job.blob_path == "batch-001.json"
         assert queued_job.source_id == "qc-analyzer"
+        assert queued_job.container == "qc-analyzer-results"
         assert queued_job.metadata == {"batch_id": "batch-001"}
 
     def test_blob_created_event_skips_disabled_source(
@@ -268,9 +266,8 @@ class TestBlobCreatedEventProcessing:
         response = client_with_services.post("/api/events/blob-created", json=payload)
 
         assert response.status_code == 202
-        # Check metrics
-        metrics = get_metrics()
-        assert metrics["events_duplicate"] == 1
+        # Verify queue_job was called (but returned False for duplicate)
+        mock_ingestion_queue.queue_job.assert_called_once()
 
 
 class TestBlobPathParsing:
@@ -338,7 +335,6 @@ class TestProcessBlobCreatedEvent:
             },
         }
 
-        reset_metrics()
         result = await _process_blob_created_event(
             event=event,
             source_config_service=mock_service,
@@ -367,7 +363,6 @@ class TestProcessBlobCreatedEvent:
             "data": {"eTag": "0x123", "contentLength": 100},
         }
 
-        reset_metrics()
         result = await _process_blob_created_event(
             event=event,
             source_config_service=mock_service,
@@ -376,25 +371,97 @@ class TestProcessBlobCreatedEvent:
         )
 
         assert result is False
-        assert get_metrics()["events_unmatched"] == 1
 
+    @pytest.mark.asyncio
+    async def test_process_event_calls_metrics_on_success(self) -> None:
+        """Test that metrics increment functions are called on successful queue."""
+        mock_service = MagicMock(spec=SourceConfigService)
+        mock_service.get_config_by_container = AsyncMock(
+            return_value={
+                "source_id": "test-source",
+                "enabled": True,
+                "config": {},
+            }
+        )
+        mock_service.extract_path_metadata = MagicMock(return_value={})
 
-class TestMetrics:
-    """Tests for event processing metrics."""
+        mock_queue = MagicMock(spec=IngestionQueue)
+        mock_queue.queue_job = AsyncMock(return_value=True)
 
-    def test_get_metrics_returns_copy(self) -> None:
-        """Test that get_metrics returns a copy of metrics dict."""
-        reset_metrics()
-        metrics1 = get_metrics()
-        metrics1["events_received"] = 999
+        event = {
+            "id": "event-123",
+            "eventType": "Microsoft.Storage.BlobCreated",
+            "subject": "/blobServices/default/containers/test/blobs/file.json",
+            "data": {"eTag": "0x123", "contentLength": 100},
+        }
 
-        metrics2 = get_metrics()
-        assert metrics2["events_received"] == 0  # Original unchanged
+        with patch("collection_model.api.events.increment_events_queued") as mock_increment:
+            result = await _process_blob_created_event(
+                event=event,
+                source_config_service=mock_service,
+                ingestion_queue=mock_queue,
+                trace_id=None,
+            )
 
-    def test_reset_metrics_clears_all(self) -> None:
-        """Test that reset_metrics clears all counters."""
-        # Simulate some activity
-        reset_metrics()
-        metrics = get_metrics()
-        # After reset, all should be 0
-        assert all(v == 0 for v in metrics.values())
+            assert result is True
+            mock_increment.assert_called_once_with("test-source")
+
+    @pytest.mark.asyncio
+    async def test_process_event_calls_metrics_on_duplicate(self) -> None:
+        """Test that duplicate metric is called when queue returns False."""
+        mock_service = MagicMock(spec=SourceConfigService)
+        mock_service.get_config_by_container = AsyncMock(
+            return_value={
+                "source_id": "test-source",
+                "enabled": True,
+                "config": {},
+            }
+        )
+        mock_service.extract_path_metadata = MagicMock(return_value={})
+
+        mock_queue = MagicMock(spec=IngestionQueue)
+        mock_queue.queue_job = AsyncMock(return_value=False)  # Duplicate
+
+        event = {
+            "id": "event-123",
+            "eventType": "Microsoft.Storage.BlobCreated",
+            "subject": "/blobServices/default/containers/test/blobs/file.json",
+            "data": {"eTag": "0x123", "contentLength": 100},
+        }
+
+        with patch("collection_model.api.events.increment_events_duplicate") as mock_increment:
+            result = await _process_blob_created_event(
+                event=event,
+                source_config_service=mock_service,
+                ingestion_queue=mock_queue,
+                trace_id=None,
+            )
+
+            assert result is False
+            mock_increment.assert_called_once_with("test-source")
+
+    @pytest.mark.asyncio
+    async def test_process_event_calls_metrics_on_unmatched(self) -> None:
+        """Test that unmatched metric is called when no config found."""
+        mock_service = MagicMock(spec=SourceConfigService)
+        mock_service.get_config_by_container = AsyncMock(return_value=None)
+
+        mock_queue = MagicMock(spec=IngestionQueue)
+
+        event = {
+            "id": "event-123",
+            "eventType": "Microsoft.Storage.BlobCreated",
+            "subject": "/blobServices/default/containers/unknown-container/blobs/file.json",
+            "data": {"eTag": "0x123", "contentLength": 100},
+        }
+
+        with patch("collection_model.api.events.increment_events_unmatched") as mock_increment:
+            result = await _process_blob_created_event(
+                event=event,
+                source_config_service=mock_service,
+                ingestion_queue=mock_queue,
+                trace_id=None,
+            )
+
+            assert result is False
+            mock_increment.assert_called_once_with("unknown-container")

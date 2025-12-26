@@ -12,6 +12,7 @@ import structlog
 from collection_model.api import events, health
 from collection_model.config import settings
 from collection_model.infrastructure.ingestion_queue import IngestionQueue
+from collection_model.infrastructure.metrics import setup_metrics, shutdown_metrics
 from collection_model.infrastructure.mongodb import (
     check_mongodb_connection,
     close_mongodb_connection,
@@ -61,8 +62,9 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
         environment=settings.environment,
     )
 
-    # Initialize OpenTelemetry tracing (must be early for other instrumentation)
+    # Initialize OpenTelemetry tracing and metrics (must be early for other instrumentation)
     setup_tracing()
+    setup_metrics()
 
     # Initialize MongoDB connection and services
     try:
@@ -95,6 +97,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     # Shutdown
     logger.info("Shutting down Collection Model service")
     await close_mongodb_connection()
+    shutdown_metrics()
     shutdown_tracing()
     logger.info("Service shutdown complete")
 

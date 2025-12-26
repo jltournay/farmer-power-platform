@@ -11,6 +11,13 @@ from typing import Any
 import structlog
 from collection_model.domain.ingestion_job import IngestionJob
 from collection_model.infrastructure.ingestion_queue import IngestionQueue
+from collection_model.infrastructure.metrics import (
+    increment_events_disabled,
+    increment_events_duplicate,
+    increment_events_queued,
+    increment_events_received,
+    increment_events_unmatched,
+)
 from collection_model.services.source_config_service import SourceConfigService
 from fastapi import APIRouter, Request, Response
 from pydantic import BaseModel, Field
@@ -18,26 +25,6 @@ from pydantic import BaseModel, Field
 logger = structlog.get_logger(__name__)
 
 router = APIRouter(prefix="/api/events", tags=["events"])
-
-# Metrics counters (simple in-memory for now, can be replaced with proper metrics)
-_metrics: dict[str, int] = {
-    "events_received": 0,
-    "events_queued": 0,
-    "events_duplicate": 0,
-    "events_unmatched": 0,
-    "events_disabled": 0,
-}
-
-
-def get_metrics() -> dict[str, int]:
-    """Get current event processing metrics."""
-    return _metrics.copy()
-
-
-def reset_metrics() -> None:
-    """Reset metrics counters (for testing)."""
-    for key in _metrics:
-        _metrics[key] = 0
 
 
 class SubscriptionValidationData(BaseModel):
@@ -112,7 +99,7 @@ async def handle_blob_created(request: Request) -> Response:
     queued_count = 0
     for event in body:
         if event.get("eventType") == "Microsoft.Storage.BlobCreated":
-            _metrics["events_received"] += 1
+            increment_events_received()
             result = await _process_blob_created_event(
                 event=event,
                 source_config_service=source_config_service,
@@ -214,7 +201,7 @@ async def _process_blob_created_event(
             container=container,
             blob_path=blob_path,
         )
-        _metrics["events_unmatched"] += 1
+        increment_events_unmatched(container)
         return False
 
     source_id = config.get("source_id", "")
@@ -226,7 +213,7 @@ async def _process_blob_created_event(
             source_id=source_id,
             container=container,
         )
-        _metrics["events_disabled"] += 1
+        increment_events_disabled(source_id)
         return False
 
     # Extract metadata from blob path using path_pattern
@@ -252,7 +239,7 @@ async def _process_blob_created_event(
             blob_path=blob_path,
             metadata=metadata,
         )
-        _metrics["events_queued"] += 1
+        increment_events_queued(source_id)
         return True
 
     logger.info(
@@ -260,7 +247,7 @@ async def _process_blob_created_event(
         blob_path=blob_path,
         etag=etag,
     )
-    _metrics["events_duplicate"] += 1
+    increment_events_duplicate(source_id)
     return False
 
 
