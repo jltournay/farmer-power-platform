@@ -5,6 +5,7 @@ including versioning, history tracking, and rollback capabilities.
 """
 
 import getpass
+import json
 import subprocess
 import sys
 from datetime import datetime, timezone
@@ -20,7 +21,7 @@ from rich.table import Table
 # Add fp-common to path for local development
 sys.path.insert(0, str(Path(__file__).parents[4] / "libs" / "fp-common"))
 
-from fp_common.models.source_config import SourceConfig
+from fp_common.models.source_config import SchemaDocument, SourceConfig
 
 from fp_source_config.settings import Environment, get_settings
 
@@ -32,6 +33,14 @@ class DeploymentAction(NamedTuple):
     action: Literal["created", "updated", "unchanged"]
     version: int
     message: str | None = None
+
+
+class SchemaDeploymentAction(NamedTuple):
+    """Result of deploying a single schema."""
+
+    schema_name: str
+    action: Literal["created", "updated", "unchanged"]
+    version: int
 
 
 class DeployedConfig(BaseModel):
@@ -86,6 +95,7 @@ class SourceConfigDeployer:
 
     CONFIGS_COLLECTION = "source_configs"
     HISTORY_COLLECTION = "source_config_history"
+    SCHEMAS_COLLECTION = "validation_schemas"
 
     def __init__(self, env: Environment) -> None:
         """Initialize the deployer for a specific environment.
@@ -400,6 +410,134 @@ class SourceConfigDeployer:
             message=f"Rolled back to version {target_version}",
         )
 
+    async def deploy_schemas(
+        self,
+        schemas: list[tuple[str, dict]],
+        dry_run: bool = False,
+    ) -> list[SchemaDeploymentAction]:
+        """Deploy validation schemas to MongoDB.
+
+        Args:
+            schemas: List of (schema_name, schema_content) tuples.
+            dry_run: If True, show what would be deployed without making changes.
+
+        Returns:
+            List of schema deployment actions taken.
+        """
+        actions: list[SchemaDeploymentAction] = []
+        git_sha = get_git_sha()
+        deployed_by = get_current_user()
+        deployed_at = datetime.now(timezone.utc)
+
+        for schema_name, schema_content in schemas:
+            existing = await self.db[self.SCHEMAS_COLLECTION].find_one(
+                {"name": schema_name}
+            )
+
+            if existing is None:
+                # Create new schema
+                if not dry_run:
+                    doc = {
+                        "_id": schema_name,
+                        "name": schema_name,
+                        "content": schema_content,
+                        "version": 1,
+                        "deployed_at": deployed_at,
+                        "deployed_by": deployed_by,
+                        "git_sha": git_sha,
+                    }
+                    await self.db[self.SCHEMAS_COLLECTION].insert_one(doc)
+
+                actions.append(
+                    SchemaDeploymentAction(
+                        schema_name=schema_name,
+                        action="created",
+                        version=1,
+                    )
+                )
+            else:
+                # Check if schema changed
+                if schema_content == existing.get("content"):
+                    actions.append(
+                        SchemaDeploymentAction(
+                            schema_name=schema_name,
+                            action="unchanged",
+                            version=existing.get("version", 1),
+                        )
+                    )
+                else:
+                    # Update schema
+                    new_version = existing.get("version", 0) + 1
+
+                    if not dry_run:
+                        await self.db[self.SCHEMAS_COLLECTION].update_one(
+                            {"name": schema_name},
+                            {
+                                "$set": {
+                                    "content": schema_content,
+                                    "version": new_version,
+                                    "deployed_at": deployed_at,
+                                    "deployed_by": deployed_by,
+                                    "git_sha": git_sha,
+                                }
+                            },
+                        )
+
+                    actions.append(
+                        SchemaDeploymentAction(
+                            schema_name=schema_name,
+                            action="updated",
+                            version=new_version,
+                        )
+                    )
+
+        return actions
+
+    async def get_schema(self, schema_name: str) -> SchemaDocument | None:
+        """Get a validation schema by name.
+
+        Args:
+            schema_name: The schema name to retrieve.
+
+        Returns:
+            The schema document, or None if not found.
+        """
+        doc = await self.db[self.SCHEMAS_COLLECTION].find_one({"name": schema_name})
+        if doc is None:
+            return None
+
+        return SchemaDocument(
+            name=doc["name"],
+            content=doc["content"],
+            version=doc.get("version", 1),
+            deployed_at=doc.get("deployed_at", datetime.now(timezone.utc)),
+            deployed_by=doc.get("deployed_by", "unknown"),
+            git_sha=doc.get("git_sha"),
+        )
+
+    async def list_schemas(self) -> list[SchemaDocument]:
+        """List all deployed validation schemas.
+
+        Returns:
+            List of schema documents.
+        """
+        schemas: list[SchemaDocument] = []
+        cursor = self.db[self.SCHEMAS_COLLECTION].find({})
+
+        async for doc in cursor:
+            schemas.append(
+                SchemaDocument(
+                    name=doc["name"],
+                    content=doc["content"],
+                    version=doc.get("version", 1),
+                    deployed_at=doc.get("deployed_at", datetime.now(timezone.utc)),
+                    deployed_by=doc.get("deployed_by", "unknown"),
+                    git_sha=doc.get("git_sha"),
+                )
+            )
+
+        return sorted(schemas, key=lambda s: s.name)
+
 
 def load_source_configs(files: list[Path]) -> list[SourceConfig]:
     """Load and parse source configuration files.
@@ -419,6 +557,46 @@ def load_source_configs(files: list[Path]) -> list[SourceConfig]:
             configs.append(config)
 
     return configs
+
+
+def load_schemas_for_configs(
+    configs: list[SourceConfig],
+    schemas_base_path: Path,
+) -> list[tuple[str, dict]]:
+    """Load validation schemas referenced by source configs.
+
+    Args:
+        configs: List of source configurations.
+        schemas_base_path: Base path where schema files are located.
+
+    Returns:
+        List of (schema_name, schema_content) tuples.
+    """
+    schemas: list[tuple[str, dict]] = []
+    seen_schemas: set[str] = set()
+
+    for config in configs:
+        if config.validation is None:
+            continue
+
+        schema_name = config.validation.schema_name
+        if schema_name in seen_schemas:
+            continue
+
+        schema_path = schemas_base_path / schema_name
+        if not schema_path.exists():
+            raise FileNotFoundError(
+                f"Schema file not found: {schema_path} "
+                f"(referenced by {config.source_id})"
+            )
+
+        with open(schema_path) as f:
+            schema_content = json.load(f)
+
+        schemas.append((schema_name, schema_content))
+        seen_schemas.add(schema_name)
+
+    return schemas
 
 
 def print_deployment_results(
@@ -469,3 +647,56 @@ def print_deployment_results(
         console.print(f"\n[bold]Dry run:[/bold] {summary}")
     else:
         console.print(f"\n[bold]Summary:[/bold] {summary}")
+
+
+def print_schema_deployment_results(
+    actions: list[SchemaDeploymentAction],
+    dry_run: bool = False,
+    console: Console | None = None,
+) -> None:
+    """Print schema deployment results to the console.
+
+    Args:
+        actions: List of schema deployment actions.
+        dry_run: Whether this was a dry run.
+        console: Rich console for output.
+    """
+    if not actions:
+        return
+
+    if console is None:
+        console = Console()
+
+    title = "Schema Deployment Preview" if dry_run else "Schema Deployment Results"
+    table = Table(title=title)
+    table.add_column("Schema Name", style="cyan")
+    table.add_column("Action", style="green")
+    table.add_column("Version", style="blue")
+
+    for action in actions:
+        action_style = {
+            "created": "[green]created[/green]",
+            "updated": "[yellow]updated[/yellow]",
+            "unchanged": "[dim]unchanged[/dim]",
+        }
+        table.add_row(
+            action.schema_name,
+            action_style.get(action.action, action.action),
+            str(action.version),
+        )
+
+    console.print(table)
+
+    # Summary
+    created = sum(1 for a in actions if a.action == "created")
+    updated = sum(1 for a in actions if a.action == "updated")
+    unchanged = sum(1 for a in actions if a.action == "unchanged")
+
+    created_str = f"[green]{created} created[/green]"
+    updated_str = f"[yellow]{updated} updated[/yellow]"
+    unchanged_str = f"[dim]{unchanged} unchanged[/dim]"
+    summary = f"{created_str}, {updated_str}, {unchanged_str}"
+    if dry_run:
+        console.print(f"\n[bold]Schemas dry run:[/bold] {summary}")
+    else:
+        console.print(f"\n[bold]Schemas summary:[/bold] {summary}")

@@ -13,14 +13,16 @@ sys.path.insert(0, str(Path(__file__).parents[3] / "scripts" / "source-config" /
 # Add fp-common to path
 sys.path.insert(0, str(Path(__file__).parents[3] / "libs" / "fp-common"))
 
-from fp_common.models.source_config import SourceConfig
+from fp_common.models.source_config import SchemaDocument, SourceConfig
 from fp_source_config.deployer import (
     ConfigHistory,
     DeployedConfig,
     DeploymentAction,
+    SchemaDeploymentAction,
     SourceConfigDeployer,
     get_current_user,
     get_git_sha,
+    load_schemas_for_configs,
     load_source_configs,
 )
 
@@ -339,3 +341,277 @@ class TestSourceConfigDeployer:
         action = await deployer.rollback("test-source", 999)
 
         assert action is None
+
+
+@pytest.mark.unit
+class TestSchemaDeploymentAction:
+    """Tests for the SchemaDeploymentAction named tuple."""
+
+    def test_schema_deployment_action(self) -> None:
+        """Test creating a schema deployment action."""
+        action = SchemaDeploymentAction(
+            schema_name="data/test-schema.json",
+            action="created",
+            version=1,
+        )
+        assert action.schema_name == "data/test-schema.json"
+        assert action.action == "created"
+        assert action.version == 1
+
+
+@pytest.mark.unit
+class TestSchemaDocument:
+    """Tests for the SchemaDocument model."""
+
+    def test_schema_document(self) -> None:
+        """Test creating a schema document."""
+        schema = SchemaDocument(
+            name="data/test-schema.json",
+            content={"type": "object", "properties": {}},
+            version=1,
+            deployed_at=datetime.now(UTC),
+            deployed_by="testuser",
+            git_sha="abc123",
+        )
+        assert schema.name == "data/test-schema.json"
+        assert schema.version == 1
+        assert schema.content == {"type": "object", "properties": {}}
+
+
+@pytest.mark.unit
+class TestLoadSchemasForConfigs:
+    """Tests for the load_schemas_for_configs function."""
+
+    def test_load_schemas(
+        self,
+        tmp_path: Path,
+        sample_valid_config: dict[str, Any],
+    ) -> None:
+        """Test loading schemas referenced by configs."""
+        import json
+
+        # Create schema file
+        schema_dir = tmp_path / "data"
+        schema_dir.mkdir()
+        schema_content = {"type": "object", "properties": {"id": {"type": "string"}}}
+        schema_file = schema_dir / "test-schema.json"
+        schema_file.write_text(json.dumps(schema_content))
+
+        # Create config with validation
+        config_data = sample_valid_config.copy()
+        config_data["validation"] = {"schema_name": "data/test-schema.json", "strict": True}
+        config = SourceConfig.model_validate(config_data)
+
+        schemas = load_schemas_for_configs([config], tmp_path)
+
+        assert len(schemas) == 1
+        assert schemas[0][0] == "data/test-schema.json"
+        assert schemas[0][1] == schema_content
+
+    def test_load_schemas_no_validation(
+        self,
+        tmp_path: Path,
+        sample_scheduled_config: dict[str, Any],
+    ) -> None:
+        """Test loading schemas when config has no validation."""
+        config = SourceConfig.model_validate(sample_scheduled_config)
+
+        schemas = load_schemas_for_configs([config], tmp_path)
+
+        assert len(schemas) == 0
+
+    def test_load_schemas_deduplication(
+        self,
+        tmp_path: Path,
+        sample_valid_config: dict[str, Any],
+    ) -> None:
+        """Test that schemas are deduplicated across configs."""
+        import json
+
+        # Create schema file
+        schema_dir = tmp_path / "data"
+        schema_dir.mkdir()
+        schema_content = {"type": "object"}
+        schema_file = schema_dir / "shared-schema.json"
+        schema_file.write_text(json.dumps(schema_content))
+
+        # Create two configs referencing the same schema
+        config_data1 = sample_valid_config.copy()
+        config_data1["source_id"] = "source-1"
+        config_data1["validation"] = {"schema_name": "data/shared-schema.json", "strict": True}
+
+        config_data2 = sample_valid_config.copy()
+        config_data2["source_id"] = "source-2"
+        config_data2["validation"] = {"schema_name": "data/shared-schema.json", "strict": True}
+
+        configs = [
+            SourceConfig.model_validate(config_data1),
+            SourceConfig.model_validate(config_data2),
+        ]
+
+        schemas = load_schemas_for_configs(configs, tmp_path)
+
+        # Should only have one schema despite two configs referencing it
+        assert len(schemas) == 1
+
+    def test_load_schemas_file_not_found(
+        self,
+        tmp_path: Path,
+        sample_valid_config: dict[str, Any],
+    ) -> None:
+        """Test error when schema file not found."""
+        config_data = sample_valid_config.copy()
+        config_data["validation"] = {"schema_name": "data/missing.json", "strict": True}
+        config = SourceConfig.model_validate(config_data)
+
+        with pytest.raises(FileNotFoundError) as exc_info:
+            load_schemas_for_configs([config], tmp_path)
+
+        assert "missing.json" in str(exc_info.value)
+        assert "test-source" in str(exc_info.value)
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+class TestSchemaDeployment:
+    """Tests for schema deployment in SourceConfigDeployer."""
+
+    async def test_deploy_new_schema(
+        self,
+        mock_mongodb_client,
+    ) -> None:
+        """Test deploying a new schema."""
+        deployer = SourceConfigDeployer("dev")
+        deployer._db = mock_mongodb_client["collection_model"]
+
+        schema_content = {"type": "object", "properties": {"id": {"type": "string"}}}
+        schemas = [("data/test-schema.json", schema_content)]
+
+        actions = await deployer.deploy_schemas(schemas)
+
+        assert len(actions) == 1
+        assert actions[0].action == "created"
+        assert actions[0].version == 1
+        assert actions[0].schema_name == "data/test-schema.json"
+
+    async def test_deploy_unchanged_schema(
+        self,
+        mock_mongodb_client,
+    ) -> None:
+        """Test deploying an unchanged schema."""
+        deployer = SourceConfigDeployer("dev")
+        deployer._db = mock_mongodb_client["collection_model"]
+
+        schema_content = {"type": "object"}
+        schemas = [("data/test-schema.json", schema_content)]
+
+        # First deploy
+        await deployer.deploy_schemas(schemas)
+        # Second deploy should be unchanged
+        actions = await deployer.deploy_schemas(schemas)
+
+        assert len(actions) == 1
+        assert actions[0].action == "unchanged"
+
+    async def test_deploy_updated_schema(
+        self,
+        mock_mongodb_client,
+    ) -> None:
+        """Test deploying an updated schema."""
+        deployer = SourceConfigDeployer("dev")
+        deployer._db = mock_mongodb_client["collection_model"]
+
+        # Deploy initial version
+        schemas_v1 = [("data/test-schema.json", {"type": "object"})]
+        await deployer.deploy_schemas(schemas_v1)
+
+        # Deploy updated version
+        schemas_v2 = [("data/test-schema.json", {"type": "object", "required": ["id"]})]
+        actions = await deployer.deploy_schemas(schemas_v2)
+
+        assert len(actions) == 1
+        assert actions[0].action == "updated"
+        assert actions[0].version == 2
+
+    async def test_deploy_schema_dry_run(
+        self,
+        mock_mongodb_client,
+    ) -> None:
+        """Test dry run schema deployment."""
+        deployer = SourceConfigDeployer("dev")
+        deployer._db = mock_mongodb_client["collection_model"]
+
+        schemas = [("data/test-schema.json", {"type": "object"})]
+        actions = await deployer.deploy_schemas(schemas, dry_run=True)
+
+        assert len(actions) == 1
+        assert actions[0].action == "created"
+
+        # Verify nothing was actually written
+        collection = deployer._db["validation_schemas"]
+        count = await collection.count_documents({})
+        assert count == 0
+
+    async def test_get_schema(
+        self,
+        mock_mongodb_client,
+    ) -> None:
+        """Test getting a deployed schema."""
+        deployer = SourceConfigDeployer("dev")
+        deployer._db = mock_mongodb_client["collection_model"]
+
+        schema_content = {"type": "object", "properties": {"id": {"type": "string"}}}
+        schemas = [("data/test-schema.json", schema_content)]
+        await deployer.deploy_schemas(schemas)
+
+        schema = await deployer.get_schema("data/test-schema.json")
+
+        assert schema is not None
+        assert schema.name == "data/test-schema.json"
+        assert schema.content == schema_content
+        assert schema.version == 1
+
+    async def test_get_schema_not_found(
+        self,
+        mock_mongodb_client,
+    ) -> None:
+        """Test getting a nonexistent schema."""
+        deployer = SourceConfigDeployer("dev")
+        deployer._db = mock_mongodb_client["collection_model"]
+
+        schema = await deployer.get_schema("data/nonexistent.json")
+
+        assert schema is None
+
+    async def test_list_schemas_empty(
+        self,
+        mock_mongodb_client,
+    ) -> None:
+        """Test listing schemas when empty."""
+        deployer = SourceConfigDeployer("dev")
+        deployer._db = mock_mongodb_client["collection_model"]
+
+        schemas = await deployer.list_schemas()
+
+        assert len(schemas) == 0
+
+    async def test_list_schemas_after_deploy(
+        self,
+        mock_mongodb_client,
+    ) -> None:
+        """Test listing schemas after deployment."""
+        deployer = SourceConfigDeployer("dev")
+        deployer._db = mock_mongodb_client["collection_model"]
+
+        schemas_to_deploy = [
+            ("data/schema-a.json", {"type": "object"}),
+            ("data/schema-b.json", {"type": "array"}),
+        ]
+        await deployer.deploy_schemas(schemas_to_deploy)
+
+        schemas = await deployer.list_schemas()
+
+        assert len(schemas) == 2
+        schema_names = [s.name for s in schemas]
+        assert "data/schema-a.json" in schema_names
+        assert "data/schema-b.json" in schema_names

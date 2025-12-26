@@ -40,6 +40,12 @@ class Settings(BaseSettings):
         alias="SOURCE_CONFIG_DIR",
     )
 
+    # Validation schemas directory
+    schemas_dir: str = Field(
+        default="config/schemas",
+        alias="SOURCE_SCHEMAS_DIR",
+    )
+
     model_config = {"env_file": ".env", "env_file_encoding": "utf-8", "extra": "ignore"}
 
     def get_mongodb_uri(self, env: Environment) -> str:

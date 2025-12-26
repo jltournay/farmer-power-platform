@@ -12,8 +12,10 @@ from rich.console import Console
 
 from fp_source_config.deployer import (
     SourceConfigDeployer,
+    load_schemas_for_configs,
     load_source_configs,
     print_deployment_results,
+    print_schema_deployment_results,
 )
 from fp_source_config.settings import Environment, get_settings
 from fp_source_config.validator import (
@@ -134,12 +136,32 @@ def deploy(
         console.print(f"[red]Error loading configurations: {e}[/red]")
         raise typer.Exit(code=1)
 
+    # Load referenced schemas
+    try:
+        schemas = load_schemas_for_configs(configs, Path(settings.schemas_dir))
+    except FileNotFoundError as e:
+        console.print(f"[red]Error loading schemas: {e}[/red]")
+        raise typer.Exit(code=1)
+    except Exception as e:
+        console.print(f"[red]Error loading schemas: {e}[/red]")
+        raise typer.Exit(code=1)
+
     # Deploy to MongoDB
     async def run_deploy() -> None:
         deployer = SourceConfigDeployer(environment)
         try:
             await deployer.connect()
             console.print(f"[dim]Deploying to {environment} environment...[/dim]\n")
+
+            # Deploy schemas first
+            if schemas:
+                schema_actions = await deployer.deploy_schemas(schemas, dry_run=dry_run)
+                print_schema_deployment_results(
+                    schema_actions, dry_run=dry_run, console=console
+                )
+                console.print()  # Blank line between tables
+
+            # Deploy configs
             actions = await deployer.deploy(configs, dry_run=dry_run)
             print_deployment_results(actions, dry_run=dry_run, console=console)
         finally:
@@ -209,6 +231,59 @@ def list_configs(
         asyncio.run(run_list())
     except Exception as e:
         console.print(f"[red]Error listing configurations: {e}[/red]")
+        raise typer.Exit(code=1)
+
+    raise typer.Exit(code=0)
+
+
+@app.command("list-schemas")
+def list_schemas(
+    env: str = typer.Option(
+        ...,
+        "--env",
+        "-e",
+        help="Target environment (dev, staging, prod)",
+    ),
+) -> None:
+    """List all deployed validation schemas."""
+    from rich.table import Table
+
+    environment = _validate_environment(env)
+
+    async def run_list_schemas() -> None:
+        deployer = SourceConfigDeployer(environment)
+        try:
+            await deployer.connect()
+            schemas = await deployer.list_schemas()
+
+            if not schemas:
+                console.print(f"[yellow]No schemas deployed in {environment}[/yellow]")
+                return
+
+            table = Table(title=f"Deployed Schemas ({environment})")
+            table.add_column("Schema Name", style="cyan")
+            table.add_column("Version", style="blue")
+            table.add_column("Deployed At", style="dim")
+            table.add_column("Deployed By", style="dim")
+
+            for schema in schemas:
+                deployed_at = schema.deployed_at.strftime("%Y-%m-%d %H:%M")
+                table.add_row(
+                    schema.name,
+                    str(schema.version),
+                    deployed_at,
+                    schema.deployed_by,
+                )
+
+            console.print(table)
+            console.print(f"\n[dim]Total: {len(schemas)} schema(s)[/dim]")
+        finally:
+            await deployer.disconnect()
+
+    try:
+        asyncio.run(run_list_schemas())
+    except Exception as e:
+        console.print(f"[red]Error listing schemas: {e}[/red]")
         raise typer.Exit(code=1)
 
     raise typer.Exit(code=0)

@@ -4,7 +4,8 @@ Defines the schema for data source configurations used by the Collection Model
 service for ingesting data from various sources (blob storage, APIs, etc.).
 """
 
-from typing import Literal
+from datetime import datetime
+from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -99,6 +100,25 @@ class ValidationConfig(BaseModel):
 
     schema_name: str = Field(..., description="JSON schema file name for validation")
     strict: bool = Field(True, description="Whether to fail on validation errors")
+
+
+class SchemaDocument(BaseModel):
+    """JSON Schema document stored in MongoDB.
+
+    Schemas are stored separately from source configs to allow:
+    - Reuse across multiple source configs
+    - Independent versioning
+    - Runtime lookup by the ingestion pipeline
+    """
+
+    model_config = ConfigDict(populate_by_name=True)
+
+    name: str = Field(..., description="Schema name/path (e.g., 'data/qc-bag-result.json')")
+    content: dict[str, Any] = Field(..., description="The actual JSON schema content")
+    version: int = Field(1, description="Schema version number")
+    deployed_at: datetime = Field(..., description="Deployment timestamp")
+    deployed_by: str = Field(..., description="User who deployed the schema")
+    git_sha: str | None = Field(None, description="Git commit SHA at deployment time")
 
 
 class TransformationConfig(BaseModel):

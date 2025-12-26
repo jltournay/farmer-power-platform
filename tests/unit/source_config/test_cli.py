@@ -93,8 +93,11 @@ class TestDeployCommand:
         with (
             patch("fp_source_config.cli.get_settings") as mock_settings,
             patch("fp_source_config.cli.SourceConfigDeployer") as mock_deployer_class,
+            patch("fp_source_config.cli.load_schemas_for_configs") as mock_load_schemas,
         ):
             mock_settings.return_value.config_dir = str(file_path.parent)
+            mock_settings.return_value.schemas_dir = str(file_path.parent)
+            mock_load_schemas.return_value = []  # No schemas to deploy
 
             mock_deployer = AsyncMock()
             mock_deployer.connect = AsyncMock()
