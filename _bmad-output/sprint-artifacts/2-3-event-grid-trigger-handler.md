@@ -98,6 +98,57 @@ So that new QC Analyzer uploads trigger automatic ingestion.
 
 ## Dev Notes
 
+### Azure Event Grid Architecture
+
+The `/api/events/blob-created` endpoint is called by **Azure Event Grid**, a managed Azure service. No custom code is needed for the "caller" - Azure handles this automatically.
+
+```
+┌─────────────────┐          ┌──────────────────┐          ┌─────────────────────┐
+│   QC Analyzer   │  upload  │  Azure Blob      │  event   │  Azure Event Grid   │
+│   (device)      │─────────▶│  Storage         │─────────▶│  (Azure service)    │
+└─────────────────┘          └──────────────────┘          └──────────┬──────────┘
+                                                                      │
+                                                                      │ HTTP POST
+                                                                      │ (automatic)
+                                                                      ▼
+                                                           ┌─────────────────────┐
+                                                           │ Collection Model    │
+                                                           │ /api/events/blob-   │
+                                                           │ created             │
+                                                           └─────────────────────┘
+```
+
+**Flow:**
+1. **QC Analyzer** uploads ZIP file to Azure Blob Storage (`qc-analyzer-landing` container)
+2. **Azure Blob Storage** automatically emits a `BlobCreated` event (built into Azure)
+3. **Azure Event Grid** receives the event and calls our webhook via HTTP POST
+4. **Collection Model** processes the event at `/api/events/blob-created`
+
+### Azure Event Grid Setup (One-time Configuration)
+
+Configure in Azure Portal: **Storage Account → Events → + Event Subscription**
+
+| Field | Value |
+|-------|-------|
+| Name | `qc-blob-created` |
+| Event Schema | `Event Grid Schema` |
+| Event Types | `Blob Created` |
+| Endpoint Type | `Web Hook` |
+| Endpoint | `https://{collection-model-url}/api/events/blob-created` |
+| Filter (Subject Begins With) | `/blobServices/default/containers/qc-analyzer-landing` |
+
+**Or via Azure CLI:**
+```bash
+az eventgrid event-subscription create \
+  --name qc-blob-created \
+  --source-resource-id /subscriptions/{sub}/resourceGroups/{rg}/providers/Microsoft.Storage/storageAccounts/{storage} \
+  --endpoint https://{collection-model-url}/api/events/blob-created \
+  --included-event-types Microsoft.Storage.BlobCreated \
+  --subject-begins-with /blobServices/default/containers/qc-analyzer-landing
+```
+
+**Important:** When you create the subscription, Event Grid sends a validation request. Our handler automatically responds with the `validationCode` to confirm the endpoint.
+
 ### Service Location
 
 ```
