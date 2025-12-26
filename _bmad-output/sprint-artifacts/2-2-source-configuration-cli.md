@@ -168,6 +168,14 @@ So that new data sources can be onboarded without code changes and configuration
 - [x] 12.9 Add `schemas_dir` setting for schema file location
 - [x] 12.10 Add 14 unit tests for schema functionality
 
+### Task 13: Schema version tracking and validation (Post-MVP Enhancement)
+- [x] 13.1 Add optional `schema_version` field to ValidationConfig
+- [x] 13.2 Implement `validate_schema_references()` method in deployer
+- [x] 13.3 Validate schema exists in MongoDB or deployment batch
+- [x] 13.4 Validate requested version doesn't exceed deployed version
+- [x] 13.5 Update deploy command to validate schema references before deploy
+- [x] 13.6 Add 8 unit tests for schema validation
+
 ---
 
 ## Dev Notes
@@ -735,11 +743,13 @@ The CLI manages configurations that the Collection Model service reads via `Sour
 - [x] `fp-source-config diff --env` command shows local vs deployed differences
 - [x] `fp-source-config history --env --source` command shows deployment history
 - [x] `fp-source-config rollback --env --source --version` command restores previous version
-- [x] Unit tests passing for all commands (65 tests)
+- [x] Unit tests passing for all commands (73 tests)
 - [x] CI passes (lint, format, tests)
 - [x] Code reviewed and merged
 - [x] Validation schemas deployed alongside source configs (post-MVP enhancement)
 - [x] `fp-source-config list-schemas --env` command works
+- [x] Schema version tracking in ValidationConfig (optional schema_version field)
+- [x] Schema reference validation on deploy (validates schema exists in MongoDB)
 
 ---
 
@@ -758,10 +768,12 @@ Claude Opus 4.5 (claude-opus-4-5-20251101)
 ### Completion Notes List
 
 - All 8 ACs implemented and verified
-- 65 unit tests passing (51 original + 14 for schema deployment)
+- 73 unit tests passing (51 original + 22 for schema enhancements)
 - Code review completed with fixes
 - Post-MVP enhancement: Validation schemas now deployed to MongoDB `validation_schemas` collection
 - Deploy command automatically deploys referenced schemas alongside source configs
+- Schema version tracking: ValidationConfig now supports optional schema_version
+- Schema reference validation: Deploy validates schema exists before deployment
 
 ### File List
 
