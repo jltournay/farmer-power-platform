@@ -1,6 +1,6 @@
 # Story 2.2: Source Configuration CLI
 
-**Status:** in-review
+**Status:** done
 **GitHub Issue:** #17
 
 ---
@@ -721,8 +721,8 @@ The CLI manages configurations that the Collection Model service reads via `Sour
 - [x] `fp-source-config history --env --source` command shows deployment history
 - [x] `fp-source-config rollback --env --source --version` command restores previous version
 - [x] Unit tests passing for all commands (51 tests)
-- [ ] CI passes (lint, format, tests)
-- [ ] Code reviewed and merged
+- [x] CI passes (lint, format, tests)
+- [x] Code reviewed and merged
 
 ---
 
