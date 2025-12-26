@@ -1,0 +1,61 @@
+[tool.poetry]
+name = "collection-model"
+version = "0.1.0"
+description = "Collection Model Service - Quality data ingestion gateway for Farmer Power Platform"
+authors = ["Farmer Power Team"]
+readme = "README.md"
+packages = [{include = "collection_model", from = "src"}]
+
+[tool.poetry.dependencies]
+python = "^3.12"
+fastapi = "^0.109.0"
+uvicorn = {extras = ["standard"], version = "^0.27.0"}
+pydantic = "^2.5.0"
+pydantic-settings = "^2.1.0"
+motor = "^3.3.0"
+grpcio = "^1.60.0"
+grpcio-health-checking = "^1.60.0"
+grpcio-reflection = "^1.60.0"
+grpcio-tools = "^1.60.0"
+structlog = "^24.1.0"
+tenacity = "^8.2.0"
+httpx = "^0.26.0"
+# OpenTelemetry - use compatible versions
+opentelemetry-api = "^1.29.0"
+opentelemetry-sdk = "^1.29.0"
+opentelemetry-exporter-otlp = "^1.29.0"
+opentelemetry-instrumentation-fastapi = ">=0.50b0"
+opentelemetry-instrumentation-grpc = ">=0.50b0"
+opentelemetry-instrumentation-pymongo = ">=0.50b0"
+# Dapr integration
+dapr = "^1.13.0"
+dapr-ext-grpc = "^1.13.0"
+# Shared libs
+fp-proto = { path = "../../libs/fp-proto" }
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^8.0.0"
+pytest-asyncio = "^0.23.0"
+pytest-cov = "^4.1.0"
+httpx = ">=0.26.0,<0.28.0"
+testcontainers = {extras = ["mongodb"], version = "^3.7.0"}
+ruff = "^0.1.0"
+mypy = "^1.8.0"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_functions = ["test_*"]
+
+# Ruff config inherited from root pyproject.toml
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+warn_return_any = true
+warn_unused_configs = true

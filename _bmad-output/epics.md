@@ -619,103 +619,147 @@ So that I can generate personalized recommendations.
 #### Story 2.1: Collection Model Service Setup
 
 As a **platform operator**,
-I want the Collection Model service deployed with Dapr sidecar and MongoDB connection,
-So that quality grading data can be ingested, stored, and events emitted to downstream services.
+I want the Collection Model service deployed with DAPR sidecar, MongoDB, and Redis pub/sub,
+So that quality grading data can be ingested, stored, and domain events emitted to downstream services.
 
 **Acceptance Criteria:**
 
-**Given** the Kubernetes cluster is running with Dapr installed
+**Given** the Kubernetes cluster is running with DAPR installed
 **When** the Collection Model service is deployed
 **Then** the service starts successfully with health check endpoint returning 200
-**And** the Dapr sidecar is injected and connected
+**And** the DAPR sidecar is injected and connected
 **And** MongoDB connection is established (verified via connection test)
-**And** gRPC server is listening on port 50052
+**And** Redis pub/sub component is configured and connected
 **And** OpenTelemetry traces are emitted for all operations
-**And** Dapr pub/sub component is configured for Azure Service Bus
 
 **Given** the service is running
-**When** the Dapr pub/sub is tested
-**Then** messages can be published to topics: collection.end_bag, collection.poor_quality_detected
-**And** topic subscriptions are registered with Dapr
+**When** the DAPR pub/sub is tested
+**Then** messages can be published to topics: `collection.document.stored`, `collection.poor_quality_detected`
+**And** topic subscriptions are registered with DAPR
+
+**Given** Azure Event Grid subscription is configured
+**When** a blob is created in `qc-analyzer-results` or `qc-analyzer-exceptions` containers
+**Then** Event Grid sends HTTP POST to the service's `/api/events/blob-created` endpoint
+**And** the webhook validates Event Grid subscription handshake
 
 **Technical Notes:**
-- Python FastAPI + grpcio
-- Dapr state store component for MongoDB
-- Dapr pub/sub component for Azure Service Bus
-- Health endpoint: `/health` and `/ready`
+- Python FastAPI with async handlers
+- DAPR pub/sub component: Redis (internal domain events)
+- External events: Azure Event Grid webhook (blob triggers)
+- Health endpoints: `/health` and `/ready`
 - Environment: farmer-power-{env} namespace
+- Proto: `farmer_power.collection.v1`
+
+**Infrastructure (Epic 0 prerequisite):**
+- Azure Event Grid System Topic for storage account (Epic 0)
+- Event subscriptions filtering on `Microsoft.Storage.BlobCreated` (Epic 0)
+- Webhook endpoint configured after service deployment
 
 ---
 
-#### Story 2.2: END_BAG Event Ingestion API
+#### Story 2.2: Source Configuration CLI
 
-As a **QC Analyzer device**,
-I want to submit END_BAG events via gRPC API,
-So that quality grading results are recorded in the platform.
+As a **platform operator**,
+I want a CLI tool to manage data source configurations,
+So that new data sources can be onboarded without code changes.
+
+**Acceptance Criteria:**
+
+**Given** the `fp-source-config` CLI is installed
+**When** I run `fp-source-config deploy sources.yaml`
+**Then** the YAML file is validated against the SourceConfig schema
+**And** configurations are upserted to MongoDB collection `source_configs`
+**And** a summary is printed: sources added, updated, unchanged
+
+**Given** a source configuration YAML file
+**When** I run `fp-source-config validate sources.yaml`
+**Then** the file is validated without deploying
+**And** validation errors are printed with line numbers
+**And** exit code is 0 for valid, 1 for invalid
+
+**Given** source configurations exist in MongoDB
+**When** I run `fp-source-config list`
+**Then** all configured sources are listed with: source_id, source_type, trigger_mode, status
+
+**Given** a source_id exists
+**When** I run `fp-source-config get <source_id>`
+**Then** the full configuration is printed as YAML
+
+**Given** a source_id exists
+**When** I run `fp-source-config disable <source_id>`
+**Then** the source is marked inactive (enabled: false)
+**And** no new ingestion jobs will be triggered for this source
+
+**Technical Notes:**
+- CLI framework: Typer
+- Config schema defined in `fp-common` as Pydantic models
+- MongoDB collection: `source_configs`
+- SourceConfig fields: source_id, source_type, trigger_mode, container_pattern, llm_extraction_prompt_id, enabled
+
+---
+
+#### Story 2.3: Event Grid Trigger Handler
+
+As a **Collection Model service**,
+I want to receive Azure Event Grid blob-created events,
+So that new QC Analyzer uploads trigger automatic ingestion.
 
 **Acceptance Criteria:**
 
 **Given** the Collection Model service is running
-**When** I submit an END_BAG event with: bag_id, farmer_id, collection_point_id, timestamp, overall_classification, leaf_assessments[]
-**Then** the event is validated against the schema
-**And** a unique event_id is generated (UUID v4)
-**And** the event is stored in MongoDB collection "quality_events"
-**And** the response includes: event_id, status="accepted", processing_status="queued"
+**When** Event Grid sends a subscription validation request
+**Then** the service responds with the validationResponse
+**And** the subscription is confirmed
 
-**Given** a valid END_BAG event is received
-**When** the event is stored successfully
-**Then** a "collection.end_bag.received" event is published to Dapr pub/sub
-**And** the event payload includes: event_id, farmer_id, collection_point_id, overall_classification
+**Given** a blob is created in `qc-analyzer-results` container
+**When** Event Grid sends blob-created event
+**Then** the event is parsed: container, blob_path, content_length, timestamp
+**And** source_config is looked up by container pattern match
+**And** if source is enabled, ingestion job is queued
 
-**Given** an END_BAG event with missing required fields
-**When** I submit the event
-**Then** the request fails with status INVALID_ARGUMENT
-**And** the response includes field-level validation errors
-**And** the event is NOT stored
+**Given** the blob matches source_config with trigger_mode=BLOB_TRIGGER
+**When** the event is processed
+**Then** blob metadata is extracted: source_type, device_id (from path)
+**And** processing_status is set to "queued" in MongoDB
+**And** the blob is queued for content processing
 
-**Given** an END_BAG event with unknown farmer_id
-**When** I submit the event
-**Then** the request fails with status NOT_FOUND
-**And** the response includes error "Farmer not found: {farmer_id}"
+**Given** no source_config matches the blob container
+**When** the event is processed
+**Then** the event is logged with warning "No matching source config"
+**And** no further processing occurs
+**And** metrics track unmatched events
 
-**Given** an END_BAG event with duplicate bag_id for same farmer and date
-**When** I submit the event
-**Then** the request fails with status ALREADY_EXISTS
-**And** the existing event_id is returned for reference
+**Given** the same blob event is received twice (Event Grid retry)
+**When** processing is attempted
+**Then** idempotency check detects duplicate (by blob_path + etag)
+**And** duplicate is skipped with log "Already processed"
 
 **Technical Notes:**
-- gRPC service: CollectionService.SubmitEndBag
-- Idempotency key: hash of (bag_id, farmer_id, date)
-- Maximum leaf_assessments per bag: 100
+- Endpoint: POST `/api/events/blob-created`
+- Event Grid schema: EventGridEvent or CloudEvents v1.0
+- Idempotency: MongoDB unique index on (blob_path, blob_etag)
+- Async processing: queue to internal task queue after validation
 
 ---
 
-#### Story 2.3: TBK Grading Result Storage
+#### Story 2.4: QC Analyzer Result Ingestion (JSON)
 
 As a **platform data analyst**,
-I want TBK grading results stored with full multi-head model output,
-So that detailed leaf type analysis is available for reporting and AI processing.
+I want QC Analyzer JSON results automatically ingested,
+So that bag summaries and grading data are stored for analysis.
 
 **Acceptance Criteria:**
 
-**Given** an END_BAG event is received
-**When** the event contains TBK grading data
-**Then** the following fields are stored per leaf_assessment:
-  - leaf_type: "fine_leaf" | "coarse_leaf" | "banji"
-  - classification: "primary" | "secondary"
-  - coarse_subtype: "mature_leaf" | "stalk" | "damaged" | null (only for coarse_leaf)
-  - banji_hardness: "soft" | "hard" | null (only for banji)
-  - confidence: 0.0-1.0
-  - image_ref: reference to Azure Blob Storage
+**Given** a JSON blob is queued for processing
+**When** the blob is downloaded from Azure Blob Storage
+**Then** the raw JSON is stored in `raw_documents` collection
+**And** processing_status is updated to "extracting"
 
-**Given** an END_BAG event is stored
-**When** the bag_summary is calculated
-**Then** it includes:
-  - primary_percentage: calculated from leaf classifications
-  - secondary_percentage: 100 - primary_percentage
-  - leaf_type_distribution: { fine_leaf: X%, coarse_leaf: Y%, banji: Z% }
-  - total_leaves_assessed: count of leaf_assessments
-  - overall_grade: calculated per TBK specification
+**Given** the raw JSON is stored
+**When** LLM extraction runs with the configured prompt
+**Then** structured data is extracted: bag_id, farmer_id, collection_point_id, timestamp, overall_classification, leaf_assessments[]
+**And** bag_summary is calculated: primary_percentage, leaf_type_distribution, overall_grade
+**And** extracted data is stored in `quality_events` collection
 
 **Given** leaf_type_distribution is calculated
 **When** the TBK grade is determined
@@ -724,105 +768,108 @@ So that detailed leaf type analysis is available for reporting and AI processing
   - Grade 2 (Standard): ≥70% primary OR fine_leaf ≥40%
   - Grade 3 (Below Standard): <70% primary AND fine_leaf <40%
 
-**Given** bag_summary is calculated
-**When** I query quality event by event_id
-**Then** both raw leaf_assessments AND computed bag_summary are returned
+**Given** extraction succeeds
+**When** the quality_event is stored
+**Then** a `collection.document.stored` domain event is emitted via Redis pub/sub
+**And** processing_status is updated to "completed"
+**And** the event payload includes: document_id, source_type, farmer_id
+
+**Given** LLM extraction fails
+**When** error is detected
+**Then** processing_status is set to "failed"
+**And** error details are stored: error_type, error_message, retry_count
+**And** document is queued for retry (max 3 attempts)
 
 **Technical Notes:**
-- MongoDB schema: quality_events collection with embedded bag_summary
-- Grade calculation runs synchronously on ingestion
-- leaf_type_distribution stored as percentages (not raw counts)
+- Azure Blob SDK: async download with streaming
+- LLM extraction via OpenRouter (prompt from MongoDB)
+- MongoDB collections: raw_documents, quality_events
+- Deduplication handled in Story 2.6
 
 ---
 
-#### Story 2.4: Batch Upload for Intermittent Connectivity
-
-As a **QC Analyzer device in a low-connectivity area**,
-I want to batch upload multiple quality events when connection is restored,
-So that data is not lost due to network issues.
-
-**Acceptance Criteria:**
-
-**Given** the Collection Model service is running
-**When** I submit a batch of END_BAG events via BatchSubmitEndBag API
-**Then** each event is validated individually
-**And** valid events are queued for processing
-**And** the response includes per-event status: { event_id, status, errors? }
-**And** the batch is processed with transactional guarantees (all-or-nothing per event)
-
-**Given** a batch contains 50 events
-**When** 48 events are valid and 2 have validation errors
-**Then** the 48 valid events are stored
-**And** the 2 invalid events are returned with field-level errors
-**And** processing continues for valid events
-
-**Given** a batch upload is in progress
-**When** the connection drops mid-transfer
-**Then** already-received events are stored
-**And** the client receives partial success response with processed count
-**And** client can retry with remaining events (idempotency prevents duplicates)
-
-**Given** the same batch is submitted twice
-**When** duplicate events are detected (by idempotency key)
-**Then** duplicates are skipped (not re-processed)
-**And** the response indicates "already_processed" for duplicates
-**And** no duplicate events are stored or published
-
-**Given** a batch upload completes
-**When** all events are processed
-**Then** a single "collection.batch.completed" event is published
-**And** the event includes: batch_id, event_count, farmer_ids[], timestamp_range
-
-**Technical Notes:**
-- gRPC service: CollectionService.BatchSubmitEndBag
-- Maximum batch size: 100 events
-- Batch processing timeout: 60 seconds
-- Retry queue: Azure Service Bus with 3 retry attempts
-
----
-
-#### Story 2.5: POOR_QUALITY_DETECTED Event Handling
+#### Story 2.5: QC Analyzer Exception Images Ingestion (ZIP)
 
 As a **Knowledge Model AI agent**,
-I want to receive POOR_QUALITY_DETECTED events for analysis,
-So that quality issues can be diagnosed and action plans generated.
+I want secondary leaf exception images automatically extracted and stored,
+So that I can analyze poor quality samples with visual evidence.
 
 **Acceptance Criteria:**
 
-**Given** an END_BAG event is processed
-**When** the overall_classification is "secondary" AND primary_percentage < 70%
-**Then** a "collection.poor_quality_detected" event is published to Dapr pub/sub
-**And** the event includes: event_id, farmer_id, bag_id, primary_percentage, leaf_type_distribution, image_refs[]
+**Given** a ZIP blob is queued for processing (from `qc-analyzer-exceptions` container)
+**When** the blob is downloaded
+**Then** the ZIP is extracted in memory (streaming, no disk write)
+**And** manifest.json is parsed for image metadata
 
-**Given** an END_BAG event is processed
-**When** the overall_classification is "primary" AND primary_percentage ≥ 70%
-**Then** no "collection.poor_quality_detected" event is published
-**And** only the standard "collection.end_bag.received" event is emitted
+**Given** the ZIP contains leaf exception images
+**When** images are extracted
+**Then** each image is uploaded to `quality-images` container
+**And** blob path follows: `quality-images/{factory_id}/{date}/{bag_id}/{leaf_index}.jpg`
+**And** image metadata is stored: blob_path, file_size, checksum, leaf_assessment_ref
 
-**Given** multiple poor quality events for same farmer within 24 hours
-**When** events are published
-**Then** each event includes aggregation_hint: { farmer_event_count_24h: N, previous_event_ids: [...] }
-**And** the Knowledge Model can use this for event deduplication
+**Given** manifest.json links images to a bag_id
+**When** images are stored
+**Then** the corresponding quality_event is updated with image_refs[]
+**And** if quality_event doesn't exist yet, images are stored with pending_link status
 
-**Given** a critical quality issue is detected (primary_percentage < 40%)
-**When** the event is published
-**Then** the event includes priority: "critical"
-**And** the event bypasses normal aggregation (immediate analysis)
+**Given** all images are extracted
+**When** processing completes
+**Then** a `collection.document.stored` domain event is emitted
+**And** processing_status is updated to "completed"
+**And** the event payload includes: document_id, source_type="QC_ANALYZER_EXCEPTIONS", image_count
 
-**Given** the Knowledge Model subscribes to "collection.poor_quality_detected"
-**When** an event is published
-**Then** the event is delivered within 5 seconds (p95)
-**And** the event includes all data needed for diagnosis (no additional queries required)
+**Given** the ZIP is corrupted or invalid
+**When** extraction fails
+**Then** processing_status is set to "failed"
+**And** error details logged: "Invalid ZIP format" or "Missing manifest.json"
+**And** original blob is retained for manual review
 
 **Technical Notes:**
-- Topic: collection.poor_quality_detected
-- Dapr pub/sub with at-least-once delivery
-- Event schema versioned (v1) for future compatibility
-- Priority field: "standard" | "critical"
+- ZIP processing: zipfile module with streaming (no temp files)
+- Max ZIP size: 50MB
+- Max images per ZIP: 100
+- Image formats: JPEG, PNG only
+- Linking: bag_id from manifest matches quality_events.bag_id
 
 ---
 
-#### Story 2.6: Weather Data Pull Mode
+#### Story 2.6: Document Storage & Deduplication
+
+As a **platform operator**,
+I want duplicate documents detected and rejected,
+So that storage is efficient and downstream analysis is not skewed.
+
+**Acceptance Criteria:**
+
+**Given** a document is about to be stored
+**When** content hash (SHA-256) is calculated
+**Then** the hash is checked against existing documents in MongoDB
+**And** if duplicate found, storage is skipped with status "duplicate"
+
+**Given** a duplicate document is detected
+**When** the ingestion completes
+**Then** no domain event is emitted
+**And** response indicates: duplicate=true, original_document_id
+**And** metrics track duplicate rate per source
+
+**Given** a unique document is stored
+**When** content hash is saved
+**Then** MongoDB unique index on content_hash prevents race conditions
+**And** document includes: content_hash, source_id, blob_path, stored_at
+
+**Given** documents are stored over time
+**When** storage metrics are queried
+**Then** metrics include: total_documents, duplicates_rejected, storage_bytes, by_source breakdown
+
+**Technical Notes:**
+- Hash algorithm: SHA-256 on raw blob content
+- MongoDB unique index: { content_hash: 1 }
+- Duplicate detection before LLM extraction (save costs)
+- Collection: raw_documents with content_hash field
+
+---
+
+#### Story 2.7: Weather API Pull Mode
 
 As a **Knowledge Model Weather Analyzer**,
 I want weather data pulled from external APIs on schedule,
@@ -830,101 +877,80 @@ So that weather-quality correlations can be analyzed.
 
 **Acceptance Criteria:**
 
-**Given** a weather data source is configured (Open-Meteo API)
-**When** the scheduled pull job runs (daily at 6 AM, Africa/Nairobi timezone)
-**Then** the Plantation Model MCP is queried first: `list_regions()`
-**And** for each region, weather data is fetched using region center coordinates
+**Given** a weather source is configured with trigger_mode=SCHEDULED_PULL
+**When** the DAPR Job triggers at scheduled time (daily 6 AM EAT)
+**Then** the Plantation Model MCP is queried: `list_regions()`
+**And** for each region, weather data is fetched using coordinates
 
 **Given** the pull job iterates over regions
 **When** fetching weather for a region
-**Then** the request includes: latitude, longitude (from region), past_days=7, timezone=Africa/Nairobi
-**And** response includes: temperature_2m_max, temperature_2m_min, precipitation_sum, humidity
-**And** the LLM extraction agent processes: region_id, date, temp_max, temp_min, precipitation_mm, humidity_avg
+**Then** Open-Meteo API is called with: latitude, longitude, past_days=7
+**And** response is stored in `raw_documents` collection
+**And** LLM extraction processes: region_id, date, temp_max, temp_min, precipitation_mm, humidity_avg
 
 **Given** weather data is extracted for a region
 **When** the data is stored
-**Then** raw response is stored in Azure Blob Storage (weather-data container)
-**And** index metadata is stored in MongoDB collection "weather_index" with region_ref
-**And** a "collection.weather_updated" event is emitted per region
+**Then** extracted data is stored in `weather_data` collection with region_ref
+**And** a `collection.weather.updated` domain event is emitted
+**And** processing_status is "completed"
 
 **Given** all regions are processed
 **When** the pull job completes
-**Then** a summary event includes: regions_processed, regions_failed, timestamp_range
-**And** metrics are logged for monitoring
+**Then** job summary is logged: regions_processed, regions_failed
+**And** metrics track success rate and latency
 
-**Given** the Open-Meteo API is unavailable for a region
-**When** the pull job runs
+**Given** the Open-Meteo API fails for a region
+**When** error is detected
 **Then** the job retries with exponential backoff (max 3 attempts)
-**And** if all retries fail, the region is skipped and flagged
-**And** other regions continue processing (partial success allowed)
-**And** a "collection.weather.fetch_failed" event is published with failed region_ids
-
-**Given** weather data exists for a region
-**When** I query via MCP tool `get_regional_weather(region_id, days=7)`
-**Then** the response includes daily data points for the requested period
-**And** data is returned in chronological order
-**And** fields include: date, temp_max, temp_min, precipitation_mm, humidity_avg
-
-**Given** weather data is 30+ days old
-**When** the daily cleanup job runs
-**Then** data older than 30 days is archived to cold storage
-**And** data within 30 days remains in MongoDB for correlation analysis
+**And** if all retries fail, region is skipped and flagged
+**And** other regions continue processing
 
 **Technical Notes:**
-- Dapr Jobs component: schedule "0 6 * * *" (daily 6 AM)
-- Open-Meteo API: free tier, no API key required
-- Iteration pattern: foreach region from Plantation MCP
-- LLM extraction agent: weather-extraction-agent
-- Storage: Blob (raw) + Mongo (index with region_ref)
-- Circuit breaker: trips after 5 consecutive failures per region
+- DAPR Jobs: schedule "0 6 * * *" (cron, Africa/Nairobi TZ)
+- Open-Meteo API: free tier, no API key
+- Iteration: Plantation MCP `list_regions()` provides coordinates
+- Storage: raw_documents + weather_data collections
 
 ---
 
-#### Story 2.7: Image Evidence Storage
+#### Story 2.8: Market Prices Pull Mode
 
-As a **QC Analyzer device**,
-I want to upload leaf images to cloud storage,
-So that visual evidence is preserved for AI analysis and audit.
+As a **Knowledge Model Market Analyzer**,
+I want market price data pulled from external APIs on schedule,
+So that market price trends can be analyzed for farmer recommendations.
 
 **Acceptance Criteria:**
 
-**Given** an END_BAG event includes leaf_assessments with images
-**When** images are submitted via UploadImage API
-**Then** images are uploaded to Azure Blob Storage
-**And** the blob path follows: quality-images/{factory_id}/{date}/{event_id}/{leaf_index}.jpg
-**And** a signed URL (SAS token) is returned for 24-hour access
+**Given** a market prices source is configured with trigger_mode=SCHEDULED_PULL
+**When** the DAPR Job triggers at scheduled time (daily 7 AM EAT)
+**Then** the configured market API is called
+**And** raw response is stored in `raw_documents` collection
 
-**Given** an image is uploaded
-**When** the upload completes
-**Then** metadata is stored: blob_path, file_size, upload_timestamp, checksum
-**And** the image_ref is linked to the corresponding leaf_assessment
+**Given** raw market data is stored
+**When** LLM extraction runs
+**Then** structured data is extracted: commodity, region, price, currency, unit, date
+**And** extracted data is stored in `market_prices` collection
 
-**Given** an image upload fails
-**When** the error is transient (network timeout)
-**Then** the upload is retried 3 times with exponential backoff
-**And** if all retries fail, the event is accepted but flagged: image_status="pending"
-**And** a background job retries pending images hourly
+**Given** market prices are extracted
+**When** storage completes
+**Then** a `collection.market_prices.updated` domain event is emitted
+**And** processing_status is "completed"
 
-**Given** an image with invalid format (not JPEG/PNG)
-**When** the upload is attempted
-**Then** the upload fails with validation error
-**And** the event is NOT rejected (quality data still recorded)
-**And** image_status is set to "invalid_format"
-
-**Given** images are stored
-**When** an AI agent needs to analyze the image
-**Then** the agent can retrieve a fresh SAS URL via GetImageUrl(image_ref)
-**And** the URL is valid for 1 hour
+**Given** the market API fails
+**When** error is detected
+**Then** retry with exponential backoff (max 3 attempts)
+**And** if all retries fail, job is marked failed with error details
+**And** alert is logged for operator review
 
 **Technical Notes:**
-- Azure Blob Storage: farmer-power-images container
-- Max image size: 5MB
-- Supported formats: JPEG, PNG
-- SAS token: read-only, 24h expiry for initial, 1h for AI access
+- DAPR Jobs: schedule "0 7 * * *" (cron, Africa/Nairobi TZ)
+- Market API: Starfish Kenya Tea Auction (requires API key)
+- Storage: raw_documents + market_prices collections
+- LLM prompt: market-prices-extraction
 
 ---
 
-#### Story 2.8: Collection Model MCP Server
+#### Story 2.9: Collection Model MCP Server
 
 As an **AI agent**,
 I want to access quality collection data via MCP tools,
@@ -939,15 +965,15 @@ So that I can analyze quality patterns and generate recommendations.
 
 **Given** a farmer_id exists
 **When** an AI agent calls `get_quality_summary(farmer_id, days=30)`
-**Then** the response includes: avg_primary_percentage, trend, total_deliveries, grade_distribution, leaf_type_avg
+**Then** the response includes: avg_primary_percentage, trend, total_deliveries, grade_distribution
 
 **Given** an event_id exists
 **When** an AI agent calls `get_quality_event(event_id)`
 **Then** the full event is returned including leaf_assessments and bag_summary
 
 **Given** the Knowledge Model needs poor quality events
-**When** an AI agent calls `get_unanalyzed_poor_quality_events(since_date)`
-**Then** events matching criteria are returned: poor_quality=true, analyzed=false, since_date filter
+**When** an AI agent calls `list_poor_quality_events(since_date, analyzed=false)`
+**Then** events matching criteria are returned with farmer context
 
 **Given** an event needs image analysis
 **When** an AI agent calls `get_image_urls(event_id)`
@@ -957,19 +983,64 @@ So that I can analyze quality patterns and generate recommendations.
 **Given** weather correlation is needed
 **When** an AI agent calls `get_weather_for_region(region_id, date_range)`
 **Then** weather data is returned for the specified region and date range
-**And** data includes daily aggregates: avg_temp, total_rainfall, avg_humidity
 
-**Given** the MCP Server receives a request
-**When** processing completes
-**Then** OpenTelemetry traces are emitted with tool name and duration
-**And** errors are logged with full context
+**Given** market prices are needed
+**When** an AI agent calls `get_market_prices(commodity, region, days=30)`
+**Then** price history is returned for the specified criteria
 
 **Technical Notes:**
-- MCP Server deployed as separate Kubernetes deployment
+- MCP Server: stateless, deployed as separate Kubernetes deployment
 - HPA enabled: min 2, max 10 replicas
-- gRPC interface following MCP protocol
-- Read-only access to MongoDB (read replicas)
-- Image URL generation requires Azure Blob Storage SDK
+- Read-only access to MongoDB (read replicas preferred)
+- Image URL generation: Azure Blob Storage SDK for SAS tokens
+- Proto: `farmer_power.collection_mcp.v1`
+
+---
+
+#### Story 2.10: Domain Event Emission
+
+As a **downstream service (Knowledge Model, Engagement Model)**,
+I want to subscribe to Collection domain events via Redis pub/sub,
+So that I can react to new quality data in real-time.
+
+**Acceptance Criteria:**
+
+**Given** a quality_event is stored successfully
+**When** processing completes
+**Then** a `collection.document.stored` event is published to Redis pub/sub
+**And** the event payload includes: document_id, source_type, farmer_id, timestamp
+
+**Given** a poor quality event is detected (primary_percentage < 70%)
+**When** the quality_event is stored
+**Then** a `collection.poor_quality_detected` event is also published
+**And** the event includes: event_id, farmer_id, primary_percentage, leaf_type_distribution
+
+**Given** a critical quality issue (primary_percentage < 40%)
+**When** the event is published
+**Then** the event includes priority: "critical"
+**And** the Knowledge Model can prioritize analysis
+
+**Given** weather data is updated for a region
+**When** storage completes
+**Then** a `collection.weather.updated` event is published
+**And** the event includes: region_id, date_range, data_points_count
+
+**Given** market prices are updated
+**When** storage completes
+**Then** a `collection.market_prices.updated` event is published
+**And** the event includes: commodity, region, latest_price, price_change_pct
+
+**Given** a downstream service subscribes to events
+**When** events are published
+**Then** DAPR pub/sub delivers with at-least-once semantics
+**And** events include correlation_id for tracing
+**And** schema version is included for compatibility (v1)
+
+**Technical Notes:**
+- DAPR pub/sub component: Redis
+- Topics: collection.document.stored, collection.poor_quality_detected, collection.weather.updated, collection.market_prices.updated
+- Event schema: CloudEvents v1.0 format
+- Delivery: at-least-once (consumers must be idempotent)
 
 ---
 

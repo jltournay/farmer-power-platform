@@ -1,99 +1,92 @@
 # Story 2.1: Collection Model Service Setup
 
-**Status:** ready-for-dev
+**Status:** in-progress
+**GitHub Issue:** #16
 
 ---
 
 ## Story
 
 As a **platform operator**,
-I want the Collection Model service deployed with Dapr sidecar and MongoDB connection,
-So that quality grading data can be ingested, stored, and events emitted to downstream services.
+I want the Collection Model service deployed with DAPR sidecar, MongoDB, and Redis pub/sub,
+So that quality grading data can be ingested, stored, and domain events emitted to downstream services.
 
 ---
 
 ## Acceptance Criteria
 
-1. **Given** the Kubernetes cluster is running with Dapr installed
+1. **Given** the Kubernetes cluster is running with DAPR installed
    **When** the Collection Model service is deployed
    **Then** the service starts successfully with health check endpoint returning 200
+   **And** the DAPR sidecar is injected and connected
+   **And** MongoDB connection is established (verified via connection test)
+   **And** Redis pub/sub component is configured and connected
+   **And** OpenTelemetry traces are emitted for all operations
 
-2. **Given** the service is deployed
-   **When** the Dapr sidecar injection is checked
-   **Then** the Dapr sidecar is injected and connected
+2. **Given** the service is running
+   **When** the DAPR pub/sub is tested
+   **Then** messages can be published to topics: `collection.document.stored`, `collection.poor_quality_detected`
+   **And** topic subscriptions are registered with DAPR
 
-3. **Given** the service is running
-   **When** a MongoDB connection test is executed
-   **Then** MongoDB connection is established (verified via connection test)
-
-4. **Given** the service is running
-   **When** a gRPC client connects
-   **Then** gRPC server is listening on port 50052
-
-5. **Given** any operation is executed
-   **When** the operation completes
-   **Then** OpenTelemetry traces are emitted for all operations
-
-6. **Given** the service is running with Dapr sidecar
-   **When** the pub/sub configuration is checked
-   **Then** Dapr pub/sub is configured for Redis
-
-7. **Given** the service is running
-   **When** a quality event occurs
-   **Then** messages can be published to topics: `collection.end_bag`, `collection.poor_quality_detected`
+3. **Given** Azure Event Grid subscription is configured (Epic 0 prerequisite)
+   **When** a blob is created in `qc-analyzer-results` or `qc-analyzer-exceptions` containers
+   **Then** Event Grid sends HTTP POST to the service's `/api/events/blob-created` endpoint
+   **And** the webhook validates Event Grid subscription handshake
 
 ---
 
 ## Tasks / Subtasks
 
-- [ ] **Task 1: Create service folder structure** (AC: #1)
-  - [ ] 1.1 Create `services/collection-model/` directory
-  - [ ] 1.2 Create `src/collection_model/` Python package
-  - [ ] 1.3 Create `pyproject.toml` with dependencies
-  - [ ] 1.4 Create `Dockerfile` based on `deploy/docker/Dockerfile.python`
+### Task 1: Create service folder structure (AC: #1)
+- [x] 1.1 Create `services/collection-model/` directory
+- [x] 1.2 Create `src/collection_model/` Python package
+- [x] 1.3 Create `pyproject.toml` with dependencies
+- [x] 1.4 Create `Dockerfile` based on `deploy/docker/Dockerfile.python`
 
-- [ ] **Task 2: Implement FastAPI application with health endpoints** (AC: #1)
-  - [ ] 2.1 Create `main.py` entrypoint with FastAPI app
-  - [ ] 2.2 Implement `/health` endpoint (liveness probe)
-  - [ ] 2.3 Implement `/ready` endpoint (readiness probe with MongoDB check)
-  - [ ] 2.4 Create `config.py` for service configuration
+### Task 2: Implement FastAPI application with health endpoints (AC: #1)
+- [x] 2.1 Create `main.py` entrypoint with FastAPI app
+- [x] 2.2 Implement `/health` endpoint (liveness probe)
+- [x] 2.3 Implement `/ready` endpoint (readiness probe with MongoDB check)
+- [x] 2.4 Create `config.py` for service configuration using Pydantic Settings
 
-- [ ] **Task 3: Configure Dapr sidecar** (AC: #2)
-  - [ ] 3.1 Create Kubernetes deployment manifest with Dapr annotations
-  - [ ] 3.2 Verify Dapr state store component exists at `deploy/kubernetes/components/dapr/statestore.yaml` (created in Story 1.1)
-  - [ ] 3.3 Verify Dapr sidecar injection in deployment
+### Task 3: Configure Kubernetes deployment with DAPR (AC: #1)
+- [x] 3.1 Create `deploy/kubernetes/base/services/collection-model.yaml` with DAPR annotations
+- [ ] 3.2 Configure DAPR app-id: `collection-model`
+- [ ] 3.3 Configure DAPR app-port: `8000` (HTTP)
+- [ ] 3.4 Verify DAPR sidecar injection works in deployment
 
-- [ ] **Task 4: Implement MongoDB connection** (AC: #3)
-  - [ ] 4.1 Create `infrastructure/mongodb.py` with async Motor client
-  - [ ] 4.2 Implement connection pooling and retry logic
-  - [ ] 4.3 Create connection test utility for readiness probe
-  - [ ] 4.4 Configure collections: `quality_events`, `weather_data`, `documents_index`
+### Task 4: Implement MongoDB connection (AC: #1)
+- [x] 4.1 Create `infrastructure/mongodb.py` with async Motor client
+- [x] 4.2 Implement connection pooling and retry logic
+- [x] 4.3 Create connection test utility for readiness probe
+- [ ] 4.4 Configure collections: `source_configs`, `raw_documents`, `quality_events`
 
-- [ ] **Task 5: Implement gRPC server** (AC: #4)
-  - [ ] 5.1 Create `proto/collection/v1/collection.proto` definitions
-  - [ ] 5.2 Create `api/grpc_server.py` with health checking
-  - [ ] 5.3 Enable server reflection for debugging
-  - [ ] 5.4 Configure gRPC to listen on port 50052
+### Task 5: Configure OpenTelemetry tracing (AC: #1)
+- [ ] 5.1 Add OpenTelemetry SDK and OTLP exporter to dependencies
+- [ ] 5.2 Auto-instrument FastAPI and PyMongo
+- [ ] 5.3 Configure via settings (`OTEL_ENABLED`, `OTEL_EXPORTER_ENDPOINT`)
 
-- [ ] **Task 6: Configure OpenTelemetry tracing** (AC: #5)
-  - [ ] 6.1 Add OpenTelemetry SDK and OTLP exporter
-  - [ ] 6.2 Auto-instrument FastAPI, gRPC, and PyMongo
-  - [ ] 6.3 Configure via settings (OTEL_ENABLED, OTEL_EXPORTER_ENDPOINT)
+### Task 6: Configure DAPR pub/sub for Redis (AC: #2)
+- [x] 6.1 Verify DAPR pub/sub component exists (created in Epic 1)
+- [x] 6.2 Implement `infrastructure/pubsub.py` with DAPR HTTP client
+- [x] 6.3 Create publish method for `collection.document.stored` topic
+- [x] 6.4 Create publish method for `collection.poor_quality_detected` topic
+- [x] 6.5 Add pub/sub health check to readiness probe
 
-- [ ] **Task 7: Configure Dapr pub/sub for Redis** (AC: #6, #7)
-  - [ ] 7.1 Verify Dapr pub/sub component exists at `deploy/kubernetes/components/dapr/pubsub.yaml` (created in Story 1.1)
-  - [ ] 7.2 Implement `infrastructure/pubsub.py` with Dapr HTTP client
-  - [ ] 7.3 Create publish methods for `collection.end_bag` topic
-  - [ ] 7.4 Create publish methods for `collection.poor_quality_detected` topic
-  - [ ] 7.5 Add pub/sub health check to readiness probe
+### Task 7: Implement Event Grid webhook handler (AC: #3)
+- [x] 7.1 Create `api/events.py` with FastAPI router
+- [x] 7.2 Implement `POST /api/events/blob-created` endpoint
+- [x] 7.3 Handle Event Grid subscription validation (return `validationResponse`)
+- [x] 7.4 Parse `Microsoft.Storage.BlobCreated` events
+- [x] 7.5 Log received events (processing deferred to Story 2.3)
 
-- [ ] **Task 8: Write unit and integration tests**
-  - [ ] 8.1 Create test directory `tests/unit/collection/` with `__init__.py` and `conftest.py`
-  - [ ] 8.2 Test health endpoint responses
-  - [ ] 8.3 Test MongoDB connection with mocks
-  - [ ] 8.4 Test configuration loading
-  - [ ] 8.5 Test pub/sub publishing with mocked Dapr client
-  - [ ] 8.6 Integration tests for full app in `tests/integration/`
+### Task 8: Write unit tests
+- [x] 8.1 Create test directory `tests/unit/collection/` with `__init__.py` and `conftest.py`
+- [x] 8.2 Test health endpoint responses
+- [x] 8.3 Test MongoDB connection with mocks
+- [x] 8.4 Test configuration loading
+- [x] 8.5 Test pub/sub publishing with mocked DAPR client
+- [x] 8.6 Test Event Grid webhook handler (validation + event parsing)
 
 ---
 
@@ -110,17 +103,15 @@ services/collection-model/
 │   ├── api/
 │   │   ├── __init__.py
 │   │   ├── health.py            # Health check endpoints
-│   │   └── grpc_server.py       # gRPC service implementation
+│   │   └── events.py            # Event Grid webhook handler
 │   ├── domain/
 │   │   ├── __init__.py
-│   │   └── models.py            # Pydantic domain models (placeholder)
+│   │   └── models.py            # Pydantic domain models
 │   └── infrastructure/
 │       ├── __init__.py
 │       ├── mongodb.py           # MongoDB async client
-│       ├── pubsub.py            # Dapr pub/sub client
+│       ├── pubsub.py            # DAPR pub/sub client
 │       └── tracing.py           # OpenTelemetry configuration
-├── tests/
-│   └── test_health.py
 ├── Dockerfile
 └── pyproject.toml
 ```
@@ -133,9 +124,8 @@ services/collection-model/
 | Web Framework | FastAPI | Latest |
 | Validation | Pydantic | 2.0+ |
 | MongoDB Driver | Motor (async) | Latest |
-| gRPC | grpcio + grpcio-reflection | Latest |
-| Service Mesh | Dapr | Latest |
-| Pub/Sub | Redis (via Dapr) | Latest |
+| Service Mesh | DAPR | Latest |
+| Pub/Sub | Redis (via DAPR) | Latest |
 | Tracing | OpenTelemetry | Auto |
 
 ### Critical Implementation Rules
@@ -144,80 +134,115 @@ services/collection-model/
 
 1. **ALL I/O operations MUST be async** - Use `async def` for all database and network operations
 2. **Use Pydantic 2.0 syntax** - `model_dump()` not `dict()`, `model_validate()` not `parse_obj()`
-3. **ALL inter-service communication via Dapr** - No direct HTTP between services
+3. **ALL inter-service communication via DAPR** - No direct HTTP between services
 4. **Type hints required** - ALL function signatures MUST have type hints
 5. **Absolute imports only** - No relative imports
-6. **Environment prefix** - Use `COLLECTION_` prefix for all config env vars (e.g., `COLLECTION_MONGODB_URI`)
+6. **Environment prefix** - Use `COLLECTION_` prefix for all config env vars
 
 ### MongoDB Collections Owned by Collection Model
 
 | Collection | Purpose |
 |------------|---------|
-| `quality_events` | All grading events (end_bag, tbk_result, poor_quality_detected) |
-| `weather_data` | Cached weather data from API pulls |
-| `documents_index` | Index of uploaded documents with embeddings reference |
+| `source_configs` | Data source configurations (from `fp-source-config` CLI) |
+| `raw_documents` | Raw blob content before LLM extraction |
+| `quality_events` | Extracted grading events with bag summaries |
+| `weather_data` | Weather API pull results |
+| `market_prices` | Market price API pull results |
 
-### Dapr Pub/Sub Topics
+### DAPR Pub/Sub Topics
 
 | Topic | Event Type | Published When |
 |-------|-----------|----------------|
-| `collection.end_bag` | EndBagEvent | QC Analyzer completes bag grading |
-| `collection.poor_quality_detected` | PoorQualityEvent | Quality drops below threshold |
+| `collection.document.stored` | DocumentStoredEvent | Raw document stored successfully |
+| `collection.poor_quality_detected` | PoorQualityEvent | Quality drops below 70% threshold |
+| `collection.weather.updated` | WeatherUpdatedEvent | Weather data pulled for region |
+| `collection.market_prices.updated` | MarketPricesUpdatedEvent | Market prices updated |
 
-### pyproject.toml Dependencies
+### Event Grid Webhook Handler
 
-```toml
-[tool.poetry]
-name = "collection-model"
-version = "0.1.0"
-description = "Collection Model Service - Quality data ingestion gateway"
+```python
+# api/events.py
+from fastapi import APIRouter, Request, Response
+from pydantic import BaseModel
+import structlog
 
-[tool.poetry.dependencies]
-python = "^3.12"
-fastapi = "^0.109.0"
-uvicorn = {extras = ["standard"], version = "^0.27.0"}
-pydantic = "^2.5.0"
-pydantic-settings = "^2.1.0"
-motor = "^3.3.0"
-grpcio = "^1.60.0"
-grpcio-reflection = "^1.60.0"
-grpcio-health-checking = "^1.60.0"
-structlog = "^24.1.0"
-httpx = "^0.26.0"  # For Dapr HTTP client
-dapr = "^1.13.0"
-dapr-ext-grpc = "^1.13.0"  # For Dapr gRPC integration
-fp-common = { path = "../../libs/fp-common" }
-fp-proto = { path = "../../libs/fp-proto" }
+router = APIRouter(prefix="/api/events", tags=["events"])
+logger = structlog.get_logger()
 
-[tool.poetry.group.dev.dependencies]
-pytest = "^8.0.0"
-pytest-asyncio = "^0.23.0"
-httpx = "^0.26.0"
-fp-testing = { path = "../../libs/fp-testing" }
+class EventGridEvent(BaseModel):
+    id: str
+    eventType: str
+    subject: str
+    data: dict
+    eventTime: str
+
+class SubscriptionValidation(BaseModel):
+    validationCode: str
+    validationUrl: str | None = None
+
+@router.post("/blob-created")
+async def handle_blob_created(request: Request) -> Response:
+    """Handle Azure Event Grid blob-created events."""
+    body = await request.json()
+
+    # Handle subscription validation handshake
+    if isinstance(body, list) and len(body) > 0:
+        event = body[0]
+        if event.get("eventType") == "Microsoft.EventGrid.SubscriptionValidationEvent":
+            validation_code = event["data"]["validationCode"]
+            logger.info("Event Grid subscription validation", code=validation_code)
+            return Response(
+                content=f'{{"validationResponse": "{validation_code}"}}',
+                media_type="application/json"
+            )
+
+    # Process blob-created events (actual processing in Story 2.3)
+    for event in body:
+        if event.get("eventType") == "Microsoft.Storage.BlobCreated":
+            logger.info(
+                "Blob created event received",
+                subject=event.get("subject"),
+                blob_url=event["data"].get("url"),
+            )
+            # TODO: Queue for processing (Story 2.3)
+
+    return Response(status_code=202)
 ```
 
-### Dapr Pub/Sub Component (Redis)
+### Pub/Sub Publishing Implementation
 
-```yaml
-# deploy/kubernetes/components/dapr/pubsub.yaml (reuse from Story 1.1)
-apiVersion: dapr.io/v1alpha1
-kind: Component
-metadata:
-  name: pubsub
-  namespace: farmer-power
-spec:
-  type: pubsub.redis
-  version: v1
-  metadata:
-    - name: redisHost
-      value: "redis:6379"
-    - name: redisPassword
-      secretKeyRef:
-        name: redis-secrets
-        key: password
+```python
+# infrastructure/pubsub.py
+from typing import Any
+import httpx
+from pydantic import BaseModel
+
+DAPR_HTTP_PORT = 3500
+
+class DaprPubSubClient:
+    """DAPR pub/sub client for publishing domain events."""
+
+    def __init__(self) -> None:
+        self.base_url = f"http://localhost:{DAPR_HTTP_PORT}"
+        self.pubsub_name = "pubsub"
+
+    async def publish(self, topic: str, data: dict[str, Any]) -> None:
+        """Publish event to DAPR pub/sub topic."""
+        url = f"{self.base_url}/v1.0/publish/{self.pubsub_name}/{topic}"
+        async with httpx.AsyncClient() as client:
+            response = await client.post(url, json=data)
+            response.raise_for_status()
+
+    async def publish_document_stored(self, event: BaseModel) -> None:
+        """Publish document.stored event."""
+        await self.publish("collection.document.stored", event.model_dump())
+
+    async def publish_poor_quality_detected(self, event: BaseModel) -> None:
+        """Publish poor_quality_detected event."""
+        await self.publish("collection.poor_quality_detected", event.model_dump())
 ```
 
-### Kubernetes Deployment with Dapr
+### Kubernetes Deployment with DAPR
 
 ```yaml
 # deploy/kubernetes/base/services/collection-model.yaml
@@ -248,9 +273,8 @@ spec:
           image: farmer-power/collection-model:latest
           ports:
             - containerPort: 8000  # FastAPI HTTP
-            - containerPort: 50052 # gRPC
           env:
-            - name: MONGODB_URI
+            - name: COLLECTION_MONGODB_URI
               valueFrom:
                 secretKeyRef:
                   name: mongodb-secrets
@@ -274,73 +298,83 @@ spec:
               port: 8000
             initialDelaySeconds: 5
             periodSeconds: 10
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: collection-model
+spec:
+  selector:
+    app: collection-model
+  ports:
+    - port: 8000
+      targetPort: 8000
+      name: http
 ```
 
-### Pub/Sub Publishing Implementation
+### Infrastructure Prerequisites (Epic 0)
 
-```python
-# infrastructure/pubsub.py
-from typing import Any
-import httpx
-from pydantic import BaseModel
-from collection_model.config import settings
+The following must be provisioned before Event Grid webhooks work:
 
-DAPR_HTTP_PORT = 3500
+1. **Azure Event Grid System Topic** - For the storage account
+2. **Event Subscription** - Filtering on `Microsoft.Storage.BlobCreated`
+3. **Webhook Endpoint** - Points to `https://{ingress}/api/events/blob-created`
 
-class DaprPubSubClient:
-    """Dapr pub/sub client for publishing events."""
+These are deployed via Terraform/Bicep in Epic 0 infrastructure stories.
 
-    def __init__(self) -> None:
-        self.base_url = f"http://localhost:{DAPR_HTTP_PORT}"
-        self.pubsub_name = "pubsub"
+### Proto Definition
 
-    async def publish(self, topic: str, data: dict[str, Any]) -> None:
-        """Publish event to Dapr pub/sub topic."""
-        url = f"{self.base_url}/v1.0/publish/{self.pubsub_name}/{topic}"
-        async with httpx.AsyncClient() as client:
-            response = await client.post(url, json=data)
-            response.raise_for_status()
+```protobuf
+// proto/collection/v1/collection.proto
+syntax = "proto3";
 
-    async def publish_end_bag_event(self, event: BaseModel) -> None:
-        """Publish end_bag event."""
-        await self.publish("collection.end_bag", event.model_dump())
+package farmer_power.collection.v1;
 
-    async def publish_poor_quality_event(self, event: BaseModel) -> None:
-        """Publish poor_quality_detected event."""
-        await self.publish("collection.poor_quality_detected", event.model_dump())
+// Domain events published via DAPR pub/sub
+message DocumentStoredEvent {
+  string document_id = 1;
+  string source_type = 2;
+  string farmer_id = 3;
+  string blob_path = 4;
+  string timestamp = 5;
+}
+
+message PoorQualityDetectedEvent {
+  string event_id = 1;
+  string farmer_id = 2;
+  double primary_percentage = 3;
+  map<string, double> leaf_type_distribution = 4;
+  string priority = 5;  // "standard" or "critical"
+}
 ```
-
-### Project Structure Notes
-
-- Service follows `services/{service-name}/` convention (kebab-case folder)
-- Python package uses `{service_name}/` convention (snake_case)
-- Proto definitions go in `proto/collection/v1/collection.proto`
-- Shared libraries imported from `libs/fp-common/` and `libs/fp-proto/`
-- Unit tests in `tests/unit/collection/` (global tests folder)
-- Service-specific tests in `services/collection-model/tests/`
-- gRPC port 50052 (Plantation uses 50051)
 
 ### References
 
 - [Source: _bmad-output/architecture/collection-model-architecture.md] - Full architecture design
-- [Source: _bmad-output/architecture/repository-structure.md] - Service folder template
-- [Source: _bmad-output/architecture/infrastructure-decisions.md] - Dapr configuration
-- [Source: _bmad-output/project-context.md#technology-stack] - Version requirements
-- [Source: _bmad-output/project-context.md#python-specific-rules] - Async/Pydantic rules
+- [Source: _bmad-output/epics.md#story-21] - Epic story definition
+- [Source: _bmad-output/project-context.md] - Coding standards and rules
 - [Source: Story 1.1] - Plantation Model service setup (reference implementation)
 
 ---
 
 ## Out of Scope
 
-- Implementing actual gRPC methods beyond health checking (Story 2-2+)
-- Webhook endpoints for QC Analyzer (Story 2-2)
-- TBK grading result storage (Story 2-3)
-- Batch upload for offline mode (Story 2-4)
-- Event subscription handling (Story 2-5+)
+- Source configuration CLI tool (Story 2.2)
+  - Event Grid event processing logic (Story 2.3)
+- QC Analyzer JSON ingestion (Story 2.4)
+- QC Analyzer ZIP ingestion (Story 2.5)
+- Deduplication logic (Story 2.6)
+- Actual domain event emission after processing (Story 2.10)
 
 ---
 
-## GitHub Issue
+## Definition of Done
 
-To be created when story is picked up for development.
+- [ ] Service starts and passes health checks
+- [ ] MongoDB connection verified via `/ready` endpoint
+- [ ] DAPR sidecar injected and pub/sub configured
+- [ ] Event Grid webhook endpoint responds to validation requests
+- [ ] Event Grid blob-created events logged (not processed)
+- [ ] OpenTelemetry traces visible in collector
+- [ ] All unit tests passing
+- [ ] Code reviewed and merged

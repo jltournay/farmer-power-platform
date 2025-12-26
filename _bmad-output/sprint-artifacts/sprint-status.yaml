@@ -1,5 +1,5 @@
   # Sprint Status - farmer-power-platform
-# generated: 2025-12-23
+# generated: 2025-12-26
 # project: farmer-power-platform
 # tracking_system: file-system
 # story_location: _bmad-output/sprint-artifacts
@@ -33,7 +33,7 @@
 # - SM typically creates next story after previous one is 'done' to incorporate learnings
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 
-generated: 2025-12-23
+generated: 2025-12-26
 project: farmer-power-platform
 tracking_system: file-system
 story_location: _bmad-output/sprint-artifacts
@@ -56,16 +56,18 @@ development_status:
   1-6-plantation-model-mcp-server: done  # github_issue: 13
   epic-1-retrospective: done
 
-  # Epic 2: Quality Data Ingestion
+  # Epic 2: Quality Data Ingestion (REVISED - BLOB_TRIGGER architecture)
   epic-2: in-progress
-  2-1-collection-model-service-setup: ready-for-dev
-  2-2-end-bag-event-ingestion-api: backlog
-  2-3-tbk-grading-result-storage: backlog
-  2-4-batch-upload-for-intermittent-connectivity: backlog
-  2-5-poor-quality-detected-event-handling: backlog
-  2-6-weather-data-pull-mode: backlog
-  2-7-image-evidence-storage: backlog
-  2-8-collection-model-mcp-server: backlog  # blocked by 0-1
+  2-1-collection-model-service-setup: in-progress  # github_issue: 16
+  2-2-source-configuration-cli: backlog
+  2-3-event-grid-trigger-handler: backlog
+  2-4-qc-analyzer-result-ingestion: backlog
+  2-5-qc-analyzer-exception-images-ingestion: backlog
+  2-6-document-storage-deduplication: backlog
+  2-7-weather-api-pull-mode: backlog
+  2-8-market-prices-pull-mode: backlog
+  2-9-collection-model-mcp-server: backlog
+  2-10-domain-event-emission: backlog
   epic-2-retrospective: optional
 
   # Epic 3: Factory Manager Dashboard

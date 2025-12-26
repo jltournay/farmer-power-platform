@@ -1,0 +1,92 @@
+// Collection Model Service - gRPC API Definition
+// Quality data ingestion gateway for the Farmer Power Platform
+
+syntax = "proto3";
+
+package farmer_power.collection.v1;
+
+import "google/protobuf/timestamp.proto";
+
+// Note: Health checking uses standard grpc.health.v1.Health (grpc-health-checking package)
+// No custom HealthService defined here to avoid duplication.
+
+// ============================================================================
+// Collection Service - Core Operations
+// ============================================================================
+
+service CollectionService {
+  // Placeholder for future gRPC methods (Story 2-2+)
+  // EndBag event ingestion
+  // TBK grading result storage
+  // Quality event queries
+  
+  // For now, this service exposes only health checking via grpc.health.v1.Health
+  // and server reflection for debugging
+}
+
+// ============================================================================
+// Common Types
+// ============================================================================
+
+// Event types published by Collection Model
+enum EventType {
+  EVENT_TYPE_UNSPECIFIED = 0;
+  EVENT_TYPE_END_BAG = 1;
+  EVENT_TYPE_TBK_RESULT = 2;
+  EVENT_TYPE_POOR_QUALITY_DETECTED = 3;
+}
+
+// Quality grade from TBK grading
+enum QualityGrade {
+  QUALITY_GRADE_UNSPECIFIED = 0;
+  QUALITY_GRADE_PRIMARY = 1;
+  QUALITY_GRADE_SECONDARY = 2;
+}
+
+// ============================================================================
+// Event Messages (for future use)
+// ============================================================================
+
+// Base event metadata
+message EventMetadata {
+  string event_id = 1;
+  string farmer_id = 2;
+  string collection_point_id = 3;
+  google.protobuf.Timestamp timestamp = 4;
+  string source = 5;  // "qc_analyzer", "factory_pos", "mobile_app"
+}
+
+// End bag event from QC Analyzer (Story 2-2)
+message EndBagEvent {
+  EventMetadata metadata = 1;
+  double weight_kg = 2;
+  QualityGrade quality_grade = 3;
+  map<string, string> attributes = 4;  // TBK attribute values
+  string bag_id = 5;
+}
+
+// Poor quality detected event (Story 2-5)
+message PoorQualityEvent {
+  EventMetadata metadata = 1;
+  QualityGrade quality_grade = 2;
+  string reason = 3;
+  double consecutive_secondary_count = 4;
+}
+
+// ============================================================================
+// Query Messages (placeholder for Story 2-8)
+// ============================================================================
+
+message GetQualityEventsRequest {
+  string farmer_id = 1;
+  google.protobuf.Timestamp start_date = 2;
+  google.protobuf.Timestamp end_date = 3;
+  int32 page_size = 4;
+  string page_token = 5;
+}
+
+message GetQualityEventsResponse {
+  repeated EndBagEvent events = 1;
+  string next_page_token = 2;
+  int32 total_count = 3;
+}
