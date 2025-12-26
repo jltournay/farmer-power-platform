@@ -538,6 +538,60 @@ class SourceConfigDeployer:
 
         return sorted(schemas, key=lambda s: s.name)
 
+    async def validate_schema_references(
+        self,
+        configs: list[SourceConfig],
+        schemas_being_deployed: list[tuple[str, dict]] | None = None,
+    ) -> list[str]:
+        """Validate that all schema references in configs can be resolved.
+
+        Checks that each referenced schema exists either:
+        - In MongoDB (already deployed)
+        - In the schemas_being_deployed list (will be deployed in same batch)
+
+        Args:
+            configs: List of source configurations to validate.
+            schemas_being_deployed: Optional list of schemas being deployed
+                in the same batch.
+
+        Returns:
+            List of error messages for missing/invalid schema references.
+        """
+        errors: list[str] = []
+        schemas_in_batch = {name for name, _ in (schemas_being_deployed or [])}
+
+        for config in configs:
+            if config.validation is None:
+                continue
+
+            schema_name = config.validation.schema_name
+            schema_version = config.validation.schema_version
+
+            # Check if schema exists in MongoDB
+            existing = await self.db[self.SCHEMAS_COLLECTION].find_one(
+                {"name": schema_name}
+            )
+
+            if existing is None:
+                # Schema not in MongoDB, check if it's being deployed
+                if schema_name not in schemas_in_batch:
+                    errors.append(
+                        f"Source '{config.source_id}' references schema "
+                        f"'{schema_name}' which is not deployed and not in "
+                        f"current deployment batch"
+                    )
+            elif schema_version is not None:
+                # Schema exists, check version if specified
+                deployed_version = existing.get("version", 1)
+                if schema_version > deployed_version:
+                    errors.append(
+                        f"Source '{config.source_id}' references schema "
+                        f"'{schema_name}' version {schema_version}, but only "
+                        f"version {deployed_version} is deployed"
+                    )
+
+        return errors
+
 
 def load_source_configs(files: list[Path]) -> list[SourceConfig]:
     """Load and parse source configuration files.

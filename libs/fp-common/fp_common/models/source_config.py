@@ -96,9 +96,18 @@ class IngestionConfig(BaseModel):
 
 
 class ValidationConfig(BaseModel):
-    """Validation configuration block."""
+    """Validation configuration block.
+
+    The schema_version field is optional:
+    - If specified, the ingestion pipeline uses that exact version
+    - If None (default), the pipeline uses the latest deployed version
+    """
 
     schema_name: str = Field(..., description="JSON schema file name for validation")
+    schema_version: int | None = Field(
+        None,
+        description="Schema version to use (None = latest)",
+    )
     strict: bool = Field(True, description="Whether to fail on validation errors")
 
 

@@ -615,3 +615,162 @@ class TestSchemaDeployment:
         schema_names = [s.name for s in schemas]
         assert "data/schema-a.json" in schema_names
         assert "data/schema-b.json" in schema_names
+
+
+@pytest.mark.unit
+class TestValidationConfigSchemaVersion:
+    """Tests for ValidationConfig with schema_version field."""
+
+    def test_validation_config_without_version(self) -> None:
+        """Test ValidationConfig defaults to None version."""
+        from fp_common.models.source_config import ValidationConfig
+
+        config = ValidationConfig(schema_name="data/test.json")
+
+        assert config.schema_name == "data/test.json"
+        assert config.schema_version is None
+        assert config.strict is True
+
+    def test_validation_config_with_version(self) -> None:
+        """Test ValidationConfig with explicit version."""
+        from fp_common.models.source_config import ValidationConfig
+
+        config = ValidationConfig(schema_name="data/test.json", schema_version=2, strict=False)
+
+        assert config.schema_name == "data/test.json"
+        assert config.schema_version == 2
+        assert config.strict is False
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+class TestValidateSchemaReferences:
+    """Tests for validate_schema_references method."""
+
+    async def test_validate_no_validation_config(
+        self,
+        mock_mongodb_client,
+        sample_scheduled_config: dict[str, Any],
+    ) -> None:
+        """Test validation passes when config has no validation section."""
+        config = SourceConfig.model_validate(sample_scheduled_config)
+        deployer = SourceConfigDeployer("dev")
+        deployer._db = mock_mongodb_client["collection_model"]
+
+        errors = await deployer.validate_schema_references([config])
+
+        assert len(errors) == 0
+
+    async def test_validate_schema_in_batch(
+        self,
+        mock_mongodb_client,
+        sample_valid_config: dict[str, Any],
+    ) -> None:
+        """Test validation passes when schema is in deployment batch."""
+        config_data = sample_valid_config.copy()
+        config_data["validation"] = {
+            "schema_name": "data/test-schema.json",
+            "strict": True,
+        }
+        config = SourceConfig.model_validate(config_data)
+        deployer = SourceConfigDeployer("dev")
+        deployer._db = mock_mongodb_client["collection_model"]
+
+        schemas_in_batch = [("data/test-schema.json", {"type": "object"})]
+        errors = await deployer.validate_schema_references([config], schemas_in_batch)
+
+        assert len(errors) == 0
+
+    async def test_validate_schema_exists_in_mongodb(
+        self,
+        mock_mongodb_client,
+        sample_valid_config: dict[str, Any],
+    ) -> None:
+        """Test validation passes when schema exists in MongoDB."""
+        # Deploy schema first
+        deployer = SourceConfigDeployer("dev")
+        deployer._db = mock_mongodb_client["collection_model"]
+        await deployer.deploy_schemas([("data/test-schema.json", {"type": "object"})])
+
+        config_data = sample_valid_config.copy()
+        config_data["validation"] = {
+            "schema_name": "data/test-schema.json",
+            "strict": True,
+        }
+        config = SourceConfig.model_validate(config_data)
+
+        errors = await deployer.validate_schema_references([config])
+
+        assert len(errors) == 0
+
+    async def test_validate_schema_missing(
+        self,
+        mock_mongodb_client,
+        sample_valid_config: dict[str, Any],
+    ) -> None:
+        """Test validation fails when schema is missing."""
+        config_data = sample_valid_config.copy()
+        config_data["validation"] = {
+            "schema_name": "data/missing-schema.json",
+            "strict": True,
+        }
+        config = SourceConfig.model_validate(config_data)
+        deployer = SourceConfigDeployer("dev")
+        deployer._db = mock_mongodb_client["collection_model"]
+
+        errors = await deployer.validate_schema_references([config])
+
+        assert len(errors) == 1
+        assert "missing-schema.json" in errors[0]
+        assert "not deployed" in errors[0]
+        assert "deployment batch" in errors[0]
+
+    async def test_validate_schema_version_too_high(
+        self,
+        mock_mongodb_client,
+        sample_valid_config: dict[str, Any],
+    ) -> None:
+        """Test validation fails when requested version is higher than deployed."""
+        # Deploy schema at version 1
+        deployer = SourceConfigDeployer("dev")
+        deployer._db = mock_mongodb_client["collection_model"]
+        await deployer.deploy_schemas([("data/test-schema.json", {"type": "object"})])
+
+        config_data = sample_valid_config.copy()
+        config_data["validation"] = {
+            "schema_name": "data/test-schema.json",
+            "schema_version": 5,  # Request version 5 but only v1 exists
+            "strict": True,
+        }
+        config = SourceConfig.model_validate(config_data)
+
+        errors = await deployer.validate_schema_references([config])
+
+        assert len(errors) == 1
+        assert "version 5" in errors[0]
+        assert "version 1 is deployed" in errors[0]
+
+    async def test_validate_schema_version_ok(
+        self,
+        mock_mongodb_client,
+        sample_valid_config: dict[str, Any],
+    ) -> None:
+        """Test validation passes when requested version matches or is lower."""
+        # Deploy schema and update it to version 3
+        deployer = SourceConfigDeployer("dev")
+        deployer._db = mock_mongodb_client["collection_model"]
+        await deployer.deploy_schemas([("data/test-schema.json", {"type": "object"})])
+        await deployer.deploy_schemas([("data/test-schema.json", {"type": "object", "v": 2})])
+        await deployer.deploy_schemas([("data/test-schema.json", {"type": "object", "v": 3})])
+
+        config_data = sample_valid_config.copy()
+        config_data["validation"] = {
+            "schema_name": "data/test-schema.json",
+            "schema_version": 2,  # Request version 2, v3 is deployed
+            "strict": True,
+        }
+        config = SourceConfig.model_validate(config_data)
+
+        errors = await deployer.validate_schema_references([config])
+
+        assert len(errors) == 0

@@ -102,6 +102,7 @@ class TestDeployCommand:
             mock_deployer = AsyncMock()
             mock_deployer.connect = AsyncMock()
             mock_deployer.disconnect = AsyncMock()
+            mock_deployer.validate_schema_references = AsyncMock(return_value=[])
             mock_deployer.deploy = AsyncMock(
                 return_value=[MagicMock(source_id="test-source", action="created", version=1)]
             )

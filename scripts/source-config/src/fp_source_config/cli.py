@@ -151,6 +151,17 @@ def deploy(
         deployer = SourceConfigDeployer(environment)
         try:
             await deployer.connect()
+
+            # Validate schema references before deploying
+            schema_errors = await deployer.validate_schema_references(
+                configs, schemas_being_deployed=schemas
+            )
+            if schema_errors:
+                console.print("[red]Schema reference validation failed:[/red]")
+                for error in schema_errors:
+                    console.print(f"  [red]• {error}[/red]")
+                raise typer.Exit(code=1)
+
             console.print(f"[dim]Deploying to {environment} environment...[/dim]\n")
 
             # Deploy schemas first
