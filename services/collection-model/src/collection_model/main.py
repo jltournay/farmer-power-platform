@@ -9,9 +9,6 @@ from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 
 import structlog
-from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
-
 from collection_model.api import events, health
 from collection_model.config import settings
 from collection_model.infrastructure.mongodb import (
@@ -25,6 +22,8 @@ from collection_model.infrastructure.tracing import (
     setup_tracing,
     shutdown_tracing,
 )
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 
 # Configure structured logging
 structlog.configure(

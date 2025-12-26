@@ -19,17 +19,11 @@ class BlobCreatedData(BaseModel):
     """Data payload for Microsoft.Storage.BlobCreated event."""
 
     api: str = Field(description="API that triggered the event")
-    client_request_id: str = Field(
-        default="", alias="clientRequestId", description="Client request ID"
-    )
+    client_request_id: str = Field(default="", alias="clientRequestId", description="Client request ID")
     request_id: str = Field(default="", alias="requestId", description="Request ID")
     e_tag: str = Field(default="", alias="eTag", description="Blob ETag")
-    content_type: str = Field(
-        default="", alias="contentType", description="Blob content type"
-    )
-    content_length: int = Field(
-        default=0, alias="contentLength", description="Blob size in bytes"
-    )
+    content_type: str = Field(default="", alias="contentType", description="Blob content type")
+    content_length: int = Field(default=0, alias="contentLength", description="Blob size in bytes")
     blob_type: str = Field(default="", alias="blobType", description="Type of blob")
     url: str = Field(description="Full URL to the blob")
     sequencer: str = Field(default="", description="Event sequencer")
@@ -49,20 +43,14 @@ class EventGridEvent(BaseModel):
     event_type: str = Field(alias="eventType", description="Event type")
     event_time: str = Field(alias="eventTime", description="Event timestamp")
     data: dict[str, Any] = Field(description="Event data payload")
-    data_version: str = Field(
-        default="", alias="dataVersion", description="Data schema version"
-    )
-    metadata_version: str = Field(
-        default="", alias="metadataVersion", description="Metadata version"
-    )
+    data_version: str = Field(default="", alias="dataVersion", description="Data schema version")
+    metadata_version: str = Field(default="", alias="metadataVersion", description="Metadata version")
 
 
 class SubscriptionValidationData(BaseModel):
     """Data payload for subscription validation event."""
 
-    validation_code: str = Field(
-        alias="validationCode", description="Validation code to echo back"
-    )
+    validation_code: str = Field(alias="validationCode", description="Validation code to echo back")
     validation_url: str | None = Field(
         default=None,
         alias="validationUrl",
@@ -85,6 +73,7 @@ async def handle_blob_created(request: Request) -> Response:
 
     Returns:
         Response with validation response or 202 Accepted for events.
+
     """
     try:
         body = await request.json()
@@ -136,6 +125,7 @@ def _handle_subscription_validation(event: dict[str, Any]) -> Response:
 
     Returns:
         Response with validationResponse JSON.
+
     """
     try:
         validation_data = SubscriptionValidationData.model_validate(event.get("data", {}))
@@ -167,6 +157,7 @@ def _log_blob_created_event(event: dict[str, Any]) -> None:
 
     Args:
         event: The blob-created event from Event Grid.
+
     """
     subject = event.get("subject", "")
     data = event.get("data", {})

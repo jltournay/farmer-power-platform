@@ -1,7 +1,6 @@
 """Tests for Collection Model Dapr pub/sub client."""
 
 import pytest
-
 from collection_model.config import settings
 
 

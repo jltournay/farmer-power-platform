@@ -1,6 +1,7 @@
 """MongoDB async client with connection pooling and retry logic."""
 
 import structlog
+from collection_model.config import settings
 from motor.motor_asyncio import AsyncIOMotorClient, AsyncIOMotorDatabase
 from pymongo.errors import ConnectionFailure, ServerSelectionTimeoutError
 from tenacity import (
@@ -9,8 +10,6 @@ from tenacity import (
     stop_after_attempt,
     wait_exponential,
 )
-
-from collection_model.config import settings
 
 logger = structlog.get_logger(__name__)
 
@@ -34,6 +33,7 @@ async def get_mongodb_client() -> AsyncIOMotorClient:
 
     Raises:
         ConnectionFailure: If unable to connect to MongoDB.
+
     """
     global _client
 
@@ -66,6 +66,7 @@ async def get_database() -> AsyncIOMotorDatabase:
 
     Returns:
         AsyncIOMotorDatabase: The application database.
+
     """
     global _database
 
@@ -94,6 +95,7 @@ async def check_mongodb_connection() -> bool:
 
     Returns:
         bool: True if connection is healthy, False otherwise.
+
     """
     try:
         client = await get_mongodb_client()
@@ -129,9 +131,7 @@ async def ensure_indexes() -> None:
     # raw_documents indexes (includes deduplication)
     raw_documents = db[RAW_DOCUMENTS_COLLECTION]
     await raw_documents.create_index("content_hash", unique=True)  # Deduplication
-    await raw_documents.create_index(
-        [("blob_path", 1), ("blob_etag", 1)], unique=True
-    )  # Idempotency for Event Grid
+    await raw_documents.create_index([("blob_path", 1), ("blob_etag", 1)], unique=True)  # Idempotency for Event Grid
     await raw_documents.create_index("source_id")
     await raw_documents.create_index("processing_status")
     await raw_documents.create_index("created_at")
@@ -144,9 +144,7 @@ async def ensure_indexes() -> None:
     await quality_events.create_index("created_at")
     await quality_events.create_index("primary_percentage")
     await quality_events.create_index([("farmer_id", 1), ("created_at", -1)])
-    await quality_events.create_index(
-        [("primary_percentage", 1), ("analyzed", 1)]
-    )  # For poor quality queries
+    await quality_events.create_index([("primary_percentage", 1), ("analyzed", 1)])  # For poor quality queries
     logger.debug("quality_events indexes created")
 
     # weather_data indexes

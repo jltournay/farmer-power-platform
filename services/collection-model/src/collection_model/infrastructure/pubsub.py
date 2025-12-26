@@ -4,9 +4,8 @@ from typing import Any
 
 import httpx
 import structlog
-from pydantic import BaseModel
-
 from collection_model.config import settings
+from pydantic import BaseModel
 
 logger = structlog.get_logger(__name__)
 
@@ -31,6 +30,7 @@ class DaprPubSubClient:
         Args:
             dapr_host: Dapr sidecar host (defaults to settings.dapr_host).
             dapr_http_port: Dapr HTTP port (defaults to settings.dapr_http_port).
+
         """
         self._dapr_host = dapr_host or settings.dapr_host
         self._dapr_http_port = dapr_http_port or settings.dapr_http_port
@@ -42,6 +42,7 @@ class DaprPubSubClient:
 
         Returns:
             True if Dapr is reachable, False otherwise.
+
         """
         try:
             async with httpx.AsyncClient() as client:
@@ -68,6 +69,7 @@ class DaprPubSubClient:
 
         Returns:
             True if event was published successfully, False otherwise.
+
         """
         url = f"{self._base_url}/v1.0/publish/{self._pubsub_name}/{topic}"
 
@@ -134,12 +136,11 @@ class DaprPubSubClient:
 
         Returns:
             True if published successfully, False otherwise.
+
         """
         return await self.publish_event(settings.dapr_document_stored_topic, event)
 
-    async def publish_poor_quality_detected(
-        self, event: BaseModel | dict[str, Any]
-    ) -> bool:
+    async def publish_poor_quality_detected(self, event: BaseModel | dict[str, Any]) -> bool:
         """Publish a poor_quality_detected event.
 
         Published when quality drops below 70% threshold.
@@ -149,6 +150,7 @@ class DaprPubSubClient:
 
         Returns:
             True if published successfully, False otherwise.
+
         """
         return await self.publish_event(settings.dapr_poor_quality_topic, event)
 
@@ -162,12 +164,11 @@ class DaprPubSubClient:
 
         Returns:
             True if published successfully, False otherwise.
+
         """
         return await self.publish_event(settings.dapr_weather_updated_topic, event)
 
-    async def publish_market_prices_updated(
-        self, event: BaseModel | dict[str, Any]
-    ) -> bool:
+    async def publish_market_prices_updated(self, event: BaseModel | dict[str, Any]) -> bool:
         """Publish a market_prices.updated event.
 
         Published when market prices are updated.
@@ -177,6 +178,7 @@ class DaprPubSubClient:
 
         Returns:
             True if published successfully, False otherwise.
+
         """
         return await self.publish_event(settings.dapr_market_prices_topic, event)
 
@@ -190,6 +192,7 @@ def get_pubsub_client() -> DaprPubSubClient:
 
     Returns:
         DaprPubSubClient: The pub/sub client instance.
+
     """
     global _pubsub_client
 
@@ -204,6 +207,7 @@ async def check_pubsub_health() -> bool:
 
     Returns:
         True if Dapr is reachable, False otherwise.
+
     """
     client = get_pubsub_client()
     return await client.check_health()

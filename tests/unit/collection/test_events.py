@@ -1,9 +1,8 @@
 """Unit tests for Event Grid webhook handler."""
 
 import pytest
-from fastapi.testclient import TestClient
-
 from collection_model.main import app
+from fastapi.testclient import TestClient
 
 
 @pytest.fixture
@@ -15,9 +14,7 @@ def client() -> TestClient:
 class TestEventGridWebhook:
     """Tests for the /api/events/blob-created endpoint."""
 
-    def test_subscription_validation_returns_validation_response(
-        self, client: TestClient
-    ) -> None:
+    def test_subscription_validation_returns_validation_response(self, client: TestClient) -> None:
         """Test that subscription validation returns the validation code."""
         validation_code = "test-validation-code-12345"
         payload = [
@@ -31,7 +28,7 @@ class TestEventGridWebhook:
                     "validationUrl": None,
                 },
                 "dataVersion": "1.0",
-            }
+            },
         ]
 
         response = client.post("/api/events/blob-created", json=payload)
@@ -60,7 +57,7 @@ class TestEventGridWebhook:
                     "storageDiagnostics": {},
                 },
                 "dataVersion": "1.0",
-            }
+            },
         ]
 
         response = client.post("/api/events/blob-created", json=payload)
@@ -135,16 +132,14 @@ class TestEventGridWebhook:
                 "eventTime": "2025-12-26T10:00:00Z",
                 "data": {},
                 "dataVersion": "1.0",
-            }
+            },
         ]
 
         response = client.post("/api/events/blob-created", json=payload)
 
         assert response.status_code == 202
 
-    def test_subscription_validation_missing_code_returns_400(
-        self, client: TestClient
-    ) -> None:
+    def test_subscription_validation_missing_code_returns_400(self, client: TestClient) -> None:
         """Test that missing validation code returns 400."""
         payload = [
             {
@@ -154,7 +149,7 @@ class TestEventGridWebhook:
                 "eventTime": "2025-12-26T10:00:00Z",
                 "data": {},  # Missing validationCode
                 "dataVersion": "1.0",
-            }
+            },
         ]
 
         response = client.post("/api/events/blob-created", json=payload)
@@ -182,7 +177,7 @@ class TestBlobPathParsing:
                     "contentLength": 1024,
                 },
                 "dataVersion": "1.0",
-            }
+            },
         ]
 
         response = client.post("/api/events/blob-created", json=payload)

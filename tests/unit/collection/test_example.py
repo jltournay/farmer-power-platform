@@ -1,5 +1,4 @@
-"""
-Example Unit Tests for Collection Model
+"""Example Unit Tests for Collection Model
 
 This file demonstrates how to use the test fixtures defined in conftest.py.
 Delete or modify this file when implementing actual tests.

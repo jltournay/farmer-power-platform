@@ -3,8 +3,6 @@
 import os
 from unittest.mock import patch
 
-import pytest
-
 
 def test_config_defaults() -> None:
     """Test configuration default values."""

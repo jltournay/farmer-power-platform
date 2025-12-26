@@ -1,6 +1,7 @@
 """Health check endpoints for Kubernetes probes."""
 
-from typing import Any, Callable, Coroutine
+from collections.abc import Callable, Coroutine
+from typing import Any
 
 from fastapi import APIRouter, status
 from fastapi.responses import JSONResponse
@@ -85,8 +86,7 @@ async def ready() -> JSONResponse:
             status_code=status.HTTP_200_OK,
             content={"status": "ready", "checks": checks},
         )
-    else:
-        return JSONResponse(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            content={"status": "not_ready", "checks": checks},
-        )
+    return JSONResponse(
+        status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+        content={"status": "not_ready", "checks": checks},
+    )

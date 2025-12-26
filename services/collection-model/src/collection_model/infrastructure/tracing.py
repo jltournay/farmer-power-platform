@@ -3,14 +3,13 @@
 from typing import TYPE_CHECKING
 
 import structlog
+from collection_model.config import settings
 from opentelemetry import trace
 from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter
 from opentelemetry.instrumentation.pymongo import PymongoInstrumentor
 from opentelemetry.sdk.resources import Resource
 from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import BatchSpanProcessor
-
-from collection_model.config import settings
 
 if TYPE_CHECKING:
     from fastapi import FastAPI
@@ -43,7 +42,7 @@ def setup_tracing() -> None:
             "service.version": settings.service_version,
             "service.namespace": settings.otel_service_namespace,
             "deployment.environment": settings.environment,
-        }
+        },
     )
 
     # Create tracer provider
@@ -62,7 +61,7 @@ def setup_tracing() -> None:
             max_queue_size=2048,
             max_export_batch_size=512,
             schedule_delay_millis=5000,
-        )
+        ),
     )
 
     # Set as global tracer provider
@@ -102,6 +101,7 @@ def instrument_fastapi(app: "FastAPI") -> None:
 
     Args:
         app: The FastAPI application instance.
+
     """
     if not settings.otel_enabled:
         return
@@ -126,6 +126,7 @@ def get_tracer(name: str) -> trace.Tracer:
 
     Returns:
         Tracer: An OpenTelemetry tracer instance.
+
     """
     return trace.get_tracer(name)
 

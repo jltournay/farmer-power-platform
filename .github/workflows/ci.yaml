@@ -50,7 +50,7 @@ jobs:
 
       - name: Run unit tests
         run: |
-          PYTHONPATH="${PYTHONPATH}:libs/fp-common:libs/fp-proto/src:libs/fp-testing:services/plantation-model/src" \
+          PYTHONPATH="${PYTHONPATH}:libs/fp-common:libs/fp-proto/src:libs/fp-testing:services/plantation-model/src:services/collection-model/src" \
             pytest tests/unit/ -v --cov=services --cov-report=term-missing
 
   integration-tests:
@@ -100,7 +100,7 @@ jobs:
           MONGODB_TEST_URI: "mongodb://localhost:27018"
           MONGODB_TEST_PORT: "27018"
         run: |
-          PYTHONPATH="${PYTHONPATH}:libs/fp-common:libs/fp-proto/src:libs/fp-testing:services/plantation-model/src" \
+          PYTHONPATH="${PYTHONPATH}:libs/fp-common:libs/fp-proto/src:libs/fp-testing:services/plantation-model/src:services/collection-model/src" \
             pytest tests/integration/ -v -m mongodb --tb=short
 
   all-tests-pass:
