@@ -4,7 +4,7 @@ This module provides the IngestionQueue class which manages the
 ingestion_queue MongoDB collection for storing IngestionJob documents.
 """
 
-from datetime import UTC
+from datetime import UTC, datetime
 
 import structlog
 from collection_model.domain.ingestion_job import IngestionJob
@@ -64,6 +64,13 @@ class IngestionQueue:
         await self.collection.create_index(
             "source_id",
             name="idx_source_id",
+        )
+
+        # Index for ingestion_id lookups (used by get_job_by_id, update_job_status)
+        await self.collection.create_index(
+            "ingestion_id",
+            unique=True,
+            name="idx_ingestion_id_unique",
         )
 
         logger.info("Ingestion queue indexes ensured")
@@ -133,8 +140,6 @@ class IngestionQueue:
             True if job was found and updated, False otherwise.
 
         """
-        from datetime import datetime
-
         update_doc: dict = {"status": status}
         if status in ("completed", "failed"):
             update_doc["processed_at"] = datetime.now(UTC)

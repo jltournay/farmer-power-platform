@@ -23,10 +23,13 @@ class SourceConfigService:
 
     Attributes:
         CACHE_TTL_MINUTES: Cache time-to-live in minutes.
+        MAX_CONFIGS: Maximum number of source configs to cache.
+        COLLECTION_NAME: MongoDB collection name for source configs.
 
     """
 
     CACHE_TTL_MINUTES = 5
+    MAX_CONFIGS = 100  # Maximum source configs expected per deployment
     COLLECTION_NAME = "source_configs"
 
     def __init__(self, db: AsyncIOMotorDatabase) -> None:
@@ -55,7 +58,7 @@ class SourceConfigService:
             return self._cache
 
         cursor = self.collection.find({"enabled": True})
-        self._cache = await cursor.to_list(length=100)
+        self._cache = await cursor.to_list(length=self.MAX_CONFIGS)
         self._cache_expires = now + timedelta(minutes=self.CACHE_TTL_MINUTES)
 
         logger.info(
