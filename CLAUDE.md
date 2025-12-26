@@ -60,7 +60,36 @@ farmer-power-platform/
 
 - Golden samples required for all AI agents (see `tests/golden/`)
 - Mock ALL external APIs (LLM, Starfish, Weather, Africa's Talking)
-- Use fixtures from `tests/conftest.py`
+- Use fixtures from `tests/conftest.py` - **DO NOT override** `mock_mongodb_client` in local conftest.py
+
+### CI Validation (MANDATORY before marking story done)
+
+1. **Run locally before push:**
+   ```bash
+   ruff check . && ruff format --check .
+   ```
+
+2. **Verify CI passes after push:**
+   ```bash
+   gh run list --limit 1  # Check status
+   gh run view <run_id> --log-failed  # If failed, check logs
+   ```
+
+3. **Story is NOT done until CI passes** - Definition of Done includes green CI
+
+### New Service Checklist
+
+When adding a new service (e.g., `services/new-model/`), you MUST:
+
+1. **Update CI PYTHONPATH** in `.github/workflows/ci.yaml`:
+   ```yaml
+   PYTHONPATH="${PYTHONPATH}:...:services/new-model/src"
+   ```
+   Update BOTH `unit-tests` and `integration-tests` jobs
+
+2. **DO NOT create conflicting fixtures** in `tests/unit/new_model/conftest.py`
+   - Use fixtures from root `tests/conftest.py` (MockMongoClient, mock_llm_client, etc.)
+   - Only add service-specific fixtures that don't override parent fixtures
 
 ### Git Commit Rules
 
