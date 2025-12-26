@@ -50,9 +50,10 @@ So that new QC Analyzer uploads trigger automatic ingestion.
 ### Task 1: Create SourceConfigService for runtime config lookup (AC: #2, #3)
 - [ ] 1.1 Create `services/collection_model/source_config_service.py`
 - [ ] 1.2 Implement `get_config_by_container(container: str)` async method
-- [ ] 1.3 Implement 5-minute TTL cache for source configs
+- [ ] 1.3 Implement 5-minute TTL cache for source configs (use in-memory dict, not aiocache)
 - [ ] 1.4 Add `is_enabled()` check for source config
-- [ ] 1.5 Implement `match_path_pattern(path, pattern)` for metadata extraction
+- [ ] 1.5 Implement `match_path_pattern(path, pattern)` for metadata extraction using regex
+- [ ] 1.6 Add `ingestion_id` (UUID) and `trace_id` to IngestionJob for observability
 
 ### Task 2: Implement Event Grid event processor (AC: #1, #2)
 - [ ] 2.1 Enhance `api/events.py` to process blob-created events (not just log)
@@ -121,7 +122,9 @@ services/collection-model/src/collection_model/
 | Web Framework | FastAPI | Latest |
 | Validation | Pydantic | 2.0+ |
 | MongoDB Driver | Motor (async) | Latest |
-| Caching | aiocache | Latest |
+| Caching | In-memory dict with TTL | N/A |
+
+> **Note:** We use in-memory caching instead of aiocache to avoid serialization issues with Motor async cursors (per Architect review).
 
 ### Critical Implementation Rules
 
@@ -136,27 +139,44 @@ services/collection-model/src/collection_model/
 
 ```python
 # services/source_config_service.py
-from datetime import datetime, timezone
+import re
+from datetime import datetime, timedelta, timezone
 from typing import Any
 
-from aiocache import cached
 from motor.motor_asyncio import AsyncIOMotorDatabase
-
-from fp_common.models.source_config import SourceConfig, ValidationConfig
 
 
 class SourceConfigService:
-    """Runtime service for looking up source configurations."""
+    """Runtime service for looking up source configurations.
+
+    Uses in-memory caching with TTL instead of aiocache to avoid
+    serialization issues with Motor async cursors.
+    """
+
+    CACHE_TTL_MINUTES = 5
 
     def __init__(self, db: AsyncIOMotorDatabase) -> None:
         self.db = db
         self.collection = db["source_configs"]
+        # In-memory cache (per Architect review - avoids aiocache async issues)
+        self._cache: list[dict[str, Any]] | None = None
+        self._cache_expires: datetime | None = None
 
-    @cached(ttl=300)  # 5-minute TTL cache
     async def get_all_configs(self) -> list[dict[str, Any]]:
-        """Get all enabled source configs (cached)."""
+        """Get all enabled source configs (cached with 5-min TTL)."""
+        now = datetime.now(timezone.utc)
+        if self._cache is not None and self._cache_expires and now < self._cache_expires:
+            return self._cache
+
         cursor = self.collection.find({"enabled": True})
-        return await cursor.to_list(length=100)
+        self._cache = await cursor.to_list(length=100)
+        self._cache_expires = now + timedelta(minutes=self.CACHE_TTL_MINUTES)
+        return self._cache
+
+    def invalidate_cache(self) -> None:
+        """Force cache refresh on next call."""
+        self._cache = None
+        self._cache_expires = None
 
     async def get_config_by_container(
         self, container: str
@@ -178,12 +198,14 @@ class SourceConfigService:
                     return config
         return None
 
+    @staticmethod
     def extract_path_metadata(
-        self,
         blob_path: str,
         config: dict[str, Any],
     ) -> dict[str, str]:
         """Extract metadata from blob path using config pattern.
+
+        Uses regex for robust pattern matching (per Architect review).
 
         Args:
             blob_path: Full blob path (e.g., results/WM-4521/tea/mombasa/batch-001.json)
@@ -198,31 +220,38 @@ class SourceConfigService:
             return {}
 
         pattern = path_pattern.get("pattern", "")
-        extract_fields = path_pattern.get("extract_fields", [])
+        extract_fields = set(path_pattern.get("extract_fields", []))
 
-        # Parse pattern and extract values
+        # Convert pattern to regex with named groups
         # Pattern: "results/{plantation_id}/{crop}/{market}/{batch_id}.json"
-        # Path: "results/WM-4521/tea/mombasa/batch-001.json"
-        metadata = {}
-        pattern_parts = pattern.split("/")
-        path_parts = blob_path.split("/")
+        # Regex: "results/(?P<plantation_id>[^/]+)/(?P<crop>[^/]+)/..."
+        def replace_placeholder(match: re.Match[str]) -> str:
+            field_name = match.group(1)
+            return f"(?P<{field_name}>[^/]+)"
 
-        for i, part in enumerate(pattern_parts):
-            if i < len(path_parts) and part.startswith("{") and part.endswith("}"):
-                field_name = part[1:-1].replace(".json", "")
-                value = path_parts[i].replace(".json", "")
-                if field_name in extract_fields:
-                    metadata[field_name] = value
+        regex_pattern = re.sub(r"\{(\w+)\}", replace_placeholder, pattern)
+        # Escape dots for file extensions
+        regex_pattern = regex_pattern.replace(".", r"\.")
+        regex_pattern = f"^{regex_pattern}$"
 
-        return metadata
+        match = re.match(regex_pattern, blob_path)
+        if not match:
+            return {}
+
+        # Return only fields specified in extract_fields
+        return {
+            k: v for k, v in match.groupdict().items()
+            if k in extract_fields
+        }
 ```
 
 ### IngestionJob Model
 
 ```python
 # domain/ingestion_job.py
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Literal
+from uuid import uuid4
 
 from pydantic import BaseModel, Field
 
@@ -230,8 +259,18 @@ from pydantic import BaseModel, Field
 class IngestionJob(BaseModel):
     """Represents a queued ingestion job."""
 
+    # Observability (per Architect review)
+    ingestion_id: str = Field(
+        default_factory=lambda: str(uuid4()),
+        description="Unique ID for this ingestion run",
+    )
+    trace_id: str | None = Field(
+        None,
+        description="Distributed tracing ID from request headers",
+    )
+
     blob_path: str = Field(..., description="Full blob path")
-    blob_etag: str = Field(..., description="Blob ETag for idempotency")
+    blob_etag: str = Field(..., description="Blob ETag for Event Grid retry idempotency")
     container: str = Field(..., description="Storage container name")
     source_id: str = Field(..., description="Matched source config ID")
     content_length: int = Field(..., description="Blob size in bytes")
@@ -339,6 +378,9 @@ async def handle_blob_created(request: Request) -> Response:
         # Extract metadata from path
         metadata = source_config_service.extract_path_metadata(blob_path, config)
 
+        # Extract trace_id from headers if available (for distributed tracing)
+        trace_id = request.headers.get("traceparent") or request.headers.get("x-trace-id")
+
         # Create ingestion job
         job = IngestionJob(
             blob_path=blob_path,
@@ -347,6 +389,7 @@ async def handle_blob_created(request: Request) -> Response:
             source_id=source_id,
             content_length=content_length,
             metadata=metadata,
+            trace_id=trace_id,
         )
 
         # Queue job (with idempotency check)
@@ -472,6 +515,20 @@ class IngestionQueue:
 | Unit | Event Grid event parsing | None |
 | Unit | Unmatched container handling | mock_mongodb_client |
 
+### Idempotency vs. Deduplication (Architect Review)
+
+This story implements **Event Grid retry idempotency** via `blob_path + blob_etag`.
+This prevents duplicate processing when Event Grid retries delivery of the same event.
+
+**Content-level deduplication** (identical file content uploaded twice with different
+names or at different times) is a separate concern handled in **Story 2.6**
+(`document-storage-deduplication`) using SHA-256 content_hash per the architecture.
+
+| Type | Purpose | Index | Story |
+|------|---------|-------|-------|
+| Idempotency | Prevent Event Grid retry duplicates | `(blob_path, blob_etag)` | This story (2.3) |
+| Deduplication | Prevent same content re-processing | `(source_id, content_hash)` | Story 2.6 |
+
 ### Previous Stories Learnings
 
 **From Story 2.1:**
@@ -544,3 +601,36 @@ class IngestionQueue:
 **To Modify:**
 - `services/collection-model/src/collection_model/api/events.py`
 - `services/collection-model/src/collection_model/main.py` (add service initialization)
+
+---
+
+## Architect Review
+
+**Reviewed by:** Winston (System Architect)
+**Date:** 2025-12-26
+**Status:** ✅ Approved with amendments (incorporated above)
+
+### Summary
+
+| Category | Rating | Notes |
+|----------|--------|-------|
+| Architecture Alignment | 8/10 | Strong overall, minor gaps addressed |
+| Completeness | 9/10 | Observability fields added |
+| Technical Correctness | 9/10 | Path matching improved with regex |
+| Clarity | 9/10 | Well-structured, good code examples |
+
+### Amendments Made
+
+1. **Task 1.6 added** - Observability fields (ingestion_id, trace_id)
+2. **IngestionJob model updated** - Added ingestion_id and trace_id fields
+3. **Caching approach changed** - In-memory dict instead of aiocache
+4. **Path extraction improved** - Using regex for robust pattern matching
+5. **Idempotency clarification** - Distinguished from content deduplication (Story 2.6)
+
+### Architecture Alignment Confirmed
+
+- Event Grid trigger approach ✓
+- SourceConfigService with TTL cache ✓
+- Path pattern extraction ✓
+- Ingestion queue with idempotency ✓
+- Async operations throughout ✓
