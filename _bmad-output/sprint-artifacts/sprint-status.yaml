@@ -46,6 +46,15 @@ development_status:
   0-3-ci-lint-configuration: done  # github_issue: 15
   epic-0-retrospective: done
 
+  # Epic 0.5: Frontend & Identity Infrastructure (ADR-002, ADR-003)
+  epic-0-5: backlog
+  0-5-1-shared-component-library-setup: backlog
+  0-5-2-azure-ad-b2c-configuration: backlog
+  0-5-3-shared-auth-library: backlog
+  0-5-4-factory-portal-scaffold: backlog
+  0-5-5-bff-authentication-middleware: backlog
+  epic-0-5-retrospective: optional
+
   # Epic 1: Farmer Registration & Data Foundation
   epic-1: done
   1-1-plantation-model-service-setup: done
@@ -70,7 +79,7 @@ development_status:
   2-10-domain-event-emission: backlog
   epic-2-retrospective: optional
 
-  # Epic 3: Factory Manager Dashboard
+  # Epic 3: Factory Manager Dashboard (expanded with ADR-002)
   epic-3: backlog
   3-1-dashboard-bff-setup: backlog
   3-2-farmer-quality-overview-grid: backlog
@@ -79,6 +88,11 @@ development_status:
   3-5-one-click-farmer-contact: backlog
   3-6-daily-report-auto-generation: backlog
   3-7-dashboard-performance-optimization: backlog
+  3-8-factory-owner-roi-dashboard: backlog
+  3-9-factory-admin-settings-ui: backlog
+  3-10-command-center-screen-implementation: backlog
+  3-11-farmer-detail-screen: backlog
+  3-12-sms-preview-and-compose: backlog
   epic-3-retrospective: optional
 
   # Epic 4: Farmer SMS Feedback
@@ -134,3 +148,27 @@ development_status:
   8-6-streaming-response-delivery: backlog
   8-7-sms-fallback-handling: backlog
   epic-8-retrospective: optional
+
+  # Epic 9: Platform Admin Portal (ADR-002, ADR-003)
+  epic-9: backlog
+  9-1-platform-admin-application-scaffold: backlog
+  9-2-factory-onboarding-wizard: backlog
+  9-3-user-management-dashboard: backlog
+  9-4-platform-health-dashboard: backlog
+  epic-9-retrospective: optional
+
+  # Epic 10: Regulator Dashboard (ADR-002, ADR-003)
+  epic-10: backlog
+  10-1-regulator-application-scaffold: backlog
+  10-2-national-quality-overview: backlog
+  10-3-regional-quality-comparison: backlog
+  10-4-leaf-type-distribution-export-readiness: backlog
+  epic-10-retrospective: optional
+
+  # Epic 11: Registration Kiosk PWA (ADR-002, ADR-003)
+  epic-11: backlog
+  11-1-registration-kiosk-application-scaffold: backlog
+  11-2-farmer-registration-workflow: backlog
+  11-3-collection-point-assignment: backlog
+  11-4-farmer-id-card-printing: backlog
+  epic-11-retrospective: optional
