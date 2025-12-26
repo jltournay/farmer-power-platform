@@ -725,3 +725,30 @@ Claude Opus 4.5 (claude-opus-4-5-20251101)
 ### Final Verdict
 
 Story 2.3 is complete and ready for production. All HIGH and MEDIUM issues have been addressed.
+
+---
+
+## Post-Review Enhancement: OpenTelemetry Metrics
+
+**Date:** 2025-12-26
+**Enhancement:** Replaced in-memory metrics with OpenTelemetry metrics
+
+### Changes Made
+
+1. Created `infrastructure/metrics.py` with OpenTelemetry metrics setup
+2. Added counters with proper labels:
+   - `collection.events.received` (source_id)
+   - `collection.events.queued` (source_id)
+   - `collection.events.duplicate` (source_id)
+   - `collection.events.unmatched` (container)
+   - `collection.events.disabled` (source_id)
+3. Updated `events.py` to use increment functions instead of dict
+4. Updated `main.py` to initialize/shutdown metrics in lifespan
+5. Updated tests to use mocking for metric verification
+
+### Why This Matters
+
+- Metrics are now exported to OTEL collector (Prometheus, Jaeger, etc.)
+- Labels enable filtering by source_id or container
+- Consistent with project's observability strategy (OpenTelemetry)
+- Removed test-only functions (get_metrics, reset_metrics)
