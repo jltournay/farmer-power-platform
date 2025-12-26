@@ -16,25 +16,23 @@ SAMPLE_VALID_CONFIG: dict[str, Any] = {
         "landing_container": "test-landing",
         "path_pattern": {
             "pattern": "results/{plantation_id}/{batch_id}.json",
-            "extracted_fields": ["plantation_id", "batch_id"],
+            "extract_fields": ["plantation_id", "batch_id"],
         },
     },
     "validation": {
         "schema_name": "data/test-schema.json",
-        "required_fields": ["plantation_id", "batch_id"],
+        "strict": True,
     },
     "transformation": {
         "agent": "test-extraction-agent",
-        "model_config": {
-            "model": "anthropic/claude-3-haiku",
-            "temperature": 0.1,
-            "max_tokens": 2000,
-        },
+        "extract_fields": ["plantation_id", "batch_id", "quality_grade"],
+        "link_field": "plantation_id",
+        "field_mappings": {"plantation_id": "farmer_id"},
     },
     "storage": {
         "raw_container": "test-raw",
         "index_collection": "test_index",
-        "retention_days": 365,
+        "ttl_days": 365,
     },
 }
 
@@ -46,11 +44,18 @@ SAMPLE_SCHEDULED_CONFIG: dict[str, Any] = {
     "enabled": True,
     "ingestion": {
         "mode": "scheduled_pull",
-        "api_endpoint": "https://api.example.com/data",
-        "schedule": {"cron": "0 6 * * *"},
+        "provider": "weather-api",
+        "schedule": "0 6 * * *",
+        "request": {
+            "base_url": "https://api.example.com/data",
+            "auth_type": "api_key",
+            "auth_secret_key": "WEATHER_API_KEY",
+        },
     },
     "transformation": {
         "agent": "scheduled-extraction-agent",
+        "extract_fields": ["temperature", "humidity", "rainfall"],
+        "link_field": "region_id",
     },
     "storage": {
         "raw_container": "scheduled-raw",

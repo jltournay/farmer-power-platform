@@ -374,8 +374,8 @@ class MockMongoCollection:
                 return doc.copy()
         return None
 
-    async def find(self, filter: dict[str, Any]) -> MockMongoCursor:
-        """Mock find operation returning cursor."""
+    def find(self, filter: dict[str, Any]) -> MockMongoCursor:
+        """Mock find operation returning cursor (sync, like Motor's find)."""
         matching = [doc.copy() for doc in self._documents.values() if all(doc.get(k) == v for k, v in filter.items())]
         return MockMongoCursor(matching)
 
@@ -462,7 +462,7 @@ class MockMongoCursor:
         """Limit to n documents."""
         return MockMongoCursor(self._documents[:n])
 
-    def sort(self, key_or_list: Any) -> MockMongoCursor:
+    def sort(self, key_or_list: Any, direction: int = 1) -> MockMongoCursor:
         """Mock sort - returns self for chaining."""
         return self
 

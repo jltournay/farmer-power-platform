@@ -1,6 +1,6 @@
 # Story 2.2: Source Configuration CLI
 
-**Status:** done
+**Status:** in-review
 **GitHub Issue:** #17
 
 ---
@@ -121,40 +121,40 @@ So that new data sources can be onboarded without code changes and configuration
 - [x] 5.6 Return deployment results with action (create/update/unchanged)
 
 ### Task 6: Implement deploy command (AC: #3, #4)
-- [ ] 6.1 Add `deploy` CLI command with `--env` and `--file` options
-- [ ] 6.2 Add `--dry-run` flag
-- [ ] 6.3 Validate configs before deploying
-- [ ] 6.4 Call deployer and display results with Rich
+- [x] 6.1 Add `deploy` CLI command with `--env` and `--file` options
+- [x] 6.2 Add `--dry-run` flag
+- [x] 6.3 Validate configs before deploying
+- [x] 6.4 Call deployer and display results with Rich
 
 ### Task 7: Implement list command (AC: #5)
-- [ ] 7.1 Implement `list_configs()` method in deployer
-- [ ] 7.2 Add `list` CLI command with `--env` option
-- [ ] 7.3 Display as Rich table with columns: source_id, display_name, version, deployed_at, enabled
+- [x] 7.1 Implement `list_configs()` method in deployer
+- [x] 7.2 Add `list` CLI command with `--env` option
+- [x] 7.3 Display as Rich table with columns: source_id, display_name, version, deployed_at, enabled
 
 ### Task 8: Implement diff command (AC: #6)
-- [ ] 8.1 Implement `diff(source_id?)` method in deployer
-- [ ] 8.2 Compare local YAML with deployed MongoDB document
-- [ ] 8.3 Add `diff` CLI command with `--env` and `--source` options
-- [ ] 8.4 Display differences with Rich formatting
+- [x] 8.1 Implement `diff(source_id?)` method in deployer
+- [x] 8.2 Compare local YAML with deployed MongoDB document
+- [x] 8.3 Add `diff` CLI command with `--env` and `--source` options
+- [x] 8.4 Display differences with Rich formatting
 
 ### Task 9: Implement history command (AC: #7)
-- [ ] 9.1 Create `source_config_history` collection schema for version tracking
-- [ ] 9.2 Implement `get_history(source_id, limit)` method in deployer
-- [ ] 9.3 Add `history` CLI command with `--env`, `--source`, `--limit` options
-- [ ] 9.4 Display history as Rich table
+- [x] 9.1 Create `source_config_history` collection schema for version tracking
+- [x] 9.2 Implement `get_history(source_id, limit)` method in deployer
+- [x] 9.3 Add `history` CLI command with `--env`, `--source`, `--limit` options
+- [x] 9.4 Display history as Rich table
 
 ### Task 10: Implement rollback command (AC: #8)
-- [ ] 10.1 Implement `rollback(source_id, version)` method in deployer
-- [ ] 10.2 Add `rollback` CLI command with `--env`, `--source`, `--version` options
-- [ ] 10.3 Require confirmation for prod environment
-- [ ] 10.4 Restore config from history and increment version
+- [x] 10.1 Implement `rollback(source_id, version)` method in deployer
+- [x] 10.2 Add `rollback` CLI command with `--env`, `--source`, `--version` options
+- [x] 10.3 Require confirmation for prod environment
+- [x] 10.4 Restore config from history and increment version
 
 ### Task 11: Write unit tests (AC: #1-8)
-- [ ] 11.1 Create `scripts/source-config/tests/` directory
-- [ ] 11.2 Test validator with valid/invalid YAML files
-- [ ] 11.3 Test deployer with mocked MongoDB
-- [ ] 11.4 Test list, diff, history, rollback commands
-- [ ] 11.5 Test environment isolation
+- [x] 11.1 Create `tests/unit/source_config/` directory with test structure
+- [x] 11.2 Test validator with valid/invalid YAML files
+- [x] 11.3 Test deployer with mocked MongoDB
+- [x] 11.4 Test list, diff, history, rollback commands
+- [x] 11.5 Test environment isolation
 
 ---
 
@@ -709,18 +709,18 @@ The CLI manages configurations that the Collection Model service reads via `Sour
 
 ## Definition of Done
 
-- [ ] `config/schemas/source-config.schema.json` auto-generated from Pydantic
-- [ ] `config/schemas/data/` directory with data payload JSON schemas
-- [ ] `config/source-configs/` directory with YAML files for all sources
-- [ ] SourceConfig Pydantic models defined in `fp-common` (full hierarchical schema)
-- [ ] `fp-source-config validate` command works with valid/invalid YAML
-- [ ] `fp-source-config deploy --env` command deploys to MongoDB with versioning
-- [ ] `fp-source-config deploy --dry-run` shows changes without deploying
-- [ ] `fp-source-config list --env` command displays all sources
-- [ ] `fp-source-config diff --env` command shows local vs deployed differences
-- [ ] `fp-source-config history --env --source` command shows deployment history
-- [ ] `fp-source-config rollback --env --source --version` command restores previous version
-- [ ] Unit tests passing for all commands
+- [x] `config/schemas/source-config.schema.json` auto-generated from Pydantic
+- [x] `config/schemas/data/` directory with data payload JSON schemas
+- [x] `config/source-configs/` directory with YAML files for all sources
+- [x] SourceConfig Pydantic models defined in `fp-common` (full hierarchical schema)
+- [x] `fp-source-config validate` command works with valid/invalid YAML
+- [x] `fp-source-config deploy --env` command deploys to MongoDB with versioning
+- [x] `fp-source-config deploy --dry-run` shows changes without deploying
+- [x] `fp-source-config list --env` command displays all sources
+- [x] `fp-source-config diff --env` command shows local vs deployed differences
+- [x] `fp-source-config history --env --source` command shows deployment history
+- [x] `fp-source-config rollback --env --source --version` command restores previous version
+- [x] Unit tests passing for all commands (51 tests)
 - [ ] CI passes (lint, format, tests)
 - [ ] Code reviewed and merged
 
@@ -730,16 +730,44 @@ The CLI manages configurations that the Collection Model service reads via `Sour
 
 ### Agent Model Used
 
-<!-- To be filled by dev agent -->
+Claude Opus 4.5 (claude-opus-4-5-20251101)
 
 ### Debug Log References
 
-<!-- To be filled during implementation -->
+- Code review found 19 test failures due to fixture schema mismatch - fixed
+- MockMongoCursor.sort() signature fix for Motor compatibility
+- MockMongoCollection.find() changed from async to sync (Motor pattern)
 
 ### Completion Notes List
 
-<!-- To be filled during implementation -->
+- All 8 ACs implemented and verified
+- 51 unit tests passing
+- Code review completed with fixes
 
 ### File List
 
-<!-- To be filled with files created/modified -->
+**Created:**
+- `scripts/source-config/pyproject.toml`
+- `scripts/source-config/src/fp_source_config/__init__.py`
+- `scripts/source-config/src/fp_source_config/cli.py`
+- `scripts/source-config/src/fp_source_config/deployer.py`
+- `scripts/source-config/src/fp_source_config/validator.py`
+- `scripts/source-config/src/fp_source_config/settings.py`
+- `libs/fp-common/fp_common/models/source_config.py`
+- `config/schemas/source-config.schema.json`
+- `config/schemas/data/qc-bag-result.json`
+- `config/schemas/data/qc-exceptions-manifest.json`
+- `config/schemas/data/farmer-registration.json`
+- `config/source-configs/qc-analyzer-result.yaml`
+- `config/source-configs/qc-analyzer-exceptions.yaml`
+- `config/source-configs/weather-api.yaml`
+- `config/source-configs/market-prices.yaml`
+- `tests/unit/source_config/__init__.py`
+- `tests/unit/source_config/conftest.py`
+- `tests/unit/source_config/test_cli.py`
+- `tests/unit/source_config/test_deployer.py`
+- `tests/unit/source_config/test_validator.py`
+
+**Modified:**
+- `libs/fp-common/fp_common/__init__.py` (export SourceConfig)
+- `tests/conftest.py` (fix MockMongoCursor.sort, MockMongoCollection.find)

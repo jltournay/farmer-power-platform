@@ -177,9 +177,7 @@ class TestSourceConfigDeployer:
         deployer._db = mock_mongodb_client["collection_model"]
 
         config = SourceConfig.model_validate(sample_valid_config)
-
-        with patch.object(deployer, "db", deployer._db):
-            actions = await deployer.deploy([config])
+        actions = await deployer.deploy([config])
 
         assert len(actions) == 1
         assert actions[0].action == "created"
@@ -197,10 +195,9 @@ class TestSourceConfigDeployer:
         config = SourceConfig.model_validate(sample_valid_config)
 
         # First deploy
-        with patch.object(deployer, "db", deployer._db):
-            await deployer.deploy([config])
-            # Second deploy should be unchanged
-            actions = await deployer.deploy([config])
+        await deployer.deploy([config])
+        # Second deploy should be unchanged
+        actions = await deployer.deploy([config])
 
         assert len(actions) == 1
         assert actions[0].action == "unchanged"
@@ -215,9 +212,7 @@ class TestSourceConfigDeployer:
         deployer._db = mock_mongodb_client["collection_model"]
 
         config = SourceConfig.model_validate(sample_valid_config)
-
-        with patch.object(deployer, "db", deployer._db):
-            actions = await deployer.deploy([config], dry_run=True)
+        actions = await deployer.deploy([config], dry_run=True)
 
         assert len(actions) == 1
         assert actions[0].action == "created"
@@ -235,8 +230,7 @@ class TestSourceConfigDeployer:
         deployer = SourceConfigDeployer("dev")
         deployer._db = mock_mongodb_client["collection_model"]
 
-        with patch.object(deployer, "db", deployer._db):
-            configs = await deployer.list_configs()
+        configs = await deployer.list_configs()
 
         assert len(configs) == 0
 
@@ -250,10 +244,8 @@ class TestSourceConfigDeployer:
         deployer._db = mock_mongodb_client["collection_model"]
 
         config = SourceConfig.model_validate(sample_valid_config)
-
-        with patch.object(deployer, "db", deployer._db):
-            await deployer.deploy([config])
-            configs = await deployer.list_configs()
+        await deployer.deploy([config])
+        configs = await deployer.list_configs()
 
         assert len(configs) == 1
         assert configs[0].source_id == "test-source"
@@ -268,10 +260,8 @@ class TestSourceConfigDeployer:
         deployer._db = mock_mongodb_client["collection_model"]
 
         config = SourceConfig.model_validate(sample_valid_config)
-
-        with patch.object(deployer, "db", deployer._db):
-            await deployer.deploy([config])
-            retrieved = await deployer.get_config("test-source")
+        await deployer.deploy([config])
+        retrieved = await deployer.get_config("test-source")
 
         assert retrieved is not None
         assert retrieved.source_id == "test-source"
@@ -284,8 +274,7 @@ class TestSourceConfigDeployer:
         deployer = SourceConfigDeployer("dev")
         deployer._db = mock_mongodb_client["collection_model"]
 
-        with patch.object(deployer, "db", deployer._db):
-            retrieved = await deployer.get_config("nonexistent")
+        retrieved = await deployer.get_config("nonexistent")
 
         assert retrieved is None
 
@@ -299,13 +288,10 @@ class TestSourceConfigDeployer:
         deployer._db = mock_mongodb_client["collection_model"]
 
         config = SourceConfig.model_validate(sample_valid_config)
-
-        with patch.object(deployer, "db", deployer._db):
-            # Deploy config
-            await deployer.deploy([config])
-
-            # Get history
-            history = await deployer.get_history("test-source")
+        # Deploy config
+        await deployer.deploy([config])
+        # Get history
+        history = await deployer.get_history("test-source")
 
         assert len(history) == 1
         assert history[0].version == 1
@@ -316,23 +302,23 @@ class TestSourceConfigDeployer:
         sample_valid_config: dict[str, Any],
     ) -> None:
         """Test rolling back to a previous version."""
+        import copy
+
         deployer = SourceConfigDeployer("dev")
         deployer._db = mock_mongodb_client["collection_model"]
 
         config = SourceConfig.model_validate(sample_valid_config)
+        # Deploy initial version
+        await deployer.deploy([config])
 
-        with patch.object(deployer, "db", deployer._db):
-            # Deploy initial version
-            await deployer.deploy([config])
+        # Modify a config field that's actually compared (not just description)
+        config_v2 = copy.deepcopy(sample_valid_config)
+        config_v2["storage"]["ttl_days"] = 730  # Change from 365 to 730
+        config2 = SourceConfig.model_validate(config_v2)
+        await deployer.deploy([config2])
 
-            # Modify and deploy again
-            config_v2 = sample_valid_config.copy()
-            config_v2["description"] = "Modified description"
-            config2 = SourceConfig.model_validate(config_v2)
-            await deployer.deploy([config2])
-
-            # Rollback to version 1
-            action = await deployer.rollback("test-source", 1)
+        # Rollback to version 1
+        action = await deployer.rollback("test-source", 1)
 
         assert action is not None
         assert action.action == "updated"
@@ -349,9 +335,7 @@ class TestSourceConfigDeployer:
         deployer._db = mock_mongodb_client["collection_model"]
 
         config = SourceConfig.model_validate(sample_valid_config)
-
-        with patch.object(deployer, "db", deployer._db):
-            await deployer.deploy([config])
-            action = await deployer.rollback("test-source", 999)
+        await deployer.deploy([config])
+        action = await deployer.rollback("test-source", 999)
 
         assert action is None
