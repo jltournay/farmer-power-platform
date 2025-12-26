@@ -5,7 +5,6 @@ from typing import TYPE_CHECKING
 import structlog
 from opentelemetry import trace
 from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter
-from opentelemetry.instrumentation.grpc import GrpcInstrumentorClient, GrpcInstrumentorServer
 from opentelemetry.instrumentation.pymongo import PymongoInstrumentor
 from opentelemetry.sdk.resources import Resource
 from opentelemetry.sdk.trace import TracerProvider
@@ -84,13 +83,16 @@ def _instrument_libraries() -> None:
     except Exception as e:
         logger.warning("Failed to instrument PyMongo", error=str(e))
 
-    # Instrument gRPC client and server
+    # Instrument HTTPX for DAPR HTTP client tracing (optional)
     try:
-        GrpcInstrumentorClient().instrument()
-        GrpcInstrumentorServer().instrument()
-        logger.debug("gRPC instrumented")
+        from opentelemetry.instrumentation.httpx import HTTPXClientInstrumentor
+
+        HTTPXClientInstrumentor().instrument()
+        logger.debug("HTTPX instrumented")
+    except ImportError:
+        logger.debug("HTTPX instrumentation not available (optional)")
     except Exception as e:
-        logger.warning("Failed to instrument gRPC", error=str(e))
+        logger.warning("Failed to instrument HTTPX", error=str(e))
 
 
 def instrument_fastapi(app: "FastAPI") -> None:

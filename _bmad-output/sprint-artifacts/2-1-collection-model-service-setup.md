@@ -51,20 +51,20 @@ So that quality grading data can be ingested, stored, and domain events emitted 
 
 ### Task 3: Configure Kubernetes deployment with DAPR (AC: #1)
 - [x] 3.1 Create `deploy/kubernetes/base/services/collection-model.yaml` with DAPR annotations
-- [ ] 3.2 Configure DAPR app-id: `collection-model`
-- [ ] 3.3 Configure DAPR app-port: `8000` (HTTP)
-- [ ] 3.4 Verify DAPR sidecar injection works in deployment
+- [x] 3.2 Configure DAPR app-id: `collection-model`
+- [x] 3.3 Configure DAPR app-port: `8000` (HTTP)
+- [ ] 3.4 Verify DAPR sidecar injection works in deployment (requires K8s cluster)
 
 ### Task 4: Implement MongoDB connection (AC: #1)
 - [x] 4.1 Create `infrastructure/mongodb.py` with async Motor client
 - [x] 4.2 Implement connection pooling and retry logic
 - [x] 4.3 Create connection test utility for readiness probe
-- [ ] 4.4 Configure collections: `source_configs`, `raw_documents`, `quality_events`
+- [x] 4.4 Configure collections: `source_configs`, `raw_documents`, `quality_events`, `weather_data`, `market_prices`
 
 ### Task 5: Configure OpenTelemetry tracing (AC: #1)
-- [ ] 5.1 Add OpenTelemetry SDK and OTLP exporter to dependencies
-- [ ] 5.2 Auto-instrument FastAPI and PyMongo
-- [ ] 5.3 Configure via settings (`OTEL_ENABLED`, `OTEL_EXPORTER_ENDPOINT`)
+- [x] 5.1 Add OpenTelemetry SDK and OTLP exporter to dependencies
+- [x] 5.2 Auto-instrument FastAPI and PyMongo (HTTPX optional)
+- [x] 5.3 Configure via settings (`OTEL_ENABLED`, `OTEL_EXPORTER_ENDPOINT`)
 
 ### Task 6: Configure DAPR pub/sub for Redis (AC: #2)
 - [x] 6.1 Verify DAPR pub/sub component exists (created in Epic 1)

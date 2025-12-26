@@ -1,5 +1,5 @@
 # Collection Model Service Kubernetes Deployment
-# gRPC port: 50052, HTTP port: 8000
+# HTTP port: 8000 (Event Grid webhook + health endpoints)
 
 apiVersion: apps/v1
 kind: Deployment
@@ -31,8 +31,6 @@ spec:
           ports:
             - containerPort: 8000
               name: http
-            - containerPort: 50052
-              name: grpc
           env:
             - name: COLLECTION_MONGODB_URI
               valueFrom:
@@ -80,6 +78,3 @@ spec:
     - name: http
       port: 8000
       targetPort: 8000
-    - name: grpc
-      port: 50052
-      targetPort: 50052

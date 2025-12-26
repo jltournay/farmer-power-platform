@@ -19,9 +19,11 @@ _client: AsyncIOMotorClient | None = None
 _database: AsyncIOMotorDatabase | None = None
 
 # Collection names owned by Collection Model
+SOURCE_CONFIGS_COLLECTION = "source_configs"
+RAW_DOCUMENTS_COLLECTION = "raw_documents"
 QUALITY_EVENTS_COLLECTION = "quality_events"
 WEATHER_DATA_COLLECTION = "weather_data"
-DOCUMENTS_INDEX_COLLECTION = "documents_index"
+MARKET_PRICES_COLLECTION = "market_prices"
 
 
 async def get_mongodb_client() -> AsyncIOMotorClient:
@@ -102,27 +104,61 @@ async def check_mongodb_connection() -> bool:
 
 
 async def ensure_indexes() -> None:
-    """Create indexes for all collections owned by Collection Model."""
+    """Create indexes for all collections owned by Collection Model.
+
+    Collections:
+    - source_configs: Data source configurations (from fp-source-config CLI)
+    - raw_documents: Raw blob content before LLM extraction
+    - quality_events: Extracted grading events with bag summaries
+    - weather_data: Weather API pull results
+    - market_prices: Market price API pull results
+    """
     db = await get_database()
+
+    # source_configs indexes
+    source_configs = db[SOURCE_CONFIGS_COLLECTION]
+    await source_configs.create_index("source_id", unique=True)
+    await source_configs.create_index("source_type")
+    await source_configs.create_index("enabled")
+    logger.debug("source_configs indexes created")
+
+    # raw_documents indexes (includes deduplication)
+    raw_documents = db[RAW_DOCUMENTS_COLLECTION]
+    await raw_documents.create_index("content_hash", unique=True)  # Deduplication
+    await raw_documents.create_index(
+        [("blob_path", 1), ("blob_etag", 1)], unique=True
+    )  # Idempotency for Event Grid
+    await raw_documents.create_index("source_id")
+    await raw_documents.create_index("processing_status")
+    await raw_documents.create_index("created_at")
+    logger.debug("raw_documents indexes created")
 
     # quality_events indexes
     quality_events = db[QUALITY_EVENTS_COLLECTION]
     await quality_events.create_index("farmer_id")
-    await quality_events.create_index("event_type")
+    await quality_events.create_index("bag_id")
     await quality_events.create_index("created_at")
+    await quality_events.create_index("primary_percentage")
     await quality_events.create_index([("farmer_id", 1), ("created_at", -1)])
+    await quality_events.create_index(
+        [("primary_percentage", 1), ("analyzed", 1)]
+    )  # For poor quality queries
+    logger.debug("quality_events indexes created")
 
     # weather_data indexes
     weather_data = db[WEATHER_DATA_COLLECTION]
-    await weather_data.create_index("location")
-    await weather_data.create_index("timestamp")
-    await weather_data.create_index([("location", 1), ("timestamp", -1)])
+    await weather_data.create_index("region_id")
+    await weather_data.create_index("date")
+    await weather_data.create_index([("region_id", 1), ("date", -1)])
+    logger.debug("weather_data indexes created")
 
-    # documents_index indexes
-    documents_index = db[DOCUMENTS_INDEX_COLLECTION]
-    await documents_index.create_index("farmer_id")
-    await documents_index.create_index("document_type")
-    await documents_index.create_index("created_at")
+    # market_prices indexes
+    market_prices = db[MARKET_PRICES_COLLECTION]
+    await market_prices.create_index("commodity")
+    await market_prices.create_index("region")
+    await market_prices.create_index("date")
+    await market_prices.create_index([("commodity", 1), ("region", 1), ("date", -1)])
+    logger.debug("market_prices indexes created")
 
     logger.info("MongoDB indexes ensured for all collections")
 
