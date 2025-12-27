@@ -1,6 +1,6 @@
 # Story 2.5: ZIP Content Processor for Exception Images
 
-**Status:** code-review
+**Status:** done
 **GitHub Issue:** #20
 **Implementation Date:** 2025-12-27
 
@@ -706,6 +706,29 @@ The implementation correctly follows the config-driven architecture, Generic ZIP
 
 ---
 
+## Code Review
+
+**Reviewer:** Senior Developer (Adversarial Mode)
+**Date:** 2025-12-27
+**Status:** ✅ PASSED
+
+### Issues Found and Fixed
+
+| # | Issue | Severity | Resolution |
+|---|-------|----------|------------|
+| 1 | Missing field_mappings | HIGH | **Dropped** - QC Analyzer will use `farmer_id` directly |
+| 2 | ZipFile opened per-document | MEDIUM | **Fixed** - Open once, pass to `_process_document()` |
+| 3 | Silent placeholder replacement | MEDIUM | **Fixed** - Log warning with unresolved placeholders |
+| 4 | Path traversal not validated | LOW | **Fixed** - Reject paths with `..` or `/` prefix |
+| 5 | No test for field_mappings | LOW | **Dropped** - Feature removed |
+| 6 | Atomic storage TODO | LOW | Acknowledged - backlog for Phase 2 |
+
+### Commit
+
+`7e3a72d` - Apply code review fixes for Story 2-5
+
+---
+
 ## Dev Agent Record
 
 ### Agent Model Used
@@ -719,6 +742,7 @@ Claude Opus 4.5 (claude-opus-4-5-20251101)
 - All 20 unit tests passing
 - CI green after formatting fixes
 - Architect review approved
+- Code review passed (4 fixes applied)
 
 ### File List
 
