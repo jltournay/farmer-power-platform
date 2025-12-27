@@ -9,10 +9,9 @@ Tests cover:
 
 from datetime import UTC, datetime
 from typing import Any
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
-
 from collection_model.domain.ingestion_job import IngestionJob
 from collection_model.processors.base import (
     ContentProcessor,

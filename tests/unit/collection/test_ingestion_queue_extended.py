@@ -6,7 +6,6 @@ Tests cover:
 """
 
 import pytest
-
 from collection_model.domain.ingestion_job import IngestionJob
 from collection_model.infrastructure.ingestion_queue import IngestionQueue
 

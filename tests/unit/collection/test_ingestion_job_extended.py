@@ -6,8 +6,6 @@ Tests cover:
 - error_type field
 """
 
-import pytest
-
 from collection_model.domain.ingestion_job import IngestionJob
 
 

@@ -6,8 +6,6 @@ Tests cover:
 - TransformationConfig.ai_agent_id field
 """
 
-import pytest
-
 from fp_common.models.source_config import (
     EventConfig,
     EventsConfig,
