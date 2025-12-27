@@ -116,6 +116,11 @@ async def serve() -> None:
 
     logger.info("Shutting down server...")
     await server.stop(grace=5)
+
+    # Close database connections
+    await document_client.close()
+    await source_config_client.close()
+
     logger.info("Server stopped")
 
 
