@@ -1,0 +1,59 @@
+# Simplified Weather API config for E2E testing
+# Uses fixed Nairobi coordinates (no iteration required)
+# This validates the full pipeline without cross-service dependencies
+
+source_id: weather-api-test
+display_name: Weather API - E2E Test (Nairobi)
+description: Simplified weather config for end-to-end testing
+
+ingestion:
+  mode: scheduled_pull
+  provider: open-meteo
+  schedule: "0 6 * * *"  # Not used in E2E test - triggered manually
+  processor_type: json-extraction
+  file_format: json
+  request:
+    base_url: https://api.open-meteo.com/v1/forecast
+    auth_type: none
+    parameters:
+      # Fixed Nairobi coordinates (no iteration)
+      latitude: "-1.2921"
+      longitude: "36.8219"
+      hourly: temperature_2m,relative_humidity_2m,precipitation
+      daily: temperature_2m_max,temperature_2m_min,precipitation_sum
+      timezone: Africa/Nairobi
+      forecast_days: "1"
+    timeout_seconds: 30
+  retry:
+    max_attempts: 3
+    backoff: exponential
+
+transformation:
+  ai_agent_id: weather-passthrough-agent  # For E2E test: passthrough (no LLM needed)
+  extract_fields:
+    - latitude
+    - longitude
+    - timezone
+    - hourly
+    - daily
+  link_field: timezone
+  field_mappings: {}
+
+storage:
+  raw_container: weather-data-raw
+  index_collection: documents
+  ttl_days: 7
+
+events:
+  on_success:
+    topic: collection.weather.updated
+    payload_fields:
+      - document_id
+      - source_id
+      - timezone
+  on_failure:
+    topic: collection.weather.failed
+    payload_fields:
+      - source_id
+      - error_type
+      - error_message
