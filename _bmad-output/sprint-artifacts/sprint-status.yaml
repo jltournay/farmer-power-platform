@@ -62,8 +62,8 @@ development_status:
   1-3-farmer-registration: done
   1-4-farmer-performance-history-structure: done
   1-5-farmer-communication-preferences: done
-  1-6-tbk-quality-grading: backlog  # NEW: TBK grading moved from Collection Model to Plantation Model
-  1-7-plantation-model-mcp-server: done  # github_issue: 13 (renumbered from 1.6)
+  1-6-plantation-model-mcp-server: done  # github_issue: 13
+  1-7-quality-grading-event-subscription: backlog  # NEW: Subscribe to Collection Model events and update farmer performance (continuation of Story 1-4)
   epic-1-retrospective: optional  # Reset: new story added
 
   # Epic 2: Quality Data Ingestion (REVISED - BLOB_TRIGGER architecture)

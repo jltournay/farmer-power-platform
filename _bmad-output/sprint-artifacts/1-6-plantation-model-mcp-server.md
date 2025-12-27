@@ -123,6 +123,7 @@ This story implements **4 core tools** for the Plantation MCP Server. The archit
 - `get_farmers_by_collection_point` - Farmers at a collection point
 
 **Deferred to Future Stories:**
+
 | Tool | Needed By | Epic |
 |------|-----------|------|
 | `get_factory`, `get_factory_config` | Admin UI, Market Analysis | Epic 2, 4 |
