@@ -38,16 +38,6 @@ if TYPE_CHECKING:
 # Import test fixtures
 from tests.conftest_integration import mongodb_client, test_db  # noqa: F401
 
-# Check if Azure SDK is available (required for blob storage tests)
-try:
-    import azure.storage.blob  # noqa: F401
-
-    AZURE_SDK_AVAILABLE = True
-except ImportError:
-    AZURE_SDK_AVAILABLE = False
-
-requires_azure = pytest.mark.skipif(not AZURE_SDK_AVAILABLE, reason="Azure SDK (azure-storage-blob) not installed")
-
 # =============================================================================
 # Test Configuration
 # =============================================================================
@@ -194,12 +184,8 @@ def mock_dapr_secret_client() -> MagicMock:
 
 @pytest.mark.mongodb
 @pytest.mark.asyncio
-@requires_azure
 class TestCollectionE2EOpenMeteo:
-    """End-to-end tests for Collection Model with real Open-Meteo API.
-
-    Requires Azure SDK for blob storage operations.
-    """
+    """End-to-end tests for Collection Model with real Open-Meteo API."""
 
     async def test_full_pipeline_fetch_and_store(
         self,
