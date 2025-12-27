@@ -78,7 +78,7 @@ development_status:
   2-8-market-prices-pull-mode: covered-by-2-7  # Configuration-only, no code changes needed
   2-9-collection-model-mcp-server: done  # github_issue: 23
   2-10-domain-event-emission: done  # Already implemented via DaprEventPublisher + config-driven topics
-  epic-2-retrospective: optional
+  epic-2-retrospective: done
 
   # Epic 3: Factory Manager Dashboard (expanded with ADR-002)
   epic-3: backlog
