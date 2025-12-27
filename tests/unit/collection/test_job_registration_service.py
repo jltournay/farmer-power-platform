@@ -86,9 +86,7 @@ class TestJobRegistrationService:
         sample_pull_source_config: dict[str, Any],
     ) -> None:
         """Test sync_all_jobs registers jobs for scheduled_pull sources."""
-        mock_source_config_service.get_all_configs = AsyncMock(
-            return_value=[sample_pull_source_config]
-        )
+        mock_source_config_service.get_all_configs = AsyncMock(return_value=[sample_pull_source_config])
 
         result = await job_registration_service.sync_all_jobs()
 
@@ -109,9 +107,7 @@ class TestJobRegistrationService:
         sample_blob_trigger_source_config: dict[str, Any],
     ) -> None:
         """Test sync_all_jobs skips non-scheduled_pull sources."""
-        mock_source_config_service.get_all_configs = AsyncMock(
-            return_value=[sample_blob_trigger_source_config]
-        )
+        mock_source_config_service.get_all_configs = AsyncMock(return_value=[sample_blob_trigger_source_config])
 
         result = await job_registration_service.sync_all_jobs()
 
@@ -167,9 +163,7 @@ class TestJobRegistrationService:
         sample_pull_source_config: dict[str, Any],
     ) -> None:
         """Test sync_all_jobs tracks registration failures."""
-        mock_source_config_service.get_all_configs = AsyncMock(
-            return_value=[sample_pull_source_config]
-        )
+        mock_source_config_service.get_all_configs = AsyncMock(return_value=[sample_pull_source_config])
         mock_dapr_jobs_client.register_job = AsyncMock(return_value=False)
 
         result = await job_registration_service.sync_all_jobs()
@@ -186,9 +180,7 @@ class TestJobRegistrationService:
         sample_pull_source_config: dict[str, Any],
     ) -> None:
         """Test registering a single job from source config."""
-        result = await job_registration_service.register_job_for_source(
-            sample_pull_source_config
-        )
+        result = await job_registration_service.register_job_for_source(sample_pull_source_config)
 
         assert result is True
         mock_dapr_jobs_client.register_job.assert_called_once_with(
@@ -204,9 +196,7 @@ class TestJobRegistrationService:
         sample_blob_trigger_source_config: dict[str, Any],
     ) -> None:
         """Test register_job_for_source skips non-pull sources."""
-        result = await job_registration_service.register_job_for_source(
-            sample_blob_trigger_source_config
-        )
+        result = await job_registration_service.register_job_for_source(sample_blob_trigger_source_config)
 
         assert result is False
         mock_dapr_jobs_client.register_job.assert_not_called()
@@ -218,14 +208,10 @@ class TestJobRegistrationService:
         mock_dapr_jobs_client: MagicMock,
     ) -> None:
         """Test unregistering a job for a source."""
-        result = await job_registration_service.unregister_job_for_source(
-            source_id="weather-api"
-        )
+        result = await job_registration_service.unregister_job_for_source(source_id="weather-api")
 
         assert result is True
-        mock_dapr_jobs_client.delete_job.assert_called_once_with(
-            source_id="weather-api"
-        )
+        mock_dapr_jobs_client.delete_job.assert_called_once_with(source_id="weather-api")
 
     @pytest.mark.asyncio
     async def test_unregister_job_for_source_handles_failure(
@@ -236,9 +222,7 @@ class TestJobRegistrationService:
         """Test unregister_job_for_source handles failures gracefully."""
         mock_dapr_jobs_client.delete_job = AsyncMock(return_value=False)
 
-        result = await job_registration_service.unregister_job_for_source(
-            source_id="weather-api"
-        )
+        result = await job_registration_service.unregister_job_for_source(source_id="weather-api")
 
         assert result is False
 

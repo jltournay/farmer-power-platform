@@ -86,20 +86,23 @@ class PullDataFetcher:
         )
 
         headers = await self._get_auth_header(pull_config)
+        timeout_seconds = pull_config.get("timeout_seconds", 30.0)
 
         logger.debug(
             "Fetching data from external API",
             url=url,
             has_auth=bool(headers),
             has_iteration_item=iteration_item is not None,
+            timeout_seconds=timeout_seconds,
         )
 
-        return await self._fetch_with_retry(url=url, headers=headers)
+        return await self._fetch_with_retry(url=url, headers=headers, timeout_seconds=timeout_seconds)
 
     async def _fetch_with_retry(
         self,
         url: str,
         headers: dict[str, str],
+        timeout_seconds: float = 30.0,
     ) -> bytes:
         """Perform HTTP GET with retry logic.
 
@@ -108,6 +111,7 @@ class PullDataFetcher:
         Args:
             url: Full URL to fetch.
             headers: HTTP headers including authentication.
+            timeout_seconds: Request timeout in seconds (default: 30.0).
 
         Returns:
             Raw response content as bytes.
@@ -129,7 +133,7 @@ class PullDataFetcher:
                 response = await client.get(
                     url,
                     headers=headers,
-                    timeout=30.0,
+                    timeout=timeout_seconds,
                 )
                 response.raise_for_status()
                 return response.content

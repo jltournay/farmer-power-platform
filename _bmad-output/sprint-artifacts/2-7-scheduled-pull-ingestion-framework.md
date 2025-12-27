@@ -487,7 +487,7 @@ Claude Opus 4.5 (claude-opus-4-5-20251101)
 - `tests/unit/collection/test_pull_data_fetcher.py` (14 tests)
 - `tests/unit/collection/test_iteration_resolver.py` (12 tests)
 - `tests/unit/collection/test_pull_job_handler.py` (11 tests)
-- `tests/unit/collection/test_ingestion_job_extended.py` (extended for pull mode)
+- `tests/unit/collection/test_ingestion_job_extended.py` (11 tests for pull mode fields - content, linkage, is_pull_mode, validation)
 
 ---
 

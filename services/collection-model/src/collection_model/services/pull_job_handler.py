@@ -12,6 +12,7 @@ import structlog
 from collection_model.domain.ingestion_job import IngestionJob
 from collection_model.infrastructure.iteration_resolver import IterationResolver
 from collection_model.infrastructure.pull_data_fetcher import PullDataFetcher
+from collection_model.infrastructure.storage_metrics import StorageMetrics
 from collection_model.processors.base import ContentProcessor
 
 logger = structlog.get_logger(__name__)
@@ -193,6 +194,9 @@ class PullJobHandler:
                 is_duplicate=is_duplicate,
             )
 
+            # Record metrics (AC9)
+            StorageMetrics.record_pull_fetch_success(source_id)
+
             return {
                 "success": True,
                 "source_id": source_id,
@@ -207,6 +211,9 @@ class PullJobHandler:
                 source_id=source_id,
                 error=str(e),
             )
+            # Record failure metrics (AC9)
+            StorageMetrics.record_pull_fetch_failed(source_id)
+
             return {
                 "success": False,
                 "source_id": source_id,
@@ -374,6 +381,9 @@ class PullJobHandler:
 
             is_duplicate = getattr(result, "is_duplicate", False)
 
+            # Record metrics (AC9)
+            StorageMetrics.record_pull_fetch_success(source_id)
+
             return {
                 "success": result.success,
                 "is_duplicate": is_duplicate,
@@ -386,6 +396,9 @@ class PullJobHandler:
                 item=item,
                 error=str(e),
             )
+            # Record failure metrics (AC9)
+            StorageMetrics.record_pull_fetch_failed(source_id)
+
             return {
                 "success": False,
                 "error": str(e),

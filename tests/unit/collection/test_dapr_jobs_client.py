@@ -149,12 +149,14 @@ class TestDaprJobsClient:
             mock_client = AsyncMock()
             mock_response = MagicMock()
             mock_response.status_code = 200
-            mock_response.json = MagicMock(return_value={
-                "jobs": [
-                    {"name": "weather-api", "schedule": "0 6 * * *"},
-                    {"name": "market-prices", "schedule": "0 */4 * * *"},
-                ]
-            })
+            mock_response.json = MagicMock(
+                return_value={
+                    "jobs": [
+                        {"name": "weather-api", "schedule": "0 6 * * *"},
+                        {"name": "market-prices", "schedule": "0 */4 * * *"},
+                    ]
+                }
+            )
             mock_response.raise_for_status = MagicMock()
             mock_client.get = AsyncMock(return_value=mock_response)
             mock_client.__aenter__ = AsyncMock(return_value=mock_client)

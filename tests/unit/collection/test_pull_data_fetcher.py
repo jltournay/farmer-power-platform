@@ -190,9 +190,7 @@ class TestPullDataFetcher:
         sample_pull_config_api_key: dict[str, Any],
     ) -> None:
         """Test auth header generation for API key."""
-        mock_dapr_secret_client.get_secret = AsyncMock(
-            return_value={"api_key": "secret-api-key-123"}
-        )
+        mock_dapr_secret_client.get_secret = AsyncMock(return_value={"api_key": "secret-api-key-123"})
 
         headers = await pull_data_fetcher._get_auth_header(sample_pull_config_api_key)
 
@@ -210,9 +208,7 @@ class TestPullDataFetcher:
         sample_pull_config_bearer: dict[str, Any],
     ) -> None:
         """Test auth header generation for bearer token."""
-        mock_dapr_secret_client.get_secret = AsyncMock(
-            return_value={"token": "bearer-token-xyz"}
-        )
+        mock_dapr_secret_client.get_secret = AsyncMock(return_value={"token": "bearer-token-xyz"})
 
         headers = await pull_data_fetcher._get_auth_header(sample_pull_config_bearer)
 
@@ -236,9 +232,7 @@ class TestPullDataFetcher:
         mock_response.status_code = 200
         mock_response.raise_for_status = MagicMock()
 
-        with patch.object(
-            httpx.AsyncClient, "get", new_callable=AsyncMock
-        ) as mock_get:
+        with patch.object(httpx.AsyncClient, "get", new_callable=AsyncMock) as mock_get:
             mock_get.return_value = mock_response
 
             result = await pull_data_fetcher.fetch(
@@ -266,9 +260,7 @@ class TestPullDataFetcher:
             "longitude": "36.8219",
         }
 
-        with patch.object(
-            httpx.AsyncClient, "get", new_callable=AsyncMock
-        ) as mock_get:
+        with patch.object(httpx.AsyncClient, "get", new_callable=AsyncMock) as mock_get:
             mock_get.return_value = mock_response
 
             result = await pull_data_fetcher.fetch(
@@ -291,17 +283,13 @@ class TestPullDataFetcher:
         sample_pull_config_api_key: dict[str, Any],
     ) -> None:
         """Test fetch includes authentication headers."""
-        mock_dapr_secret_client.get_secret = AsyncMock(
-            return_value={"api_key": "my-api-key"}
-        )
+        mock_dapr_secret_client.get_secret = AsyncMock(return_value={"api_key": "my-api-key"})
         mock_response = MagicMock()
         mock_response.content = b'{"data": "secure"}'
         mock_response.status_code = 200
         mock_response.raise_for_status = MagicMock()
 
-        with patch.object(
-            httpx.AsyncClient, "get", new_callable=AsyncMock
-        ) as mock_get:
+        with patch.object(httpx.AsyncClient, "get", new_callable=AsyncMock) as mock_get:
             mock_get.return_value = mock_response
 
             await pull_data_fetcher.fetch(
@@ -321,9 +309,7 @@ class TestPullDataFetcher:
         sample_pull_config_no_auth: dict[str, Any],
     ) -> None:
         """Test fetch raises on HTTP error after retries exhausted."""
-        with patch.object(
-            httpx.AsyncClient, "get", new_callable=AsyncMock
-        ) as mock_get:
+        with patch.object(httpx.AsyncClient, "get", new_callable=AsyncMock) as mock_get:
             mock_get.side_effect = httpx.HTTPStatusError(
                 "Server Error",
                 request=MagicMock(),
@@ -343,9 +329,7 @@ class TestPullDataFetcher:
         sample_pull_config_no_auth: dict[str, Any],
     ) -> None:
         """Test fetch handles timeout errors."""
-        with patch.object(
-            httpx.AsyncClient, "get", new_callable=AsyncMock
-        ) as mock_get:
+        with patch.object(httpx.AsyncClient, "get", new_callable=AsyncMock) as mock_get:
             mock_get.side_effect = httpx.TimeoutException("Connection timed out")
 
             with pytest.raises(httpx.TimeoutException):

@@ -73,9 +73,7 @@ class TestIterationResolver:
         mock_response = MagicMock()
         mock_response.data = b'{"success": true, "result_json": "[{\\"region_id\\": \\"nyeri\\", \\"latitude\\": -0.4167, \\"longitude\\": 36.95, \\"name\\": \\"Nyeri\\"}, {\\"region_id\\": \\"kericho\\", \\"latitude\\": -0.3689, \\"longitude\\": 35.2863, \\"name\\": \\"Kericho\\"}, {\\"region_id\\": \\"nandi\\", \\"latitude\\": 0.1833, \\"longitude\\": 35.1, \\"name\\": \\"Nandi\\"}]"}'
 
-        with patch(
-            "collection_model.infrastructure.iteration_resolver.DaprClient"
-        ) as mock_dapr:
+        with patch("collection_model.infrastructure.iteration_resolver.DaprClient") as mock_dapr:
             mock_client = MagicMock()
             mock_client.invoke_method.return_value = mock_response
             mock_dapr.return_value.__enter__.return_value = mock_client
@@ -97,9 +95,7 @@ class TestIterationResolver:
         mock_response = MagicMock()
         mock_response.data = b'{"success": true, "result_json": "[]"}'
 
-        with patch(
-            "collection_model.infrastructure.iteration_resolver.DaprClient"
-        ) as mock_dapr:
+        with patch("collection_model.infrastructure.iteration_resolver.DaprClient") as mock_dapr:
             mock_client = MagicMock()
             mock_client.invoke_method.return_value = mock_response
             mock_dapr.return_value.__enter__.return_value = mock_client
@@ -128,9 +124,7 @@ class TestIterationResolver:
         mock_response = MagicMock()
         mock_response.data = b'{"success": true, "result_json": "[]"}'
 
-        with patch(
-            "collection_model.infrastructure.iteration_resolver.DaprClient"
-        ) as mock_dapr:
+        with patch("collection_model.infrastructure.iteration_resolver.DaprClient") as mock_dapr:
             mock_client = MagicMock()
             mock_client.invoke_method.return_value = mock_response
             mock_dapr.return_value.__enter__.return_value = mock_client
@@ -160,9 +154,7 @@ class TestIterationResolver:
         mock_response = MagicMock()
         mock_response.data = b'{"success": true, "result_json": "{\\"regions\\": [{\\"id\\": 1}, {\\"id\\": 2}]}"}'
 
-        with patch(
-            "collection_model.infrastructure.iteration_resolver.DaprClient"
-        ) as mock_dapr:
+        with patch("collection_model.infrastructure.iteration_resolver.DaprClient") as mock_dapr:
             mock_client = MagicMock()
             mock_client.invoke_method.return_value = mock_response
             mock_dapr.return_value.__enter__.return_value = mock_client
@@ -181,11 +173,11 @@ class TestIterationResolver:
     ) -> None:
         """Test resolve raises error when MCP tool not found."""
         mock_response = MagicMock()
-        mock_response.data = b'{"success": false, "error_code": 3, "error_message": "Unknown tool: list_active_regions"}'
+        mock_response.data = (
+            b'{"success": false, "error_code": 3, "error_message": "Unknown tool: list_active_regions"}'
+        )
 
-        with patch(
-            "collection_model.infrastructure.iteration_resolver.DaprClient"
-        ) as mock_dapr:
+        with patch("collection_model.infrastructure.iteration_resolver.DaprClient") as mock_dapr:
             mock_client = MagicMock()
             mock_client.invoke_method.return_value = mock_response
             mock_dapr.return_value.__enter__.return_value = mock_client
@@ -193,9 +185,7 @@ class TestIterationResolver:
             with pytest.raises(IterationResolverError) as exc_info:
                 await iteration_resolver.resolve(sample_iteration_config)
 
-        assert "tool not found" in str(exc_info.value).lower() or "Unknown tool" in str(
-            exc_info.value
-        )
+        assert "tool not found" in str(exc_info.value).lower() or "Unknown tool" in str(exc_info.value)
 
     @pytest.mark.asyncio
     async def test_resolve_raises_on_mcp_failure(
@@ -207,9 +197,7 @@ class TestIterationResolver:
         mock_response = MagicMock()
         mock_response.data = b'{"success": false, "error_code": 2, "error_message": "Service unavailable"}'
 
-        with patch(
-            "collection_model.infrastructure.iteration_resolver.DaprClient"
-        ) as mock_dapr:
+        with patch("collection_model.infrastructure.iteration_resolver.DaprClient") as mock_dapr:
             mock_client = MagicMock()
             mock_client.invoke_method.return_value = mock_response
             mock_dapr.return_value.__enter__.return_value = mock_client
@@ -226,9 +214,7 @@ class TestIterationResolver:
         sample_iteration_config: dict[str, Any],
     ) -> None:
         """Test resolve raises error on DAPR connection failure."""
-        with patch(
-            "collection_model.infrastructure.iteration_resolver.DaprClient"
-        ) as mock_dapr:
+        with patch("collection_model.infrastructure.iteration_resolver.DaprClient") as mock_dapr:
             mock_dapr.return_value.__enter__.side_effect = Exception("Connection refused")
 
             with pytest.raises(IterationResolverError) as exc_info:
@@ -246,9 +232,7 @@ class TestIterationResolver:
         mock_response = MagicMock()
         mock_response.data = b'{"success": true, "result_json": "[]"}'
 
-        with patch(
-            "collection_model.infrastructure.iteration_resolver.DaprClient"
-        ) as mock_dapr:
+        with patch("collection_model.infrastructure.iteration_resolver.DaprClient") as mock_dapr:
             mock_client = MagicMock()
             mock_client.invoke_method.return_value = mock_response
             mock_dapr.return_value.__enter__.return_value = mock_client

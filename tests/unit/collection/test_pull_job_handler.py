@@ -44,9 +44,7 @@ class TestPullJobHandler:
     def mock_processor(self) -> MagicMock:
         """Create mock processor."""
         processor = MagicMock()
-        processor.process = AsyncMock(
-            return_value=MagicMock(success=True, is_duplicate=False)
-        )
+        processor.process = AsyncMock(return_value=MagicMock(success=True, is_duplicate=False))
         return processor
 
     @pytest.fixture
@@ -152,9 +150,7 @@ class TestPullJobHandler:
         sample_source_config_no_iteration: dict[str, Any],
     ) -> None:
         """Test handle_job_trigger loads source config."""
-        mock_source_config_service.get_config = AsyncMock(
-            return_value=sample_source_config_no_iteration
-        )
+        mock_source_config_service.get_config = AsyncMock(return_value=sample_source_config_no_iteration)
 
         await pull_job_handler.handle_job_trigger(source_id="weather-api")
 
@@ -184,9 +180,7 @@ class TestPullJobHandler:
         sample_source_config_no_iteration: dict[str, Any],
     ) -> None:
         """Test single fetch when no iteration block."""
-        mock_source_config_service.get_config = AsyncMock(
-            return_value=sample_source_config_no_iteration
-        )
+        mock_source_config_service.get_config = AsyncMock(return_value=sample_source_config_no_iteration)
 
         result = await pull_job_handler.handle_job_trigger(source_id="weather-api")
 
@@ -210,9 +204,7 @@ class TestPullJobHandler:
         sample_regions: list[dict[str, Any]],
     ) -> None:
         """Test multi-fetch with iteration block."""
-        mock_source_config_service.get_config = AsyncMock(
-            return_value=sample_source_config_with_iteration
-        )
+        mock_source_config_service.get_config = AsyncMock(return_value=sample_source_config_with_iteration)
         mock_iteration_resolver.resolve = AsyncMock(return_value=sample_regions)
 
         result = await pull_job_handler.handle_job_trigger(source_id="weather-api-regions")
@@ -236,9 +228,7 @@ class TestPullJobHandler:
         sample_source_config_no_iteration: dict[str, Any],
     ) -> None:
         """Test fetch passes correct pull config to fetcher."""
-        mock_source_config_service.get_config = AsyncMock(
-            return_value=sample_source_config_no_iteration
-        )
+        mock_source_config_service.get_config = AsyncMock(return_value=sample_source_config_no_iteration)
 
         await pull_job_handler.handle_job_trigger(source_id="weather-api")
 
@@ -258,9 +248,7 @@ class TestPullJobHandler:
         sample_regions: list[dict[str, Any]],
     ) -> None:
         """Test fetch passes iteration item for URL substitution."""
-        mock_source_config_service.get_config = AsyncMock(
-            return_value=sample_source_config_with_iteration
-        )
+        mock_source_config_service.get_config = AsyncMock(return_value=sample_source_config_with_iteration)
         mock_iteration_resolver.resolve = AsyncMock(return_value=sample_regions)
 
         await pull_job_handler.handle_job_trigger(source_id="weather-api-regions")
@@ -280,9 +268,7 @@ class TestPullJobHandler:
         sample_source_config_no_iteration: dict[str, Any],
     ) -> None:
         """Test processor receives job with inline content."""
-        mock_source_config_service.get_config = AsyncMock(
-            return_value=sample_source_config_no_iteration
-        )
+        mock_source_config_service.get_config = AsyncMock(return_value=sample_source_config_no_iteration)
         mock_pull_data_fetcher.fetch = AsyncMock(return_value=b'{"temperature": 25}')
 
         await pull_job_handler.handle_job_trigger(source_id="weather-api")
@@ -304,14 +290,10 @@ class TestPullJobHandler:
         sample_source_config_with_iteration: dict[str, Any],
     ) -> None:
         """Test processor receives linkage extracted from iteration item."""
-        mock_source_config_service.get_config = AsyncMock(
-            return_value=sample_source_config_with_iteration
-        )
+        mock_source_config_service.get_config = AsyncMock(return_value=sample_source_config_with_iteration)
         regions = [{"region_id": "nyeri", "latitude": -0.4167, "name": "Nyeri"}]
         mock_iteration_resolver.resolve = AsyncMock(return_value=regions)
-        mock_iteration_resolver.extract_linkage = MagicMock(
-            return_value={"region_id": "nyeri", "name": "Nyeri"}
-        )
+        mock_iteration_resolver.extract_linkage = MagicMock(return_value={"region_id": "nyeri", "name": "Nyeri"})
 
         await pull_job_handler.handle_job_trigger(source_id="weather-api-regions")
 
@@ -333,9 +315,7 @@ class TestPullJobHandler:
         sample_regions: list[dict[str, Any]],
     ) -> None:
         """Test handler continues on partial fetch failures."""
-        mock_source_config_service.get_config = AsyncMock(
-            return_value=sample_source_config_with_iteration
-        )
+        mock_source_config_service.get_config = AsyncMock(return_value=sample_source_config_with_iteration)
         mock_iteration_resolver.resolve = AsyncMock(return_value=sample_regions)
 
         # Second fetch fails
@@ -379,9 +359,7 @@ class TestPullJobHandler:
             ingestion_queue=mock_ingestion_queue,
         )
 
-        mock_source_config_service.get_config = AsyncMock(
-            return_value=sample_source_config_with_iteration
-        )
+        mock_source_config_service.get_config = AsyncMock(return_value=sample_source_config_with_iteration)
         mock_iteration_resolver.resolve = AsyncMock(return_value=sample_regions)
 
         # Track concurrent executions
@@ -418,9 +396,7 @@ class TestPullJobHandler:
         sample_regions: list[dict[str, Any]],
     ) -> None:
         """Test handler returns complete job summary."""
-        mock_source_config_service.get_config = AsyncMock(
-            return_value=sample_source_config_with_iteration
-        )
+        mock_source_config_service.get_config = AsyncMock(return_value=sample_source_config_with_iteration)
         mock_iteration_resolver.resolve = AsyncMock(return_value=sample_regions)
 
         result = await pull_job_handler.handle_job_trigger(source_id="weather-api-regions")

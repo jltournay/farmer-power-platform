@@ -24,6 +24,13 @@ storage_bytes_counter = meter.create_counter(
     unit="By",
 )
 
+# Counter for pull job fetch operations (Story 2.7)
+pull_fetch_counter = meter.create_counter(
+    name="collection_pull_fetch_total",
+    description="Total pull fetch operations by status (success/failed)",
+    unit="1",
+)
+
 
 class StorageMetrics:
     """OpenTelemetry metrics for document storage operations.
@@ -54,3 +61,21 @@ class StorageMetrics:
             source_id: ID of the source configuration.
         """
         documents_counter.add(1, {"source_id": source_id, "status": "duplicate"})
+
+    @staticmethod
+    def record_pull_fetch_success(source_id: str) -> None:
+        """Record a successful pull fetch operation (Story 2.7).
+
+        Args:
+            source_id: ID of the source configuration.
+        """
+        pull_fetch_counter.add(1, {"source_id": source_id, "status": "success"})
+
+    @staticmethod
+    def record_pull_fetch_failed(source_id: str) -> None:
+        """Record a failed pull fetch operation (Story 2.7).
+
+        Args:
+            source_id: ID of the source configuration.
+        """
+        pull_fetch_counter.add(1, {"source_id": source_id, "status": "failed"})
