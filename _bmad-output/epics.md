@@ -1213,46 +1213,51 @@ So that I can analyze poor quality samples with visual evidence.
 **Acceptance Criteria:**
 
 **Given** the Generic Content Processing Framework exists (Story 2.4)
-**When** a ZIP blob is queued for processing
-**Then** the `ZipExtractionProcessor` is selected via `transformation.agent = "collection-zip-extraction"`
+**When** a ZIP blob is queued for processing with `processor_type: zip-extraction`
+**Then** the `ZipExtractionProcessor` is selected via source config
 **And** no changes to the core pipeline are required
 
 **Given** the `ZipExtractionProcessor` is invoked
 **When** the blob is downloaded
 **Then** the ZIP is extracted in memory (streaming, no disk write)
-**And** manifest.json is parsed for image metadata
+**And** `manifest.json` is validated against `generic-zip-manifest.schema.json`
+**And** `payload` is validated against source-specific schema (`qc-exceptions-manifest.json`)
 
-**Given** the ZIP contains leaf exception images
-**When** images are extracted
-**Then** each image is uploaded to `quality-images` container
-**And** blob path follows: `quality-images/{factory_id}/{date}/{bag_id}/{leaf_index}.jpg`
-**And** image metadata is stored: blob_path, file_size, checksum, leaf_assessment_ref
+**Given** the manifest contains documents with file roles
+**When** files are processed per `manifest.documents[]`
+**Then** files with `role: image` are extracted to `exception-images` container
+**And** blob path follows: `exception-images/{plantation_id}/{batch_id}/{document_id}.jpg`
+**And** files with `role: metadata` are parsed and merged into document attributes
 
-**Given** manifest.json links images to a bag_id
-**When** images are stored
-**Then** the corresponding quality_event is updated with image_refs[]
-**And** if quality_event doesn't exist yet, images are stored with pending_link status
+**Given** images and metadata are extracted
+**When** documents are stored
+**Then** a `DocumentIndex` is created in the `documents` collection for each manifest document
+**And** `linkage_fields` contains: `plantation_id`, `batch_id`, `factory_id`, `batch_result_ref`
+**And** `extracted_fields` contains image attributes: `quality_grade`, `confidence`, `leaf_type`, `coarse_subtype`
+**And** `raw_document` references the original ZIP blob
 
-**Given** all images are extracted
+**Given** all documents are stored
 **When** processing completes
-**Then** a `collection.document.stored` domain event is emitted
+**Then** a `collection.quality-exceptions.ingested` domain event is emitted
 **And** processing_status is updated to "completed"
-**And** the event payload includes: document_id, source_id, image_count
+**And** the event payload includes: `document_id`, `source_id`, `plantation_id`, `batch_id`, document count
 
 **Given** the ZIP is corrupted or invalid
 **When** extraction fails
 **Then** processing_status is set to "failed"
-**And** error details logged: "Invalid ZIP format" or "Missing manifest.json"
+**And** error details logged: "Invalid ZIP format" or "Missing manifest.json" or schema validation errors
 **And** original blob is retained for manual review
 
 **Technical Notes:**
 - Implements `ContentProcessor` ABC from Story 2.4
-- Registered as: `ProcessorRegistry.register("collection-zip-extraction", ZipExtractionProcessor)`
+- Registered as: `ProcessorRegistry.register("zip-extraction", ZipExtractionProcessor)`
 - ZIP processing: zipfile module with streaming (no temp files)
 - Max ZIP size: 50MB
 - Max images per ZIP: 100
 - Image formats: JPEG, PNG only
-- Linking: bag_id from manifest matches quality_events.bag_id
+- Uses generic ZIP manifest format (see `collection-model-architecture.md`)
+- All documents stored in single `documents` collection, differentiated by `source_id`
+- Linking via `linkage_fields.batch_id` and `linkage_fields.plantation_id`
 - No changes to core pipeline - pure configuration-driven polymorphism
 
 ---
