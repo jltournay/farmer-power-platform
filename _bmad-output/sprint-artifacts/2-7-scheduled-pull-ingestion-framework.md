@@ -64,8 +64,9 @@ This story implements the **SCHEDULED_PULL** ingestion mode for the Collection M
 6. **Given** the source has an iteration block
    **When** the job executes
    **Then** the MCP tool specified in `source_mcp`:`source_tool` is called
-   **And** for each item returned, a parallel fetch is executed (limited by `concurrency`)
-   **And** each fetched JSON is passed to `JsonExtractionProcessor` with injected linkage
+   **And** for each item returned, item values are substituted into URL parameters (e.g., `{region.latitude}`, `{region.longitude}`)
+   **And** a parallel fetch is executed for each item (limited by `concurrency`)
+   **And** each fetched JSON is passed to `JsonExtractionProcessor` with item values injected as linkage
 
 ### AC3: HTTP Fetch with DAPR Secrets
 
@@ -295,9 +296,45 @@ async def _get_auth_header(self, pull_config: dict) -> dict[str, str]:
     return {auth_header: secret}
 ```
 
+### URL Parameter Substitution with Iteration
+
+When an iteration block is configured, the MCP tool returns a list of items. Each item's fields can be used as URL parameters via `{item.field}` syntax:
+
+**Example Flow:**
+
+1. **MCP Tool Call:** `plantation-mcp:list_active_regions` returns:
+   ```json
+   [
+     {"region_id": "nyeri", "latitude": -0.4167, "longitude": 36.9500, "name": "Nyeri"},
+     {"region_id": "kericho", "latitude": -0.3689, "longitude": 35.2863, "name": "Kericho"},
+     {"region_id": "nandi", "latitude": 0.1833, "longitude": 35.1000, "name": "Nandi"}
+   ]
+   ```
+
+2. **URL Template Substitution:** For each item, parameters are substituted:
+   ```
+   Base URL: https://api.open-meteo.com/v1/forecast
+   Parameters:
+     latitude: {item.latitude}   → -0.4167 (for Nyeri)
+     longitude: {item.longitude} → 36.9500 (for Nyeri)
+     hourly: temperature_2m,...  → (static, no substitution)
+
+   Final URL: https://api.open-meteo.com/v1/forecast?latitude=-0.4167&longitude=36.9500&hourly=temperature_2m,...
+   ```
+
+3. **Linkage Injection:** Item values are injected into document linkage:
+   ```json
+   {
+     "linkage": {
+       "region_id": "nyeri",
+       "region_name": "Nyeri"
+     }
+   }
+   ```
+
 ### Source Config Reference
 
-Weather API config is already defined (`config/source-configs/weather-api.yaml`):
+Weather API config with parameter substitution (`config/source-configs/weather-api.yaml`):
 
 ```yaml
 source_id: weather-api
@@ -308,12 +345,18 @@ ingestion:
     base_url: https://api.open-meteo.com/v1/forecast
     auth_type: none
     parameters:
+      latitude: "{item.latitude}"      # Substituted from iteration item
+      longitude: "{item.longitude}"    # Substituted from iteration item
       hourly: temperature_2m,relative_humidity_2m,precipitation,wind_speed_10m
+      timezone: Africa/Nairobi
     timeout_seconds: 30
   iteration:
     foreach: region
     source_mcp: plantation-mcp
     source_tool: list_active_regions
+    inject_linkage:                    # Fields to inject into document linkage
+      - region_id
+      - name
     concurrency: 5
   retry:
     max_attempts: 3
