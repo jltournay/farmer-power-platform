@@ -5,6 +5,7 @@ description: Secondary leaf images requiring manual review or AI analysis
 ingestion:
   mode: blob_trigger
   landing_container: qc-analyzer-landing
+  processor_type: zip-extraction  # TODO: Implement ZipExtractionProcessor in future story
   path_pattern:
     pattern: "exceptions/{plantation_id}/{batch_id}.zip"
     extract_fields:
@@ -28,7 +29,7 @@ validation:
   strict: true
 
 transformation:
-  agent: qc-exception-extraction-agent
+  ai_agent_id: qc-exception-extraction-agent
   extract_fields:
     - plantation_id
     - batch_id
@@ -43,3 +44,18 @@ storage:
   raw_container: exception-images-raw
   index_collection: exception_images_index
   ttl_days: 365
+
+events:
+  on_success:
+    topic: collection.exception_images.received
+    payload_fields:
+      - document_id
+      - plantation_id
+      - batch_id
+      - exception_count
+  on_failure:
+    topic: collection.exception_images.failed
+    payload_fields:
+      - source_id
+      - error_type
+      - error_message

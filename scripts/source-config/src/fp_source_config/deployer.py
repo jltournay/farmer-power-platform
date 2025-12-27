@@ -169,6 +169,7 @@ class SourceConfigDeployer:
                             "validation": config_dict.get("validation"),
                             "transformation": config_dict["transformation"],
                             "storage": config_dict["storage"],
+                            "events": config_dict.get("events"),
                         },
                         "version": 1,
                         "deployed_at": deployed_at,
@@ -202,6 +203,7 @@ class SourceConfigDeployer:
                     "validation": config_dict.get("validation"),
                     "transformation": config_dict["transformation"],
                     "storage": config_dict["storage"],
+                    "events": config_dict.get("events"),
                 }
 
                 # Simple equality check (deep comparison would be better)

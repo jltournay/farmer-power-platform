@@ -5,6 +5,7 @@ description: Aggregated quality grading results from Starfish QC machines
 ingestion:
   mode: blob_trigger
   landing_container: qc-analyzer-landing
+  processor_type: json-extraction
   path_pattern:
     pattern: "results/{plantation_id}/{crop}/{market}/{batch_id}.json"
     extract_fields:
@@ -25,7 +26,7 @@ validation:
   strict: true
 
 transformation:
-  agent: qc-result-extraction-agent
+  ai_agent_id: qc-result-extraction-agent
   extract_fields:
     - plantation_id
     - factory_id
@@ -42,3 +43,17 @@ storage:
   raw_container: quality-results-raw
   index_collection: quality_results_index
   ttl_days: 730
+
+events:
+  on_success:
+    topic: collection.quality_result.received
+    payload_fields:
+      - document_id
+      - plantation_id
+      - batch_timestamp
+  on_failure:
+    topic: collection.quality_result.failed
+    payload_fields:
+      - source_id
+      - error_type
+      - error_message

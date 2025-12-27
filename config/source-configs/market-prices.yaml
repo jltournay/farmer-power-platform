@@ -24,7 +24,7 @@ ingestion:
     backoff: exponential
 
 transformation:
-  agent: market-prices-extraction-agent
+  ai_agent_id: market-prices-extraction-agent
   extract_fields:
     - market_id
     - commodity
@@ -39,3 +39,17 @@ storage:
   raw_container: market-prices-raw
   index_collection: market_prices_index
   ttl_days: 730
+
+events:
+  on_success:
+    topic: collection.market_prices.updated
+    payload_fields:
+      - document_id
+      - market_id
+      - effective_date
+  on_failure:
+    topic: collection.market_prices.failed
+    payload_fields:
+      - source_id
+      - error_type
+      - error_message

@@ -24,7 +24,7 @@ ingestion:
     backoff: exponential
 
 transformation:
-  agent: weather-data-extraction-agent
+  ai_agent_id: weather-data-extraction-agent
   extract_fields:
     - region_id
     - timestamp
@@ -39,3 +39,17 @@ storage:
   raw_container: weather-data-raw
   index_collection: weather_data_index
   ttl_days: 365
+
+events:
+  on_success:
+    topic: collection.weather.updated
+    payload_fields:
+      - document_id
+      - region_id
+      - timestamp
+  on_failure:
+    topic: collection.weather.failed
+    payload_fields:
+      - source_id
+      - error_type
+      - error_message
