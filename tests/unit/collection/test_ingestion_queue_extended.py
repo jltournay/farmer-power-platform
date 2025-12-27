@@ -148,8 +148,12 @@ class TestIngestionQueueExtended:
         mock_db,
     ) -> None:
         """Test incrementing retry count for non-existent job returns 0."""
-        # Mock find_one_and_update to return None
-        mock_db["ingestion_queue"].find_one_and_update = lambda *args, **kwargs: None
+
+        # Mock find_one_and_update to return None asynchronously
+        async def mock_find_one_and_update(*args, **kwargs):
+            return None
+
+        mock_db["ingestion_queue"].find_one_and_update = mock_find_one_and_update
 
         new_count = await ingestion_queue.increment_retry_count("nonexistent-id")
 
