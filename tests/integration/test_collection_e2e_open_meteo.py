@@ -41,14 +41,12 @@ from tests.conftest_integration import mongodb_client, test_db  # noqa: F401
 # Check if Azure SDK is available (required for blob storage tests)
 try:
     import azure.storage.blob  # noqa: F401
+
     AZURE_SDK_AVAILABLE = True
 except ImportError:
     AZURE_SDK_AVAILABLE = False
 
-requires_azure = pytest.mark.skipif(
-    not AZURE_SDK_AVAILABLE,
-    reason="Azure SDK (azure-storage-blob) not installed"
-)
+requires_azure = pytest.mark.skipif(not AZURE_SDK_AVAILABLE, reason="Azure SDK (azure-storage-blob) not installed")
 
 # =============================================================================
 # Test Configuration
@@ -150,10 +148,10 @@ def mock_ai_client() -> MagicMock:
 
     async def mock_extract(request: Any) -> dict:
         # Parse the raw content as JSON
-        content = request.raw_content if hasattr(request, 'raw_content') else request.get('raw_content', '{}')
+        content = request.raw_content if hasattr(request, "raw_content") else request.get("raw_content", "{}")
 
         if isinstance(content, bytes):
-            content = content.decode('utf-8')
+            content = content.decode("utf-8")
 
         extracted = json.loads(content)
 
@@ -360,7 +358,7 @@ class TestCollectionE2EOpenMeteo:
                     "source_id": "weather-api-test",
                     "ingested_at": now,
                 }
-            }
+            },
         )
 
         # Create MCP DocumentClient (uses same MongoDB)
