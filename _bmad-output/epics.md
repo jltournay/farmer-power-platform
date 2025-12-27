@@ -1419,6 +1419,79 @@ events:
 - `DaprEventPublisher` - domain event emission
 - `DocumentRepository` - index storage
 
+**DAPR Secret Store Configuration:**
+
+Secrets (API keys, OAuth credentials) are accessed via DAPR Secret Store component. This provides:
+- Abstraction over secret backends (Azure Key Vault, Kubernetes Secrets, HashiCorp Vault)
+- No secrets in source configuration or environment variables
+- Automatic secret rotation support (backend-dependent)
+
+**DAPR Component Definition** (`deploy/dapr/components/secretstore.yaml`):
+
+```yaml
+apiVersion: dapr.io/v1alpha1
+kind: Component
+metadata:
+  name: azure-keyvault
+  namespace: farmer-power
+spec:
+  type: secretstores.azure.keyvault
+  version: v1
+  metadata:
+    - name: vaultName
+      value: "farmer-power-secrets"
+    - name: azureClientId
+      value: ""  # Uses Managed Identity in AKS
+    - name: azureTenantId
+      value: ""  # From Azure AD
+```
+
+**Alternative: Kubernetes Secrets** (for local/dev):
+
+```yaml
+apiVersion: dapr.io/v1alpha1
+kind: Component
+metadata:
+  name: kubernetes-secrets
+  namespace: farmer-power
+spec:
+  type: secretstores.kubernetes
+  version: v1
+  metadata: []
+```
+
+**Usage in Source Config:**
+
+```yaml
+ingestion:
+  request:
+    auth_type: api_key
+    secret_store: azure-keyvault    # DAPR component name
+    secret_key: starfish-api-key    # Key name in secret store
+    auth_header: Authorization      # HTTP header to populate
+```
+
+**Code Implementation:**
+
+```python
+# PullDataFetcher retrieves secret via DAPR client
+async def _get_auth_header(self, pull_config: dict) -> dict[str, str]:
+    if pull_config.get("auth_type") == "none":
+        return {}
+
+    secret_store = pull_config["secret_store"]
+    secret_key = pull_config["secret_key"]
+    auth_header = pull_config["auth_header"]
+
+    # DAPR Secret Store API
+    secret = await self._dapr.get_secret(
+        store_name=secret_store,
+        key=secret_key,
+    )
+
+    return {auth_header: secret[secret_key]}
+```
+
 **Test Validation:**
 - Weather API source config (Open-Meteo, no auth, with iteration)
 - Mock MCP tool returns region list
