@@ -1,6 +1,6 @@
 # Story 2.6: Document Storage & Deduplication
 
-**Status:** in-progress
+**Status:** review
 **Epic:** 2 - Quality Data Ingestion
 **GitHub Issue:** #21
 **Created:** 2025-12-27

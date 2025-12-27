@@ -73,7 +73,7 @@ development_status:
   2-3-event-grid-trigger-handler: done  # github_issue: 18
   2-4-generic-content-processing-framework: done  # github_issue: 19 - Generic Content Processing Framework + JSON Processor
   2-5-qc-analyzer-exception-images-ingestion: done  # github_issue: 20
-  2-6-document-storage-deduplication: in-progress  # github_issue: 21
+  2-6-document-storage-deduplication: review  # github_issue: 21
   2-7-weather-api-pull-mode: backlog
   2-8-market-prices-pull-mode: unscoped-phase2  # Descoped from Phase 1
   2-9-collection-model-mcp-server: backlog
