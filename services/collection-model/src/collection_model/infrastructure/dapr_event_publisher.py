@@ -59,6 +59,22 @@ class DaprEventPublisher:
         self._pubsub_name = pubsub_name or settings.dapr_pubsub_name
         self._base_url = f"http://localhost:{self._dapr_port}"
 
+    async def check_health(self) -> bool:
+        """Check if DAPR sidecar is available.
+
+        Returns:
+            True if DAPR is reachable, False otherwise.
+        """
+        try:
+            async with httpx.AsyncClient() as client:
+                response = await client.get(
+                    f"{self._base_url}/v1.0/healthz",
+                    timeout=2.0,
+                )
+                return response.status_code == 200
+        except Exception:
+            return False
+
     async def publish(
         self,
         topic: str,
@@ -270,3 +286,31 @@ class DaprEventPublisher:
                 payload[field_name] = doc_dict["linkage_fields"][field_name]
 
         return payload
+
+
+# Module-level singleton and helper function for health checks
+_event_publisher: DaprEventPublisher | None = None
+
+
+def get_event_publisher() -> DaprEventPublisher:
+    """Get or create the event publisher singleton.
+
+    Returns:
+        DaprEventPublisher: The event publisher instance.
+    """
+    global _event_publisher
+
+    if _event_publisher is None:
+        _event_publisher = DaprEventPublisher()
+
+    return _event_publisher
+
+
+async def check_pubsub_health() -> bool:
+    """Check if DAPR Pub/Sub is available.
+
+    Returns:
+        True if DAPR is reachable, False otherwise.
+    """
+    publisher = get_event_publisher()
+    return await publisher.check_health()

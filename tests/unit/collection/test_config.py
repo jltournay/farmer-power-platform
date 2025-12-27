@@ -20,8 +20,7 @@ def test_config_defaults() -> None:
         assert settings.port == 8000
         assert settings.mongodb_database == "collection"
         assert settings.dapr_pubsub_name == "pubsub"
-        assert settings.dapr_document_stored_topic == "collection.document.stored"
-        assert settings.dapr_poor_quality_topic == "collection.poor_quality_detected"
+        # Note: Event topics are now config-driven from source_config, not in Settings
 
 
 def test_config_from_env() -> None:
@@ -42,10 +41,12 @@ def test_config_from_env() -> None:
         assert settings.otel_enabled is False
 
 
-def test_config_event_grid_topics() -> None:
-    """Test Event Grid related topics are configured."""
+def test_config_dapr_settings() -> None:
+    """Test DAPR-related settings are configured."""
     from collection_model.config import settings
 
-    assert settings.dapr_document_stored_topic == "collection.document.stored"
-    assert settings.dapr_weather_updated_topic == "collection.weather.updated"
-    assert settings.dapr_market_prices_topic == "collection.market_prices.updated"
+    # Core DAPR settings are in config
+    assert settings.dapr_host == "localhost"
+    assert settings.dapr_http_port == 3500
+    assert settings.dapr_pubsub_name == "pubsub"
+    # Note: Event topics are now config-driven from source_config, not hardcoded

@@ -15,6 +15,7 @@ import collection_model.processors  # noqa: F401
 import structlog
 from collection_model.api import events, health
 from collection_model.config import settings
+from collection_model.infrastructure.dapr_event_publisher import check_pubsub_health
 from collection_model.infrastructure.ingestion_queue import IngestionQueue
 from collection_model.infrastructure.metrics import setup_metrics, shutdown_metrics
 from collection_model.infrastructure.mongodb import (
@@ -23,7 +24,6 @@ from collection_model.infrastructure.mongodb import (
     get_database,
     get_mongodb_client,
 )
-from collection_model.infrastructure.pubsub import check_pubsub_health
 from collection_model.infrastructure.tracing import (
     instrument_fastapi,
     setup_tracing,

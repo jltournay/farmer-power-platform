@@ -53,13 +53,10 @@ class Settings(BaseSettings):
     cors_allow_headers: list[str] = ["*"]
 
     # DAPR configuration
+    # Note: Event topics are config-driven from source_config, not hardcoded here
     dapr_host: str = "localhost"
     dapr_http_port: int = 3500
     dapr_pubsub_name: str = "pubsub"
-    dapr_document_stored_topic: str = "collection.document.stored"
-    dapr_poor_quality_topic: str = "collection.poor_quality_detected"
-    dapr_weather_updated_topic: str = "collection.weather.updated"
-    dapr_market_prices_topic: str = "collection.market_prices.updated"
 
     # Logging configuration
     log_level: str = "INFO"
