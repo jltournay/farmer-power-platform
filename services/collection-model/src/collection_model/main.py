@@ -16,7 +16,10 @@ import structlog
 from collection_model.api import events, health
 from collection_model.config import settings
 from collection_model.infrastructure.dapr_event_publisher import DaprEventPublisher
+from collection_model.infrastructure.dapr_jobs_client import DaprJobsClient
+from collection_model.infrastructure.dapr_secret_client import DaprSecretClient
 from collection_model.infrastructure.ingestion_queue import IngestionQueue
+from collection_model.infrastructure.iteration_resolver import IterationResolver
 from collection_model.infrastructure.metrics import setup_metrics, shutdown_metrics
 from collection_model.infrastructure.mongodb import (
     check_mongodb_connection,
@@ -24,12 +27,15 @@ from collection_model.infrastructure.mongodb import (
     get_database,
     get_mongodb_client,
 )
+from collection_model.infrastructure.pull_data_fetcher import PullDataFetcher
 from collection_model.infrastructure.tracing import (
     instrument_fastapi,
     setup_tracing,
     shutdown_tracing,
 )
 from collection_model.services.content_processor_worker import ContentProcessorWorker
+from collection_model.services.job_registration_service import JobRegistrationService
+from collection_model.services.pull_job_handler import PullJobHandler
 from collection_model.services.source_config_service import SourceConfigService
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -107,10 +113,50 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
         worker_task = asyncio.create_task(app.state.content_processor_worker.start())
         app.state.worker_task = worker_task
 
+        # Initialize DAPR Jobs Client and Job Registration Service (Story 2.7)
+        app.state.dapr_jobs_client = DaprJobsClient()
+        app.state.job_registration_service = JobRegistrationService(
+            dapr_jobs_client=app.state.dapr_jobs_client,
+            source_config_service=app.state.source_config_service,
+        )
+
+        # Sync DAPR Jobs for all scheduled_pull sources on startup
+        job_sync_result = await app.state.job_registration_service.sync_all_jobs()
+        logger.info(
+            "DAPR Jobs synced on startup",
+            registered=job_sync_result["registered"],
+            skipped=job_sync_result["skipped"],
+            failed=job_sync_result["failed"],
+        )
+
+        # Initialize Pull Job Handler (Story 2.7)
+        # Note: The processor is obtained from worker when handling jobs
+        # since it needs infrastructure dependencies set
+        app.state.dapr_secret_client = DaprSecretClient()
+        app.state.pull_data_fetcher = PullDataFetcher(
+            dapr_secret_client=app.state.dapr_secret_client,
+        )
+        app.state.iteration_resolver = IterationResolver()
+        app.state.pull_job_handler = PullJobHandler(
+            source_config_service=app.state.source_config_service,
+            pull_data_fetcher=app.state.pull_data_fetcher,
+            iteration_resolver=app.state.iteration_resolver,
+            processor=None,  # Processor set via set_processor after worker init
+            ingestion_queue=app.state.ingestion_queue,
+        )
+        # Link handler to worker for processor access
+        app.state.pull_job_handler.set_worker(app.state.content_processor_worker)
+
         health.set_mongodb_check(check_mongodb_connection)
         logger.info(
             "MongoDB connection and services initialized",
-            services=["SourceConfigService", "IngestionQueue", "ContentProcessorWorker"],
+            services=[
+                "SourceConfigService",
+                "IngestionQueue",
+                "ContentProcessorWorker",
+                "JobRegistrationService",
+                "PullJobHandler",
+            ],
         )
     except Exception as e:
         logger.warning("MongoDB connection failed at startup", error=str(e))

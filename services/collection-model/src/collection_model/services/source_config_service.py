@@ -74,6 +74,21 @@ class SourceConfigService:
         self._cache_expires = None
         logger.debug("Source config cache invalidated")
 
+    async def get_config(self, source_id: str) -> dict[str, Any] | None:
+        """Get a single source config by source_id.
+
+        Args:
+            source_id: Source identifier.
+
+        Returns:
+            Source config document or None if not found.
+        """
+        configs = await self.get_all_configs()
+        for config in configs:
+            if config.get("source_id") == source_id:
+                return config
+        return None
+
     async def get_config_by_container(self, container: str) -> dict[str, Any] | None:
         """Find source config matching the given container.
 

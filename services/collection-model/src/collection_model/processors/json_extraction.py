@@ -96,17 +96,22 @@ class JsonExtractionProcessor(ContentProcessor):
             ProcessorResult with success status and extracted data.
         """
         source_id = source_config.get("source_id", job.source_id)
+        is_pull_mode = job.is_pull_mode
 
         logger.info(
-            "Processing JSON blob",
+            "Processing JSON content",
             ingestion_id=job.ingestion_id,
             source_id=source_id,
-            blob_path=job.blob_path,
+            blob_path=job.blob_path if not is_pull_mode else None,
+            is_pull_mode=is_pull_mode,
         )
 
         try:
-            # Step 1: Download blob
-            content = await self._download_blob(job)
+            # Step 1: Get content (inline for pull mode, download for blob mode)
+            if is_pull_mode:
+                content = job.content  # type: ignore[assignment]
+            else:
+                content = await self._download_blob(job)
 
             # Step 2: Validate JSON
             raw_json = self._validate_json(content)
@@ -332,7 +337,11 @@ class JsonExtractionProcessor(ContentProcessor):
         job: IngestionJob,
         source_config: dict[str, Any],
     ) -> DocumentIndex:
-        """Create a document index from extraction results."""
+        """Create a document index from extraction results.
+
+        For pull mode jobs with linkage, the linkage fields from iteration
+        are merged into the extracted_fields before building linkage_fields.
+        """
         transformation = source_config.get("config", {}).get("transformation", {})
         ai_agent_id = transformation.get("ai_agent_id") or transformation.get("agent", "unknown")
 
@@ -359,11 +368,16 @@ class JsonExtractionProcessor(ContentProcessor):
             processed_at=datetime.now(UTC),
         )
 
+        # Merge linkage from pull mode iteration into extracted fields
+        extracted_fields = extraction_result.get("extracted_fields", {}).copy()
+        if job.linkage:
+            extracted_fields.update(job.linkage)
+
         return DocumentIndex.from_extraction(
             raw_document=raw_ref,
             extraction=extraction,
             ingestion=ingestion,
-            extracted_fields=extraction_result.get("extracted_fields", {}),
+            extracted_fields=extracted_fields,
             source_config=source_config,
         )
 

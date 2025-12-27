@@ -1,24 +1,29 @@
-"""Azure Event Grid webhook handler for blob-created events.
+"""Event handlers for blob-created events and DAPR Job triggers.
 
-This module handles incoming Event Grid events when blobs are created
-in Azure Blob Storage containers (qc-analyzer-results, qc-analyzer-exceptions).
+This module handles:
+1. Azure Event Grid events when blobs are created in storage containers
+2. DAPR Job callbacks for scheduled pull ingestion (Story 2.7)
+
 Events are validated, matched against source configurations, and queued
 for processing.
 """
 
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import structlog
 from collection_model.domain.ingestion_job import IngestionJob
 from collection_model.infrastructure.ingestion_queue import IngestionQueue
 from collection_model.infrastructure.metrics import EventMetrics
 from collection_model.services.source_config_service import SourceConfigService
-from fastapi import APIRouter, Request, Response
+from fastapi import APIRouter, HTTPException, Request, Response
 from pydantic import BaseModel, Field
+
+if TYPE_CHECKING:
+    from collection_model.services.pull_job_handler import PullJobHandler
 
 logger = structlog.get_logger(__name__)
 
-router = APIRouter(prefix="/api/events", tags=["events"])
+router = APIRouter(prefix="/api", tags=["events"])
 
 
 class SubscriptionValidationData(BaseModel):
@@ -32,7 +37,7 @@ class SubscriptionValidationData(BaseModel):
     )
 
 
-@router.post("/blob-created")
+@router.post("/events/blob-created")
 async def handle_blob_created(request: Request) -> Response:
     """Handle Azure Event Grid blob-created events.
 
@@ -276,3 +281,82 @@ def _parse_event_subject(subject: str) -> tuple[str, str]:
 
     container, blob_path = container_and_blob.split("/blobs/", 1)
     return container, blob_path
+
+
+# =============================================================================
+# DAPR Job Trigger Endpoint (Story 2.7)
+# =============================================================================
+
+
+class JobTriggerResponse(BaseModel):
+    """Response for job trigger endpoint."""
+
+    success: bool = Field(description="Whether the job completed successfully")
+    source_id: str = Field(description="Source identifier")
+    fetched: int = Field(default=0, description="Number of successful fetches")
+    failed: int = Field(default=0, description="Number of failed fetches")
+    duplicates: int = Field(default=0, description="Number of duplicate documents")
+    error: str | None = Field(default=None, description="Error message if failed")
+
+
+@router.post(
+    "/v1/triggers/job/{source_id}",
+    response_model=JobTriggerResponse,
+    tags=["triggers"],
+)
+async def handle_job_trigger(
+    source_id: str,
+    request: Request,
+) -> JobTriggerResponse:
+    """Handle DAPR Job trigger callback for scheduled pull ingestion.
+
+    This endpoint is called by DAPR Jobs at the configured schedule.
+    It triggers data fetching from the configured external API and
+    processes the response through the ingestion pipeline.
+
+    Args:
+        source_id: Source configuration identifier from job callback.
+        request: FastAPI request object.
+
+    Returns:
+        JobTriggerResponse with fetch results summary.
+
+    Raises:
+        HTTPException: 503 if services not initialized.
+        HTTPException: 500 on processing error.
+    """
+    logger.info("DAPR Job trigger received", source_id=source_id)
+
+    # Get pull job handler from app state
+    pull_job_handler: PullJobHandler | None = getattr(request.app.state, "pull_job_handler", None)
+
+    if pull_job_handler is None:
+        logger.error("PullJobHandler not initialized in app state")
+        raise HTTPException(
+            status_code=503,
+            detail="Pull job handler not available",
+        )
+
+    try:
+        result = await pull_job_handler.handle_job_trigger(source_id=source_id)
+
+        logger.info(
+            "Job trigger completed",
+            source_id=source_id,
+            success=result["success"],
+            fetched=result.get("fetched", 0),
+            failed=result.get("failed", 0),
+        )
+
+        return JobTriggerResponse(**result)
+
+    except Exception as e:
+        logger.exception(
+            "Job trigger failed",
+            source_id=source_id,
+            error=str(e),
+        )
+        raise HTTPException(
+            status_code=500,
+            detail=f"Job trigger failed: {e}",
+        ) from e
