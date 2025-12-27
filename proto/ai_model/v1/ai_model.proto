@@ -1,0 +1,59 @@
+// AI Model Service - gRPC API Definition
+// LLM extraction gateway for all domain models
+
+syntax = "proto3";
+
+package farmer_power.ai_model.v1;
+
+// AiModelService provides LLM-based extraction capabilities
+service AiModelService {
+  // Extract structured data from raw content using LLM
+  rpc Extract(ExtractionRequest) returns (ExtractionResponse);
+
+  // Health check for service readiness
+  rpc HealthCheck(HealthCheckRequest) returns (HealthCheckResponse);
+}
+
+message ExtractionRequest {
+  // Raw content to extract from (JSON, text, etc.)
+  string raw_content = 1;
+
+  // AI agent ID from source configuration (e.g., "qc-exception-extraction-agent")
+  string ai_agent_id = 2;
+
+  // Source configuration hints for extraction
+  string source_config_json = 3;
+
+  // MIME type of the content
+  string content_type = 4;
+
+  // OpenTelemetry trace ID for distributed tracing
+  string trace_id = 5;
+}
+
+message ExtractionResponse {
+  // Whether extraction succeeded
+  bool success = 1;
+
+  // Extracted fields as JSON
+  string extracted_fields_json = 2;
+
+  // Confidence score of the extraction (0.0-1.0)
+  float confidence = 3;
+
+  // Whether extraction passed semantic validation
+  bool validation_passed = 4;
+
+  // Validation warnings (non-blocking issues)
+  repeated string validation_warnings = 5;
+
+  // Error message if success=false
+  string error_message = 6;
+}
+
+message HealthCheckRequest {}
+
+message HealthCheckResponse {
+  bool healthy = 1;
+  string version = 2;
+}

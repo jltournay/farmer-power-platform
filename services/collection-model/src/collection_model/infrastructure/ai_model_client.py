@@ -1,16 +1,20 @@
-"""AI Model DAPR client for LLM extraction via Service Invocation.
+"""AI Model DAPR client for LLM extraction via gRPC Service Invocation.
 
 This module provides the AiModelClient class for calling the AI Model service
-via DAPR Service Invocation. Collection Model NEVER calls LLM directly - all
-LLM operations go through AI Model.
+via DAPR gRPC Service Invocation. Collection Model NEVER calls LLM directly -
+all LLM operations go through AI Model.
+
+Architecture Decision: All inter-service communication uses gRPC via DAPR
+(see infrastructure-decisions.md).
 """
 
+import json
 from typing import Any
 
-import httpx
 import structlog
 from collection_model.config import settings
 from collection_model.domain.exceptions import ExtractionError
+from dapr.clients import DaprClient
 from pydantic import BaseModel, Field
 
 logger = structlog.get_logger(__name__)
@@ -49,32 +53,29 @@ class ExtractionResponse(BaseModel):
 
 
 class AiModelClient:
-    """DAPR Service Invocation client for AI Model.
+    """DAPR gRPC Service Invocation client for AI Model.
 
     All LLM calls go through AI Model - Collection Model never calls LLM directly.
-    Uses DAPR Service Invocation for inter-service communication.
+    Uses DAPR gRPC Service Invocation for inter-service communication.
+
+    Architecture: All inter-model calls use gRPC via DAPR (infrastructure-decisions.md).
     """
 
     def __init__(
         self,
-        dapr_http_port: int | None = None,
         ai_model_app_id: str | None = None,
     ) -> None:
         """Initialize the AI Model client.
 
         Args:
-            dapr_http_port: DAPR HTTP port (defaults to settings.dapr_http_port).
             ai_model_app_id: AI Model app ID (defaults to settings.ai_model_app_id).
         """
-        self._dapr_port = dapr_http_port or settings.dapr_http_port
         self._ai_model_app_id = ai_model_app_id or settings.ai_model_app_id
-        self._base_url = f"http://localhost:{self._dapr_port}"
 
     async def extract(self, request: ExtractionRequest) -> ExtractionResponse:
         """Call AI Model to extract structured data from raw content.
 
-        Uses DAPR Service Invocation:
-        POST http://localhost:3500/v1.0/invoke/ai-model/method/extract
+        Uses DAPR gRPC Service Invocation to call AI Model's Extract method.
 
         Args:
             request: Extraction request with raw content and agent ID.
@@ -85,71 +86,68 @@ class AiModelClient:
         Raises:
             ExtractionError: If extraction fails.
         """
-        url = f"{self._base_url}/v1.0/invoke/{self._ai_model_app_id}/method/extract"
-
         logger.debug(
-            "Calling AI Model for extraction",
+            "Calling AI Model for extraction via gRPC",
             ai_agent_id=request.ai_agent_id,
             content_type=request.content_type,
             content_length=len(request.raw_content),
         )
 
-        try:
-            async with httpx.AsyncClient() as client:
-                response = await client.post(
-                    url,
-                    json=request.model_dump(),
-                    timeout=60.0,  # LLM calls can be slow
-                    headers={
-                        "Content-Type": "application/json",
-                        "dapr-app-id": self._ai_model_app_id,
-                    },
-                )
-                response.raise_for_status()
+        # Prepare gRPC request payload as JSON (DAPR handles serialization)
+        request_data = {
+            "raw_content": request.raw_content,
+            "ai_agent_id": request.ai_agent_id,
+            "source_config_json": json.dumps(request.source_config),
+            "content_type": request.content_type,
+        }
 
-                result = ExtractionResponse.model_validate(response.json())
+        try:
+            with DaprClient() as client:
+                response = client.invoke_method(
+                    app_id=self._ai_model_app_id,
+                    method_name="Extract",
+                    data=json.dumps(request_data),
+                    content_type="application/json",
+                )
+
+                # Parse response
+                response_data = json.loads(response.data.decode("utf-8"))
+
+                if not response_data.get("success", True):
+                    error_msg = response_data.get("error_message", "Unknown extraction error")
+                    raise ExtractionError(f"AI Model extraction failed: {error_msg}")
+
+                # Parse extracted fields from JSON
+                extracted_fields_json = response_data.get("extracted_fields_json", "{}")
+                extracted_fields = json.loads(extracted_fields_json)
+
+                result = ExtractionResponse(
+                    extracted_fields=extracted_fields,
+                    confidence=response_data.get("confidence", 1.0),
+                    validation_passed=response_data.get("validation_passed", True),
+                    validation_warnings=response_data.get("validation_warnings", []),
+                )
+
                 logger.info(
-                    "AI Model extraction completed",
+                    "AI Model extraction completed via gRPC",
                     ai_agent_id=request.ai_agent_id,
                     confidence=result.confidence,
                     validation_passed=result.validation_passed,
                     field_count=len(result.extracted_fields),
                 )
+
                 return result
 
-        except httpx.HTTPStatusError as e:
-            logger.error(
-                "AI Model returned error status",
-                ai_agent_id=request.ai_agent_id,
-                status_code=e.response.status_code,
-                response_text=e.response.text[:500],
-            )
-            raise ExtractionError(
-                f"AI Model extraction failed with status {e.response.status_code}: {e.response.text[:200]}"
-            ) from e
-
-        except httpx.TimeoutException as e:
-            logger.error(
-                "AI Model request timed out",
-                ai_agent_id=request.ai_agent_id,
-            )
-            raise ExtractionError("AI Model extraction timed out") from e
-
-        except httpx.RequestError as e:
-            logger.error(
-                "Failed to connect to AI Model",
-                ai_agent_id=request.ai_agent_id,
-                error=str(e),
-            )
-            raise ExtractionError(f"Failed to connect to AI Model: {e}") from e
+        except ExtractionError:
+            raise
 
         except Exception as e:
             logger.exception(
-                "Unexpected error during AI Model extraction",
+                "Failed to invoke AI Model via gRPC",
                 ai_agent_id=request.ai_agent_id,
                 error=str(e),
             )
-            raise ExtractionError(f"Unexpected extraction error: {e}") from e
+            raise ExtractionError(f"AI Model invocation failed: {e}") from e
 
     async def health_check(self) -> bool:
         """Check if AI Model service is healthy.
@@ -157,12 +155,18 @@ class AiModelClient:
         Returns:
             True if healthy, False otherwise.
         """
-        url = f"{self._base_url}/v1.0/invoke/{self._ai_model_app_id}/method/health"
-
         try:
-            async with httpx.AsyncClient() as client:
-                response = await client.get(url, timeout=5.0)
-                return response.status_code == 200
+            with DaprClient() as client:
+                response = client.invoke_method(
+                    app_id=self._ai_model_app_id,
+                    method_name="HealthCheck",
+                    data="{}",
+                    content_type="application/json",
+                )
+
+                response_data = json.loads(response.data.decode("utf-8"))
+                return response_data.get("healthy", False)
+
         except Exception as e:
             logger.warning("AI Model health check failed", error=str(e))
             return False
