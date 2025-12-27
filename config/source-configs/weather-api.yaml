@@ -37,7 +37,7 @@ transformation:
 
 storage:
   raw_container: weather-data-raw
-  index_collection: weather_data_index
+  index_collection: documents
   ttl_days: 365
 
 events:

@@ -42,7 +42,7 @@ transformation:
 
 storage:
   raw_container: exception-images-raw
-  index_collection: exception_images_index
+  index_collection: documents
   ttl_days: 365
 
 events:

@@ -41,7 +41,7 @@ transformation:
 
 storage:
   raw_container: quality-results-raw
-  index_collection: quality_results_index
+  index_collection: documents
   ttl_days: 730
 
 events:

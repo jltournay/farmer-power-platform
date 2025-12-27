@@ -37,7 +37,7 @@ transformation:
 
 storage:
   raw_container: market-prices-raw
-  index_collection: market_prices_index
+  index_collection: documents
   ttl_days: 730
 
 events:

@@ -340,7 +340,7 @@ transformation:
 
 storage:
   raw_container: quality-results-raw
-  index_collection: quality_results_index
+  index_collection: documents
   ttl_days: 730
 ```
 
@@ -445,7 +445,7 @@ validation:
 storage:
   raw_container: quality-exceptions-raw
   image_container: qc-exception-images    # Where images are extracted to
-  index_collection: quality_exceptions_index
+  index_collection: documents
   ttl_days: 730
 
 events:
@@ -515,7 +515,7 @@ transformation:
 
 storage:
   raw_container: registrations-raw
-  index_collection: farmer_registrations_index
+  index_collection: documents
   ttl_days: null
 ```
 
@@ -565,7 +565,7 @@ transformation:
 
 storage:
   raw_container: weather-data-raw
-  index_collection: weather_index
+  index_collection: documents
   ttl_days: 365
 ```
 
@@ -608,7 +608,7 @@ transformation:
 
 storage:
   raw_container: market-data-raw
-  index_collection: market_prices_index
+  index_collection: documents
   ttl_days: 365
 ```
 
@@ -1411,7 +1411,7 @@ Collection Model:
 9. Validates against qc-bag-result.json schema
 10. LLM extracts: farmer_id, factory_id, bag_summary, grading_model_id
 11. LLM validates: primary_count + secondary_count = total_leaves
-12. Stores: raw JSON → Blob, index → MongoDB quality_results_index
+12. Stores: raw JSON → Blob, index → MongoDB documents collection
 13. Archives processed file to qc-archive container
 14. Emits: collection.quality_result.received
 
@@ -1455,7 +1455,7 @@ Field Officer with Mobile App:
 Event Grid → Collection Model:
 4. Validates against farmer-registration.json schema
 5. LLM extracts: farmer_name, phone_number, location_gps
-6. Stores: raw JSON → Blob, index → MongoDB farmer_registrations_index
+6. Stores: raw JSON → Blob, index → MongoDB documents collection
 7. Emits: collection.farmer_registration.received
 
 Downstream (Plantation Model):
@@ -1504,28 +1504,29 @@ Documents are stored in two locations:
 │                          DOCUMENT STORAGE                                    │
 ├─────────────────────────────────────────────────────────────────────────────┤
 │                                                                             │
-│  Azure Blob Storage (Raw)              MongoDB (Index)                      │
+│  Azure Blob Storage (Raw)              MongoDB (Single Collection)          │
 │  ┌─────────────────────────┐          ┌─────────────────────────┐          │
-│  │ quality-results-raw/    │          │ quality_results_index   │          │
-│  │   {document_id}.json    │◀────────▶│   extracted fields      │          │
-│  │                         │  ref     │   + raw_blob_uri        │          │
-│  ├─────────────────────────┤          ├─────────────────────────┤          │
-│  │ quality-exceptions-raw/ │          │ quality_exceptions_index│          │
-│  │   {document_id}.zip     │◀────────▶│   + image_uris[]        │          │
-│  ├─────────────────────────┤          ├─────────────────────────┤          │
-│  │ qc-exception-images/    │          │                         │          │
-│  │   {doc_id}/img_001.jpg  │◀─────────│   references            │          │
-│  │   {doc_id}/img_002.jpg  │          │                         │          │
-│  ├─────────────────────────┤          ├─────────────────────────┤          │
-│  │ registrations-raw/      │          │ farmer_registrations    │          │
-│  │   {document_id}.json    │◀────────▶│   _index                │          │
-│  ├─────────────────────────┤          ├─────────────────────────┤          │
-│  │ weather-data-raw/       │          │ weather_index           │          │
-│  │   {document_id}.json    │◀────────▶│                         │          │
-│  ├─────────────────────────┤          ├─────────────────────────┤          │
-│  │ market-data-raw/        │          │ market_prices_index     │          │
-│  │   {document_id}.json    │◀────────▶│                         │          │
+│  │ quality-results-raw/    │          │                         │          │
+│  │   {document_id}.json    │──────┐   │      documents          │          │
+│  ├─────────────────────────┤      │   │                         │          │
+│  │ quality-exceptions-raw/ │      │   │  ┌─────────────────┐    │          │
+│  │   {document_id}.zip     │──────┼──▶│  │ source_id       │    │          │
+│  ├─────────────────────────┤      │   │  │ document_id     │    │          │
+│  │ qc-exception-images/    │      │   │  │ farmer_id       │    │          │
+│  │   {doc_id}/img_001.jpg  │──────┤   │  │ linkage_fields  │    │          │
+│  │   {doc_id}/img_002.jpg  │      │   │  │ extracted_fields│    │          │
+│  ├─────────────────────────┤      │   │  │ raw_document    │    │          │
+│  │ registrations-raw/      │      │   │  │ extraction      │    │          │
+│  │   {document_id}.json    │──────┤   │  │ ingestion       │    │          │
+│  ├─────────────────────────┤      │   │  └─────────────────┘    │          │
+│  │ weather-data-raw/       │      │   │                         │          │
+│  │   {document_id}.json    │──────┤   │  Indexes:               │          │
+│  ├─────────────────────────┤      │   │  • (source_id, -1)      │          │
+│  │ market-data-raw/        │      │   │  • (farmer_id, src, -1) │          │
+│  │   {document_id}.json    │──────┘   │  • (linkage_fields.*)   │          │
 │  └─────────────────────────┘          └─────────────────────────┘          │
+│                                                                             │
+│  All sources → single 'documents' collection, differentiated by source_id  │
 │                                                                             │
 └─────────────────────────────────────────────────────────────────────────────┘
 ```
