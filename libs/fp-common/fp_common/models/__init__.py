@@ -1,6 +1,14 @@
 """Pydantic models for Farmer Power Platform."""
 
+from fp_common.models.domain_events import (
+    CollectionEventTopic,
+    PlantationEventTopic,
+    get_all_valid_topics,
+    is_valid_topic,
+)
 from fp_common.models.source_config import (
+    EventConfig,
+    EventsConfig,
     IngestionConfig,
     IterationConfig,
     PathPatternConfig,
@@ -16,9 +24,13 @@ from fp_common.models.source_config import (
 )
 
 __all__ = [
+    "CollectionEventTopic",
+    "EventConfig",
+    "EventsConfig",
     "IngestionConfig",
     "IterationConfig",
     "PathPatternConfig",
+    "PlantationEventTopic",
     "ProcessedFileConfig",
     "RequestConfig",
     "RetryConfig",
@@ -28,4 +40,6 @@ __all__ = [
     "ValidationConfig",
     "ZipConfig",
     "generate_json_schema",
+    "get_all_valid_topics",
+    "is_valid_topic",
 ]

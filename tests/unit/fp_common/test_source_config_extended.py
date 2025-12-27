@@ -4,8 +4,10 @@ Tests cover:
 - processor_type field in IngestionConfig
 - EventsConfig and EventConfig models
 - TransformationConfig.ai_agent_id field
+- Domain event topic validation
 """
 
+import pytest
 from fp_common.models.source_config import (
     EventConfig,
     EventsConfig,
@@ -14,6 +16,7 @@ from fp_common.models.source_config import (
     StorageConfig,
     TransformationConfig,
 )
+from pydantic import ValidationError
 
 
 class TestIngestionConfigProcessorType:
@@ -108,6 +111,42 @@ class TestEventConfig:
         )
         assert config.payload_fields == ["document_id", "source_id", "farmer_id"]
 
+    def test_event_config_invalid_topic_rejected(self) -> None:
+        """Test EventConfig rejects invalid topic names."""
+        with pytest.raises(ValidationError) as exc_info:
+            EventConfig(topic="invalid.topic.name")
+        assert "Invalid event topic" in str(exc_info.value)
+        assert "invalid.topic.name" in str(exc_info.value)
+
+    def test_event_config_validates_all_collection_topics(self) -> None:
+        """Test EventConfig accepts all valid Collection event topics."""
+        valid_topics = [
+            "collection.quality_result.received",
+            "collection.quality_result.failed",
+            "collection.exception_images.received",
+            "collection.exception_images.failed",
+            "collection.weather.updated",
+            "collection.weather.failed",
+            "collection.market_prices.updated",
+            "collection.market_prices.failed",
+        ]
+        for topic in valid_topics:
+            config = EventConfig(topic=topic)
+            assert config.topic == topic
+
+    def test_event_config_validates_all_plantation_topics(self) -> None:
+        """Test EventConfig accepts all valid Plantation event topics."""
+        valid_topics = [
+            "plantation.farmer.registered",
+            "plantation.farmer.updated",
+            "plantation.farmer.deactivated",
+            "plantation.plot.created",
+            "plantation.plot.updated",
+        ]
+        for topic in valid_topics:
+            config = EventConfig(topic=topic)
+            assert config.topic == topic
+
 
 class TestEventsConfig:
     """Tests for EventsConfig model."""
@@ -133,11 +172,11 @@ class TestEventsConfig:
     def test_events_config_with_both_events(self) -> None:
         """Test EventsConfig with both success and failure events."""
         config = EventsConfig(
-            on_success=EventConfig(topic="topic.success"),
-            on_failure=EventConfig(topic="topic.failure"),
+            on_success=EventConfig(topic="collection.quality_result.received"),
+            on_failure=EventConfig(topic="collection.quality_result.failed"),
         )
-        assert config.on_success.topic == "topic.success"
-        assert config.on_failure.topic == "topic.failure"
+        assert config.on_success.topic == "collection.quality_result.received"
+        assert config.on_failure.topic == "collection.quality_result.failed"
 
 
 class TestSourceConfigEvents:
@@ -182,13 +221,13 @@ class TestSourceConfigEvents:
             ),
             events=EventsConfig(
                 on_success=EventConfig(
-                    topic="collection.document.stored",
+                    topic="collection.quality_result.received",
                     payload_fields=["document_id", "source_id"],
                 ),
             ),
         )
         assert config.events is not None
-        assert config.events.on_success.topic == "collection.document.stored"
+        assert config.events.on_success.topic == "collection.quality_result.received"
 
     def test_source_config_model_dump_includes_events(self) -> None:
         """Test that model_dump includes events field."""
@@ -206,9 +245,9 @@ class TestSourceConfigEvents:
                 index_collection="index",
             ),
             events=EventsConfig(
-                on_success=EventConfig(topic="test.topic"),
+                on_success=EventConfig(topic="collection.weather.updated"),
             ),
         )
         data = config.model_dump()
         assert "events" in data
-        assert data["events"]["on_success"]["topic"] == "test.topic"
+        assert data["events"]["on_success"]["topic"] == "collection.weather.updated"

@@ -7,7 +7,9 @@ service for ingesting data from various sources (blob storage, APIs, etc.).
 from datetime import datetime
 from typing import Any, Literal
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator
+
+from fp_common.models.domain_events import get_all_valid_topics, is_valid_topic
 
 
 class PathPatternConfig(BaseModel):
@@ -168,13 +170,36 @@ class StorageConfig(BaseModel):
 
 
 class EventConfig(BaseModel):
-    """Single event configuration for success or failure events."""
+    """Single event configuration for success or failure events.
+
+    The topic must be a valid domain event topic defined in
+    fp_common.models.domain_events.
+    """
 
     topic: str = Field(..., description="DAPR Pub/Sub topic (e.g., 'collection.quality_result.received')")
     payload_fields: list[str] = Field(
         default_factory=list,
         description="Fields to include in event payload",
     )
+
+    @field_validator("topic")
+    @classmethod
+    def validate_topic_name(cls, v: str) -> str:
+        """Validate that topic is a registered domain event topic.
+
+        Args:
+            v: The topic name to validate.
+
+        Returns:
+            The validated topic name.
+
+        Raises:
+            ValueError: If the topic is not in the valid topics registry.
+        """
+        if not is_valid_topic(v):
+            valid_topics = get_all_valid_topics()
+            raise ValueError(f"Invalid event topic: '{v}'. Valid topics are: {', '.join(sorted(valid_topics))}")
+        return v
 
 
 class EventsConfig(BaseModel):
