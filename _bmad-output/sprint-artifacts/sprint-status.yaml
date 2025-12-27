@@ -75,9 +75,9 @@ development_status:
   2-5-qc-analyzer-exception-images-ingestion: done  # github_issue: 20
   2-6-document-storage-deduplication: backlog
   2-7-weather-api-pull-mode: backlog
-  2-8-market-prices-pull-mode: backlog
+  2-8-market-prices-pull-mode: unscoped-phase2  # Descoped from Phase 1
   2-9-collection-model-mcp-server: backlog
-  2-10-domain-event-emission: backlog
+  2-10-domain-event-emission: done  # Already implemented via DaprEventPublisher + config-driven topics
   epic-2-retrospective: optional
 
   # Epic 3: Factory Manager Dashboard (expanded with ADR-002)
