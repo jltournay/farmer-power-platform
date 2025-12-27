@@ -1298,84 +1298,190 @@ So that storage is efficient and downstream analysis is not skewed.
 
 ---
 
-#### Story 2.7: Weather API Pull Mode
+#### Story 2.7: Scheduled Pull Ingestion Framework
 
-As a **Knowledge Model Weather Analyzer**,
-I want weather data pulled from external APIs on schedule,
-So that weather-quality correlations can be analyzed.
+As a **platform operator**,
+I want a generic scheduled pull framework for external API data,
+So that any HTTP/REST data source can be ingested via configuration without code changes.
+
+**Design Principle:** Pull mode is a data fetcher that feeds JSON into the existing ingestion pipeline. The `JsonExtractionProcessor` handles all downstream processing (deduplication, AI extraction, storage, events). New data sources require only configuration - no code changes.
 
 **Acceptance Criteria:**
 
-**Given** a weather source is configured with trigger_mode=SCHEDULED_PULL
-**When** the DAPR Job triggers at scheduled time (daily 6 AM EAT)
-**Then** the Plantation Model MCP is queried: `list_regions()`
-**And** for each region, weather data is fetched using coordinates
+**DAPR Job Lifecycle Management:**
 
-**Given** the pull job iterates over regions
-**When** fetching weather for a region
-**Then** Open-Meteo API is called with: latitude, longitude, past_days=7
-**And** response is stored in `raw_documents` collection
-**And** LLM extraction processes: region_id, date, temp_max, temp_min, precipitation_mm, humidity_avg
+**Given** a source is configured with `ingestion.mode: scheduled_pull`
+**When** the Collection Model service starts
+**Then** `JobRegistrationService.sync_all_jobs()` registers DAPR Jobs for all pull sources
+**And** each job is registered with the configured schedule (cron or period)
 
-**Given** weather data is extracted for a region
-**When** the data is stored
-**Then** extracted data is stored in `weather_data` collection with region_ref
-**And** a `collection.weather.updated` domain event is emitted
-**And** processing_status is "completed"
+**Given** a new pull source configuration is created via CLI
+**When** the configuration is saved to MongoDB
+**Then** a DAPR Job is automatically registered for the new source
+**And** the job uses the schedule from `ingestion.schedule`
 
-**Given** all regions are processed
-**When** the pull job completes
-**Then** job summary is logged: regions_processed, regions_failed
-**And** metrics track success rate and latency
+**Given** a pull source configuration is updated
+**When** the schedule or endpoint changes
+**Then** the existing DAPR Job is deleted and re-registered with new settings
 
-**Given** the Open-Meteo API fails for a region
+**Pull Job Execution:**
+
+**Given** a DAPR Job triggers at scheduled time
+**When** `PullJobHandler` receives the job event
+**Then** the source configuration is loaded from MongoDB
+**And** the iteration block is checked for dynamic multi-fetch
+
+**Given** the source has NO iteration block
+**When** the job executes
+**Then** a single HTTP request is made to the configured endpoint
+**And** the JSON response is passed to `JsonExtractionProcessor` pipeline
+
+**Given** the source has an iteration block
+**When** the job executes
+**Then** the MCP tool specified in `source_mcp`:`source_tool` is called
+**And** for each item returned, a parallel fetch is executed (limited by `concurrency`)
+**And** each fetched JSON is passed to `JsonExtractionProcessor` with injected linkage
+
+**HTTP Fetch with Secrets:**
+
+**Given** a pull source requires authentication
+**When** fetching data from the endpoint
+**Then** the API key is retrieved from DAPR Secret Store using `secret_store` and `secret_key`
+**And** the key is added to the request header specified in `auth_header`
+
+**Given** the HTTP request fails
 **When** error is detected
-**Then** the job retries with exponential backoff (max 3 attempts)
-**And** if all retries fail, region is skipped and flagged
-**And** other regions continue processing
+**Then** retry with exponential backoff (max attempts from `retry.max_attempts`)
+**And** if iteration mode, skip failed item and continue others
+**And** metrics track success/failure per source
 
-**Technical Notes:**
-- DAPR Jobs: schedule "0 6 * * *" (cron, Africa/Nairobi TZ)
-- Open-Meteo API: free tier, no API key
-- Iteration: Plantation MCP `list_regions()` provides coordinates
-- Storage: raw_documents + weather_data collections
+**Pipeline Reuse:**
+
+**Given** JSON content is fetched from an external API
+**When** passed to the ingestion pipeline
+**Then** `RawDocumentStore` computes content hash for deduplication (Story 2-6)
+**And** duplicate content returns `is_duplicate=True` without LLM costs
+**And** new content proceeds through `JsonExtractionProcessor`
+**And** `StorageMetrics` records stored/duplicate counts
+**And** domain event is emitted via `DaprEventPublisher`
+
+**Technical Implementation:**
+
+| Component | Type | Description |
+|-----------|------|-------------|
+| `JobRegistrationService` | NEW | Register/update/delete DAPR Jobs on startup + config changes |
+| `PullJobHandler` | NEW | Handle DAPR Job triggers with iteration support |
+| `PullDataFetcher` | NEW | HTTP client with DAPR Secrets, URL templating |
+| `IterationResolver` | NEW | Call MCP tools to get iteration items |
+| `SourceConfigService` | MODIFIED | Hook job registration into config CRUD |
+| `IngestionJob.content` | MODIFIED | Optional field for inline content (vs blob_path) |
+| `IngestionJob.linkage` | MODIFIED | Optional injected linkage from iteration context |
+
+**Source Configuration Schema:**
+
+```yaml
+source_id: weather-api
+ingestion:
+  mode: scheduled_pull
+  schedule: "0 6 * * *"  # Cron or "@every 6h"
+  request:
+    base_url: https://api.open-meteo.com/v1/forecast
+    auth_type: none | api_key | oauth
+    secret_store: azure-keyvault  # DAPR secret store name
+    secret_key: weather-api-key   # Key in secret store
+    auth_header: X-API-Key        # Header to add
+    parameters:
+      hourly: temperature_2m,precipitation
+      timezone: Africa/Nairobi
+    timeout_seconds: 30
+  iteration:  # Optional - enables multi-fetch
+    foreach: region
+    source_mcp: plantation-mcp
+    source_tool: list_active_regions
+    concurrency: 5
+  retry:
+    max_attempts: 3
+    backoff: exponential
+transformation:
+  ai_agent_id: weather-data-extraction-agent
+  link_field: region_id
+  # ... same as blob trigger sources
+storage:
+  # ... same as blob trigger sources
+events:
+  # ... same as blob trigger sources
+```
+
+**Reused Components (no changes):**
+- `JsonExtractionProcessor` - processes fetched JSON
+- `RawDocumentStore` - deduplication via content hash
+- `StorageMetrics` - OTel counters (Story 2-6)
+- `DaprEventPublisher` - domain event emission
+- `DocumentRepository` - index storage
+
+**Test Validation:**
+- Weather API source config (Open-Meteo, no auth, with iteration)
+- Mock MCP tool returns region list
+- Verify parallel fetch with concurrency limit
+- Verify deduplication prevents duplicate processing
+- Verify DAPR Job registration on startup and config change
 
 ---
 
 #### Story 2.8: Market Prices Pull Mode
 
-As a **Knowledge Model Market Analyzer**,
-I want market price data pulled from external APIs on schedule,
-So that market price trends can be analyzed for farmer recommendations.
+**Status:** COVERED BY STORY 2.7
 
-**Acceptance Criteria:**
+This story is now a **configuration-only task** - no code changes required.
 
-**Given** a market prices source is configured with trigger_mode=SCHEDULED_PULL
-**When** the DAPR Job triggers at scheduled time (daily 7 AM EAT)
-**Then** the configured market API is called
-**And** raw response is stored in `raw_documents` collection
+The generic Scheduled Pull Ingestion Framework (Story 2.7) supports any HTTP/REST data source via configuration. Market prices ingestion requires only:
 
-**Given** raw market data is stored
-**When** LLM extraction runs
-**Then** structured data is extracted: commodity, region, price, currency, unit, date
-**And** extracted data is stored in `market_prices` collection
+1. Create source configuration YAML with `mode: scheduled_pull`
+2. Configure Starfish API endpoint and authentication
+3. Create AI extraction agent for market price fields
+4. Register configuration via CLI
 
-**Given** market prices are extracted
-**When** storage completes
-**Then** a `collection.market_prices.updated` domain event is emitted
-**And** processing_status is "completed"
+**Example Configuration:**
 
-**Given** the market API fails
-**When** error is detected
-**Then** retry with exponential backoff (max 3 attempts)
-**And** if all retries fail, job is marked failed with error details
-**And** alert is logged for operator review
+```yaml
+source_id: market-prices-starfish
+display_name: Starfish Kenya Tea Auction Prices
+ingestion:
+  mode: scheduled_pull
+  schedule: "0 7 * * *"  # Daily 7 AM EAT
+  request:
+    base_url: https://api.starfish.co.ke/v1/tea-auction/prices
+    auth_type: api_key
+    secret_store: azure-keyvault
+    secret_key: starfish-api-key
+    auth_header: Authorization
+    parameters:
+      market: mombasa
+      date: today
+    timeout_seconds: 30
+  retry:
+    max_attempts: 3
+    backoff: exponential
+transformation:
+  ai_agent_id: market-prices-extraction-agent
+  extract_fields:
+    - commodity
+    - region
+    - price
+    - currency
+    - unit
+    - auction_date
+  link_field: region
+storage:
+  raw_container: market-data-raw
+  index_collection: documents
+events:
+  on_success:
+    topic: collection.market_prices.updated
+    payload_fields: [commodity, region, price, auction_date]
+```
 
-**Technical Notes:**
-- DAPR Jobs: schedule "0 7 * * *" (cron, Africa/Nairobi TZ)
-- Market API: Starfish Kenya Tea Auction (requires API key)
-- Storage: raw_documents + market_prices collections
-- LLM prompt: market-prices-extraction
+**Note:** This story remains in `unscoped-phase2` in sprint-status.yaml as it depends on Starfish API access being available. When ready, implementation is configuration-only.
 
 ---
 
