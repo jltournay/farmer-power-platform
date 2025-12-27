@@ -1,7 +1,7 @@
 """Unit tests for Event Grid webhook handler."""
 
 from typing import TYPE_CHECKING
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 from collection_model.api.events import (
@@ -395,16 +395,17 @@ class TestProcessBlobCreatedEvent:
             "data": {"eTag": "0x123", "contentLength": 100},
         }
 
-        with patch("collection_model.api.events.increment_events_queued") as mock_increment:
-            result = await _process_blob_created_event(
-                event=event,
-                source_config_service=mock_service,
-                ingestion_queue=mock_queue,
-                trace_id=None,
-            )
+        mock_metrics = MagicMock()
+        result = await _process_blob_created_event(
+            event=event,
+            source_config_service=mock_service,
+            ingestion_queue=mock_queue,
+            trace_id=None,
+            event_metrics=mock_metrics,
+        )
 
-            assert result is True
-            mock_increment.assert_called_once_with("test-source")
+        assert result is True
+        mock_metrics.increment_queued.assert_called_once_with("test-source")
 
     @pytest.mark.asyncio
     async def test_process_event_calls_metrics_on_duplicate(self) -> None:
@@ -429,16 +430,17 @@ class TestProcessBlobCreatedEvent:
             "data": {"eTag": "0x123", "contentLength": 100},
         }
 
-        with patch("collection_model.api.events.increment_events_duplicate") as mock_increment:
-            result = await _process_blob_created_event(
-                event=event,
-                source_config_service=mock_service,
-                ingestion_queue=mock_queue,
-                trace_id=None,
-            )
+        mock_metrics = MagicMock()
+        result = await _process_blob_created_event(
+            event=event,
+            source_config_service=mock_service,
+            ingestion_queue=mock_queue,
+            trace_id=None,
+            event_metrics=mock_metrics,
+        )
 
-            assert result is False
-            mock_increment.assert_called_once_with("test-source")
+        assert result is False
+        mock_metrics.increment_duplicate.assert_called_once_with("test-source")
 
     @pytest.mark.asyncio
     async def test_process_event_calls_metrics_on_unmatched(self) -> None:
@@ -455,13 +457,14 @@ class TestProcessBlobCreatedEvent:
             "data": {"eTag": "0x123", "contentLength": 100},
         }
 
-        with patch("collection_model.api.events.increment_events_unmatched") as mock_increment:
-            result = await _process_blob_created_event(
-                event=event,
-                source_config_service=mock_service,
-                ingestion_queue=mock_queue,
-                trace_id=None,
-            )
+        mock_metrics = MagicMock()
+        result = await _process_blob_created_event(
+            event=event,
+            source_config_service=mock_service,
+            ingestion_queue=mock_queue,
+            trace_id=None,
+            event_metrics=mock_metrics,
+        )
 
-            assert result is False
-            mock_increment.assert_called_once_with("unknown-container")
+        assert result is False
+        mock_metrics.increment_unmatched.assert_called_once_with("unknown-container")

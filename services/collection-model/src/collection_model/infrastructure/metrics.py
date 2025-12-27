@@ -2,6 +2,9 @@
 
 This module provides metrics instrumentation for event processing
 using OpenTelemetry's metrics API.
+
+Metrics are encapsulated in service classes to avoid module-level state
+and enable proper dependency injection.
 """
 
 import structlog
@@ -14,31 +17,146 @@ from opentelemetry.sdk.resources import Resource
 
 logger = structlog.get_logger(__name__)
 
-# Global meter for creating metrics
-_meter: metrics.Meter | None = None
 
-# Global counters (initialized on setup)
-_events_received_counter: metrics.Counter | None = None
-_events_queued_counter: metrics.Counter | None = None
-_events_duplicate_counter: metrics.Counter | None = None
-_events_unmatched_counter: metrics.Counter | None = None
-_events_disabled_counter: metrics.Counter | None = None
+class EventMetrics:
+    """Metrics for event ingestion (blob-created events).
+
+    Encapsulates all event-related counters to avoid module-level state.
+    """
+
+    def __init__(self, meter: metrics.Meter) -> None:
+        """Initialize event metrics.
+
+        Args:
+            meter: OpenTelemetry Meter for creating counters.
+        """
+        self.events_received = meter.create_counter(
+            name="collection.events.received",
+            description="Number of blob-created events received",
+            unit="1",
+        )
+        self.events_queued = meter.create_counter(
+            name="collection.events.queued",
+            description="Number of events successfully queued for processing",
+            unit="1",
+        )
+        self.events_duplicate = meter.create_counter(
+            name="collection.events.duplicate",
+            description="Number of duplicate events skipped",
+            unit="1",
+        )
+        self.events_unmatched = meter.create_counter(
+            name="collection.events.unmatched",
+            description="Number of events with no matching source config",
+            unit="1",
+        )
+        self.events_disabled = meter.create_counter(
+            name="collection.events.disabled",
+            description="Number of events skipped due to disabled source",
+            unit="1",
+        )
+
+    def increment_received(self, source_id: str = "unknown") -> None:
+        """Increment the events received counter."""
+        self.events_received.add(1, {"source_id": source_id})
+
+    def increment_queued(self, source_id: str) -> None:
+        """Increment the events queued counter."""
+        self.events_queued.add(1, {"source_id": source_id})
+
+    def increment_duplicate(self, source_id: str) -> None:
+        """Increment the duplicate events counter."""
+        self.events_duplicate.add(1, {"source_id": source_id})
+
+    def increment_unmatched(self, container: str) -> None:
+        """Increment the unmatched events counter."""
+        self.events_unmatched.add(1, {"container": container})
+
+    def increment_disabled(self, source_id: str) -> None:
+        """Increment the disabled events counter."""
+        self.events_disabled.add(1, {"source_id": source_id})
 
 
-def setup_metrics() -> None:
+class ProcessingMetrics:
+    """Metrics for content processing (worker jobs).
+
+    Encapsulates all processing-related counters and histograms
+    to avoid module-level state.
+    """
+
+    def __init__(self, meter: metrics.Meter) -> None:
+        """Initialize processing metrics.
+
+        Args:
+            meter: OpenTelemetry Meter for creating instruments.
+        """
+        self.processing_completed = meter.create_counter(
+            name="collection.processing.completed",
+            description="Number of jobs processed successfully",
+            unit="1",
+        )
+        self.processing_errors = meter.create_counter(
+            name="collection.processing.errors",
+            description="Number of processing errors",
+            unit="1",
+        )
+        self.processing_duration = meter.create_histogram(
+            name="collection.processing.duration",
+            description="Processing duration in seconds",
+            unit="s",
+        )
+
+    def record_success(self, source_id: str, duration: float) -> None:
+        """Record a successful processing job."""
+        labels = {"source_id": source_id}
+        self.processing_completed.add(1, labels)
+        self.processing_duration.record(duration, labels)
+
+    def record_error(self, source_id: str, duration: float, error_type: str) -> None:
+        """Record a failed processing job."""
+        labels = {"source_id": source_id}
+        self.processing_errors.add(1, {**labels, "error_type": error_type})
+        self.processing_duration.record(duration, labels)
+
+
+class MetricsService:
+    """Central metrics service for the Collection Model.
+
+    Provides access to all metric instruments. Initialized once at startup
+    and injected as a dependency where needed.
+    """
+
+    def __init__(self, meter: metrics.Meter) -> None:
+        """Initialize all metrics.
+
+        Args:
+            meter: OpenTelemetry Meter for creating instruments.
+        """
+        self.meter = meter
+        self.events = EventMetrics(meter)
+        self.processing = ProcessingMetrics(meter)
+
+
+# Metrics service instance (set by setup_metrics)
+_metrics_service: MetricsService | None = None
+
+
+def setup_metrics() -> MetricsService | None:
     """Configure OpenTelemetry metrics with OTLP exporter.
 
     Sets up:
     - MeterProvider with service resource attributes
     - OTLP gRPC exporter for metrics collector
-    - Event processing counters
+    - MetricsService with all counters and histograms
+
+    Returns:
+        MetricsService instance or None if disabled.
     """
-    global _meter, _events_received_counter, _events_queued_counter
-    global _events_duplicate_counter, _events_unmatched_counter, _events_disabled_counter
+    global _metrics_service
 
     if not settings.otel_enabled:
         logger.info("OpenTelemetry metrics disabled")
-        return
+        return None
 
     logger.info(
         "Configuring OpenTelemetry metrics",
@@ -76,102 +194,25 @@ def setup_metrics() -> None:
     metrics.set_meter_provider(provider)
 
     # Create meter for this service
-    _meter = metrics.get_meter(
+    meter = metrics.get_meter(
         name="collection_model",
         version=settings.service_version,
     )
 
-    # Create counters for event processing
-    _events_received_counter = _meter.create_counter(
-        name="collection.events.received",
-        description="Number of blob-created events received",
-        unit="1",
-    )
-
-    _events_queued_counter = _meter.create_counter(
-        name="collection.events.queued",
-        description="Number of events successfully queued for processing",
-        unit="1",
-    )
-
-    _events_duplicate_counter = _meter.create_counter(
-        name="collection.events.duplicate",
-        description="Number of duplicate events skipped",
-        unit="1",
-    )
-
-    _events_unmatched_counter = _meter.create_counter(
-        name="collection.events.unmatched",
-        description="Number of events with no matching source config",
-        unit="1",
-    )
-
-    _events_disabled_counter = _meter.create_counter(
-        name="collection.events.disabled",
-        description="Number of events skipped due to disabled source",
-        unit="1",
-    )
+    # Create and store metrics service
+    _metrics_service = MetricsService(meter)
 
     logger.info("OpenTelemetry metrics configured successfully")
+    return _metrics_service
 
 
-def increment_events_received(source_id: str = "unknown") -> None:
-    """Increment the events received counter.
-
-    Args:
-        source_id: The source configuration ID for the event.
-    """
-    if _events_received_counter:
-        _events_received_counter.add(1, {"source_id": source_id})
-
-
-def increment_events_queued(source_id: str) -> None:
-    """Increment the events queued counter.
-
-    Args:
-        source_id: The source configuration ID for the event.
-    """
-    if _events_queued_counter:
-        _events_queued_counter.add(1, {"source_id": source_id})
-
-
-def increment_events_duplicate(source_id: str) -> None:
-    """Increment the duplicate events counter.
-
-    Args:
-        source_id: The source configuration ID for the event.
-    """
-    if _events_duplicate_counter:
-        _events_duplicate_counter.add(1, {"source_id": source_id})
-
-
-def increment_events_unmatched(container: str) -> None:
-    """Increment the unmatched events counter.
-
-    Args:
-        container: The container name that had no matching config.
-    """
-    if _events_unmatched_counter:
-        _events_unmatched_counter.add(1, {"container": container})
-
-
-def increment_events_disabled(source_id: str) -> None:
-    """Increment the disabled events counter.
-
-    Args:
-        source_id: The disabled source configuration ID.
-    """
-    if _events_disabled_counter:
-        _events_disabled_counter.add(1, {"source_id": source_id})
-
-
-def get_meter() -> metrics.Meter | None:
-    """Get the global meter for creating additional metrics.
+def get_metrics_service() -> MetricsService | None:
+    """Get the metrics service instance.
 
     Returns:
-        The OpenTelemetry Meter or None if not initialized.
+        MetricsService or None if not initialized or disabled.
     """
-    return _meter
+    return _metrics_service
 
 
 def shutdown_metrics() -> None:

@@ -16,7 +16,7 @@ from collection_model.infrastructure.blob_storage import BlobStorageClient
 from collection_model.infrastructure.dapr_event_publisher import DaprEventPublisher
 from collection_model.infrastructure.document_repository import DocumentRepository
 from collection_model.infrastructure.ingestion_queue import IngestionQueue
-from collection_model.infrastructure.metrics import get_meter
+from collection_model.infrastructure.metrics import ProcessingMetrics
 from collection_model.infrastructure.raw_document_store import RawDocumentStore
 from collection_model.processors import ProcessorNotFoundError, ProcessorRegistry
 from collection_model.processors.json_extraction import JsonExtractionProcessor
@@ -24,39 +24,6 @@ from collection_model.services.source_config_service import SourceConfigService
 from motor.motor_asyncio import AsyncIOMotorDatabase
 
 logger = structlog.get_logger(__name__)
-
-# Metrics counters (initialized on first use)
-_processing_counter = None
-_processing_errors_counter = None
-_processing_duration_histogram = None
-
-
-def _get_metrics():
-    """Get or create processing metrics."""
-    global _processing_counter, _processing_errors_counter, _processing_duration_histogram
-
-    meter = get_meter()
-    if not meter:
-        return None, None, None
-
-    if _processing_counter is None:
-        _processing_counter = meter.create_counter(
-            name="collection.processing.completed",
-            description="Number of jobs processed",
-            unit="1",
-        )
-        _processing_errors_counter = meter.create_counter(
-            name="collection.processing.errors",
-            description="Number of processing errors",
-            unit="1",
-        )
-        _processing_duration_histogram = meter.create_histogram(
-            name="collection.processing.duration",
-            description="Processing duration in seconds",
-            unit="s",
-        )
-
-    return _processing_counter, _processing_errors_counter, _processing_duration_histogram
 
 
 class ContentProcessorWorker:
@@ -71,6 +38,7 @@ class ContentProcessorWorker:
         db: AsyncIOMotorDatabase,
         ingestion_queue: IngestionQueue,
         source_config_service: SourceConfigService,
+        processing_metrics: ProcessingMetrics | None = None,
         poll_interval: float | None = None,
         batch_size: int | None = None,
         max_retries: int | None = None,
@@ -81,6 +49,7 @@ class ContentProcessorWorker:
             db: MongoDB database instance.
             ingestion_queue: Ingestion queue for job management.
             source_config_service: Service for source config lookups.
+            processing_metrics: Metrics for recording processing stats (optional).
             poll_interval: Seconds between queue polls (defaults to settings).
             batch_size: Max jobs to process per poll (defaults to settings).
             max_retries: Max retry attempts before permanent failure.
@@ -88,6 +57,7 @@ class ContentProcessorWorker:
         self.db = db
         self.queue = ingestion_queue
         self.config_service = source_config_service
+        self._metrics = processing_metrics
         self.poll_interval = poll_interval or settings.worker_poll_interval
         self.batch_size = batch_size or settings.worker_batch_size
         self.max_retries = max_retries or settings.worker_max_retries
@@ -314,16 +284,10 @@ class ContentProcessorWorker:
         error_type: str | None = None,
     ) -> None:
         """Record processing metrics."""
-        counter, error_counter, histogram = _get_metrics()
-
-        if not counter:
+        if not self._metrics:
             return
 
-        labels = {"source_id": source_id}
-
         if success:
-            counter.add(1, labels)
+            self._metrics.record_success(source_id, duration)
         else:
-            error_counter.add(1, {**labels, "error_type": error_type or "unknown"})
-
-        histogram.record(duration, labels)
+            self._metrics.record_error(source_id, duration, error_type or "unknown")

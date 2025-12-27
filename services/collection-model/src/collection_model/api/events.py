@@ -11,13 +11,7 @@ from typing import Any
 import structlog
 from collection_model.domain.ingestion_job import IngestionJob
 from collection_model.infrastructure.ingestion_queue import IngestionQueue
-from collection_model.infrastructure.metrics import (
-    increment_events_disabled,
-    increment_events_duplicate,
-    increment_events_queued,
-    increment_events_received,
-    increment_events_unmatched,
-)
+from collection_model.infrastructure.metrics import EventMetrics
 from collection_model.services.source_config_service import SourceConfigService
 from fastapi import APIRouter, Request, Response
 from pydantic import BaseModel, Field
@@ -87,6 +81,7 @@ async def handle_blob_created(request: Request) -> Response:
     # Get services from app state
     source_config_service: SourceConfigService | None = getattr(request.app.state, "source_config_service", None)
     ingestion_queue: IngestionQueue | None = getattr(request.app.state, "ingestion_queue", None)
+    event_metrics: EventMetrics | None = getattr(request.app.state, "event_metrics", None)
 
     if source_config_service is None or ingestion_queue is None:
         logger.error("Services not initialized in app state")
@@ -99,12 +94,14 @@ async def handle_blob_created(request: Request) -> Response:
     queued_count = 0
     for event in body:
         if event.get("eventType") == "Microsoft.Storage.BlobCreated":
-            increment_events_received()
+            if event_metrics:
+                event_metrics.increment_received()
             result = await _process_blob_created_event(
                 event=event,
                 source_config_service=source_config_service,
                 ingestion_queue=ingestion_queue,
                 trace_id=trace_id,
+                event_metrics=event_metrics,
             )
             if result:
                 queued_count += 1
@@ -159,6 +156,7 @@ async def _process_blob_created_event(
     source_config_service: SourceConfigService,
     ingestion_queue: IngestionQueue,
     trace_id: str | None,
+    event_metrics: EventMetrics | None = None,
 ) -> bool:
     """Process a single blob-created event.
 
@@ -167,6 +165,7 @@ async def _process_blob_created_event(
         source_config_service: Service for looking up source configs.
         ingestion_queue: Queue for storing ingestion jobs.
         trace_id: Distributed tracing ID from request headers.
+        event_metrics: Optional metrics for recording event stats.
 
     Returns:
         True if job was queued successfully, False otherwise.
@@ -201,7 +200,8 @@ async def _process_blob_created_event(
             container=container,
             blob_path=blob_path,
         )
-        increment_events_unmatched(container)
+        if event_metrics:
+            event_metrics.increment_unmatched(container)
         return False
 
     source_id = config.get("source_id", "")
@@ -213,7 +213,8 @@ async def _process_blob_created_event(
             source_id=source_id,
             container=container,
         )
-        increment_events_disabled(source_id)
+        if event_metrics:
+            event_metrics.increment_disabled(source_id)
         return False
 
     # Extract metadata from blob path using path_pattern
@@ -239,7 +240,8 @@ async def _process_blob_created_event(
             blob_path=blob_path,
             metadata=metadata,
         )
-        increment_events_queued(source_id)
+        if event_metrics:
+            event_metrics.increment_queued(source_id)
         return True
 
     logger.info(
@@ -247,7 +249,8 @@ async def _process_blob_created_event(
         blob_path=blob_path,
         etag=etag,
     )
-    increment_events_duplicate(source_id)
+    if event_metrics:
+        event_metrics.increment_duplicate(source_id)
     return False
 
 

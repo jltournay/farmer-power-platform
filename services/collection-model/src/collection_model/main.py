@@ -15,7 +15,7 @@ import collection_model.processors  # noqa: F401
 import structlog
 from collection_model.api import events, health
 from collection_model.config import settings
-from collection_model.infrastructure.dapr_event_publisher import check_pubsub_health
+from collection_model.infrastructure.dapr_event_publisher import DaprEventPublisher
 from collection_model.infrastructure.ingestion_queue import IngestionQueue
 from collection_model.infrastructure.metrics import setup_metrics, shutdown_metrics
 from collection_model.infrastructure.mongodb import (
@@ -69,7 +69,18 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
 
     # Initialize OpenTelemetry tracing and metrics (must be early for other instrumentation)
     setup_tracing()
-    setup_metrics()
+    metrics_service = setup_metrics()
+
+    # Store metrics in app.state for dependency injection
+    if metrics_service:
+        app.state.event_metrics = metrics_service.events
+        app.state.processing_metrics = metrics_service.processing
+    else:
+        app.state.event_metrics = None
+        app.state.processing_metrics = None
+
+    # Initialize DaprEventPublisher (no singleton - stored in app.state)
+    app.state.event_publisher = DaprEventPublisher()
 
     # Initialize MongoDB connection and services
     worker_task = None
@@ -89,6 +100,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
             db=db,
             ingestion_queue=app.state.ingestion_queue,
             source_config_service=app.state.source_config_service,
+            processing_metrics=app.state.processing_metrics,
         )
 
         # Start worker as background task
@@ -104,8 +116,8 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
         logger.warning("MongoDB connection failed at startup", error=str(e))
         # Service can still start - readiness probe will report not ready
 
-    # Set up pub/sub health check
-    health.set_pubsub_check(check_pubsub_health)
+    # Set up pub/sub health check using app.state.event_publisher
+    health.set_pubsub_check(app.state.event_publisher.check_health)
 
     logger.info("Service startup complete")
 
