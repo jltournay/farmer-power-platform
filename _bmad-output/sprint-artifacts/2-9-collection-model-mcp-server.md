@@ -1,6 +1,6 @@
 # Story 2.9: Collection Model MCP Server
 
-**Status:** review
+**Status:** done
 **Epic:** 2 - Quality Data Ingestion
 **GitHub Issue:** #23
 **Created:** 2025-12-27

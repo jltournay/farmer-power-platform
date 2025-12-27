@@ -67,7 +67,7 @@ development_status:
   epic-1-retrospective: optional  # Reset: new story added
 
   # Epic 2: Quality Data Ingestion (REVISED - BLOB_TRIGGER architecture)
-  epic-2: in-progress
+  epic-2: done
   2-1-collection-model-service-setup: done  # github_issue: 16
   2-2-source-configuration-cli: done  # github_issue: 17
   2-3-event-grid-trigger-handler: done  # github_issue: 18
@@ -76,7 +76,7 @@ development_status:
   2-6-document-storage-deduplication: done  # github_issue: 21
   2-7-scheduled-pull-ingestion-framework: done  # github_issue: 22 - Renamed: generic pull framework, weather API is test case
   2-8-market-prices-pull-mode: covered-by-2-7  # Configuration-only, no code changes needed
-  2-9-collection-model-mcp-server: review  # github_issue: 23
+  2-9-collection-model-mcp-server: done  # github_issue: 23
   2-10-domain-event-emission: done  # Already implemented via DaprEventPublisher + config-driven topics
   epic-2-retrospective: optional
 
