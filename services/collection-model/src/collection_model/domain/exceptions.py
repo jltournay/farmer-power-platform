@@ -79,3 +79,40 @@ class DuplicateDocumentError(StorageError):
     """
 
     pass
+
+
+class ZipExtractionError(CollectionModelError):
+    """Raised when ZIP extraction fails.
+
+    This is typically NOT retryable - it indicates a problem with the ZIP content.
+    Examples:
+    - Corrupt ZIP file
+    - Missing manifest.json
+    - Invalid manifest format
+    - File not found in ZIP
+    """
+
+    error_type: str = "zip_extraction"
+
+
+class ManifestValidationError(ValidationError):
+    """Raised when manifest.json validation fails.
+
+    This is NOT retryable - the source needs to fix the manifest.
+    Examples:
+    - Missing required fields
+    - Invalid manifest structure
+    - Payload schema validation failure
+    """
+
+    pass
+
+
+class BatchProcessingError(CollectionModelError):
+    """Raised when batch processing fails atomically.
+
+    All-or-nothing semantics: if any document in the batch fails,
+    the entire batch is rolled back.
+    """
+
+    error_type: str = "batch_processing"

@@ -15,9 +15,11 @@ from collection_model.processors.base import (
 )
 from collection_model.processors.json_extraction import JsonExtractionProcessor
 from collection_model.processors.registry import ProcessorRegistry
+from collection_model.processors.zip_extraction import ZipExtractionProcessor
 
 # Register processors
 ProcessorRegistry.register("json-extraction", JsonExtractionProcessor)
+ProcessorRegistry.register("zip-extraction", ZipExtractionProcessor)
 
 __all__ = [
     "ContentProcessor",
@@ -25,4 +27,5 @@ __all__ = [
     "ProcessorNotFoundError",
     "ProcessorRegistry",
     "ProcessorResult",
+    "ZipExtractionProcessor",
 ]

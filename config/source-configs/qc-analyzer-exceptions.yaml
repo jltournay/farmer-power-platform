@@ -5,7 +5,7 @@ description: Secondary leaf images requiring manual review or AI analysis
 ingestion:
   mode: blob_trigger
   landing_container: qc-analyzer-landing
-  processor_type: zip-extraction  # TODO: Implement ZipExtractionProcessor in future story
+  processor_type: zip-extraction
   path_pattern:
     pattern: "exceptions/{plantation_id}/{batch_id}.zip"
     extract_fields:
@@ -20,9 +20,6 @@ ingestion:
     archive_ttl_days: 365
   zip_config:
     manifest_file: manifest.json
-    images_folder: images
-    extract_images: true
-    image_storage_container: exception-images
 
 validation:
   schema_name: data/qc-exceptions-manifest.json
@@ -42,6 +39,8 @@ transformation:
 
 storage:
   raw_container: exception-images-raw
+  file_container: exception-images
+  file_path_pattern: "{plantation_id}/{batch_id}/{doc_id}/{filename}"
   index_collection: documents
   ttl_days: 365
 
