@@ -35,6 +35,17 @@ class Settings(BaseSettings):
     mongodb_retry_min_wait: int = 1
     mongodb_retry_max_wait: int = 10
 
+    # Azure Blob Storage configuration
+    azure_storage_connection_string: str = "DefaultEndpointsProtocol=https;AccountName=devstoreaccount1;AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;BlobEndpoint=http://127.0.0.1:10000/devstoreaccount1"
+
+    # Content Processor Worker configuration
+    worker_poll_interval: float = 5.0
+    worker_batch_size: int = 10
+    worker_max_retries: int = 3
+
+    # AI Model DAPR configuration
+    ai_model_app_id: str = "ai-model"
+
     # CORS configuration
     cors_origins: list[str] = ["http://localhost:3000", "http://localhost:8080"]
     cors_allow_credentials: bool = True

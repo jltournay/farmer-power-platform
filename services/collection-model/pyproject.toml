@@ -24,6 +24,8 @@ opentelemetry-instrumentation-fastapi = ">=0.50b0"
 opentelemetry-instrumentation-pymongo = ">=0.50b0"
 # Dapr integration (HTTP only, no gRPC)
 dapr = "^1.13.0"
+# Azure Blob Storage (Story 2.4)
+azure-storage-blob = "^12.19.0"
 # Shared libs
 fp-proto = { path = "../../libs/fp-proto" }
 

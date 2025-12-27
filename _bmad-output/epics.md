@@ -292,7 +292,7 @@ Per architecture decision (see `infrastructure-decisions.md#mcp-protocol-decisio
 - None (foundational)
 
 **Blocks:**
-- Story 1.6: Plantation Model MCP Server
+- Story 1.7: Plantation Model MCP Server
 - Story 2.8: Collection Model MCP Server
 - Story 5.9: Knowledge Model MCP Server
 - Story 6.6: Action Plan MCP Server
@@ -849,7 +849,56 @@ So that I receive feedback in a way I can understand.
 
 ---
 
-#### Story 1.6: Plantation Model MCP Server
+#### Story 1.6: TBK Quality Grading
+
+As a **factory quality manager**,
+I want tea quality grades calculated using TBK (Tea Board of Kenya) standards,
+So that farmers receive consistent, industry-standard quality assessments.
+
+**Acceptance Criteria:**
+
+**Given** a `collection.quality_result.received` event is received from Collection Model
+**When** the Plantation Model processes the event
+**Then** the extracted quality data is retrieved from the event payload
+**And** TBK grade is calculated based on primary_percentage and fine_leaf_percentage
+
+**Given** quality data contains leaf_type_distribution
+**When** TBK grade is calculated
+**Then** the grade follows TBK specification:
+  - Grade 1 (Premium): >=85% primary AND fine_leaf >=60%
+  - Grade 2 (Standard): >=70% primary OR fine_leaf >=40%
+  - Grade 3 (Below Standard): <70% primary AND fine_leaf <40%
+
+**Given** a TBK grade is calculated
+**When** the grade is stored
+**Then** the farmer's quality record is updated with: tbk_grade, tbk_grade_code, graded_at
+**And** the grade is linked to the original quality_result document_id
+**And** the farmer's performance_history is updated
+
+**Given** the grading is complete
+**When** downstream services need the grade
+**Then** a `plantation.quality.graded` event is emitted via DAPR Pub/Sub
+**And** the event payload includes: farmer_id, document_id, tbk_grade, tbk_grade_code
+
+**Given** invalid or incomplete quality data is received
+**When** grading cannot be performed
+**Then** the event is logged with error details
+**And** the farmer's record is NOT updated
+**And** an alert is raised for manual review
+
+**Technical Notes:**
+- Subscribe to `collection.quality_result.received` via DAPR Pub/Sub
+- Grading logic is pure function (no external dependencies)
+- Grade stored in farmer's `quality_grades` subcollection
+- Performance history aggregation updated (rolling 30-day average)
+- OpenTelemetry metrics: `plantation.grading.count`, `plantation.grading.distribution`
+
+**Dependencies:**
+- Story 2.4: Generic Content Processing Framework (emits the event)
+
+---
+
+#### Story 1.7: Plantation Model MCP Server
 
 As an **AI agent**,
 I want to access farmer and factory data via MCP tools,
@@ -1014,7 +1063,11 @@ So that new QC Analyzer uploads trigger automatic ingestion.
 
 ---
 
-#### Story 2.4: QC Analyzer Result Ingestion (JSON)
+#### Story 2.4: Generic Content Processing Framework + JSON Processor
+
+As a **platform operator**,
+I want a generic, configuration-driven content processing framework,
+So that new data sources can be processed without code changes to the core pipeline.
 
 As a **platform data analyst**,
 I want QC Analyzer JSON results automatically ingested,
@@ -1022,13 +1075,38 @@ So that bag summaries and grading data are stored for analysis.
 
 **Acceptance Criteria:**
 
+**Framework (Generic):**
+
+**Given** an ingestion job is dequeued for processing
+**When** the processor is selected
+**Then** the `transformation.agent` field from SourceConfig determines which ContentProcessor is used
+**And** no hardcoded source_type checks exist in the pipeline
+**And** the ProcessorRegistry returns the appropriate processor class
+
+**Given** a new source type needs to be added
+**When** a developer implements ContentProcessor
+**Then** they only need to:
+  1. Create a new processor class implementing `ContentProcessor` ABC
+  2. Register it in `ProcessorRegistry` with the `transformation.agent` key
+  3. Add source configuration YAML with matching `transformation.agent`
+**And** no changes to the core pipeline code are required
+
+**Given** an unknown `transformation.agent` value is encountered
+**When** the processor lookup fails
+**Then** processing_status is set to "failed"
+**And** error details include: "No processor registered for agent: {agent_name}"
+**And** the job is not retried (configuration error, not transient)
+
+**JSON Processor (QC Analyzer Results):**
+
 **Given** a JSON blob is queued for processing
-**When** the blob is downloaded from Azure Blob Storage
-**Then** the raw JSON is stored in `raw_documents` collection
+**When** the `JsonExtractionProcessor` is invoked
+**Then** the blob is downloaded from Azure Blob Storage (async streaming)
+**And** the raw JSON is stored in `raw_documents` collection
 **And** processing_status is updated to "extracting"
 
 **Given** the raw JSON is stored
-**When** LLM extraction runs with the configured prompt
+**When** LLM extraction runs with the configured prompt (from `transformation.llm_prompt_id`)
 **Then** structured data is extracted: bag_id, farmer_id, collection_point_id, timestamp, overall_classification, leaf_assessments[]
 **And** bag_summary is calculated: primary_percentage, leaf_type_distribution, overall_grade
 **And** extracted data is stored in `quality_events` collection
@@ -1044,7 +1122,7 @@ So that bag summaries and grading data are stored for analysis.
 **When** the quality_event is stored
 **Then** a `collection.document.stored` domain event is emitted via Redis pub/sub
 **And** processing_status is updated to "completed"
-**And** the event payload includes: document_id, source_type, farmer_id
+**And** the event payload includes: document_id, source_id, farmer_id
 
 **Given** LLM extraction fails
 **When** error is detected
@@ -1053,14 +1131,80 @@ So that bag summaries and grading data are stored for analysis.
 **And** document is queued for retry (max 3 attempts)
 
 **Technical Notes:**
+
+**Framework Architecture:**
+```
+processors/
+├── __init__.py
+├── base.py              # ContentProcessor ABC, ProcessorResult
+├── registry.py          # ProcessorRegistry (agent → processor mapping)
+├── json_extraction.py   # JsonExtractionProcessor
+└── zip_extraction.py    # ZipExtractionProcessor (Story 2.5)
+```
+
+**ContentProcessor ABC:**
+```python
+from abc import ABC, abstractmethod
+from collection_model.domain.ingestion_job import IngestionJob
+
+class ContentProcessor(ABC):
+    """Base class for all content processors."""
+
+    @abstractmethod
+    async def process(
+        self,
+        job: IngestionJob,
+        source_config: dict
+    ) -> ProcessorResult:
+        """Process the ingestion job according to source config."""
+        pass
+
+    @abstractmethod
+    def supports_content_type(self, content_type: str) -> bool:
+        """Check if processor supports the given content type."""
+        pass
+```
+
+**ProcessorRegistry:**
+```python
+class ProcessorRegistry:
+    """Maps transformation.agent values to processor classes."""
+
+    _processors: dict[str, type[ContentProcessor]] = {}
+
+    @classmethod
+    def register(cls, agent_name: str, processor_class: type[ContentProcessor]):
+        cls._processors[agent_name] = processor_class
+
+    @classmethod
+    def get_processor(cls, agent_name: str) -> ContentProcessor:
+        if agent_name not in cls._processors:
+            raise ProcessorNotFoundError(f"No processor for agent: {agent_name}")
+        return cls._processors[agent_name]()
+
+# Registration (in __init__.py or startup)
+ProcessorRegistry.register("collection-json-extraction", JsonExtractionProcessor)
+ProcessorRegistry.register("collection-zip-extraction", ZipExtractionProcessor)
+```
+
+**Pipeline Integration:**
+```python
+# In content_processor_worker.py - NO hardcoded source checks
+async def process_job(job: IngestionJob, source_config: dict):
+    agent = source_config["transformation"]["agent"]
+    processor = ProcessorRegistry.get_processor(agent)  # Pure config-driven
+    result = await processor.process(job, source_config)
+    return result
+```
+
 - Azure Blob SDK: async download with streaming
-- LLM extraction via OpenRouter (prompt from MongoDB)
+- LLM extraction via OpenRouter (prompt from MongoDB `prompts` collection)
 - MongoDB collections: raw_documents, quality_events
 - Deduplication handled in Story 2.6
 
 ---
 
-#### Story 2.5: QC Analyzer Exception Images Ingestion (ZIP)
+#### Story 2.5: ZIP Content Processor for Exception Images
 
 As a **Knowledge Model AI agent**,
 I want secondary leaf exception images automatically extracted and stored,
@@ -1068,7 +1212,12 @@ So that I can analyze poor quality samples with visual evidence.
 
 **Acceptance Criteria:**
 
-**Given** a ZIP blob is queued for processing (from `qc-analyzer-exceptions` container)
+**Given** the Generic Content Processing Framework exists (Story 2.4)
+**When** a ZIP blob is queued for processing
+**Then** the `ZipExtractionProcessor` is selected via `transformation.agent = "collection-zip-extraction"`
+**And** no changes to the core pipeline are required
+
+**Given** the `ZipExtractionProcessor` is invoked
 **When** the blob is downloaded
 **Then** the ZIP is extracted in memory (streaming, no disk write)
 **And** manifest.json is parsed for image metadata
@@ -1088,7 +1237,7 @@ So that I can analyze poor quality samples with visual evidence.
 **When** processing completes
 **Then** a `collection.document.stored` domain event is emitted
 **And** processing_status is updated to "completed"
-**And** the event payload includes: document_id, source_type="QC_ANALYZER_EXCEPTIONS", image_count
+**And** the event payload includes: document_id, source_id, image_count
 
 **Given** the ZIP is corrupted or invalid
 **When** extraction fails
@@ -1097,11 +1246,14 @@ So that I can analyze poor quality samples with visual evidence.
 **And** original blob is retained for manual review
 
 **Technical Notes:**
+- Implements `ContentProcessor` ABC from Story 2.4
+- Registered as: `ProcessorRegistry.register("collection-zip-extraction", ZipExtractionProcessor)`
 - ZIP processing: zipfile module with streaming (no temp files)
 - Max ZIP size: 50MB
 - Max images per ZIP: 100
 - Image formats: JPEG, PNG only
 - Linking: bag_id from manifest matches quality_events.bag_id
+- No changes to core pipeline - pure configuration-driven polymorphism
 
 ---
 
@@ -3986,7 +4138,8 @@ So that farmers have proof of registration.
 - Story 1.3: Farmer Registration
 - Story 1.4: Farmer Performance History Structure
 - Story 1.5: Farmer Communication Preferences
-- Story 1.6: Plantation Model MCP Server
+- Story 1.6: TBK Quality Grading
+- Story 1.7: Plantation Model MCP Server
 
 **Epic 2: Quality Data Ingestion**
 - Story 2.1: Collection Model Service Setup

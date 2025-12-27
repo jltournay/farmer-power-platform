@@ -128,6 +128,9 @@ class IngestionQueue:
         ingestion_id: str,
         status: str,
         error_message: str | None = None,
+        error_type: str | None = None,
+        document_id: str | None = None,
+        no_retry: bool = False,
     ) -> bool:
         """Update the status of a job.
 
@@ -135,6 +138,9 @@ class IngestionQueue:
             ingestion_id: The ingestion_id of the job to update.
             status: New status value.
             error_message: Optional error message if status is "failed".
+            error_type: Optional error type classification.
+            document_id: Optional document ID if processing completed.
+            no_retry: If True, marks job as permanently failed (config error).
 
         Returns:
             True if job was found and updated, False otherwise.
@@ -145,6 +151,10 @@ class IngestionQueue:
             update_doc["processed_at"] = datetime.now(UTC)
         if error_message:
             update_doc["error_message"] = error_message
+        if error_type:
+            update_doc["error_type"] = error_type
+        if document_id:
+            update_doc["document_id"] = document_id
 
         result = await self.collection.update_one(
             {"ingestion_id": ingestion_id},
@@ -156,6 +166,7 @@ class IngestionQueue:
                 "Job status updated",
                 ingestion_id=ingestion_id,
                 status=status,
+                error_type=error_type,
             )
             return True
 
@@ -164,6 +175,37 @@ class IngestionQueue:
             ingestion_id=ingestion_id,
         )
         return False
+
+    async def increment_retry_count(self, ingestion_id: str) -> int:
+        """Increment the retry count for a job and return new count.
+
+        Args:
+            ingestion_id: The ingestion_id of the job to update.
+
+        Returns:
+            The new retry count after increment.
+
+        """
+        result = await self.collection.find_one_and_update(
+            {"ingestion_id": ingestion_id},
+            {"$inc": {"retry_count": 1}},
+            return_document=True,
+        )
+
+        if result:
+            new_count = result.get("retry_count", 1)
+            logger.debug(
+                "Job retry count incremented",
+                ingestion_id=ingestion_id,
+                retry_count=new_count,
+            )
+            return new_count
+
+        logger.warning(
+            "Job not found for retry increment",
+            ingestion_id=ingestion_id,
+        )
+        return 0
 
     async def get_job_by_id(self, ingestion_id: str) -> IngestionJob | None:
         """Get a job by its ingestion_id.

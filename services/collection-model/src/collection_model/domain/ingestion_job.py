@@ -52,9 +52,17 @@ class IngestionJob(BaseModel):
     content_length: int = Field(..., description="Blob size in bytes")
 
     # Processing status
-    status: Literal["queued", "processing", "completed", "failed"] = Field(
+    status: Literal["queued", "processing", "extracting", "completed", "failed"] = Field(
         default="queued",
         description="Current processing status",
+    )
+    retry_count: int = Field(
+        default=0,
+        description="Number of retry attempts",
+    )
+    error_type: Literal["extraction", "storage", "validation", "config"] | None = Field(
+        default=None,
+        description="Type of error if failed",
     )
     created_at: datetime = Field(
         default_factory=lambda: datetime.now(UTC),

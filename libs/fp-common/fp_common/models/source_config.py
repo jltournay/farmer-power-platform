@@ -87,6 +87,12 @@ class IngestionConfig(BaseModel):
     processed_file_config: ProcessedFileConfig | None = Field(None, description="Post-processing configuration")
     zip_config: ZipConfig | None = Field(None, description="ZIP handling configuration")
 
+    # Processor selection (Story 2.4)
+    processor_type: str | None = Field(
+        None,
+        description="ContentProcessor type for ProcessorRegistry lookup (e.g., 'json-extraction')",
+    )
+
     # scheduled_pull fields
     provider: str | None = Field(None, description="External data provider name")
     schedule: str | None = Field(None, description="Cron schedule expression")
@@ -136,10 +142,21 @@ class TransformationConfig(BaseModel):
     Defines how to extract and map fields from ingested data.
     """
 
-    agent: str = Field(..., description="AI agent for data extraction")
+    ai_agent_id: str | None = Field(
+        None,
+        description="AI Model agent ID for LLM extraction (preferred over 'agent')",
+    )
+    agent: str | None = Field(
+        None,
+        description="AI agent for data extraction (deprecated, use ai_agent_id)",
+    )
     extract_fields: list[str] = Field(..., description="Fields to extract from data")
     link_field: str = Field(..., description="Field to use for linking to other data")
     field_mappings: dict[str, str] = Field(default_factory=dict, description="Field name mappings")
+
+    def get_ai_agent_id(self) -> str | None:
+        """Get the AI agent ID, preferring ai_agent_id over deprecated agent field."""
+        return self.ai_agent_id or self.agent
 
 
 class StorageConfig(BaseModel):
@@ -148,6 +165,33 @@ class StorageConfig(BaseModel):
     raw_container: str = Field(..., description="Container for raw data storage")
     index_collection: str = Field(..., description="MongoDB collection for index")
     ttl_days: int | None = Field(None, description="Days to retain data")
+
+
+class EventConfig(BaseModel):
+    """Single event configuration for success or failure events."""
+
+    topic: str = Field(..., description="DAPR Pub/Sub topic (e.g., 'collection.quality_result.received')")
+    payload_fields: list[str] = Field(
+        default_factory=list,
+        description="Fields to include in event payload",
+    )
+
+
+class EventsConfig(BaseModel):
+    """Events configuration for domain event emission.
+
+    Enables config-driven event emission - processors read topic and
+    payload fields from config rather than hardcoding them.
+    """
+
+    on_success: EventConfig | None = Field(
+        None,
+        description="Event to emit when processing succeeds",
+    )
+    on_failure: EventConfig | None = Field(
+        None,
+        description="Event to emit when processing fails",
+    )
 
 
 class SourceConfig(BaseModel):
@@ -168,6 +212,7 @@ class SourceConfig(BaseModel):
     validation: ValidationConfig | None = Field(None, description="Validation configuration")
     transformation: TransformationConfig = Field(..., description="Transformation configuration")
     storage: StorageConfig = Field(..., description="Storage configuration")
+    events: EventsConfig | None = Field(None, description="Domain event emission configuration")
 
 
 def generate_json_schema(output_path: str | None = None) -> dict:

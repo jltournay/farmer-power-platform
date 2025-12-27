@@ -5,9 +5,13 @@ Collects, validates, transforms, links, stores, and serves documents
 related to quality events from various sources.
 """
 
+import asyncio
+import contextlib
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 
+# Import processors to register them
+import collection_model.processors  # noqa: F401
 import structlog
 from collection_model.api import events, health
 from collection_model.config import settings
@@ -25,6 +29,7 @@ from collection_model.infrastructure.tracing import (
     setup_tracing,
     shutdown_tracing,
 )
+from collection_model.services.content_processor_worker import ContentProcessorWorker
 from collection_model.services.source_config_service import SourceConfigService
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -67,6 +72,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     setup_metrics()
 
     # Initialize MongoDB connection and services
+    worker_task = None
     try:
         await get_mongodb_client()
         db = await get_database()
@@ -78,10 +84,21 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
         # Ensure indexes for ingestion queue
         await app.state.ingestion_queue.ensure_indexes()
 
+        # Initialize Content Processor Worker (Story 2.4)
+        app.state.content_processor_worker = ContentProcessorWorker(
+            db=db,
+            ingestion_queue=app.state.ingestion_queue,
+            source_config_service=app.state.source_config_service,
+        )
+
+        # Start worker as background task
+        worker_task = asyncio.create_task(app.state.content_processor_worker.start())
+        app.state.worker_task = worker_task
+
         health.set_mongodb_check(check_mongodb_connection)
         logger.info(
             "MongoDB connection and services initialized",
-            services=["SourceConfigService", "IngestionQueue"],
+            services=["SourceConfigService", "IngestionQueue", "ContentProcessorWorker"],
         )
     except Exception as e:
         logger.warning("MongoDB connection failed at startup", error=str(e))
@@ -96,6 +113,15 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
 
     # Shutdown
     logger.info("Shutting down Collection Model service")
+
+    # Stop the worker
+    if hasattr(app.state, "content_processor_worker"):
+        await app.state.content_processor_worker.stop()
+    if worker_task:
+        worker_task.cancel()
+        with contextlib.suppress(asyncio.CancelledError):
+            await worker_task
+
     await close_mongodb_connection()
     shutdown_metrics()
     shutdown_tracing()
