@@ -6,10 +6,17 @@ Principle - new processors can be added without modifying core pipeline code.
 """
 
 from abc import ABC, abstractmethod
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from collection_model.domain.ingestion_job import IngestionJob
 from pydantic import BaseModel, Field
+
+if TYPE_CHECKING:
+    from collection_model.infrastructure.ai_model_client import AiModelClient
+    from collection_model.infrastructure.blob_storage import BlobStorageClient
+    from collection_model.infrastructure.dapr_event_publisher import DaprEventPublisher
+    from collection_model.infrastructure.document_repository import DocumentRepository
+    from collection_model.infrastructure.raw_document_store import RawDocumentStore
 
 
 class ProcessorResult(BaseModel):
@@ -85,3 +92,33 @@ class ContentProcessor(ABC):
             True if this processor can handle the content type.
         """
         pass
+
+    def set_dependencies(
+        self,
+        blob_client: "BlobStorageClient",
+        raw_document_store: "RawDocumentStore",
+        ai_model_client: "AiModelClient",
+        document_repository: "DocumentRepository",
+        event_publisher: "DaprEventPublisher",
+    ) -> None:
+        """Set infrastructure dependencies for the processor.
+
+        This method is called by ContentProcessorWorker after getting
+        the processor from the registry. All processors receive the same
+        dependencies - no isinstance checks needed.
+
+        Default implementation stores dependencies as instance attributes.
+        Subclasses can override if they need different behavior.
+
+        Args:
+            blob_client: Azure Blob Storage client.
+            raw_document_store: Raw document storage service.
+            ai_model_client: AI Model client for extraction.
+            document_repository: Document index repository.
+            event_publisher: DAPR event publisher.
+        """
+        self._blob_client = blob_client
+        self._raw_store = raw_document_store
+        self._ai_client = ai_model_client
+        self._doc_repo = document_repository
+        self._event_publisher = event_publisher

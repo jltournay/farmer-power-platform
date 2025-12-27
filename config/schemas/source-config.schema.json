@@ -1,5 +1,61 @@
 {
   "$defs": {
+    "EventConfig": {
+      "description": "Configuration for a single domain event.",
+      "properties": {
+        "topic": {
+          "description": "DAPR pub/sub topic name (e.g., 'collection.quality-results')",
+          "title": "Topic",
+          "type": "string",
+          "pattern": "^collection\\.[a-z][a-z0-9-]*$"
+        },
+        "payload_fields": {
+          "description": "Fields to include in event payload",
+          "items": {
+            "type": "string"
+          },
+          "title": "Payload Fields",
+          "type": "array",
+          "default": []
+        }
+      },
+      "required": [
+        "topic"
+      ],
+      "title": "EventConfig",
+      "type": "object"
+    },
+    "EventsConfig": {
+      "description": "Domain events configuration.\n\nDefines events emitted on successful or failed processing.",
+      "properties": {
+        "on_success": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/EventConfig"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Event to emit on successful ingestion"
+        },
+        "on_failure": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/EventConfig"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Event to emit on failed ingestion"
+        }
+      },
+      "title": "EventsConfig",
+      "type": "object"
+    },
     "IngestionConfig": {
       "description": "Ingestion configuration block.\n\nSupports two modes:\n- blob_trigger: React to files uploaded to blob storage\n- scheduled_pull: Pull data from external APIs on a schedule",
       "properties": {
@@ -10,6 +66,11 @@
             "scheduled_pull"
           ],
           "title": "Mode",
+          "type": "string"
+        },
+        "processor_type": {
+          "description": "Content processor type (e.g., 'json-extraction', 'zip')",
+          "title": "Processor Type",
           "type": "string"
         },
         "landing_container": {
@@ -539,6 +600,18 @@
     "storage": {
       "$ref": "#/$defs/StorageConfig",
       "description": "Storage configuration"
+    },
+    "events": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/EventsConfig"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "Domain events configuration"
     }
   },
   "required": [

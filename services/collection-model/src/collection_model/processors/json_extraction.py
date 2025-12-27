@@ -75,30 +75,7 @@ class JsonExtractionProcessor(ContentProcessor):
         self._doc_repo = document_repository
         self._event_publisher = event_publisher
 
-    def set_dependencies(
-        self,
-        blob_client: BlobStorageClient,
-        raw_document_store: RawDocumentStore,
-        ai_model_client: AiModelClient,
-        document_repository: DocumentRepository,
-        event_publisher: DaprEventPublisher,
-    ) -> None:
-        """Set dependencies after construction.
-
-        Used when processor is instantiated by registry.
-
-        Args:
-            blob_client: Azure Blob Storage client.
-            raw_document_store: Raw document storage.
-            ai_model_client: AI Model DAPR client.
-            document_repository: Generic document repository.
-            event_publisher: DAPR event publisher.
-        """
-        self._blob_client = blob_client
-        self._raw_store = raw_document_store
-        self._ai_client = ai_model_client
-        self._doc_repo = document_repository
-        self._event_publisher = event_publisher
+    # set_dependencies inherited from ContentProcessor ABC
 
     async def process(
         self,

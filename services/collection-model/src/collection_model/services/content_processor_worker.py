@@ -19,7 +19,6 @@ from collection_model.infrastructure.ingestion_queue import IngestionQueue
 from collection_model.infrastructure.metrics import ProcessingMetrics
 from collection_model.infrastructure.raw_document_store import RawDocumentStore
 from collection_model.processors import ProcessorNotFoundError, ProcessorRegistry
-from collection_model.processors.json_extraction import JsonExtractionProcessor
 from collection_model.services.source_config_service import SourceConfigService
 from motor.motor_asyncio import AsyncIOMotorDatabase
 
@@ -226,15 +225,14 @@ class ContentProcessorWorker:
 
         processor = ProcessorRegistry.get_processor(processor_type)
 
-        # Set dependencies if it's a JsonExtractionProcessor
-        if isinstance(processor, JsonExtractionProcessor):
-            processor.set_dependencies(
-                blob_client=self._blob_client,
-                raw_document_store=self._raw_store,
-                ai_model_client=self._ai_client,
-                document_repository=self._doc_repo,
-                event_publisher=self._event_publisher,
-            )
+        # Set dependencies on all processors via ABC method (no isinstance checks)
+        processor.set_dependencies(
+            blob_client=self._blob_client,
+            raw_document_store=self._raw_store,
+            ai_model_client=self._ai_client,
+            document_repository=self._doc_repo,
+            event_publisher=self._event_publisher,
+        )
 
         return processor
 
