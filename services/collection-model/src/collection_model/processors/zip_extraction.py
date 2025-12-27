@@ -139,18 +139,19 @@ class ZipExtractionProcessor(ContentProcessor):
                     f"ZIP exceeds maximum document count: {len(manifest.documents)} > {MAX_DOCUMENTS_PER_ZIP}"
                 )
 
-            # Step 4: Process each document in manifest
+            # Step 4: Process each document in manifest (open ZipFile once for efficiency)
             documents: list[DocumentIndex] = []
-            for doc_entry in manifest.documents:
-                doc = await self._process_document(
-                    zip_content=zip_content,
-                    doc_entry=doc_entry,
-                    manifest=manifest,
-                    raw_zip_ref=raw_zip_ref,
-                    job=job,
-                    source_config=source_config,
-                )
-                documents.append(doc)
+            with zipfile.ZipFile(io.BytesIO(zip_content), "r") as zf:
+                for doc_entry in manifest.documents:
+                    doc = await self._process_document(
+                        zf=zf,
+                        doc_entry=doc_entry,
+                        manifest=manifest,
+                        raw_zip_ref=raw_zip_ref,
+                        job=job,
+                        source_config=source_config,
+                    )
+                    documents.append(doc)
 
             # Step 5: Store all documents atomically
             await self._store_documents_atomic(documents, source_config)
@@ -366,7 +367,7 @@ class ZipExtractionProcessor(ContentProcessor):
 
     async def _process_document(
         self,
-        zip_content: bytes,
+        zf: zipfile.ZipFile,
         doc_entry: ManifestDocument,
         manifest: ZipManifest,
         raw_zip_ref: RawDocumentRef,
@@ -378,7 +379,7 @@ class ZipExtractionProcessor(ContentProcessor):
         Extracts files, stores them to blob storage, and creates a DocumentIndex.
 
         Args:
-            zip_content: ZIP file content bytes.
+            zf: Open ZipFile object (shared across all documents for efficiency).
             doc_entry: Document entry from manifest.
             manifest: The full manifest.
             raw_zip_ref: Reference to the stored raw ZIP.
@@ -398,22 +399,21 @@ class ZipExtractionProcessor(ContentProcessor):
         # Extract and store files, organized by role
         file_refs: dict[str, list[BlobReference]] = {}
 
-        with zipfile.ZipFile(io.BytesIO(zip_content), "r") as zf:
-            for file_entry in doc_entry.files:
-                blob_ref = await self._extract_and_store_file(
-                    zf=zf,
-                    file_entry=file_entry,
-                    doc_entry=doc_entry,
-                    manifest=manifest,
-                    job=job,
-                    source_config=source_config,
-                )
+        for file_entry in doc_entry.files:
+            blob_ref = await self._extract_and_store_file(
+                zf=zf,
+                file_entry=file_entry,
+                doc_entry=doc_entry,
+                manifest=manifest,
+                job=job,
+                source_config=source_config,
+            )
 
-                # Group by role
-                role = file_entry.role
-                if role not in file_refs:
-                    file_refs[role] = []
-                file_refs[role].append(blob_ref)
+            # Group by role
+            role = file_entry.role
+            if role not in file_refs:
+                file_refs[role] = []
+            file_refs[role].append(blob_ref)
 
         # Create DocumentIndex
         return self._create_document_index(
@@ -449,6 +449,12 @@ class ZipExtractionProcessor(ContentProcessor):
         """
         if not self._blob_client:
             raise ConfigurationError("Blob client not configured")
+
+        # Validate path for security (reject path traversal attempts)
+        if ".." in file_entry.path or file_entry.path.startswith("/"):
+            raise ZipExtractionError(
+                f"Invalid file path (path traversal rejected): {file_entry.path} (document: {doc_entry.document_id})"
+            )
 
         # Verify file exists in ZIP
         if file_entry.path not in zf.namelist():
@@ -538,8 +544,17 @@ class ZipExtractionProcessor(ContentProcessor):
         for key, value in subs.items():
             result = result.replace(f"{{{key}}}", value)
 
-        # Clean up any remaining unreplaced placeholders
-        result = re.sub(r"\{[^}]+\}", "unknown", result)
+        # Check for unresolved placeholders and log warning
+        unresolved = re.findall(r"\{([^}]+)\}", result)
+        if unresolved:
+            logger.warning(
+                "Unresolved placeholders in file_path_pattern",
+                pattern=pattern,
+                unresolved_placeholders=unresolved,
+                available_keys=list(subs.keys()),
+            )
+            # Replace with "unknown" to avoid broken paths
+            result = re.sub(r"\{[^}]+\}", "unknown", result)
 
         return result
 

@@ -34,8 +34,7 @@ transformation:
     - exception_count
     - exception_images
   link_field: batch_result_ref
-  field_mappings:
-    plantation_id: farmer_id
+  # NOTE: QC Analyzer will use farmer_id directly (no field_mappings needed)
 
 storage:
   raw_container: exception-images-raw
