@@ -75,79 +75,60 @@ Factory and field environments have **unreliable network connectivity**. HTTP we
 
 ## Generic ZIP Manifest Format
 
-All ZIP-based sources must include a `manifest.json` file following a standard format. This enables the platform to process different data sources uniformly while allowing domain-specific payload structures.
+**All ZIP-based sources MUST include a `manifest.json` following this standard format.** This is the contract that enables unified processing across all data sources.
 
-### Why a Standard Manifest Format?
+### Schema Location
 
-1. **Unified Processing** - One ZIP processor handles all sources
-2. **Multi-File Documents** - Supports documents with multiple related files (e.g., image + metadata JSON)
-3. **Flexible Payload** - Domain-specific data in `payload` section validated against source-specific schemas
-4. **Cross-Reference Linkage** - Standard `linkage` fields for entity relationships
+| Schema | Purpose |
+|--------|---------|
+| `config/schemas/generic-zip-manifest.schema.json` | **Mandatory** - validates manifest structure for ALL ZIP sources |
+| `config/schemas/data/{source-id}-manifest.json` | **Per-source** - validates `payload` and `document_attributes` for specific source |
 
-### Manifest Schema Reference
+### Required Fields
 
-**Schema Location:** `config/schemas/generic-zip-manifest.schema.json`
-
-**Payload Schema Pattern:** `config/schemas/data/{source-id}-manifest.json` defines the `payload` and `document_attributes` structure for each source.
-
-### Manifest Structure
+Every ZIP manifest MUST contain these fields:
 
 ```json
 {
   "manifest_version": "1.0",
-  "source_id": "qc-analyzer-exceptions",
-  "created_at": "2025-12-26T08:32:15Z",
-
-  "linkage": {
-    "plantation_id": "WM-4521",
-    "batch_id": "batch-2025-12-26-001",
-    "factory_id": "KEN-FAC-001"
-  },
-
+  "source_id": "<source-config-id>",
+  "created_at": "<ISO-8601 timestamp>",
   "documents": [
     {
-      "document_id": "leaf_001",
+      "document_id": "<unique-id-within-batch>",
       "files": [
-        { "path": "images/leaf_001.jpg", "role": "image" },
-        { "path": "results/leaf_001.json", "role": "metadata" }
-      ],
-      "attributes": {
-        "quality_grade": "C",
-        "confidence": 0.91,
-        "leaf_type": "coarse_leaf"
-      }
-    },
-    {
-      "document_id": "leaf_002",
-      "files": [
-        { "path": "images/leaf_002.jpg", "role": "image" },
-        { "path": "results/leaf_002.json", "role": "metadata" }
-      ],
-      "attributes": {
-        "quality_grade": "D",
-        "confidence": 0.87,
-        "leaf_type": "three_plus_leaves_bud"
-      }
+        { "path": "<relative-path-in-zip>", "role": "<file-role>" }
+      ]
     }
-  ],
-
-  "payload": {
-    "grading_model_id": "tbk_kenya_tea_v1",
-    "grading_model_version": "1.0.0",
-    "total_exceptions": 2
-  }
+  ]
 }
 ```
 
-### Key Concepts
+### Optional Fields
 
-| Concept | Description |
-|---------|-------------|
-| **documents[]** | Array of logical documents. Each document groups related files (e.g., an image and its classification result) |
-| **files[].role** | Purpose of the file: `image` (visual), `metadata` (JSON with attributes), `primary` (main content), `thumbnail` (preview), `attachment` (supplementary) |
-| **attributes** | Pre-extracted attributes for a document, OR loaded from the metadata file at processing time |
-| **linkage** | Cross-reference fields for entity relationships (plantation_id, batch_id, etc.) |
-| **payload** | Batch-level domain-specific data validated against source's payload schema |
+| Field | Type | Description |
+|-------|------|-------------|
+| `linkage` | object | Cross-reference fields for entity relationships (e.g., `plantation_id`, `batch_id`) |
+| `documents[].attributes` | object | Pre-extracted attributes, OR loaded from metadata file at processing time |
+| `documents[].files[].mime_type` | string | MIME type of the file (optional, can be inferred) |
+| `documents[].files[].size_bytes` | integer | File size in bytes (optional) |
+| `payload` | object | Batch-level domain-specific data, validated against source's payload schema |
+
+### Multi-File Documents
+
+A key feature: **one document can group multiple related files**. For example, an image and its classification result:
+
+```json
+{
+  "document_id": "leaf_001",
+  "files": [
+    { "path": "images/leaf_001.jpg", "role": "image" },
+    { "path": "results/leaf_001.json", "role": "metadata" }
+  ]
+}
+```
+
+The processor will extract the image to blob storage AND parse the metadata JSON to merge attributes into the document record.
 
 ### File Roles
 
@@ -161,11 +142,16 @@ All ZIP-based sources must include a `manifest.json` file following a standard f
 
 ### Processing Flow
 
+The **ZIP Processor** (`processor_type: zip`) is a generic processor that relies entirely on the manifest schema to process any ZIP source. It does not contain source-specific logic.
+
 ```
 ZIP Upload
     │
     ▼
 ┌─────────────────────────────────────────────────────────┐
+│                     ZIP PROCESSOR                        │
+│         (driven by generic-zip-manifest.schema)          │
+├─────────────────────────────────────────────────────────┤
 │ 1. Extract manifest.json                                 │
 │ 2. Validate against generic-zip-manifest.schema.json    │
 │ 3. Validate payload against source-specific schema      │
@@ -173,39 +159,23 @@ ZIP Upload
 │    a. Extract files by role                             │
 │    b. Load attributes from metadata file (if present)   │
 │    c. Store images to blob container                    │
-│    d. Create document record with linkage              │
-│ 5. Archive original ZIP                                 │
-│ 6. Emit domain event                                    │
+│ 5. LLM Extraction (if configured):                      │
+│    a. Extract/normalize fields from attributes          │
+│    b. Apply field mappings (e.g., plantation_id→farmer_id)│
+│    c. Semantic validation (cross-field consistency)     │
+│ 6. Create document records with linkage                 │
+│ 7. Archive original ZIP                                 │
+│ 8. Emit domain event                                    │
 └─────────────────────────────────────────────────────────┘
 ```
 
-### Example: QC Analyzer Exception Images
+> **Note:** Step 5 (LLM Extraction) is optional and configured per source. Sources with well-structured manifests may skip LLM or only use it for semantic validation.
 
-**ZIP Contents:**
-```
-batch-2025-12-26-001.zip
-├── manifest.json
-├── images/
-│   ├── leaf_001.jpg
-│   └── leaf_002.jpg
-└── results/
-    ├── leaf_001.json
-    └── leaf_002.json
-```
+### Source-Specific Implementation Example
 
-**Resulting MongoDB Documents:**
-```
-quality_exceptions_index:
-├── document_id: "batch-2025-12-26-001/leaf_001"
-│   ├── image_uri: "az://qc-exception-images/batch.../leaf_001.jpg"
-│   ├── quality_grade: "C"
-│   └── linkage: { plantation_id: "WM-4521", batch_id: "batch-..." }
-│
-└── document_id: "batch-2025-12-26-001/leaf_002"
-    ├── image_uri: "az://qc-exception-images/batch.../leaf_002.jpg"
-    ├── quality_grade: "D"
-    └── linkage: { plantation_id: "WM-4521", batch_id: "batch-..." }
-```
+> The following shows how **one source** (QC Analyzer Exceptions) implements the generic manifest format. Each source defines its own `payload` schema and `document_attributes` schema in `config/schemas/data/`.
+
+See [Stream 2: Secondary Leaf Images (ZIP)](#stream-2-secondary-leaf-images-zip) below for the complete QC Analyzer example.
 
 ## Architecture Diagram
 
@@ -380,57 +350,71 @@ storage:
 
 Images of all secondary-grade leaves with their classification metadata. The Knowledge Model uses these images to understand quality issues and diagnose why a farmer's tea is failing quality standards.
 
+> **Note:** This source uses the [Generic ZIP Manifest Format](#generic-zip-manifest-format). The manifest follows the standard structure with source-specific `payload` and `document_attributes`.
+
 **Upload Path:** `exceptions/{plantation_id}/{crop}/{market}/{batch_id}.zip`
 
 **ZIP Structure:**
 ```
 {batch_id}.zip
-├── manifest.json         # Metadata linking to batch result
-└── images/
-    ├── img_00001.jpg     # Secondary-grade leaf images only
-    ├── img_00002.jpg
+├── manifest.json              # Generic manifest format
+├── images/
+│   ├── leaf_001.jpg           # Secondary-grade leaf images
+│   ├── leaf_002.jpg
+│   └── ...
+└── results/
+    ├── leaf_001.json          # Classification metadata per image
+    ├── leaf_002.json
     └── ...
 ```
 
-**manifest.json Schema:**
+**manifest.json (Generic Format):**
 ```json
 {
-  "plantation_id": "WM-4521",
-  "source_id": "qc_analyzer_exceptions",
-  "batch_id": "batch-2025-12-26-001",
-  "batch_result_ref": "results/WM-4521/tea/mombasa/batch-2025-12-26-001.json",
+  "manifest_version": "1.0",
+  "source_id": "qc-analyzer-exceptions",
+  "created_at": "2025-12-26T08:32:15Z",
 
-  "factory_id": "KEN-FAC-001",
-  "grading_model_id": "tbk_kenya_tea_v1",
-  "grading_model_version": "1.0.0",
+  "linkage": {
+    "plantation_id": "WM-4521",
+    "batch_id": "batch-2025-12-26-001",
+    "factory_id": "KEN-FAC-001",
+    "batch_result_ref": "results/WM-4521/tea/mombasa/batch-2025-12-26-001.json"
+  },
 
-  "batch_timestamp": "2025-12-26T08:32:15Z",
-  "exception_count": 30,
-
-  "exception_images": [
+  "documents": [
     {
-      "file_uri": "images/img_00001.jpg",
-      "mime_type": "image/jpeg",
-      "classification": {
-        "quality_grade": "secondary",
-        "confidence": 0.91,
-        "leaf_type": "coarse_leaf",
-        "coarse_subtype": "hard_leaf",
-        "banji_hardness": null
-      }
+      "document_id": "leaf_001",
+      "files": [
+        { "path": "images/leaf_001.jpg", "role": "image" },
+        { "path": "results/leaf_001.json", "role": "metadata" }
+      ]
     },
     {
-      "file_uri": "images/img_00002.jpg",
-      "mime_type": "image/jpeg",
-      "classification": {
-        "quality_grade": "secondary",
-        "confidence": 0.87,
-        "leaf_type": "three_plus_leaves_bud",
-        "coarse_subtype": null,
-        "banji_hardness": null
-      }
+      "document_id": "leaf_002",
+      "files": [
+        { "path": "images/leaf_002.jpg", "role": "image" },
+        { "path": "results/leaf_002.json", "role": "metadata" }
+      ]
     }
-  ]
+  ],
+
+  "payload": {
+    "grading_model_id": "tbk_kenya_tea_v1",
+    "grading_model_version": "1.0.0",
+    "total_exceptions": 2
+  }
+}
+```
+
+**Metadata File (results/leaf_001.json):**
+```json
+{
+  "quality_grade": "secondary",
+  "confidence": 0.91,
+  "leaf_type": "coarse_leaf",
+  "coarse_subtype": "hard_leaf",
+  "banji_hardness": null
 }
 ```
 
@@ -442,17 +426,11 @@ description: Images of secondary-grade leaves for audit and retraining
 
 ingestion:
   mode: blob_trigger
+  processor_type: zip                    # Uses generic ZIP processor
   landing_container: qc-analyzer-landing
   path_pattern:
     pattern: "exceptions/{plantation_id}/{crop}/{market}/{batch_id}.zip"
     extract_fields: [plantation_id, crop, market, batch_id]
-  file_pattern: "*.zip"
-  file_format: zip
-  zip_config:
-    manifest_file: manifest.json
-    images_folder: images
-    extract_images: true
-    image_storage_container: qc-exception-images
   trigger_mechanism: event_grid
   processed_file_config:
     action: archive
@@ -460,26 +438,18 @@ ingestion:
     archive_ttl_days: 730
 
 validation:
-  schema_name: qc-exceptions-manifest.json
+  manifest_schema: generic-zip-manifest.schema.json   # Generic manifest validation
+  payload_schema: qc-exceptions-manifest.json         # Source-specific payload validation
   strict: true
-
-transformation:
-  agent: qc-exceptions-extraction-agent
-  extract_fields:
-    - plantation_id
-    - factory_id
-    - batch_id
-    - batch_result_ref
-    - exception_count
-    - exception_images
-  link_field: plantation_id
-  field_mappings:
-    plantation_id: farmer_id
 
 storage:
   raw_container: quality-exceptions-raw
+  image_container: qc-exception-images    # Where images are extracted to
   index_collection: quality_exceptions_index
   ttl_days: 730
+
+events:
+  topic: collection.quality-exceptions
 ```
 
 ### Mobile App Source
@@ -1317,16 +1287,39 @@ spec:
 
 ## Domain Events
 
-Events emitted after successful ingestion:
+Events are **config-driven**. Each source configuration defines its topic in `events.topic`. The Collection Model emits a generic event structure.
 
-| Event | Trigger | Payload |
-|-------|---------|---------|
-| `collection.document.stored` | Any document stored | document_id, source_id, link_value |
-| `collection.quality_result.received` | QC Analyzer bag result | farmer_id, factory_id, batch_id, primary_percentage |
-| `collection.quality_exceptions.received` | QC Analyzer exception images | farmer_id, factory_id, batch_id, exception_count |
-| `collection.farmer_registration.received` | Mobile App registration | farmer_name, phone_number, factory_id |
-| `collection.weather_data.updated` | Weather pull complete | region_id, date_range |
-| `collection.market_prices.updated` | Market prices pull complete | market, price_per_kg |
+### Event Structure
+
+```json
+{
+  "type": "collection.{source-topic}.ingested",
+  "source": "collection-model",
+  "time": "2025-12-26T08:32:15Z",
+  "data": {
+    "document_id": "qc-analyzer-exceptions/batch-2025-12-26-001/leaf_001",
+    "source_id": "qc-analyzer-exceptions",
+    "farmer_id": "WM-4521",
+    "linkage": {
+      "batch_id": "batch-2025-12-26-001",
+      "plantation_id": "WM-4521"
+    },
+    "document_count": 1,
+    "ingestion_id": "ing-abc123"
+  }
+}
+```
+
+### Event Topics (from source config)
+
+| Source | Topic (config) | Full Event Type |
+|--------|----------------|-----------------|
+| qc-analyzer-result | `quality-results` | `collection.quality-results.ingested` |
+| qc-analyzer-exceptions | `quality-exceptions` | `collection.quality-exceptions.ingested` |
+| mobile-app-registration | `farmer-registrations` | `collection.farmer-registrations.ingested` |
+| weather-api | `weather-data` | `collection.weather-data.ingested` |
+
+> **No hardcoded events** - adding a new source with `events.topic: my-new-topic` automatically emits `collection.my-new-topic.ingested`.
 
 ## Trust Model
 
@@ -1340,51 +1333,54 @@ Events emitted after successful ingestion:
 
 ## MCP Server Tools
 
+All tools work with the **generic `documents` collection**. Queries use `source_id` and attribute filters.
+
 | Tool | Purpose | Parameters |
 |------|---------|------------|
-| `get_farmer_documents` | All documents for a farmer | `farmer_id`, `date_range?`, `source_type?` |
-| `get_quality_results` | QC Analyzer bag results | `farmer_id?`, `factory_id?`, `grade_filter?` |
-| `get_quality_exceptions` | Secondary leaf images for batch | `batch_id`, `include_images?` |
-| `get_farmer_quality_history` | Farmer quality trends | `farmer_id`, `days`, `factory_id?` |
-| `get_factory_quality_summary` | Factory overview | `factory_id`, `date_range?` |
-| `get_regional_weather` | Weather data for region | `region_id`, `days` (default 7) |
-| `get_market_prices` | Market price data | `commodity?`, `market?`, `date_range?` |
-| `search_documents` | Search by criteria | `query?`, `filters`, `source_types?` |
-| `get_document_by_id` | Single document | `document_id`, `include_raw?` |
-| `list_sources` | List data sources | `enabled_only?` |
+| `get_documents` | Query documents with filters | `source_id?`, `farmer_id?`, `linkage?`, `attributes?`, `date_range?`, `limit?` |
+| `get_document_by_id` | Single document by ID | `document_id`, `include_files?` |
+| `search_documents` | Full-text search | `query`, `source_ids?`, `farmer_id?`, `limit?` |
+| `get_farmer_documents` | All documents for a farmer | `farmer_id`, `source_ids?`, `date_range?` |
+| `list_sources` | List configured sources | `enabled_only?` |
 
 ### Tool Examples
 
 ```python
-# Knowledge Model getting farmer quality history
-history = await collection_mcp.call_tool(
-    "get_farmer_quality_history",
-    {"farmer_id": "WM-4521", "days": 30}
-)
-# Returns: trends, leaf_type_distribution, top_secondary_causes
-
-# Action Plan Model getting recent quality results
-results = await collection_mcp.call_tool(
-    "get_quality_results",
+# Get all QC exception images for a batch
+exceptions = await collection_mcp.call_tool(
+    "get_documents",
     {
+        "source_id": "qc-analyzer-exceptions",
+        "linkage": {"batch_id": "batch-2025-12-26-001"},
+        "include_files": True
+    }
+)
+# Returns: list of documents with attributes (leaf_type, confidence) and file URIs
+
+# Get farmer's quality results
+results = await collection_mcp.call_tool(
+    "get_documents",
+    {
+        "source_id": "qc-analyzer-result",
         "farmer_id": "WM-4521",
-        "grade_filter": "low_quality",
         "date_range": {"start": "2025-12-01", "end": "2025-12-26"}
     }
 )
 
-# Knowledge Model: analyze secondary leaves to diagnose quality issues
-exceptions = await collection_mcp.call_tool(
-    "get_quality_exceptions",
-    {"batch_id": "batch-2025-12-26-001", "include_images": True}
+# Get all documents for a farmer (cross-source)
+all_docs = await collection_mcp.call_tool(
+    "get_farmer_documents",
+    {"farmer_id": "WM-4521", "source_ids": ["qc-analyzer-result", "qc-analyzer-exceptions"]}
 )
-# Returns: images + classification metadata for secondary-grade leaves
-# Knowledge Model analyzes: leaf types, coarse subtypes, patterns
 
-# Knowledge Model correlating weather with quality
-weather = await collection_mcp.call_tool(
-    "get_regional_weather",
-    {"region_id": "nandi-high", "days": 7}
+# Search by attribute
+coarse_leaves = await collection_mcp.call_tool(
+    "get_documents",
+    {
+        "source_id": "qc-analyzer-exceptions",
+        "attributes": {"leaf_type": "coarse_leaf"},
+        "limit": 100
+    }
 )
 ```
 
@@ -1427,15 +1423,17 @@ Azure Event Grid:
 15. Detects BlobCreated event
 16. POSTs to Collection Model /api/v1/triggers/event-grid
 
-Collection Model:
+Collection Model (ZIP Processor):
 17. Downloads ZIP from blob storage
-18. Extracts manifest.json and images
-19. Stores images to qc-exception-images container
-20. Validates manifest against qc-exceptions-manifest.json schema
-21. Links to batch result via batch_result_ref
-22. Stores: raw ZIP → Blob, index → MongoDB quality_exceptions_index
-23. Archives processed file
-24. Emits: collection.quality_exceptions.received
+18. Extracts manifest.json, validates against generic-zip-manifest.schema.json
+19. Validates payload against qc-exceptions-manifest.json (source-specific)
+20. For each document in manifest.documents[]:
+    a. Extracts image file to qc-exception-images container
+    b. Parses metadata JSON file for attributes
+    c. Creates generic DocumentIndex with linkage, attributes, files
+21. Stores: raw ZIP → Blob, documents → MongoDB 'documents' collection
+22. Archives processed file
+23. Emits: collection.quality-exceptions.ingested
 
 Downstream (Knowledge Model):
 25. Subscribes to collection.quality_result.received
@@ -1795,326 +1793,155 @@ async def process_blob(blob_content: bytes, source_id: str):
 | **On duplicate** | Skip silently | Idempotent uploads (retry-safe) |
 | **Index** | Unique compound | DB-level enforcement, fast lookups |
 
-### Quality Result Index
+### Generic Document Index
+
+The Collection Model uses a **single generic document model** for all sources. No source-specific index models - the structure is driven entirely by configuration.
 
 ```python
-# services/collection-model/src/collection_model/domain/quality_result.py
-from .models import BaseDocumentIndex
+# services/collection-model/src/collection_model/domain/document_index.py
+from datetime import datetime
+from typing import Any
+
+from pydantic import BaseModel, Field
 
 
-class LeafTypeDistribution(BaseModel):
-    """Distribution of leaf types in a batch."""
-    bud: int = 0
-    one_leaf_bud: int = 0
-    two_leaves_bud: int = 0
-    three_plus_leaves_bud: int = 0
-    single_soft_leaf: int = 0
-    coarse_leaf: int = 0
-    banji: int = 0
+class FileReference(BaseModel):
+    """Reference to a file stored in blob storage."""
+    path: str                       # Original path in ZIP/source
+    role: str                       # image, metadata, primary, thumbnail, attachment
+    blob_uri: str                   # Azure blob URI after extraction
+    mime_type: str | None = None
+    size_bytes: int | None = None
 
 
-class CoarseSubtypeDistribution(BaseModel):
-    """Distribution of coarse leaf subtypes."""
-    double_luck: int = 0
-    maintenance_leaf: int = 0
-    hard_leaf: int = 0
-
-
-class BanjiDistribution(BaseModel):
-    """Distribution of banji hardness."""
-    soft: int = 0
-    hard: int = 0
-
-
-class BagSummary(BaseModel):
-    """Aggregated quality summary for a bag."""
-    total_leaves: int
-    primary_count: int
-    secondary_count: int
-    primary_percentage: float = Field(ge=0.0, le=100.0)
-    secondary_percentage: float = Field(ge=0.0, le=100.0)
-
-    leaf_type_distribution: LeafTypeDistribution
-    coarse_subtype_distribution: CoarseSubtypeDistribution
-    banji_distribution: BanjiDistribution
-
-
-class QualityResultIndex(BaseDocumentIndex):
+class DocumentIndex(BaseModel):
     """
-    Index document for QC Analyzer bag quality results.
-    Collection: quality_results_index
+    Generic document index for ALL sources.
+    Collection: documents
+
+    Structure is driven by manifest + source configuration.
+    No source-specific fields - all domain data lives in 'attributes' and 'payload'.
     """
-    # Batch identification
-    batch_id: str
-    batch_timestamp: datetime
+    # Identity
+    document_id: str = Field(description="Unique document ID (source_id/batch_id/doc_id)")
+    source_id: str = Field(description="Source configuration ID")
 
-    # Factory context
-    factory_id: str
-    collection_point_id: str
-
-    # Grading model
-    grading_model_id: str
-    grading_model_version: str
-
-    # Product context
-    crop_name: str
-    market_name: str
-
-    # Quality data (extracted)
-    bag_summary: BagSummary
-
-    # Computed fields for querying
-    is_low_quality: bool = Field(
-        description="True if secondary_percentage > 30%"
-    )
-    dominant_secondary_cause: str | None = Field(
-        default=None,
-        description="Most common secondary leaf type"
-    )
-
-    class Config:
-        json_schema_extra = {
-            "collection": "quality_results_index",
-            "indexes": [
-                {"keys": [("farmer_id", 1), ("batch_timestamp", -1)]},
-                {"keys": [("factory_id", 1), ("batch_timestamp", -1)]},
-                {"keys": [("batch_id", 1)], "unique": True},
-                {"keys": [("is_low_quality", 1), ("batch_timestamp", -1)]},
-            ]
-        }
-```
-
-### Quality Exceptions Index
-
-```python
-# services/collection-model/src/collection_model/domain/quality_exceptions.py
-from .models import BaseDocumentIndex, BlobReference
-
-
-class LeafClassification(BaseModel):
-    """Classification result for a single leaf image."""
-    quality_grade: str              # "primary" | "secondary"
-    confidence: float = Field(ge=0.0, le=1.0)
-    leaf_type: str
-    coarse_subtype: str | None = None
-    banji_hardness: str | None = None
-
-
-class ExceptionImage(BaseModel):
-    """A secondary-grade leaf image with its classification."""
-    image_ref: BlobReference        # Reference to extracted image
-    classification: LeafClassification
-    sequence_number: int            # Order in batch
-
-
-class QualityExceptionsIndex(BaseDocumentIndex):
-    """
-    Index document for QC Analyzer secondary leaf images.
-    Collection: quality_exceptions_index
-
-    Used by Knowledge Model to understand WHY quality is failing.
-    """
-    # Batch identification
-    batch_id: str
-    batch_timestamp: datetime
-
-    # Reference to corresponding quality result
-    batch_result_document_id: str
-    batch_result_ref: str           # Blob path to result JSON
-
-    # Factory context
-    factory_id: str
-    grading_model_id: str
-    grading_model_version: str
-
-    # Exception summary
-    exception_count: int
-    exception_images: list[ExceptionImage]
-
-    # Aggregated analysis (computed on ingestion)
-    leaf_type_breakdown: dict[str, int] = Field(
+    # Linkage (from manifest.linkage, mapped via source config)
+    linkage: dict[str, Any] = Field(
         default_factory=dict,
-        description="Count per leaf_type in exceptions"
+        description="Cross-reference fields (plantation_id, batch_id, factory_id, etc.)"
     )
-    top_exception_causes: list[str] = Field(
+    farmer_id: str | None = Field(
+        default=None,
+        description="Farmer ID after field mapping (e.g., plantation_id → farmer_id)"
+    )
+
+    # Files (from manifest.documents[].files)
+    files: list[FileReference] = Field(
         default_factory=list,
-        description="Top 3 leaf types causing exceptions"
+        description="Files belonging to this document"
     )
 
-    class Config:
-        json_schema_extra = {
-            "collection": "quality_exceptions_index",
-            "indexes": [
-                {"keys": [("farmer_id", 1), ("batch_timestamp", -1)]},
-                {"keys": [("batch_id", 1)], "unique": True},
-                {"keys": [("batch_result_document_id", 1)]},
-            ]
-        }
-```
-
-### Farmer Registration Index
-
-```python
-# services/collection-model/src/collection_model/domain/registration.py
-from .models import BaseDocumentIndex
-
-
-class GPSLocation(BaseModel):
-    """GPS coordinates."""
-    latitude: float = Field(ge=-90.0, le=90.0)
-    longitude: float = Field(ge=-180.0, le=180.0)
-
-
-class FarmerRegistrationIndex(BaseDocumentIndex):
-    """
-    Index document for farmer registrations from Mobile App.
-    Collection: farmer_registrations_index
-    """
-    # Registration identity
-    registration_id: str
-
-    # Farmer details (extracted)
-    farmer_name: str
-    phone_number: str               # Primary linkage field
-    national_id: str | None = None
-
-    # Location
-    factory_id: str
-    collection_point_id: str
-    location_gps: GPSLocation | None = None
-
-    # Registration context
-    registered_by: str              # Field officer ID
-    registered_at: datetime
-
-    # Processing status
-    farmer_created: bool = Field(
-        default=False,
-        description="True when Plantation Model created farmer entity"
+    # Attributes (from manifest.documents[].attributes or metadata file)
+    attributes: dict[str, Any] = Field(
+        default_factory=dict,
+        description="Document-level attributes (quality_grade, confidence, leaf_type, etc.)"
     )
-    assigned_farmer_id: str | None = Field(
+
+    # Payload (from manifest.payload - batch-level data)
+    payload: dict[str, Any] = Field(
+        default_factory=dict,
+        description="Batch-level domain data (grading_model_id, total_exceptions, etc.)"
+    )
+
+    # Raw storage
+    raw_blob_uri: str = Field(description="URI to raw source file (ZIP or JSON)")
+    content_hash: str = Field(description="SHA-256 hash for deduplication")
+
+    # Timestamps
+    source_timestamp: datetime | None = Field(
         default=None,
-        description="Farmer ID assigned by Plantation Model"
+        description="Timestamp from source (e.g., created_at from manifest)"
+    )
+    ingested_at: datetime = Field(
+        default_factory=datetime.utcnow,
+        description="When document was ingested"
     )
 
+    # Ingestion metadata
+    ingestion_id: str = Field(description="Unique ingestion run ID")
+    trace_id: str | None = None
+
+    # TTL
+    expires_at: datetime | None = None
+
     class Config:
         json_schema_extra = {
-            "collection": "farmer_registrations_index",
+            "collection": "documents",
             "indexes": [
-                {"keys": [("phone_number", 1)], "unique": True},
-                {"keys": [("registration_id", 1)], "unique": True},
-                {"keys": [("factory_id", 1), ("registered_at", -1)]},
-                {"keys": [("farmer_created", 1)]},
+                # Primary lookups
+                {"keys": [("document_id", 1)], "unique": True},
+                {"keys": [("source_id", 1), ("ingested_at", -1)]},
+
+                # Farmer queries (cross-source)
+                {"keys": [("farmer_id", 1), ("source_id", 1), ("ingested_at", -1)]},
+
+                # Linkage queries (generic - uses dot notation)
+                {"keys": [("linkage.batch_id", 1)]},
+                {"keys": [("linkage.plantation_id", 1)]},
+
+                # Deduplication
+                {"keys": [("source_id", 1), ("content_hash", 1)], "unique": True},
+
+                # TTL
+                {"keys": [("expires_at", 1)], "expireAfterSeconds": 0},
             ]
         }
 ```
 
-### Weather Index
+### Why Generic?
+
+| Aspect | Source-Specific Models | Generic Model |
+|--------|----------------------|---------------|
+| New source | Requires code change | Config only |
+| Schema change | Requires code change | Config + schema only |
+| Querying | Type-safe but rigid | Flexible with dot notation |
+| Validation | Compile-time | Runtime via JSON Schema |
+
+### Querying Generic Documents
 
 ```python
-# services/collection-model/src/collection_model/domain/weather.py
-from .models import BaseDocumentIndex
+# Find all documents for a farmer
+await db.documents.find({
+    "farmer_id": "WM-4521",
+    "source_id": "qc-analyzer-exceptions"
+})
 
+# Find by linkage field (generic)
+await db.documents.find({
+    "linkage.batch_id": "batch-2025-12-26-001"
+})
 
-class DailyWeather(BaseModel):
-    """Weather data for a single day."""
-    date: date
-    temp_max_c: float
-    temp_min_c: float
-    precipitation_mm: float
-    humidity_avg: float | None = None
+# Find by attribute (source-specific, but generic query)
+await db.documents.find({
+    "source_id": "qc-analyzer-exceptions",
+    "attributes.leaf_type": "coarse_leaf"
+})
 
-
-class WeatherIndex(BaseDocumentIndex):
-    """
-    Index document for weather data from Weather API.
-    Collection: weather_index
-    """
-    # Location
-    region_id: str
-    region_name: str
-
-    # Data range
-    data_date: date                 # Primary date for this record
-    date_range_start: date
-    date_range_end: date
-
-    # Weather data (extracted)
-    daily_data: list[DailyWeather]
-
-    # Aggregates (computed)
-    avg_temp_max: float
-    avg_temp_min: float
-    total_precipitation_mm: float
-
-    class Config:
-        json_schema_extra = {
-            "collection": "weather_index",
-            "indexes": [
-                {"keys": [("region_id", 1), ("data_date", -1)]},
-                {"keys": [("region_id", 1), ("date_range_start", 1), ("date_range_end", 1)]},
-            ]
-        }
+# Aggregate across sources
+await db.documents.aggregate([
+    {"$match": {"farmer_id": "WM-4521"}},
+    {"$group": {"_id": "$source_id", "count": {"$sum": 1}}}
+])
 ```
 
-### Market Prices Index
-
-```python
-# services/collection-model/src/collection_model/domain/market_prices.py
-from .models import BaseDocumentIndex
-
-
-class GradePrice(BaseModel):
-    """Price for a specific grade."""
-    grade: str
-    price_per_kg: float
-    volume_kg: float | None = None
-
-
-class MarketPricesIndex(BaseDocumentIndex):
-    """
-    Index document for market price data.
-    Collection: market_prices_index
-    """
-    # Market identification
-    commodity: str                  # "tea"
-    market: str                     # "mombasa_auction"
-
-    # Price date
-    price_date: date
-    auction_number: str | None = None
-
-    # Price data (extracted)
-    average_price_per_kg: float
-    volume_traded_kg: float | None = None
-    grade_breakdown: list[GradePrice] = Field(default_factory=list)
-
-    # Trend indicators (computed)
-    price_change_percent: float | None = Field(
-        default=None,
-        description="Change from previous week"
-    )
-
-    class Config:
-        json_schema_extra = {
-            "collection": "market_prices_index",
-            "indexes": [
-                {"keys": [("commodity", 1), ("market", 1), ("price_date", -1)]},
-                {"keys": [("price_date", -1)]},
-            ]
-        }
-```
-
-### MongoDB Collections Summary
+### MongoDB Collection
 
 | Collection | Purpose | Key Indexes |
 |------------|---------|-------------|
 | `source_configs` | Source configuration registry | `source_id` (unique) |
-| `quality_results_index` | QC Analyzer bag results | `farmer_id + batch_timestamp`, `batch_id` (unique) |
-| `quality_exceptions_index` | Secondary leaf images | `farmer_id + batch_timestamp`, `batch_result_document_id` |
-| `farmer_registrations_index` | Mobile app registrations | `phone_number` (unique), `registration_id` (unique) |
-| `weather_index` | Regional weather data | `region_id + data_date` |
-| `market_prices_index` | Auction prices | `commodity + market + price_date` |
+| `documents` | **All ingested documents** (generic) | `document_id` (unique), `farmer_id + source_id`, `linkage.*` |
+| `ingestion_queue` | Processing queue | `status`, `source_id` |
 
 ## Testing Strategy
 
