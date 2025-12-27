@@ -1,0 +1,78 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: collection-mcp
+  labels:
+    app: collection-mcp
+    component: mcp-server
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: collection-mcp
+  template:
+    metadata:
+      labels:
+        app: collection-mcp
+        component: mcp-server
+      annotations:
+        # DAPR sidecar injection
+        dapr.io/enabled: "true"
+        dapr.io/app-id: "collection-mcp"
+        dapr.io/app-port: "50051"
+        dapr.io/app-protocol: "grpc"
+        dapr.io/log-level: "info"
+    spec:
+      containers:
+        - name: collection-mcp
+          image: farmer-power/collection-mcp:latest
+          ports:
+            - containerPort: 50051
+              name: grpc
+          env:
+            - name: COLLECTION_MCP_GRPC_PORT
+              value: "50051"
+            - name: COLLECTION_MCP_MONGODB_URI
+              valueFrom:
+                secretKeyRef:
+                  name: mongodb-credentials
+                  key: uri
+            - name: COLLECTION_MCP_MONGODB_DATABASE
+              value: "collection_model"
+            - name: COLLECTION_MCP_AZURE_STORAGE_ACCOUNT_NAME
+              valueFrom:
+                secretKeyRef:
+                  name: azure-storage-credentials
+                  key: account-name
+            - name: COLLECTION_MCP_AZURE_STORAGE_ACCOUNT_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: azure-storage-credentials
+                  key: account-key
+            - name: COLLECTION_MCP_SAS_TOKEN_VALIDITY_HOURS
+              value: "1"
+            - name: COLLECTION_MCP_LOG_LEVEL
+              value: "INFO"
+            - name: OTEL_EXPORTER_OTLP_ENDPOINT
+              value: "http://otel-collector:4317"
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu: "100m"
+            limits:
+              memory: "256Mi"
+              cpu: "500m"
+          livenessProbe:
+            grpc:
+              port: 50051
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          readinessProbe:
+            grpc:
+              port: 50051
+            initialDelaySeconds: 5
+            periodSeconds: 5
+            timeoutSeconds: 3
+            failureThreshold: 3

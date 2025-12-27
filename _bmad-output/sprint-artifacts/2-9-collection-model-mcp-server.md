@@ -1,8 +1,8 @@
 # Story 2.9: Collection Model MCP Server
 
-**Status:** ready-for-dev
+**Status:** done
 **Epic:** 2 - Quality Data Ingestion
-**GitHub Issue:** <!-- Auto-created by dev-story workflow -->
+**GitHub Issue:** #23
 **Created:** 2025-12-27
 
 ---
@@ -408,16 +408,16 @@ mcp-servers/collection-mcp/
 
 ## Definition of Done
 
-- [ ] Collection MCP Server scaffold created with correct structure
-- [ ] Tool definitions for all 5 tools with full schemas
-- [ ] DocumentClient queries documents with filters (source, farmer, linkage, attributes, date_range)
-- [ ] BlobUrlGenerator creates SAS URLs with 1 hour validity
-- [ ] MCP service handles all tool calls with proper error codes
-- [ ] list_sources returns configured sources
-- [ ] Unit tests for all components
-- [ ] CI configuration updated for collection-mcp
-- [ ] Kubernetes deployment manifests created
-- [ ] CI passes (ruff check, ruff format, tests)
+- [x] Collection MCP Server scaffold created with correct structure
+- [x] Tool definitions for all 5 tools with full schemas
+- [x] DocumentClient queries documents with filters (source, farmer, linkage, attributes, date_range)
+- [x] BlobUrlGenerator creates SAS URLs with 1 hour validity
+- [x] MCP service handles all tool calls with proper error codes
+- [x] list_sources returns configured sources
+- [x] Unit tests for all components (71 tests)
+- [x] CI configuration updated for collection-mcp
+- [x] Kubernetes deployment manifests created
+- [x] CI passes (ruff check, ruff format, tests)
 
 ---
 
@@ -425,14 +425,62 @@ mcp-servers/collection-mcp/
 
 ### Agent Model Used
 
-{{agent_model_name_version}}
+Claude Opus 4.5 (claude-opus-4-5-20251101)
 
 ### Debug Log References
 
+None
+
 ### Completion Notes List
 
+- All 10 tasks completed successfully
+- 71 unit tests passing
+- Follows plantation-mcp patterns exactly
+- Config-driven architecture with generic document tools
+
 ### File List
+
+**MCP Server Core:**
+- `mcp-servers/collection-mcp/pyproject.toml`
+- `mcp-servers/collection-mcp/Dockerfile`
+- `mcp-servers/collection-mcp/src/collection_mcp/__init__.py`
+- `mcp-servers/collection-mcp/src/collection_mcp/config.py`
+- `mcp-servers/collection-mcp/src/collection_mcp/main.py`
+
+**API Layer:**
+- `mcp-servers/collection-mcp/src/collection_mcp/api/__init__.py`
+- `mcp-servers/collection-mcp/src/collection_mcp/api/mcp_service.py`
+
+**Tools Layer:**
+- `mcp-servers/collection-mcp/src/collection_mcp/tools/__init__.py`
+- `mcp-servers/collection-mcp/src/collection_mcp/tools/definitions.py`
+
+**Infrastructure Layer:**
+- `mcp-servers/collection-mcp/src/collection_mcp/infrastructure/__init__.py`
+- `mcp-servers/collection-mcp/src/collection_mcp/infrastructure/document_client.py`
+- `mcp-servers/collection-mcp/src/collection_mcp/infrastructure/blob_url_generator.py`
+- `mcp-servers/collection-mcp/src/collection_mcp/infrastructure/source_config_client.py`
+
+**Tests:**
+- `mcp-servers/collection-mcp/tests/__init__.py`
+- `mcp-servers/collection-mcp/tests/conftest.py`
+- `mcp-servers/collection-mcp/tests/unit/__init__.py`
+- `tests/unit/collection_mcp/__init__.py`
+- `tests/unit/collection_mcp/test_tool_definitions.py`
+- `tests/unit/collection_mcp/test_document_client.py`
+- `tests/unit/collection_mcp/test_blob_url_generator.py`
+- `tests/unit/collection_mcp/test_mcp_service.py`
+
+**Kubernetes:**
+- `deploy/kubernetes/base/mcp-servers/collection-mcp/deployment.yaml`
+- `deploy/kubernetes/base/mcp-servers/collection-mcp/service.yaml`
+- `deploy/kubernetes/base/mcp-servers/collection-mcp/hpa.yaml`
+- `deploy/kubernetes/base/mcp-servers/collection-mcp/kustomization.yaml`
+
+**CI:**
+- `.github/workflows/ci.yaml` (updated PYTHONPATH)
 
 ---
 
 _Created: 2025-12-27_
+_Completed: 2025-12-27_

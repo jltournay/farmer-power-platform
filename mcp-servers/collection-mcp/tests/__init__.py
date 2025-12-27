@@ -1,0 +1,1 @@
+"""Collection MCP Server tests."""

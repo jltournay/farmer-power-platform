@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: collection-mcp
+  labels:
+    app: collection-mcp
+    component: mcp-server
+spec:
+  type: ClusterIP
+  ports:
+    - port: 50051
+      targetPort: grpc
+      protocol: TCP
+      name: grpc
+  selector:
+    app: collection-mcp
