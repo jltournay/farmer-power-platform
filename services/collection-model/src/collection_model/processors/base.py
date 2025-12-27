@@ -28,6 +28,7 @@ class ProcessorResult(BaseModel):
         extracted_data: Data extracted by AI Model.
         error_message: Error description if processing failed.
         error_type: Classification of the error for retry logic.
+        is_duplicate: True if document was detected as duplicate and skipped.
     """
 
     success: bool
@@ -35,6 +36,7 @@ class ProcessorResult(BaseModel):
     extracted_data: dict[str, Any] = Field(default_factory=dict)
     error_message: str | None = None
     error_type: str | None = None  # "extraction", "storage", "validation", "config"
+    is_duplicate: bool = False
 
 
 class ProcessorNotFoundError(Exception):

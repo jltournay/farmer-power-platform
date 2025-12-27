@@ -31,6 +31,7 @@ from collection_model.infrastructure.blob_storage import BlobStorageClient
 from collection_model.infrastructure.dapr_event_publisher import DaprEventPublisher
 from collection_model.infrastructure.document_repository import DocumentRepository
 from collection_model.infrastructure.raw_document_store import RawDocumentStore
+from collection_model.infrastructure.storage_metrics import StorageMetrics
 from collection_model.processors.base import ContentProcessor, ProcessorResult
 
 logger = structlog.get_logger(__name__)
@@ -144,6 +145,9 @@ class JsonExtractionProcessor(ContentProcessor):
                 source_id=source_id,
             )
 
+            # Record storage metrics
+            StorageMetrics.record_stored(source_id, len(content))
+
             return ProcessorResult(
                 success=True,
                 document_id=document.document_id,
@@ -156,11 +160,13 @@ class JsonExtractionProcessor(ContentProcessor):
                 "Duplicate document detected, skipping",
                 ingestion_id=job.ingestion_id,
                 source_id=source_id,
-                error=str(e),
+                content_hash=str(e),
             )
+            # Record duplicate metrics
+            StorageMetrics.record_duplicate(source_id)
             return ProcessorResult(
                 success=True,
-                error_message=str(e),
+                is_duplicate=True,
             )
 
         except ValidationError as e:
