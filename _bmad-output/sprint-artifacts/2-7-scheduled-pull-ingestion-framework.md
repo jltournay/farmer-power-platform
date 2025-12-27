@@ -2,7 +2,7 @@
 
 **Status:** ready-for-dev
 **Epic:** 2 - Quality Data Ingestion
-**GitHub Issue:** <!-- Auto-created by dev-story workflow -->
+**GitHub Issue:** #22
 **Created:** 2025-12-27
 
 ---
