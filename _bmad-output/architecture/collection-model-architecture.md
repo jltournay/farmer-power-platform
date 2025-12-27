@@ -73,6 +73,140 @@ Factory and field environments have **unreliable network connectivity**. HTTP we
 - Azure handles durability and delivery guarantees
 - Collection Model processes asynchronously
 
+## Generic ZIP Manifest Format
+
+All ZIP-based sources must include a `manifest.json` file following a standard format. This enables the platform to process different data sources uniformly while allowing domain-specific payload structures.
+
+### Why a Standard Manifest Format?
+
+1. **Unified Processing** - One ZIP processor handles all sources
+2. **Multi-File Documents** - Supports documents with multiple related files (e.g., image + metadata JSON)
+3. **Flexible Payload** - Domain-specific data in `payload` section validated against source-specific schemas
+4. **Cross-Reference Linkage** - Standard `linkage` fields for entity relationships
+
+### Manifest Schema Reference
+
+**Schema Location:** `config/schemas/generic-zip-manifest.schema.json`
+
+**Payload Schema Pattern:** `config/schemas/data/{source-id}-manifest.json` defines the `payload` and `document_attributes` structure for each source.
+
+### Manifest Structure
+
+```json
+{
+  "manifest_version": "1.0",
+  "source_id": "qc-analyzer-exceptions",
+  "created_at": "2025-12-26T08:32:15Z",
+
+  "linkage": {
+    "plantation_id": "WM-4521",
+    "batch_id": "batch-2025-12-26-001",
+    "factory_id": "KEN-FAC-001"
+  },
+
+  "documents": [
+    {
+      "document_id": "leaf_001",
+      "files": [
+        { "path": "images/leaf_001.jpg", "role": "image" },
+        { "path": "results/leaf_001.json", "role": "metadata" }
+      ],
+      "attributes": {
+        "quality_grade": "C",
+        "confidence": 0.91,
+        "leaf_type": "coarse_leaf"
+      }
+    },
+    {
+      "document_id": "leaf_002",
+      "files": [
+        { "path": "images/leaf_002.jpg", "role": "image" },
+        { "path": "results/leaf_002.json", "role": "metadata" }
+      ],
+      "attributes": {
+        "quality_grade": "D",
+        "confidence": 0.87,
+        "leaf_type": "three_plus_leaves_bud"
+      }
+    }
+  ],
+
+  "payload": {
+    "grading_model_id": "tbk_kenya_tea_v1",
+    "grading_model_version": "1.0.0",
+    "total_exceptions": 2
+  }
+}
+```
+
+### Key Concepts
+
+| Concept | Description |
+|---------|-------------|
+| **documents[]** | Array of logical documents. Each document groups related files (e.g., an image and its classification result) |
+| **files[].role** | Purpose of the file: `image` (visual), `metadata` (JSON with attributes), `primary` (main content), `thumbnail` (preview), `attachment` (supplementary) |
+| **attributes** | Pre-extracted attributes for a document, OR loaded from the metadata file at processing time |
+| **linkage** | Cross-reference fields for entity relationships (plantation_id, batch_id, etc.) |
+| **payload** | Batch-level domain-specific data validated against source's payload schema |
+
+### File Roles
+
+| Role | Description | Storage |
+|------|-------------|---------|
+| `image` | Visual content (JPG, PNG) | Extracted to blob container |
+| `metadata` | JSON with document attributes | Parsed and merged into document |
+| `primary` | Main content file | Stored as raw document |
+| `thumbnail` | Preview image | Extracted to blob container |
+| `attachment` | Supplementary files | Stored as attachments |
+
+### Processing Flow
+
+```
+ZIP Upload
+    │
+    ▼
+┌─────────────────────────────────────────────────────────┐
+│ 1. Extract manifest.json                                 │
+│ 2. Validate against generic-zip-manifest.schema.json    │
+│ 3. Validate payload against source-specific schema      │
+│ 4. For each document in documents[]:                    │
+│    a. Extract files by role                             │
+│    b. Load attributes from metadata file (if present)   │
+│    c. Store images to blob container                    │
+│    d. Create document record with linkage              │
+│ 5. Archive original ZIP                                 │
+│ 6. Emit domain event                                    │
+└─────────────────────────────────────────────────────────┘
+```
+
+### Example: QC Analyzer Exception Images
+
+**ZIP Contents:**
+```
+batch-2025-12-26-001.zip
+├── manifest.json
+├── images/
+│   ├── leaf_001.jpg
+│   └── leaf_002.jpg
+└── results/
+    ├── leaf_001.json
+    └── leaf_002.json
+```
+
+**Resulting MongoDB Documents:**
+```
+quality_exceptions_index:
+├── document_id: "batch-2025-12-26-001/leaf_001"
+│   ├── image_uri: "az://qc-exception-images/batch.../leaf_001.jpg"
+│   ├── quality_grade: "C"
+│   └── linkage: { plantation_id: "WM-4521", batch_id: "batch-..." }
+│
+└── document_id: "batch-2025-12-26-001/leaf_002"
+    ├── image_uri: "az://qc-exception-images/batch.../leaf_002.jpg"
+    ├── quality_grade: "D"
+    └── linkage: { plantation_id: "WM-4521", batch_id: "batch-..." }
+```
+
 ## Architecture Diagram
 
 ```

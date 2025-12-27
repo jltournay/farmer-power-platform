@@ -1,0 +1,85 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://farmerpower.io/schemas/generic-zip-manifest.schema.json",
+  "title": "Generic ZIP Manifest",
+  "description": "Standard manifest format for ZIP-based ingestion. All ZIP sources must include a manifest.json following this schema.",
+  "type": "object",
+  "required": ["manifest_version", "source_id", "created_at", "documents"],
+  "properties": {
+    "manifest_version": {
+      "type": "string",
+      "const": "1.0",
+      "description": "Manifest schema version"
+    },
+    "source_id": {
+      "type": "string",
+      "description": "Source configuration ID (must match source_id in source config)"
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When the ZIP package was created"
+    },
+    "linkage": {
+      "type": "object",
+      "description": "Cross-reference fields for linking documents to other entities",
+      "additionalProperties": {
+        "type": ["string", "number"]
+      }
+    },
+    "documents": {
+      "type": "array",
+      "description": "Array of logical documents/entities in the ZIP",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["document_id", "files"],
+        "properties": {
+          "document_id": {
+            "type": "string",
+            "description": "Unique identifier for this document within the batch"
+          },
+          "files": {
+            "type": "array",
+            "description": "Files belonging to this document",
+            "minItems": 1,
+            "items": {
+              "type": "object",
+              "required": ["path", "role"],
+              "properties": {
+                "path": {
+                  "type": "string",
+                  "description": "Relative path within the ZIP archive"
+                },
+                "role": {
+                  "type": "string",
+                  "enum": ["image", "metadata", "primary", "thumbnail", "attachment"],
+                  "description": "Purpose of the file: image (visual), metadata (JSON with attributes), primary (main content), thumbnail (preview), attachment (supplementary)"
+                },
+                "mime_type": {
+                  "type": "string",
+                  "description": "MIME type of the file (optional, can be inferred)"
+                },
+                "size_bytes": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "description": "File size in bytes (optional)"
+                }
+              }
+            }
+          },
+          "attributes": {
+            "type": "object",
+            "description": "Pre-extracted attributes for this document (optional, can be loaded from metadata file)",
+            "additionalProperties": true
+          }
+        }
+      }
+    },
+    "payload": {
+      "type": "object",
+      "description": "Batch-level domain-specific data (validated against source-specific schema)",
+      "additionalProperties": true
+    }
+  }
+}
