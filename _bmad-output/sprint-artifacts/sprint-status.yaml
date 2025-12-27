@@ -76,7 +76,7 @@ development_status:
   2-6-document-storage-deduplication: done  # github_issue: 21
   2-7-scheduled-pull-ingestion-framework: done  # github_issue: 22 - Renamed: generic pull framework, weather API is test case
   2-8-market-prices-pull-mode: covered-by-2-7  # Configuration-only, no code changes needed
-  2-9-collection-model-mcp-server: backlog
+  2-9-collection-model-mcp-server: ready-for-dev
   2-10-domain-event-emission: done  # Already implemented via DaprEventPublisher + config-driven topics
   epic-2-retrospective: optional
 

@@ -1561,47 +1561,80 @@ events:
 #### Story 2.9: Collection Model MCP Server
 
 As an **AI agent**,
-I want to access quality collection data via MCP tools,
-So that I can analyze quality patterns and generate recommendations.
+I want to query collected documents via generic MCP tools,
+So that I can access any source's data using consistent, config-driven queries.
 
 **Acceptance Criteria:**
 
+**AC1: get_documents - Query with Filters**
 **Given** the Collection MCP Server is deployed
-**When** an AI agent calls `get_recent_quality_events(farmer_id, days=7)`
-**Then** the response includes all quality events for that farmer in the past 7 days
-**And** each event includes: event_id, timestamp, primary_percentage, leaf_type_distribution, grade
+**When** an AI agent calls `get_documents(source_id="qc-analyzer-result", farmer_id="WM-4521", date_range={start, end}, limit=50)`
+**Then** matching documents are returned from the generic `documents` collection
+**And** each document includes: document_id, source_id, farmer_id, linkage, attributes, files, ingested_at
+**And** results are sorted by ingested_at descending
 
-**Given** a farmer_id exists
-**When** an AI agent calls `get_quality_summary(farmer_id, days=30)`
-**Then** the response includes: avg_primary_percentage, trend, total_deliveries, grade_distribution
+**AC2: get_documents - Attribute Filtering**
+**Given** quality documents exist with varying primary_percentage
+**When** an AI agent calls `get_documents(source_id="qc-analyzer-result", attributes={"bag_summary.primary_percentage": {"$lt": 70}})`
+**Then** only documents matching the attribute filter are returned
+**And** this enables queries like "poor quality events" without hardcoded tools
 
-**Given** an event_id exists
-**When** an AI agent calls `get_quality_event(event_id)`
-**Then** the full event is returned including leaf_assessments and bag_summary
+**AC3: get_documents - Linkage Filtering**
+**Given** documents exist with linkage fields (batch_id, plantation_id, factory_id)
+**When** an AI agent calls `get_documents(linkage={"batch_id": "batch-2025-12-26-001"})`
+**Then** all documents linked to that batch are returned across any source_id
 
-**Given** the Knowledge Model needs poor quality events
-**When** an AI agent calls `list_poor_quality_events(since_date, analyzed=false)`
-**Then** events matching criteria are returned with farmer context
+**AC4: get_document_by_id - Single Document with Files**
+**Given** a document_id exists
+**When** an AI agent calls `get_document_by_id(document_id="qc-analyzer-exceptions/batch-001/leaf_001", include_files=true)`
+**Then** the full document is returned with all attributes and payload
+**And** files[] array includes blob_uri with fresh SAS tokens (1 hour validity)
+**And** file roles are preserved (image, metadata, primary, thumbnail)
 
-**Given** an event needs image analysis
-**When** an AI agent calls `get_image_urls(event_id)`
-**Then** fresh SAS URLs are returned for all images in that event
-**And** URLs are valid for 1 hour
+**AC5: get_farmer_documents - Cross-Source Farmer Query**
+**Given** a farmer has documents from multiple sources
+**When** an AI agent calls `get_farmer_documents(farmer_id="WM-4521", source_ids=["qc-analyzer-result", "qc-analyzer-exceptions"], date_range={last_30_days})`
+**Then** all matching documents across specified sources are returned
+**And** this replaces the need for source-specific farmer tools
 
-**Given** weather correlation is needed
-**When** an AI agent calls `get_weather_for_region(region_id, date_range)`
-**Then** weather data is returned for the specified region and date range
+**AC6: search_documents - Full-Text Search**
+**Given** documents have searchable content in attributes
+**When** an AI agent calls `search_documents(query="coarse leaf", source_ids=["qc-analyzer-exceptions"], limit=20)`
+**Then** documents matching the search query are returned
+**And** results include relevance scoring
 
-**Given** market prices are needed
-**When** an AI agent calls `get_market_prices(commodity, region, days=30)`
-**Then** price history is returned for the specified criteria
+**AC7: list_sources - Source Registry**
+**Given** source configurations are deployed
+**When** an AI agent calls `list_sources(enabled_only=true)`
+**Then** all enabled source configurations are returned
+**And** each includes: source_id, display_name, ingestion.mode, description
+
+**AC8: Weather and Market Data via Generic Tools**
+**Given** weather-api and market-prices sources are configured
+**When** an AI agent calls `get_documents(source_id="weather-api", linkage={"region_id": "nyeri"}, date_range={last_7_days})`
+**Then** weather documents for that region are returned
+**And** the same pattern works for `get_documents(source_id="market-prices", ...)`
+**And** no source-specific tools are needed
+
+**AC9: Error Handling**
+**Given** an invalid source_id is provided
+**When** an AI agent calls `get_documents(source_id="nonexistent")`
+**Then** an empty result set is returned (not an error)
+**And** the response includes metadata indicating 0 matches
+
+**Given** an invalid document_id is provided
+**When** an AI agent calls `get_document_by_id(document_id="nonexistent")`
+**Then** a NOT_FOUND error is returned with appropriate error code
 
 **Technical Notes:**
 - MCP Server: stateless, deployed as separate Kubernetes deployment
 - HPA enabled: min 2, max 10 replicas
 - Read-only access to MongoDB (read replicas preferred)
-- Image URL generation: Azure Blob Storage SDK for SAS tokens
+- All tools query the generic `documents` collection with source_id filtering
+- No source-specific tools - config-driven architecture
+- File URLs: Azure Blob Storage SDK generates SAS tokens on-demand
 - Proto: `farmer_power.collection_mcp.v1`
+- Implements MCP ToolCallRequest/ToolCallResponse pattern via DAPR Service Invocation
 
 ---
 
