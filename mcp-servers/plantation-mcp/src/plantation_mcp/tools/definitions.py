@@ -99,6 +99,93 @@ TOOL_REGISTRY: dict[str, ToolDefinition] = {
         },
         category="query",
     ),
+    # Region tools (Story 1.8)
+    "get_region": ToolDefinition(
+        name="get_region",
+        description=(
+            "Get region details by ID. Returns name, county, country, geography "
+            "(center GPS, radius, altitude band), flush calendar, agronomic factors, "
+            "and weather configuration."
+        ),
+        input_schema={
+            "type": "object",
+            "properties": {
+                "region_id": {
+                    "type": "string",
+                    "description": "Region ID in format {county}-{altitude_band} (e.g., nyeri-highland)",
+                },
+            },
+            "required": ["region_id"],
+        },
+        category="query",
+    ),
+    "list_regions": ToolDefinition(
+        name="list_regions",
+        description=(
+            "List regions with optional filtering by county or altitude band. "
+            "Returns active regions by default."
+        ),
+        input_schema={
+            "type": "object",
+            "properties": {
+                "county": {
+                    "type": "string",
+                    "description": "Filter by county name (e.g., Nyeri, Kericho)",
+                },
+                "altitude_band": {
+                    "type": "string",
+                    "enum": ["highland", "midland", "lowland"],
+                    "description": "Filter by altitude band",
+                },
+            },
+            "required": [],
+        },
+        category="query",
+    ),
+    "get_current_flush": ToolDefinition(
+        name="get_current_flush",
+        description=(
+            "Get the current flush period for a region based on today's date. "
+            "Returns flush name (first_flush, monsoon_flush, autumn_flush, dormant), "
+            "start/end dates, characteristics, and days remaining."
+        ),
+        input_schema={
+            "type": "object",
+            "properties": {
+                "region_id": {
+                    "type": "string",
+                    "description": "Region ID (e.g., nyeri-highland)",
+                },
+            },
+            "required": ["region_id"],
+        },
+        category="query",
+    ),
+    "get_region_weather": ToolDefinition(
+        name="get_region_weather",
+        description=(
+            "Get recent weather observations for a region. Returns temperature "
+            "(min/max), precipitation, and humidity data."
+        ),
+        input_schema={
+            "type": "object",
+            "properties": {
+                "region_id": {
+                    "type": "string",
+                    "description": "Region ID (e.g., nyeri-highland)",
+                },
+                "days": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 30,
+                    "default": 7,
+                    "description": "Number of days of history (default: 7, max: 30)",
+                },
+            },
+            "required": ["region_id"],
+        },
+        category="query",
+    ),
 }
 
 

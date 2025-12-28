@@ -40,6 +40,11 @@ class McpToolServiceServicer(mcp_tool_pb2_grpc.McpToolServiceServicer):
             "get_farmer_summary": self._handle_get_farmer_summary,
             "get_collection_points": self._handle_get_collection_points,
             "get_farmers_by_collection_point": self._handle_get_farmers_by_collection_point,
+            # Region tools (Story 1.8)
+            "get_region": self._handle_get_region,
+            "list_regions": self._handle_list_regions,
+            "get_current_flush": self._handle_get_current_flush,
+            "get_region_weather": self._handle_get_region_weather,
         }
 
     async def ListTools(
@@ -265,3 +270,62 @@ class McpToolServiceServicer(mcp_tool_pb2_grpc.McpToolServiceServicer):
         collection_point_id = arguments["collection_point_id"]
         farmers = await self._plantation_client.get_farmers_by_collection_point(collection_point_id)
         return {"farmers": farmers}
+
+    # =========================================================================
+    # Region Tool Handlers (Story 1.8)
+    # =========================================================================
+
+    async def _handle_get_region(self, arguments: dict[str, Any]) -> dict[str, Any]:
+        """Handle get_region tool call.
+
+        Args:
+            arguments: Tool arguments with region_id.
+
+        Returns:
+            Region details dict.
+
+        """
+        region_id = arguments["region_id"]
+        return await self._plantation_client.get_region(region_id)
+
+    async def _handle_list_regions(self, arguments: dict[str, Any]) -> dict[str, Any]:
+        """Handle list_regions tool call.
+
+        Args:
+            arguments: Tool arguments with optional county and altitude_band filters.
+
+        Returns:
+            Dict with list of regions.
+
+        """
+        county = arguments.get("county")
+        altitude_band = arguments.get("altitude_band")
+        regions = await self._plantation_client.list_regions(county=county, altitude_band=altitude_band)
+        return {"regions": regions}
+
+    async def _handle_get_current_flush(self, arguments: dict[str, Any]) -> dict[str, Any]:
+        """Handle get_current_flush tool call.
+
+        Args:
+            arguments: Tool arguments with region_id.
+
+        Returns:
+            Current flush period details.
+
+        """
+        region_id = arguments["region_id"]
+        return await self._plantation_client.get_current_flush(region_id)
+
+    async def _handle_get_region_weather(self, arguments: dict[str, Any]) -> dict[str, Any]:
+        """Handle get_region_weather tool call.
+
+        Args:
+            arguments: Tool arguments with region_id and optional days.
+
+        Returns:
+            Weather observations for the region.
+
+        """
+        region_id = arguments["region_id"]
+        days = arguments.get("days", 7)
+        return await self._plantation_client.get_region_weather(region_id, days=days)

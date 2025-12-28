@@ -76,6 +76,38 @@ def sample_farmer_summary() -> dict:
     }
 
 
+@pytest.fixture
+def sample_region() -> dict:
+    """Sample region data."""
+    return {
+        "region_id": "nyeri-highland",
+        "name": "Nyeri Highland",
+        "county": "Nyeri",
+        "country": "Kenya",
+        "is_active": True,
+        "geography": {
+            "center_gps": {"lat": -0.4197, "lng": 36.9553},
+            "radius_km": 25,
+            "altitude_band": {
+                "min_meters": 1800,
+                "max_meters": 2200,
+                "label": "ALTITUDE_BAND_HIGHLAND",
+            },
+        },
+        "flush_calendar": {
+            "first_flush": {"start": "03-15", "end": "05-15", "characteristics": "Spring"},
+            "monsoon_flush": {"start": "06-15", "end": "09-30", "characteristics": "Monsoon"},
+            "autumn_flush": {"start": "10-15", "end": "12-15", "characteristics": "Autumn"},
+            "dormant": {"start": "12-16", "end": "03-14", "characteristics": "Dormant"},
+        },
+        "agronomic": {"soil_type": "volcanic_red"},
+        "weather_config": {
+            "api_location": {"lat": -0.4197, "lng": 36.9553},
+            "altitude_for_api": 1950,
+        },
+    }
+
+
 class TestListTools:
     """Tests for ListTools RPC."""
 
@@ -85,19 +117,25 @@ class TestListTools:
         servicer: McpToolServiceServicer,
         mock_context: MagicMock,
     ) -> None:
-        """AC #1, #2, #3, #4: ListTools returns all 4 tools with schemas."""
+        """ListTools returns all 9 tools with schemas (including region tools)."""
         request = mcp_tool_pb2.ListToolsRequest()
 
         response = await servicer.ListTools(request, mock_context)
 
-        assert len(response.tools) == 4
+        assert len(response.tools) == 9
 
         tool_names = {tool.name for tool in response.tools}
         assert tool_names == {
+            "get_factory",
             "get_farmer",
             "get_farmer_summary",
             "get_collection_points",
             "get_farmers_by_collection_point",
+            # Region tools (Story 1.8)
+            "get_region",
+            "list_regions",
+            "get_current_flush",
+            "get_region_weather",
         }
 
         # Verify each tool has schema
@@ -124,7 +162,7 @@ class TestListTools:
 
         response = await servicer.ListTools(request, mock_context)
 
-        assert len(response.tools) == 4
+        assert len(response.tools) == 9
         for tool in response.tools:
             assert tool.category == "query"
 
@@ -376,3 +414,268 @@ class TestErrorHandling:
         assert response.success is False
         assert response.error_code == mcp_tool_pb2.ERROR_CODE_TOOL_NOT_FOUND
         assert "unknown_tool" in response.error_message
+
+
+# =============================================================================
+# Region Tool Tests (Story 1.8)
+# =============================================================================
+
+
+class TestGetRegionTool:
+    """Tests for get_region tool."""
+
+    @pytest.mark.asyncio
+    async def test_get_region_success(
+        self,
+        servicer: McpToolServiceServicer,
+        mock_plantation_client: MagicMock,
+        mock_context: MagicMock,
+        sample_region: dict,
+    ) -> None:
+        """get_region returns region details with all metadata."""
+        mock_plantation_client.get_region = AsyncMock(return_value=sample_region)
+
+        request = mcp_tool_pb2.ToolCallRequest(
+            tool_name="get_region",
+            arguments_json=json.dumps({"region_id": "nyeri-highland"}),
+        )
+
+        response = await servicer.CallTool(request, mock_context)
+
+        assert response.success is True
+        result = json.loads(response.result_json)
+        assert result["region_id"] == "nyeri-highland"
+        assert result["name"] == "Nyeri Highland"
+        assert result["county"] == "Nyeri"
+        assert "geography" in result
+        assert "flush_calendar" in result
+        assert "weather_config" in result
+
+        mock_plantation_client.get_region.assert_called_once_with("nyeri-highland")
+
+    @pytest.mark.asyncio
+    async def test_get_region_not_found(
+        self,
+        servicer: McpToolServiceServicer,
+        mock_plantation_client: MagicMock,
+        mock_context: MagicMock,
+    ) -> None:
+        """get_region with non-existent region returns error."""
+        mock_plantation_client.get_region = AsyncMock(
+            side_effect=NotFoundError("Region not found: nonexistent-region")
+        )
+
+        request = mcp_tool_pb2.ToolCallRequest(
+            tool_name="get_region",
+            arguments_json=json.dumps({"region_id": "nonexistent-region"}),
+        )
+
+        response = await servicer.CallTool(request, mock_context)
+
+        assert response.success is False
+        assert response.error_code == mcp_tool_pb2.ERROR_CODE_INVALID_ARGUMENTS
+        assert "not found" in response.error_message.lower()
+
+
+class TestListRegionsTool:
+    """Tests for list_regions tool."""
+
+    @pytest.mark.asyncio
+    async def test_list_regions_success(
+        self,
+        servicer: McpToolServiceServicer,
+        mock_plantation_client: MagicMock,
+        mock_context: MagicMock,
+        sample_region: dict,
+    ) -> None:
+        """list_regions returns list of regions."""
+        mock_plantation_client.list_regions = AsyncMock(return_value=[sample_region])
+
+        request = mcp_tool_pb2.ToolCallRequest(
+            tool_name="list_regions",
+            arguments_json=json.dumps({}),
+        )
+
+        response = await servicer.CallTool(request, mock_context)
+
+        assert response.success is True
+        result = json.loads(response.result_json)
+        assert "regions" in result
+        assert len(result["regions"]) == 1
+        assert result["regions"][0]["region_id"] == "nyeri-highland"
+
+        mock_plantation_client.list_regions.assert_called_once_with(county=None, altitude_band=None)
+
+    @pytest.mark.asyncio
+    async def test_list_regions_with_filters(
+        self,
+        servicer: McpToolServiceServicer,
+        mock_plantation_client: MagicMock,
+        mock_context: MagicMock,
+        sample_region: dict,
+    ) -> None:
+        """list_regions with county and altitude_band filters."""
+        mock_plantation_client.list_regions = AsyncMock(return_value=[sample_region])
+
+        request = mcp_tool_pb2.ToolCallRequest(
+            tool_name="list_regions",
+            arguments_json=json.dumps({"county": "Nyeri", "altitude_band": "highland"}),
+        )
+
+        response = await servicer.CallTool(request, mock_context)
+
+        assert response.success is True
+        mock_plantation_client.list_regions.assert_called_once_with(county="Nyeri", altitude_band="highland")
+
+
+class TestGetCurrentFlushTool:
+    """Tests for get_current_flush tool."""
+
+    @pytest.mark.asyncio
+    async def test_get_current_flush_success(
+        self,
+        servicer: McpToolServiceServicer,
+        mock_plantation_client: MagicMock,
+        mock_context: MagicMock,
+    ) -> None:
+        """get_current_flush returns current flush period."""
+        sample_flush = {
+            "region_id": "nyeri-highland",
+            "flush_name": "dormant",
+            "start": "12-16",
+            "end": "03-14",
+            "characteristics": "Dormant period",
+            "days_remaining": 76,
+        }
+        mock_plantation_client.get_current_flush = AsyncMock(return_value=sample_flush)
+
+        request = mcp_tool_pb2.ToolCallRequest(
+            tool_name="get_current_flush",
+            arguments_json=json.dumps({"region_id": "nyeri-highland"}),
+        )
+
+        response = await servicer.CallTool(request, mock_context)
+
+        assert response.success is True
+        result = json.loads(response.result_json)
+        assert result["region_id"] == "nyeri-highland"
+        assert result["flush_name"] == "dormant"
+        assert result["days_remaining"] == 76
+
+        mock_plantation_client.get_current_flush.assert_called_once_with("nyeri-highland")
+
+    @pytest.mark.asyncio
+    async def test_get_current_flush_region_not_found(
+        self,
+        servicer: McpToolServiceServicer,
+        mock_plantation_client: MagicMock,
+        mock_context: MagicMock,
+    ) -> None:
+        """get_current_flush with non-existent region returns error."""
+        mock_plantation_client.get_current_flush = AsyncMock(
+            side_effect=NotFoundError("Region not found: nonexistent-region")
+        )
+
+        request = mcp_tool_pb2.ToolCallRequest(
+            tool_name="get_current_flush",
+            arguments_json=json.dumps({"region_id": "nonexistent-region"}),
+        )
+
+        response = await servicer.CallTool(request, mock_context)
+
+        assert response.success is False
+        assert "not found" in response.error_message.lower()
+
+
+class TestGetRegionWeatherTool:
+    """Tests for get_region_weather tool."""
+
+    @pytest.mark.asyncio
+    async def test_get_region_weather_success(
+        self,
+        servicer: McpToolServiceServicer,
+        mock_plantation_client: MagicMock,
+        mock_context: MagicMock,
+    ) -> None:
+        """get_region_weather returns weather observations."""
+        sample_weather = {
+            "region_id": "nyeri-highland",
+            "observations": [
+                {
+                    "date": "2025-12-28",
+                    "temp_min": 12.5,
+                    "temp_max": 24.8,
+                    "precipitation_mm": 2.3,
+                    "humidity_avg": 78.5,
+                    "source": "open-meteo",
+                },
+                {
+                    "date": "2025-12-27",
+                    "temp_min": 11.0,
+                    "temp_max": 23.5,
+                    "precipitation_mm": 0.0,
+                    "humidity_avg": 72.0,
+                    "source": "open-meteo",
+                },
+            ],
+        }
+        mock_plantation_client.get_region_weather = AsyncMock(return_value=sample_weather)
+
+        request = mcp_tool_pb2.ToolCallRequest(
+            tool_name="get_region_weather",
+            arguments_json=json.dumps({"region_id": "nyeri-highland"}),
+        )
+
+        response = await servicer.CallTool(request, mock_context)
+
+        assert response.success is True
+        result = json.loads(response.result_json)
+        assert result["region_id"] == "nyeri-highland"
+        assert len(result["observations"]) == 2
+        assert result["observations"][0]["temp_max"] == 24.8
+
+        mock_plantation_client.get_region_weather.assert_called_once_with("nyeri-highland", days=7)
+
+    @pytest.mark.asyncio
+    async def test_get_region_weather_with_days_parameter(
+        self,
+        servicer: McpToolServiceServicer,
+        mock_plantation_client: MagicMock,
+        mock_context: MagicMock,
+    ) -> None:
+        """get_region_weather respects days parameter."""
+        mock_plantation_client.get_region_weather = AsyncMock(
+            return_value={"region_id": "nyeri-highland", "observations": []}
+        )
+
+        request = mcp_tool_pb2.ToolCallRequest(
+            tool_name="get_region_weather",
+            arguments_json=json.dumps({"region_id": "nyeri-highland", "days": 14}),
+        )
+
+        response = await servicer.CallTool(request, mock_context)
+
+        assert response.success is True
+        mock_plantation_client.get_region_weather.assert_called_once_with("nyeri-highland", days=14)
+
+    @pytest.mark.asyncio
+    async def test_get_region_weather_region_not_found(
+        self,
+        servicer: McpToolServiceServicer,
+        mock_plantation_client: MagicMock,
+        mock_context: MagicMock,
+    ) -> None:
+        """get_region_weather with non-existent region returns error."""
+        mock_plantation_client.get_region_weather = AsyncMock(
+            side_effect=NotFoundError("Region not found: nonexistent-region")
+        )
+
+        request = mcp_tool_pb2.ToolCallRequest(
+            tool_name="get_region_weather",
+            arguments_json=json.dumps({"region_id": "nonexistent-region"}),
+        )
+
+        response = await servicer.CallTool(request, mock_context)
+
+        assert response.success is False
+        assert "not found" in response.error_message.lower()

@@ -334,6 +334,244 @@ class PlantationClient:
             "is_active": cp.is_active,
         }
 
+    # =========================================================================
+    # Region Methods (Story 1.8)
+    # =========================================================================
+
+    @retry(
+        retry=retry_if_exception_type(grpc.aio.AioRpcError),
+        stop=stop_after_attempt(3),
+        wait=wait_exponential(multiplier=1, min=1, max=10),
+        reraise=True,
+    )
+    async def get_region(self, region_id: str) -> dict[str, Any]:
+        """Get region by ID.
+
+        Args:
+            region_id: The region ID (e.g., nyeri-highland).
+
+        Returns:
+            Dict with region details.
+
+        Raises:
+            NotFoundError: If region not found.
+            ServiceUnavailableError: If service is unavailable.
+
+        """
+        try:
+            stub = await self._get_stub()
+            request = plantation_pb2.GetRegionRequest(region_id=region_id)
+            metadata = [("dapr-app-id", settings.plantation_app_id)]
+
+            response = await stub.GetRegion(request, metadata=metadata)
+
+            return self._region_to_dict(response)
+
+        except grpc.aio.AioRpcError as e:
+            if e.code() == grpc.StatusCode.NOT_FOUND:
+                raise NotFoundError(f"Region not found: {region_id}") from e
+            if e.code() == grpc.StatusCode.UNAVAILABLE:
+                raise ServiceUnavailableError(f"Plantation service unavailable: {e.details()}") from e
+            raise
+
+    @retry(
+        retry=retry_if_exception_type(grpc.aio.AioRpcError),
+        stop=stop_after_attempt(3),
+        wait=wait_exponential(multiplier=1, min=1, max=10),
+        reraise=True,
+    )
+    async def list_regions(
+        self,
+        county: str | None = None,
+        altitude_band: str | None = None,
+    ) -> list[dict[str, Any]]:
+        """List regions with optional filtering.
+
+        Args:
+            county: Optional county filter.
+            altitude_band: Optional altitude band filter (highland/midland/lowland).
+
+        Returns:
+            List of region dicts.
+
+        Raises:
+            ServiceUnavailableError: If service is unavailable.
+
+        """
+        try:
+            stub = await self._get_stub()
+            request = plantation_pb2.ListRegionsRequest(
+                county=county or "",
+                altitude_band=altitude_band or "",
+            )
+            metadata = [("dapr-app-id", settings.plantation_app_id)]
+
+            response = await stub.ListRegions(request, metadata=metadata)
+
+            return [self._region_to_dict(r) for r in response.regions]
+
+        except grpc.aio.AioRpcError as e:
+            if e.code() == grpc.StatusCode.UNAVAILABLE:
+                raise ServiceUnavailableError(f"Plantation service unavailable: {e.details()}") from e
+            raise
+
+    @retry(
+        retry=retry_if_exception_type(grpc.aio.AioRpcError),
+        stop=stop_after_attempt(3),
+        wait=wait_exponential(multiplier=1, min=1, max=10),
+        reraise=True,
+    )
+    async def get_current_flush(self, region_id: str) -> dict[str, Any]:
+        """Get current flush period for a region.
+
+        Args:
+            region_id: The region ID.
+
+        Returns:
+            Dict with current flush period info.
+
+        Raises:
+            NotFoundError: If region not found.
+            ServiceUnavailableError: If service is unavailable.
+
+        """
+        try:
+            stub = await self._get_stub()
+            request = plantation_pb2.GetCurrentFlushRequest(region_id=region_id)
+            metadata = [("dapr-app-id", settings.plantation_app_id)]
+
+            response = await stub.GetCurrentFlush(request, metadata=metadata)
+
+            return {
+                "region_id": response.region_id,
+                "flush_name": response.flush_name,
+                "start": response.start,
+                "end": response.end,
+                "characteristics": response.characteristics,
+                "days_remaining": response.days_remaining,
+            }
+
+        except grpc.aio.AioRpcError as e:
+            if e.code() == grpc.StatusCode.NOT_FOUND:
+                raise NotFoundError(f"Region not found: {region_id}") from e
+            if e.code() == grpc.StatusCode.UNAVAILABLE:
+                raise ServiceUnavailableError(f"Plantation service unavailable: {e.details()}") from e
+            raise
+
+    @retry(
+        retry=retry_if_exception_type(grpc.aio.AioRpcError),
+        stop=stop_after_attempt(3),
+        wait=wait_exponential(multiplier=1, min=1, max=10),
+        reraise=True,
+    )
+    async def get_region_weather(self, region_id: str, days: int = 7) -> dict[str, Any]:
+        """Get weather observations for a region.
+
+        Args:
+            region_id: The region ID.
+            days: Number of days of history (default: 7).
+
+        Returns:
+            Dict with weather observations list.
+
+        Raises:
+            NotFoundError: If region not found.
+            ServiceUnavailableError: If service is unavailable.
+
+        """
+        try:
+            stub = await self._get_stub()
+            request = plantation_pb2.GetRegionWeatherRequest(
+                region_id=region_id,
+                days=days,
+            )
+            metadata = [("dapr-app-id", settings.plantation_app_id)]
+
+            response = await stub.GetRegionWeather(request, metadata=metadata)
+
+            observations = []
+            for obs in response.observations:
+                observations.append({
+                    "date": obs.date,
+                    "temp_min": obs.temp_min,
+                    "temp_max": obs.temp_max,
+                    "precipitation_mm": obs.precipitation_mm,
+                    "humidity_avg": obs.humidity_avg,
+                    "source": obs.source,
+                })
+
+            return {
+                "region_id": response.region_id,
+                "observations": observations,
+            }
+
+        except grpc.aio.AioRpcError as e:
+            if e.code() == grpc.StatusCode.NOT_FOUND:
+                raise NotFoundError(f"Region not found: {region_id}") from e
+            if e.code() == grpc.StatusCode.UNAVAILABLE:
+                raise ServiceUnavailableError(f"Plantation service unavailable: {e.details()}") from e
+            raise
+
+    def _region_to_dict(self, region: plantation_pb2.Region) -> dict[str, Any]:
+        """Convert Region proto to dict."""
+        result: dict[str, Any] = {
+            "region_id": region.region_id,
+            "name": region.name,
+            "county": region.county,
+            "country": region.country,
+            "is_active": region.is_active,
+        }
+
+        # Geography
+        if region.HasField("geography"):
+            geo = region.geography
+            result["geography"] = {
+                "center_gps": {
+                    "lat": geo.center_gps.lat if geo.HasField("center_gps") else 0,
+                    "lng": geo.center_gps.lng if geo.HasField("center_gps") else 0,
+                },
+                "radius_km": geo.radius_km,
+            }
+            if geo.HasField("altitude_band"):
+                result["geography"]["altitude_band"] = {
+                    "min_meters": geo.altitude_band.min_meters,
+                    "max_meters": geo.altitude_band.max_meters,
+                    "label": plantation_pb2.AltitudeBandLabel.Name(geo.altitude_band.label),
+                }
+
+        # Flush calendar
+        if region.HasField("flush_calendar"):
+            fc = region.flush_calendar
+            result["flush_calendar"] = {}
+            for period_name in ["first_flush", "monsoon_flush", "autumn_flush", "dormant"]:
+                period = getattr(fc, period_name, None)
+                if period:
+                    result["flush_calendar"][period_name] = {
+                        "start": period.start,
+                        "end": period.end,
+                        "characteristics": period.characteristics,
+                    }
+
+        # Agronomic
+        if region.HasField("agronomic"):
+            result["agronomic"] = {
+                "soil_type": region.agronomic.soil_type,
+            }
+
+        # Weather config
+        if region.HasField("weather_config"):
+            wc = region.weather_config
+            result["weather_config"] = {
+                "altitude_for_api": wc.altitude_for_api,
+            }
+            if wc.HasField("api_location"):
+                result["weather_config"]["api_location"] = {
+                    "lat": wc.api_location.lat,
+                    "lng": wc.api_location.lng,
+                }
+
+        return result
+
     async def close(self) -> None:
         """Close the gRPC channel."""
         if self._channel:
