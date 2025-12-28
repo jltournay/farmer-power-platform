@@ -23,7 +23,7 @@
 #### Architecture (Sharded - 12 files)
 | Entry Point | Files |
 |-------------|-------|
-| `architecture/index.md` | 12 sharded architecture documents covering 8 domain models |
+| `architecture/index.md` | 13 sharded architecture documents covering 9 domain models |
 
 #### Epics & Stories
 | Document | Scope |
@@ -54,7 +54,7 @@
 
 ## Step 2: Architecture → Epics Coverage Validation
 
-**Source of Truth:** `architecture/index.md` (8 Domain Models + Infrastructure)
+**Source of Truth:** `architecture/index.md` (9 Domain Models + Infrastructure)
 
 ### Model Coverage Matrix
 
@@ -68,6 +68,7 @@
 | 6 | AI Model | Defined | Epic 5 | Yes | ✅ COVERED |
 | 7 | Notification Model | Defined | Epic 4, 7 | Yes | ✅ COVERED |
 | 8 | Conversational AI Model | Defined | Epic 8 | Yes | ✅ COVERED |
+| 9 | Engagement Model | Defined | TBD | TBD | ⚠️ NEW - Epic needed |
 
 ### Epic Summary
 

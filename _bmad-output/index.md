@@ -22,7 +22,7 @@ _Single entry point for all platform documentation. This index ensures coherence
 
 ---
 
-## Platform Domain Models (8 Total)
+## Platform Domain Models (9 Total)
 
 | # | Model | Responsibility | Added |
 |---|-------|----------------|-------|
@@ -34,8 +34,9 @@ _Single entry point for all platform documentation. This index ensures coherence
 | 6 | **AI Model** | Centralized LLM orchestration, RAG, agent execution | v1.0 |
 | 7 | **Notification Model** | Message delivery: SMS, WhatsApp, Voice IVR (one-way) | v1.0 |
 | 8 | **Conversational AI Model** | Two-way dialogue: voice chatbot, text chat (multi-channel) | v1.1 |
+| 9 | **Engagement Model** | Farmer progress tracking, streaks, milestones, motivation (Duolingo-style) | v1.2 |
 
-**Note:** Product briefs created before v1.1 reference 6 models. The Notification Model was implicit in v1.0 and the Conversational AI Model was added in v1.1 (2025-12-20).
+**Note:** Product briefs created before v1.1 reference 6 models. The Notification Model was implicit in v1.0, Conversational AI Model added in v1.1 (2025-12-20), and Engagement Model added in v1.2 (2025-12-28).
 
 ---
 
@@ -45,7 +46,7 @@ _Single entry point for all platform documentation. This index ensures coherence
 
 | Document | Description | Last Updated |
 |----------|-------------|--------------|
-| [`architecture/index.md`](./architecture/index.md) | Complete platform architecture with all 8 domain models | 2025-12-23 |
+| [`architecture/index.md`](./architecture/index.md) | Complete platform architecture with all 9 domain models | 2025-12-28 |
 | [`project-context.md`](./project-context.md) | Lean AI agent rules (136 rules) - ALWAYS LOAD FIRST | 2025-12-20 |
 | [`architecture-decision-index.md`](./architecture-decision-index.md) | Decision traceability matrix | 2025-12-20 |
 | [`ai-model-developer-guide/index.md`](./ai-model-developer-guide/index.md) | AI/LLM development patterns (12 sections) | 2025-12-23 |
@@ -155,6 +156,7 @@ When making significant changes, verify:
 | Execute LLM/AI tasks | AI Model |
 | Send SMS/WhatsApp/Voice | Notification Model |
 | Interactive voice/text chat | Conversational AI Model |
+| Track farmer progress/streaks | Engagement Model |
 
 ### MCP Server Lookup
 
@@ -164,6 +166,7 @@ When making significant changes, verify:
 | MCP-Analysis | Knowledge Model | Diagnoses, disease detection |
 | MCP-ActionPlan | Action Plan Model | Generated action plans |
 | MCP-PlantationModel | Plantation Model | Farms, factories, grading models |
+| MCP-Engagement | Engagement Model | Streaks, milestones, motivation state |
 
 **Note:** AI Model and Notification Model do NOT expose MCP servers (they orchestrate/deliver, not own data). Conversational AI Model uses existing MCPs via AI Model.
 
@@ -177,8 +180,9 @@ When making significant changes, verify:
 | 1.1 | 2025-12-20 | Added Notification Model (explicit), Conversational AI Model (8th model) |
 | 1.2 | 2025-12-23 | Sharded large documents for AI agent efficiency (architecture, ai-model-developer-guide, ux-design-specification) |
 | 1.3 | 2025-12-23 | Complete traceability: Added epics.md, test-design-system-level.md, TBK specification to index |
+| 1.4 | 2025-12-28 | Added Engagement Model (9th model) - Duolingo-style farmer motivation engine |
 
 ---
 
-_Last Updated: 2025-12-23_
+_Last Updated: 2025-12-28_
 _Maintainer: Platform Architecture Team_

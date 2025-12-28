@@ -9,7 +9,7 @@
 
 ## Executive Summary
 
-**System Scope:** Complete Farmer Power Cloud Platform - 8 Domain Models + Infrastructure
+**System Scope:** Complete Farmer Power Cloud Platform - 9 Domain Models + Infrastructure
 
 **Team Context:**
 - **Testing Maturity:** Low (new to automated testing)

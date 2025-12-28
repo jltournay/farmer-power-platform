@@ -209,6 +209,79 @@ def assign_farm_to_region(farm_gps: GPS, farm_altitude: int) -> str:
 | Per Farm (800,000 farms) | 800,000 | ~$292,000 |
 | Per Region (~50 regions) | 50 | ~$18 |
 
+## Factory Entity
+
+A Factory is a **tea processing facility** that receives leaf collections from farmers via collection points.
+
+```yaml
+# Factory Entity Schema
+# MongoDB: factories
+factory:
+  # ═══════════════════════════════════════════════════════════════════
+  # IDENTITY
+  # ═══════════════════════════════════════════════════════════════════
+  factory_id: "factory-nyeri-main"      # Unique identifier
+  name: "Nyeri Tea Factory"
+  region_id: "nyeri-highland"           # Parent region
+
+  # ═══════════════════════════════════════════════════════════════════
+  # LOCATION
+  # ═══════════════════════════════════════════════════════════════════
+  address:
+    street: "123 Factory Road"
+    town: "Nyeri"
+    county: "nyeri"
+  gps:
+    latitude: -0.4245
+    longitude: 36.9541
+
+  # ═══════════════════════════════════════════════════════════════════
+  # GRADING MODEL REFERENCE
+  # ═══════════════════════════════════════════════════════════════════
+  grading_model_id: "tbk-tea-leaves-v1"   # Active grading model
+  grading_model_version: 3
+
+  # ═══════════════════════════════════════════════════════════════════
+  # QUALITY THRESHOLDS (Factory-Configurable)
+  # ═══════════════════════════════════════════════════════════════════
+  # NEUTRAL NAMING: tier_1, tier_2, tier_3 (NOT WIN/WATCH/WORK)
+  # Engagement Model maps these to engagement categories (WIN/WATCH/WORK/WARN)
+  # Factory Admin UI shows as: Premium/Standard/Acceptable/Below Standard
+  quality_thresholds:
+    tier_1: 85.0          # Premium tier (≥85% Primary)
+    tier_2: 70.0          # Standard tier (≥70% Primary)
+    tier_3: 50.0          # Acceptable tier (≥50% Primary)
+    # Below tier_3 = Below Standard (auto-calculated)
+
+  # ═══════════════════════════════════════════════════════════════════
+  # PAYMENT POLICY
+  # ═══════════════════════════════════════════════════════════════════
+  payment_policy:
+    type: "weekly_bonus"            # split_payment | weekly_bonus | delayed_payment | feedback_only
+    tier_1_adjustment: 0.15         # +15% bonus for Premium
+    tier_2_adjustment: 0.0          # Base rate for Standard
+    tier_3_adjustment: -0.05        # -5% for Acceptable
+    below_tier_3_adjustment: -0.10  # -10% for Below Standard
+
+  # ═══════════════════════════════════════════════════════════════════
+  # OPERATIONAL
+  # ═══════════════════════════════════════════════════════════════════
+  status: "active"                  # active | onboarding | suspended
+  created_at: "2025-01-15T08:00:00Z"
+  updated_at: "2025-12-28T10:30:00Z"
+```
+
+**Quality Threshold Vocabulary Separation:**
+
+| Domain | Vocabulary | Example |
+|--------|------------|---------|
+| Plantation Model (storage) | tier_1, tier_2, tier_3 | `quality_thresholds.tier_1: 85.0` |
+| Engagement Model (internal) | WIN, WATCH, WORK, WARN | Maps tier_1 → WIN |
+| Factory Admin UI | Premium, Standard, Acceptable, Below Standard | User-friendly labels |
+| Farmer Communications | WIN, WATCH, ACTION | Simplified engagement feedback |
+
+**Key Design Decision:** Plantation Model stores thresholds with neutral naming (tier_1/tier_2/tier_3). The Engagement Model owns the WIN/WATCH/WORK/WARN vocabulary and computes categories by fetching thresholds via MCP.
+
 ## Collection Point Entity
 
 A Collection Point is a **physical location where a factory clerk collects tea bags from farmers**. It's the intermediary between farmers and factories.

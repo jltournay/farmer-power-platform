@@ -6,8 +6,9 @@
 
 **Primary Workflow:** Payment Policy Configuration
 - Select policy type (Split Payment, Weekly Bonus, Delayed Payment, Feedback Only, Reputation)
-- Configure grade-to-price multipliers by Primary % threshold
-- Preview SMS templates for each category (WIN/WATCH/ACTION NEEDED)
+- Configure quality tier thresholds (Premium/Standard/Acceptable/Below Standard based on Primary %)
+- Configure price adjustments per tier
+- Preview SMS templates for each tier
 - Calculate projected monthly cost impact
 - Activate with 7-day farmer notification period
 
@@ -19,18 +20,19 @@
 ├─────────────────────────────────────────────────────────────────┤
 │                                                                 │
 │  PAYMENT POLICY                    SMS TEMPLATES                │
-│  ┌─────────────────────┐          ┌─────────────────────┐      │
-│  │ Current: Weekly     │          │ WIN Message  [Edit] │      │
-│  │ Bonus (Policy B)    │          │ WATCH Message[Edit] │      │
-│  │                     │          │ ACTION Msg   [Edit] │      │
-│  │ [Change Policy →]   │          │                     │      │
-│  └─────────────────────┘          │ [Preview All →]     │      │
-│                                   └─────────────────────┘      │
-│  GRADE-TO-PRICE MULTIPLIERS                                    │
+│  ┌─────────────────────┐          ┌─────────────────────────┐  │
+│  │ Current: Weekly     │          │ Premium Message  [Edit] │  │
+│  │ Bonus (Policy B)    │          │ Standard Message [Edit] │  │
+│  │                     │          │ Acceptable Msg   [Edit] │  │
+│  │ [Change Policy →]   │          │ Below Std Msg    [Edit] │  │
+│  └─────────────────────┘          │ [Preview All →]         │  │
+│                                   └─────────────────────────┘  │
+│  QUALITY TIERS & PRICING                                        │
 │  ┌──────────────────────────────────────────────────────────┐  │
-│  │  WIN (≥85% Primary):     +15% bonus    [Edit]            │  │
-│  │  WATCH (70-84%):         Base rate     [Edit]            │  │
-│  │  ACTION NEEDED (<70%):   -10%          [Edit]            │  │
+│  │  🟢 Premium        (≥85% Primary):  +15% bonus [Config →]│  │
+│  │  🟡 Standard       (≥70% Primary):  Base rate  [Config →]│  │
+│  │  🟠 Acceptable     (≥50% Primary):  -5%        [Config →]│  │
+│  │  🔴 Below Standard (<50% Primary):  -10%       [Config →]│  │
 │  │                                                          │  │
 │  │  [💰 Calculate Impact] - Shows projected monthly cost    │  │
 │  └──────────────────────────────────────────────────────────┘  │
@@ -39,6 +41,84 @@
 │                                                                 │
 └─────────────────────────────────────────────────────────────────┘
 ```
+
+### Quality Tiers & Pricing Configuration
+
+**Purpose:** Allow factories to customize quality thresholds and associated payment adjustments based on their quality standards and farmer population.
+
+**Default Thresholds (TBK Industry Standard):**
+
+| Quality Tier | Default Threshold | Typical Use Case |
+|--------------|-------------------|------------------|
+| Premium | ≥85% Primary | Export-grade quality |
+| Standard | ≥70% Primary | Good commercial quality |
+| Acceptable | ≥50% Primary | Needs improvement support |
+| Below Standard | <50% Primary | Critical intervention needed |
+
+**Configuration Screen:**
+
+```
+┌─────────────────────────────────────────────────────────────────────────┐
+│  QUALITY TIERS & PRICING                                     [Reset ↺]  │
+├─────────────────────────────────────────────────────────────────────────┤
+│                                                                         │
+│  Configure your quality thresholds and associated payment adjustments   │
+│                                                                         │
+│  ┌───────────────────────────────────────────────────────────────────┐  │
+│  │  QUALITY TIER      │  PRIMARY % THRESHOLD  │  PRICE ADJUSTMENT    │  │
+│  ├───────────────────────────────────────────────────────────────────┤  │
+│  │  🟢 Premium        │  [≥ 85 %        ▲▼]  │  [+15 %        ▲▼]   │  │
+│  │  🟡 Standard       │  [≥ 70 %        ▲▼]  │  [Base rate      ]   │  │
+│  │  🟠 Acceptable     │  [≥ 50 %        ▲▼]  │  [-5  %        ▲▼]   │  │
+│  │  🔴 Below Standard │  [< 50 %          ]  │  [-10 %        ▲▼]   │  │
+│  └───────────────────────────────────────────────────────────────────┘  │
+│                                                                         │
+│  ⚠️ "Below Standard" is always below Acceptable threshold (auto-calc)  │
+│                                                                         │
+│  PREVIEW: Based on last 30 days                                         │
+│  ┌───────────────────────────────────────────────────────────────────┐  │
+│  │  Current              │  With new thresholds                      │  │
+│  │  Premium:   245       │  Premium:   [312] (+67 farmers) ▲         │  │
+│  │  Standard:  380       │  Standard:  [340] (-40 farmers)           │  │
+│  │  Acceptable:210       │  Acceptable:[198] (-12 farmers)           │  │
+│  │  Below Std:  65       │  Below Std: [ 50] (-15 farmers) ▲         │  │
+│  └───────────────────────────────────────────────────────────────────┘  │
+│                                                                         │
+│  💰 Projected cost impact: +KES 45,000/month (more bonuses paid)        │
+│                                                                         │
+│  [Cancel]                            [Preview SMS] [Save & Notify ✓]    │
+│                                                                         │
+└─────────────────────────────────────────────────────────────────────────┘
+```
+
+**Validation Rules:**
+
+| Rule | Constraint | Error Message |
+|------|------------|---------------|
+| Premium > Standard > Acceptable | Thresholds must be descending | "Premium threshold must be higher than Standard" |
+| Minimum gap | At least 10% between tiers | "Tiers need at least 10% gap" |
+| Below Standard auto-calculated | Always < Acceptable threshold | (No user input - computed) |
+| Range limits | 30% ≤ threshold ≤ 95% | "Threshold must be between 30% and 95%" |
+
+**Use Cases for Custom Thresholds:**
+
+| Factory Type | Premium | Standard | Acceptable | Rationale |
+|--------------|---------|----------|------------|-----------|
+| **Premium Export** | ≥90% | ≥80% | ≥60% | High standards for export market |
+| **Standard (Default)** | ≥85% | ≥70% | ≥50% | TBK industry standard |
+| **Developing Region** | ≥75% | ≥60% | ≥40% | Encouraging new farmers |
+| **Training Mode** | ≥70% | ≥55% | ≥35% | Maximum encouragement during onboarding |
+
+**Key Design Decisions:**
+
+| Decision | Rationale |
+|----------|-----------|
+| Thresholds + pricing together | One place for quality economics |
+| Live preview of farmer distribution | Understand impact before committing |
+| Cost projection | Financial implications visible |
+| WARN auto-calculated | Simplify config, prevent gaps |
+| Reset to defaults | Safety net for experiments |
+| 7-day notification period | Farmers informed before changes apply |
 
 **Key Design Decisions:**
 - All changes preview-able before activation

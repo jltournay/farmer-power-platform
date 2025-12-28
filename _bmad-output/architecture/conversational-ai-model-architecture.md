@@ -427,7 +427,7 @@ ConversationLog:
 
 ## Updated Model Overview
 
-The Farmer Power Platform now has **8 Domain Models**:
+The Farmer Power Platform now has **9 Domain Models**:
 
 | # | Model | Responsibility |
 |---|-------|----------------|
@@ -438,7 +438,8 @@ The Farmer Power Platform now has **8 Domain Models**:
 | 5 | Market Analysis Model | Market intelligence, pricing, demand |
 | 6 | AI Model | Centralized LLM orchestration, RAG, agents |
 | 7 | Notification Model | SMS, WhatsApp, Voice IVR (one-way) |
-| 8 | **Conversational AI Model** | Two-way dialogue across channels (NEW) |
+| 8 | Conversational AI Model | Two-way dialogue across channels |
+| 9 | **Engagement Model** | Farmer progress, streaks, milestones, motivation (NEW) |
 
 **Model Interaction Diagram:**
 

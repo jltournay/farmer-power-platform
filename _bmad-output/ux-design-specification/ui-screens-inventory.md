@@ -59,17 +59,19 @@ Complete inventory of all user interfaces and their screens for the Farmer Power
 ## 4. Factory Admin UI
 
 **User:** Factory Administrator
-**Purpose:** Configure payment policies, customize farmer communications
+**Purpose:** Configure payment policies, quality thresholds, and customize farmer communications
 
 | # | Screen | Purpose |
 |---|--------|---------|
 | 1 | **Payment Policy Configuration** | Select/change payment policy type |
-| 2 | **Grade-to-Price Multipliers** | Configure bonus/penalty by Primary % threshold |
-| 3 | **SMS Template Editor** | Customize WIN/WATCH/ACTION messages |
+| 2 | **Quality Tiers & Pricing** | Configure Primary % thresholds (Premium/Standard/Acceptable/Below Standard) and price adjustments |
+| 3 | **SMS Template Editor** | Customize tier-based messages (Premium/Standard/Acceptable/Below Standard) |
 | 4 | **Impact Calculator** | Preview projected monthly cost changes |
+| 5 | **Threshold Preview** | See farmer distribution changes before applying new thresholds |
 
 **Related Docs:**
 - [Admin Interface: Factory Admin UI](./admin-interface-core-experience.md#factory-admin-ui)
+- [Quality Tiers & Pricing Configuration](./admin-interface-core-experience.md#quality-tiers--pricing-configuration)
 
 ---
 
@@ -134,10 +136,10 @@ Complete inventory of all user interfaces and their screens for the Farmer Power
 | Factory Manager Dashboard | 4 |
 | Factory Owner Dashboard | 3 |
 | Regulator Dashboard | 4 |
-| Factory Admin | 4 |
+| Factory Admin | 5 |
 | Platform Admin | 4 |
 | Farmer Registration | 4 |
-| **Total Web Screens** | **23** |
+| **Total Web Screens** | **24** |
 
 ### Non-Web Channels
 

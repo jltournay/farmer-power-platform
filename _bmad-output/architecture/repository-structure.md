@@ -16,7 +16,7 @@ This document defines the physical organization of the Farmer Power Platform cod
 | Onboarding | Clone once, see everything | Multiple repos to understand |
 | Service boundaries | Enforced by convention | Enforced by repo boundaries |
 
-**Rationale:** For a platform with 8 tightly integrated domain models, monorepo enables:
+**Rationale:** For a platform with 9 tightly integrated domain models, monorepo enables:
 - Atomic refactoring across service boundaries
 - Shared proto definitions without versioning complexity
 - Unified CI/CD with selective builds

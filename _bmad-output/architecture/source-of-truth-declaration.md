@@ -4,7 +4,7 @@
 
 | Aspect | Status |
 |--------|--------|
-| Domain Models | **8 models** (see Model Overview below) |
+| Domain Models | **9 models** (see Model Overview below) |
 | Infrastructure Decisions | Authoritative |
 | Integration Patterns | Authoritative |
 | AI/LLM Architecture | Authoritative |
@@ -16,7 +16,7 @@
 - `project-context.md` - Lean AI agent rules (derived from this document)
 - `architecture-decision-index.md` - Decision traceability matrix
 
-## Platform Model Overview (8 Models)
+## Platform Model Overview (9 Models)
 
 | # | Model | Responsibility | Section |
 |---|-------|----------------|---------|
@@ -28,5 +28,6 @@
 | 6 | AI Model | LLM orchestration, RAG | [Link](#ai-model-architecture) |
 | 7 | Notification Model | SMS, WhatsApp, Voice IVR (one-way) | [Link](./notification-model-architecture.md) |
 | 8 | Conversational AI Model | Two-way dialogue across channels | [Link](#conversational-ai-model-architecture) |
+| 9 | Engagement Model | Farmer progress, streaks, milestones, motivation | [Link](./engagement-model-architecture.md) |
 
 ---

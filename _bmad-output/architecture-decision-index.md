@@ -109,6 +109,23 @@ _This index maps all architectural decisions from `architecture.md` to their cov
 | AD-098 | Does NOT expose own MCP server | MCP | COVERED | Conversational AI Rules section |
 | AD-099 | MongoDB collections: sessions, conversation_history, channel_configs | Storage | COVERED | MongoDB Collection Ownership |
 
+## Engagement Model Decisions
+
+| ID | Decision | Section | In Context? | Notes |
+|----|----------|---------|-------------|-------|
+| AD-100 | Engagement Model is 9th Domain Model (farmer motivation engine) | Overview | COVERED | Domain Model Boundaries table |
+| AD-101 | Duolingo-style encouragement patterns adapted for farmers | UX | COVERED | engagement-model-architecture.md |
+| AD-102 | Streaks based on weekly collection cycles, not daily | Business | COVERED | Core Concepts section |
+| AD-103 | Streak freeze (1/month + weather bonus) for compassion | Business | COVERED | Streak Freeze section |
+| AD-104 | 5-level progression: Newcomer → Learner → Practitioner → Expert → Master | Gamification | COVERED | Level Progression section |
+| AD-105 | NO leaderboards (farmers not competing) | Anti-Pattern | COVERED | Anti-Patterns Avoided table |
+| AD-106 | NO points system (use real quality metrics instead) | Anti-Pattern | COVERED | Anti-Patterns Avoided table |
+| AD-107 | 5-state motivation machine: THRIVING → STEADY → AT_RISK → DECLINING → RECOVERING | State | COVERED | Motivation State Machine section |
+| AD-108 | Consumes plantation.performance_updated (not raw collection events) | Events | COVERED | Event Integration section |
+| AD-109 | Exposes MCP server for Action Plan personalization | MCP | COVERED | MCP Server Tools section |
+| AD-110 | Factory-configurable quality thresholds (tier_1/tier_2/tier_3) | Config | COVERED | Plantation stores neutral thresholds; Engagement maps to WIN/WATCH/WORK/WARN; UI shows Premium/Standard/Acceptable |
+| AD-111 | MongoDB collections: engagement_state, milestones, celebrations | Storage | COVERED | MongoDB Collection Ownership |
+
 ## Cross-Cutting Decisions
 
 | ID | Decision | Section | In Context? | Notes |

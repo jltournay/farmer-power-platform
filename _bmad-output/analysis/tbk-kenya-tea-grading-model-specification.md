@@ -141,214 +141,93 @@ The model uses a **3-head architecture** to capture the hierarchical nature of T
 
 ### Grade Calculation Logic
 
-```python
-def calculate_grade(leaf_type: str, coarse_subtype: str, banji_hardness: str) -> str:
-    """
-    Calculate TBK grade based on multi-head classification output.
+The grade calculation logic is the responsibility of the farmer_power_qc_analyzer project, and it is not part of this project. The model classifies each leave in a bag. There is no grading for the bag as a whole, like the sorting zone in the QC Analyzer routes each leaf in the corresponding grading storing bin.  
 
-    Returns: 'primary' or 'secondary'
-    """
-    # Direct primary classifications
-    if leaf_type in ['bud', 'one_leaf_bud', 'two_leaves_bud', 'single_soft_leaf']:
-        return 'primary'
 
-    # Direct secondary classifications
-    if leaf_type == 'three_plus_leaves_bud':
-        return 'secondary'
-
-    # Coarse leaf is always secondary (subtype is informational)
-    if leaf_type == 'coarse_leaf':
-        return 'secondary'
-
-    # Banji depends on hardness
-    if leaf_type == 'banji':
-        return 'primary' if banji_hardness == 'soft' else 'secondary'
-
-    # Fallback (should not reach)
-    return 'secondary'
-```
 
 ---
 
-## MarketGradingConfig (Python)
+## MarketGradingConfig (JSON)
 
 This configuration should be placed in the `farmer-power-training` repository at:
-`training/grading/kenya_tbk_tea/config.py`
-
-> **Note:** This configuration uses the `reject_conditions` + `conditional_reject` format compatible with `BinaryGradingSystem` in the QC Analyzer. The `conditional_reject` feature requires [farmer-power-qc-analyzer#3](https://github.com/farmerpower-ai/farmer-power-qc-analyzer/issues/3).
-
-```python
-"""
-TBK Kenya Tea Grading Configuration
-
-Regulatory Authority: Tea Board of Kenya (TBK)
-Legal Framework: Tea Act 2020
-Version: 1.1
-Date: 2025-12-22
-
-Compatible with: BinaryGradingSystem (farmer-power-qc-analyzer)
-Requires: conditional_reject support (issue #3)
-"""
-
-from dataclasses import dataclass
-from typing import Dict, Any, List
+`training/grading/configs`
 
 
-@dataclass
-class MarketGradingConfig:
-    """Configuration for market-specific grading."""
-    crops_name: str
-    market_name: str
-    grading_type: str
-    attributes: Dict[str, Dict[str, Any]]
-    grade_rules: Dict[str, Any]
-    attribute_weights: Dict[str, float]
-    grade_thresholds: Dict[str, float]
-    perfect_grade: str = ''
-
-
-TBK_KENYA_TEA_CONFIG = MarketGradingConfig(
-    crops_name="Tea",
-    market_name="Kenya_TBK",
-    grading_type="binary",
-
-    attributes={
-        'leaf_type': {
-            'num_classes': 7,
-            'classes': [
-                'bud',
-                'one_leaf_bud',
-                'two_leaves_bud',
-                'three_plus_leaves_bud',
-                'single_soft_leaf',
-                'coarse_leaf',
-                'banji'
-            ]
-        },
-        'coarse_subtype': {
-            'num_classes': 4,
-            'classes': [
-                'none',
-                'double_luck',
-                'maintenance_leaf',
-                'hard_leaf'
-            ]
-        },
-        'banji_hardness': {
-            'num_classes': 2,
-            'classes': [
-                'soft',
-                'hard'
-            ]
-        }
-    },
-
-    grade_rules={
-        # Unconditional reject: these leaf_type values always result in REJECT
-        'reject_conditions': {
-            'leaf_type': ['three_plus_leaves_bud', 'coarse_leaf']
-        },
-
-        # Conditional reject: banji is only rejected if banji_hardness is 'hard'
-        # Requires: farmer-power-qc-analyzer#3
-        'conditional_reject': [
-            {
-                'if_attribute': 'leaf_type',
-                'if_value': 'banji',
-                'then_attribute': 'banji_hardness',
-                'reject_values': ['hard']
-            }
-        ]
-    },
-
-    # Not used in binary grading, but required by schema
-    attribute_weights={
-        'leaf_type': 1.0,
-        'coarse_subtype': 0.0,
-        'banji_hardness': 0.0
-    },
-
-    # Not used in binary grading
-    grade_thresholds={},
-
-    # ACCEPT is the perfect grade (no action plan needed)
-    perfect_grade='ACCEPT'
-)
-
-
-# Convenience exports
-GRADING_CONFIG = TBK_KENYA_TEA_CONFIG
-
-
-# Grade label mapping for display/reporting
-GRADE_LABELS = {
-    'ACCEPT': 'Primary',    # TBK terminology
-    'REJECT': 'Secondary'   # TBK terminology
-}
-```
-
----
-
-## ONNX Model Metadata
-
-This metadata must be embedded in the ONNX model file and will be validated by the Farmer Power QC Analyzer.
-
-Save as: `training/grading/kenya_tbk_tea/onnx_metadata.json`
-
-```json
+````json
 {
-  "model_id": "tbk_kenya_tea_v1",
-  "model_version": "1.0.0",
-  "created_date": "2025-12-22",
-  "regulatory_authority": "Tea Board of Kenya (TBK)",
-  "crops_name": "Tea",
-  "market_name": "Kenya_TBK",
-  "grading_type": "binary",
-  "grade_labels": ["primary", "secondary"],
-
-  "head_type": "multi_head",
-  "head_order": [
-    "leaf_type",
-    "coarse_subtype",
-    "banji_hardness"
-  ],
-  "head_types": {
-    "leaf_type": "multiclass",
-    "coarse_subtype": "multiclass",
-    "banji_hardness": "binary"
-  },
-  "classes_names": {
-    "leaf_type": [
-      "bud",
-      "one_leaf_bud",
-      "two_leaves_bud",
-      "three_plus_leaves_bud",
-      "single_soft_leaf",
-      "coarse_leaf",
-      "banji"
-    ],
-    "coarse_subtype": [
-      "none",
-      "double_luck",
-      "maintenance_leaf",
-      "hard_leaf"
-    ],
-    "banji_hardness": [
-      "soft",
-      "hard"
+    "crops_name": "tea",
+    "market_name": "Kenya",
+    "grading_model_id": "tbk_kenya_tea_v1",
+    "grading_model_version": "1.0.0",
+    "grading_type": "binary",
+    "attributes": {
+      "leaf_type": {
+        "num_classes": 7,
+        "classes": [
+          "bud",
+          "one_leaf_bud",
+          "two_leaves_bud",
+          "three_plus_leaves_bud",
+          "single_soft_leaf",
+          "coarse_leaf",
+          "banji"
+        ]
+      },
+      "coarse_subtype": {
+        "num_classes": 4,
+        "classes": [
+          "none",
+          "double_luck",
+          "maintenance_leaf",
+          "hard_leaf"
+        ]
+      },
+      "banji_hardness": {
+        "num_classes": 2,
+        "classes": [
+          "soft",
+          "hard"
+        ]
+      }
+    },
+    "grade_rules": {
+      "binary_labels": {
+        "ACCEPT": "primary",
+        "REJECT": "secondary"
+      },
+      "reject_conditions": {
+        "leaf_type": [
+          "three_plus_leaves_bud",
+          "coarse_leaf"
+        ]
+      },
+      "conditional_reject": [
+        {
+          "if_attribute": "leaf_type",
+          "if_value": "banji",
+          "then_attribute": "banji_hardness",
+          "reject_values": [
+            "hard"
+          ]
+        }
+      ]
+    },
+    "attribute_weights": {
+      "leaf_type": 1.0,
+      "coarse_subtype": 0.0,
+      "banji_hardness": 0.0
+    },
+    "grade_thresholds": {},
+    "perfect_grade": "primary",
+    "attributes_list": [
+      "leaf_type",
+      "coarse_subtype",
+      "banji_hardness"
     ]
-  },
-  "num_classes": {
-    "leaf_type": 7,
-    "coarse_subtype": 4,
-    "banji_hardness": 2
-  },
-  "total_classes": 13,
-  "preprocessing": "IMAGENET1K_V1"
 }
-```
 
----
+````
+
 
 ## Labeling Guide
 
@@ -511,83 +390,88 @@ TRAINING_CONFIG = {
 
 The QC Analyzer will output grading results in this format for ingestion by the Collection Model:
 
+The QC Analyzer will output a JSON file with the result of the grading process for a tea bag for ingestion by the Collection Model
+
+Example of a quality result for a tea bag with 102 tea leaves. The tea bag is classified with 61 leaves classified as `primary` and 41 leaves classified as `secondary`.
+
 ```json
 {
-  "bag_id": "BAG-2025-001234",
+  "market_name": "Kenya",
+  "crop_name": "tea",
+  "grading_model_version": "1.0.0",
+  "grading_model_id": "tbk_kenya_tea_v1",
+  "timestamp": "2025-12-22T10:30:45Z",
+  "bag_id": "2dd2fa43-85be-4fe6-a44a-b209135d9e9f",
   "factory_id": "KEN-FAC-001",
   "farmer_id": "KEN-FRM-567890",
-  "timestamp": "2025-12-22T10:30:45Z",
-  "grading_model_id": "tbk_kenya_tea_v1",
-  "grading_model_version": "1.0.0",
-
-  "leaf_classifications": [
-    {
-      "leaf_id": 1,
-      "predictions": {
-        "leaf_type": {
-          "class": "two_leaves_bud",
-          "confidence": 0.94
-        },
-        "coarse_subtype": {
-          "class": "none",
-          "confidence": 0.99
-        },
-        "banji_hardness": {
-          "class": "soft",
-          "confidence": 0.97
-        }
+  "total": 102,
+  "attribute_distribution": {
+    "leaf_type": {
+      "two_leaves_bud": {
+        "count": 11,
+        "avg_confidence": 0.8273
       },
-      "grade": "primary",
-      "grade_score": 1.0
-    },
-    {
-      "leaf_id": 2,
-      "predictions": {
-        "leaf_type": {
-          "class": "coarse_leaf",
-          "confidence": 0.89
-        },
-        "coarse_subtype": {
-          "class": "hard_leaf",
-          "confidence": 0.82
-        },
-        "banji_hardness": {
-          "class": "soft",
-          "confidence": 0.95
-        }
+      "banji": {
+        "count": 12,
+        "avg_confidence": 0.8075
       },
-      "grade": "secondary",
-      "grade_score": 0.0
-    }
-  ],
-
-  "bag_summary": {
-    "total_leaves": 150,
-    "primary_count": 120,
-    "secondary_count": 30,
-    "primary_percentage": 80.0,
-    "secondary_percentage": 20.0,
-    "leaf_type_distribution": {
-      "bud": 15,
-      "one_leaf_bud": 45,
-      "two_leaves_bud": 50,
-      "three_plus_leaves_bud": 10,
-      "single_soft_leaf": 10,
-      "coarse_leaf": 15,
-      "banji": 5
+      "one_leaf_bud": {
+        "count": 15,
+        "avg_confidence": 0.8267
+      },
+      "single_soft_leaf": {
+        "count": 16,
+        "avg_confidence": 0.8206
+      },
+      "three_plus_leaves_bud": {
+        "count": 20,
+        "avg_confidence": 0.873
+      },
+      "bud": {
+        "count": 12,
+        "avg_confidence": 0.9067
+      },
+      "coarse_leaf": {
+        "count": 16,
+        "avg_confidence": 0.8469
+      }
     },
-    "coarse_subtype_distribution": {
-      "double_luck": 3,
-      "maintenance_leaf": 7,
-      "hard_leaf": 5
+    "coarse_subtype": {
+      "hard_leaf": {
+        "count": 25,
+        "avg_confidence": 0.8444
+      },
+      "double_luck": {
+        "count": 25,
+        "avg_confidence": 0.8304
+      },
+      "maintenance_leaf": {
+        "count": 28,
+        "avg_confidence": 0.8582
+      },
+      "none": {
+        "count": 24,
+        "avg_confidence": 0.8438
+      }
     },
-    "banji_distribution": {
-      "soft": 3,
-      "hard": 2
+    "banji_hardness": {
+      "soft": {
+        "count": 55,
+        "avg_confidence": 0.8445
+      },
+      "hard": {
+        "count": 47,
+        "avg_confidence": 0.8606
+      }
     }
-  }
+  },
+  "primary": 61,
+  "secondary": 41
 }
+
+
 ```
+
 
 ### Plantation Model Linkage
 
@@ -634,10 +518,11 @@ The multi-attribute model enables rich analytics:
 
 ### C. Document History
 
-| Version | Date | Author | Changes |
-|---------|------|--------|---------|
-| 1.0 | 2025-12-22 | Business Analyst | Initial specification |
-| 1.1 | 2025-12-22 | Business Analyst | Updated MarketGradingConfig to use `reject_conditions` + `conditional_reject` format compatible with QC Analyzer BinaryGradingSystem. Added dependency on issue #3. |
+| Version | Date       | Author           | Changes                                                                                                                                                             |
+|---------|------------|------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| 1.0     | 2025-12-22 | Business Analyst | Initial specification                                                                                                                                               |
+| 1.1     | 2025-12-22 | Business Analyst | Updated MarketGradingConfig to use `reject_conditions` + `conditional_reject` format compatible with QC Analyzer BinaryGradingSystem. Added dependency on issue #3. |
+| 1.2     | 2026-01-05 | Business Analyst | Updated with real examples of leaf grading                                                                                                                          |
 
 ---
 

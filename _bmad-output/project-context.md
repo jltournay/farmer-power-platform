@@ -22,7 +22,7 @@ _This file contains critical rules and patterns that AI agents must follow when 
 
 ```
 farmer-power-platform/
-├── services/                    # All microservices (8 domain models + BFF)
+├── services/                    # All microservices (9 domain models + BFF)
 │   ├── collection-model/
 │   ├── plantation-model/
 │   ├── knowledge-model/
@@ -31,12 +31,14 @@ farmer-power-platform/
 │   ├── market-analysis-model/
 │   ├── ai-model/
 │   ├── conversational-ai/
+│   ├── engagement-model/
 │   └── bff/
 ├── mcp-servers/                 # MCP Server implementations
 │   ├── collection-mcp/
 │   ├── plantation-mcp/
 │   ├── knowledge-mcp/
-│   └── action-plan-mcp/
+│   ├── action-plan-mcp/
+│   └── engagement-mcp/
 ├── proto/                       # Shared Protocol Buffer definitions
 │   ├── collection/v1/
 │   ├── plantation/v1/
@@ -485,7 +487,7 @@ class NotificationService:
 
 ## Architecture & Domain Model Rules
 
-### Domain Model Boundaries (8 Models)
+### Domain Model Boundaries (9 Models)
 
 | Model | Responsibility | Does NOT |
 |-------|---------------|----------|
@@ -497,6 +499,7 @@ class NotificationService:
 | Market Analysis | Buyer profiles, lot matching | Generate action plans |
 | AI Model | Agent orchestration, LLM calls | Own business data |
 | Conversational AI | Two-way dialogue (voice chatbot, text chat) | Execute AI logic, deliver final messages |
+| Engagement | Track progress, streaks, milestones, motivation | Diagnose issues, deliver messages |
 
 ### Cross-Model Communication
 
@@ -515,11 +518,12 @@ class NotificationService:
 ### MongoDB Collection Ownership
 
 - `collection_model`: `quality_events`, `weather_data`, `documents_index`
-- `plantation_model`: `farmers`, `factories`, `regions`, `grading_models`
+- `plantation_model`: `farmers`, `factories`, `regions`, `grading_models`, `farmer_performance`
 - `knowledge_model`: `diagnoses`, `triage_feedback`
 - `action_plan_model`: `action_plans`, `farmer_dashboard_view`
 - `ai_model`: `prompts`, `rag_documents`, `workflow_checkpoints`, `agent_configs`
 - `conversational_ai_model`: `sessions`, `conversation_history`, `channel_configs`
+- `engagement_model`: `engagement_state`, `milestones`, `celebrations`
 
 ### Region Definition (Plantation Model)
 
