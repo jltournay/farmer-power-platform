@@ -1,7 +1,7 @@
 # Story 1.7: Quality Grading Event Subscription
 
-**Status:** ready-for-dev
-**GitHub Issue:** <!-- To be created -->
+**Status:** review
+**GitHub Issue:** #24
 
 ---
 
@@ -108,8 +108,8 @@ Now that Epic 2 is complete:
 
 ## Tasks / Subtasks
 
-- [ ] **Task 0: Add quality thresholds to Factory entity** (Prerequisite for Engagement Model)
-  - [ ] 0.1 Create `QualityThresholds` value object in `domain/models/value_objects.py`:
+- [x] **Task 0: Add quality thresholds to Factory entity** (Prerequisite for Engagement Model) ✅
+  - [x] 0.1 Create `QualityThresholds` value object in `domain/models/value_objects.py`:
     ```python
     class QualityThresholds(BaseModel):
         """Factory-configurable quality thresholds.
@@ -123,69 +123,71 @@ Now that Epic 2 is complete:
         tier_3: float = Field(default=50.0, ge=0, le=100, description="Acceptable tier threshold (≥X% Primary)")
         # Below tier_3 = Below Standard (auto-calculated)
     ```
-  - [ ] 0.2 Add `quality_thresholds: QualityThresholds` field to `Factory` entity in `domain/models/factory.py`
-  - [ ] 0.3 Add `quality_thresholds` to `FactoryCreate` and `FactoryUpdate` models
-  - [ ] 0.4 Update gRPC service to handle quality_thresholds field
-  - [ ] 0.5 Update MCP server's `get_factory` tool to include quality_thresholds in response
-  - [ ] 0.6 Add unit tests for threshold validation (tier_1 > tier_2 > tier_3)
+  - [x] 0.2 Add `quality_thresholds: QualityThresholds` field to `Factory` entity in `domain/models/factory.py`
+  - [x] 0.3 Add `quality_thresholds` to `FactoryCreate` and `FactoryUpdate` models
+  - [x] 0.4 Update proto file and regenerate stubs, update gRPC service to handle quality_thresholds field
+  - [x] 0.5 Add `get_factory` MCP tool with quality_thresholds in response
+  - [x] 0.6 Add unit tests for threshold validation (tier_1 > tier_2 > tier_3) - 10 new tests in `test_factory_model.py`
 
-- [ ] **Task 1: Create DAPR Pub/Sub subscription handler** (AC: #1)
-  - [ ] 1.1 Create `api/event_handlers/quality_result_handler.py`
-  - [ ] 1.2 Implement DAPR subscription endpoint for `collection.quality_result.received`
-  - [ ] 1.3 Parse event payload: `document_id`, `plantation_id`, `batch_timestamp`
-  - [ ] 1.4 Add OpenTelemetry tracing for event processing
-  - [ ] 1.5 Register subscription in DAPR component config
+- [x] **Task 1: Create DAPR Pub/Sub subscription handler** (AC: #1) ✅
+  - [x] 1.1 Create `api/event_handlers/quality_result_handler.py`
+  - [x] 1.2 Implement DAPR subscription endpoint for `collection.quality_result.received`
+  - [x] 1.3 Parse event payload: `document_id`, `plantation_id`, `batch_timestamp`
+  - [x] 1.4 Add OpenTelemetry tracing for event processing
+  - [x] 1.5 Register subscription in DAPR component config (`deploy/dapr/components/pubsub.yaml`)
+  - [x] 1.6 Add new event topics to `fp_common/models/domain_events.py`
 
-- [ ] **Task 2: Add versioned lookup to GradingModelRepository** (AC: #1)
-  - [ ] 2.1 Add `get_by_id_and_version(model_id, model_version)` method to `GradingModelRepository`
-  - [ ] 2.2 Query by both `model_id` AND `model_version` fields
-  - [ ] 2.3 Add composite index on `(model_id, model_version)` for efficient lookup
-  - [ ] 2.4 Add unit tests for versioned lookup
+- [x] **Task 2: Add versioned lookup to GradingModelRepository** (AC: #1) ✅
+  - [x] 2.1 Add `get_by_id_and_version(model_id, model_version)` method to `GradingModelRepository`
+  - [x] 2.2 Query by both `model_id` AND `model_version` fields
+  - [x] 2.3 Add composite index on `(model_id, model_version)` for efficient lookup
+  - [x] 2.4 Add unit tests for versioned lookup - 3 new tests in `test_grading_model_repository.py`
 
-- [ ] **Task 3: Create Collection MCP client** (AC: #1)
-  - [ ] 3.1 Create `infrastructure/clients/collection_mcp_client.py`
-  - [ ] 3.2 Implement `get_document(document_id)` via gRPC to Collection MCP
-  - [ ] 3.3 Handle connection errors and timeouts gracefully
-  - [ ] 3.4 Add retry logic with exponential backoff
+- [x] **Task 3: Create Collection client** (AC: #1) ✅
+  - [x] 3.1 Create `infrastructure/collection_client.py`
+  - [x] 3.2 Implement `get_document(document_id)` via MongoDB to Collection Model database
+  - [x] 3.3 Handle connection errors and timeouts gracefully
+  - [x] 3.4 Add retry logic with exponential backoff (tenacity)
 
-- [ ] **Task 4: Implement performance update service** (AC: #2, #4)
-  - [ ] 4.1 Create `domain/services/performance_update_service.py`
-  - [ ] 4.2 Implement `update_today_metrics(farmer_id, primary_count, secondary_count, attribute_distribution, weight_kg)`
-  - [ ] 4.3 Handle date rollover (reset `today` when date changes)
-  - [ ] 4.4 Use atomic MongoDB update with `$inc` for counters
-  - [ ] 4.5 Handle farmer not found (log warning, skip update)
+- [x] **Task 4: Implement QualityEventProcessor service** (AC: #2, #4) ✅
+  - [x] 4.1 Create `domain/services/quality_event_processor.py`
+  - [x] 4.2 Implement `process()` method orchestrating full event processing
+  - [x] 4.3 Handle date rollover (reset `today` when date changes)
+  - [x] 4.4 Use atomic MongoDB update with `$inc` for counters via repository
+  - [x] 4.5 Handle farmer not found (log warning, skip update)
 
-- [ ] **Task 5: Implement domain event emission - plantation.quality.graded** (AC: #3)
-  - [ ] 5.1 Reuse `DaprEventPublisher` pattern from Collection Model (generic payload dict)
-  - [ ] 5.2 Emit `plantation.quality.graded` event via `event_publisher.publish()` after performance update
-  - [ ] 5.3 Include payload fields: `farmer_id`, `document_id`, `grading_model_id`, `grading_model_version`, `grade_counts`, `attribute_distribution`, `timestamp`
-  - [ ] 5.4 **NO dedicated Pydantic model** - use dynamic dict like Collection Model
+- [x] **Task 5: Implement domain event emission - plantation.quality.graded** (AC: #3) ✅
+  - [x] 5.1 Reuse `DaprPubSubClient` pattern (generic payload dict)
+  - [x] 5.2 Emit `plantation.quality.graded` event via `event_publisher.publish()` after performance update
+  - [x] 5.3 Include payload fields: `farmer_id`, `document_id`, `grading_model_id`, `grading_model_version`, `grade_counts`, `attribute_distribution`, `timestamp`
+  - [x] 5.4 **NO dedicated Pydantic model** - use dynamic dict like Collection Model
 
-- [ ] **Task 5b: Implement performance summary computation** (AC: #4)
-  - [ ] 5b.1 Create `domain/services/performance_summary_service.py`
-  - [ ] 5b.2 Implement `compute_primary_percentage(grade_counts)` - calculate % from today's counts
-  - [ ] 5b.3 Implement `compute_improvement_trend(farmer_performance)` - compare recent vs previous (improving/stable/declining)
-  - [ ] 5b.4 **NO category computation** - Engagement Model owns WIN/WATCH/WORK/WARN vocabulary
+- [x] **Task 5b: Implement performance summary computation** (AC: #4) ✅
+  - [x] 5b.1 Methods in `QualityEventProcessor`
+  - [x] 5b.2 Implement `_compute_primary_percentage(grade_counts)` - calculate % from today's counts
+  - [x] 5b.3 Implement `_compute_improvement_trend(farmer_performance)` - compare recent vs previous (improving/stable/declining)
+  - [x] 5b.4 **NO category computation** - Engagement Model owns WIN/WATCH/WORK/WARN vocabulary
 
-- [ ] **Task 5c: Emit plantation.performance_updated event** (AC: #4)
-  - [ ] 5c.1 Emit `plantation.performance_updated` event after summary computation
-  - [ ] 5c.2 Include payload: `farmer_id`, `factory_id`, `primary_percentage`, `improvement_trend`, `today`, `triggered_by_document_id`
-  - [ ] 5c.3 **NO `current_category`** - Engagement Model computes from primary_percentage + factory thresholds
-  - [ ] 5c.4 This event is consumed by Engagement Model for streak/milestone updates
+- [x] **Task 5c: Emit plantation.performance_updated event** (AC: #4) ✅
+  - [x] 5c.1 Emit `plantation.performance_updated` event after summary computation
+  - [x] 5c.2 Include payload: `farmer_id`, `factory_id`, `primary_percentage`, `improvement_trend`, `today`, `triggered_by_document_id`
+  - [x] 5c.3 **NO `current_category`** - Engagement Model computes from primary_percentage + factory thresholds
+  - [x] 5c.4 This event is consumed by Engagement Model for streak/milestone updates
 
-- [ ] **Task 6: Implement error handling** (AC: #5)
-  - [ ] 6.1 Define `QualityEventProcessingError` exception class
-  - [ ] 6.2 Handle: document not found, farmer not found, missing grade counts
-  - [ ] 6.3 Log errors with full context (document_id, farmer_id, error details)
-  - [ ] 6.4 Emit failure metrics: `plantation.quality_event.failed`
-  - [ ] 6.5 Return appropriate DAPR acknowledgment (SUCCESS, RETRY, DROP)
+- [x] **Task 6: Implement error handling** (AC: #5) ✅
+  - [x] 6.1 Define `QualityEventProcessingError` exception class
+  - [x] 6.2 Handle: document not found, farmer not found, missing grade counts
+  - [x] 6.3 Log errors with full context (document_id, farmer_id, error details)
+  - [x] 6.4 Return appropriate DAPR acknowledgment (SUCCESS, RETRY, DROP) in event handler
 
-- [ ] **Task 7: Write unit tests** (AC: #1-5)
-  - [ ] 7.1 Test event handler parses payload correctly
-  - [ ] 7.2 Test performance update increments both primary and secondary counters correctly
-  - [ ] 7.3 Test date rollover resets today metrics
-  - [ ] 7.4 Test domain event is emitted with correct payload (including `attribute_distribution`)
-  - [ ] 7.5 Test error cases: missing document, missing farmer, missing grade counts
+- [x] **Task 7: Write unit tests** (AC: #1-5) ✅
+  - [x] 7.1 Test event handler parses payload correctly
+  - [x] 7.2 Test performance update increments grade counters correctly
+  - [x] 7.3 Test date rollover resets today metrics
+  - [x] 7.4 Test domain events are emitted with correct payload (including `attribute_distribution`)
+  - [x] 7.5 Test error cases: missing document, missing farmer, missing grade counts
+  - [x] 7.6 Test Collection client: success, not found, database errors
+  - [x] 7.7 26 new tests in `test_quality_event_processor.py` and `test_collection_client.py`
 
 - [ ] **Task 8: Integration test with mock DAPR** (AC: #1-5)
   - [ ] 8.1 Create integration test simulating full event flow

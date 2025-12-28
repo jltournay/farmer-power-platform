@@ -31,9 +31,11 @@ class McpToolServiceServicer(mcp_tool_pb2_grpc.McpToolServiceServicer):
 
         Args:
             plantation_client: Client for Plantation Model service.
+
         """
         self._plantation_client = plantation_client
         self._tool_handlers: dict[str, Any] = {
+            "get_factory": self._handle_get_factory,
             "get_farmer": self._handle_get_farmer,
             "get_farmer_summary": self._handle_get_farmer_summary,
             "get_collection_points": self._handle_get_collection_points,
@@ -53,6 +55,7 @@ class McpToolServiceServicer(mcp_tool_pb2_grpc.McpToolServiceServicer):
 
         Returns:
             ListToolsResponse with tool definitions.
+
         """
         with tracer.start_as_current_span("mcp.list_tools") as span:
             category = request.category if request.category else None
@@ -88,6 +91,7 @@ class McpToolServiceServicer(mcp_tool_pb2_grpc.McpToolServiceServicer):
 
         Returns:
             ToolCallResponse with result or error.
+
         """
         with tracer.start_as_current_span(f"mcp.call_tool.{request.tool_name}") as span:
             span.set_attribute("mcp.tool_name", request.tool_name)
@@ -195,6 +199,19 @@ class McpToolServiceServicer(mcp_tool_pb2_grpc.McpToolServiceServicer):
     # Tool Handlers
     # =========================================================================
 
+    async def _handle_get_factory(self, arguments: dict[str, Any]) -> dict[str, Any]:
+        """Handle get_factory tool call.
+
+        Args:
+            arguments: Tool arguments with factory_id.
+
+        Returns:
+            Factory details dict including quality_thresholds.
+
+        """
+        factory_id = arguments["factory_id"]
+        return await self._plantation_client.get_factory(factory_id)
+
     async def _handle_get_farmer(self, arguments: dict[str, Any]) -> dict[str, Any]:
         """Handle get_farmer tool call.
 
@@ -203,6 +220,7 @@ class McpToolServiceServicer(mcp_tool_pb2_grpc.McpToolServiceServicer):
 
         Returns:
             Farmer details dict.
+
         """
         farmer_id = arguments["farmer_id"]
         return await self._plantation_client.get_farmer(farmer_id)
@@ -215,6 +233,7 @@ class McpToolServiceServicer(mcp_tool_pb2_grpc.McpToolServiceServicer):
 
         Returns:
             Farmer summary dict with performance metrics.
+
         """
         farmer_id = arguments["farmer_id"]
         return await self._plantation_client.get_farmer_summary(farmer_id)
@@ -227,6 +246,7 @@ class McpToolServiceServicer(mcp_tool_pb2_grpc.McpToolServiceServicer):
 
         Returns:
             Dict with list of collection points.
+
         """
         factory_id = arguments["factory_id"]
         collection_points = await self._plantation_client.get_collection_points(factory_id)
@@ -240,6 +260,7 @@ class McpToolServiceServicer(mcp_tool_pb2_grpc.McpToolServiceServicer):
 
         Returns:
             Dict with list of farmers.
+
         """
         collection_point_id = arguments["collection_point_id"]
         farmers = await self._plantation_client.get_farmers_by_collection_point(collection_point_id)

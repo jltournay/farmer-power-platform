@@ -74,6 +74,15 @@ message ContactInfo {
   string address = 3;
 }
 
+// Factory-configurable quality thresholds for farmer categorization (Story 1.7)
+// NEUTRAL NAMING: tier_1, tier_2, tier_3 (NOT WIN/WATCH/WORK)
+// Engagement Model maps these to engagement categories.
+message QualityThresholds {
+  double tier_1 = 1;  // Premium tier threshold (default ≥85% Primary)
+  double tier_2 = 2;  // Standard tier threshold (default ≥70% Primary)
+  double tier_3 = 3;  // Acceptable tier threshold (default ≥50% Primary)
+}
+
 // ============================================================================
 // Region Messages
 // ============================================================================
@@ -133,9 +142,10 @@ message Factory {
   GeoLocation location = 5;
   ContactInfo contact = 6;
   int32 processing_capacity_kg = 7;
-  bool is_active = 8;
-  google.protobuf.Timestamp created_at = 9;
-  google.protobuf.Timestamp updated_at = 10;
+  QualityThresholds quality_thresholds = 8;  // Story 1.7: Quality tier thresholds
+  bool is_active = 9;
+  google.protobuf.Timestamp created_at = 10;
+  google.protobuf.Timestamp updated_at = 11;
 }
 
 message GetFactoryRequest {
@@ -162,6 +172,7 @@ message CreateFactoryRequest {
   GeoLocation location = 4;
   ContactInfo contact = 5;
   int32 processing_capacity_kg = 6;
+  QualityThresholds quality_thresholds = 7;  // Optional, defaults to 85/70/50
 }
 
 message UpdateFactoryRequest {
@@ -171,7 +182,8 @@ message UpdateFactoryRequest {
   optional GeoLocation location = 4;
   optional ContactInfo contact = 5;
   optional int32 processing_capacity_kg = 6;
-  optional bool is_active = 7;
+  optional QualityThresholds quality_thresholds = 7;  // Story 1.7
+  optional bool is_active = 8;
 }
 
 message DeleteFactoryRequest {

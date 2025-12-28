@@ -1,0 +1,49 @@
+# DAPR Pub/Sub Component for Farmer Power Platform
+#
+# This component enables event-driven communication between microservices.
+# Story 1.7: Quality grading event subscription
+#
+# Topics:
+# - collection.quality_result.received: QC Analyzer results (Collection -> Plantation)
+# - plantation.quality.graded: Grade update notifications (Plantation -> Engagement)
+# - plantation.performance_updated: Performance summary updates (Plantation -> Engagement)
+
+---
+# Redis Pub/Sub (Development/Local)
+# Default for local development with Docker Compose
+apiVersion: dapr.io/v1alpha1
+kind: Component
+metadata:
+  name: pubsub
+  namespace: default
+spec:
+  type: pubsub.redis
+  version: v1
+  metadata:
+    - name: redisHost
+      value: "localhost:6379"
+    - name: redisPassword
+      value: ""
+
+---
+# Azure Service Bus (Production)
+# Uncomment and configure for production deployments
+#
+# Prerequisites:
+# 1. Create Azure Service Bus namespace
+# 2. Create topics for each event type
+# 3. Set connection string in Key Vault
+#
+# apiVersion: dapr.io/v1alpha1
+# kind: Component
+# metadata:
+#   name: pubsub
+#   namespace: farmer-power
+# spec:
+#   type: pubsub.azure.servicebus
+#   version: v1
+#   metadata:
+#     - name: connectionString
+#       secretKeyRef:
+#         name: azure-keyvault
+#         key: service-bus-connection-string

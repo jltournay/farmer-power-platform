@@ -16,6 +16,24 @@ class ToolDefinition(BaseModel):
 
 # Tool registry - all available tools
 TOOL_REGISTRY: dict[str, ToolDefinition] = {
+    "get_factory": ToolDefinition(
+        name="get_factory",
+        description=(
+            "Get factory details by ID. Returns name, code, region, location, "
+            "processing capacity, and quality thresholds (tier_1, tier_2, tier_3)."
+        ),
+        input_schema={
+            "type": "object",
+            "properties": {
+                "factory_id": {
+                    "type": "string",
+                    "description": "Factory ID (e.g., KEN-FAC-001)",
+                },
+            },
+            "required": ["factory_id"],
+        },
+        category="query",
+    ),
     "get_farmer": ToolDefinition(
         name="get_farmer",
         description=(
@@ -28,7 +46,7 @@ TOOL_REGISTRY: dict[str, ToolDefinition] = {
                 "farmer_id": {
                     "type": "string",
                     "description": "Farmer ID (e.g., WM-0001)",
-                }
+                },
             },
             "required": ["farmer_id"],
         },
@@ -45,7 +63,7 @@ TOOL_REGISTRY: dict[str, ToolDefinition] = {
                 "farmer_id": {
                     "type": "string",
                     "description": "Farmer ID (e.g., WM-0001)",
-                }
+                },
             },
             "required": ["farmer_id"],
         },
@@ -60,7 +78,7 @@ TOOL_REGISTRY: dict[str, ToolDefinition] = {
                 "factory_id": {
                     "type": "string",
                     "description": "Factory ID",
-                }
+                },
             },
             "required": ["factory_id"],
         },
@@ -75,7 +93,7 @@ TOOL_REGISTRY: dict[str, ToolDefinition] = {
                 "collection_point_id": {
                     "type": "string",
                     "description": "Collection point ID",
-                }
+                },
             },
             "required": ["collection_point_id"],
         },

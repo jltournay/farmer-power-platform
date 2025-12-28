@@ -52,6 +52,10 @@ class PlantationEventTopic(StrEnum):
     PLOT_CREATED = "plantation.plot.created"
     PLOT_UPDATED = "plantation.plot.updated"
 
+    # Quality events (Story 1.7)
+    QUALITY_GRADED = "plantation.quality.graded"
+    PERFORMANCE_UPDATED = "plantation.performance_updated"
+
 
 def get_all_valid_topics() -> list[str]:
     """Get all valid domain event topic names.

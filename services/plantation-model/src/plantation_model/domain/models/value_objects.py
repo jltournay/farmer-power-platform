@@ -60,3 +60,55 @@ class CollectionPointCapacity(BaseModel):
     )
     has_weighing_scale: bool = Field(default=False, description="Has weighing scale")
     has_qc_device: bool = Field(default=False, description="Has quality control device")
+
+
+class QualityThresholds(BaseModel):
+    """Factory-configurable quality thresholds for farmer categorization.
+
+    NEUTRAL NAMING: tier_1, tier_2, tier_3 (NOT WIN/WATCH/WORK)
+    Engagement Model maps these to engagement categories.
+    Factory Admin UI shows as: Premium/Standard/Acceptable/Below Standard.
+
+    Thresholds define minimum Primary % for each tier:
+    - tier_1: Premium tier (default ≥85% Primary)
+    - tier_2: Standard tier (default ≥70% Primary)
+    - tier_3: Acceptable tier (default ≥50% Primary)
+    - Below tier_3 = Below Standard (auto-calculated)
+    """
+
+    tier_1: float = Field(
+        default=85.0,
+        ge=0,
+        le=100,
+        description="Premium tier threshold (≥X% Primary)",
+    )
+    tier_2: float = Field(
+        default=70.0,
+        ge=0,
+        le=100,
+        description="Standard tier threshold (≥X% Primary)",
+    )
+    tier_3: float = Field(
+        default=50.0,
+        ge=0,
+        le=100,
+        description="Acceptable tier threshold (≥X% Primary)",
+    )
+
+    @field_validator("tier_2")
+    @classmethod
+    def tier_2_less_than_tier_1(cls, v: float, info) -> float:
+        """Validate tier_2 < tier_1."""
+        tier_1 = info.data.get("tier_1", 85.0)
+        if v >= tier_1:
+            raise ValueError(f"tier_2 ({v}) must be less than tier_1 ({tier_1})")
+        return v
+
+    @field_validator("tier_3")
+    @classmethod
+    def tier_3_less_than_tier_2(cls, v: float, info) -> float:
+        """Validate tier_3 < tier_2."""
+        tier_2 = info.data.get("tier_2", 70.0)
+        if v >= tier_2:
+            raise ValueError(f"tier_3 ({v}) must be less than tier_2 ({tier_2})")
+        return v

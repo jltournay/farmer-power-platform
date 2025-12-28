@@ -20,13 +20,9 @@ logger = structlog.get_logger(__name__)
 class ServiceUnavailableError(Exception):
     """Raised when the Plantation Model service is unavailable."""
 
-    pass
-
 
 class NotFoundError(Exception):
     """Raised when a resource is not found."""
-
-    pass
 
 
 class PlantationClient:
@@ -40,6 +36,7 @@ class PlantationClient:
 
         Args:
             channel: Optional gRPC channel. If not provided, creates one to DAPR sidecar.
+
         """
         self._channel = channel
         self._stub: plantation_pb2_grpc.PlantationServiceStub | None = None
@@ -74,6 +71,7 @@ class PlantationClient:
         Raises:
             NotFoundError: If farmer not found.
             ServiceUnavailableError: If service is unavailable.
+
         """
         try:
             stub = await self._get_stub()
@@ -111,6 +109,7 @@ class PlantationClient:
         Raises:
             NotFoundError: If farmer not found.
             ServiceUnavailableError: If service is unavailable.
+
         """
         try:
             stub = await self._get_stub()
@@ -145,6 +144,7 @@ class PlantationClient:
 
         Raises:
             ServiceUnavailableError: If service is unavailable.
+
         """
         try:
             stub = await self._get_stub()
@@ -177,6 +177,7 @@ class PlantationClient:
 
         Raises:
             ServiceUnavailableError: If service is unavailable.
+
         """
         try:
             stub = await self._get_stub()
@@ -191,6 +192,75 @@ class PlantationClient:
             if e.code() == grpc.StatusCode.UNAVAILABLE:
                 raise ServiceUnavailableError(f"Plantation service unavailable: {e.details()}") from e
             raise
+
+    @retry(
+        retry=retry_if_exception_type(grpc.aio.AioRpcError),
+        stop=stop_after_attempt(3),
+        wait=wait_exponential(multiplier=1, min=1, max=10),
+        reraise=True,
+    )
+    async def get_factory(self, factory_id: str) -> dict[str, Any]:
+        """Get factory by ID.
+
+        Args:
+            factory_id: The factory ID (e.g., KEN-FAC-001).
+
+        Returns:
+            Dict with factory details including quality_thresholds.
+
+        Raises:
+            NotFoundError: If factory not found.
+            ServiceUnavailableError: If service is unavailable.
+
+        """
+        try:
+            stub = await self._get_stub()
+            request = plantation_pb2.GetFactoryRequest(id=factory_id)
+            metadata = [("dapr-app-id", settings.plantation_app_id)]
+
+            response = await stub.GetFactory(request, metadata=metadata)
+
+            return self._factory_to_dict(response)
+
+        except grpc.aio.AioRpcError as e:
+            if e.code() == grpc.StatusCode.NOT_FOUND:
+                raise NotFoundError(f"Factory not found: {factory_id}") from e
+            if e.code() == grpc.StatusCode.UNAVAILABLE:
+                raise ServiceUnavailableError(f"Plantation service unavailable: {e.details()}") from e
+            raise
+
+    def _factory_to_dict(self, factory: plantation_pb2.Factory) -> dict[str, Any]:
+        """Convert Factory proto to dict."""
+        result = {
+            "factory_id": factory.id,
+            "name": factory.name,
+            "code": factory.code,
+            "region_id": factory.region_id,
+            "location": {
+                "latitude": factory.location.latitude if factory.location else 0,
+                "longitude": factory.location.longitude if factory.location else 0,
+                "altitude_meters": factory.location.altitude_meters if factory.location else 0,
+            },
+            "processing_capacity_kg": factory.processing_capacity_kg,
+            "is_active": factory.is_active,
+        }
+
+        # Add quality thresholds (Story 1.7)
+        if factory.HasField("quality_thresholds"):
+            result["quality_thresholds"] = {
+                "tier_1": factory.quality_thresholds.tier_1,
+                "tier_2": factory.quality_thresholds.tier_2,
+                "tier_3": factory.quality_thresholds.tier_3,
+            }
+        else:
+            # Return defaults if not set
+            result["quality_thresholds"] = {
+                "tier_1": 85.0,
+                "tier_2": 70.0,
+                "tier_3": 50.0,
+            }
+
+        return result
 
     def _farmer_to_dict(self, farmer: plantation_pb2.Farmer) -> dict[str, Any]:
         """Convert Farmer proto to dict."""

@@ -2,7 +2,7 @@
 
 import pytest
 from plantation_model.domain.models.factory import Factory, FactoryCreate, FactoryUpdate
-from plantation_model.domain.models.value_objects import ContactInfo, GeoLocation
+from plantation_model.domain.models.value_objects import ContactInfo, GeoLocation, QualityThresholds
 from pydantic import ValidationError
 
 
@@ -164,3 +164,105 @@ class TestFactoryUpdate:
         assert update.code == "UF"
         assert update.processing_capacity_kg == 100000
         assert update.is_active is False
+
+
+class TestQualityThresholds:
+    """Tests for QualityThresholds value object (Story 1.7)."""
+
+    def test_quality_thresholds_defaults(self) -> None:
+        """Test default threshold values."""
+        thresholds = QualityThresholds()
+
+        assert thresholds.tier_1 == 85.0
+        assert thresholds.tier_2 == 70.0
+        assert thresholds.tier_3 == 50.0
+
+    def test_quality_thresholds_custom_valid(self) -> None:
+        """Test custom threshold values."""
+        thresholds = QualityThresholds(tier_1=90.0, tier_2=75.0, tier_3=55.0)
+
+        assert thresholds.tier_1 == 90.0
+        assert thresholds.tier_2 == 75.0
+        assert thresholds.tier_3 == 55.0
+
+    def test_quality_thresholds_tier2_must_be_less_than_tier1(self) -> None:
+        """Test tier_2 must be less than tier_1."""
+        with pytest.raises(ValidationError) as exc_info:
+            QualityThresholds(tier_1=80.0, tier_2=85.0, tier_3=50.0)
+
+        assert "tier_2" in str(exc_info.value)
+
+    def test_quality_thresholds_tier3_must_be_less_than_tier2(self) -> None:
+        """Test tier_3 must be less than tier_2."""
+        with pytest.raises(ValidationError) as exc_info:
+            QualityThresholds(tier_1=85.0, tier_2=70.0, tier_3=75.0)
+
+        assert "tier_3" in str(exc_info.value)
+
+    def test_quality_thresholds_equal_values_rejected(self) -> None:
+        """Test equal tier values are rejected."""
+        with pytest.raises(ValidationError):
+            QualityThresholds(tier_1=70.0, tier_2=70.0, tier_3=50.0)
+
+    def test_quality_thresholds_range_validation(self) -> None:
+        """Test threshold values must be 0-100."""
+        with pytest.raises(ValidationError):
+            QualityThresholds(tier_1=150.0)  # > 100
+
+        with pytest.raises(ValidationError):
+            QualityThresholds(tier_1=-10.0)  # < 0
+
+    def test_factory_with_custom_thresholds(self) -> None:
+        """Test factory with custom quality thresholds."""
+        factory = Factory(
+            id="KEN-FAC-001",
+            name="Test Factory",
+            code="TF",
+            region_id="test",
+            location=GeoLocation(latitude=0, longitude=0),
+            quality_thresholds=QualityThresholds(
+                tier_1=90.0,
+                tier_2=75.0,
+                tier_3=60.0,
+            ),
+        )
+
+        assert factory.quality_thresholds.tier_1 == 90.0
+        assert factory.quality_thresholds.tier_2 == 75.0
+        assert factory.quality_thresholds.tier_3 == 60.0
+
+    def test_factory_default_thresholds(self) -> None:
+        """Test factory uses default thresholds if not specified."""
+        factory = Factory(
+            id="KEN-FAC-001",
+            name="Test Factory",
+            code="TF",
+            region_id="test",
+            location=GeoLocation(latitude=0, longitude=0),
+        )
+
+        assert factory.quality_thresholds.tier_1 == 85.0
+        assert factory.quality_thresholds.tier_2 == 70.0
+        assert factory.quality_thresholds.tier_3 == 50.0
+
+    def test_factory_create_with_thresholds(self) -> None:
+        """Test FactoryCreate with quality thresholds."""
+        create_req = FactoryCreate(
+            name="New Factory",
+            code="NF",
+            region_id="test-region",
+            location=GeoLocation(latitude=-0.5, longitude=36.5),
+            quality_thresholds=QualityThresholds(tier_1=88.0, tier_2=72.0, tier_3=55.0),
+        )
+
+        assert create_req.quality_thresholds is not None
+        assert create_req.quality_thresholds.tier_1 == 88.0
+
+    def test_factory_update_with_thresholds(self) -> None:
+        """Test FactoryUpdate with quality thresholds."""
+        update = FactoryUpdate(
+            quality_thresholds=QualityThresholds(tier_1=92.0, tier_2=78.0, tier_3=58.0),
+        )
+
+        assert update.quality_thresholds is not None
+        assert update.quality_thresholds.tier_1 == 92.0

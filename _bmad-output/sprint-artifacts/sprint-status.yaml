@@ -63,7 +63,7 @@ development_status:
   1-4-farmer-performance-history-structure: done
   1-5-farmer-communication-preferences: done
   1-6-plantation-model-mcp-server: done  # github_issue: 13
-  1-7-quality-grading-event-subscription: backlog  # NEW: Subscribe to Collection Model events and update farmer performance (continuation of Story 1-4)
+  1-7-quality-grading-event-subscription: review  # github_issue: 24
   epic-1-retrospective: optional  # Reset: new story added
 
   # Epic 2: Quality Data Ingestion (REVISED - BLOB_TRIGGER architecture)

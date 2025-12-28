@@ -62,6 +62,30 @@ class GradingModelRepository(BaseRepository[GradingModel]):
         doc.pop("_id", None)
         return GradingModel.model_validate(doc)
 
+    async def get_by_id_and_version(self, model_id: str, model_version: str) -> GradingModel | None:
+        """Get a grading model by ID and version (Story 1.7).
+
+        Used when processing quality result events to ensure we use the
+        exact version of the grading model that was used for classification.
+
+        Args:
+            model_id: The grading model's unique identifier.
+            model_version: The specific version of the model.
+
+        Returns:
+            The grading model if found with matching version, None otherwise.
+        """
+        doc = await self._collection.find_one({"model_id": model_id, "model_version": model_version})
+        if doc is None:
+            logger.debug(
+                "Grading model not found: model_id=%s, version=%s",
+                model_id,
+                model_version,
+            )
+            return None
+        doc.pop("_id", None)
+        return GradingModel.model_validate(doc)
+
     async def get_by_factory(self, factory_id: str) -> GradingModel | None:
         """Get the grading model assigned to a factory.
 
@@ -214,6 +238,10 @@ class GradingModelRepository(BaseRepository[GradingModel]):
             [("model_id", ASCENDING)],
             unique=True,
             name="idx_grading_model_id",
+        )
+        await self._collection.create_index(
+            [("model_id", ASCENDING), ("model_version", ASCENDING)],
+            name="idx_grading_model_id_version",
         )
         await self._collection.create_index(
             [("active_at_factory", ASCENDING)],

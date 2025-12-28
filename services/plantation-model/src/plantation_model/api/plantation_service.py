@@ -34,6 +34,7 @@ from plantation_model.domain.models.value_objects import (
     ContactInfo,
     GeoLocation,
     OperatingHours,
+    QualityThresholds,
 )
 from plantation_model.infrastructure.dapr_client import DaprPubSubClient
 from plantation_model.infrastructure.google_elevation import (
@@ -101,6 +102,7 @@ class PlantationServiceServicer(plantation_pb2_grpc.PlantationServiceServicer):
             dapr_client: Optional Dapr pub/sub client for event publishing.
             grading_model_repo: Optional grading model repository instance.
             farmer_performance_repo: Optional farmer performance repository instance.
+
         """
         self._factory_repo = factory_repo
         self._cp_repo = collection_point_repo
@@ -133,6 +135,11 @@ class PlantationServiceServicer(plantation_pb2_grpc.PlantationServiceServicer):
                 address=factory.contact.address,
             ),
             processing_capacity_kg=factory.processing_capacity_kg,
+            quality_thresholds=plantation_pb2.QualityThresholds(
+                tier_1=factory.quality_thresholds.tier_1,
+                tier_2=factory.quality_thresholds.tier_2,
+                tier_3=factory.quality_thresholds.tier_3,
+            ),
             is_active=factory.is_active,
             created_at=datetime_to_timestamp(factory.created_at),
             updated_at=datetime_to_timestamp(factory.updated_at),
@@ -147,6 +154,7 @@ class PlantationServiceServicer(plantation_pb2_grpc.PlantationServiceServicer):
 
         Returns:
             Altitude in meters, or 0.0 if unavailable.
+
         """
         altitude = await self._elevation_client.get_altitude(latitude, longitude)
         return altitude if altitude is not None else 0.0
@@ -233,6 +241,17 @@ class PlantationServiceServicer(plantation_pb2_grpc.PlantationServiceServicer):
                 address=request.contact.address if request.contact else "",
             ),
             processing_capacity_kg=request.processing_capacity_kg,
+            quality_thresholds=QualityThresholds(
+                tier_1=request.quality_thresholds.tier_1
+                if request.HasField("quality_thresholds") and request.quality_thresholds.tier_1
+                else 85.0,
+                tier_2=request.quality_thresholds.tier_2
+                if request.HasField("quality_thresholds") and request.quality_thresholds.tier_2
+                else 70.0,
+                tier_3=request.quality_thresholds.tier_3
+                if request.HasField("quality_thresholds") and request.quality_thresholds.tier_3
+                else 50.0,
+            ),
             is_active=True,
             created_at=now,
             updated_at=now,
@@ -282,6 +301,12 @@ class PlantationServiceServicer(plantation_pb2_grpc.PlantationServiceServicer):
             ).model_dump()
         if request.HasField("processing_capacity_kg"):
             updates["processing_capacity_kg"] = request.processing_capacity_kg
+        if request.HasField("quality_thresholds"):
+            updates["quality_thresholds"] = QualityThresholds(
+                tier_1=request.quality_thresholds.tier_1,
+                tier_2=request.quality_thresholds.tier_2,
+                tier_3=request.quality_thresholds.tier_3,
+            ).model_dump()
         if request.HasField("is_active"):
             updates["is_active"] = request.is_active
 
@@ -1310,6 +1335,7 @@ class PlantationServiceServicer(plantation_pb2_grpc.PlantationServiceServicer):
         Raises:
             NOT_FOUND: If farmer doesn't exist
             INVALID_ARGUMENT: If channel, interaction preference, or language is invalid
+
         """
         # Validate farmer exists
         farmer = await self._farmer_repo.get_by_id(request.farmer_id)

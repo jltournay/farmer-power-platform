@@ -2,7 +2,7 @@
 
 from datetime import UTC, datetime
 
-from plantation_model.domain.models.value_objects import ContactInfo, GeoLocation
+from plantation_model.domain.models.value_objects import ContactInfo, GeoLocation, QualityThresholds
 from pydantic import BaseModel, Field
 
 
@@ -20,6 +20,10 @@ class Factory(BaseModel):
     location: GeoLocation = Field(description="Geographic location with altitude")
     contact: ContactInfo = Field(default_factory=ContactInfo, description="Contact information")
     processing_capacity_kg: int = Field(default=0, ge=0, description="Daily processing capacity in kg")
+    quality_thresholds: QualityThresholds = Field(
+        default_factory=QualityThresholds,
+        description="Quality tier thresholds for farmer categorization",
+    )
     is_active: bool = Field(default=True, description="Whether factory is active")
     created_at: datetime = Field(
         default_factory=lambda: datetime.now(UTC),
@@ -48,9 +52,14 @@ class Factory(BaseModel):
                     "address": "P.O. Box 123, Nyeri",
                 },
                 "processing_capacity_kg": 50000,
+                "quality_thresholds": {
+                    "tier_1": 85.0,
+                    "tier_2": 70.0,
+                    "tier_3": 50.0,
+                },
                 "is_active": True,
-            }
-        }
+            },
+        },
     }
 
 
@@ -63,6 +72,7 @@ class FactoryCreate(BaseModel):
     location: GeoLocation
     contact: ContactInfo | None = None
     processing_capacity_kg: int = Field(default=0, ge=0)
+    quality_thresholds: QualityThresholds | None = None
 
 
 class FactoryUpdate(BaseModel):
@@ -73,4 +83,5 @@ class FactoryUpdate(BaseModel):
     location: GeoLocation | None = None
     contact: ContactInfo | None = None
     processing_capacity_kg: int | None = Field(default=None, ge=0)
+    quality_thresholds: QualityThresholds | None = None
     is_active: bool | None = None

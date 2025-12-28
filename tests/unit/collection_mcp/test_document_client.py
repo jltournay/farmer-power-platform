@@ -1,14 +1,11 @@
 """Tests for Collection MCP Document Client."""
 
-from datetime import datetime, timezone
 from typing import Any
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
-
 from collection_mcp.infrastructure.document_client import (
     DocumentClient,
-    DocumentClientError,
     DocumentNotFoundError,
 )
 

@@ -1,14 +1,13 @@
 """Tests for Collection MCP tool definitions."""
 
 import pytest
-from jsonschema import validate, ValidationError as JsonSchemaValidationError
-
 from collection_mcp.tools.definitions import (
     TOOL_REGISTRY,
     ToolDefinition,
     get_tool,
     list_tools,
 )
+from jsonschema import ValidationError as JsonSchemaValidationError, validate
 
 
 class TestToolRegistry:

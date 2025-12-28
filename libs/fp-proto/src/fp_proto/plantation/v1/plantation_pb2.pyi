@@ -94,6 +94,16 @@ class ContactInfo(_message.Message):
     address: str
     def __init__(self, phone: str | None = ..., email: str | None = ..., address: str | None = ...) -> None: ...
 
+class QualityThresholds(_message.Message):
+    __slots__ = ("tier_1", "tier_2", "tier_3")
+    TIER_1_FIELD_NUMBER: _ClassVar[int]
+    TIER_2_FIELD_NUMBER: _ClassVar[int]
+    TIER_3_FIELD_NUMBER: _ClassVar[int]
+    tier_1: float
+    tier_2: float
+    tier_3: float
+    def __init__(self, tier_1: float | None = ..., tier_2: float | None = ..., tier_3: float | None = ...) -> None: ...
+
 class Region(_message.Message):
     __slots__ = ("center", "code", "created_at", "id", "is_active", "name", "parent_region_id", "updated_at")
     ID_FIELD_NUMBER: _ClassVar[int]
@@ -212,6 +222,7 @@ class Factory(_message.Message):
         "location",
         "name",
         "processing_capacity_kg",
+        "quality_thresholds",
         "region_id",
         "updated_at",
     )
@@ -222,6 +233,7 @@ class Factory(_message.Message):
     LOCATION_FIELD_NUMBER: _ClassVar[int]
     CONTACT_FIELD_NUMBER: _ClassVar[int]
     PROCESSING_CAPACITY_KG_FIELD_NUMBER: _ClassVar[int]
+    QUALITY_THRESHOLDS_FIELD_NUMBER: _ClassVar[int]
     IS_ACTIVE_FIELD_NUMBER: _ClassVar[int]
     CREATED_AT_FIELD_NUMBER: _ClassVar[int]
     UPDATED_AT_FIELD_NUMBER: _ClassVar[int]
@@ -232,6 +244,7 @@ class Factory(_message.Message):
     location: GeoLocation
     contact: ContactInfo
     processing_capacity_kg: int
+    quality_thresholds: QualityThresholds
     is_active: bool
     created_at: _timestamp_pb2.Timestamp
     updated_at: _timestamp_pb2.Timestamp
@@ -244,6 +257,7 @@ class Factory(_message.Message):
         location: GeoLocation | _Mapping | None = ...,
         contact: ContactInfo | _Mapping | None = ...,
         processing_capacity_kg: int | None = ...,
+        quality_thresholds: QualityThresholds | _Mapping | None = ...,
         is_active: bool = ...,
         created_at: datetime.datetime | _timestamp_pb2.Timestamp | _Mapping | None = ...,
         updated_at: datetime.datetime | _timestamp_pb2.Timestamp | _Mapping | None = ...,
@@ -289,19 +303,21 @@ class ListFactoriesResponse(_message.Message):
     ) -> None: ...
 
 class CreateFactoryRequest(_message.Message):
-    __slots__ = ("code", "contact", "location", "name", "processing_capacity_kg", "region_id")
+    __slots__ = ("code", "contact", "location", "name", "processing_capacity_kg", "quality_thresholds", "region_id")
     NAME_FIELD_NUMBER: _ClassVar[int]
     CODE_FIELD_NUMBER: _ClassVar[int]
     REGION_ID_FIELD_NUMBER: _ClassVar[int]
     LOCATION_FIELD_NUMBER: _ClassVar[int]
     CONTACT_FIELD_NUMBER: _ClassVar[int]
     PROCESSING_CAPACITY_KG_FIELD_NUMBER: _ClassVar[int]
+    QUALITY_THRESHOLDS_FIELD_NUMBER: _ClassVar[int]
     name: str
     code: str
     region_id: str
     location: GeoLocation
     contact: ContactInfo
     processing_capacity_kg: int
+    quality_thresholds: QualityThresholds
     def __init__(
         self,
         name: str | None = ...,
@@ -310,16 +326,27 @@ class CreateFactoryRequest(_message.Message):
         location: GeoLocation | _Mapping | None = ...,
         contact: ContactInfo | _Mapping | None = ...,
         processing_capacity_kg: int | None = ...,
+        quality_thresholds: QualityThresholds | _Mapping | None = ...,
     ) -> None: ...
 
 class UpdateFactoryRequest(_message.Message):
-    __slots__ = ("code", "contact", "id", "is_active", "location", "name", "processing_capacity_kg")
+    __slots__ = (
+        "code",
+        "contact",
+        "id",
+        "is_active",
+        "location",
+        "name",
+        "processing_capacity_kg",
+        "quality_thresholds",
+    )
     ID_FIELD_NUMBER: _ClassVar[int]
     NAME_FIELD_NUMBER: _ClassVar[int]
     CODE_FIELD_NUMBER: _ClassVar[int]
     LOCATION_FIELD_NUMBER: _ClassVar[int]
     CONTACT_FIELD_NUMBER: _ClassVar[int]
     PROCESSING_CAPACITY_KG_FIELD_NUMBER: _ClassVar[int]
+    QUALITY_THRESHOLDS_FIELD_NUMBER: _ClassVar[int]
     IS_ACTIVE_FIELD_NUMBER: _ClassVar[int]
     id: str
     name: str
@@ -327,6 +354,7 @@ class UpdateFactoryRequest(_message.Message):
     location: GeoLocation
     contact: ContactInfo
     processing_capacity_kg: int
+    quality_thresholds: QualityThresholds
     is_active: bool
     def __init__(
         self,
@@ -336,6 +364,7 @@ class UpdateFactoryRequest(_message.Message):
         location: GeoLocation | _Mapping | None = ...,
         contact: ContactInfo | _Mapping | None = ...,
         processing_capacity_kg: int | None = ...,
+        quality_thresholds: QualityThresholds | _Mapping | None = ...,
         is_active: bool = ...,
     ) -> None: ...
 

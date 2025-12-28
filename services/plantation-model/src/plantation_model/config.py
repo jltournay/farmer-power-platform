@@ -53,6 +53,11 @@ class Settings(BaseSettings):
     # Google APIs configuration
     google_elevation_api_key: str = ""  # Required for altitude auto-population
 
+    # Collection Model configuration (Story 1.7)
+    # Used to fetch quality documents for event processing
+    collection_mongodb_uri: str = "mongodb://localhost:27017"
+    collection_mongodb_database: str = "collection"
+
 
 # Global settings instance
 settings = Settings()

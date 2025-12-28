@@ -2,10 +2,9 @@
 
 import json
 from typing import Any
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
-
 from collection_mcp.api.mcp_service import McpToolServiceServicer
 from collection_mcp.infrastructure.blob_url_generator import BlobUrlGenerator
 from collection_mcp.infrastructure.document_client import (

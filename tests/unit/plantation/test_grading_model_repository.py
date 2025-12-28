@@ -90,6 +90,45 @@ class TestGradingModelRepository:
         assert result is None
 
     @pytest.mark.asyncio
+    async def test_get_by_id_and_version_found(
+        self, grading_model_repo: GradingModelRepository, sample_grading_model: GradingModel
+    ) -> None:
+        """Test retrieving a grading model by ID and version (Story 1.7)."""
+        mock_doc = sample_grading_model.model_dump()
+        mock_doc["_id"] = sample_grading_model.model_id
+        grading_model_repo._collection.find_one = AsyncMock(return_value=mock_doc)
+
+        result = await grading_model_repo.get_by_id_and_version(
+            sample_grading_model.model_id, sample_grading_model.model_version
+        )
+
+        assert result is not None
+        assert result.model_id == sample_grading_model.model_id
+        assert result.model_version == sample_grading_model.model_version
+        # Verify query includes both model_id and model_version
+        grading_model_repo._collection.find_one.assert_called_once_with(
+            {"model_id": sample_grading_model.model_id, "model_version": sample_grading_model.model_version}
+        )
+
+    @pytest.mark.asyncio
+    async def test_get_by_id_and_version_not_found(self, grading_model_repo: GradingModelRepository) -> None:
+        """Test retrieving non-existent model version (Story 1.7)."""
+        grading_model_repo._collection.find_one = AsyncMock(return_value=None)
+
+        result = await grading_model_repo.get_by_id_and_version("tbk_kenya_tea_v1", "2.0.0")
+
+        assert result is None
+
+    @pytest.mark.asyncio
+    async def test_get_by_id_and_version_wrong_version(self, grading_model_repo: GradingModelRepository) -> None:
+        """Test retrieving model with mismatched version (Story 1.7)."""
+        grading_model_repo._collection.find_one = AsyncMock(return_value=None)
+
+        result = await grading_model_repo.get_by_id_and_version("tbk_kenya_tea_v1", "99.99.99")
+
+        assert result is None
+
+    @pytest.mark.asyncio
     async def test_get_by_factory_found(
         self, grading_model_repo: GradingModelRepository, sample_grading_model: GradingModel
     ) -> None:

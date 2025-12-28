@@ -1,10 +1,9 @@
 """Tests for Collection MCP Blob URL Generator."""
 
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from unittest.mock import patch
 
 import pytest
-
 from collection_mcp.infrastructure.blob_url_generator import (
     BlobUrlGenerator,
     BlobUrlGeneratorError,
@@ -111,7 +110,7 @@ class TestSasUrlGeneration:
             call_kwargs = mock_sas.call_args[1]
             expiry = call_kwargs["expiry"]
             # Verify expiry is approximately 2 hours from now
-            now = datetime.now(timezone.utc)
+            now = datetime.now(UTC)
             expected_expiry = now + timedelta(hours=2)
             assert abs((expiry - expected_expiry).total_seconds()) < 10  # Within 10 seconds
 
