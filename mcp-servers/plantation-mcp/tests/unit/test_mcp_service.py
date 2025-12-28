@@ -461,9 +461,7 @@ class TestGetRegionTool:
         mock_context: MagicMock,
     ) -> None:
         """get_region with non-existent region returns error."""
-        mock_plantation_client.get_region = AsyncMock(
-            side_effect=NotFoundError("Region not found: nonexistent-region")
-        )
+        mock_plantation_client.get_region = AsyncMock(side_effect=NotFoundError("Region not found: nonexistent-region"))
 
         request = mcp_tool_pb2.ToolCallRequest(
             tool_name="get_region",

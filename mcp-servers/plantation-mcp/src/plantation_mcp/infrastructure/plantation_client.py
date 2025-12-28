@@ -491,14 +491,16 @@ class PlantationClient:
 
             observations = []
             for obs in response.observations:
-                observations.append({
-                    "date": obs.date,
-                    "temp_min": obs.temp_min,
-                    "temp_max": obs.temp_max,
-                    "precipitation_mm": obs.precipitation_mm,
-                    "humidity_avg": obs.humidity_avg,
-                    "source": obs.source,
-                })
+                observations.append(
+                    {
+                        "date": obs.date,
+                        "temp_min": obs.temp_min,
+                        "temp_max": obs.temp_max,
+                        "precipitation_mm": obs.precipitation_mm,
+                        "humidity_avg": obs.humidity_avg,
+                        "source": obs.source,
+                    }
+                )
 
             return {
                 "region_id": response.region_id,

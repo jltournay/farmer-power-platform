@@ -122,8 +122,7 @@ TOOL_REGISTRY: dict[str, ToolDefinition] = {
     "list_regions": ToolDefinition(
         name="list_regions",
         description=(
-            "List regions with optional filtering by county or altitude band. "
-            "Returns active regions by default."
+            "List regions with optional filtering by county or altitude band. Returns active regions by default."
         ),
         input_schema={
             "type": "object",

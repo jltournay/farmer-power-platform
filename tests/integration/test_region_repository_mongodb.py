@@ -154,9 +154,7 @@ class TestRegionRepository:
 
         # Create multiple regions
         region1 = create_test_region("nyeri-highland", "Nyeri Highland", "Nyeri")
-        region2 = create_test_region(
-            "kericho-midland", "Kericho Midland", "Kericho", AltitudeBandLabel.MIDLAND
-        )
+        region2 = create_test_region("kericho-midland", "Kericho Midland", "Kericho", AltitudeBandLabel.MIDLAND)
         await repo.create(region1)
         await repo.create(region2)
 
@@ -252,15 +250,11 @@ class TestRegionalWeatherRepository:
         today = date.today()
 
         # Insert initial observation
-        obs1 = WeatherObservation(
-            temp_min=10.0, temp_max=20.0, precipitation_mm=0.0, humidity_avg=50.0
-        )
+        obs1 = WeatherObservation(temp_min=10.0, temp_max=20.0, precipitation_mm=0.0, humidity_avg=50.0)
         await repo.upsert_observation("nyeri-highland", today, obs1)
 
         # Upsert updated observation
-        obs2 = WeatherObservation(
-            temp_min=12.0, temp_max=25.0, precipitation_mm=5.0, humidity_avg=80.0
-        )
+        obs2 = WeatherObservation(temp_min=12.0, temp_max=25.0, precipitation_mm=5.0, humidity_avg=80.0)
         result = await repo.upsert_observation("nyeri-highland", today, obs2)
 
         assert result.temp_min == 12.0
@@ -277,9 +271,7 @@ class TestRegionalWeatherRepository:
         today = date.today()
 
         # Insert observation
-        obs = WeatherObservation(
-            temp_min=15.0, temp_max=28.0, precipitation_mm=1.5, humidity_avg=65.0
-        )
+        obs = WeatherObservation(temp_min=15.0, temp_max=28.0, precipitation_mm=1.5, humidity_avg=65.0)
         await repo.upsert_observation("nyeri-highland", today, obs)
 
         # Retrieve
@@ -325,9 +317,7 @@ class TestRegionalWeatherRepository:
         today = date.today()
 
         # Insert observation
-        obs = WeatherObservation(
-            temp_min=15.0, temp_max=25.0, precipitation_mm=0.0, humidity_avg=60.0
-        )
+        obs = WeatherObservation(temp_min=15.0, temp_max=25.0, precipitation_mm=0.0, humidity_avg=60.0)
         await repo.upsert_observation("nyeri-highland", today, obs)
 
         # Delete
@@ -353,9 +343,7 @@ class TestRegionalWeatherRepository:
 
         # Insert multiple observations
         for i in range(3):
-            obs = WeatherObservation(
-                temp_min=10.0, temp_max=20.0, precipitation_mm=0.0, humidity_avg=50.0
-            )
+            obs = WeatherObservation(temp_min=10.0, temp_max=20.0, precipitation_mm=0.0, humidity_avg=50.0)
             await repo.upsert_observation("nyeri-highland", today - timedelta(days=i), obs)
 
         count = await repo.count_observations("nyeri-highland")
