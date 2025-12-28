@@ -53,6 +53,14 @@ class TestPlantationEventTopic:
         assert PlantationEventTopic.PLOT_CREATED == "plantation.plot.created"
         assert PlantationEventTopic.PLOT_UPDATED == "plantation.plot.updated"
 
+    def test_quality_topics(self) -> None:
+        """Test quality event topics."""
+        assert PlantationEventTopic.QUALITY_GRADED == "plantation.quality.graded"
+
+    def test_performance_topics(self) -> None:
+        """Test performance event topics."""
+        assert PlantationEventTopic.PERFORMANCE_UPDATED == "plantation.performance_updated"
+
 
 class TestGetAllValidTopics:
     """Tests for get_all_valid_topics function."""
@@ -77,12 +85,14 @@ class TestGetAllValidTopics:
         assert "plantation.farmer.registered" in topics
         assert "plantation.farmer.updated" in topics
         assert "plantation.plot.created" in topics
+        assert "plantation.quality.graded" in topics
+        assert "plantation.performance_updated" in topics
 
     def test_total_count(self) -> None:
         """Test total count of valid topics."""
         topics = get_all_valid_topics()
-        # 8 Collection + 5 Plantation = 13 total
-        assert len(topics) == 13
+        # 8 Collection + 7 Plantation = 15 total
+        assert len(topics) == 15
 
 
 class TestIsValidTopic:
