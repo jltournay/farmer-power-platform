@@ -374,8 +374,8 @@ So that farmers receive quality-based payment adjustments according to our chose
 - `PaymentPolicy` value object added to Factory entity
 - Proto definition: `PaymentPolicy` message with `policy_type` enum and adjustment fields
 - `get_factory` MCP tool updated to include payment_policy in response
-- Factory Admin UI (Epic 3, Story 3.8) will consume this configuration
-- Engagement Model will use tier adjustments for calculating actual payments
+- Factory Admin UI (Epic 3, Story 3.8) will consume this configuration for display/editing
+- Payment calculation is external (factory payroll systems consume this configuration via API)
 
 **Dependencies:**
 - Story 1.2: Factory and Collection Point Management (Factory entity exists)
