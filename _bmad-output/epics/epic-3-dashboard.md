@@ -14,7 +14,6 @@ This epic focuses on building the Factory Manager Dashboard - a comprehensive we
 
 ## Scope
 
-- Dashboard BFF (Backend for Frontend) service setup
 - Farmer quality overview grid with virtualized rendering
 - Automatic farmer categorization (Action Needed/Watch/Wins)
 - Dashboard filtering capabilities
@@ -27,51 +26,13 @@ This epic focuses on building the Factory Manager Dashboard - a comprehensive we
 - Farmer detail screen
 - SMS preview and compose functionality
 
+**Note:** BFF Service Setup moved to Epic 0.5 (Story 0.5.6) as shared infrastructure for all frontends.
+
 ---
 
 ## Stories
 
-### Story 3.1: Dashboard BFF (Backend for Frontend) Setup
-
-As a **platform operator**,
-I want a BFF service deployed to serve the Factory Manager dashboard,
-So that the frontend has an optimized API layer for dashboard queries.
-
-**Acceptance Criteria:**
-
-**Given** the Kubernetes cluster is running
-**When** the Dashboard BFF service is deployed
-**Then** the service starts successfully with health check endpoint returning 200
-**And** FastAPI is serving REST endpoints on port 8080
-**And** OpenTelemetry traces are emitted for all requests
-**And** CORS is configured for allowed dashboard origins
-
-**Given** the BFF is running
-**When** an unauthenticated request is made
-**Then** the request is rejected with 401 Unauthorized
-**And** the response includes WWW-Authenticate header
-
-**Given** a Factory Manager is authenticated (OAuth2/OIDC)
-**When** they request dashboard data
-**Then** the BFF queries Plantation and Collection Models via gRPC
-**And** data is aggregated and transformed for frontend consumption
-**And** only data for factories the user has access to is returned
-
-**Given** the BFF receives multiple concurrent requests
-**When** processing under load
-**Then** connection pooling is used for downstream gRPC calls
-**And** request timeout is enforced (5 seconds max)
-**And** circuit breaker trips after 5 consecutive failures
-
-**Technical Notes:**
-- Python FastAPI with async support
-- OAuth2 token validation via Azure AD B2C
-- gRPC clients with connection pooling
-- Environment: farmer-power-{env} namespace
-
----
-
-### Story 3.2: Farmer Quality Overview Grid
+### Story 3.1: Farmer Quality Overview Grid
 
 As a **Factory Quality Manager**,
 I want to see a grid of all farmers with their quality metrics,
@@ -115,7 +76,7 @@ So that I can quickly assess the quality situation across my factory.
 
 ---
 
-### Story 3.3: Farmer Categorization (Action Needed/Watch/Wins)
+### Story 3.2: Farmer Categorization (Action Needed/Watch/Wins)
 
 As a **Factory Quality Manager**,
 I want farmers automatically categorized by status,
@@ -160,7 +121,7 @@ So that I can prioritize my attention on those needing help.
 
 ---
 
-### Story 3.4: Dashboard Filtering
+### Story 3.3: Dashboard Filtering
 
 As a **Factory Quality Manager**,
 I want to filter farmers by various criteria,
@@ -205,7 +166,7 @@ So that I can focus on specific segments of my farmer base.
 
 ---
 
-### Story 3.5: One-Click Farmer Contact
+### Story 3.4: One-Click Farmer Contact
 
 As a **Factory Quality Manager**,
 I want to quickly contact problem farmers,
@@ -256,7 +217,7 @@ So that I can follow up on quality issues without leaving the dashboard.
 
 ---
 
-### Story 3.6: Daily Report Auto-Generation
+### Story 3.5: Daily Report Auto-Generation
 
 As a **Factory Quality Manager**,
 I want daily summary reports generated automatically,
@@ -302,7 +263,7 @@ So that I have a quality overview waiting for me each morning.
 
 ---
 
-### Story 3.7: Dashboard Performance Optimization
+### Story 3.6: Dashboard Performance Optimization
 
 As a **Factory Quality Manager**,
 I want the dashboard to load quickly even with large datasets,
@@ -352,7 +313,7 @@ So that I can efficiently review quality data without waiting.
 
 ---
 
-### Story 3.8: Factory Owner ROI Dashboard
+### Story 3.7: Factory Owner ROI Dashboard
 
 As a **Factory Owner**,
 I want to see ROI metrics and value validation for my subscription,
@@ -386,13 +347,13 @@ So that I can justify the platform investment to stakeholders.
 
 **Dependencies:**
 - Story 0.5.4: Factory Portal Scaffold
-- Story 3.1: Dashboard BFF Setup
+- Story 0.5.6: BFF Service Setup
 
 **Story Points:** 5
 
 ---
 
-### Story 3.9: Factory Admin Settings UI
+### Story 3.8: Factory Admin Settings UI
 
 As a **Factory Administrator**,
 I want to configure payment policies, grade multipliers, and SMS templates,
@@ -432,13 +393,13 @@ So that I can customize the platform for my factory's specific needs.
 
 **Dependencies:**
 - Story 0.5.4: Factory Portal Scaffold
-- Story 3.1: Dashboard BFF Setup
+- Story 0.5.6: BFF Service Setup
 
 **Story Points:** 5
 
 ---
 
-### Story 3.10: Command Center Screen Implementation
+### Story 3.9: Command Center Screen Implementation
 
 As a **Factory Quality Manager (Joseph)**,
 I want the Command Center screen to show today's quality overview,
@@ -478,14 +439,14 @@ So that I can identify farmers needing intervention at a glance.
 
 **Dependencies:**
 - Story 0.5.4: Factory Portal Scaffold
-- Story 3.2: Farmer Quality Overview Grid
-- Story 3.3: Farmer Categorization
+- Story 3.1: Farmer Quality Overview Grid
+- Story 3.2: Farmer Categorization
 
 **Story Points:** 5
 
 ---
 
-### Story 3.11: Farmer Detail Screen
+### Story 3.10: Farmer Detail Screen
 
 As a **Factory Quality Manager**,
 I want to view detailed farmer information and history,
@@ -524,13 +485,13 @@ So that I can make informed intervention decisions.
 
 **Dependencies:**
 - Story 0.5.4: Factory Portal Scaffold
-- Story 3.1: Dashboard BFF Setup
+- Story 0.5.6: BFF Service Setup
 
 **Story Points:** 5
 
 ---
 
-### Story 3.12: SMS Preview and Compose
+### Story 3.11: SMS Preview and Compose
 
 As a **Factory Quality Manager**,
 I want to preview and compose SMS messages to farmers,
@@ -570,6 +531,6 @@ So that I can communicate effectively with proper personalization.
 
 **Dependencies:**
 - Story 0.5.1: Shared Component Library
-- Story 3.1: Dashboard BFF Setup
+- Story 0.5.6: BFF Service Setup
 
 **Story Points:** 3

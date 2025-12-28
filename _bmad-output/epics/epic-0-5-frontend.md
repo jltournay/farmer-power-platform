@@ -1,6 +1,10 @@
 ### Epic 0.5: Frontend & Identity Infrastructure
 
-Cross-cutting frontend and authentication infrastructure that enables all web applications. These stories establish the shared component library, authentication flow, and foundational frontend patterns.
+**Priority:** P1
+
+**Dependencies:** Epic 0 (Infrastructure)
+
+Cross-cutting frontend and authentication infrastructure that enables all web applications. These stories establish the shared component library, authentication flow, BFF service, and foundational frontend patterns.
 
 **Related ADRs:** ADR-002 (Frontend Architecture), ADR-003 (Identity & Access Management)
 
@@ -8,7 +12,8 @@ Cross-cutting frontend and authentication infrastructure that enables all web ap
 - Shared React component library (@fp/ui-components)
 - Azure AD B2C configuration and auth library (@fp/auth)
 - Factory Portal application scaffold
-- Authentication flow (BFF pattern)
+- **BFF Service Setup** (shared by all frontends)
+- Authentication middleware (BFF pattern)
 - Theme system and design tokens
 
 ---
@@ -227,7 +232,7 @@ So that API endpoints are protected with proper authorization.
 
 **Acceptance Criteria:**
 
-**Given** the BFF service exists (from Story 3.1)
+**Given** the BFF service exists (from Story 0.5.6)
 **When** I add authentication middleware
 **Then** JWT tokens are validated against B2C JWKS endpoint
 **And** Token claims are extracted and available in request context
@@ -264,8 +269,55 @@ So that API endpoints are protected with proper authorization.
 
 **Dependencies:**
 - Story 0.5.2: Azure AD B2C Configuration
-- Story 3.1: Dashboard BFF Setup
+- Story 0.5.6: BFF Service Setup
 
 **Story Points:** 3
+
+---
+
+#### Story 0.5.6: BFF Service Setup
+
+As a **platform operator**,
+I want a shared BFF (Backend for Frontend) service deployed,
+So that all frontend applications have an optimized API layer.
+
+**Acceptance Criteria:**
+
+**Given** the Kubernetes cluster is running
+**When** the BFF service is deployed
+**Then** the service starts successfully with health check endpoint returning 200
+**And** FastAPI is serving REST endpoints on port 8080
+**And** OpenTelemetry traces are emitted for all requests
+**And** CORS is configured for allowed frontend origins
+
+**Given** the BFF is running
+**When** an unauthenticated request is made
+**Then** the request is rejected with 401 Unauthorized
+**And** the response includes WWW-Authenticate header
+
+**Given** a user is authenticated (OAuth2/OIDC)
+**When** they request data
+**Then** the BFF queries domain models via gRPC (Plantation, Collection, etc.)
+**And** data is aggregated and transformed for frontend consumption
+**And** only data for factories the user has access to is returned
+
+**Given** the BFF receives multiple concurrent requests
+**When** processing under load
+**Then** connection pooling is used for downstream gRPC calls
+**And** request timeout is enforced (5 seconds max)
+**And** circuit breaker trips after 5 consecutive failures
+
+**Technical Notes:**
+- Python FastAPI with async support
+- OAuth2 token validation via Azure AD B2C
+- gRPC clients with connection pooling
+- Location: `services/bff/`
+- Environment: farmer-power-{env} namespace
+- Shared by all frontends (Kiosk, Admin, Regulator, Dashboard)
+
+**Dependencies:**
+- Story 0.5.2: Azure AD B2C Configuration
+
+**Story Points:** 5
 
 ---

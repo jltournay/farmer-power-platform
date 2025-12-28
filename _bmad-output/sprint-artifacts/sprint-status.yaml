@@ -99,6 +99,7 @@ development_status:
   0-5-3-shared-auth-library: backlog
   0-5-4-factory-portal-scaffold: backlog
   0-5-5-bff-authentication-middleware: backlog
+  0-5-6-bff-service-setup: backlog  # Moved from Epic 3 - shared by all frontends
   epic-0-5-retrospective: optional
 
   # Epic 0.75: AI Model Foundation (NEW - 2025-12-28)
@@ -235,17 +236,17 @@ development_status:
 
   # Epic 3: Factory Manager Dashboard (4th UI - MOST COMPLEX)
   # Dependencies: Epic 0.5, Epic 1, Epic 2, Epic 4, Epic 5, Epic 6
+  # Note: BFF setup moved to Epic 0.5 (Story 0.5.6)
   epic-3: backlog
-  3-1-dashboard-bff-setup: backlog
-  3-2-farmer-quality-overview-grid: backlog
-  3-3-farmer-categorization: backlog
-  3-4-dashboard-filtering: backlog
-  3-5-one-click-farmer-contact: backlog
-  3-6-daily-report-auto-generation: backlog
-  3-7-dashboard-performance-optimization: backlog
-  3-8-factory-owner-roi-dashboard: backlog
-  3-9-factory-admin-settings-ui: backlog
-  3-10-command-center-screen-implementation: backlog
-  3-11-farmer-detail-screen: backlog
-  3-12-sms-preview-and-compose: backlog
+  3-1-farmer-quality-overview-grid: backlog
+  3-2-farmer-categorization: backlog
+  3-3-dashboard-filtering: backlog
+  3-4-one-click-farmer-contact: backlog
+  3-5-daily-report-auto-generation: backlog
+  3-6-dashboard-performance-optimization: backlog
+  3-7-factory-owner-roi-dashboard: backlog
+  3-8-factory-admin-settings-ui: backlog
+  3-9-command-center-screen-implementation: backlog
+  3-10-farmer-detail-screen: backlog
+  3-11-sms-preview-and-compose: backlog
   epic-3-retrospective: optional

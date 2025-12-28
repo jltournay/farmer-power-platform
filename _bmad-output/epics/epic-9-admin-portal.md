@@ -180,6 +180,6 @@ So that I can monitor operations and identify issues.
 
 **Dependencies:**
 - Story 9.1: Platform Admin Application Scaffold
-- Story 3.1: Dashboard BFF Setup (for health endpoints)
+- Story 0.5.6: BFF Service Setup (for health endpoints)
 
 **Story Points:** 5

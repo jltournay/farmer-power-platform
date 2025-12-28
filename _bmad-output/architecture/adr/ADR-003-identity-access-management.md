@@ -3,7 +3,7 @@
 **Status:** Accepted
 **Date:** 2025-12-26
 **Deciders:** Winston (Architect), Jeanlouistournay
-**Related Stories:** Story 3.1 (Dashboard BFF Setup), Platform Admin UI (User Management)
+**Related Stories:** Story 0.5.6 (BFF Service Setup), Platform Admin UI (User Management)
 
 ## Context
 
@@ -598,5 +598,5 @@ api_permissions:
 - [Azure AD B2B Federation](https://docs.microsoft.com/en-us/azure/active-directory/external-identities/)
 - NFR26: OAuth2/OpenID Connect authentication
 - NFR27: RBAC roles
-- Story 3.1: Dashboard BFF Setup
+- Story 0.5.6: BFF Service Setup
 - ADR-002: Frontend Architecture (4 apps requiring auth)
