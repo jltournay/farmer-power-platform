@@ -1,8 +1,16 @@
 # Epic 6: Weekly Action Plans
 
+**Priority:** P4
+
+**Dependencies:** Epic 0.75 (AI Model Foundation), Epic 5 (Quality Diagnosis AI)
+
+**FRs covered:** FR29, FR30, FR31, FR32, FR33
+
 ## Overview
 
 This epic implements the Action Plan Model service that generates personalized weekly improvement recommendations for farmers based on quality diagnoses from the Knowledge Model. Action plans are tailored to farm scale, translated to the farmer's preferred language, and delivered in dual formats (detailed report + SMS summary).
+
+**Note:** This epic requires Epic 0.75 (AI Model Foundation) for LLM capabilities and Epic 5 (Knowledge Model) for quality diagnoses that inform the recommendations.
 
 ## Scope
 

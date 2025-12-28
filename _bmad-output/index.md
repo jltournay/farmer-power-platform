@@ -51,26 +51,30 @@ _Single entry point for all platform documentation. This index ensures coherence
 | [`architecture-decision-index.md`](./architecture-decision-index.md) | Decision traceability matrix | 2025-12-20 |
 | [`ai-model-developer-guide/index.md`](./ai-model-developer-guide/index.md) | AI/LLM development patterns (12 sections) | 2025-12-23 |
 | [`ux-design-specification/index.md`](./ux-design-specification/index.md) | User experience design (15 sections) | 2025-12-23 |
-| [`epics/index.md`](./epics/index.md) | Epics and user stories (12 epics, sharded) | 2025-12-28 |
+| [`epics/index.md`](./epics/index.md) | Epics and user stories (14 epics, sharded) | 2025-12-28 |
 | [`test-design-system-level.md`](./test-design-system-level.md) | System-level test strategy and design | 2025-12-23 |
 
-### Epics & Stories (Sharded by Epic)
+### Epics & Stories (Sharded by Epic - Priority Order)
 
-| Epic | File | Status | Stories |
-|------|------|--------|---------|
-| Epic 0 | [`epics/epic-0-infrastructure.md`](./epics/epic-0-infrastructure.md) | Done | 0.1 |
-| Epic 0.5 | [`epics/epic-0-5-frontend.md`](./epics/epic-0-5-frontend.md) | Backlog | 0.5.1-0.5.5 |
-| Epic 1 | [`epics/epic-1-plantation-model.md`](./epics/epic-1-plantation-model.md) | In Progress | 1.1-1.8 |
-| Epic 2 | [`epics/epic-2-collection-model.md`](./epics/epic-2-collection-model.md) | Done | 2.1-2.9 |
-| Epic 3 | [`epics/epic-3-dashboard.md`](./epics/epic-3-dashboard.md) | Backlog | 3.1-3.12 |
-| Epic 4 | [`epics/epic-4-sms-feedback.md`](./epics/epic-4-sms-feedback.md) | Backlog | 4.1-4.7 |
-| Epic 5 | [`epics/epic-5-diagnosis-ai.md`](./epics/epic-5-diagnosis-ai.md) | Backlog | 5.1-5.9 |
-| Epic 6 | [`epics/epic-6-action-plans.md`](./epics/epic-6-action-plans.md) | Backlog | 6.1-6.6 |
-| Epic 7 | [`epics/epic-7-voice-ivr.md`](./epics/epic-7-voice-ivr.md) | Backlog | 7.1-7.5 |
-| Epic 8 | [`epics/epic-8-voice-advisor.md`](./epics/epic-8-voice-advisor.md) | Backlog | 8.1-8.7 |
-| Epic 9 | [`epics/epic-9-admin-portal.md`](./epics/epic-9-admin-portal.md) | Backlog | 9.1-9.4 |
-| Epic 10 | [`epics/epic-10-regulator.md`](./epics/epic-10-regulator.md) | Backlog | 10.1-10.4 |
-| Epic 11 | [`epics/epic-11-registration-kiosk.md`](./epics/epic-11-registration-kiosk.md) | Backlog | 11.1-11.4 |
+**Note:** Epics reordered by priority on 2025-12-28. See `epics/index.md` for full dependency analysis.
+
+| Priority | Epic | File | Status | Stories |
+|----------|------|------|--------|---------|
+| P0 | Epic 0 | [`epics/epic-0-infrastructure.md`](./epics/epic-0-infrastructure.md) | Done | 0.1-0.3 |
+| P0 | Epic 1 | [`epics/epic-1-plantation-model.md`](./epics/epic-1-plantation-model.md) | In Progress | 1.1-1.8 |
+| P0 | Epic 2 | [`epics/epic-2-collection-model.md`](./epics/epic-2-collection-model.md) | Done | 2.1-2.9 |
+| P1 | Epic 0.5 | [`epics/epic-0-5-frontend.md`](./epics/epic-0-5-frontend.md) | Backlog | 0.5.1-0.5.5 |
+| P1 | **Epic 0.75** | [`epics/epic-0-75-ai-model.md`](./epics/epic-0-75-ai-model.md) | **Backlog** | **0.75.1-0.75.6** |
+| P2 | Epic 11 | [`epics/epic-11-registration-kiosk.md`](./epics/epic-11-registration-kiosk.md) | Backlog | 11.1-11.4 |
+| P2 | Epic 9 | [`epics/epic-9-admin-portal.md`](./epics/epic-9-admin-portal.md) | Backlog | 9.1-9.4 |
+| P3 | Epic 5 | [`epics/epic-5-diagnosis-ai.md`](./epics/epic-5-diagnosis-ai.md) | Backlog | 5.1-5.9 |
+| P3 | Epic 10 | [`epics/epic-10-regulator.md`](./epics/epic-10-regulator.md) | Backlog | 10.1-10.4 |
+| P4 | Epic 6 | [`epics/epic-6-action-plans.md`](./epics/epic-6-action-plans.md) | Backlog | 6.1-6.6 |
+| P4 | Epic 4 | [`epics/epic-4-sms-feedback.md`](./epics/epic-4-sms-feedback.md) | Backlog | 4.1-4.7 |
+| P5 | Epic 7 | [`epics/epic-7-voice-ivr.md`](./epics/epic-7-voice-ivr.md) | Backlog | 7.1-7.5 |
+| P5 | Epic 8 | [`epics/epic-8-voice-advisor.md`](./epics/epic-8-voice-advisor.md) | Backlog | 8.1-8.7 |
+| P5 | **Epic 12** | [`epics/epic-12-engagement-model.md`](./epics/epic-12-engagement-model.md) | **Backlog** | **12.1-12.8** |
+| P6 | Epic 3 | [`epics/epic-3-dashboard.md`](./epics/epic-3-dashboard.md) | Backlog | 3.1-3.12 |
 
 **Sprint Status:** [`sprint-artifacts/sprint-status.yaml`](./sprint-artifacts/sprint-status.yaml)
 
@@ -202,6 +206,7 @@ When making significant changes, verify:
 | 1.3 | 2025-12-23 | Complete traceability: Added epics.md, test-design-system-level.md, TBK specification to index |
 | 1.4 | 2025-12-28 | Added Engagement Model (9th model) - Duolingo-style farmer motivation engine |
 | 1.5 | 2025-12-28 | Sharded epics.md (4,500+ lines) into 12 separate epic files for maintainability |
+| 1.6 | 2025-12-28 | **Epic restructure:** Added Epic 0.75 (AI Model Foundation), Epic 12 (Engagement Model). Reordered epics by priority - Epic 3 (Dashboard) moved to P6 (last), Epic 11 (Kiosk) moved to P2 (first UI). Total: 14 epics. |
 
 ---
 

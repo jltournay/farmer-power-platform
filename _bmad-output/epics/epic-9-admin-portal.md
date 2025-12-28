@@ -1,6 +1,12 @@
 # Epic 9: Platform Admin Portal
 
+**Priority:** P2 (2nd frontend to build - Simple CRUD)
+
+**Dependencies:** Epic 0.5 (Frontend Infrastructure), Epic 1 (Plantation Model)
+
 Internal Farmer Power team can onboard new factories, manage users across all factories, and monitor platform health. This is the internal operations portal.
+
+**Note:** This is the 2nd frontend application to build. It establishes BFF patterns with simple CRUD operations for factory onboarding and user management. Build after Epic 11 (Kiosk) to apply learned patterns.
 
 **Related ADRs:** ADR-002 (Frontend Architecture), ADR-003 (Identity & Access Management)
 

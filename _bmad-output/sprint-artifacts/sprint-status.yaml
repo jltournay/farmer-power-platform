@@ -1,5 +1,5 @@
-  # Sprint Status - farmer-power-platform
-# generated: 2025-12-26
+# Sprint Status - farmer-power-platform
+# generated: 2025-12-28
 # project: farmer-power-platform
 # tracking_system: file-system
 # story_location: _bmad-output/sprint-artifacts
@@ -32,13 +32,27 @@
 # - Stories can be worked in parallel if team capacity allows
 # - SM typically creates next story after previous one is 'done' to incorporate learnings
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
+#
+# PRIORITY ORDER (2025-12-28 restructure):
+# ========================================
+# P0: Epic 0 (Done), Epic 1 (In Progress), Epic 2 (Done)
+# P1: Epic 0.5, Epic 0.75 (NEW - AI Model Foundation)
+# P2: Epic 11 (Kiosk - 1st UI), Epic 9 (Admin - 2nd UI)
+# P3: Epic 5, Epic 10 (Regulator - 3rd UI)
+# P4: Epic 6, Epic 4
+# P5: Epic 7, Epic 8, Epic 12 (NEW - Engagement)
+# P6: Epic 3 (Dashboard - LAST UI, needs Epic 4,5,6)
 
-generated: 2025-12-26
+generated: 2025-12-28
 project: farmer-power-platform
 tracking_system: file-system
 story_location: _bmad-output/sprint-artifacts
 
 development_status:
+  # ═══════════════════════════════════════════════════════════════════════════
+  # P0: FOUNDATION (Done/In Progress)
+  # ═══════════════════════════════════════════════════════════════════════════
+
   # Epic 0: Platform Infrastructure Foundation
   epic-0: done
   0-1-mcp-grpc-infrastructure: done  # github_issue: 11
@@ -46,16 +60,8 @@ development_status:
   0-3-ci-lint-configuration: done  # github_issue: 15
   epic-0-retrospective: done
 
-  # Epic 0.5: Frontend & Identity Infrastructure (ADR-002, ADR-003)
-  epic-0-5: backlog
-  0-5-1-shared-component-library-setup: backlog
-  0-5-2-azure-ad-b2c-configuration: backlog
-  0-5-3-shared-auth-library: backlog
-  0-5-4-factory-portal-scaffold: backlog
-  0-5-5-bff-authentication-middleware: backlog
-  epic-0-5-retrospective: optional
-
   # Epic 1: Farmer Registration & Data Foundation
+  # Dependencies: Epic 0
   epic-1: in-progress  # Story 1.8 added to backlog
   1-1-plantation-model-service-setup: done
   1-2-factory-and-collection-point-management: done
@@ -68,19 +74,167 @@ development_status:
   epic-1-retrospective: optional  # Reset: new story added
 
   # Epic 2: Quality Data Ingestion (REVISED - BLOB_TRIGGER architecture)
+  # Dependencies: Epic 0, Epic 1
   epic-2: done
   2-1-collection-model-service-setup: done  # github_issue: 16
   2-2-source-configuration-cli: done  # github_issue: 17
   2-3-event-grid-trigger-handler: done  # github_issue: 18
-  2-4-generic-content-processing-framework: done  # github_issue: 19 - Generic Content Processing Framework + JSON Processor
+  2-4-generic-content-processing-framework: done  # github_issue: 19
   2-5-qc-analyzer-exception-images-ingestion: done  # github_issue: 20
   2-6-document-storage-deduplication: done  # github_issue: 21
-  2-7-scheduled-pull-ingestion-framework: done  # github_issue: 22 - Renamed: generic pull framework, weather API is test case
-  2-8-market-prices-pull-mode: covered-by-2-7  # Configuration-only, no code changes needed
+  2-7-scheduled-pull-ingestion-framework: done  # github_issue: 22
+  2-8-market-prices-pull-mode: covered-by-2-7  # Configuration-only
   2-9-collection-model-mcp-server: done  # github_issue: 23
   epic-2-retrospective: done
 
-  # Epic 3: Factory Manager Dashboard (expanded with ADR-002)
+  # ═══════════════════════════════════════════════════════════════════════════
+  # P1: HORIZONTAL INFRASTRUCTURE
+  # ═══════════════════════════════════════════════════════════════════════════
+
+  # Epic 0.5: Frontend & Identity Infrastructure (ADR-002, ADR-003)
+  # Dependencies: Epic 0
+  epic-0-5: backlog
+  0-5-1-shared-component-library-setup: backlog
+  0-5-2-azure-ad-b2c-configuration: backlog
+  0-5-3-shared-auth-library: backlog
+  0-5-4-factory-portal-scaffold: backlog
+  0-5-5-bff-authentication-middleware: backlog
+  epic-0-5-retrospective: optional
+
+  # Epic 0.75: AI Model Foundation (NEW - 2025-12-28)
+  # Dependencies: Epic 0
+  # Blocks: Epic 5, 6, 8, 12
+  epic-0-75: backlog
+  0-75-1-ai-model-service-setup: backlog
+  0-75-2-llm-gateway-model-routing: backlog
+  0-75-3-agent-framework: backlog
+  0-75-4-prompt-management: backlog
+  0-75-5-rag-infrastructure: backlog
+  0-75-6-ai-model-mcp-clients: backlog
+  epic-0-75-retrospective: optional
+
+  # ═══════════════════════════════════════════════════════════════════════════
+  # P2: FIRST FRONTEND APPS (Simple React validation)
+  # ═══════════════════════════════════════════════════════════════════════════
+
+  # Epic 11: Registration Kiosk PWA (1st UI - SIMPLEST)
+  # Dependencies: Epic 0.5, Epic 1
+  epic-11: backlog
+  11-1-registration-kiosk-application-scaffold: backlog
+  11-2-farmer-registration-workflow: backlog
+  11-3-collection-point-assignment: backlog
+  11-4-farmer-id-card-printing: backlog
+  epic-11-retrospective: optional
+
+  # Epic 9: Platform Admin Portal (2nd UI - Simple CRUD)
+  # Dependencies: Epic 0.5, Epic 1
+  epic-9: backlog
+  9-1-platform-admin-application-scaffold: backlog
+  9-2-factory-onboarding-wizard: backlog
+  9-3-user-management-dashboard: backlog
+  9-4-platform-health-dashboard: backlog
+  epic-9-retrospective: optional
+
+  # ═══════════════════════════════════════════════════════════════════════════
+  # P3: AI DIAGNOSIS + ANALYTICS UI
+  # ═══════════════════════════════════════════════════════════════════════════
+
+  # Epic 5: Quality Diagnosis AI
+  # Dependencies: Epic 0.75, Epic 1, Epic 2
+  epic-5: backlog
+  5-1-knowledge-model-service-setup: backlog
+  5-2-event-aggregation-engine: backlog
+  5-3-triage-agent: backlog
+  5-4-disease-detection-agent: backlog
+  5-5-weather-impact-analyzer: backlog
+  5-6-technique-assessment-agent: backlog
+  5-7-trend-analysis-agent: backlog
+  5-8-rag-knowledge-base: backlog
+  5-9-knowledge-model-mcp-server: backlog
+  epic-5-retrospective: optional
+
+  # Epic 10: Regulator Dashboard (3rd UI - Read-only analytics)
+  # Dependencies: Epic 0.5, Epic 2
+  epic-10: backlog
+  10-1-regulator-application-scaffold: backlog
+  10-2-national-quality-overview: backlog
+  10-3-regional-quality-comparison: backlog
+  10-4-leaf-type-distribution-export-readiness: backlog
+  epic-10-retrospective: optional
+
+  # ═══════════════════════════════════════════════════════════════════════════
+  # P4: ACTION PLANS + NOTIFICATIONS
+  # ═══════════════════════════════════════════════════════════════════════════
+
+  # Epic 6: Weekly Action Plans
+  # Dependencies: Epic 0.75, Epic 5
+  epic-6: backlog
+  6-1-action-plan-model-service-setup: backlog
+  6-2-weekly-action-plan-generation: backlog
+  6-3-farm-scale-aware-recommendations: backlog
+  6-4-dual-format-output: backlog
+  6-5-multilingual-translation: backlog
+  6-6-action-plan-mcp-server: backlog
+  epic-6-retrospective: optional
+
+  # Epic 4: Farmer SMS Feedback
+  # Dependencies: Epic 1, Epic 2
+  epic-4: backlog
+  4-1-notification-model-service-setup: backlog
+  4-2-sms-message-generation: backlog
+  4-3-sms-cost-optimization: backlog
+  4-4-sms-delivery-assurance: backlog
+  4-5-lead-farmer-escalation: backlog
+  4-6-inbound-keyword-handling: backlog
+  4-7-group-and-regional-messaging: backlog
+  epic-4-retrospective: optional
+
+  # ═══════════════════════════════════════════════════════════════════════════
+  # P5: VOICE + ENGAGEMENT
+  # ═══════════════════════════════════════════════════════════════════════════
+
+  # Epic 7: Voice IVR Experience
+  # Dependencies: Epic 4, Epic 6
+  epic-7: backlog
+  7-1-voice-ivr-service-setup: backlog
+  7-2-caller-id-farmer-identification: backlog
+  7-3-language-selection-menu: backlog
+  7-4-action-plan-tts-playback: backlog
+  7-5-navigation-and-help-options: backlog
+  epic-7-retrospective: optional
+
+  # Epic 8: Voice Quality Advisor (Conversational AI)
+  # Dependencies: Epic 0.75, Epic 5, Epic 6
+  epic-8: backlog
+  8-1-conversational-ai-service-setup: backlog
+  8-2-swahili-speech-to-text: backlog
+  8-3-intent-classification: backlog
+  8-4-personalized-response-generation: backlog
+  8-5-guided-dialogue-flow: backlog
+  8-6-streaming-response-delivery: backlog
+  8-7-sms-fallback-handling: backlog
+  epic-8-retrospective: optional
+
+  # Epic 12: Farmer Engagement & Motivation (NEW - 2025-12-28)
+  # Dependencies: Epic 0.75, Epic 1
+  # 9th Domain Model: Engagement Model
+  epic-12: backlog
+  12-1-engagement-model-service-setup: backlog
+  12-2-streak-calculator: backlog
+  12-3-level-progression-system: backlog
+  12-4-milestone-detection-tracking: backlog
+  12-5-motivation-state-machine: backlog
+  12-6-category-mapping-service: backlog
+  12-7-engagement-model-mcp-server: backlog
+  12-8-celebration-event-emission: backlog
+  epic-12-retrospective: optional
+
+  # ═══════════════════════════════════════════════════════════════════════════
+  # P6: COMPLEX DASHBOARD (LAST - Requires Epic 0.5, 1, 2, 4, 5, 6)
+  # ═══════════════════════════════════════════════════════════════════════════
+
+  # Epic 3: Factory Manager Dashboard (4th UI - MOST COMPLEX)
+  # Dependencies: Epic 0.5, Epic 1, Epic 2, Epic 4, Epic 5, Epic 6
   epic-3: backlog
   3-1-dashboard-bff-setup: backlog
   3-2-farmer-quality-overview-grid: backlog
@@ -95,81 +249,3 @@ development_status:
   3-11-farmer-detail-screen: backlog
   3-12-sms-preview-and-compose: backlog
   epic-3-retrospective: optional
-
-  # Epic 4: Farmer SMS Feedback
-  epic-4: backlog
-  4-1-notification-model-service-setup: backlog
-  4-2-sms-message-generation: backlog
-  4-3-sms-cost-optimization: backlog
-  4-4-sms-delivery-assurance: backlog
-  4-5-lead-farmer-escalation: backlog
-  4-6-inbound-keyword-handling: backlog
-  4-7-group-and-regional-messaging: backlog
-  epic-4-retrospective: optional
-
-  # Epic 5: Quality Diagnosis AI
-  epic-5: backlog
-  5-1-knowledge-model-service-setup: backlog
-  5-2-event-aggregation-engine: backlog
-  5-3-triage-agent: backlog
-  5-4-disease-detection-agent: backlog
-  5-5-weather-impact-analyzer: backlog
-  5-6-technique-assessment-agent: backlog
-  5-7-trend-analysis-agent: backlog
-  5-8-rag-knowledge-base: backlog
-  5-9-knowledge-model-mcp-server: backlog  # blocked by 0-1
-  epic-5-retrospective: optional
-
-  # Epic 6: Weekly Action Plans
-  epic-6: backlog
-  6-1-action-plan-model-service-setup: backlog
-  6-2-weekly-action-plan-generation: backlog
-  6-3-farm-scale-aware-recommendations: backlog
-  6-4-dual-format-output: backlog
-  6-5-multilingual-translation: backlog
-  6-6-action-plan-mcp-server: backlog  # blocked by 0-1
-  epic-6-retrospective: optional
-
-  # Epic 7: Voice IVR Experience
-  epic-7: backlog
-  7-1-voice-ivr-service-setup: backlog
-  7-2-caller-id-farmer-identification: backlog
-  7-3-language-selection-menu: backlog
-  7-4-action-plan-tts-playback: backlog
-  7-5-navigation-and-help-options: backlog
-  epic-7-retrospective: optional
-
-  # Epic 8: Voice Quality Advisor (Conversational AI)
-  epic-8: backlog
-  8-1-conversational-ai-service-setup: backlog
-  8-2-swahili-speech-to-text: backlog
-  8-3-intent-classification: backlog
-  8-4-personalized-response-generation: backlog
-  8-5-guided-dialogue-flow: backlog
-  8-6-streaming-response-delivery: backlog
-  8-7-sms-fallback-handling: backlog
-  epic-8-retrospective: optional
-
-  # Epic 9: Platform Admin Portal (ADR-002, ADR-003)
-  epic-9: backlog
-  9-1-platform-admin-application-scaffold: backlog
-  9-2-factory-onboarding-wizard: backlog
-  9-3-user-management-dashboard: backlog
-  9-4-platform-health-dashboard: backlog
-  epic-9-retrospective: optional
-
-  # Epic 10: Regulator Dashboard (ADR-002, ADR-003)
-  epic-10: backlog
-  10-1-regulator-application-scaffold: backlog
-  10-2-national-quality-overview: backlog
-  10-3-regional-quality-comparison: backlog
-  10-4-leaf-type-distribution-export-readiness: backlog
-  epic-10-retrospective: optional
-
-  # Epic 11: Registration Kiosk PWA (ADR-002, ADR-003)
-  epic-11: backlog
-  11-1-registration-kiosk-application-scaffold: backlog
-  11-2-farmer-registration-workflow: backlog
-  11-3-collection-point-assignment: backlog
-  11-4-farmer-id-card-printing: backlog
-  epic-11-retrospective: optional

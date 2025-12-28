@@ -1,6 +1,12 @@
 # Epic 10: Regulator Dashboard
 
+**Priority:** P3 (3rd frontend to build - Read-only analytics)
+
+**Dependencies:** Epic 0.5 (Frontend Infrastructure), Epic 2 (Collection Model)
+
 Tea Board of Kenya officials can view national-level quality intelligence. This dashboard is completely isolated from factory data for security.
+
+**Note:** This is the 3rd frontend application to build. It tests aggregation patterns with read-only analytics. Build after Epic 9 (Admin Portal) to apply learned patterns. Simpler than Epic 3 (Factory Dashboard) because it's read-only and doesn't need Epic 5/6 AI data.
 
 **Related ADRs:** ADR-002 (Frontend Architecture), ADR-003 (Identity & Access Management)
 

@@ -35,7 +35,7 @@ workflow_status:
   create-architecture: "_bmad-output/architecture/index.md"
   test-design: "_bmad-output/test-design-system-level.md"
   validate-architecture: "completed"  # 2025-12-23: Manual review - extracted Notification Model, fixed consistency issues
-  create-epics-and-stories: "_bmad-output/epics.md"  # 2025-12-23: 8 epics, 55 stories
+  create-epics-and-stories: "_bmad-output/epics/index.md"  # 2025-12-28: 14 epics (sharded into epics/ directory)
   implementation-readiness: "_bmad-output/implementation-readiness-report-2025-12-23.md"  # 2025-12-23: READY - Market Analysis pending discussion
 
   # Phase 3: Implementation

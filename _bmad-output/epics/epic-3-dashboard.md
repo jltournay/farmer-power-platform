@@ -1,8 +1,16 @@
 # Epic 3: Factory Manager Dashboard
 
+**Priority:** P6 (LAST frontend epic)
+
+**Dependencies:** Epic 0.5 (Frontend Infrastructure), Epic 1 (Plantation Model), Epic 2 (Collection Model), Epic 4 (SMS Feedback), Epic 5 (Quality Diagnosis AI), Epic 6 (Weekly Action Plans)
+
+**FRs covered:** FR9, FR10, FR11, FR12, FR13, FR14
+
 ## Overview
 
 This epic focuses on building the Factory Manager Dashboard - a comprehensive web interface for factory quality managers to monitor farmer quality metrics, categorize farmers by status, contact farmers directly, and generate daily reports. The dashboard serves as the primary tool for factory personnel to oversee quality across their farmer base and take action on quality issues.
+
+**Note:** This is the MOST COMPLEX frontend application and should be built LAST. It requires data from all major backend services (Plantation, Collection, Knowledge, Action Plan, Notification) to display meaningful content. Build simpler UIs first (Epic 11 Kiosk → Epic 9 Admin → Epic 10 Regulator) to validate React patterns before tackling this epic.
 
 ## Scope
 

@@ -1,6 +1,12 @@
 # Epic 11: Registration Kiosk PWA
 
+**Priority:** P2 (1st frontend to build - SIMPLEST)
+
+**Dependencies:** Epic 0.5 (Frontend Infrastructure), Epic 1 (Plantation Model)
+
 Registration clerks at collection points can enroll new farmers using dedicated tablets. The application works offline for rural areas with poor connectivity.
+
+**Note:** This is the SIMPLEST frontend application and should be built FIRST to validate React patterns and PWA architecture. It only depends on Plantation Model for farmer registration.
 
 **Related ADRs:** ADR-002 (Frontend Architecture), ADR-003 (Identity & Access Management)
 

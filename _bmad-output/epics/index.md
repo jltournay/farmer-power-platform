@@ -6,23 +6,47 @@ This document provides the complete epic and story breakdown for farmer-power-pl
 
 **Note:** This index provides an overview. Each epic has its own detailed file with full story definitions.
 
-## Epic Files
+## Epic Files (Priority Order)
 
-| Epic | File | Status | Stories |
-|------|------|--------|---------|
-| Epic 0 | [epic-0-infrastructure.md](epic-0-infrastructure.md) | Done | 0.1 |
-| Epic 0.5 | [epic-0-5-frontend.md](epic-0-5-frontend.md) | Backlog | 0.5.1-0.5.5 |
-| Epic 1 | [epic-1-plantation-model.md](epic-1-plantation-model.md) | In Progress | 1.1-1.8 |
-| Epic 2 | [epic-2-collection-model.md](epic-2-collection-model.md) | Done | 2.1-2.9 |
-| Epic 3 | [epic-3-dashboard.md](epic-3-dashboard.md) | Backlog | 3.1-3.12 |
-| Epic 4 | [epic-4-sms-feedback.md](epic-4-sms-feedback.md) | Backlog | 4.1-4.7 |
-| Epic 5 | [epic-5-diagnosis-ai.md](epic-5-diagnosis-ai.md) | Backlog | 5.1-5.9 |
-| Epic 6 | [epic-6-action-plans.md](epic-6-action-plans.md) | Backlog | 6.1-6.6 |
-| Epic 7 | [epic-7-voice-ivr.md](epic-7-voice-ivr.md) | Backlog | 7.1-7.5 |
-| Epic 8 | [epic-8-voice-advisor.md](epic-8-voice-advisor.md) | Backlog | 8.1-8.7 |
-| Epic 9 | [epic-9-admin-portal.md](epic-9-admin-portal.md) | Backlog | 9.1-9.4 |
-| Epic 10 | [epic-10-regulator.md](epic-10-regulator.md) | Backlog | 10.1-10.4 |
-| Epic 11 | [epic-11-registration-kiosk.md](epic-11-registration-kiosk.md) | Backlog | 11.1-11.4 |
+**Note:** Epics are ordered by implementation priority based on dependency analysis (2025-12-28).
+
+| Priority | Epic | File | Status | Stories | Dependencies |
+|----------|------|------|--------|---------|--------------|
+| P0 | Epic 0 | [epic-0-infrastructure.md](epic-0-infrastructure.md) | Done | 0.1-0.3 | None |
+| P0 | Epic 1 | [epic-1-plantation-model.md](epic-1-plantation-model.md) | In Progress | 1.1-1.8 | Epic 0 |
+| P0 | Epic 2 | [epic-2-collection-model.md](epic-2-collection-model.md) | Done | 2.1-2.9 | Epic 0, 1 |
+| P1 | Epic 0.5 | [epic-0-5-frontend.md](epic-0-5-frontend.md) | Backlog | 0.5.1-0.5.5 | Epic 0 |
+| P1 | **Epic 0.75** | [epic-0-75-ai-model.md](epic-0-75-ai-model.md) | **Backlog** | **0.75.1-0.75.6** | **Epic 0** |
+| P2 | **Epic 11** | [epic-11-registration-kiosk.md](epic-11-registration-kiosk.md) | Backlog | 11.1-11.4 | Epic 0.5, 1 |
+| P2 | **Epic 9** | [epic-9-admin-portal.md](epic-9-admin-portal.md) | Backlog | 9.1-9.4 | Epic 0.5, 1 |
+| P3 | Epic 5 | [epic-5-diagnosis-ai.md](epic-5-diagnosis-ai.md) | Backlog | 5.1-5.9 | **Epic 0.75**, 1, 2 |
+| P3 | **Epic 10** | [epic-10-regulator.md](epic-10-regulator.md) | Backlog | 10.1-10.4 | Epic 0.5, 2 |
+| P4 | Epic 6 | [epic-6-action-plans.md](epic-6-action-plans.md) | Backlog | 6.1-6.6 | **Epic 0.75**, 5 |
+| P4 | Epic 4 | [epic-4-sms-feedback.md](epic-4-sms-feedback.md) | Backlog | 4.1-4.7 | Epic 1, 2 |
+| P5 | Epic 7 | [epic-7-voice-ivr.md](epic-7-voice-ivr.md) | Backlog | 7.1-7.5 | Epic 4, 6 |
+| P5 | Epic 8 | [epic-8-voice-advisor.md](epic-8-voice-advisor.md) | Backlog | 8.1-8.7 | **Epic 0.75**, 5, 6 |
+| P5 | **Epic 12** | [epic-12-engagement-model.md](epic-12-engagement-model.md) | **Backlog** | **12.1-12.8** | **Epic 0.75**, 1 |
+| P6 | **Epic 3** | [epic-3-dashboard.md](epic-3-dashboard.md) | Backlog | 3.1-3.12 | Epic 0.5, 1, 2, 4, 5, 6 |
+
+### Key Changes (2025-12-28)
+
+1. **Epic 0.75 (AI Model Foundation)** - NEW: Enables Epic 5, 6, 8, 12
+2. **Epic 12 (Engagement Model)** - NEW: Farmer motivation engine (9th domain model)
+3. **Epic 3 (Dashboard) moved to P6** - Requires most other epics; was incorrectly prioritized early
+4. **Epic 11 (Kiosk) moved to P2** - Simplest UI, ideal for validating React patterns first
+5. **Epic 9 (Admin Portal) moved to P2** - Simple CRUD, good second React app
+6. **Epic 10 (Regulator) moved to P3** - Read-only analytics, simpler than Dashboard
+
+### Frontend Implementation Order
+
+For React/frontend development, the recommended progression is:
+
+| Order | Epic | Rationale |
+|-------|------|-----------|
+| 1st | Epic 11 (Kiosk) | Simplest PWA, 1 domain model, validates React patterns |
+| 2nd | Epic 9 (Admin Portal) | CRUD operations, establishes BFF patterns |
+| 3rd | Epic 10 (Regulator) | Read-only analytics, tests aggregation patterns |
+| 4th | Epic 3 (Dashboard) | Most complex, applies all learned patterns |
 
 ## Requirements Inventory
 
@@ -168,55 +192,80 @@ This document provides the complete epic and story breakdown for farmer-power-pl
 | FR29-FR33 | Epic 6 | Action Plan Model |
 | FR34-FR38 | Epic 1 | Plantation Model / Registration |
 | FR39-FR44 | Epic 4 | Notification Model |
-| FR45-FR49 | Epic 5 | AI Model |
+| FR45-FR49 | **Epic 0.75** | **AI Model Foundation** |
 | FR50-FR57 | Epic 8 | Conversational AI / Voice Advisor |
 | FR58-FR61 | Epic 2 | TBK Grading Integration |
+| Engagement | **Epic 12** | **Farmer Engagement & Motivation** |
 
 ## Epic Summaries
 
 ### Epic 0: Platform Infrastructure Foundation
 Cross-cutting infrastructure that enables domain model services. These stories establish shared libraries, proto definitions, and foundational patterns used across all epics.
+**Dependencies:** None (foundational)
 
 ### Epic 0.5: Frontend & Identity Infrastructure
 Cross-cutting frontend and authentication infrastructure that enables all web applications. These stories establish the shared component library, authentication flow, and foundational frontend patterns.
+**Dependencies:** Epic 0
+
+### Epic 0.75: AI Model Foundation (NEW)
+Cross-cutting AI infrastructure that enables all AI-powered domain models. These stories establish the LLM gateway, agent framework, RAG engine, and prompt management patterns.
+**Dependencies:** Epic 0
+**Blocks:** Epic 5, 6, 8, 12
+**FRs covered:** FR45, FR46, FR47, FR48, FR49
 
 ### Epic 1: Farmer Registration & Data Foundation
 Factory staff can register farmers into the system. Farmers receive their unique ID and are ready to be tracked.
+**Dependencies:** Epic 0
 **FRs covered:** FR34, FR35, FR36, FR37, FR38
 
 ### Epic 2: Quality Data Ingestion
 QC Analyzer can submit quality grading results to the platform. Data is validated, stored, and events are emitted for downstream processing.
+**Dependencies:** Epic 0, 1
 **FRs covered:** FR15-FR23, FR58-FR61
 
 ### Epic 3: Factory Manager Dashboard
 Factory Quality Managers can view farmer quality data, identify problem farmers, and take action. Daily reports are auto-generated.
+**Dependencies:** Epic 0.5, 1, 2, 4, 5, 6 (LAST frontend epic - requires most other epics)
 **FRs covered:** FR9, FR10, FR11, FR12, FR13, FR14
 
 ### Epic 4: Farmer SMS Feedback
 Farmers receive personalized SMS feedback within 3 hours of delivery, with actionable tips in their local language.
+**Dependencies:** Epic 1, 2
 **FRs covered:** FR1-FR4, FR8, FR39-FR44
 
 ### Epic 5: Quality Diagnosis AI
 Platform automatically diagnoses quality issues (disease, weather, technique) and stores analysis results for action plan generation.
-**FRs covered:** FR24-FR28, FR45-FR49
+**Dependencies:** Epic 0.75, 1, 2
+**FRs covered:** FR24-FR28
 
 ### Epic 6: Weekly Action Plans
 Farmers receive weekly personalized action plans with specific recommendations tailored to their farm size and recent quality issues.
+**Dependencies:** Epic 0.75, 5
 **FRs covered:** FR29, FR30, FR31, FR32, FR33
 
 ### Epic 7: Voice IVR Experience
 Farmers can call a shortcode to hear their detailed action plan via TTS in their preferred language.
+**Dependencies:** Epic 4, 6
 **FRs covered:** FR5, FR6, FR7
 
 ### Epic 8: Voice Quality Advisor (Conversational AI)
 Farmers can call and have a two-way conversation about quality improvement, asking questions in Swahili.
+**Dependencies:** Epic 0.75, 5, 6
 **FRs covered:** FR50-FR57
 
 ### Epic 9: Platform Admin Portal
 Platform administrators can onboard factories, manage users, and monitor platform health.
+**Dependencies:** Epic 0.5, 1 (Simple CRUD - 2nd frontend to build)
 
 ### Epic 10: Regulator Dashboard
 Regulators can view national and regional quality metrics and trends.
+**Dependencies:** Epic 0.5, 2 (Read-only analytics - 3rd frontend to build)
 
 ### Epic 11: Registration Kiosk PWA
 Field staff can register farmers using a mobile PWA with offline support.
+**Dependencies:** Epic 0.5, 1 (Simplest UI - 1st frontend to build)
+
+### Epic 12: Farmer Engagement & Motivation (NEW)
+Track farmer progress with streaks, milestones, and levels. Enable Duolingo-style encouragement patterns that motivate farmers to consistently improve quality.
+**Dependencies:** Epic 0.75, 1
+**Domain Model:** Engagement Model (9th domain model)

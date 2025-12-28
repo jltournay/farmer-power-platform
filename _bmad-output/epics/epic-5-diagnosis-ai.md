@@ -1,8 +1,16 @@
 # Epic 5: Quality Diagnosis AI
 
+**Priority:** P3
+
+**Dependencies:** Epic 0.75 (AI Model Foundation), Epic 1 (Plantation Model), Epic 2 (Collection Model)
+
+**FRs covered:** FR24, FR25, FR26, FR27, FR28
+
 ## Overview
 
 This epic implements the AI-powered quality diagnosis system using LangGraph workflows and RAG (Retrieval Augmented Generation). The Knowledge Model service provides intelligent triage of quality issues, routing to specialized agents for disease detection, weather impact analysis, technique assessment, and trend analysis. All diagnoses are enriched with expert agricultural knowledge via a curated RAG knowledge base.
+
+**Note:** This epic requires Epic 0.75 (AI Model Foundation) to be completed first. The AI Model provides the LLM gateway, agent framework, RAG infrastructure, and prompt management that this epic builds upon.
 
 ## Scope
 

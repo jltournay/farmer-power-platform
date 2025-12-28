@@ -1,8 +1,14 @@
 # Epic 8: Voice Quality Advisor (Conversational AI)
 
+**Priority:** P5
+
+**Dependencies:** Epic 0.75 (AI Model Foundation), Epic 5 (Quality Diagnosis AI), Epic 6 (Weekly Action Plans)
+
+**FRs covered:** FR50, FR51, FR52, FR53, FR54, FR55, FR56, FR57
+
 Farmers can have interactive voice conversations with an AI quality advisor to ask questions about their tea quality and get personalized advice. This provides a more natural, conversational interface for farmers who need detailed guidance.
 
-**Related Requirements:** FR50-FR57
+**Note:** This epic requires Epic 0.75 (AI Model Foundation) for LLM orchestration, Epic 5 for quality diagnoses, and Epic 6 for action plan context.
 
 **Scope:**
 - Conversational AI service with voice processing
