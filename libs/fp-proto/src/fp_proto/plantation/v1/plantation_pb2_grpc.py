@@ -61,6 +61,16 @@ class PlantationServiceStub(object):
                 request_serializer=plantation_dot_v1_dot_plantation__pb2.UpdateRegionRequest.SerializeToString,
                 response_deserializer=plantation_dot_v1_dot_plantation__pb2.Region.FromString,
                 _registered_method=True)
+        self.GetRegionWeather = channel.unary_unary(
+                '/farmer_power.plantation.v1.PlantationService/GetRegionWeather',
+                request_serializer=plantation_dot_v1_dot_plantation__pb2.GetRegionWeatherRequest.SerializeToString,
+                response_deserializer=plantation_dot_v1_dot_plantation__pb2.GetRegionWeatherResponse.FromString,
+                _registered_method=True)
+        self.GetCurrentFlush = channel.unary_unary(
+                '/farmer_power.plantation.v1.PlantationService/GetCurrentFlush',
+                request_serializer=plantation_dot_v1_dot_plantation__pb2.GetCurrentFlushRequest.SerializeToString,
+                response_deserializer=plantation_dot_v1_dot_plantation__pb2.GetCurrentFlushResponse.FromString,
+                _registered_method=True)
         self.GetFactory = channel.unary_unary(
                 '/farmer_power.plantation.v1.PlantationService/GetFactory',
                 request_serializer=plantation_dot_v1_dot_plantation__pb2.GetFactoryRequest.SerializeToString,
@@ -184,7 +194,7 @@ class PlantationServiceServicer(object):
     """
 
     def GetRegion(self, request, context):
-        """Region operations
+        """Region operations (Story 1.8)
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
@@ -203,6 +213,19 @@ class PlantationServiceServicer(object):
         raise NotImplementedError('Method not implemented!')
 
     def UpdateRegion(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def GetRegionWeather(self, request, context):
+        """Regional Weather operations (Story 1.8)
+        """
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def GetCurrentFlush(self, request, context):
         """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
@@ -369,6 +392,16 @@ def add_PlantationServiceServicer_to_server(servicer, server):
                     servicer.UpdateRegion,
                     request_deserializer=plantation_dot_v1_dot_plantation__pb2.UpdateRegionRequest.FromString,
                     response_serializer=plantation_dot_v1_dot_plantation__pb2.Region.SerializeToString,
+            ),
+            'GetRegionWeather': grpc.unary_unary_rpc_method_handler(
+                    servicer.GetRegionWeather,
+                    request_deserializer=plantation_dot_v1_dot_plantation__pb2.GetRegionWeatherRequest.FromString,
+                    response_serializer=plantation_dot_v1_dot_plantation__pb2.GetRegionWeatherResponse.SerializeToString,
+            ),
+            'GetCurrentFlush': grpc.unary_unary_rpc_method_handler(
+                    servicer.GetCurrentFlush,
+                    request_deserializer=plantation_dot_v1_dot_plantation__pb2.GetCurrentFlushRequest.FromString,
+                    response_serializer=plantation_dot_v1_dot_plantation__pb2.GetCurrentFlushResponse.SerializeToString,
             ),
             'GetFactory': grpc.unary_unary_rpc_method_handler(
                     servicer.GetFactory,
@@ -596,6 +629,60 @@ class PlantationService(object):
             '/farmer_power.plantation.v1.PlantationService/UpdateRegion',
             plantation_dot_v1_dot_plantation__pb2.UpdateRegionRequest.SerializeToString,
             plantation_dot_v1_dot_plantation__pb2.Region.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def GetRegionWeather(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/farmer_power.plantation.v1.PlantationService/GetRegionWeather',
+            plantation_dot_v1_dot_plantation__pb2.GetRegionWeatherRequest.SerializeToString,
+            plantation_dot_v1_dot_plantation__pb2.GetRegionWeatherResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def GetCurrentFlush(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/farmer_power.plantation.v1.PlantationService/GetCurrentFlush',
+            plantation_dot_v1_dot_plantation__pb2.GetCurrentFlushRequest.SerializeToString,
+            plantation_dot_v1_dot_plantation__pb2.GetCurrentFlushResponse.FromString,
             options,
             channel_credentials,
             insecure,

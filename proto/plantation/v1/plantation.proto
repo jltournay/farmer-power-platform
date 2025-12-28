@@ -15,11 +15,15 @@ import "google/protobuf/timestamp.proto";
 // ============================================================================
 
 service PlantationService {
-  // Region operations
+  // Region operations (Story 1.8)
   rpc GetRegion(GetRegionRequest) returns (Region);
   rpc ListRegions(ListRegionsRequest) returns (ListRegionsResponse);
   rpc CreateRegion(CreateRegionRequest) returns (Region);
   rpc UpdateRegion(UpdateRegionRequest) returns (Region);
+
+  // Regional Weather operations (Story 1.8)
+  rpc GetRegionWeather(GetRegionWeatherRequest) returns (GetRegionWeatherResponse);
+  rpc GetCurrentFlush(GetCurrentFlushRequest) returns (GetCurrentFlushResponse);
 
   // Factory operations
   rpc GetFactory(GetFactoryRequest) returns (Factory);
@@ -84,29 +88,93 @@ message QualityThresholds {
 }
 
 // ============================================================================
-// Region Messages
+// Region Messages (Story 1.8)
 // ============================================================================
 
+// Altitude band classification for tea growing regions
+enum AltitudeBandLabel {
+  ALTITUDE_BAND_UNSPECIFIED = 0;
+  ALTITUDE_BAND_HIGHLAND = 1;   // 1800m+ - Cooler, more rainfall, frost risk
+  ALTITUDE_BAND_MIDLAND = 2;    // 1400m - 1800m - Moderate conditions
+  ALTITUDE_BAND_LOWLAND = 3;    // Below 1400m - Warmer, earlier flushes
+}
+
+// GPS coordinates
+message GPS {
+  double lat = 1;   // Latitude (-90 to 90)
+  double lng = 2;   // Longitude (-180 to 180)
+}
+
+// Altitude band with elevation range
+message AltitudeBand {
+  int32 min_meters = 1;
+  int32 max_meters = 2;
+  AltitudeBandLabel label = 3;
+}
+
+// Geographic information for a region
+message Geography {
+  GPS center_gps = 1;
+  double radius_km = 2;
+  AltitudeBand altitude_band = 3;
+}
+
+// Tea flush period (seasonal growth period)
+message FlushPeriod {
+  string start = 1;           // MM-DD format (e.g., "03-15")
+  string end = 2;             // MM-DD format (e.g., "05-15")
+  string characteristics = 3;  // Description (e.g., "Highest quality, delicate flavor")
+}
+
+// Complete flush calendar for a region
+message FlushCalendar {
+  FlushPeriod first_flush = 1;    // Spring flush (highest quality)
+  FlushPeriod monsoon_flush = 2;  // Monsoon flush (high volume)
+  FlushPeriod autumn_flush = 3;   // Autumn flush (balanced)
+  FlushPeriod dormant = 4;        // Dormant period (minimal growth)
+}
+
+// Weather API configuration for a region
+message WeatherConfig {
+  GPS api_location = 1;         // Location for weather API queries
+  int32 altitude_for_api = 2;   // Altitude in meters for API
+  string collection_time = 3;   // When to collect data (HH:MM, e.g., "06:00")
+}
+
+// Agronomic factors for a region
+message Agronomic {
+  string soil_type = 1;                    // e.g., "volcanic_red"
+  repeated string typical_diseases = 2;    // Common diseases in region
+  string harvest_peak_hours = 3;           // e.g., "06:00-10:00"
+  bool frost_risk = 4;                     // Whether frost is a concern
+}
+
+// Region entity with weather and agronomic configuration (Story 1.8)
+// region_id format: {county}-{altitude_band} (e.g., "nyeri-highland")
 message Region {
-  string id = 1;
-  string name = 2;
-  string code = 3;
-  GeoLocation center = 4;
-  string parent_region_id = 5;
-  bool is_active = 6;
-  google.protobuf.Timestamp created_at = 7;
-  google.protobuf.Timestamp updated_at = 8;
+  string region_id = 1;                       // Semantic ID: {county}-{altitude_band}
+  string name = 2;                            // Display name (e.g., "Nyeri Highland")
+  string county = 3;                          // County name (e.g., "Nyeri")
+  string country = 4;                         // Country (default: "Kenya")
+  Geography geography = 5;                    // Geographic location and altitude
+  FlushCalendar flush_calendar = 6;           // Tea growing seasons
+  Agronomic agronomic = 7;                    // Agronomic factors
+  WeatherConfig weather_config = 8;           // Weather data collection config
+  bool is_active = 9;
+  google.protobuf.Timestamp created_at = 10;
+  google.protobuf.Timestamp updated_at = 11;
 }
 
 message GetRegionRequest {
-  string id = 1;
+  string region_id = 1;   // Semantic region ID (e.g., "nyeri-highland")
 }
 
 message ListRegionsRequest {
   int32 page_size = 1;
   string page_token = 2;
-  string parent_region_id = 3;
-  bool active_only = 4;
+  string county = 3;              // Filter by county name
+  string altitude_band = 4;       // Filter by altitude band (highland/midland/lowland)
+  bool active_only = 5;
 }
 
 message ListRegionsResponse {
@@ -117,17 +185,74 @@ message ListRegionsResponse {
 
 message CreateRegionRequest {
   string name = 1;
-  string code = 2;
-  GeoLocation center = 3;
-  string parent_region_id = 4;
+  string county = 2;
+  string country = 3;             // Optional, defaults to "Kenya"
+  Geography geography = 4;
+  FlushCalendar flush_calendar = 5;
+  Agronomic agronomic = 6;
+  WeatherConfig weather_config = 7;
 }
 
 message UpdateRegionRequest {
-  string id = 1;
+  string region_id = 1;
   optional string name = 2;
-  optional string code = 3;
-  optional GeoLocation center = 4;
-  optional bool is_active = 5;
+  optional Geography geography = 3;
+  optional FlushCalendar flush_calendar = 4;
+  optional Agronomic agronomic = 5;
+  optional WeatherConfig weather_config = 6;
+  optional bool is_active = 7;
+}
+
+// ============================================================================
+// Regional Weather Messages (Story 1.8)
+// ============================================================================
+
+// Daily weather observation for a region
+message WeatherObservation {
+  double temp_min = 1;          // Minimum temperature (Celsius)
+  double temp_max = 2;          // Maximum temperature (Celsius)
+  double precipitation_mm = 3;  // Total precipitation (mm)
+  double humidity_avg = 4;      // Average humidity (0-100%)
+}
+
+// Regional weather record
+message RegionalWeather {
+  string region_id = 1;
+  string date = 2;              // ISO date (YYYY-MM-DD)
+  double temp_min = 3;
+  double temp_max = 4;
+  double precipitation_mm = 5;
+  double humidity_avg = 6;
+  string source = 7;            // Data source (e.g., "open-meteo")
+  google.protobuf.Timestamp created_at = 8;
+}
+
+message GetRegionWeatherRequest {
+  string region_id = 1;
+  int32 days = 2;               // Number of days of history (default: 7)
+}
+
+message GetRegionWeatherResponse {
+  string region_id = 1;
+  repeated RegionalWeather observations = 2;
+}
+
+// Current flush period response
+message CurrentFlush {
+  string flush_name = 1;        // e.g., "first_flush", "monsoon_flush"
+  string start_date = 2;        // MM-DD
+  string end_date = 3;          // MM-DD
+  string characteristics = 4;
+  int32 days_remaining = 5;     // Days until flush period ends
+}
+
+message GetCurrentFlushRequest {
+  string region_id = 1;
+}
+
+message GetCurrentFlushResponse {
+  string region_id = 1;
+  CurrentFlush current_flush = 2;
 }
 
 // ============================================================================

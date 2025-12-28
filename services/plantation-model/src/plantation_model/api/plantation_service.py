@@ -29,12 +29,22 @@ from plantation_model.domain.models.grading_model import (
     GradingType,
 )
 from plantation_model.domain.models.id_generator import IDGenerator
+from plantation_model.domain.models.region import Region, RegionCreate
+from plantation_model.domain.models.regional_weather import RegionalWeather
 from plantation_model.domain.models.value_objects import (
+    Agronomic,
+    AltitudeBand,
+    AltitudeBandLabel,
     CollectionPointCapacity,
     ContactInfo,
+    FlushCalendar,
+    FlushPeriod,
     GeoLocation,
+    Geography,
+    GPS,
     OperatingHours,
     QualityThresholds,
+    WeatherConfig,
 )
 from plantation_model.infrastructure.dapr_client import DaprPubSubClient
 from plantation_model.infrastructure.google_elevation import (
@@ -55,6 +65,12 @@ from plantation_model.infrastructure.repositories.farmer_repository import (
 )
 from plantation_model.infrastructure.repositories.grading_model_repository import (
     GradingModelRepository,
+)
+from plantation_model.infrastructure.repositories.region_repository import (
+    RegionRepository,
+)
+from plantation_model.infrastructure.repositories.regional_weather_repository import (
+    RegionalWeatherRepository,
 )
 
 logger = logging.getLogger(__name__)
@@ -90,6 +106,8 @@ class PlantationServiceServicer(plantation_pb2_grpc.PlantationServiceServicer):
         dapr_client: DaprPubSubClient | None = None,
         grading_model_repo: GradingModelRepository | None = None,
         farmer_performance_repo: FarmerPerformanceRepository | None = None,
+        region_repo: RegionRepository | None = None,
+        regional_weather_repo: RegionalWeatherRepository | None = None,
     ) -> None:
         """Initialize the servicer.
 
@@ -102,6 +120,8 @@ class PlantationServiceServicer(plantation_pb2_grpc.PlantationServiceServicer):
             dapr_client: Optional Dapr pub/sub client for event publishing.
             grading_model_repo: Optional grading model repository instance.
             farmer_performance_repo: Optional farmer performance repository instance.
+            region_repo: Optional region repository instance (Story 1.8).
+            regional_weather_repo: Optional regional weather repository instance (Story 1.8).
 
         """
         self._factory_repo = factory_repo
@@ -112,6 +132,8 @@ class PlantationServiceServicer(plantation_pb2_grpc.PlantationServiceServicer):
         self._dapr_client = dapr_client or DaprPubSubClient()
         self._grading_model_repo = grading_model_repo
         self._farmer_performance_repo = farmer_performance_repo
+        self._region_repo = region_repo
+        self._regional_weather_repo = regional_weather_repo
 
     # =========================================================================
     # Factory Operations
@@ -1409,4 +1431,405 @@ class PlantationServiceServicer(plantation_pb2_grpc.PlantationServiceServicer):
 
         return plantation_pb2.UpdateCommunicationPreferencesResponse(
             farmer=self._farmer_to_proto(updated_farmer),
+        )
+
+    # =========================================================================
+    # Region Operations (Story 1.8)
+    # =========================================================================
+
+    def _altitude_band_label_to_proto(self, label: AltitudeBandLabel) -> plantation_pb2.AltitudeBandLabel:
+        """Convert AltitudeBandLabel domain enum to protobuf enum."""
+        mapping = {
+            AltitudeBandLabel.HIGHLAND: plantation_pb2.ALTITUDE_BAND_HIGHLAND,
+            AltitudeBandLabel.MIDLAND: plantation_pb2.ALTITUDE_BAND_MIDLAND,
+            AltitudeBandLabel.LOWLAND: plantation_pb2.ALTITUDE_BAND_LOWLAND,
+        }
+        return mapping.get(label, plantation_pb2.ALTITUDE_BAND_UNSPECIFIED)
+
+    def _altitude_band_label_from_proto(self, label: plantation_pb2.AltitudeBandLabel) -> AltitudeBandLabel:
+        """Convert protobuf AltitudeBandLabel enum to domain enum."""
+        mapping = {
+            plantation_pb2.ALTITUDE_BAND_HIGHLAND: AltitudeBandLabel.HIGHLAND,
+            plantation_pb2.ALTITUDE_BAND_MIDLAND: AltitudeBandLabel.MIDLAND,
+            plantation_pb2.ALTITUDE_BAND_LOWLAND: AltitudeBandLabel.LOWLAND,
+        }
+        return mapping.get(label, AltitudeBandLabel.MIDLAND)
+
+    def _region_to_proto(self, region: Region) -> plantation_pb2.Region:
+        """Convert Region domain model to protobuf message."""
+        return plantation_pb2.Region(
+            region_id=region.region_id,
+            name=region.name,
+            county=region.county,
+            country=region.country,
+            geography=plantation_pb2.Geography(
+                center_gps=plantation_pb2.GPS(
+                    lat=region.geography.center_gps.lat,
+                    lng=region.geography.center_gps.lng,
+                ),
+                radius_km=region.geography.radius_km,
+                altitude_band=plantation_pb2.AltitudeBand(
+                    min_meters=region.geography.altitude_band.min_meters,
+                    max_meters=region.geography.altitude_band.max_meters,
+                    label=self._altitude_band_label_to_proto(region.geography.altitude_band.label),
+                ),
+            ),
+            flush_calendar=plantation_pb2.FlushCalendar(
+                first_flush=plantation_pb2.FlushPeriod(
+                    start=region.flush_calendar.first_flush.start,
+                    end=region.flush_calendar.first_flush.end,
+                    characteristics=region.flush_calendar.first_flush.characteristics,
+                ),
+                monsoon_flush=plantation_pb2.FlushPeriod(
+                    start=region.flush_calendar.monsoon_flush.start,
+                    end=region.flush_calendar.monsoon_flush.end,
+                    characteristics=region.flush_calendar.monsoon_flush.characteristics,
+                ),
+                autumn_flush=plantation_pb2.FlushPeriod(
+                    start=region.flush_calendar.autumn_flush.start,
+                    end=region.flush_calendar.autumn_flush.end,
+                    characteristics=region.flush_calendar.autumn_flush.characteristics,
+                ),
+                dormant=plantation_pb2.FlushPeriod(
+                    start=region.flush_calendar.dormant.start,
+                    end=region.flush_calendar.dormant.end,
+                    characteristics=region.flush_calendar.dormant.characteristics,
+                ),
+            ),
+            agronomic=plantation_pb2.Agronomic(
+                soil_type=region.agronomic.soil_type,
+                typical_diseases=region.agronomic.typical_diseases,
+                harvest_peak_hours=region.agronomic.harvest_peak_hours,
+                frost_risk=region.agronomic.frost_risk,
+            ),
+            weather_config=plantation_pb2.WeatherConfig(
+                api_location=plantation_pb2.GPS(
+                    lat=region.weather_config.api_location.lat,
+                    lng=region.weather_config.api_location.lng,
+                ),
+                altitude_for_api=region.weather_config.altitude_for_api,
+                collection_time=region.weather_config.collection_time,
+            ),
+            is_active=region.is_active,
+            created_at=datetime_to_timestamp(region.created_at),
+            updated_at=datetime_to_timestamp(region.updated_at),
+        )
+
+    def _regional_weather_to_proto(self, weather: RegionalWeather) -> plantation_pb2.RegionalWeather:
+        """Convert RegionalWeather domain model to protobuf message."""
+        return plantation_pb2.RegionalWeather(
+            region_id=weather.region_id,
+            date=weather.date.isoformat(),
+            temp_min=weather.temp_min,
+            temp_max=weather.temp_max,
+            precipitation_mm=weather.precipitation_mm,
+            humidity_avg=weather.humidity_avg,
+            source=weather.source,
+            created_at=datetime_to_timestamp(weather.created_at),
+        )
+
+    async def GetRegion(
+        self,
+        request: plantation_pb2.GetRegionRequest,
+        context: grpc.aio.ServicerContext,
+    ) -> plantation_pb2.Region:
+        """Get a region by ID (Story 1.8)."""
+        if not self._region_repo:
+            await context.abort(
+                grpc.StatusCode.UNIMPLEMENTED,
+                "Region repository not configured",
+            )
+
+        region = await self._region_repo.get_by_id(request.region_id)
+        if region is None:
+            await context.abort(
+                grpc.StatusCode.NOT_FOUND,
+                f"Region {request.region_id} not found",
+            )
+
+        return self._region_to_proto(region)
+
+    async def ListRegions(
+        self,
+        request: plantation_pb2.ListRegionsRequest,
+        context: grpc.aio.ServicerContext,
+    ) -> plantation_pb2.ListRegionsResponse:
+        """List regions with optional filtering (Story 1.8)."""
+        if not self._region_repo:
+            await context.abort(
+                grpc.StatusCode.UNIMPLEMENTED,
+                "Region repository not configured",
+            )
+
+        page_size = request.page_size if request.page_size > 0 else 100
+        page_token = request.page_token if request.page_token else None
+
+        regions, next_token, total = await self._region_repo.list(
+            county=request.county if request.county else None,
+            altitude_band=request.altitude_band if request.altitude_band else None,
+            active_only=request.active_only,
+            page_size=page_size,
+            page_token=page_token,
+        )
+
+        return plantation_pb2.ListRegionsResponse(
+            regions=[self._region_to_proto(r) for r in regions],
+            next_page_token=next_token or "",
+            total_count=total,
+        )
+
+    async def CreateRegion(
+        self,
+        request: plantation_pb2.CreateRegionRequest,
+        context: grpc.aio.ServicerContext,
+    ) -> plantation_pb2.Region:
+        """Create a new region (Story 1.8)."""
+        if not self._region_repo:
+            await context.abort(
+                grpc.StatusCode.UNIMPLEMENTED,
+                "Region repository not configured",
+            )
+
+        # Build RegionCreate from request
+        try:
+            region_create = RegionCreate(
+                name=request.name,
+                county=request.county,
+                country=request.country if request.country else "Kenya",
+                geography=Geography(
+                    center_gps=GPS(
+                        lat=request.geography.center_gps.lat,
+                        lng=request.geography.center_gps.lng,
+                    ),
+                    radius_km=request.geography.radius_km,
+                    altitude_band=AltitudeBand(
+                        min_meters=request.geography.altitude_band.min_meters,
+                        max_meters=request.geography.altitude_band.max_meters,
+                        label=self._altitude_band_label_from_proto(request.geography.altitude_band.label),
+                    ),
+                ),
+                flush_calendar=FlushCalendar(
+                    first_flush=FlushPeriod(
+                        start=request.flush_calendar.first_flush.start,
+                        end=request.flush_calendar.first_flush.end,
+                        characteristics=request.flush_calendar.first_flush.characteristics,
+                    ),
+                    monsoon_flush=FlushPeriod(
+                        start=request.flush_calendar.monsoon_flush.start,
+                        end=request.flush_calendar.monsoon_flush.end,
+                        characteristics=request.flush_calendar.monsoon_flush.characteristics,
+                    ),
+                    autumn_flush=FlushPeriod(
+                        start=request.flush_calendar.autumn_flush.start,
+                        end=request.flush_calendar.autumn_flush.end,
+                        characteristics=request.flush_calendar.autumn_flush.characteristics,
+                    ),
+                    dormant=FlushPeriod(
+                        start=request.flush_calendar.dormant.start,
+                        end=request.flush_calendar.dormant.end,
+                        characteristics=request.flush_calendar.dormant.characteristics,
+                    ),
+                ),
+                agronomic=Agronomic(
+                    soil_type=request.agronomic.soil_type,
+                    typical_diseases=list(request.agronomic.typical_diseases),
+                    harvest_peak_hours=request.agronomic.harvest_peak_hours,
+                    frost_risk=request.agronomic.frost_risk,
+                ),
+                weather_config=WeatherConfig(
+                    api_location=GPS(
+                        lat=request.weather_config.api_location.lat,
+                        lng=request.weather_config.api_location.lng,
+                    ),
+                    altitude_for_api=request.weather_config.altitude_for_api,
+                    collection_time=request.weather_config.collection_time if request.weather_config.collection_time else "06:00",
+                ),
+            )
+        except ValueError as e:
+            await context.abort(
+                grpc.StatusCode.INVALID_ARGUMENT,
+                f"Invalid region data: {e}",
+            )
+
+        # Generate region_id and create full Region
+        region = region_create.to_region()
+
+        # Check for duplicate
+        existing = await self._region_repo.get_by_id(region.region_id)
+        if existing:
+            await context.abort(
+                grpc.StatusCode.ALREADY_EXISTS,
+                f"Region {region.region_id} already exists",
+            )
+
+        await self._region_repo.create(region)
+        logger.info("Created region %s (%s)", region.region_id, region.name)
+
+        return self._region_to_proto(region)
+
+    async def UpdateRegion(
+        self,
+        request: plantation_pb2.UpdateRegionRequest,
+        context: grpc.aio.ServicerContext,
+    ) -> plantation_pb2.Region:
+        """Update an existing region (Story 1.8)."""
+        if not self._region_repo:
+            await context.abort(
+                grpc.StatusCode.UNIMPLEMENTED,
+                "Region repository not configured",
+            )
+
+        # Build updates dict from optional fields
+        updates = {}
+
+        if request.HasField("name"):
+            updates["name"] = request.name
+        if request.HasField("geography"):
+            updates["geography"] = Geography(
+                center_gps=GPS(
+                    lat=request.geography.center_gps.lat,
+                    lng=request.geography.center_gps.lng,
+                ),
+                radius_km=request.geography.radius_km,
+                altitude_band=AltitudeBand(
+                    min_meters=request.geography.altitude_band.min_meters,
+                    max_meters=request.geography.altitude_band.max_meters,
+                    label=self._altitude_band_label_from_proto(request.geography.altitude_band.label),
+                ),
+            ).model_dump()
+        if request.HasField("flush_calendar"):
+            updates["flush_calendar"] = FlushCalendar(
+                first_flush=FlushPeriod(
+                    start=request.flush_calendar.first_flush.start,
+                    end=request.flush_calendar.first_flush.end,
+                    characteristics=request.flush_calendar.first_flush.characteristics,
+                ),
+                monsoon_flush=FlushPeriod(
+                    start=request.flush_calendar.monsoon_flush.start,
+                    end=request.flush_calendar.monsoon_flush.end,
+                    characteristics=request.flush_calendar.monsoon_flush.characteristics,
+                ),
+                autumn_flush=FlushPeriod(
+                    start=request.flush_calendar.autumn_flush.start,
+                    end=request.flush_calendar.autumn_flush.end,
+                    characteristics=request.flush_calendar.autumn_flush.characteristics,
+                ),
+                dormant=FlushPeriod(
+                    start=request.flush_calendar.dormant.start,
+                    end=request.flush_calendar.dormant.end,
+                    characteristics=request.flush_calendar.dormant.characteristics,
+                ),
+            ).model_dump()
+        if request.HasField("agronomic"):
+            updates["agronomic"] = Agronomic(
+                soil_type=request.agronomic.soil_type,
+                typical_diseases=list(request.agronomic.typical_diseases),
+                harvest_peak_hours=request.agronomic.harvest_peak_hours,
+                frost_risk=request.agronomic.frost_risk,
+            ).model_dump()
+        if request.HasField("weather_config"):
+            updates["weather_config"] = WeatherConfig(
+                api_location=GPS(
+                    lat=request.weather_config.api_location.lat,
+                    lng=request.weather_config.api_location.lng,
+                ),
+                altitude_for_api=request.weather_config.altitude_for_api,
+                collection_time=request.weather_config.collection_time if request.weather_config.collection_time else "06:00",
+            ).model_dump()
+        if request.HasField("is_active"):
+            updates["is_active"] = request.is_active
+
+        if not updates:
+            # No updates, just return current region
+            region = await self._region_repo.get_by_id(request.region_id)
+            if region is None:
+                await context.abort(
+                    grpc.StatusCode.NOT_FOUND,
+                    f"Region {request.region_id} not found",
+                )
+            return self._region_to_proto(region)
+
+        region = await self._region_repo.update(request.region_id, updates)
+        if region is None:
+            await context.abort(
+                grpc.StatusCode.NOT_FOUND,
+                f"Region {request.region_id} not found",
+            )
+
+        logger.info("Updated region %s", region.region_id)
+        return self._region_to_proto(region)
+
+    async def GetRegionWeather(
+        self,
+        request: plantation_pb2.GetRegionWeatherRequest,
+        context: grpc.aio.ServicerContext,
+    ) -> plantation_pb2.GetRegionWeatherResponse:
+        """Get weather history for a region (Story 1.8)."""
+        if not self._regional_weather_repo:
+            await context.abort(
+                grpc.StatusCode.UNIMPLEMENTED,
+                "Regional weather repository not configured",
+            )
+
+        # Verify region exists
+        if self._region_repo:
+            region = await self._region_repo.get_by_id(request.region_id)
+            if region is None:
+                await context.abort(
+                    grpc.StatusCode.NOT_FOUND,
+                    f"Region {request.region_id} not found",
+                )
+
+        days = request.days if request.days > 0 else 7
+        observations = await self._regional_weather_repo.get_weather_history(
+            region_id=request.region_id,
+            days=days,
+        )
+
+        return plantation_pb2.GetRegionWeatherResponse(
+            region_id=request.region_id,
+            observations=[self._regional_weather_to_proto(o) for o in observations],
+        )
+
+    async def GetCurrentFlush(
+        self,
+        request: plantation_pb2.GetCurrentFlushRequest,
+        context: grpc.aio.ServicerContext,
+    ) -> plantation_pb2.GetCurrentFlushResponse:
+        """Get current flush period for a region (Story 1.8)."""
+        if not self._region_repo:
+            await context.abort(
+                grpc.StatusCode.UNIMPLEMENTED,
+                "Region repository not configured",
+            )
+
+        region = await self._region_repo.get_by_id(request.region_id)
+        if region is None:
+            await context.abort(
+                grpc.StatusCode.NOT_FOUND,
+                f"Region {request.region_id} not found",
+            )
+
+        # Import here to avoid circular imports
+        from plantation_model.domain.services.flush_calculator import FlushCalculator
+
+        calculator = FlushCalculator()
+        flush_result = calculator.get_current_flush(region.flush_calendar)
+
+        if flush_result is None:
+            # Should not happen with valid calendar, but handle gracefully
+            await context.abort(
+                grpc.StatusCode.INTERNAL,
+                "Unable to determine current flush period",
+            )
+
+        return plantation_pb2.GetCurrentFlushResponse(
+            region_id=request.region_id,
+            current_flush=plantation_pb2.CurrentFlush(
+                flush_name=flush_result.name,
+                start_date=flush_result.period.start,
+                end_date=flush_result.period.end,
+                characteristics=flush_result.period.characteristics,
+                days_remaining=flush_result.days_remaining,
+            ),
         )

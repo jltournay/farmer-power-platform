@@ -70,7 +70,7 @@ development_status:
   1-5-farmer-communication-preferences: done
   1-6-plantation-model-mcp-server: done  # github_issue: 13
   1-7-quality-grading-event-subscription: done  # github_issue: 24
-  1-8-region-entity-weather-configuration: backlog  # Identified gap: Region entity not implemented
+  1-8-region-entity-weather-configuration: in-progress  # github_issue: 25
   epic-1-retrospective: optional  # Reset: new story added
 
   # Epic 2: Quality Data Ingestion (REVISED - BLOB_TRIGGER architecture)
