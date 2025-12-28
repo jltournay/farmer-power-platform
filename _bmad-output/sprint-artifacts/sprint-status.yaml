@@ -104,15 +104,19 @@ development_status:
 
   # Epic 0.75: AI Model Foundation (NEW - 2025-12-28)
   # Dependencies: Epic 0. Blocks: Epic 5, 6, 8, 12
-  # Updated 2025-12-28: Added Story 0.75.7 (AI Security Patterns)
+  # Updated 2025-12-28: Added conversational agent type, Action Plan & Voice agent configs
   epic-0-75: backlog
   0-75-1-ai-model-service-setup: backlog
   0-75-2-llm-gateway-model-routing: backlog  # Includes cost attribution metrics
-  0-75-3-agent-framework: backlog  # Includes LangGraph checkpointing, golden samples
+  0-75-3-agent-framework: backlog  # extractor, explorer, generator, router, conversational types
   0-75-4-prompt-management: backlog
   0-75-5-rag-infrastructure: backlog  # Includes embedding model, farmer-cli commands
   0-75-6-ai-model-mcp-clients: backlog
-  0-75-7-ai-security-patterns: backlog  # NEW: Prompt injection, PII handling
+  0-75-7-ai-security-patterns: backlog  # Prompt injection, PII handling
+  0-75-8-knowledge-model-agent-configs: backlog  # triage, disease, weather, technique, trend agents
+  0-75-9-triage-feedback-loop: backlog
+  0-75-10-action-plan-agent-config: backlog  # action-plan-generator-v1
+  0-75-11-voice-advisor-agent-config: backlog  # voice-advisor-v1 (conversational type)
   epic-0-75-retrospective: optional
 
   # ═══════════════════════════════════════════════════════════════════════════
@@ -141,18 +145,17 @@ development_status:
   # P3: AI DIAGNOSIS + ANALYTICS UI
   # ═══════════════════════════════════════════════════════════════════════════
 
-  # Epic 5: Quality Diagnosis AI
+  # Epic 5: Knowledge Model (Quality Diagnosis)
   # Dependencies: Epic 0.75, Epic 1, Epic 2
+  # Updated 2025-12-28: Restructured to focus on business logic, delegates AI to Epic 0.75
   epic-5: backlog
-  5-1-knowledge-model-service-setup: backlog
-  5-2-event-aggregation-engine: backlog
-  5-3-triage-agent: backlog
-  5-4-disease-detection-agent: backlog
-  5-5-weather-impact-analyzer: backlog
-  5-6-technique-assessment-agent: backlog
-  5-7-trend-analysis-agent: backlog
-  5-8-rag-knowledge-base: backlog
-  5-9-knowledge-model-mcp-server: backlog
+  5-1-knowledge-model-service-setup: backlog  # Dapr, Analysis DB - NO AI framework setup
+  5-2-event-aggregation-engine: backlog  # Business rules for batching events
+  5-3-analysis-type-disease-detection: backlog  # Output schema, triggers - agent in Epic 0.75.8
+  5-4-analysis-type-weather-impact: backlog  # Lag correlation rules - agent in Epic 0.75.8
+  5-5-analysis-type-technique-assessment: backlog  # Thresholds - agent in Epic 0.75.8
+  5-6-analysis-type-trend-analysis: backlog  # Schedule, stats - agent in Epic 0.75.8
+  5-7-knowledge-model-mcp-server: backlog
   epic-5-retrospective: optional
 
   # Epic 10: Regulator Dashboard (3rd UI - Read-only analytics)
@@ -170,12 +173,13 @@ development_status:
 
   # Epic 6: Weekly Action Plans
   # Dependencies: Epic 0.75, Epic 5
+  # Updated 2025-12-28: Restructured to focus on business logic, delegates AI to Epic 0.75.10
   epic-6: backlog
-  6-1-action-plan-model-service-setup: backlog
-  6-2-weekly-action-plan-generation: backlog
-  6-3-farm-scale-aware-recommendations: backlog
-  6-4-dual-format-output: backlog
-  6-5-multilingual-translation: backlog
+  6-1-action-plan-model-service-setup: backlog  # Dapr, scheduled jobs - agent in Epic 0.75.10
+  6-2-weekly-action-plan-generation: backlog  # Workflow, recommendation schema
+  6-3-farm-scale-aware-recommendations: backlog  # Business rules per scale
+  6-4-dual-format-output: backlog  # Report + SMS + TTS formats
+  6-5-multilingual-output: backlog  # Language requirements
   6-6-action-plan-mcp-server: backlog
   epic-6-retrospective: optional
 
@@ -206,14 +210,15 @@ development_status:
   epic-7-retrospective: optional
 
   # Epic 8: Voice Quality Advisor (Conversational AI)
-  # Dependencies: Epic 0.75, Epic 5, Epic 6
+  # Dependencies: Epic 0.75, Epic 5, Epic 6, Epic 7
+  # Updated 2025-12-28: Restructured to focus on business logic, delegates AI to Epic 0.75.11
   epic-8: backlog
-  8-1-conversational-ai-service-setup: backlog
-  8-2-swahili-speech-to-text: backlog
-  8-3-intent-classification: backlog
-  8-4-personalized-response-generation: backlog
-  8-5-guided-dialogue-flow: backlog
-  8-6-streaming-response-delivery: backlog
+  8-1-conversational-ai-service-setup: backlog  # Telephony integration - agent in Epic 0.75.11
+  8-2-speech-to-text-requirements: backlog  # STT accuracy targets, not provider setup
+  8-3-intent-classification: backlog  # Intent categories and responses
+  8-4-personalized-response-requirements: backlog  # MCP context, personalization rules
+  8-5-guided-dialogue-flow: backlog  # Turn limits, constraints
+  8-6-streaming-response-delivery: backlog  # Latency requirements
   8-7-sms-fallback-handling: backlog
   epic-8-retrospective: optional
 
