@@ -1,8 +1,9 @@
+from google.protobuf.internal import containers as _containers
+from google.protobuf.internal import enum_type_wrapper as _enum_type_wrapper
+from google.protobuf import descriptor as _descriptor
+from google.protobuf import message as _message
 from collections.abc import Iterable as _Iterable, Mapping as _Mapping
-from typing import ClassVar as _ClassVar
-
-from google.protobuf import descriptor as _descriptor, message as _message
-from google.protobuf.internal import containers as _containers, enum_type_wrapper as _enum_type_wrapper
+from typing import ClassVar as _ClassVar, Optional as _Optional, Union as _Union
 
 DESCRIPTOR: _descriptor.FileDescriptor
 
@@ -24,16 +25,16 @@ class ListToolsRequest(_message.Message):
     __slots__ = ("category",)
     CATEGORY_FIELD_NUMBER: _ClassVar[int]
     category: str
-    def __init__(self, category: str | None = ...) -> None: ...
+    def __init__(self, category: _Optional[str] = ...) -> None: ...
 
 class ListToolsResponse(_message.Message):
     __slots__ = ("tools",)
     TOOLS_FIELD_NUMBER: _ClassVar[int]
     tools: _containers.RepeatedCompositeFieldContainer[ToolDefinition]
-    def __init__(self, tools: _Iterable[ToolDefinition | _Mapping] | None = ...) -> None: ...
+    def __init__(self, tools: _Optional[_Iterable[_Union[ToolDefinition, _Mapping]]] = ...) -> None: ...
 
 class ToolDefinition(_message.Message):
-    __slots__ = ("category", "description", "input_schema_json", "name")
+    __slots__ = ("name", "description", "input_schema_json", "category")
     NAME_FIELD_NUMBER: _ClassVar[int]
     DESCRIPTION_FIELD_NUMBER: _ClassVar[int]
     INPUT_SCHEMA_JSON_FIELD_NUMBER: _ClassVar[int]
@@ -44,14 +45,14 @@ class ToolDefinition(_message.Message):
     category: str
     def __init__(
         self,
-        name: str | None = ...,
-        description: str | None = ...,
-        input_schema_json: str | None = ...,
-        category: str | None = ...,
+        name: _Optional[str] = ...,
+        description: _Optional[str] = ...,
+        input_schema_json: _Optional[str] = ...,
+        category: _Optional[str] = ...,
     ) -> None: ...
 
 class ToolCallRequest(_message.Message):
-    __slots__ = ("arguments_json", "caller_agent_id", "tool_name", "trace_id")
+    __slots__ = ("tool_name", "arguments_json", "trace_id", "caller_agent_id")
     TOOL_NAME_FIELD_NUMBER: _ClassVar[int]
     ARGUMENTS_JSON_FIELD_NUMBER: _ClassVar[int]
     TRACE_ID_FIELD_NUMBER: _ClassVar[int]
@@ -62,14 +63,14 @@ class ToolCallRequest(_message.Message):
     caller_agent_id: str
     def __init__(
         self,
-        tool_name: str | None = ...,
-        arguments_json: str | None = ...,
-        trace_id: str | None = ...,
-        caller_agent_id: str | None = ...,
+        tool_name: _Optional[str] = ...,
+        arguments_json: _Optional[str] = ...,
+        trace_id: _Optional[str] = ...,
+        caller_agent_id: _Optional[str] = ...,
     ) -> None: ...
 
 class ToolCallResponse(_message.Message):
-    __slots__ = ("error_code", "error_message", "result_json", "success")
+    __slots__ = ("success", "result_json", "error_code", "error_message")
     SUCCESS_FIELD_NUMBER: _ClassVar[int]
     RESULT_JSON_FIELD_NUMBER: _ClassVar[int]
     ERROR_CODE_FIELD_NUMBER: _ClassVar[int]
@@ -81,7 +82,7 @@ class ToolCallResponse(_message.Message):
     def __init__(
         self,
         success: bool = ...,
-        result_json: str | None = ...,
-        error_code: ErrorCode | str | None = ...,
-        error_message: str | None = ...,
+        result_json: _Optional[str] = ...,
+        error_code: _Optional[_Union[ErrorCode, str]] = ...,
+        error_message: _Optional[str] = ...,
     ) -> None: ...

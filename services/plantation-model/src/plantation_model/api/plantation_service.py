@@ -1642,7 +1642,9 @@ class PlantationServiceServicer(plantation_pb2_grpc.PlantationServiceServicer):
                         lng=request.weather_config.api_location.lng,
                     ),
                     altitude_for_api=request.weather_config.altitude_for_api,
-                    collection_time=request.weather_config.collection_time if request.weather_config.collection_time else "06:00",
+                    collection_time=request.weather_config.collection_time
+                    if request.weather_config.collection_time
+                    else "06:00",
                 ),
             )
         except ValueError as e:
@@ -1734,7 +1736,9 @@ class PlantationServiceServicer(plantation_pb2_grpc.PlantationServiceServicer):
                     lng=request.weather_config.api_location.lng,
                 ),
                 altitude_for_api=request.weather_config.altitude_for_api,
-                collection_time=request.weather_config.collection_time if request.weather_config.collection_time else "06:00",
+                collection_time=request.weather_config.collection_time
+                if request.weather_config.collection_time
+                else "06:00",
             ).model_dump()
         if request.HasField("is_active"):
             updates["is_active"] = request.is_active
