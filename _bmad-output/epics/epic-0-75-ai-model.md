@@ -10,10 +10,11 @@ Cross-cutting AI infrastructure that enables all AI-powered domain models. These
 
 **Scope:**
 - LLM Gateway (OpenRouter integration, model routing, cost tracking)
-- Agent framework (Extractor, Explorer, Generator types)
+- Agent framework (Extractor, Explorer, Generator types) with LangGraph
 - Prompt management (MongoDB storage, versioning, A/B testing)
-- RAG infrastructure (Pinecone, knowledge domains)
+- RAG infrastructure (Pinecone, knowledge domains, embedding pipeline)
 - MCP client integration for data access
+- AI security patterns (prompt injection prevention, PII handling)
 
 ---
 
@@ -81,6 +82,19 @@ So that I can select the appropriate model for each task type without changing c
 **Then** an error event is published to the dead letter topic
 **And** the failure is logged with full context
 
+**Given** an LLM call is made
+**When** the response is received
+**Then** the following are logged to OpenTelemetry spans:
+  - `input_tokens`, `output_tokens`, `total_cost_usd`
+  - `model_id`, `task_type`, `agent_id`
+  - `farmer_id`, `factory_id` (if available in context)
+**And** metrics are exported for cost attribution dashboards
+
+**Given** I need to monitor LLM costs
+**When** I view the Grafana dashboard
+**Then** I can see cost breakdown by: model, agent_type, factory, date
+**And** alerts fire if daily spend exceeds configured threshold
+
 **Model Routing Configuration:**
 
 | Task Type | Primary Model | Fallback |
@@ -89,6 +103,11 @@ So that I can select the appropriate model for each task type without changing c
 | diagnosis | claude-3-5-sonnet | gpt-4o |
 | generation | claude-3-5-sonnet | gpt-4o |
 | rag_query | claude-3-haiku | - |
+
+**Technical Notes:**
+- OpenRouter provides cost per request in response headers
+- Cost attribution uses farmer_id → factory_id mapping from Plantation Model
+- Prometheus metrics: `llm_request_cost_usd`, `llm_tokens_total`
 
 ---
 
@@ -125,6 +144,20 @@ So that I can create new agents by configuration rather than code.
 **Then** all agent instances are loaded and validated
 **And** invalid configurations are logged with specific errors
 
+**Given** a workflow is interrupted mid-execution (crash/restart)
+**When** the AI Model service restarts
+**Then** the workflow resumes from the last MongoDB checkpoint
+**And** partial results from completed steps are preserved
+**And** the workflow does NOT restart from the beginning
+**And** the thread_id enables deterministic resumption
+
+**Given** a new agent type is implemented
+**When** the agent is tested
+**Then** golden sample test infrastructure exists at `tests/golden/{agent_id}/`
+**And** input/expected JSON files follow naming convention (input_001.json, expected_001.json)
+**And** pytest fixtures load golden samples for comparison
+**And** CI runs golden sample tests on every PR
+
 **Agent Instance Schema:**
 - `agent.id`, `agent.type`, `agent.version`
 - `input.event`, `input.schema`
@@ -134,6 +167,13 @@ So that I can create new agents by configuration rather than code.
 - `prompt.*` - template references
 - `rag.*` - RAG configuration
 - `error_handling.*` - retry and dead letter config
+
+**Technical Notes:**
+- LangChain for simple linear workflows (Extractor)
+- LangGraph for complex workflows (Explorer, Generator) with conditional branching
+- MongoDB checkpointing via `langgraph.checkpoint.mongodb.MongoDBSaver`
+- Checkpoint collection: `ai_model.workflow_checkpoints`
+- Golden samples required for all agents before production deployment
 
 ---
 
@@ -195,9 +235,26 @@ So that my responses are informed by domain expertise.
 
 **Given** knowledge documents are uploaded via Admin UI
 **When** the embedding pipeline runs
-**Then** documents are chunked and embedded
+**Then** documents are chunked by section (not arbitrary length)
+**And** `text-embedding-3-small` (OpenAI) is used for embeddings
 **And** vectors are stored in Pinecone with metadata (domain, version, doc_id)
 **And** the document status in MongoDB changes to `staged`
+
+**Given** a knowledge document is ready for staging
+**When** I run `farmer-cli knowledge stage --doc <path>`
+**Then** the document is validated for structure and content
+**And** embeddings are generated and uploaded to staged namespace
+**And** validation errors are reported before upload
+
+**Given** I need to manage knowledge versions
+**When** I run farmer-cli knowledge commands
+**Then** the following commands are available:
+  - `farmer-cli knowledge validate --doc <path>` - validate document structure
+  - `farmer-cli knowledge stage --doc <path>` - embed and upload to staged
+  - `farmer-cli knowledge promote --doc <path>` - promote staged to active
+  - `farmer-cli knowledge rollback --to-version <X.Y.Z>` - rollback to previous
+  - `farmer-cli knowledge versions --doc <path>` - list all versions
+**And** progress and status are logged to console
 
 **Given** a staged namespace is ready for promotion
 **When** an operator promotes the namespace
@@ -260,6 +317,64 @@ So that I can access farmer context, quality documents, and analyses.
 - DAPR service invocation for all MCP calls
 - Timeout: 30 seconds per call
 - Retry: 3 attempts with backoff
+
+---
+
+### Story 0.75.7: AI Security Patterns
+
+**Story File:** Not yet created | Status: Backlog
+
+As a **security engineer**,
+I want AI workflows to prevent prompt injection and protect PII,
+So that the system is secure by design.
+
+**Acceptance Criteria:**
+
+**Given** user-controlled input is included in prompts
+**When** the prompt is constructed
+**Then** input is sanitized and delimited with clear boundaries
+**And** XML/markdown escaping is applied to prevent injection
+**And** input length is validated against maximum limits
+
+**Given** farmer PII (name, phone, GPS coordinates) is available
+**When** prompts are constructed
+**Then** PII is NOT included in prompts (use farmer_id reference only)
+**And** MCP calls retrieve PII only when needed for output formatting
+**And** prompts use pseudonymized identifiers
+
+**Given** an LLM generates output
+**When** the output is processed
+**Then** output is validated against expected schema
+**And** output is sanitized before storage or display
+**And** no sensitive patterns (API keys, tokens, internal URLs) are leaked
+
+**Given** a prompt injection attempt is detected
+**When** the input validation runs
+**Then** the request is rejected with a safe error message
+**And** the attempt is logged with trace context for security review
+**And** no internal system details are revealed in the error
+
+**Given** PII must appear in farmer-facing output (e.g., SMS message)
+**When** the generator formats the message
+**Then** PII is retrieved via MCP at the last possible moment
+**And** PII is never logged or traced
+**And** PII is never sent to the LLM
+
+**Security Controls:**
+
+| Control | Implementation |
+|---------|----------------|
+| Input sanitization | Escape XML/markdown, length limits, character validation |
+| PII protection | farmer_id only in prompts, MCP for PII retrieval |
+| Output validation | JSON schema validation, pattern matching for secrets |
+| Injection detection | Boundary markers, instruction detection heuristics |
+| Audit logging | Security events to separate audit log, no PII |
+
+**Technical Notes:**
+- Input sanitization utilities in `fp-common/security/prompt_sanitizer.py`
+- PII patterns defined in security configuration (phone, email, GPS regex)
+- OWASP LLM Top 10 compliance checklist for each agent
+- Security review required for agents handling sensitive data
 
 ---
 

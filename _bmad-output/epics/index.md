@@ -16,7 +16,7 @@ This document provides the complete epic and story breakdown for farmer-power-pl
 | P0 | Epic 1 | [epic-1-plantation-model.md](epic-1-plantation-model.md) | In Progress | 1.1-1.8 | Epic 0 |
 | P0 | Epic 2 | [epic-2-collection-model.md](epic-2-collection-model.md) | Done | 2.1-2.9 | Epic 0, 1 |
 | P1 | Epic 0.5 | [epic-0-5-frontend.md](epic-0-5-frontend.md) | Backlog | 0.5.1-0.5.6 | Epic 0 |
-| P1 | **Epic 0.75** | [epic-0-75-ai-model.md](epic-0-75-ai-model.md) | **Backlog** | **0.75.1-0.75.6** | **Epic 0** |
+| P1 | **Epic 0.75** | [epic-0-75-ai-model.md](epic-0-75-ai-model.md) | **Backlog** | **0.75.1-0.75.7** | **Epic 0** |
 | P2 | **Epic 11** | [epic-11-registration-kiosk.md](epic-11-registration-kiosk.md) | Backlog | 11.1-11.4 | Epic 0.5, 1 |
 | P2 | **Epic 9** | [epic-9-admin-portal.md](epic-9-admin-portal.md) | Backlog | 9.1-9.4 | Epic 0.5, 1 |
 | P3 | Epic 5 | [epic-5-diagnosis-ai.md](epic-5-diagnosis-ai.md) | Backlog | 5.1-5.9 | **Epic 0.75**, 1, 2 |

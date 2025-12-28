@@ -76,7 +76,7 @@ So that users can authenticate securely with role-based access control.
 **Given** the Azure subscription is available
 **When** Azure AD B2C tenant is provisioned
 **Then** Tenant is created: `farmerpowerb2c.onmicrosoft.com`
-**And** Custom domain configured: `auth.farmerpower.co.ke`
+**And** Custom domain configured: `auth.farmerpower.ai`
 **And** Branding matches Farmer Power design (logo, colors)
 
 **Given** the B2C tenant is configured

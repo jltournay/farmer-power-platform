@@ -63,8 +63,8 @@ _Single entry point for all platform documentation. This index ensures coherence
 | P0 | Epic 0 | [`epics/epic-0-infrastructure.md`](./epics/epic-0-infrastructure.md) | Done | 0.1-0.3 |
 | P0 | Epic 1 | [`epics/epic-1-plantation-model.md`](./epics/epic-1-plantation-model.md) | In Progress | 1.1-1.8 |
 | P0 | Epic 2 | [`epics/epic-2-collection-model.md`](./epics/epic-2-collection-model.md) | Done | 2.1-2.9 |
-| P1 | Epic 0.5 | [`epics/epic-0-5-frontend.md`](./epics/epic-0-5-frontend.md) | Backlog | 0.5.1-0.5.5 |
-| P1 | **Epic 0.75** | [`epics/epic-0-75-ai-model.md`](./epics/epic-0-75-ai-model.md) | **Backlog** | **0.75.1-0.75.6** |
+| P1 | Epic 0.5 | [`epics/epic-0-5-frontend.md`](./epics/epic-0-5-frontend.md) | Backlog | 0.5.1-0.5.6 |
+| P1 | **Epic 0.75** | [`epics/epic-0-75-ai-model.md`](./epics/epic-0-75-ai-model.md) | **Backlog** | **0.75.1-0.75.7** |
 | P2 | Epic 11 | [`epics/epic-11-registration-kiosk.md`](./epics/epic-11-registration-kiosk.md) | Backlog | 11.1-11.4 |
 | P2 | Epic 9 | [`epics/epic-9-admin-portal.md`](./epics/epic-9-admin-portal.md) | Backlog | 9.1-9.4 |
 | P3 | Epic 5 | [`epics/epic-5-diagnosis-ai.md`](./epics/epic-5-diagnosis-ai.md) | Backlog | 5.1-5.9 |

@@ -103,15 +103,16 @@ development_status:
   epic-0-5-retrospective: optional
 
   # Epic 0.75: AI Model Foundation (NEW - 2025-12-28)
-  # Dependencies: Epic 0
-  # Blocks: Epic 5, 6, 8, 12
+  # Dependencies: Epic 0. Blocks: Epic 5, 6, 8, 12
+  # Updated 2025-12-28: Added Story 0.75.7 (AI Security Patterns)
   epic-0-75: backlog
   0-75-1-ai-model-service-setup: backlog
-  0-75-2-llm-gateway-model-routing: backlog
-  0-75-3-agent-framework: backlog
+  0-75-2-llm-gateway-model-routing: backlog  # Includes cost attribution metrics
+  0-75-3-agent-framework: backlog  # Includes LangGraph checkpointing, golden samples
   0-75-4-prompt-management: backlog
-  0-75-5-rag-infrastructure: backlog
+  0-75-5-rag-infrastructure: backlog  # Includes embedding model, farmer-cli commands
   0-75-6-ai-model-mcp-clients: backlog
+  0-75-7-ai-security-patterns: backlog  # NEW: Prompt injection, PII handling
   epic-0-75-retrospective: optional
 
   # ═══════════════════════════════════════════════════════════════════════════
