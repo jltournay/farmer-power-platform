@@ -334,6 +334,54 @@ So that weather data can be collected per region for quality correlation.
 
 ---
 
+### Story 1.9: Factory Payment Policy Configuration
+
+**Story File:** Not yet created | Status: Backlog
+
+As a **factory administrator**,
+I want to configure payment policies for my factory,
+So that farmers receive quality-based payment adjustments according to our chosen incentive model.
+
+**Acceptance Criteria:**
+
+**Given** the Plantation Model service is running
+**When** I create or update a factory
+**Then** the factory can include a `payment_policy` with:
+  - `policy_type`: one of "split_payment", "weekly_bonus", "delayed_payment", "feedback_only"
+  - `tier_1_adjustment`: percentage adjustment for Premium tier (e.g., +0.15 for +15%)
+  - `tier_2_adjustment`: percentage adjustment for Standard tier (typically 0.0 for base rate)
+  - `tier_3_adjustment`: percentage adjustment for Acceptable tier (e.g., -0.05 for -5%)
+  - `below_tier_3_adjustment`: percentage adjustment for Below Standard (e.g., -0.10 for -10%)
+
+**Given** a factory has no payment_policy configured
+**When** the factory is queried
+**Then** default values are returned: `policy_type="feedback_only"`, all adjustments = 0.0
+
+**Given** a factory has payment_policy configured
+**When** an AI agent calls `get_factory(factory_id)`
+**Then** the response includes the full `payment_policy` configuration
+
+**Given** a factory exists
+**When** I update only the payment_policy
+**Then** the changes are persisted and returned in subsequent queries
+**And** `updated_at` timestamp is refreshed
+
+**Given** invalid adjustment values are provided (e.g., > 1.0 or < -1.0)
+**When** I attempt to save the configuration
+**Then** validation fails with appropriate error message
+
+**Technical Notes:**
+- `PaymentPolicy` value object added to Factory entity
+- Proto definition: `PaymentPolicy` message with `policy_type` enum and adjustment fields
+- `get_factory` MCP tool updated to include payment_policy in response
+- Factory Admin UI (Epic 3, Story 3.8) will consume this configuration
+- Engagement Model will use tier adjustments for calculating actual payments
+
+**Dependencies:**
+- Story 1.2: Factory and Collection Point Management (Factory entity exists)
+
+---
+
 ## Retrospective
 
-**[📋 Epic 1 Retrospective](../sprint-artifacts/epic-1-retrospective.md)** | Status: Complete
+**[📋 Epic 1 Retrospective](../sprint-artifacts/epic-1-retrospective.md)** | Status: In Progress (Story 1.9 pending)

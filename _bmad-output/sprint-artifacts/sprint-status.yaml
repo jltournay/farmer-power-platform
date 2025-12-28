@@ -62,7 +62,7 @@ development_status:
 
   # Epic 1: Farmer Registration & Data Foundation
   # Dependencies: Epic 0
-  epic-1: in-progress  # Story 1.8 added to backlog
+  epic-1: in-progress  # Story 1.9 pending
   1-1-plantation-model-service-setup: done
   1-2-factory-and-collection-point-management: done
   1-3-farmer-registration: done
@@ -70,8 +70,9 @@ development_status:
   1-5-farmer-communication-preferences: done
   1-6-plantation-model-mcp-server: done  # github_issue: 13
   1-7-quality-grading-event-subscription: done  # github_issue: 24
-  1-8-region-entity-weather-configuration: in-progress  # github_issue: 25
-  epic-1-retrospective: optional  # Reset: new story added
+  1-8-region-entity-weather-configuration: done  # github_issue: 25
+  1-9-payment-policy-configuration: backlog
+  epic-1-retrospective: optional  # Story 1.9 pending
 
   # Epic 2: Quality Data Ingestion (REVISED - BLOB_TRIGGER architecture)
   # Dependencies: Epic 0, Epic 1
