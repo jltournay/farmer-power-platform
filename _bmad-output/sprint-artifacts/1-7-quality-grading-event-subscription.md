@@ -1,6 +1,6 @@
 # Story 1.7: Quality Grading Event Subscription
 
-**Status:** review
+**Status:** done
 **GitHub Issue:** #24
 
 ---
@@ -187,13 +187,14 @@ Now that Epic 2 is complete:
   - [x] 7.4 Test domain events are emitted with correct payload (including `attribute_distribution`)
   - [x] 7.5 Test error cases: missing document, missing farmer, missing grade counts
   - [x] 7.6 Test Collection client: success, not found, database errors
-  - [x] 7.7 26 new tests in `test_quality_event_processor.py` and `test_collection_client.py`
+  - [x] 7.7 29 new tests: 21 in `test_quality_event_processor.py`, 8 in `test_collection_client.py`
 
-- [ ] **Task 8: Integration test with mock DAPR** (AC: #1-5)
-  - [ ] 8.1 Create integration test simulating full event flow
-  - [ ] 8.2 Use mock Collection MCP client
-  - [ ] 8.3 Verify MongoDB updates are correct
-  - [ ] 8.4 Verify domain event is published
+- [x] **Task 8: Integration test with mock DAPR** (AC: #1-5)
+  - [x] 8.1 Create integration test simulating full event flow (`test_quality_event_flow.py`)
+  - [x] 8.2 Use mock Collection client with dependency injection
+  - [x] 8.3 Verify MongoDB updates via repository mock assertions
+  - [x] 8.4 Verify domain events are published (2 events: quality.graded, performance_updated)
+  - [x] 8.5 9 integration tests covering success, error cases, and edge cases
 
 ---
 
@@ -719,10 +720,51 @@ The `grade_labels` field is extracted from the grading config's `binary_labels` 
 
 ### Agent Model Used
 
-{{agent_model_name_version}}
+Claude Opus 4.5
 
 ### Debug Log References
 
+N/A
+
 ### Completion Notes List
 
+- Task 0-7 completed with 29 unit tests
+- Task 8 completed with 9 integration tests
+- All acceptance criteria verified in unit and integration tests
+- Total: 38 new tests for Story 1.7
+
 ### File List
+
+**New Files:**
+- `services/plantation-model/src/plantation_model/api/event_handlers/__init__.py`
+- `services/plantation-model/src/plantation_model/api/event_handlers/quality_result_handler.py`
+- `services/plantation-model/src/plantation_model/domain/services/__init__.py`
+- `services/plantation-model/src/plantation_model/domain/services/quality_event_processor.py`
+- `services/plantation-model/src/plantation_model/infrastructure/collection_client.py`
+- `tests/unit/plantation/test_quality_event_processor.py`
+- `tests/unit/plantation/test_collection_client.py`
+- `tests/integration/test_quality_event_flow.py` - Integration tests for full event flow
+
+**Modified Files:**
+- `services/plantation-model/src/plantation_model/domain/models/value_objects.py` - Added QualityThresholds
+- `services/plantation-model/src/plantation_model/domain/models/factory.py` - Added quality_thresholds field
+- `services/plantation-model/src/plantation_model/infrastructure/repositories/grading_model_repository.py` - Added get_by_id_and_version
+- `services/plantation-model/src/plantation_model/config.py` - Added collection_mongodb_* settings
+- `services/plantation-model/src/plantation_model/main.py` - Added QualityEventProcessor initialization
+- `libs/fp-common/fp_common/models/domain_events.py` - Added QUALITY_GRADED, PERFORMANCE_UPDATED topics
+- `deploy/dapr/components/pubsub.yaml` - Added Story 1.7 topic documentation
+- `proto/plantation/v1/plantation.proto` - Added QualityThresholds message
+- `libs/fp-proto/src/fp_proto/plantation/v1/plantation_pb2.py` - Regenerated stubs
+- `libs/fp-proto/src/fp_proto/plantation/v1/plantation_pb2.pyi` - Regenerated type stubs
+- `mcp-servers/plantation-mcp/src/plantation_mcp/tools/definitions.py` - Added get_factory tool
+- `mcp-servers/plantation-mcp/src/plantation_mcp/api/mcp_service.py` - Added _handle_get_factory
+- `mcp-servers/plantation-mcp/src/plantation_mcp/infrastructure/plantation_client.py` - Added get_factory with quality_thresholds
+- `tests/unit/plantation/test_factory_model.py` - Added 11 QualityThresholds tests
+- `tests/unit/plantation/test_grading_model_repository.py` - Added 3 versioned lookup tests
+
+### Change Log
+
+| Date | Author | Change |
+|------|--------|--------|
+| 2025-12-28 | Dev Agent | Initial implementation of Tasks 0-7 |
+| 2025-12-28 | Code Review | File List populated, test count corrected, Task 8 deferred |
