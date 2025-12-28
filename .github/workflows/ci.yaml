@@ -49,10 +49,37 @@ jobs:
             structlog httpx aiohttp fastapi uvicorn dapr dapr-ext-grpc langchain-core jsonschema \
             typer rich pyyaml deepdiff azure-storage-blob
 
-      - name: Run unit tests
+      - name: Run unit tests with coverage
         run: |
           PYTHONPATH="${PYTHONPATH}:libs/fp-common:libs/fp-proto/src:libs/fp-testing:services/plantation-model/src:services/collection-model/src:scripts/source-config/src:mcp-servers/plantation-mcp/src:mcp-servers/collection-mcp/src" \
-            pytest tests/unit/ -v --cov=services --cov-report=term-missing
+            pytest tests/unit/ -v --cov=services --cov=libs --cov=mcp-servers --cov-report=term-missing --cov-report=xml
+
+      - name: Extract coverage percentage
+        id: coverage
+        run: |
+          # Extract coverage percentage from XML
+          COVERAGE=$(python -c "
+          import xml.etree.ElementTree as ET
+          tree = ET.parse('coverage.xml')
+          root = tree.getroot()
+          line_rate = float(root.attrib.get('line-rate', 0))
+          print(f'{line_rate * 100:.1f}')
+          ")
+          echo "percentage=$COVERAGE" >> $GITHUB_OUTPUT
+          echo "Coverage: $COVERAGE%"
+
+      - name: Update coverage badge
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        uses: schneegans/dynamic-badges-action@v1.7.0
+        with:
+          auth: ${{ secrets.GIST_TOKEN }}
+          gistID: ${{ vars.COVERAGE_GIST_ID }}
+          filename: coverage.json
+          label: coverage
+          message: ${{ steps.coverage.outputs.percentage }}%
+          valColorRange: ${{ steps.coverage.outputs.percentage }}
+          minColorRange: 0
+          maxColorRange: 100
 
   integration-tests:
     name: Integration Tests (MongoDB)
