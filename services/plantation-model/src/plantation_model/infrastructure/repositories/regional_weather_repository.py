@@ -5,10 +5,13 @@ from __future__ import annotations
 import datetime as dt
 import logging
 from datetime import UTC
+from typing import TYPE_CHECKING
 
-from motor.motor_asyncio import AsyncIOMotorCollection, AsyncIOMotorDatabase
 from plantation_model.domain.models.regional_weather import RegionalWeather, WeatherObservation
 from pymongo import ASCENDING, DESCENDING
+
+if TYPE_CHECKING:
+    from motor.motor_asyncio import AsyncIOMotorCollection, AsyncIOMotorDatabase
 
 logger = logging.getLogger(__name__)
 

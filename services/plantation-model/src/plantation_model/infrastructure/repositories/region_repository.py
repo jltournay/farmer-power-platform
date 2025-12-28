@@ -4,10 +4,13 @@ from __future__ import annotations
 
 import logging
 from datetime import UTC, datetime
+from typing import TYPE_CHECKING
 
-from motor.motor_asyncio import AsyncIOMotorCollection, AsyncIOMotorDatabase
 from plantation_model.domain.models.region import Region
 from pymongo import ASCENDING
+
+if TYPE_CHECKING:
+    from motor.motor_asyncio import AsyncIOMotorCollection, AsyncIOMotorDatabase
 
 logger = logging.getLogger(__name__)
 

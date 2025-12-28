@@ -12,16 +12,18 @@ Event Flow:
 """
 
 from datetime import date, datetime
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import structlog
 from fastapi import APIRouter, Request, Response
 from opentelemetry import trace
 from plantation_model.domain.models.regional_weather import WeatherObservation
-from plantation_model.infrastructure.repositories.regional_weather_repository import (
-    RegionalWeatherRepository,
-)
 from pydantic import BaseModel, Field
+
+if TYPE_CHECKING:
+    from plantation_model.infrastructure.repositories.regional_weather_repository import (
+        RegionalWeatherRepository,
+    )
 
 logger = structlog.get_logger(__name__)
 tracer = trace.get_tracer(__name__)

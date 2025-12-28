@@ -4,8 +4,10 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import date
+from typing import TYPE_CHECKING
 
-from plantation_model.domain.models.value_objects import FlushCalendar, FlushPeriod
+if TYPE_CHECKING:
+    from plantation_model.domain.models.value_objects import FlushCalendar, FlushPeriod
 
 
 @dataclass
