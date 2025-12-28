@@ -208,6 +208,7 @@ fix = true
 # Exclude auto-generated protobuf files
 exclude = [
     "libs/fp-proto/src/fp_proto/**/*_pb2.py",
+    "libs/fp-proto/src/fp_proto/**/*_pb2.pyi",
     "libs/fp-proto/src/fp_proto/**/*_pb2_grpc.py",
 ]
 
