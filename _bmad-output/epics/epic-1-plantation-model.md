@@ -291,9 +291,9 @@ So that I can see real-time quality trends without manual data entry.
 
 ---
 
-### Story 1.8: Region Entity & Weather Configuration (NOT IMPLEMENTED)
+### Story 1.8: Region Entity & Weather Configuration
 
-**Story File:** Not yet created | Status: Backlog
+**[📄 Story File](../sprint-artifacts/1-8-region-entity-weather-configuration.md)** | Status: Done
 
 As a **platform operator**,
 I want regions defined with weather configuration,
@@ -332,10 +332,8 @@ So that weather data can be collected per region for quality correlation.
 **Dependencies:**
 - Story 2.7: Scheduled Pull Ingestion Framework (fetches weather data)
 
-**Status:** Backlog - Not yet implemented
-
 ---
 
 ## Retrospective
 
-**[📋 Epic 1 Retrospective](../sprint-artifacts/epic-1-retrospective.md)** | Status: In Progress (Story 1.8 pending)
+**[📋 Epic 1 Retrospective](../sprint-artifacts/epic-1-retrospective.md)** | Status: Complete
