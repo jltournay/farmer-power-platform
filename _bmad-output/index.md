@@ -13,7 +13,7 @@ _Single entry point for all platform documentation. This index ensures coherence
 | **Decision Traceability** | `architecture-decision-index.md` | Maps decisions to documentation coverage |
 | **AI Implementation** | `ai-model-developer-guide/index.md` | Detailed AI/LLM development patterns |
 | **User Experience** | `ux-design-specification/index.md` | UI/UX patterns and user journeys |
-| **Epics & Stories** | `epics.md` | Implementation backlog and user stories |
+| **Epics & Stories** | `epics/index.md` | Implementation backlog and user stories (sharded by epic) |
 | **Test Strategy** | `test-design-system-level.md` | System-level test design and validation approach |
 | **Product Vision** | `analysis/product-brief-*.md` | Point-in-time product requirements |
 | **Domain Specification** | `analysis/tbk-kenya-tea-grading-model-specification.md` | TBK Kenya tea grading domain knowledge |
@@ -51,8 +51,28 @@ _Single entry point for all platform documentation. This index ensures coherence
 | [`architecture-decision-index.md`](./architecture-decision-index.md) | Decision traceability matrix | 2025-12-20 |
 | [`ai-model-developer-guide/index.md`](./ai-model-developer-guide/index.md) | AI/LLM development patterns (12 sections) | 2025-12-23 |
 | [`ux-design-specification/index.md`](./ux-design-specification/index.md) | User experience design (15 sections) | 2025-12-23 |
-| [`epics.md`](./epics.md) | Epics and user stories for implementation | 2025-12-23 |
+| [`epics/index.md`](./epics/index.md) | Epics and user stories (12 epics, sharded) | 2025-12-28 |
 | [`test-design-system-level.md`](./test-design-system-level.md) | System-level test strategy and design | 2025-12-23 |
+
+### Epics & Stories (Sharded by Epic)
+
+| Epic | File | Status | Stories |
+|------|------|--------|---------|
+| Epic 0 | [`epics/epic-0-infrastructure.md`](./epics/epic-0-infrastructure.md) | Done | 0.1 |
+| Epic 0.5 | [`epics/epic-0-5-frontend.md`](./epics/epic-0-5-frontend.md) | Backlog | 0.5.1-0.5.5 |
+| Epic 1 | [`epics/epic-1-plantation-model.md`](./epics/epic-1-plantation-model.md) | In Progress | 1.1-1.8 |
+| Epic 2 | [`epics/epic-2-collection-model.md`](./epics/epic-2-collection-model.md) | Done | 2.1-2.9 |
+| Epic 3 | [`epics/epic-3-dashboard.md`](./epics/epic-3-dashboard.md) | Backlog | 3.1-3.12 |
+| Epic 4 | [`epics/epic-4-sms-feedback.md`](./epics/epic-4-sms-feedback.md) | Backlog | 4.1-4.7 |
+| Epic 5 | [`epics/epic-5-diagnosis-ai.md`](./epics/epic-5-diagnosis-ai.md) | Backlog | 5.1-5.9 |
+| Epic 6 | [`epics/epic-6-action-plans.md`](./epics/epic-6-action-plans.md) | Backlog | 6.1-6.6 |
+| Epic 7 | [`epics/epic-7-voice-ivr.md`](./epics/epic-7-voice-ivr.md) | Backlog | 7.1-7.5 |
+| Epic 8 | [`epics/epic-8-voice-advisor.md`](./epics/epic-8-voice-advisor.md) | Backlog | 8.1-8.7 |
+| Epic 9 | [`epics/epic-9-admin-portal.md`](./epics/epic-9-admin-portal.md) | Backlog | 9.1-9.4 |
+| Epic 10 | [`epics/epic-10-regulator.md`](./epics/epic-10-regulator.md) | Backlog | 10.1-10.4 |
+| Epic 11 | [`epics/epic-11-registration-kiosk.md`](./epics/epic-11-registration-kiosk.md) | Backlog | 11.1-11.4 |
+
+**Sprint Status:** [`sprint-artifacts/sprint-status.yaml`](./sprint-artifacts/sprint-status.yaml)
 
 **AI Agent Loading Strategy:**
 1. **Always load first:** `project-context.md` (17 KB - critical rules)
@@ -93,9 +113,9 @@ _Single entry point for all platform documentation. This index ensures coherence
        │              │              │               │              │              │
        ▼              ▼              ▼               ▼              ▼              ▼
 ┌─────────────┐ ┌───────────┐ ┌───────────┐ ┌─────────────┐ ┌───────────┐ ┌───────────┐
-│architecture/│ │ project-  │ │ Product   │ │   epics.md  │ │test-design│ │   ux-     │
-│(12 sharded) │ │context.md │ │ Briefs    │ │(User Stories│ │system-    │ │design-    │
-│Source Truth │ │AI Rules   │ │+ TBK Spec │ │ & Backlog)  │ │level.md   │ │spec/      │
+│architecture/│ │ project-  │ │ Product   │ │   epics/    │ │test-design│ │   ux-     │
+│(12 sharded) │ │context.md │ │ Briefs    │ │(12 sharded) │ │system-    │ │design-    │
+│Source Truth │ │AI Rules   │ │+ TBK Spec │ │ Stories     │ │level.md   │ │spec/      │
 └──────┬──────┘ └─────┬─────┘ └───────────┘ └─────────────┘ └───────────┘ └───────────┘
        │              │
        │ Traces to    │ Derived from
@@ -181,6 +201,7 @@ When making significant changes, verify:
 | 1.2 | 2025-12-23 | Sharded large documents for AI agent efficiency (architecture, ai-model-developer-guide, ux-design-specification) |
 | 1.3 | 2025-12-23 | Complete traceability: Added epics.md, test-design-system-level.md, TBK specification to index |
 | 1.4 | 2025-12-28 | Added Engagement Model (9th model) - Duolingo-style farmer motivation engine |
+| 1.5 | 2025-12-28 | Sharded epics.md (4,500+ lines) into 12 separate epic files for maintainability |
 
 ---
 
