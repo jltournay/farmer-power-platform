@@ -10,11 +10,33 @@ Cross-cutting frontend and authentication infrastructure that enables all web ap
 
 **Scope:**
 - Shared React component library (@fp/ui-components)
-- Azure AD B2C configuration and auth library (@fp/auth)
+- Mock-first authentication with Azure AD B2C ready (@fp/auth)
 - Factory Portal application scaffold
 - **BFF Service Setup** (shared by all frontends)
-- Authentication middleware (BFF pattern)
+- Authentication middleware (BFF pattern) - dual mode (mock + B2C)
 - Theme system and design tokens
+
+---
+
+### Development Strategy: Mock-First Authentication
+
+**Decision:** Implement mock authentication for local Docker Desktop Kubernetes development, with Azure AD B2C deferred until production deployment.
+
+**Benefits:**
+- Build and test UI without Azure configuration
+- Quick persona switching for role-based testing
+- Offline development capability
+- Same interface - swap to B2C via config change
+
+**Story Order (Revised):**
+1. Story 0.5.1 - Shared Component Library (no auth)
+2. Story 0.5.3 - Shared Auth Library (mock provider first)
+3. Story 0.5.6 - BFF Service Setup (basic service)
+4. Story 0.5.5 - BFF Auth Middleware (mock + B2C modes)
+5. Story 0.5.4 - Factory Portal Scaffold (uses mock auth)
+6. Story 0.5.2 - Azure AD B2C Configuration (**DEFERRED** to production prep)
+
+**Reference:** See ADR-003 "Development Authentication Strategy (Mock-First)" section
 
 ---
 
@@ -67,9 +89,13 @@ So that all frontend applications have consistent UI components and styling.
 
 #### Story 0.5.2: Azure AD B2C Configuration
 
+**Status:** DEFERRED (implement for production deployment)
+
 As a **platform administrator**,
 I want Azure AD B2C configured for the Farmer Power Platform,
 So that users can authenticate securely with role-based access control.
+
+> **Note:** This story is deferred for local development. Mock authentication (Story 0.5.3) provides the same interface. Implement this story when preparing for Azure AKS deployment.
 
 **Acceptance Criteria:**
 
@@ -117,30 +143,36 @@ So that users can authenticate securely with role-based access control.
 
 ---
 
-#### Story 0.5.3: Shared Auth Library
+#### Story 0.5.3: Shared Auth Library (Mock-First)
 
 As a **frontend developer**,
-I want a shared authentication library for React applications,
-So that all frontend apps implement consistent authentication and authorization.
+I want a shared authentication library with swappable providers,
+So that all frontend apps work with mock auth locally and Azure B2C in production.
 
 **Acceptance Criteria:**
 
 **Given** the auth library needs to be created
 **When** I create `libs/auth/`
 **Then** it exports as `@fp/auth` via npm workspaces
-**And** MSAL React is configured as the authentication provider
 **And** TypeScript types are exported for auth context
+**And** Two providers are available: `MockAuthProvider` and `AzureB2CAuthProvider`
 
-**Given** the auth library is created
-**When** I implement the `AuthProvider` component
-**Then** it wraps MSAL provider with B2C configuration
-**And** Silent token refresh is handled automatically
-**And** Login redirect flow is implemented (PKCE)
+**Given** `VITE_AUTH_PROVIDER=mock` is set
+**When** the `AuthProvider` component initializes
+**Then** `MockAuthProvider` is used
+**And** A login selector shows available mock user personas
+**And** Tokens are stored in localStorage (dev only)
+
+**Given** mock auth is active
+**When** I select a mock user persona
+**Then** A locally-signed JWT is generated with same claims structure as B2C
+**And** Claims include: sub, name, email, role, factory_id, permissions
+**And** The user is immediately "logged in"
 
 **Given** the auth context is available
 **When** I use the `useAuth` hook
 **Then** `isAuthenticated` boolean is available
-**And** `user` object includes: name, email, roles[], factoryId
+**And** `user` object includes: name, email, role, factoryId, permissions
 **And** `login()` and `logout()` functions are available
 **And** `getAccessToken()` returns token for API calls
 
@@ -150,20 +182,20 @@ So that all frontend apps implement consistent authentication and authorization.
 **And** Unauthorized users are redirected to access denied page
 **And** Loading state is handled during auth check
 
-**Given** the auth flow completes
-**When** tokens are received
-**Then** Access token is stored securely (memory, not localStorage)
-**And** Refresh token handles silent renewal
-**And** OpenTelemetry traces include user context (not PII)
+**Given** mock users are needed
+**When** I check the mock user personas
+**Then** 5 personas are available: factory_manager, factory_owner, platform_admin, registration_clerk, regulator
+**And** Each has appropriate permissions and factory/region assignments
 
 **Technical Notes:**
 - Location: `libs/auth/`
-- MSAL version: @azure/msal-react ^2.0
-- Token storage: In-memory with silent refresh
-- Reference: ADR-003 for B2C configuration
+- Mock: localStorage JWT with HS256 signing
+- B2C: MSAL React @azure/msal-react ^2.0 (implemented later)
+- Config: `VITE_AUTH_PROVIDER=mock | azure-b2c`
+- Reference: ADR-003 "Development Authentication Strategy (Mock-First)"
 
 **Dependencies:**
-- Story 0.5.2: Azure AD B2C Configuration
+- None (mock-first approach removes B2C dependency)
 
 **Story Points:** 3
 
@@ -218,29 +250,37 @@ So that Factory Manager, Owner, and Admin screens can be built.
 
 **Dependencies:**
 - Story 0.5.1: Shared Component Library
-- Story 0.5.3: Shared Auth Library
+- Story 0.5.3: Shared Auth Library (mock mode)
+- Story 0.5.5: BFF Authentication Middleware (mock mode)
 
 **Story Points:** 3
 
 ---
 
-#### Story 0.5.5: BFF Authentication Middleware
+#### Story 0.5.5: BFF Authentication Middleware (Dual-Mode)
 
 As a **backend developer**,
-I want the BFF service to validate JWT tokens from Azure AD B2C,
-So that API endpoints are protected with proper authorization.
+I want the BFF service to validate JWT tokens in both mock and B2C modes,
+So that API endpoints are protected locally and in production.
 
 **Acceptance Criteria:**
 
-**Given** the BFF service exists (from Story 0.5.6)
-**When** I add authentication middleware
-**Then** JWT tokens are validated against B2C JWKS endpoint
+**Given** `AUTH_PROVIDER=mock` is configured
+**When** the middleware validates a token
+**Then** JWT is validated using local HS256 secret
 **And** Token claims are extracted and available in request context
 **And** Invalid tokens return 401 Unauthorized
 
-**Given** the JWT is validated
+**Given** `AUTH_PROVIDER=azure-b2c` is configured
+**When** the middleware validates a token
+**Then** JWT is validated against B2C JWKS endpoint
+**And** JWKS is cached for 24 hours
+**And** Token claims are extracted identically to mock mode
+
+**Given** the JWT is validated (either mode)
 **When** the middleware extracts claims
-**Then** `user_id`, `email`, `roles[]`, `factory_id` are available
+**Then** `user_id`, `email`, `role`, `factory_id`, `permissions` are available
+**And** Claims work identically regardless of provider
 **And** Claims are added to OpenTelemetry trace context
 **And** PII (email, name) is NOT logged
 
@@ -261,14 +301,19 @@ So that API endpoints are protected with proper authorization.
 **Then** 401 is returned with `token_expired` error code
 **And** Client can refresh and retry
 
+**Given** mock mode is used in production build
+**When** the app starts with `AUTH_PROVIDER=mock`
+**Then** Startup fails with configuration error (security guardrail)
+
 **Technical Notes:**
 - FastAPI middleware with python-jose
-- JWKS caching: 24 hours
+- Config: `AUTH_PROVIDER=mock | azure-b2c`
+- Mock: HS256 validation with `MOCK_JWT_SECRET`
+- B2C: RS256 validation with JWKS caching
 - Decorators: `@require_role`, `@require_factory`
-- Reference: ADR-003 for authorization flow
+- Reference: ADR-003 "Development Authentication Strategy (Mock-First)"
 
 **Dependencies:**
-- Story 0.5.2: Azure AD B2C Configuration
 - Story 0.5.6: BFF Service Setup
 
 **Story Points:** 3
@@ -309,14 +354,14 @@ So that all frontend applications have an optimized API layer.
 
 **Technical Notes:**
 - Python FastAPI with async support
-- OAuth2 token validation via Azure AD B2C
+- Auth: Supports mock and Azure AD B2C modes (via Story 0.5.5)
 - gRPC clients with connection pooling
 - Location: `services/bff/`
 - Environment: farmer-power-{env} namespace
 - Shared by all frontends (Kiosk, Admin, Regulator, Dashboard)
 
 **Dependencies:**
-- Story 0.5.2: Azure AD B2C Configuration
+- None (basic service scaffold, auth added via Story 0.5.5)
 
 **Story Points:** 5
 

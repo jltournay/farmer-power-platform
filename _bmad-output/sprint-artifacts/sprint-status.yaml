@@ -94,13 +94,15 @@ development_status:
 
   # Epic 0.5: Frontend & Identity Infrastructure (ADR-002, ADR-003)
   # Dependencies: Epic 0
+  # Strategy: Mock-first authentication for local Docker Desktop dev (see ADR-003)
+  # Revised Order: 0.5.1 → 0.5.3 → 0.5.6 → 0.5.5 → 0.5.4 → 0.5.2 (deferred)
   epic-0-5: backlog
-  0-5-1-shared-component-library-setup: backlog
-  0-5-2-azure-ad-b2c-configuration: backlog
-  0-5-3-shared-auth-library: backlog
-  0-5-4-factory-portal-scaffold: backlog
-  0-5-5-bff-authentication-middleware: backlog
-  0-5-6-bff-service-setup: backlog  # Moved from Epic 3 - shared by all frontends
+  0-5-1-shared-component-library-setup: backlog  # No auth dependency
+  0-5-3-shared-auth-library: backlog  # Mock provider first, no B2C dependency
+  0-5-6-bff-service-setup: backlog  # Basic service scaffold
+  0-5-5-bff-authentication-middleware: backlog  # Dual-mode: mock + B2C
+  0-5-4-factory-portal-scaffold: backlog  # Uses mock auth
+  0-5-2-azure-ad-b2c-configuration: deferred  # Implement for production deployment
   epic-0-5-retrospective: optional
 
   # Epic 0.75: AI Model Foundation (NEW - 2025-12-28)
