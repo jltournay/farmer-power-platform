@@ -6,6 +6,7 @@ Includes:
 - CollectionMCPClient: MCP tool client for Collection Model
 """
 
+import json
 from typing import Any
 
 import grpc
@@ -46,8 +47,6 @@ class PlantationMCPClient:
         arguments: dict[str, Any],
     ) -> dict[str, Any]:
         """Call an MCP tool by name."""
-        import json
-
         request = mcp_tool_pb2.ToolCallRequest(
             tool_name=tool_name,
             arguments_json=json.dumps(arguments),
@@ -118,8 +117,6 @@ class CollectionMCPClient:
         arguments: dict[str, Any],
     ) -> dict[str, Any]:
         """Call an MCP tool by name."""
-        import json
-
         request = mcp_tool_pb2.ToolCallRequest(
             tool_name=tool_name,
             arguments_json=json.dumps(arguments),
@@ -162,6 +159,16 @@ class CollectionMCPClient:
             "get_blob_sas_url",
             {"container_name": container_name, "blob_name": blob_name},
         )
+
+
+class PlantationServiceError(Exception):
+    """Exception raised when Plantation gRPC service returns an error."""
+
+    def __init__(self, operation: str, code: grpc.StatusCode, details: str):
+        self.operation = operation
+        self.code = code
+        self.details = details
+        super().__init__(f"{operation} failed: [{code.name}] {details}")
 
 
 class PlantationServiceClient:
@@ -257,8 +264,15 @@ class PlantationServiceClient:
         if policy:
             request.payment_policy.CopyFrom(policy)
 
-        response = await self.stub.CreateFactory(request)
-        return MessageToDict(response, preserving_proto_field_name=True)
+        try:
+            response = await self.stub.CreateFactory(request)
+            return MessageToDict(response, preserving_proto_field_name=True)
+        except grpc.RpcError as e:
+            raise PlantationServiceError(
+                operation="CreateFactory",
+                code=e.code(),
+                details=e.details() or str(e),
+            ) from e
 
     async def create_collection_point(
         self,
@@ -305,8 +319,15 @@ class PlantationServiceClient:
             status=status,
         )
 
-        response = await self.stub.CreateCollectionPoint(request)
-        return MessageToDict(response, preserving_proto_field_name=True)
+        try:
+            response = await self.stub.CreateCollectionPoint(request)
+            return MessageToDict(response, preserving_proto_field_name=True)
+        except grpc.RpcError as e:
+            raise PlantationServiceError(
+                operation="CreateCollectionPoint",
+                code=e.code(),
+                details=e.details() or str(e),
+            ) from e
 
     async def create_farmer(
         self,
@@ -346,5 +367,12 @@ class PlantationServiceClient:
             grower_number=grower_number,
         )
 
-        response = await self.stub.CreateFarmer(request)
-        return MessageToDict(response, preserving_proto_field_name=True)
+        try:
+            response = await self.stub.CreateFarmer(request)
+            return MessageToDict(response, preserving_proto_field_name=True)
+        except grpc.RpcError as e:
+            raise PlantationServiceError(
+                operation="CreateFarmer",
+                code=e.code(),
+                details=e.details() or str(e),
+            ) from e

@@ -21,10 +21,15 @@ Architecture Notes:
     - Google Elevation Mock provides deterministic altitude responses
     - Altitude bands: Highland >1800m, Midland 1400-1800m, Lowland 800-1400m
 
-Test Data (unique to this flow):
-    - Factory: FAC-E2E-FLOW-001 (TBK grading model)
-    - Collection Point: CP-E2E-FLOW-001
-    - Farmer: FRM-E2E-FLOW-001 (lat=1.0, expected region: midland)
+Test Data (dynamically created per test):
+    - Factory codes: KEN-TBK-FLOW-* (unique per test)
+    - Collection Points: Created dynamically, linked to test factories
+    - Farmers: Created with GPS coordinates for elevation mock testing
+
+Google Elevation Mock Behavior:
+    - lat < 0.5 → 600m (lowland)
+    - 0.5 <= lat < 1.0 → 1000m (lowland: 800-1400m)
+    - lat >= 1.0 → 1400m (midland: 1400-1800m)
 """
 
 import pytest
@@ -41,8 +46,14 @@ class TestFactoryCreation:
         plantation_mcp,
         seed_data,
     ):
-        """Given seeded grading models, create a factory with TBK model via gRPC."""
+        """Given seeded grading models, create a factory with TBK model via gRPC.
+
+        AC1: Factory is created in a region that uses TBK grading model.
+        The TBK grading model is pre-seeded and associated with regions.
+        Factory inherits grading model configuration via region_id.
+        """
         # Create factory via Plantation gRPC API
+        # Note: TBK grading model is seeded and associated with kericho regions
         factory = await plantation_service.create_factory(
             name="E2E Flow Test Factory",
             code="KEN-TBK-FLOW",
@@ -256,25 +267,58 @@ class TestFarmerRegistrationWithGPS:
         plantation_mcp,
         seed_data,
     ):
-        """Verify region assignment based on altitude from elevation mock.
+        """Verify region assignment based on altitude from elevation mock (AC4).
 
         Elevation mock returns:
         - lat < 0.5 → 600m (lowland)
-        - lat 0.5-1.0 → 1000m (lowland: 800-1400m)
+        - 0.5 <= lat < 1.0 → 1000m (lowland: 800-1400m)
         - lat >= 1.0 → 1400m (midland: 1400-1800m)
 
-        This test creates a farmer at lat=1.0 and verifies region assignment.
+        This test creates a farmer at lat=1.0 and verifies the region
+        is assigned to a midland region based on the 1400m altitude.
         """
-        # Use existing seeded factory and CP (FAC-E2E-001, CP-E2E-001)
+        # First create factory and collection point for this test
+        factory = await plantation_service.create_factory(
+            name="E2E Altitude Test Factory",
+            code="KEN-TBK-FLOW-ALT",
+            region_id="kericho-midland",  # Use midland region
+            location={"latitude": 1.0, "longitude": 35.0, "altitude_meters": 1400.0},
+            contact={
+                "phone": "+254712000005",
+                "email": "altitude-test@e2e.co.ke",
+                "address": "P.O. Box 995, Kericho",
+            },
+            processing_capacity_kg=10000,
+        )
+        factory_id = factory.get("id")
+
+        cp = await plantation_service.create_collection_point(
+            name="Altitude Test CP",
+            factory_id=factory_id,
+            location={"latitude": 1.0, "longitude": 35.0, "altitude_meters": 1400.0},
+            region_id="kericho-midland",
+            clerk_id="CLK-FLOW-ALT",
+            clerk_phone="+254712000105",
+            operating_hours={"weekdays": "06:00-14:00", "weekends": "07:00-12:00"},
+            collection_days=["mon", "wed", "fri"],
+            capacity={
+                "max_daily_kg": 2000,
+                "storage_type": "covered_shed",
+                "has_weighing_scale": True,
+                "has_qc_device": False,
+            },
+        )
+        cp_id = cp.get("id")
+
         # Create farmer at lat=1.0 (elevation mock returns 1400m → midland)
         farmer = await plantation_service.create_farmer(
             first_name="Altitude",
             last_name="Test",
-            collection_point_id="CP-E2E-001",  # Use existing seed CP
+            collection_point_id=cp_id,
             farm_location={
                 "latitude": 1.0,  # Elevation mock returns 1400m
                 "longitude": 35.0,
-                "altitude_meters": 0.0,
+                "altitude_meters": 0.0,  # Will be set by elevation lookup
             },
             contact={"phone": "+254712000301", "email": "", "address": "Midland Area"},
             farm_size_hectares=1.5,
@@ -292,12 +336,14 @@ class TestFarmerRegistrationWithGPS:
         )
 
         assert result is not None
-        assert result.get("success") is True
+        assert result.get("success") is True, f"Expected success=True, got: {result}"
 
-        # The region should be assigned based on altitude (midland for 1400m)
+        # AC4: Verify the region altitude band is "midland" (1400-1800m range)
         result_str = str(result.get("result_json", "")).lower()
-        # Check that the farmer exists and has some region
-        assert farmer_id.lower() in result_str or "altitude" in result_str
+        assert "midland" in result_str, (
+            f"Expected farmer to be assigned to a midland region "
+            f"(1400m altitude from mock), but got: {result.get('result_json')}"
+        )
 
 
 @pytest.mark.e2e
@@ -312,11 +358,44 @@ class TestMCPQueryVerification:
         seed_data,
     ):
         """Verify get_farmer returns farmer with all registration fields."""
+        # Create factory and CP for this test (avoid seed data dependency)
+        factory = await plantation_service.create_factory(
+            name="E2E Query Farmer Factory",
+            code="KEN-TBK-FLOW-QF",
+            region_id="kericho-highland",
+            location={"latitude": 0.35, "longitude": 35.35, "altitude_meters": 1850.0},
+            contact={
+                "phone": "+254712000006",
+                "email": "query-farmer@e2e.co.ke",
+                "address": "P.O. Box 994, Kericho",
+            },
+            processing_capacity_kg=12000,
+        )
+        factory_id = factory.get("id")
+
+        cp = await plantation_service.create_collection_point(
+            name="Query Farmer Test CP",
+            factory_id=factory_id,
+            location={"latitude": 0.36, "longitude": 35.36, "altitude_meters": 1840.0},
+            region_id="kericho-highland",
+            clerk_id="CLK-FLOW-QF",
+            clerk_phone="+254712000106",
+            operating_hours={"weekdays": "06:00-14:00", "weekends": "07:00-12:00"},
+            collection_days=["mon", "wed", "fri"],
+            capacity={
+                "max_daily_kg": 2000,
+                "storage_type": "covered_shed",
+                "has_weighing_scale": True,
+                "has_qc_device": False,
+            },
+        )
+        cp_id = cp.get("id")
+
         # Create a farmer for this test
         farmer = await plantation_service.create_farmer(
             first_name="Query",
             last_name="Test",
-            collection_point_id="CP-E2E-001",  # Use existing seed CP
+            collection_point_id=cp_id,
             farm_location={"latitude": 0.9, "longitude": 35.0, "altitude_meters": 0.0},
             contact={
                 "phone": "+254712000401",

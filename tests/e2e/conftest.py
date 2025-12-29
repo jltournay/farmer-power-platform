@@ -17,11 +17,14 @@ import asyncio
 import json
 from collections.abc import AsyncGenerator
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import httpx
 import pytest
 import pytest_asyncio
+
+if TYPE_CHECKING:
+    from tests.e2e.helpers.mcp_clients import CollectionMCPClient, PlantationMCPClient
 
 from tests.e2e.helpers.api_clients import CollectionClient, PlantationClient
 from tests.e2e.helpers.azure_blob import AZURITE_CONNECTION_STRING, AzuriteClient
@@ -170,7 +173,7 @@ async def plantation_service(
 async def plantation_mcp(
     e2e_config: dict[str, Any],
     wait_for_services: None,
-):
+) -> AsyncGenerator[PlantationMCPClient, None]:
     """Provide Plantation MCP client."""
     # Import here to avoid import errors if grpcio not installed
     from tests.e2e.helpers.mcp_clients import PlantationMCPClient
@@ -186,7 +189,7 @@ async def plantation_mcp(
 async def collection_mcp(
     e2e_config: dict[str, Any],
     wait_for_services: None,
-):
+) -> AsyncGenerator[CollectionMCPClient, None]:
     """Provide Collection MCP client."""
     from tests.e2e.helpers.mcp_clients import CollectionMCPClient
 
