@@ -113,9 +113,7 @@ class SeedValidator:
             with filepath.open() as f:
                 return json.load(f)
         except json.JSONDecodeError as e:
-            self.errors.append(
-                ValidationError(filename, 0, "N/A", f"Invalid JSON: {e}")
-            )
+            self.errors.append(ValidationError(filename, 0, "N/A", f"Invalid JSON: {e}"))
             return None
 
     def _validate_factories(self) -> None:
@@ -134,9 +132,7 @@ class SeedValidator:
                 try:
                     Factory.model_validate(record)
                 except Exception as e:
-                    self.errors.append(
-                        ValidationError("factories.json", i, record_id, str(e))
-                    )
+                    self.errors.append(ValidationError("factories.json", i, record_id, str(e)))
 
             if not any(e.file == "factories.json" for e in self.errors):
                 print(f"OK ({len(data)} records)")
@@ -161,9 +157,7 @@ class SeedValidator:
                 try:
                     Farmer.model_validate(record)
                 except Exception as e:
-                    self.errors.append(
-                        ValidationError("farmers.json", i, record_id, str(e))
-                    )
+                    self.errors.append(ValidationError("farmers.json", i, record_id, str(e)))
 
             if not any(e.file == "farmers.json" for e in self.errors):
                 print(f"OK ({len(data)} records)")
@@ -188,9 +182,7 @@ class SeedValidator:
                 try:
                     CollectionPoint.model_validate(record)
                 except Exception as e:
-                    self.errors.append(
-                        ValidationError("collection_points.json", i, record_id, str(e))
-                    )
+                    self.errors.append(ValidationError("collection_points.json", i, record_id, str(e)))
 
             if not any(e.file == "collection_points.json" for e in self.errors):
                 print(f"OK ({len(data)} records)")
@@ -215,9 +207,7 @@ class SeedValidator:
                 try:
                     Region.model_validate(record)
                 except Exception as e:
-                    self.errors.append(
-                        ValidationError("regions.json", i, record_id, str(e))
-                    )
+                    self.errors.append(ValidationError("regions.json", i, record_id, str(e)))
 
             if not any(e.file == "regions.json" for e in self.errors):
                 print(f"OK ({len(data)} records)")
@@ -282,9 +272,7 @@ class SeedValidator:
                 try:
                     FarmerPerformance.model_validate(record)
                 except Exception as e:
-                    self.errors.append(
-                        ValidationError("farmer_performance.json", i, record_id, str(e))
-                    )
+                    self.errors.append(ValidationError("farmer_performance.json", i, record_id, str(e)))
 
             if not any(e.file == "farmer_performance.json" for e in self.errors):
                 print(f"OK ({len(data)} records)")
