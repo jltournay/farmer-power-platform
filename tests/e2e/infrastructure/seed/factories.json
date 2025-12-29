@@ -1,0 +1,64 @@
+[
+  {
+    "factory_id": "FAC-E2E-001",
+    "code": "KEN-TBK-001",
+    "name": "Kericho Tea Factory E2E",
+    "region_id": "kericho-high",
+    "grading_model_id": "tbk_kenya_tea_v1",
+    "address": {
+      "county": "Kericho",
+      "sub_county": "Ainamoi",
+      "location": "Kericho Town"
+    },
+    "coordinates": {
+      "lat": 0.3,
+      "lng": 35.3
+    },
+    "quality_thresholds": {
+      "win_threshold": 85,
+      "watch_threshold": 70
+    },
+    "payment_policy": {
+      "payment_day": "Friday",
+      "bonus_for_primary": 5.0,
+      "base_price_per_kg": 25.0
+    },
+    "contact": {
+      "manager_name": "John Kipchoge",
+      "phone": "+254712345001"
+    },
+    "active": true,
+    "created_at": "2025-01-01T00:00:00Z"
+  },
+  {
+    "factory_id": "FAC-E2E-002",
+    "code": "KEN-KTDA-002",
+    "name": "Nandi Hills Factory E2E",
+    "region_id": "nandi-high",
+    "grading_model_id": "ktda_ternary_v1",
+    "address": {
+      "county": "Nandi",
+      "sub_county": "Nandi Hills",
+      "location": "Nandi Hills Town"
+    },
+    "coordinates": {
+      "lat": 0.1,
+      "lng": 35.1
+    },
+    "quality_thresholds": {
+      "win_threshold": 80,
+      "watch_threshold": 65
+    },
+    "payment_policy": {
+      "payment_day": "Thursday",
+      "bonus_for_premium": 8.0,
+      "base_price_per_kg": 28.0
+    },
+    "contact": {
+      "manager_name": "Mary Chebet",
+      "phone": "+254712345002"
+    },
+    "active": true,
+    "created_at": "2025-01-01T00:00:00Z"
+  }
+]

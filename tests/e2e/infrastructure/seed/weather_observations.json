@@ -1,0 +1,112 @@
+[
+  {
+    "region_id": "kericho-high",
+    "observations": [
+      {
+        "date": "2025-12-28",
+        "temperature": {"min": 12.0, "max": 24.0, "avg": 18.0},
+        "precipitation_mm": 2.5,
+        "humidity_percent": 75,
+        "conditions": "partly_cloudy"
+      },
+      {
+        "date": "2025-12-27",
+        "temperature": {"min": 11.0, "max": 23.0, "avg": 17.0},
+        "precipitation_mm": 8.0,
+        "humidity_percent": 85,
+        "conditions": "rain"
+      },
+      {
+        "date": "2025-12-26",
+        "temperature": {"min": 13.0, "max": 25.0, "avg": 19.0},
+        "precipitation_mm": 0.0,
+        "humidity_percent": 65,
+        "conditions": "sunny"
+      },
+      {
+        "date": "2025-12-25",
+        "temperature": {"min": 12.5, "max": 24.5, "avg": 18.5},
+        "precipitation_mm": 0.5,
+        "humidity_percent": 70,
+        "conditions": "partly_cloudy"
+      },
+      {
+        "date": "2025-12-24",
+        "temperature": {"min": 10.0, "max": 22.0, "avg": 16.0},
+        "precipitation_mm": 15.0,
+        "humidity_percent": 90,
+        "conditions": "heavy_rain"
+      },
+      {
+        "date": "2025-12-23",
+        "temperature": {"min": 11.5, "max": 23.5, "avg": 17.5},
+        "precipitation_mm": 5.0,
+        "humidity_percent": 80,
+        "conditions": "rain"
+      },
+      {
+        "date": "2025-12-22",
+        "temperature": {"min": 14.0, "max": 26.0, "avg": 20.0},
+        "precipitation_mm": 0.0,
+        "humidity_percent": 60,
+        "conditions": "sunny"
+      }
+    ],
+    "updated_at": "2025-12-28T06:00:00Z"
+  },
+  {
+    "region_id": "nandi-high",
+    "observations": [
+      {
+        "date": "2025-12-28",
+        "temperature": {"min": 11.0, "max": 22.0, "avg": 16.5},
+        "precipitation_mm": 0.0,
+        "humidity_percent": 68,
+        "conditions": "sunny"
+      },
+      {
+        "date": "2025-12-27",
+        "temperature": {"min": 10.0, "max": 21.0, "avg": 15.5},
+        "precipitation_mm": 3.0,
+        "humidity_percent": 78,
+        "conditions": "partly_cloudy"
+      },
+      {
+        "date": "2025-12-26",
+        "temperature": {"min": 12.0, "max": 23.0, "avg": 17.5},
+        "precipitation_mm": 0.0,
+        "humidity_percent": 62,
+        "conditions": "sunny"
+      },
+      {
+        "date": "2025-12-25",
+        "temperature": {"min": 11.0, "max": 22.0, "avg": 16.5},
+        "precipitation_mm": 1.0,
+        "humidity_percent": 72,
+        "conditions": "partly_cloudy"
+      },
+      {
+        "date": "2025-12-24",
+        "temperature": {"min": 9.0, "max": 20.0, "avg": 14.5},
+        "precipitation_mm": 12.0,
+        "humidity_percent": 88,
+        "conditions": "rain"
+      },
+      {
+        "date": "2025-12-23",
+        "temperature": {"min": 10.5, "max": 21.5, "avg": 16.0},
+        "precipitation_mm": 4.0,
+        "humidity_percent": 75,
+        "conditions": "rain"
+      },
+      {
+        "date": "2025-12-22",
+        "temperature": {"min": 13.0, "max": 24.0, "avg": 18.5},
+        "precipitation_mm": 0.0,
+        "humidity_percent": 58,
+        "conditions": "sunny"
+      }
+    ],
+    "updated_at": "2025-12-28T06:00:00Z"
+  }
+]

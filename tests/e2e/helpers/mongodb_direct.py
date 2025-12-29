@@ -163,3 +163,53 @@ class MongoDBDirectClient:
                     {"$set": config},
                     upsert=True,
                 )
+
+    async def seed_factories(self, factories: list[dict[str, Any]]) -> None:
+        """Seed factories into plantation database."""
+        if factories:
+            for factory in factories:
+                await self.plantation_db.factories.update_one(
+                    {"factory_id": factory["factory_id"]},
+                    {"$set": factory},
+                    upsert=True,
+                )
+
+    async def seed_collection_points(self, collection_points: list[dict[str, Any]]) -> None:
+        """Seed collection points into plantation database."""
+        if collection_points:
+            for cp in collection_points:
+                await self.plantation_db.collection_points.update_one(
+                    {"collection_point_id": cp["collection_point_id"]},
+                    {"$set": cp},
+                    upsert=True,
+                )
+
+    async def seed_farmers(self, farmers: list[dict[str, Any]]) -> None:
+        """Seed farmers into plantation database."""
+        if farmers:
+            for farmer in farmers:
+                await self.plantation_db.farmers.update_one(
+                    {"farmer_id": farmer["farmer_id"]},
+                    {"$set": farmer},
+                    upsert=True,
+                )
+
+    async def seed_farmer_performance(self, performance_data: list[dict[str, Any]]) -> None:
+        """Seed farmer performance summaries into plantation database."""
+        if performance_data:
+            for perf in performance_data:
+                await self.plantation_db.farmer_performance.update_one(
+                    {"farmer_id": perf["farmer_id"]},
+                    {"$set": perf},
+                    upsert=True,
+                )
+
+    async def seed_weather_observations(self, weather_data: list[dict[str, Any]]) -> None:
+        """Seed weather observations into plantation database."""
+        if weather_data:
+            for obs in weather_data:
+                await self.plantation_db.weather_observations.update_one(
+                    {"region_id": obs["region_id"]},
+                    {"$set": obs},
+                    upsert=True,
+                )

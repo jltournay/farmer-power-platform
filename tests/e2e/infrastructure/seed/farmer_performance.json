@@ -1,0 +1,141 @@
+[
+  {
+    "farmer_id": "FRM-E2E-001",
+    "factory_id": "FAC-E2E-001",
+    "grading_model_id": "tbk_kenya_tea_v1",
+    "summary_period": "30d",
+    "metrics": {
+      "total_deliveries": 12,
+      "total_kg": 156.5,
+      "primary_percentage": 78.5,
+      "quality_score": 82.0
+    },
+    "grade_distribution": {
+      "Primary": 98,
+      "Secondary": 27
+    },
+    "attribute_distributions": {
+      "leaf_type": {
+        "bud": 15,
+        "one_leaf_bud": 25,
+        "two_leaves_bud": 58,
+        "three_plus_leaves_bud": 12,
+        "coarse_leaf": 15
+      }
+    },
+    "trends": {
+      "quality_trend": "improving",
+      "volume_trend": "stable",
+      "weekly_avg_kg": 39.1
+    },
+    "status": "WATCH",
+    "last_delivery_date": "2025-12-28T08:30:00Z",
+    "updated_at": "2025-12-28T12:00:00Z"
+  },
+  {
+    "farmer_id": "FRM-E2E-002",
+    "factory_id": "FAC-E2E-001",
+    "grading_model_id": "tbk_kenya_tea_v1",
+    "summary_period": "30d",
+    "metrics": {
+      "total_deliveries": 15,
+      "total_kg": 210.0,
+      "primary_percentage": 92.3,
+      "quality_score": 95.0
+    },
+    "grade_distribution": {
+      "Primary": 175,
+      "Secondary": 15
+    },
+    "attribute_distributions": {
+      "leaf_type": {
+        "bud": 35,
+        "one_leaf_bud": 80,
+        "two_leaves_bud": 60,
+        "three_plus_leaves_bud": 10,
+        "coarse_leaf": 5
+      }
+    },
+    "trends": {
+      "quality_trend": "stable",
+      "volume_trend": "improving",
+      "weekly_avg_kg": 52.5
+    },
+    "status": "WIN",
+    "last_delivery_date": "2025-12-28T07:45:00Z",
+    "updated_at": "2025-12-28T12:00:00Z"
+  },
+  {
+    "farmer_id": "FRM-E2E-003",
+    "factory_id": "FAC-E2E-001",
+    "grading_model_id": "tbk_kenya_tea_v1",
+    "summary_period": "30d",
+    "metrics": {
+      "total_deliveries": 8,
+      "total_kg": 95.0,
+      "primary_percentage": 62.5,
+      "quality_score": 68.0
+    },
+    "grade_distribution": {
+      "Primary": 48,
+      "Secondary": 30
+    },
+    "attribute_distributions": {
+      "leaf_type": {
+        "bud": 8,
+        "one_leaf_bud": 15,
+        "two_leaves_bud": 25,
+        "three_plus_leaves_bud": 18,
+        "coarse_leaf": 12
+      }
+    },
+    "trends": {
+      "quality_trend": "declining",
+      "volume_trend": "declining",
+      "weekly_avg_kg": 23.8
+    },
+    "status": "ACTION",
+    "last_delivery_date": "2025-12-27T09:15:00Z",
+    "updated_at": "2025-12-28T12:00:00Z"
+  },
+  {
+    "farmer_id": "FRM-E2E-004",
+    "factory_id": "FAC-E2E-002",
+    "grading_model_id": "ktda_ternary_v1",
+    "summary_period": "30d",
+    "metrics": {
+      "total_deliveries": 10,
+      "total_kg": 180.0,
+      "grade_a_percentage": 45.0,
+      "grade_b_percentage": 48.0,
+      "rejected_percentage": 7.0,
+      "quality_score": 85.0
+    },
+    "grade_distribution": {
+      "Grade A": 81,
+      "Grade B": 86,
+      "Rejected": 13
+    },
+    "attribute_distributions": {
+      "leaf_type": {
+        "fine": 81,
+        "medium": 86,
+        "coarse": 10,
+        "stalks": 3
+      },
+      "moisture_level": {
+        "optimal": 100,
+        "wet": 60,
+        "dry": 20
+      }
+    },
+    "trends": {
+      "quality_trend": "stable",
+      "volume_trend": "stable",
+      "weekly_avg_kg": 45.0
+    },
+    "status": "WIN",
+    "last_delivery_date": "2025-12-28T06:30:00Z",
+    "updated_at": "2025-12-28T12:00:00Z"
+  }
+]

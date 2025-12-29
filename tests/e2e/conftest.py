@@ -203,6 +203,11 @@ async def seed_data(
         "grading_models": [],
         "regions": [],
         "source_configs": [],
+        "factories": [],
+        "collection_points": [],
+        "farmers": [],
+        "farmer_performance": [],
+        "weather_observations": [],
     }
 
     # Load and seed grading models
@@ -225,5 +230,40 @@ async def seed_data(
         source_configs = json.loads(source_configs_file.read_text())
         await mongodb_direct.seed_source_configs(source_configs)
         seeded_data["source_configs"] = source_configs
+
+    # Load and seed factories
+    factories_file = seed_dir / "factories.json"
+    if factories_file.exists():
+        factories = json.loads(factories_file.read_text())
+        await mongodb_direct.seed_factories(factories)
+        seeded_data["factories"] = factories
+
+    # Load and seed collection points
+    collection_points_file = seed_dir / "collection_points.json"
+    if collection_points_file.exists():
+        collection_points = json.loads(collection_points_file.read_text())
+        await mongodb_direct.seed_collection_points(collection_points)
+        seeded_data["collection_points"] = collection_points
+
+    # Load and seed farmers
+    farmers_file = seed_dir / "farmers.json"
+    if farmers_file.exists():
+        farmers = json.loads(farmers_file.read_text())
+        await mongodb_direct.seed_farmers(farmers)
+        seeded_data["farmers"] = farmers
+
+    # Load and seed farmer performance data
+    farmer_performance_file = seed_dir / "farmer_performance.json"
+    if farmer_performance_file.exists():
+        farmer_performance = json.loads(farmer_performance_file.read_text())
+        await mongodb_direct.seed_farmer_performance(farmer_performance)
+        seeded_data["farmer_performance"] = farmer_performance
+
+    # Load and seed weather observations
+    weather_observations_file = seed_dir / "weather_observations.json"
+    if weather_observations_file.exists():
+        weather_observations = json.loads(weather_observations_file.read_text())
+        await mongodb_direct.seed_weather_observations(weather_observations)
+        seeded_data["weather_observations"] = weather_observations
 
     yield seeded_data
