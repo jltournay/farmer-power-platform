@@ -1,7 +1,7 @@
 # Story 0.4.4: Factory-Farmer Registration Flow
 
 **Status:** ready-for-dev
-**GitHub Issue:** <!-- Auto-created by dev-story workflow -->
+**GitHub Issue:** [#29](https://github.com/jltournay/farmer-power-platform/issues/29)
 **Epic:** [Epic 0.4: E2E Test Scenarios](../epics/epic-0-4-e2e-tests.md)
 
 ## Story
