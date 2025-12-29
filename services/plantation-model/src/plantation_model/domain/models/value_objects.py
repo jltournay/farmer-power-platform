@@ -116,6 +116,70 @@ class QualityThresholds(BaseModel):
 
 
 # ============================================================================
+# Payment Policy Value Objects (Story 1.9)
+# ============================================================================
+
+
+class PaymentPolicyType(str, Enum):
+    """Payment incentive model types.
+
+    Defines how quality-based payment adjustments are applied:
+    - SPLIT_PAYMENT: Base rate + quality adjustment per delivery
+    - WEEKLY_BONUS: Base rate per delivery, weekly quality bonus
+    - DELAYED_PAYMENT: Full payment after quality assessment
+    - FEEDBACK_ONLY: No payment adjustment, quality info only (default)
+    """
+
+    SPLIT_PAYMENT = "split_payment"
+    WEEKLY_BONUS = "weekly_bonus"
+    DELAYED_PAYMENT = "delayed_payment"
+    FEEDBACK_ONLY = "feedback_only"
+
+
+class PaymentPolicy(BaseModel):
+    """Factory-configurable payment policy for quality-based incentives.
+
+    Adjustments are percentage modifiers applied to base rate:
+    - tier_1_adjustment: +0.15 means +15% for Premium tier
+    - tier_2_adjustment: 0.0 means base rate for Standard tier
+    - tier_3_adjustment: -0.05 means -5% for Acceptable tier
+    - below_tier_3_adjustment: -0.10 means -10% for Below Standard
+
+    Payment calculation is EXTERNAL - factory payroll systems consume this via API.
+    Farmer Power Platform does NOT perform actual payment processing.
+    """
+
+    policy_type: PaymentPolicyType = Field(
+        default=PaymentPolicyType.FEEDBACK_ONLY,
+        description="Payment incentive model type",
+    )
+    tier_1_adjustment: float = Field(
+        default=0.0,
+        ge=-1.0,
+        le=1.0,
+        description="Premium tier adjustment (-1.0 to 1.0)",
+    )
+    tier_2_adjustment: float = Field(
+        default=0.0,
+        ge=-1.0,
+        le=1.0,
+        description="Standard tier adjustment (-1.0 to 1.0)",
+    )
+    tier_3_adjustment: float = Field(
+        default=0.0,
+        ge=-1.0,
+        le=1.0,
+        description="Acceptable tier adjustment (-1.0 to 1.0)",
+    )
+    below_tier_3_adjustment: float = Field(
+        default=0.0,
+        ge=-1.0,
+        le=1.0,
+        description="Below Standard adjustment (-1.0 to 1.0)",
+    )
+
+
+# ============================================================================
 # Region-related Value Objects (Story 1.8)
 # ============================================================================
 

@@ -32,6 +32,7 @@ from plantation_model.domain.models.id_generator import IDGenerator
 from plantation_model.domain.models.region import Region, RegionCreate
 from plantation_model.domain.models.regional_weather import RegionalWeather
 from plantation_model.domain.models.value_objects import (
+    GPS,
     Agronomic,
     AltitudeBand,
     AltitudeBandLabel,
@@ -39,10 +40,11 @@ from plantation_model.domain.models.value_objects import (
     ContactInfo,
     FlushCalendar,
     FlushPeriod,
-    GeoLocation,
     Geography,
-    GPS,
+    GeoLocation,
     OperatingHours,
+    PaymentPolicy,
+    PaymentPolicyType,
     QualityThresholds,
     WeatherConfig,
 )
@@ -141,6 +143,13 @@ class PlantationServiceServicer(plantation_pb2_grpc.PlantationServiceServicer):
 
     def _factory_to_proto(self, factory: Factory) -> plantation_pb2.Factory:
         """Convert Factory domain model to protobuf message."""
+        # Map PaymentPolicyType enum to proto enum
+        policy_type_map = {
+            PaymentPolicyType.SPLIT_PAYMENT: plantation_pb2.PAYMENT_POLICY_TYPE_SPLIT_PAYMENT,
+            PaymentPolicyType.WEEKLY_BONUS: plantation_pb2.PAYMENT_POLICY_TYPE_WEEKLY_BONUS,
+            PaymentPolicyType.DELAYED_PAYMENT: plantation_pb2.PAYMENT_POLICY_TYPE_DELAYED_PAYMENT,
+            PaymentPolicyType.FEEDBACK_ONLY: plantation_pb2.PAYMENT_POLICY_TYPE_FEEDBACK_ONLY,
+        }
         return plantation_pb2.Factory(
             id=factory.id,
             name=factory.name,
@@ -162,9 +171,41 @@ class PlantationServiceServicer(plantation_pb2_grpc.PlantationServiceServicer):
                 tier_2=factory.quality_thresholds.tier_2,
                 tier_3=factory.quality_thresholds.tier_3,
             ),
+            payment_policy=plantation_pb2.PaymentPolicy(
+                policy_type=policy_type_map.get(
+                    factory.payment_policy.policy_type,
+                    plantation_pb2.PAYMENT_POLICY_TYPE_FEEDBACK_ONLY,
+                ),
+                tier_1_adjustment=factory.payment_policy.tier_1_adjustment,
+                tier_2_adjustment=factory.payment_policy.tier_2_adjustment,
+                tier_3_adjustment=factory.payment_policy.tier_3_adjustment,
+                below_tier_3_adjustment=factory.payment_policy.below_tier_3_adjustment,
+            ),
             is_active=factory.is_active,
             created_at=datetime_to_timestamp(factory.created_at),
             updated_at=datetime_to_timestamp(factory.updated_at),
+        )
+
+    def _proto_to_payment_policy(self, proto_policy: plantation_pb2.PaymentPolicy | None) -> PaymentPolicy:
+        """Convert protobuf PaymentPolicy to domain model."""
+        if proto_policy is None:
+            return PaymentPolicy()  # Return defaults
+
+        # Map proto enum to domain enum
+        policy_type_map = {
+            plantation_pb2.PAYMENT_POLICY_TYPE_SPLIT_PAYMENT: PaymentPolicyType.SPLIT_PAYMENT,
+            plantation_pb2.PAYMENT_POLICY_TYPE_WEEKLY_BONUS: PaymentPolicyType.WEEKLY_BONUS,
+            plantation_pb2.PAYMENT_POLICY_TYPE_DELAYED_PAYMENT: PaymentPolicyType.DELAYED_PAYMENT,
+            plantation_pb2.PAYMENT_POLICY_TYPE_FEEDBACK_ONLY: PaymentPolicyType.FEEDBACK_ONLY,
+            plantation_pb2.PAYMENT_POLICY_TYPE_UNSPECIFIED: PaymentPolicyType.FEEDBACK_ONLY,
+        }
+
+        return PaymentPolicy(
+            policy_type=policy_type_map.get(proto_policy.policy_type, PaymentPolicyType.FEEDBACK_ONLY),
+            tier_1_adjustment=proto_policy.tier_1_adjustment,
+            tier_2_adjustment=proto_policy.tier_2_adjustment,
+            tier_3_adjustment=proto_policy.tier_3_adjustment,
+            below_tier_3_adjustment=proto_policy.below_tier_3_adjustment,
         )
 
     async def _get_altitude_for_location(self, latitude: float, longitude: float) -> float:
@@ -274,6 +315,9 @@ class PlantationServiceServicer(plantation_pb2_grpc.PlantationServiceServicer):
                 if request.HasField("quality_thresholds") and request.quality_thresholds.tier_3
                 else 50.0,
             ),
+            payment_policy=self._proto_to_payment_policy(
+                request.payment_policy if request.HasField("payment_policy") else None
+            ),
             is_active=True,
             created_at=now,
             updated_at=now,
@@ -329,6 +373,8 @@ class PlantationServiceServicer(plantation_pb2_grpc.PlantationServiceServicer):
                 tier_2=request.quality_thresholds.tier_2,
                 tier_3=request.quality_thresholds.tier_3,
             ).model_dump()
+        if request.HasField("payment_policy"):
+            updates["payment_policy"] = self._proto_to_payment_policy(request.payment_policy).model_dump()
         if request.HasField("is_active"):
             updates["is_active"] = request.is_active
 

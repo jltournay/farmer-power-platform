@@ -20,7 +20,8 @@ TOOL_REGISTRY: dict[str, ToolDefinition] = {
         name="get_factory",
         description=(
             "Get factory details by ID. Returns name, code, region, location, "
-            "processing capacity, and quality thresholds (tier_1, tier_2, tier_3)."
+            "processing capacity, quality thresholds (tier_1, tier_2, tier_3), "
+            "and payment policy (policy_type, tier adjustments)."
         ),
         input_schema={
             "type": "object",

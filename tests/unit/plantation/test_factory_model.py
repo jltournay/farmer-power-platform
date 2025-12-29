@@ -2,7 +2,13 @@
 
 import pytest
 from plantation_model.domain.models.factory import Factory, FactoryCreate, FactoryUpdate
-from plantation_model.domain.models.value_objects import ContactInfo, GeoLocation, QualityThresholds
+from plantation_model.domain.models.value_objects import (
+    ContactInfo,
+    GeoLocation,
+    PaymentPolicy,
+    PaymentPolicyType,
+    QualityThresholds,
+)
 from pydantic import ValidationError
 
 
@@ -266,3 +272,173 @@ class TestQualityThresholds:
 
         assert update.quality_thresholds is not None
         assert update.quality_thresholds.tier_1 == 92.0
+
+
+class TestPaymentPolicy:
+    """Tests for PaymentPolicy value object (Story 1.9)."""
+
+    def test_payment_policy_defaults(self) -> None:
+        """Test default payment policy values."""
+        policy = PaymentPolicy()
+
+        assert policy.policy_type == PaymentPolicyType.FEEDBACK_ONLY
+        assert policy.tier_1_adjustment == 0.0
+        assert policy.tier_2_adjustment == 0.0
+        assert policy.tier_3_adjustment == 0.0
+        assert policy.below_tier_3_adjustment == 0.0
+
+    def test_payment_policy_custom_valid(self) -> None:
+        """Test custom payment policy values."""
+        policy = PaymentPolicy(
+            policy_type=PaymentPolicyType.SPLIT_PAYMENT,
+            tier_1_adjustment=0.15,
+            tier_2_adjustment=0.0,
+            tier_3_adjustment=-0.05,
+            below_tier_3_adjustment=-0.10,
+        )
+
+        assert policy.policy_type == PaymentPolicyType.SPLIT_PAYMENT
+        assert policy.tier_1_adjustment == 0.15
+        assert policy.tier_2_adjustment == 0.0
+        assert policy.tier_3_adjustment == -0.05
+        assert policy.below_tier_3_adjustment == -0.10
+
+    def test_payment_policy_all_policy_types(self) -> None:
+        """Test all payment policy types are valid."""
+        for policy_type in PaymentPolicyType:
+            policy = PaymentPolicy(policy_type=policy_type)
+            assert policy.policy_type == policy_type
+
+    def test_payment_policy_adjustment_upper_bound(self) -> None:
+        """Test adjustment values cannot exceed 1.0."""
+        with pytest.raises(ValidationError) as exc_info:
+            PaymentPolicy(tier_1_adjustment=1.5)
+
+        assert "tier_1_adjustment" in str(exc_info.value)
+
+    def test_payment_policy_adjustment_lower_bound(self) -> None:
+        """Test adjustment values cannot be less than -1.0."""
+        with pytest.raises(ValidationError) as exc_info:
+            PaymentPolicy(tier_3_adjustment=-1.5)
+
+        assert "tier_3_adjustment" in str(exc_info.value)
+
+    def test_payment_policy_all_adjustments_boundary_valid(self) -> None:
+        """Test boundary values are accepted."""
+        policy = PaymentPolicy(
+            tier_1_adjustment=1.0,
+            tier_2_adjustment=-1.0,
+            tier_3_adjustment=0.0,
+            below_tier_3_adjustment=-0.5,
+        )
+
+        assert policy.tier_1_adjustment == 1.0
+        assert policy.tier_2_adjustment == -1.0
+
+    def test_payment_policy_model_dump(self) -> None:
+        """Test payment policy serialization with model_dump (Pydantic 2.0)."""
+        policy = PaymentPolicy(
+            policy_type=PaymentPolicyType.WEEKLY_BONUS,
+            tier_1_adjustment=0.20,
+        )
+
+        data = policy.model_dump()
+
+        assert data["policy_type"] == "weekly_bonus"
+        assert data["tier_1_adjustment"] == 0.20
+
+    def test_payment_policy_enum_values(self) -> None:
+        """Test PaymentPolicyType enum string values."""
+        assert PaymentPolicyType.SPLIT_PAYMENT.value == "split_payment"
+        assert PaymentPolicyType.WEEKLY_BONUS.value == "weekly_bonus"
+        assert PaymentPolicyType.DELAYED_PAYMENT.value == "delayed_payment"
+        assert PaymentPolicyType.FEEDBACK_ONLY.value == "feedback_only"
+
+
+class TestFactoryWithPaymentPolicy:
+    """Tests for Factory with PaymentPolicy (Story 1.9)."""
+
+    def test_factory_default_payment_policy(self) -> None:
+        """Test factory uses default payment policy if not specified."""
+        factory = Factory(
+            id="KEN-FAC-001",
+            name="Test Factory",
+            code="TF",
+            region_id="test",
+            location=GeoLocation(latitude=0, longitude=0),
+        )
+
+        assert factory.payment_policy.policy_type == PaymentPolicyType.FEEDBACK_ONLY
+        assert factory.payment_policy.tier_1_adjustment == 0.0
+        assert factory.payment_policy.tier_2_adjustment == 0.0
+        assert factory.payment_policy.tier_3_adjustment == 0.0
+        assert factory.payment_policy.below_tier_3_adjustment == 0.0
+
+    def test_factory_with_custom_payment_policy(self) -> None:
+        """Test factory with custom payment policy."""
+        factory = Factory(
+            id="KEN-FAC-001",
+            name="Test Factory",
+            code="TF",
+            region_id="test",
+            location=GeoLocation(latitude=0, longitude=0),
+            payment_policy=PaymentPolicy(
+                policy_type=PaymentPolicyType.SPLIT_PAYMENT,
+                tier_1_adjustment=0.15,
+                tier_2_adjustment=0.0,
+                tier_3_adjustment=-0.05,
+                below_tier_3_adjustment=-0.10,
+            ),
+        )
+
+        assert factory.payment_policy.policy_type == PaymentPolicyType.SPLIT_PAYMENT
+        assert factory.payment_policy.tier_1_adjustment == 0.15
+        assert factory.payment_policy.below_tier_3_adjustment == -0.10
+
+    def test_factory_create_with_payment_policy(self) -> None:
+        """Test FactoryCreate with payment policy."""
+        create_req = FactoryCreate(
+            name="New Factory",
+            code="NF",
+            region_id="test-region",
+            location=GeoLocation(latitude=-0.5, longitude=36.5),
+            payment_policy=PaymentPolicy(
+                policy_type=PaymentPolicyType.WEEKLY_BONUS,
+                tier_1_adjustment=0.10,
+            ),
+        )
+
+        assert create_req.payment_policy is not None
+        assert create_req.payment_policy.policy_type == PaymentPolicyType.WEEKLY_BONUS
+
+    def test_factory_update_with_payment_policy(self) -> None:
+        """Test FactoryUpdate with payment policy."""
+        update = FactoryUpdate(
+            payment_policy=PaymentPolicy(
+                policy_type=PaymentPolicyType.DELAYED_PAYMENT,
+                tier_1_adjustment=0.20,
+            ),
+        )
+
+        assert update.payment_policy is not None
+        assert update.payment_policy.policy_type == PaymentPolicyType.DELAYED_PAYMENT
+
+    def test_factory_model_dump_includes_payment_policy(self) -> None:
+        """Test factory serialization includes payment policy."""
+        factory = Factory(
+            id="KEN-FAC-001",
+            name="Test Factory",
+            code="TF",
+            region_id="test",
+            location=GeoLocation(latitude=0, longitude=0),
+            payment_policy=PaymentPolicy(
+                policy_type=PaymentPolicyType.SPLIT_PAYMENT,
+                tier_1_adjustment=0.15,
+            ),
+        )
+
+        data = factory.model_dump()
+
+        assert "payment_policy" in data
+        assert data["payment_policy"]["policy_type"] == "split_payment"
+        assert data["payment_policy"]["tier_1_adjustment"] == 0.15

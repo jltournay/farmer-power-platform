@@ -2,7 +2,12 @@
 
 from datetime import UTC, datetime
 
-from plantation_model.domain.models.value_objects import ContactInfo, GeoLocation, QualityThresholds
+from plantation_model.domain.models.value_objects import (
+    ContactInfo,
+    GeoLocation,
+    PaymentPolicy,
+    QualityThresholds,
+)
 from pydantic import BaseModel, Field
 
 
@@ -23,6 +28,10 @@ class Factory(BaseModel):
     quality_thresholds: QualityThresholds = Field(
         default_factory=QualityThresholds,
         description="Quality tier thresholds for farmer categorization",
+    )
+    payment_policy: PaymentPolicy = Field(
+        default_factory=PaymentPolicy,
+        description="Payment incentive policy configuration",
     )
     is_active: bool = Field(default=True, description="Whether factory is active")
     created_at: datetime = Field(
@@ -57,6 +66,13 @@ class Factory(BaseModel):
                     "tier_2": 70.0,
                     "tier_3": 50.0,
                 },
+                "payment_policy": {
+                    "policy_type": "feedback_only",
+                    "tier_1_adjustment": 0.0,
+                    "tier_2_adjustment": 0.0,
+                    "tier_3_adjustment": 0.0,
+                    "below_tier_3_adjustment": 0.0,
+                },
                 "is_active": True,
             },
         },
@@ -73,6 +89,7 @@ class FactoryCreate(BaseModel):
     contact: ContactInfo | None = None
     processing_capacity_kg: int = Field(default=0, ge=0)
     quality_thresholds: QualityThresholds | None = None
+    payment_policy: PaymentPolicy | None = None
 
 
 class FactoryUpdate(BaseModel):
@@ -84,4 +101,5 @@ class FactoryUpdate(BaseModel):
     contact: ContactInfo | None = None
     processing_capacity_kg: int | None = Field(default=None, ge=0)
     quality_thresholds: QualityThresholds | None = None
+    payment_policy: PaymentPolicy | None = None
     is_active: bool | None = None

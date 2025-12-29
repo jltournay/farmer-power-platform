@@ -336,7 +336,7 @@ So that weather data can be collected per region for quality correlation.
 
 ### Story 1.9: Factory Payment Policy Configuration
 
-**Story File:** Not yet created | Status: Backlog
+**[📄 Story File](../sprint-artifacts/1-9-payment-policy-configuration.md)** | Status: Ready for Dev
 
 As a **factory administrator**,
 I want to configure payment policies for my factory,

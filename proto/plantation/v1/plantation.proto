@@ -87,6 +87,26 @@ message QualityThresholds {
   double tier_3 = 3;  // Acceptable tier threshold (default ≥50% Primary)
 }
 
+// Payment incentive model types (Story 1.9)
+enum PaymentPolicyType {
+  PAYMENT_POLICY_TYPE_UNSPECIFIED = 0;
+  PAYMENT_POLICY_TYPE_SPLIT_PAYMENT = 1;    // Base + quality adjustment per delivery
+  PAYMENT_POLICY_TYPE_WEEKLY_BONUS = 2;     // Base per delivery, weekly bonus
+  PAYMENT_POLICY_TYPE_DELAYED_PAYMENT = 3;  // Full payment after quality assessment
+  PAYMENT_POLICY_TYPE_FEEDBACK_ONLY = 4;    // No payment adjustment (default)
+}
+
+// Factory payment policy configuration (Story 1.9)
+// Adjustments are percentage modifiers (-1.0 to +1.0) applied to base rate
+// Payment calculation is EXTERNAL - consumed by factory payroll systems via API
+message PaymentPolicy {
+  PaymentPolicyType policy_type = 1;
+  double tier_1_adjustment = 2;        // Premium tier adjustment
+  double tier_2_adjustment = 3;        // Standard tier adjustment
+  double tier_3_adjustment = 4;        // Acceptable tier adjustment
+  double below_tier_3_adjustment = 5;  // Below Standard adjustment
+}
+
 // ============================================================================
 // Region Messages (Story 1.8)
 // ============================================================================
@@ -268,9 +288,10 @@ message Factory {
   ContactInfo contact = 6;
   int32 processing_capacity_kg = 7;
   QualityThresholds quality_thresholds = 8;  // Story 1.7: Quality tier thresholds
-  bool is_active = 9;
-  google.protobuf.Timestamp created_at = 10;
-  google.protobuf.Timestamp updated_at = 11;
+  PaymentPolicy payment_policy = 9;          // Story 1.9: Payment incentive config
+  bool is_active = 10;
+  google.protobuf.Timestamp created_at = 11;
+  google.protobuf.Timestamp updated_at = 12;
 }
 
 message GetFactoryRequest {
@@ -298,6 +319,7 @@ message CreateFactoryRequest {
   ContactInfo contact = 5;
   int32 processing_capacity_kg = 6;
   QualityThresholds quality_thresholds = 7;  // Optional, defaults to 85/70/50
+  PaymentPolicy payment_policy = 8;          // Optional, defaults to feedback_only
 }
 
 message UpdateFactoryRequest {
@@ -308,7 +330,8 @@ message UpdateFactoryRequest {
   optional ContactInfo contact = 5;
   optional int32 processing_capacity_kg = 6;
   optional QualityThresholds quality_thresholds = 7;  // Story 1.7
-  optional bool is_active = 8;
+  optional PaymentPolicy payment_policy = 8;          // Story 1.9
+  optional bool is_active = 9;
 }
 
 message DeleteFactoryRequest {
