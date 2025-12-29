@@ -1,5 +1,5 @@
 # Sprint Status - farmer-power-platform
-# generated: 2025-12-28
+# generated: 2025-12-29
 # project: farmer-power-platform
 # tracking_system: file-system
 # story_location: _bmad-output/sprint-artifacts
@@ -33,17 +33,17 @@
 # - SM typically creates next story after previous one is 'done' to incorporate learnings
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 #
-# PRIORITY ORDER (2025-12-28 restructure):
+# PRIORITY ORDER (2025-12-29 update):
 # ========================================
-# P0: Epic 0 (Done), Epic 1 (In Progress), Epic 2 (Done)
-# P1: Epic 0.5, Epic 0.75 (NEW - AI Model Foundation)
+# P0: Epic 0 (Done), Epic 1 (Done), Epic 2 (Done), Epic 0.4 (E2E Tests - NEW)
+# P1: Epic 0.5, Epic 0.75 (AI Model Foundation)
 # P2: Epic 11 (Kiosk - 1st UI), Epic 9 (Admin - 2nd UI)
 # P3: Epic 5, Epic 10 (Regulator - 3rd UI)
 # P4: Epic 6, Epic 4
 # P5: Epic 7, Epic 8, Epic 12 (NEW - Engagement)
 # P6: Epic 3 (Dashboard - LAST UI, needs Epic 4,5,6)
 
-generated: 2025-12-28
+generated: 2025-12-29
 project: farmer-power-platform
 tracking_system: file-system
 story_location: _bmad-output/sprint-artifacts
@@ -87,6 +87,21 @@ development_status:
   2-8-market-prices-pull-mode: covered-by-2-7  # Configuration-only
   2-9-collection-model-mcp-server: done  # github_issue: 23
   epic-2-retrospective: done
+
+  # Epic 0.4: E2E Test Scenarios for Plantation & Collection Models
+  # Dependencies: Epic 0, Epic 1, Epic 2
+  # Tests the full stack: Plantation Model, Collection Model, MCP Servers, DAPR events
+  epic-0-4: backlog
+  0-4-1-infrastructure-verification: done  # 19 tests in test_00_infrastructure_verification.py
+  0-4-2-plantation-mcp-tool-contracts: backlog  # 9 tests
+  0-4-3-collection-mcp-tool-contracts: backlog  # 5 tests
+  0-4-4-factory-farmer-registration-flow: backlog  # 5 tests
+  0-4-5-quality-event-blob-ingestion: backlog  # 6 tests - JSON direct, no AI
+  0-4-6-weather-data-ingestion-mock-ai: backlog  # 5 tests - Real weather API, mock AI
+  0-4-7-cross-model-dapr-event-flow: backlog  # 4 tests - CRITICAL
+  0-4-8-tbk-ktda-grading-validation: backlog  # 6 tests
+  0-4-9-zip-processor-ingestion: backlog  # 9 tests
+  epic-0-4-retrospective: optional
 
   # ═══════════════════════════════════════════════════════════════════════════
   # P1: HORIZONTAL INFRASTRUCTURE
