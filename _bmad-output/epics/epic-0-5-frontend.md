@@ -136,8 +136,27 @@ So that users can authenticate securely with role-based access control.
 - Reference: `_bmad-output/architecture/adr/ADR-003-identity-access-management.md`
 - User provisioning: Microsoft Graph API (not self-service)
 
+**Cloudflare DNS Configuration:**
+
+DNS for `farmerpower.ai` is hosted on Cloudflare. When configuring the custom domain:
+
+| Record | Type | Value | Proxy |
+|--------|------|-------|-------|
+| `auth` | CNAME | `farmerpowerb2c.b2clogin.com` | **DNS only (grey cloud)** |
+| Root | TXT | `MS=<azure-verification-code>` | N/A |
+
+**Critical:** The `auth.farmerpower.ai` subdomain **must** have Cloudflare proxy disabled (grey cloud icon). Azure AD B2C requires direct connection for:
+- Token endpoint calls
+- JWKS key fetching
+- Custom domain SSL certificate validation
+
+If Cloudflare proxy is enabled (orange cloud), SSL/certificate mismatch errors will occur.
+
+Other subdomains (`portal`, `api`) can use Cloudflare proxy normally.
+
 **Dependencies:**
 - Azure subscription
+- Cloudflare DNS access for farmerpower.ai
 
 **Story Points:** 5
 
