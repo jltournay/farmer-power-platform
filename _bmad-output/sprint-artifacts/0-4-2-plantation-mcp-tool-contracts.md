@@ -71,10 +71,10 @@ So that AI agents can reliably query plantation data.
   - [x] Assert farmers returned
 
 - [x] **Task 8: Implement region tests** (AC: 6, 7)
-  - [x] Test get_region with seed region_id (e.g., "kericho-high")
+  - [x] Test get_region with seed region_id (e.g., "kericho-highland")
   - [x] Assert returns region data
   - [x] Test list_regions with county="Kericho" filter
-  - [x] Test list_regions with altitude_band="high" filter
+  - [x] Test list_regions with altitude_band="highland" filter
   - [x] Assert correct regions returned
 
 - [x] **Task 9: Implement get_current_flush test** (AC: 8)
@@ -196,13 +196,13 @@ All seed data files are located in `tests/e2e/infrastructure/seed/`:
 
 | File | Contents | Key IDs |
 |------|----------|---------|
-| `regions.json` | 5 regions | `kericho-low`, `kericho-medium`, `kericho-high`, `nandi-high`, `bomet-medium` |
+| `regions.json` | 5 regions | `kericho-highland`, `kericho-midland`, `kericho-lowland`, `nandi-highland`, `bomet-midland` |
 | `grading_models.json` | 2 models | `tbk_kenya_tea_v1` (binary), `ktda_ternary_v1` (ternary) |
-| `factories.json` | 2 factories | `FAC-E2E-001` (TBK, kericho-high), `FAC-E2E-002` (KTDA, nandi-high) |
+| `factories.json` | 2 factories | `FAC-E2E-001` (TBK, kericho-highland), `FAC-E2E-002` (KTDA, nandi-highland) |
 | `collection_points.json` | 3 CPs | `CP-E2E-001`, `CP-E2E-002` (FAC-E2E-001), `CP-E2E-003` (FAC-E2E-002) |
 | `farmers.json` | 4 farmers | `FRM-E2E-001` to `FRM-E2E-004` |
 | `farmer_performance.json` | 4 records | Performance summaries with metrics, trends, status |
-| `weather_observations.json` | 2 regions | 7 days each for `kericho-high`, `nandi-high` |
+| `weather_observations.json` | 2 regions | 7 days each for `kericho-highland`, `nandi-highland` |
 
 **Test Data Relationships:**
 ```
@@ -320,7 +320,7 @@ Claude Opus 4.5 (claude-opus-4-5-20251101)
 
 ### Completion Notes List
 
-- Created `test_01_plantation_mcp_contracts.py` with 14 test methods across 9 test classes
+- Created `test_01_plantation_mcp_contracts.py` with 13 test methods across 9 test classes
 - Tests cover all 9 Plantation MCP tools as specified in acceptance criteria
 - Used seed data from fixtures instead of creating data dynamically (cleaner approach)
 - Test assertions are defensive - check for content presence with multiple possible field names
@@ -330,13 +330,24 @@ Claude Opus 4.5 (claude-opus-4-5-20251101)
 ### File List
 
 **Created:**
-- `tests/e2e/scenarios/test_01_plantation_mcp_contracts.py` - Main test file with 9 tool contract tests
+- `tests/e2e/scenarios/test_01_plantation_mcp_contracts.py` - Main test file with 13 contract tests across 9 tool categories
 
-**Modified (earlier in session - seed data):**
+**Modified (seed data):**
 - `tests/e2e/infrastructure/seed/factories.json` - 2 test factories
 - `tests/e2e/infrastructure/seed/collection_points.json` - 3 test CPs
 - `tests/e2e/infrastructure/seed/farmers.json` - 4 test farmers
 - `tests/e2e/infrastructure/seed/farmer_performance.json` - 4 performance records
 - `tests/e2e/infrastructure/seed/weather_observations.json` - 7 days for 2 regions
+- `tests/e2e/infrastructure/seed/regions.json` - Updated region IDs
+- `tests/e2e/infrastructure/seed/grading_models.json` - Updated model references
+
+**Modified (test infrastructure):**
 - `tests/e2e/conftest.py` - Added seeding for new data files
 - `tests/e2e/helpers/mongodb_direct.py` - Added seed methods for new collections
+- `tests/e2e/helpers/mcp_clients.py` - MCP client helpers
+- `tests/e2e/infrastructure/validate_seed_data.py` - Seed validation script
+- `tests/e2e/README.md` - Documentation updates
+- `tests/e2e/E2E-TESTING-MENTAL-MODEL.md` - Testing guidelines
+
+**Modified (production bug fixes):**
+- `mcp-servers/plantation-mcp/src/plantation_mcp/infrastructure/plantation_client.py` - Proto alignment fixes (see Production Code Changes table above)
