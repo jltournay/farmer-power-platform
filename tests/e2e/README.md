@@ -19,33 +19,66 @@ These tests deploy all 4 existing modules (plantation-model, plantation-mcp, col
 - Python 3.11+ (3.12 recommended)
 - pytest, pytest-asyncio, httpx, grpcio, azure-storage-blob, motor
 
-## Quick Start
+## Quick Start (Local)
 
 ### 1. Start the E2E Stack
 
 ```bash
 # From repository root
-docker-compose -f tests/e2e/infrastructure/docker-compose.e2e.yaml up -d
+docker compose -f tests/e2e/infrastructure/docker-compose.e2e.yaml up -d --build
 
 # Wait for all services to be healthy
-docker-compose -f tests/e2e/infrastructure/docker-compose.e2e.yaml ps
+docker compose -f tests/e2e/infrastructure/docker-compose.e2e.yaml ps
 ```
 
 ### 2. Run Infrastructure Verification Tests
 
 ```bash
 # Run all E2E tests
-pytest tests/e2e/scenarios/ -v --tb=short
+PYTHONPATH="${PYTHONPATH}:.:libs/fp-proto/src" pytest tests/e2e/scenarios/ -v --tb=short
 
 # Run only infrastructure verification
-pytest tests/e2e/scenarios/test_00_infrastructure_verification.py -v
+PYTHONPATH="${PYTHONPATH}:.:libs/fp-proto/src" pytest tests/e2e/scenarios/test_00_infrastructure_verification.py -v
 ```
 
 ### 3. Stop the Stack
 
 ```bash
-docker-compose -f tests/e2e/infrastructure/docker-compose.e2e.yaml down -v
+docker compose -f tests/e2e/infrastructure/docker-compose.e2e.yaml down -v
 ```
+
+## GitHub Actions CI
+
+E2E tests run automatically in GitHub Actions via the `e2e-tests.yaml` workflow.
+
+### Trigger E2E Tests Manually
+
+```bash
+# Trigger E2E workflow via GitHub CLI
+gh workflow run e2e-tests.yaml
+
+# With options
+gh workflow run e2e-tests.yaml -f test_filter="test_00" -f verbose=true
+
+# Check status
+gh run list --workflow=e2e-tests.yaml --limit 3
+
+# View logs of latest run
+gh run view --log
+```
+
+### Workflow Options
+
+| Input | Description | Default |
+|-------|-------------|---------|
+| `test_filter` | Filter tests by name (e.g., "test_01") | (all tests) |
+| `verbose` | Enable verbose pytest output | `true` |
+
+### View Results
+
+- **GitHub UI**: Actions tab > E2E Tests workflow
+- **CLI**: `gh run view <run_id>`
+- **Artifacts**: Test results XML available as `e2e-test-results`
 
 ## Directory Structure
 
@@ -220,11 +253,11 @@ lsof -i :27017 # Local MongoDB
 ### Services not starting
 ```bash
 # Check service logs
-docker-compose -f tests/e2e/infrastructure/docker-compose.e2e.yaml logs
+docker compose -f tests/e2e/infrastructure/docker-compose.e2e.yaml logs
 
 # Check specific service
-docker-compose -f tests/e2e/infrastructure/docker-compose.e2e.yaml logs plantation-model
-docker-compose -f tests/e2e/infrastructure/docker-compose.e2e.yaml logs plantation-mcp
+docker compose -f tests/e2e/infrastructure/docker-compose.e2e.yaml logs plantation-model
+docker compose -f tests/e2e/infrastructure/docker-compose.e2e.yaml logs plantation-mcp
 ```
 
 ### Azurite API Version Error
@@ -265,11 +298,11 @@ If you see "Event loop is closed" errors, ensure:
 To completely rebuild the E2E stack:
 ```bash
 # Stop and remove all containers and volumes
-docker-compose -f tests/e2e/infrastructure/docker-compose.e2e.yaml down -v
+docker compose -f tests/e2e/infrastructure/docker-compose.e2e.yaml down -v
 
 # Rebuild without cache
-docker-compose -f tests/e2e/infrastructure/docker-compose.e2e.yaml build --no-cache
+docker compose -f tests/e2e/infrastructure/docker-compose.e2e.yaml build --no-cache
 
 # Start fresh
-docker-compose -f tests/e2e/infrastructure/docker-compose.e2e.yaml up -d
+docker compose -f tests/e2e/infrastructure/docker-compose.e2e.yaml up -d
 ```
