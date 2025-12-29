@@ -37,19 +37,19 @@ So that new farmers are correctly assigned to regions based on GPS and altitude.
   - [x] Return deterministic altitude: lat>=1.0 → 1400m (midland)
 
 - [x] **Task 3: Implement factory creation test** (AC: 1)
-  - [x] Use `mongodb_direct.seed_factories()` (no HTTP write API exists)
-  - [x] Create factory `FAC-E2E-FLOW-001` with TBK grading model
+  - [x] Use `plantation_service.create_factory()` via gRPC
+  - [x] Create factory with TBK grading model
   - [x] Verify via `plantation_mcp.call_tool("get_factory", ...)`
   - [x] Assert factory has correct configuration
 
 - [x] **Task 4: Implement collection point creation test** (AC: 2)
-  - [x] Use `mongodb_direct.seed_collection_points()` (no HTTP write API exists)
-  - [x] Create CP `CP-E2E-FLOW-001` linked to factory
+  - [x] Use `plantation_service.create_collection_point()` via gRPC
+  - [x] Create CP linked to factory
   - [x] Verify via `plantation_mcp.call_tool("get_collection_points", ...)`
   - [x] Assert CP is linked to factory
 
 - [x] **Task 5: Implement farmer registration test** (AC: 3, 4)
-  - [x] Use `mongodb_direct.seed_farmers()` (no HTTP write API exists)
+  - [x] Use `plantation_service.create_farmer()` via gRPC
   - [x] Register farmer with GPS coordinates (lat=1.0, lng=35.0)
   - [x] Altitude 1400m → kericho-midland region
   - [x] Verify region assignment matches mock altitude (1400m → midland)
@@ -160,17 +160,23 @@ If you modified ANY production code, document each change here:
 
 ### Data Operations (IMPORTANT)
 
-**No HTTP write APIs exist for Plantation Model.** Write operations must use `mongodb_direct`:
+**Write operations use Plantation gRPC API** via `plantation_service` fixture:
 
 ```python
 # Factory creation
-await mongodb_direct.seed_factories([{...}])
+factory = await plantation_service.create_factory(
+    name="...", code="...", region_id="...", ...
+)
 
 # Collection point creation
-await mongodb_direct.seed_collection_points([{...}])
+cp = await plantation_service.create_collection_point(
+    name="...", factory_id=factory["id"], ...
+)
 
-# Farmer registration
-await mongodb_direct.seed_farmers([{...}])
+# Farmer registration (region auto-assigned via elevation lookup)
+farmer = await plantation_service.create_farmer(
+    first_name="...", collection_point_id=cp["id"], farm_location={...}, ...
+)
 ```
 
 ### Test File Location
@@ -181,8 +187,9 @@ await mongodb_direct.seed_farmers([{...}])
 
 | Fixture | Description |
 |---------|-------------|
+| `plantation_service` | gRPC client for Plantation Model write operations |
 | `plantation_mcp` | gRPC MCP client for Plantation Model (read-only) |
-| `mongodb_direct` | Direct MongoDB access for data creation/verification |
+| `mongodb_direct` | Direct MongoDB access for verification |
 | `seed_data` | Pre-loaded test data (regions, grading_models) |
 | `wait_for_services` | Auto-invoked, ensures services healthy |
 
@@ -261,8 +268,8 @@ None - implementation straightforward
 ### Completion Notes List
 
 1. **Google Elevation Mock already exists** - Located at `tests/e2e/infrastructure/mock-servers/google-elevation/`
-2. **No HTTP write APIs** - Plantation Model only exposes health endpoints and DAPR event handlers
-3. **Data creation via mongodb_direct** - All entity creation uses `mongodb_direct.seed_*()` methods
+2. **Write operations via gRPC API** - Uses `plantation_service` fixture for CreateFactory, CreateCollectionPoint, CreateFarmer
+3. **Added PlantationServiceClient** - New gRPC client for Plantation Model write operations in `mcp_clients.py`
 4. **Adjusted test coordinates** - Used lat=1.0 (returns 1400m) to get midland region instead of lat=0.8 (returns 1000m → lowland)
 5. **Story spec correction** - Original story expected 1000m to be midland, but actual seed data says midland is 1400-1800m
 
@@ -272,5 +279,7 @@ None - implementation straightforward
 - `tests/e2e/scenarios/test_03_factory_farmer_flow.py` - 6 tests covering AC1-AC5
 
 **Modified:**
+- `tests/e2e/helpers/mcp_clients.py` - Added PlantationServiceClient for gRPC write operations
+- `tests/e2e/conftest.py` - Added plantation_service fixture
 - `_bmad-output/sprint-artifacts/sprint-status.yaml` - Updated 0-4-4 to in-progress
 - `_bmad-output/sprint-artifacts/0-4-4-factory-farmer-registration-flow.md` - Updated tasks, notes, and file list

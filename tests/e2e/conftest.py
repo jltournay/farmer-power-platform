@@ -25,6 +25,7 @@ import pytest_asyncio
 
 from tests.e2e.helpers.api_clients import CollectionClient, PlantationClient
 from tests.e2e.helpers.azure_blob import AZURITE_CONNECTION_STRING, AzuriteClient
+from tests.e2e.helpers.mcp_clients import PlantationServiceClient
 from tests.e2e.helpers.mongodb_direct import MongoDBDirectClient
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -33,6 +34,8 @@ from tests.e2e.helpers.mongodb_direct import MongoDBDirectClient
 
 E2E_CONFIG = {
     "plantation_model_url": "http://localhost:8001",
+    "plantation_model_grpc_host": "localhost",
+    "plantation_model_grpc_port": 50051,
     "collection_model_url": "http://localhost:8002",
     "plantation_mcp_host": "localhost",
     "plantation_mcp_port": 50052,
@@ -142,6 +145,19 @@ async def collection_api(
 ) -> AsyncGenerator[CollectionClient, None]:
     """Provide Collection Model API client."""
     async with CollectionClient(e2e_config["collection_model_url"]) as client:
+        yield client
+
+
+@pytest_asyncio.fixture
+async def plantation_service(
+    e2e_config: dict[str, Any],
+    wait_for_services: None,
+) -> AsyncGenerator[PlantationServiceClient, None]:
+    """Provide Plantation Model gRPC client for write operations."""
+    async with PlantationServiceClient(
+        host=e2e_config["plantation_model_grpc_host"],
+        port=e2e_config["plantation_model_grpc_port"],
+    ) as client:
         yield client
 
 
