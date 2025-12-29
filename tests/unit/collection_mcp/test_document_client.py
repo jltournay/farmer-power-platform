@@ -179,7 +179,7 @@ class TestDocumentClientGetDocuments:
         await client.get_documents(limit=2000)
 
         # Verify limit was capped to 1000
-        mock_cursor._limit == 1000  # noqa: B015
+        assert mock_cursor._limit == 1000
 
 
 class TestDocumentClientGetDocumentById:

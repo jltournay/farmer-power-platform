@@ -111,7 +111,7 @@ class TestGetDocumentById:
         assert "result_json" in result
 
         result_str = str(result.get("result_json", ""))
-        assert document_id in result_str or "DOC-E2E-001" in result_str
+        assert document_id in result_str
 
     @pytest.mark.asyncio
     async def test_get_document_by_id_with_include_files(

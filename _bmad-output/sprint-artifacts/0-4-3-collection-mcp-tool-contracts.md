@@ -12,7 +12,7 @@ So that AI agents can reliably query collected documents.
 
 ## Acceptance Criteria
 
-1. **AC1: get_documents** - Given documents exist in the collection database, When `get_documents` is called with source_id, farmer_id, or attribute filters, Then it returns matching documents sorted by ingested_at descending
+1. **AC1: get_documents** - Given documents exist in the collection database, When `get_documents` is called with source_id, farmer_id, or attribute filters, Then it returns matching documents sorted by created_at descending
 
 2. **AC2: get_document_by_id** - Given a document exists with a known document_id, When `get_document_by_id` is called with include_files=true, Then it returns full document with SAS URLs for blob access
 
@@ -41,7 +41,7 @@ So that AI agents can reliably query collected documents.
   - [x] Test filtering by source_id
   - [x] Test filtering by farmer_id
   - [x] Test filtering by attributes
-  - [x] Verify results sorted by ingested_at descending
+  - [x] Verify results sorted by created_at descending
 
 - [x] **Task 4: Implement get_document_by_id test** (AC: 2)
   - [x] Test retrieval with known document_id
@@ -64,7 +64,7 @@ So that AI agents can reliably query collected documents.
 
 - [x] **Task 8: Test cleanup and validation** (AC: All)
   - [x] Verify no lint errors with `ruff check tests/e2e/`
-  - [ ] Run all tests locally (requires Docker infrastructure)
+  - [x] Run all tests locally (requires Docker infrastructure)
   - [x] Push and verify CI passes
 
 ## E2E Story Checklist (MANDATORY before marking Done)
@@ -245,5 +245,7 @@ Claude Opus 4.5 (claude-opus-4-5-20251101)
 **Modified:**
 - `tests/e2e/conftest.py` - Added document and blob seeding to seed_data fixture
 - `tests/e2e/helpers/mongodb_direct.py` - Added seed_documents method
-- `mcp-servers/collection-mcp/src/collection_mcp/infrastructure/document_client.py` - Fixed collection name and field paths to match DocumentIndex schema
+- `mcp-servers/collection-mcp/src/collection_mcp/infrastructure/document_client.py` - Fixed field paths to match DocumentIndex schema
+- `config/source-configs/weather-api-test.yaml` - Updated index_collection to quality_documents
+- `tests/unit/collection_mcp/test_document_client.py` - Updated unit test assertions to match DocumentIndex schema
 

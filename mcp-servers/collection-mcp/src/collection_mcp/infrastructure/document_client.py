@@ -116,7 +116,7 @@ class DocumentClient:
             limit: Maximum number of results (default 50, max 1000)
 
         Returns:
-            List of matching documents sorted by ingested_at descending
+            List of matching documents sorted by created_at descending
         """
         query = self._build_query(
             source_id=source_id,
@@ -195,7 +195,7 @@ class DocumentClient:
             limit: Maximum number of results (default 100, max 1000)
 
         Returns:
-            List of matching documents sorted by ingested_at descending
+            List of matching documents sorted by created_at descending
         """
         # Check both linkage_fields and extracted_fields for farmer_id
         query: dict[str, Any] = {
