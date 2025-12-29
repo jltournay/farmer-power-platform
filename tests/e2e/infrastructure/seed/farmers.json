@@ -1,107 +1,114 @@
 [
   {
-    "farmer_id": "FRM-E2E-001",
+    "id": "FRM-E2E-001",
+    "grower_number": "GN-E2E-001",
     "first_name": "James",
     "last_name": "Kiprop",
-    "phone": "+254712100001",
-    "national_id": "12345678",
-    "factory_id": "FAC-E2E-001",
+    "region_id": "kericho-highland",
     "collection_point_id": "CP-E2E-001",
-    "region_id": "kericho-high",
-    "farm": {
-      "size_hectares": 2.5,
-      "coordinates": {
-        "lat": 0.29,
-        "lng": 35.29
-      },
-      "altitude_meters": 1800
+    "farm_location": {
+      "latitude": 0.29,
+      "longitude": 35.29,
+      "altitude_meters": 1800.0
     },
-    "preferences": {
-      "language": "sw",
-      "sms_enabled": true,
-      "voice_enabled": true
+    "contact": {
+      "phone": "+254712100001",
+      "email": "",
+      "address": "Kericho Village"
     },
-    "lead_farmer": false,
-    "active": true,
-    "created_at": "2025-01-01T00:00:00Z"
+    "farm_size_hectares": 2.5,
+    "farm_scale": "medium",
+    "national_id": "12345678",
+    "registration_date": "2025-01-01T00:00:00Z",
+    "is_active": true,
+    "notification_channel": "sms",
+    "interaction_pref": "text",
+    "pref_lang": "sw",
+    "created_at": "2025-01-01T00:00:00Z",
+    "updated_at": "2025-01-01T00:00:00Z"
   },
   {
-    "farmer_id": "FRM-E2E-002",
+    "id": "FRM-E2E-002",
+    "grower_number": "GN-E2E-002",
     "first_name": "Grace",
     "last_name": "Cheruiyot",
-    "phone": "+254712100002",
-    "national_id": "23456789",
-    "factory_id": "FAC-E2E-001",
+    "region_id": "kericho-highland",
     "collection_point_id": "CP-E2E-001",
-    "region_id": "kericho-high",
-    "farm": {
-      "size_hectares": 1.8,
-      "coordinates": {
-        "lat": 0.27,
-        "lng": 35.27
-      },
-      "altitude_meters": 1750
+    "farm_location": {
+      "latitude": 0.27,
+      "longitude": 35.27,
+      "altitude_meters": 1750.0
     },
-    "preferences": {
-      "language": "en",
-      "sms_enabled": true,
-      "voice_enabled": false
+    "contact": {
+      "phone": "+254712100002",
+      "email": "grace@example.com",
+      "address": "Ainamoi Village"
     },
-    "lead_farmer": true,
-    "lead_farmer_for": ["FRM-E2E-001", "FRM-E2E-003"],
-    "active": true,
-    "created_at": "2025-01-01T00:00:00Z"
+    "farm_size_hectares": 1.8,
+    "farm_scale": "medium",
+    "national_id": "23456789",
+    "registration_date": "2025-01-01T00:00:00Z",
+    "is_active": true,
+    "notification_channel": "sms",
+    "interaction_pref": "text",
+    "pref_lang": "en",
+    "created_at": "2025-01-01T00:00:00Z",
+    "updated_at": "2025-01-01T00:00:00Z"
   },
   {
-    "farmer_id": "FRM-E2E-003",
+    "id": "FRM-E2E-003",
+    "grower_number": "GN-E2E-003",
     "first_name": "Daniel",
     "last_name": "Bett",
-    "phone": "+254712100003",
-    "national_id": "34567890",
-    "factory_id": "FAC-E2E-001",
+    "region_id": "kericho-highland",
     "collection_point_id": "CP-E2E-002",
-    "region_id": "kericho-high",
-    "farm": {
-      "size_hectares": 3.2,
-      "coordinates": {
-        "lat": 0.33,
-        "lng": 35.33
-      },
-      "altitude_meters": 1900
+    "farm_location": {
+      "latitude": 0.33,
+      "longitude": 35.33,
+      "altitude_meters": 1900.0
     },
-    "preferences": {
-      "language": "sw",
-      "sms_enabled": true,
-      "voice_enabled": true
+    "contact": {
+      "phone": "+254712100003",
+      "email": "",
+      "address": "Kapsoit Area"
     },
-    "lead_farmer": false,
-    "active": true,
-    "created_at": "2025-01-01T00:00:00Z"
+    "farm_size_hectares": 3.2,
+    "farm_scale": "medium",
+    "national_id": "34567890",
+    "registration_date": "2025-01-01T00:00:00Z",
+    "is_active": true,
+    "notification_channel": "sms",
+    "interaction_pref": "voice",
+    "pref_lang": "sw",
+    "created_at": "2025-01-01T00:00:00Z",
+    "updated_at": "2025-01-01T00:00:00Z"
   },
   {
-    "farmer_id": "FRM-E2E-004",
+    "id": "FRM-E2E-004",
+    "grower_number": "GN-E2E-004",
     "first_name": "Sarah",
     "last_name": "Kosgei",
-    "phone": "+254712100004",
-    "national_id": "45678901",
-    "factory_id": "FAC-E2E-002",
+    "region_id": "nandi-highland",
     "collection_point_id": "CP-E2E-003",
-    "region_id": "nandi-high",
-    "farm": {
-      "size_hectares": 2.0,
-      "coordinates": {
-        "lat": 0.11,
-        "lng": 35.11
-      },
-      "altitude_meters": 1600
+    "farm_location": {
+      "latitude": 0.11,
+      "longitude": 35.11,
+      "altitude_meters": 1600.0
     },
-    "preferences": {
-      "language": "en",
-      "sms_enabled": true,
-      "voice_enabled": true
+    "contact": {
+      "phone": "+254712100004",
+      "email": "sarah.kosgei@example.com",
+      "address": "Nandi Hills"
     },
-    "lead_farmer": false,
-    "active": true,
-    "created_at": "2025-01-01T00:00:00Z"
+    "farm_size_hectares": 2.0,
+    "farm_scale": "medium",
+    "national_id": "45678901",
+    "registration_date": "2025-01-01T00:00:00Z",
+    "is_active": true,
+    "notification_channel": "whatsapp",
+    "interaction_pref": "text",
+    "pref_lang": "en",
+    "created_at": "2025-01-01T00:00:00Z",
+    "updated_at": "2025-01-01T00:00:00Z"
   }
 ]

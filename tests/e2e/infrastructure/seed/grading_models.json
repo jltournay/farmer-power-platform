@@ -2,9 +2,10 @@
   {
     "model_id": "tbk_kenya_tea_v1",
     "model_version": "1.0.0",
-    "name": "TBK Kenya Tea Grading Model",
+    "regulatory_authority": "Tea Board of Kenya (TBK)",
+    "crops_name": "Tea",
+    "market_name": "Kenya_TBK",
     "grading_type": "binary",
-    "description": "Standard Tea Board of Kenya binary grading model",
     "attributes": {
       "leaf_type": {
         "num_classes": 7,
@@ -44,15 +45,17 @@
       "ACCEPT": "Primary",
       "REJECT": "Secondary"
     },
-    "active": true,
-    "created_at": "2025-01-01T00:00:00Z"
+    "active_at_factory": ["FAC-E2E-001"],
+    "created_at": "2025-01-01T00:00:00Z",
+    "updated_at": "2025-01-01T00:00:00Z"
   },
   {
     "model_id": "ktda_ternary_v1",
     "model_version": "1.0.0",
-    "name": "KTDA Ternary Grading Model",
+    "regulatory_authority": "Kenya Tea Development Agency (KTDA)",
+    "crops_name": "Tea",
+    "market_name": "Kenya_KTDA",
     "grading_type": "ternary",
-    "description": "KTDA three-tier grading model",
     "attributes": {
       "leaf_type": {
         "num_classes": 5,
@@ -64,20 +67,18 @@
       }
     },
     "grade_rules": {
-      "premium_conditions": {
-        "leaf_type": ["fine"],
-        "moisture_level": ["optimal"]
-      },
       "reject_conditions": {
         "leaf_type": ["stalks", "other"]
-      }
+      },
+      "conditional_reject": []
     },
     "grade_labels": {
       "PREMIUM": "Grade A",
       "STANDARD": "Grade B",
       "REJECT": "Rejected"
     },
-    "active": true,
-    "created_at": "2025-01-01T00:00:00Z"
+    "active_at_factory": ["FAC-E2E-002"],
+    "created_at": "2025-01-01T00:00:00Z",
+    "updated_at": "2025-01-01T00:00:00Z"
   }
 ]

@@ -16,8 +16,20 @@ from plantation_model.infrastructure.repositories.collection_point_repository im
 from plantation_model.infrastructure.repositories.factory_repository import (
     FactoryRepository,
 )
+from plantation_model.infrastructure.repositories.farmer_performance_repository import (
+    FarmerPerformanceRepository,
+)
 from plantation_model.infrastructure.repositories.farmer_repository import (
     FarmerRepository,
+)
+from plantation_model.infrastructure.repositories.grading_model_repository import (
+    GradingModelRepository,
+)
+from plantation_model.infrastructure.repositories.region_repository import (
+    RegionRepository,
+)
+from plantation_model.infrastructure.repositories.regional_weather_repository import (
+    RegionalWeatherRepository,
 )
 
 logger = structlog.get_logger(__name__)
@@ -60,6 +72,12 @@ class GrpcServer:
         id_generator = IDGenerator(db)
         elevation_client = GoogleElevationClient(settings.google_elevation_api_key)
 
+        # Initialize additional repositories (Story 1.8, E2E tests)
+        grading_model_repo = GradingModelRepository(db)
+        farmer_performance_repo = FarmerPerformanceRepository(db)
+        region_repo = RegionRepository(db)
+        regional_weather_repo = RegionalWeatherRepository(db)
+
         # Ensure indexes are created
         await factory_repo.ensure_indexes()
         await cp_repo.ensure_indexes()
@@ -72,6 +90,10 @@ class GrpcServer:
             farmer_repo=farmer_repo,
             id_generator=id_generator,
             elevation_client=elevation_client,
+            grading_model_repo=grading_model_repo,
+            farmer_performance_repo=farmer_performance_repo,
+            region_repo=region_repo,
+            regional_weather_repo=regional_weather_repo,
         )
         plantation_pb2_grpc.add_PlantationServiceServicer_to_server(plantation_servicer, self._server)
 

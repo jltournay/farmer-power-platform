@@ -1,122 +1,257 @@
 [
   {
-    "region_id": "kericho-low",
+    "region_id": "kericho-highland",
+    "name": "Kericho Highland",
     "county": "Kericho",
-    "altitude_band": "low",
-    "name": "Kericho Low Altitude",
-    "altitude_range": {
-      "min": 0,
-      "max": 800
-    },
-    "coordinates": {
-      "center": [-0.3, 35.3],
-      "bounds": {
-        "north": 0.0,
-        "south": -0.5,
-        "east": 35.5,
-        "west": 35.0
+    "country": "Kenya",
+    "geography": {
+      "center_gps": {"lat": 0.3, "lng": 35.3},
+      "radius_km": 25,
+      "altitude_band": {
+        "min_meters": 1800,
+        "max_meters": 2200,
+        "label": "highland"
       }
     },
     "flush_calendar": {
-      "peak_months": ["March", "April", "October", "November"],
-      "low_months": ["January", "February", "July", "August"]
+      "first_flush": {
+        "start": "03-15",
+        "end": "05-15",
+        "characteristics": "Highest quality, delicate flavor"
+      },
+      "monsoon_flush": {
+        "start": "06-15",
+        "end": "09-30",
+        "characteristics": "High volume, robust flavor"
+      },
+      "autumn_flush": {
+        "start": "10-15",
+        "end": "12-15",
+        "characteristics": "Balanced quality"
+      },
+      "dormant": {
+        "start": "12-16",
+        "end": "03-14",
+        "characteristics": "Minimal growth, frost risk"
+      }
     },
-    "created_at": "2025-01-01T00:00:00Z"
+    "agronomic": {
+      "soil_type": "volcanic_red",
+      "typical_diseases": ["blister_blight", "grey_blight", "red_rust"],
+      "harvest_peak_hours": "06:00-10:00",
+      "frost_risk": true
+    },
+    "weather_config": {
+      "api_location": {"lat": 0.3, "lng": 35.3},
+      "altitude_for_api": 1900,
+      "collection_time": "06:00"
+    },
+    "is_active": true,
+    "created_at": "2025-01-01T00:00:00Z",
+    "updated_at": "2025-01-01T00:00:00Z"
   },
   {
-    "region_id": "kericho-medium",
+    "region_id": "kericho-midland",
+    "name": "Kericho Midland",
     "county": "Kericho",
-    "altitude_band": "medium",
-    "name": "Kericho Medium Altitude",
-    "altitude_range": {
-      "min": 800,
-      "max": 1200
-    },
-    "coordinates": {
-      "center": [0.0, 35.3],
-      "bounds": {
-        "north": 0.5,
-        "south": -0.3,
-        "east": 35.6,
-        "west": 35.0
+    "country": "Kenya",
+    "geography": {
+      "center_gps": {"lat": 0.0, "lng": 35.3},
+      "radius_km": 30,
+      "altitude_band": {
+        "min_meters": 1400,
+        "max_meters": 1800,
+        "label": "midland"
       }
     },
     "flush_calendar": {
-      "peak_months": ["April", "May", "October", "November"],
-      "low_months": ["January", "July", "August"]
+      "first_flush": {
+        "start": "03-01",
+        "end": "05-01",
+        "characteristics": "Earlier start than highland"
+      },
+      "monsoon_flush": {
+        "start": "06-01",
+        "end": "09-15",
+        "characteristics": "Good volume"
+      },
+      "autumn_flush": {
+        "start": "10-01",
+        "end": "12-01",
+        "characteristics": "Standard quality"
+      },
+      "dormant": {
+        "start": "12-15",
+        "end": "02-28",
+        "characteristics": "Short dormancy"
+      }
     },
-    "created_at": "2025-01-01T00:00:00Z"
+    "agronomic": {
+      "soil_type": "loamy",
+      "typical_diseases": ["grey_blight", "root_rot"],
+      "harvest_peak_hours": "06:00-11:00",
+      "frost_risk": false
+    },
+    "weather_config": {
+      "api_location": {"lat": 0.0, "lng": 35.3},
+      "altitude_for_api": 1600,
+      "collection_time": "06:00"
+    },
+    "is_active": true,
+    "created_at": "2025-01-01T00:00:00Z",
+    "updated_at": "2025-01-01T00:00:00Z"
   },
   {
-    "region_id": "kericho-high",
+    "region_id": "kericho-lowland",
+    "name": "Kericho Lowland",
     "county": "Kericho",
-    "altitude_band": "high",
-    "name": "Kericho High Altitude",
-    "altitude_range": {
-      "min": 1200,
-      "max": 2500
-    },
-    "coordinates": {
-      "center": [0.3, 35.3],
-      "bounds": {
-        "north": 0.8,
-        "south": 0.0,
-        "east": 35.7,
-        "west": 35.0
+    "country": "Kenya",
+    "geography": {
+      "center_gps": {"lat": -0.3, "lng": 35.3},
+      "radius_km": 35,
+      "altitude_band": {
+        "min_meters": 800,
+        "max_meters": 1400,
+        "label": "lowland"
       }
     },
     "flush_calendar": {
-      "peak_months": ["May", "June", "November", "December"],
-      "low_months": ["February", "August", "September"]
+      "first_flush": {
+        "start": "02-15",
+        "end": "04-15",
+        "characteristics": "Earliest start, quick growth"
+      },
+      "monsoon_flush": {
+        "start": "05-15",
+        "end": "09-01",
+        "characteristics": "Extended season"
+      },
+      "autumn_flush": {
+        "start": "09-15",
+        "end": "11-30",
+        "characteristics": "Lower quality due to heat"
+      },
+      "dormant": {
+        "start": "12-01",
+        "end": "02-14",
+        "characteristics": "Heat stress period"
+      }
     },
-    "created_at": "2025-01-01T00:00:00Z"
+    "agronomic": {
+      "soil_type": "sandy_loam",
+      "typical_diseases": ["root_rot", "nematodes"],
+      "harvest_peak_hours": "05:30-09:00",
+      "frost_risk": false
+    },
+    "weather_config": {
+      "api_location": {"lat": -0.3, "lng": 35.3},
+      "altitude_for_api": 1100,
+      "collection_time": "05:30"
+    },
+    "is_active": true,
+    "created_at": "2025-01-01T00:00:00Z",
+    "updated_at": "2025-01-01T00:00:00Z"
   },
   {
-    "region_id": "nandi-high",
+    "region_id": "nandi-highland",
+    "name": "Nandi Highland",
     "county": "Nandi",
-    "altitude_band": "high",
-    "name": "Nandi High Altitude",
-    "altitude_range": {
-      "min": 1200,
-      "max": 2200
-    },
-    "coordinates": {
-      "center": [0.1, 35.1],
-      "bounds": {
-        "north": 0.4,
-        "south": -0.2,
-        "east": 35.3,
-        "west": 34.9
+    "country": "Kenya",
+    "geography": {
+      "center_gps": {"lat": 0.1, "lng": 35.1},
+      "radius_km": 20,
+      "altitude_band": {
+        "min_meters": 1800,
+        "max_meters": 2100,
+        "label": "highland"
       }
     },
     "flush_calendar": {
-      "peak_months": ["May", "June", "October", "November"],
-      "low_months": ["January", "February", "August"]
+      "first_flush": {
+        "start": "03-20",
+        "end": "05-20",
+        "characteristics": "Premium quality"
+      },
+      "monsoon_flush": {
+        "start": "06-20",
+        "end": "10-01",
+        "characteristics": "High yield"
+      },
+      "autumn_flush": {
+        "start": "10-20",
+        "end": "12-20",
+        "characteristics": "Good quality"
+      },
+      "dormant": {
+        "start": "12-21",
+        "end": "03-19",
+        "characteristics": "Cold season"
+      }
     },
-    "created_at": "2025-01-01T00:00:00Z"
+    "agronomic": {
+      "soil_type": "volcanic_red",
+      "typical_diseases": ["blister_blight", "red_rust"],
+      "harvest_peak_hours": "06:00-10:00",
+      "frost_risk": true
+    },
+    "weather_config": {
+      "api_location": {"lat": 0.1, "lng": 35.1},
+      "altitude_for_api": 1950,
+      "collection_time": "06:00"
+    },
+    "is_active": true,
+    "created_at": "2025-01-01T00:00:00Z",
+    "updated_at": "2025-01-01T00:00:00Z"
   },
   {
-    "region_id": "bomet-medium",
+    "region_id": "bomet-midland",
+    "name": "Bomet Midland",
     "county": "Bomet",
-    "altitude_band": "medium",
-    "name": "Bomet Medium Altitude",
-    "altitude_range": {
-      "min": 800,
-      "max": 1400
-    },
-    "coordinates": {
-      "center": [-0.8, 35.3],
-      "bounds": {
-        "north": -0.5,
-        "south": -1.1,
-        "east": 35.6,
-        "west": 35.0
+    "country": "Kenya",
+    "geography": {
+      "center_gps": {"lat": -0.8, "lng": 35.3},
+      "radius_km": 25,
+      "altitude_band": {
+        "min_meters": 1400,
+        "max_meters": 1800,
+        "label": "midland"
       }
     },
     "flush_calendar": {
-      "peak_months": ["April", "May", "October", "November"],
-      "low_months": ["January", "February", "July"]
+      "first_flush": {
+        "start": "03-10",
+        "end": "05-10",
+        "characteristics": "Standard start"
+      },
+      "monsoon_flush": {
+        "start": "06-10",
+        "end": "09-20",
+        "characteristics": "Moderate volume"
+      },
+      "autumn_flush": {
+        "start": "10-10",
+        "end": "12-10",
+        "characteristics": "Consistent quality"
+      },
+      "dormant": {
+        "start": "12-11",
+        "end": "03-09",
+        "characteristics": "Regular dormancy"
+      }
     },
-    "created_at": "2025-01-01T00:00:00Z"
+    "agronomic": {
+      "soil_type": "loamy",
+      "typical_diseases": ["grey_blight"],
+      "harvest_peak_hours": "06:00-11:00",
+      "frost_risk": false
+    },
+    "weather_config": {
+      "api_location": {"lat": -0.8, "lng": 35.3},
+      "altitude_for_api": 1600,
+      "collection_time": "06:00"
+    },
+    "is_active": true,
+    "created_at": "2025-01-01T00:00:00Z",
+    "updated_at": "2025-01-01T00:00:00Z"
   }
 ]

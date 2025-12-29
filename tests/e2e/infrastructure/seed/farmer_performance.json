@@ -1,141 +1,177 @@
 [
   {
     "farmer_id": "FRM-E2E-001",
-    "factory_id": "FAC-E2E-001",
     "grading_model_id": "tbk_kenya_tea_v1",
-    "summary_period": "30d",
-    "metrics": {
-      "total_deliveries": 12,
-      "total_kg": 156.5,
-      "primary_percentage": 78.5,
-      "quality_score": 82.0
+    "grading_model_version": "1.0.0",
+    "farm_size_hectares": 2.5,
+    "farm_scale": "medium",
+    "historical": {
+      "grade_distribution_30d": {"Primary": 98, "Secondary": 27},
+      "grade_distribution_90d": {"Primary": 280, "Secondary": 80},
+      "grade_distribution_year": {"Primary": 1100, "Secondary": 300},
+      "attribute_distributions_30d": {
+        "leaf_type": {
+          "bud": 15,
+          "one_leaf_bud": 25,
+          "two_leaves_bud": 58,
+          "three_plus_leaves_bud": 12,
+          "coarse_leaf": 15
+        }
+      },
+      "attribute_distributions_90d": {},
+      "attribute_distributions_year": {},
+      "primary_percentage_30d": 78.5,
+      "primary_percentage_90d": 77.8,
+      "primary_percentage_year": 78.6,
+      "total_kg_30d": 156.5,
+      "total_kg_90d": 450.0,
+      "total_kg_year": 1800.0,
+      "yield_kg_per_hectare_30d": 62.6,
+      "yield_kg_per_hectare_90d": 180.0,
+      "yield_kg_per_hectare_year": 720.0,
+      "improvement_trend": "improving",
+      "computed_at": "2025-12-28T12:00:00Z"
     },
-    "grade_distribution": {
-      "Primary": 98,
-      "Secondary": 27
+    "today": {
+      "deliveries": 1,
+      "total_kg": 15.5,
+      "grade_counts": {"Primary": 1},
+      "attribute_counts": {"leaf_type": {"two_leaves_bud": 1}},
+      "last_delivery": "2025-12-28T08:30:00Z",
+      "metrics_date": "2025-12-28"
     },
-    "attribute_distributions": {
-      "leaf_type": {
-        "bud": 15,
-        "one_leaf_bud": 25,
-        "two_leaves_bud": 58,
-        "three_plus_leaves_bud": 12,
-        "coarse_leaf": 15
-      }
-    },
-    "trends": {
-      "quality_trend": "improving",
-      "volume_trend": "stable",
-      "weekly_avg_kg": 39.1
-    },
-    "status": "WATCH",
-    "last_delivery_date": "2025-12-28T08:30:00Z",
+    "created_at": "2025-01-01T00:00:00Z",
     "updated_at": "2025-12-28T12:00:00Z"
   },
   {
     "farmer_id": "FRM-E2E-002",
-    "factory_id": "FAC-E2E-001",
     "grading_model_id": "tbk_kenya_tea_v1",
-    "summary_period": "30d",
-    "metrics": {
-      "total_deliveries": 15,
-      "total_kg": 210.0,
-      "primary_percentage": 92.3,
-      "quality_score": 95.0
+    "grading_model_version": "1.0.0",
+    "farm_size_hectares": 1.8,
+    "farm_scale": "medium",
+    "historical": {
+      "grade_distribution_30d": {"Primary": 175, "Secondary": 15},
+      "grade_distribution_90d": {"Primary": 500, "Secondary": 50},
+      "grade_distribution_year": {"Primary": 2000, "Secondary": 200},
+      "attribute_distributions_30d": {
+        "leaf_type": {
+          "bud": 35,
+          "one_leaf_bud": 80,
+          "two_leaves_bud": 60,
+          "three_plus_leaves_bud": 10,
+          "coarse_leaf": 5
+        }
+      },
+      "attribute_distributions_90d": {},
+      "attribute_distributions_year": {},
+      "primary_percentage_30d": 92.1,
+      "primary_percentage_90d": 90.9,
+      "primary_percentage_year": 90.9,
+      "total_kg_30d": 210.0,
+      "total_kg_90d": 600.0,
+      "total_kg_year": 2400.0,
+      "yield_kg_per_hectare_30d": 116.7,
+      "yield_kg_per_hectare_90d": 333.3,
+      "yield_kg_per_hectare_year": 1333.3,
+      "improvement_trend": "stable",
+      "computed_at": "2025-12-28T12:00:00Z"
     },
-    "grade_distribution": {
-      "Primary": 175,
-      "Secondary": 15
+    "today": {
+      "deliveries": 2,
+      "total_kg": 28.0,
+      "grade_counts": {"Primary": 2},
+      "attribute_counts": {"leaf_type": {"one_leaf_bud": 1, "two_leaves_bud": 1}},
+      "last_delivery": "2025-12-28T07:45:00Z",
+      "metrics_date": "2025-12-28"
     },
-    "attribute_distributions": {
-      "leaf_type": {
-        "bud": 35,
-        "one_leaf_bud": 80,
-        "two_leaves_bud": 60,
-        "three_plus_leaves_bud": 10,
-        "coarse_leaf": 5
-      }
-    },
-    "trends": {
-      "quality_trend": "stable",
-      "volume_trend": "improving",
-      "weekly_avg_kg": 52.5
-    },
-    "status": "WIN",
-    "last_delivery_date": "2025-12-28T07:45:00Z",
+    "created_at": "2025-01-01T00:00:00Z",
     "updated_at": "2025-12-28T12:00:00Z"
   },
   {
     "farmer_id": "FRM-E2E-003",
-    "factory_id": "FAC-E2E-001",
     "grading_model_id": "tbk_kenya_tea_v1",
-    "summary_period": "30d",
-    "metrics": {
-      "total_deliveries": 8,
-      "total_kg": 95.0,
-      "primary_percentage": 62.5,
-      "quality_score": 68.0
+    "grading_model_version": "1.0.0",
+    "farm_size_hectares": 3.2,
+    "farm_scale": "medium",
+    "historical": {
+      "grade_distribution_30d": {"Primary": 48, "Secondary": 30},
+      "grade_distribution_90d": {"Primary": 140, "Secondary": 90},
+      "grade_distribution_year": {"Primary": 550, "Secondary": 350},
+      "attribute_distributions_30d": {
+        "leaf_type": {
+          "bud": 8,
+          "one_leaf_bud": 15,
+          "two_leaves_bud": 25,
+          "three_plus_leaves_bud": 18,
+          "coarse_leaf": 12
+        }
+      },
+      "attribute_distributions_90d": {},
+      "attribute_distributions_year": {},
+      "primary_percentage_30d": 61.5,
+      "primary_percentage_90d": 60.9,
+      "primary_percentage_year": 61.1,
+      "total_kg_30d": 95.0,
+      "total_kg_90d": 280.0,
+      "total_kg_year": 1100.0,
+      "yield_kg_per_hectare_30d": 29.7,
+      "yield_kg_per_hectare_90d": 87.5,
+      "yield_kg_per_hectare_year": 343.8,
+      "improvement_trend": "declining",
+      "computed_at": "2025-12-28T12:00:00Z"
     },
-    "grade_distribution": {
-      "Primary": 48,
-      "Secondary": 30
+    "today": {
+      "deliveries": 0,
+      "total_kg": 0.0,
+      "grade_counts": {},
+      "attribute_counts": {},
+      "last_delivery": null,
+      "metrics_date": "2025-12-28"
     },
-    "attribute_distributions": {
-      "leaf_type": {
-        "bud": 8,
-        "one_leaf_bud": 15,
-        "two_leaves_bud": 25,
-        "three_plus_leaves_bud": 18,
-        "coarse_leaf": 12
-      }
-    },
-    "trends": {
-      "quality_trend": "declining",
-      "volume_trend": "declining",
-      "weekly_avg_kg": 23.8
-    },
-    "status": "ACTION",
-    "last_delivery_date": "2025-12-27T09:15:00Z",
+    "created_at": "2025-01-01T00:00:00Z",
     "updated_at": "2025-12-28T12:00:00Z"
   },
   {
     "farmer_id": "FRM-E2E-004",
-    "factory_id": "FAC-E2E-002",
     "grading_model_id": "ktda_ternary_v1",
-    "summary_period": "30d",
-    "metrics": {
-      "total_deliveries": 10,
-      "total_kg": 180.0,
-      "grade_a_percentage": 45.0,
-      "grade_b_percentage": 48.0,
-      "rejected_percentage": 7.0,
-      "quality_score": 85.0
-    },
-    "grade_distribution": {
-      "Grade A": 81,
-      "Grade B": 86,
-      "Rejected": 13
-    },
-    "attribute_distributions": {
-      "leaf_type": {
-        "fine": 81,
-        "medium": 86,
-        "coarse": 10,
-        "stalks": 3
+    "grading_model_version": "1.0.0",
+    "farm_size_hectares": 2.0,
+    "farm_scale": "medium",
+    "historical": {
+      "grade_distribution_30d": {"Grade A": 81, "Grade B": 86, "Rejected": 13},
+      "grade_distribution_90d": {"Grade A": 240, "Grade B": 250, "Rejected": 40},
+      "grade_distribution_year": {"Grade A": 950, "Grade B": 1000, "Rejected": 150},
+      "attribute_distributions_30d": {
+        "leaf_type": {
+          "fine": 81,
+          "medium": 86,
+          "coarse": 10,
+          "stalks": 3
+        }
       },
-      "moisture_level": {
-        "optimal": 100,
-        "wet": 60,
-        "dry": 20
-      }
+      "attribute_distributions_90d": {},
+      "attribute_distributions_year": {},
+      "primary_percentage_30d": 45.0,
+      "primary_percentage_90d": 45.3,
+      "primary_percentage_year": 45.2,
+      "total_kg_30d": 180.0,
+      "total_kg_90d": 530.0,
+      "total_kg_year": 2100.0,
+      "yield_kg_per_hectare_30d": 90.0,
+      "yield_kg_per_hectare_90d": 265.0,
+      "yield_kg_per_hectare_year": 1050.0,
+      "improvement_trend": "stable",
+      "computed_at": "2025-12-28T12:00:00Z"
     },
-    "trends": {
-      "quality_trend": "stable",
-      "volume_trend": "stable",
-      "weekly_avg_kg": 45.0
+    "today": {
+      "deliveries": 1,
+      "total_kg": 18.0,
+      "grade_counts": {"Grade A": 1},
+      "attribute_counts": {"leaf_type": {"fine": 1}},
+      "last_delivery": "2025-12-28T06:30:00Z",
+      "metrics_date": "2025-12-28"
     },
-    "status": "WIN",
-    "last_delivery_date": "2025-12-28T06:30:00Z",
+    "created_at": "2025-01-01T00:00:00Z",
     "updated_at": "2025-12-28T12:00:00Z"
   }
 ]

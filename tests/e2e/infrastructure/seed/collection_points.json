@@ -1,77 +1,83 @@
 [
   {
-    "collection_point_id": "CP-E2E-001",
-    "factory_id": "FAC-E2E-001",
+    "id": "CP-E2E-001",
     "name": "Ainamoi Collection Point",
-    "code": "CP-AIN-001",
-    "address": {
-      "location": "Ainamoi Market",
-      "landmark": "Near Ainamoi Primary School"
-    },
-    "coordinates": {
-      "lat": 0.28,
-      "lng": 35.28
-    },
-    "operating_hours": {
-      "open": "06:00",
-      "close": "14:00"
-    },
-    "capacity_kg_per_day": 5000,
-    "clerk": {
-      "name": "Peter Korir",
-      "phone": "+254712345101"
-    },
-    "active": true,
-    "created_at": "2025-01-01T00:00:00Z"
-  },
-  {
-    "collection_point_id": "CP-E2E-002",
     "factory_id": "FAC-E2E-001",
-    "name": "Kapsoit Collection Point",
-    "code": "CP-KAP-001",
-    "address": {
-      "location": "Kapsoit Junction",
-      "landmark": "Next to Kapsoit Health Center"
+    "location": {
+      "latitude": 0.28,
+      "longitude": 35.28,
+      "altitude_meters": 1780.0
     },
-    "coordinates": {
-      "lat": 0.32,
-      "lng": 35.32
-    },
+    "region_id": "kericho-highland",
+    "clerk_id": "CLK-E2E-001",
+    "clerk_phone": "+254712345101",
     "operating_hours": {
-      "open": "06:00",
-      "close": "14:00"
+      "weekdays": "06:00-14:00",
+      "weekends": "07:00-12:00"
     },
-    "capacity_kg_per_day": 3000,
-    "clerk": {
-      "name": "Jane Langat",
-      "phone": "+254712345102"
+    "collection_days": ["mon", "tue", "wed", "thu", "fri", "sat"],
+    "capacity": {
+      "max_daily_kg": 5000,
+      "storage_type": "covered_shed",
+      "has_weighing_scale": true,
+      "has_qc_device": true
     },
-    "active": true,
-    "created_at": "2025-01-01T00:00:00Z"
+    "status": "active",
+    "created_at": "2025-01-01T00:00:00Z",
+    "updated_at": "2025-01-01T00:00:00Z"
   },
   {
-    "collection_point_id": "CP-E2E-003",
-    "factory_id": "FAC-E2E-002",
-    "name": "Nandi Hills Central CP",
-    "code": "CP-NHC-001",
-    "address": {
-      "location": "Nandi Hills Market",
-      "landmark": "Behind Nandi Hills Post Office"
+    "id": "CP-E2E-002",
+    "name": "Kapsoit Collection Point",
+    "factory_id": "FAC-E2E-001",
+    "location": {
+      "latitude": 0.32,
+      "longitude": 35.32,
+      "altitude_meters": 1820.0
     },
-    "coordinates": {
-      "lat": 0.12,
-      "lng": 35.12
-    },
+    "region_id": "kericho-highland",
+    "clerk_id": "CLK-E2E-002",
+    "clerk_phone": "+254712345102",
     "operating_hours": {
-      "open": "05:30",
-      "close": "13:00"
+      "weekdays": "06:00-14:00",
+      "weekends": "07:00-12:00"
     },
-    "capacity_kg_per_day": 4000,
-    "clerk": {
-      "name": "Samuel Rotich",
-      "phone": "+254712345103"
+    "collection_days": ["mon", "wed", "fri", "sat"],
+    "capacity": {
+      "max_daily_kg": 3000,
+      "storage_type": "covered_shed",
+      "has_weighing_scale": true,
+      "has_qc_device": false
     },
-    "active": true,
-    "created_at": "2025-01-01T00:00:00Z"
+    "status": "active",
+    "created_at": "2025-01-01T00:00:00Z",
+    "updated_at": "2025-01-01T00:00:00Z"
+  },
+  {
+    "id": "CP-E2E-003",
+    "name": "Nandi Hills Central CP",
+    "factory_id": "FAC-E2E-002",
+    "location": {
+      "latitude": 0.12,
+      "longitude": 35.12,
+      "altitude_meters": 1680.0
+    },
+    "region_id": "nandi-highland",
+    "clerk_id": "CLK-E2E-003",
+    "clerk_phone": "+254712345103",
+    "operating_hours": {
+      "weekdays": "05:30-13:00",
+      "weekends": "06:00-11:00"
+    },
+    "collection_days": ["mon", "tue", "wed", "thu", "fri", "sat"],
+    "capacity": {
+      "max_daily_kg": 4000,
+      "storage_type": "covered_shed",
+      "has_weighing_scale": true,
+      "has_qc_device": true
+    },
+    "status": "active",
+    "created_at": "2025-01-01T00:00:00Z",
+    "updated_at": "2025-01-01T00:00:00Z"
   }
 ]

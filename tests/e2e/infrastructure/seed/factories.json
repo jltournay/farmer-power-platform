@@ -1,64 +1,66 @@
 [
   {
-    "factory_id": "FAC-E2E-001",
-    "code": "KEN-TBK-001",
+    "id": "FAC-E2E-001",
     "name": "Kericho Tea Factory E2E",
-    "region_id": "kericho-high",
-    "grading_model_id": "tbk_kenya_tea_v1",
-    "address": {
-      "county": "Kericho",
-      "sub_county": "Ainamoi",
-      "location": "Kericho Town"
-    },
-    "coordinates": {
-      "lat": 0.3,
-      "lng": 35.3
-    },
-    "quality_thresholds": {
-      "win_threshold": 85,
-      "watch_threshold": 70
-    },
-    "payment_policy": {
-      "payment_day": "Friday",
-      "bonus_for_primary": 5.0,
-      "base_price_per_kg": 25.0
+    "code": "KEN-TBK-001",
+    "region_id": "kericho-highland",
+    "location": {
+      "latitude": 0.3,
+      "longitude": 35.3,
+      "altitude_meters": 1800.0
     },
     "contact": {
-      "manager_name": "John Kipchoge",
-      "phone": "+254712345001"
+      "phone": "+254712345001",
+      "email": "factory@kericho-e2e.co.ke",
+      "address": "P.O. Box 100, Kericho"
     },
-    "active": true,
-    "created_at": "2025-01-01T00:00:00Z"
+    "processing_capacity_kg": 50000,
+    "quality_thresholds": {
+      "tier_1": 85.0,
+      "tier_2": 70.0,
+      "tier_3": 50.0
+    },
+    "payment_policy": {
+      "policy_type": "split_payment",
+      "tier_1_adjustment": 0.15,
+      "tier_2_adjustment": 0.0,
+      "tier_3_adjustment": -0.05,
+      "below_tier_3_adjustment": -0.10
+    },
+    "is_active": true,
+    "created_at": "2025-01-01T00:00:00Z",
+    "updated_at": "2025-01-01T00:00:00Z"
   },
   {
-    "factory_id": "FAC-E2E-002",
-    "code": "KEN-KTDA-002",
+    "id": "FAC-E2E-002",
     "name": "Nandi Hills Factory E2E",
-    "region_id": "nandi-high",
-    "grading_model_id": "ktda_ternary_v1",
-    "address": {
-      "county": "Nandi",
-      "sub_county": "Nandi Hills",
-      "location": "Nandi Hills Town"
-    },
-    "coordinates": {
-      "lat": 0.1,
-      "lng": 35.1
-    },
-    "quality_thresholds": {
-      "win_threshold": 80,
-      "watch_threshold": 65
-    },
-    "payment_policy": {
-      "payment_day": "Thursday",
-      "bonus_for_premium": 8.0,
-      "base_price_per_kg": 28.0
+    "code": "KEN-KTDA-002",
+    "region_id": "nandi-highland",
+    "location": {
+      "latitude": 0.1,
+      "longitude": 35.1,
+      "altitude_meters": 1700.0
     },
     "contact": {
-      "manager_name": "Mary Chebet",
-      "phone": "+254712345002"
+      "phone": "+254712345002",
+      "email": "factory@nandi-e2e.co.ke",
+      "address": "P.O. Box 200, Nandi Hills"
     },
-    "active": true,
-    "created_at": "2025-01-01T00:00:00Z"
+    "processing_capacity_kg": 40000,
+    "quality_thresholds": {
+      "tier_1": 80.0,
+      "tier_2": 65.0,
+      "tier_3": 45.0
+    },
+    "payment_policy": {
+      "policy_type": "weekly_bonus",
+      "tier_1_adjustment": 0.10,
+      "tier_2_adjustment": 0.0,
+      "tier_3_adjustment": 0.0,
+      "below_tier_3_adjustment": -0.05
+    },
+    "is_active": true,
+    "created_at": "2025-01-01T00:00:00Z",
+    "updated_at": "2025-01-01T00:00:00Z"
   }
 ]

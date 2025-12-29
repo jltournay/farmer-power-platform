@@ -1,6 +1,6 @@
 [
   {
-    "region_id": "kericho-high",
+    "region_id": "kericho-highland",
     "observations": [
       {
         "date": "2025-12-28",
@@ -55,7 +55,7 @@
     "updated_at": "2025-12-28T06:00:00Z"
   },
   {
-    "region_id": "nandi-high",
+    "region_id": "nandi-highland",
     "observations": [
       {
         "date": "2025-12-28",

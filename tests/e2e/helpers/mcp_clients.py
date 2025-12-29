@@ -41,9 +41,9 @@ class PlantationMCPClient:
         """Call an MCP tool by name."""
         import json
 
-        request = mcp_tool_pb2.CallToolRequest(
-            name=tool_name,
-            arguments=json.dumps(arguments),
+        request = mcp_tool_pb2.ToolCallRequest(
+            tool_name=tool_name,
+            arguments_json=json.dumps(arguments),
         )
         response = await self.stub.CallTool(request)
         return MessageToDict(response, preserving_proto_field_name=True)
@@ -113,9 +113,9 @@ class CollectionMCPClient:
         """Call an MCP tool by name."""
         import json
 
-        request = mcp_tool_pb2.CallToolRequest(
-            name=tool_name,
-            arguments=json.dumps(arguments),
+        request = mcp_tool_pb2.ToolCallRequest(
+            tool_name=tool_name,
+            arguments_json=json.dumps(arguments),
         )
         response = await self.stub.CallTool(request)
         return MessageToDict(response, preserving_proto_field_name=True)

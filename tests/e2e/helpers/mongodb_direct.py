@@ -146,12 +146,26 @@ class MongoDBDirectClient:
     async def seed_grading_models(self, grading_models: list[dict[str, Any]]) -> None:
         """Seed grading models into plantation database."""
         if grading_models:
-            await self.plantation_db.grading_models.insert_many(grading_models)
+            for gm in grading_models:
+                # Set _id to match model_id for repository lookups
+                gm_doc = {**gm, "_id": gm["model_id"]}
+                await self.plantation_db.grading_models.update_one(
+                    {"_id": gm["model_id"]},
+                    {"$set": gm_doc},
+                    upsert=True,
+                )
 
     async def seed_regions(self, regions: list[dict[str, Any]]) -> None:
         """Seed regions into plantation database."""
         if regions:
-            await self.plantation_db.regions.insert_many(regions)
+            for region in regions:
+                # Set _id to match region_id for repository lookups
+                region_doc = {**region, "_id": region["region_id"]}
+                await self.plantation_db.regions.update_one(
+                    {"_id": region["region_id"]},
+                    {"$set": region_doc},
+                    upsert=True,
+                )
 
     async def seed_source_configs(self, source_configs: list[dict[str, Any]]) -> None:
         """Seed source configs into collection database."""
@@ -168,9 +182,11 @@ class MongoDBDirectClient:
         """Seed factories into plantation database."""
         if factories:
             for factory in factories:
+                # Set _id to match id for repository lookups
+                factory_doc = {**factory, "_id": factory["id"]}
                 await self.plantation_db.factories.update_one(
-                    {"factory_id": factory["factory_id"]},
-                    {"$set": factory},
+                    {"_id": factory["id"]},
+                    {"$set": factory_doc},
                     upsert=True,
                 )
 
@@ -178,9 +194,11 @@ class MongoDBDirectClient:
         """Seed collection points into plantation database."""
         if collection_points:
             for cp in collection_points:
+                # Set _id to match id for repository lookups
+                cp_doc = {**cp, "_id": cp["id"]}
                 await self.plantation_db.collection_points.update_one(
-                    {"collection_point_id": cp["collection_point_id"]},
-                    {"$set": cp},
+                    {"_id": cp["id"]},
+                    {"$set": cp_doc},
                     upsert=True,
                 )
 
@@ -188,9 +206,11 @@ class MongoDBDirectClient:
         """Seed farmers into plantation database."""
         if farmers:
             for farmer in farmers:
+                # Set _id to match id for repository lookups
+                farmer_doc = {**farmer, "_id": farmer["id"]}
                 await self.plantation_db.farmers.update_one(
-                    {"farmer_id": farmer["farmer_id"]},
-                    {"$set": farmer},
+                    {"_id": farmer["id"]},
+                    {"$set": farmer_doc},
                     upsert=True,
                 )
 
