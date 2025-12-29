@@ -45,8 +45,8 @@ jobs:
       - name: Build and start E2E stack
         working-directory: tests/e2e/infrastructure
         run: |
-          docker-compose -f docker-compose.e2e.yaml build
-          docker-compose -f docker-compose.e2e.yaml up -d
+          docker compose -f docker-compose.e2e.yaml build
+          docker compose -f docker-compose.e2e.yaml up -d
 
           echo "Waiting for services to be healthy..."
           sleep 30
@@ -54,7 +54,7 @@ jobs:
           # Check service health
           for service in mongodb redis azurite; do
             echo "Checking $service..."
-            docker-compose -f docker-compose.e2e.yaml ps $service
+            docker compose -f docker-compose.e2e.yaml ps $service
           done
 
       - name: Wait for services to be ready
@@ -109,13 +109,13 @@ jobs:
         working-directory: tests/e2e/infrastructure
         run: |
           echo "=== Docker Compose Logs ==="
-          docker-compose -f docker-compose.e2e.yaml logs --tail=100
+          docker compose -f docker-compose.e2e.yaml logs --tail=100
 
       - name: Cleanup E2E stack
         if: always()
         working-directory: tests/e2e/infrastructure
         run: |
-          docker-compose -f docker-compose.e2e.yaml down -v --remove-orphans
+          docker compose -f docker-compose.e2e.yaml down -v --remove-orphans
 
       - name: Test Summary
         uses: test-summary/action@v2

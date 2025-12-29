@@ -3,11 +3,11 @@
 from typing import Any
 
 import grpc
-from google.protobuf.json_format import MessageToDict
 
 # Import generated protobuf stubs
 # Note: These imports assume fp-proto is in the PYTHONPATH
 from fp_proto.mcp.v1 import mcp_tool_pb2, mcp_tool_pb2_grpc
+from google.protobuf.json_format import MessageToDict
 
 
 class PlantationMCPClient:

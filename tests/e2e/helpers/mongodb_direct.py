@@ -99,9 +99,7 @@ class MongoDBDirectClient:
                 {"extracted_fields.farmer_id": farmer_id},
             ]
         }
-        cursor = self.collection_db.quality_documents.find(query).sort(
-            "created_at", -1
-        ).limit(limit)
+        cursor = self.collection_db.quality_documents.find(query).sort("created_at", -1).limit(limit)
         return await cursor.to_list(length=limit)
 
     async def get_source_config(self, source_id: str) -> dict[str, Any] | None:

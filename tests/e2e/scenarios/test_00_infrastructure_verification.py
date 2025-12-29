@@ -14,6 +14,8 @@ Prerequisites:
     docker-compose -f tests/e2e/infrastructure/docker-compose.e2e.yaml up -d
 """
 
+import contextlib
+
 import pytest
 
 
@@ -27,11 +29,7 @@ class TestHTTPEndpoints:
         health = await plantation_api.health()
         assert health is not None
         # Accept various health response formats
-        assert (
-            health.get("status") == "healthy"
-            or health.get("status") == "ok"
-            or "healthy" in str(health).lower()
-        )
+        assert health.get("status") == "healthy" or health.get("status") == "ok" or "healthy" in str(health).lower()
 
     @pytest.mark.asyncio
     async def test_plantation_model_ready(self, plantation_api):
@@ -44,11 +42,7 @@ class TestHTTPEndpoints:
         """Verify Collection Model HTTP endpoint is healthy."""
         health = await collection_api.health()
         assert health is not None
-        assert (
-            health.get("status") == "healthy"
-            or health.get("status") == "ok"
-            or "healthy" in str(health).lower()
-        )
+        assert health.get("status") == "healthy" or health.get("status") == "ok" or "healthy" in str(health).lower()
 
     @pytest.mark.asyncio
     async def test_collection_model_ready(self, collection_api):
@@ -134,10 +128,8 @@ class TestAzurite:
             assert test_container in containers
         finally:
             # Cleanup
-            try:
+            with contextlib.suppress(Exception):
                 await azurite_client.delete_container(test_container)
-            except Exception:
-                pass
 
     @pytest.mark.asyncio
     async def test_azurite_upload_download(self, azurite_client):
@@ -160,10 +152,8 @@ class TestAzurite:
             assert len(blobs) >= 1
         finally:
             # Cleanup
-            try:
+            with contextlib.suppress(Exception):
                 await azurite_client.delete_container(test_container)
-            except Exception:
-                pass
 
 
 @pytest.mark.e2e
@@ -185,9 +175,7 @@ class TestDAPRPubSub:
         async with httpx.AsyncClient(timeout=5.0) as client:
             try:
                 # Check if service is responding (implies DAPR is up)
-                response = await client.get(
-                    f"{e2e_config['plantation_model_url']}/health"
-                )
+                response = await client.get(f"{e2e_config['plantation_model_url']}/health")
                 assert response.status_code == 200
             except httpx.ConnectError:
                 pytest.fail("Plantation Model not accessible - DAPR may be down")
@@ -199,9 +187,7 @@ class TestDAPRPubSub:
 
         async with httpx.AsyncClient(timeout=5.0) as client:
             try:
-                response = await client.get(
-                    f"{e2e_config['collection_model_url']}/health"
-                )
+                response = await client.get(f"{e2e_config['collection_model_url']}/health")
                 assert response.status_code == 200
             except httpx.ConnectError:
                 pytest.fail("Collection Model not accessible - DAPR may be down")
@@ -226,9 +212,7 @@ class TestSeedData:
 
         if grading_models:
             # Verify at least one exists in DB
-            db_count = await mongodb_direct.plantation_db.grading_models.count_documents(
-                {}
-            )
+            db_count = await mongodb_direct.plantation_db.grading_models.count_documents({})
             assert db_count >= len(grading_models)
 
     @pytest.mark.asyncio
@@ -248,9 +232,7 @@ class TestSeedData:
         print(f"Seeded source configs: {len(source_configs)}")
 
         if source_configs:
-            db_count = await mongodb_direct.collection_db.source_configs.count_documents(
-                {}
-            )
+            db_count = await mongodb_direct.collection_db.source_configs.count_documents({})
             assert db_count >= len(source_configs)
 
 

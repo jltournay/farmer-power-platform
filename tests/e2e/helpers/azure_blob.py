@@ -1,10 +1,10 @@
 """Azure Blob Storage (Azurite) client for E2E testing."""
 
+import contextlib
 import json
 from typing import Any
 
 from azure.storage.blob.aio import BlobServiceClient, ContainerClient
-
 
 # Default Azurite connection string
 AZURITE_CONNECTION_STRING = (
@@ -23,9 +23,7 @@ class AzuriteClient:
         self._client: BlobServiceClient | None = None
 
     async def __aenter__(self) -> "AzuriteClient":
-        self._client = BlobServiceClient.from_connection_string(
-            self.connection_string
-        )
+        self._client = BlobServiceClient.from_connection_string(self.connection_string)
         return self
 
     async def __aexit__(self, *args: Any) -> None:
@@ -41,21 +39,15 @@ class AzuriteClient:
     async def create_container(self, container_name: str) -> ContainerClient:
         """Create a container if it doesn't exist."""
         container = self.client.get_container_client(container_name)
-        try:
+        with contextlib.suppress(Exception):
             await container.create_container()
-        except Exception:
-            # Container may already exist
-            pass
         return container
 
     async def delete_container(self, container_name: str) -> None:
         """Delete a container and all its blobs."""
         container = self.client.get_container_client(container_name)
-        try:
+        with contextlib.suppress(Exception):
             await container.delete_container()
-        except Exception:
-            # Container may not exist
-            pass
 
     async def upload_blob(
         self,
@@ -121,10 +113,8 @@ class AzuriteClient:
         """Delete a specific blob."""
         container = self.client.get_container_client(container_name)
         blob = container.get_blob_client(blob_name)
-        try:
+        with contextlib.suppress(Exception):
             await blob.delete_blob()
-        except Exception:
-            pass
 
     async def upload_quality_event(
         self,

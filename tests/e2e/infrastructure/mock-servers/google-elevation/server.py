@@ -9,15 +9,16 @@ Returns deterministic elevation data based on latitude ranges:
 This allows predictable testing of altitude band assignment in Plantation Model.
 """
 
+import uvicorn
 from fastapi import FastAPI, Query
 from pydantic import BaseModel
-import uvicorn
 
 app = FastAPI(title="Google Elevation API Mock")
 
 
 class ElevationResult(BaseModel):
     """Single elevation result."""
+
     elevation: float
     location: dict
     resolution: float
@@ -25,6 +26,7 @@ class ElevationResult(BaseModel):
 
 class ElevationResponse(BaseModel):
     """Google Elevation API response format."""
+
     results: list[ElevationResult]
     status: str
 
@@ -74,11 +76,13 @@ async def get_elevation(
                 lng = float(parts[1])
                 elevation = get_elevation_for_lat(lat)
 
-                results.append(ElevationResult(
-                    elevation=elevation,
-                    location={"lat": lat, "lng": lng},
-                    resolution=30.0,  # Mock resolution
-                ))
+                results.append(
+                    ElevationResult(
+                        elevation=elevation,
+                        location={"lat": lat, "lng": lng},
+                        resolution=30.0,  # Mock resolution
+                    )
+                )
             except ValueError:
                 continue
 
