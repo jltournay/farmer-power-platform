@@ -1,6 +1,6 @@
 # Story 0.4.3: Collection MCP Tool Contract Tests
 
-**Status:** review
+**Status:** done
 **GitHub Issue:** [#28](https://github.com/jltournay/farmer-power-platform/issues/28)
 **Epic:** [Epic 0.4: E2E Test Scenarios](../epics/epic-0-4-e2e-tests.md)
 
