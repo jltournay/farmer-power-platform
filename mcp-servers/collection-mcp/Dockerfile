@@ -1,36 +1,72 @@
 # Collection MCP Server Dockerfile
-FROM python:3.12-slim AS builder
+# Python 3.12 with multi-stage build for minimal image size
+# MUST be built from repository root: docker build -f mcp-servers/collection-mcp/Dockerfile .
+
+# ============================================================================
+# BASE STAGE
+# ============================================================================
+FROM python:3.12-slim as base
 
 WORKDIR /app
 
-# Install poetry
-RUN pip install poetry==1.7.0
+# Install system dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
 
-# Copy dependency files
-COPY pyproject.toml poetry.lock* ./
+# Install Poetry
+RUN pip install --no-cache-dir poetry==1.7.0
 
-# Copy local libraries (needed for dependency resolution)
-COPY libs/fp-common /app/libs/fp-common
-COPY libs/fp-proto /app/libs/fp-proto
+# Configure Poetry to not create virtualenvs
+RUN poetry config virtualenvs.create false
 
-# Install dependencies
-RUN poetry config virtualenvs.create false \
-    && poetry install --no-interaction --no-ansi --only main
+# ============================================================================
+# BUILDER STAGE
+# ============================================================================
+FROM base as builder
 
-# Production stage
-FROM python:3.12-slim
+# Maintain repository structure for relative path resolution
+WORKDIR /app
+
+# Copy shared libs first (for caching) - maintain structure for poetry paths
+COPY libs/ /app/libs/
+
+# Copy MCP server files maintaining directory structure
+COPY mcp-servers/collection-mcp/ /app/mcp-servers/collection-mcp/
+
+# Change to MCP server directory where pyproject.toml expects relative paths to work
+WORKDIR /app/mcp-servers/collection-mcp
+
+# Install dependencies (without dev dependencies)
+# The relative path ../../libs/fp-proto will now resolve correctly
+RUN poetry install --no-interaction --no-ansi --no-root --only main 2>/dev/null || \
+    poetry install --no-interaction --no-ansi --no-root
+
+# ============================================================================
+# RUNTIME STAGE
+# ============================================================================
+FROM python:3.12-slim as runtime
 
 WORKDIR /app
+
+# Create non-root user for security
+RUN groupadd --gid 1000 appgroup && \
+    useradd --uid 1000 --gid 1000 --shell /bin/bash appuser
 
 # Copy installed packages from builder
 COPY --from=builder /usr/local/lib/python3.12/site-packages /usr/local/lib/python3.12/site-packages
 COPY --from=builder /usr/local/bin /usr/local/bin
 
-# Copy application code
-COPY src/collection_mcp /app/collection_mcp
+# Copy application code and set ownership
+COPY --from=builder --chown=appuser:appgroup /app/mcp-servers/collection-mcp/src/ ./src/
+COPY --from=builder --chown=appuser:appgroup /app/libs/fp-proto/src/ ./libs/fp-proto/src/
 
 # Set Python path
-ENV PYTHONPATH=/app
+ENV PYTHONPATH=/app/src:/app/libs/fp-proto/src
+ENV PYTHONUNBUFFERED=1
+
+# Switch to non-root user
+USER appuser
 
 # Expose gRPC port
 EXPOSE 50051

@@ -9,7 +9,7 @@ from plantation_model.api.event_handlers.weather_updated_handler import (
 )
 
 __all__ = [
+    "get_weather_subscriptions",
     "quality_result_router",
     "weather_updated_router",
-    "get_weather_subscriptions",
 ]

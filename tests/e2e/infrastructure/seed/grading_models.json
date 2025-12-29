@@ -1,0 +1,83 @@
+[
+  {
+    "model_id": "tbk_kenya_tea_v1",
+    "model_version": "1.0.0",
+    "name": "TBK Kenya Tea Grading Model",
+    "grading_type": "binary",
+    "description": "Standard Tea Board of Kenya binary grading model",
+    "attributes": {
+      "leaf_type": {
+        "num_classes": 7,
+        "classes": [
+          "bud",
+          "one_leaf_bud",
+          "two_leaves_bud",
+          "three_plus_leaves_bud",
+          "banji",
+          "coarse_leaf",
+          "other"
+        ]
+      },
+      "coarse_subtype": {
+        "num_classes": 4,
+        "classes": ["none", "double_luck", "triple_luck", "super_coarse"]
+      },
+      "banji_hardness": {
+        "num_classes": 2,
+        "classes": ["soft", "hard"]
+      }
+    },
+    "grade_rules": {
+      "reject_conditions": {
+        "leaf_type": ["three_plus_leaves_bud", "coarse_leaf"]
+      },
+      "conditional_reject": [
+        {
+          "if_attribute": "leaf_type",
+          "if_value": "banji",
+          "then_attribute": "banji_hardness",
+          "reject_values": ["hard"]
+        }
+      ]
+    },
+    "grade_labels": {
+      "ACCEPT": "Primary",
+      "REJECT": "Secondary"
+    },
+    "active": true,
+    "created_at": "2025-01-01T00:00:00Z"
+  },
+  {
+    "model_id": "ktda_ternary_v1",
+    "model_version": "1.0.0",
+    "name": "KTDA Ternary Grading Model",
+    "grading_type": "ternary",
+    "description": "KTDA three-tier grading model",
+    "attributes": {
+      "leaf_type": {
+        "num_classes": 5,
+        "classes": ["fine", "medium", "coarse", "stalks", "other"]
+      },
+      "moisture_level": {
+        "num_classes": 3,
+        "classes": ["optimal", "wet", "dry"]
+      }
+    },
+    "grade_rules": {
+      "premium_conditions": {
+        "leaf_type": ["fine"],
+        "moisture_level": ["optimal"]
+      },
+      "reject_conditions": {
+        "leaf_type": ["stalks", "other"]
+      }
+    },
+    "grade_labels": {
+      "PREMIUM": "Grade A",
+      "STANDARD": "Grade B",
+      "REJECT": "Rejected"
+    },
+    "active": true,
+    "created_at": "2025-01-01T00:00:00Z"
+  }
+]

@@ -1,0 +1,122 @@
+[
+  {
+    "region_id": "kericho-low",
+    "county": "Kericho",
+    "altitude_band": "low",
+    "name": "Kericho Low Altitude",
+    "altitude_range": {
+      "min": 0,
+      "max": 800
+    },
+    "coordinates": {
+      "center": [-0.3, 35.3],
+      "bounds": {
+        "north": 0.0,
+        "south": -0.5,
+        "east": 35.5,
+        "west": 35.0
+      }
+    },
+    "flush_calendar": {
+      "peak_months": ["March", "April", "October", "November"],
+      "low_months": ["January", "February", "July", "August"]
+    },
+    "created_at": "2025-01-01T00:00:00Z"
+  },
+  {
+    "region_id": "kericho-medium",
+    "county": "Kericho",
+    "altitude_band": "medium",
+    "name": "Kericho Medium Altitude",
+    "altitude_range": {
+      "min": 800,
+      "max": 1200
+    },
+    "coordinates": {
+      "center": [0.0, 35.3],
+      "bounds": {
+        "north": 0.5,
+        "south": -0.3,
+        "east": 35.6,
+        "west": 35.0
+      }
+    },
+    "flush_calendar": {
+      "peak_months": ["April", "May", "October", "November"],
+      "low_months": ["January", "July", "August"]
+    },
+    "created_at": "2025-01-01T00:00:00Z"
+  },
+  {
+    "region_id": "kericho-high",
+    "county": "Kericho",
+    "altitude_band": "high",
+    "name": "Kericho High Altitude",
+    "altitude_range": {
+      "min": 1200,
+      "max": 2500
+    },
+    "coordinates": {
+      "center": [0.3, 35.3],
+      "bounds": {
+        "north": 0.8,
+        "south": 0.0,
+        "east": 35.7,
+        "west": 35.0
+      }
+    },
+    "flush_calendar": {
+      "peak_months": ["May", "June", "November", "December"],
+      "low_months": ["February", "August", "September"]
+    },
+    "created_at": "2025-01-01T00:00:00Z"
+  },
+  {
+    "region_id": "nandi-high",
+    "county": "Nandi",
+    "altitude_band": "high",
+    "name": "Nandi High Altitude",
+    "altitude_range": {
+      "min": 1200,
+      "max": 2200
+    },
+    "coordinates": {
+      "center": [0.1, 35.1],
+      "bounds": {
+        "north": 0.4,
+        "south": -0.2,
+        "east": 35.3,
+        "west": 34.9
+      }
+    },
+    "flush_calendar": {
+      "peak_months": ["May", "June", "October", "November"],
+      "low_months": ["January", "February", "August"]
+    },
+    "created_at": "2025-01-01T00:00:00Z"
+  },
+  {
+    "region_id": "bomet-medium",
+    "county": "Bomet",
+    "altitude_band": "medium",
+    "name": "Bomet Medium Altitude",
+    "altitude_range": {
+      "min": 800,
+      "max": 1400
+    },
+    "coordinates": {
+      "center": [-0.8, 35.3],
+      "bounds": {
+        "north": -0.5,
+        "south": -1.1,
+        "east": 35.6,
+        "west": 35.0
+      }
+    },
+    "flush_calendar": {
+      "peak_months": ["April", "May", "October", "November"],
+      "low_months": ["January", "February", "July"]
+    },
+    "created_at": "2025-01-01T00:00:00Z"
+  }
+]

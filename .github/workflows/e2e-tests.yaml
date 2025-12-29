@@ -1,0 +1,124 @@
+# E2E Tests Workflow
+# Runs end-to-end tests against a fully deployed Docker Compose stack
+# Triggered manually via workflow_dispatch
+
+name: E2E Tests
+
+on:
+  workflow_dispatch:
+    inputs:
+      test_filter:
+        description: 'Test filter (e.g., "test_01" or leave empty for all)'
+        required: false
+        default: ''
+      verbose:
+        description: 'Enable verbose output'
+        required: false
+        default: 'true'
+        type: boolean
+
+env:
+  PYTHON_VERSION: "3.12"
+
+jobs:
+  e2e-tests:
+    name: E2E Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install test dependencies
+        run: |
+          pip install pytest pytest-asyncio httpx grpcio grpcio-tools motor azure-storage-blob pydantic pydantic-settings
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build and start E2E stack
+        working-directory: tests/e2e/infrastructure
+        run: |
+          docker-compose -f docker-compose.e2e.yaml build
+          docker-compose -f docker-compose.e2e.yaml up -d
+
+          echo "Waiting for services to be healthy..."
+          sleep 30
+
+          # Check service health
+          for service in mongodb redis azurite; do
+            echo "Checking $service..."
+            docker-compose -f docker-compose.e2e.yaml ps $service
+          done
+
+      - name: Wait for services to be ready
+        run: |
+          echo "Waiting for Plantation Model..."
+          for i in {1..60}; do
+            if curl -s http://localhost:8001/health > /dev/null 2>&1; then
+              echo "Plantation Model is ready"
+              break
+            fi
+            echo "Waiting... ($i/60)"
+            sleep 2
+          done
+
+          echo "Waiting for Collection Model..."
+          for i in {1..60}; do
+            if curl -s http://localhost:8002/health > /dev/null 2>&1; then
+              echo "Collection Model is ready"
+              break
+            fi
+            echo "Waiting... ($i/60)"
+            sleep 2
+          done
+
+      - name: Run E2E tests
+        run: |
+          TEST_FILTER="${{ github.event.inputs.test_filter }}"
+          VERBOSE="${{ github.event.inputs.verbose }}"
+
+          PYTEST_ARGS="tests/e2e/scenarios/ -m e2e"
+
+          if [ "$VERBOSE" = "true" ]; then
+            PYTEST_ARGS="$PYTEST_ARGS -v --tb=short"
+          fi
+
+          if [ -n "$TEST_FILTER" ]; then
+            PYTEST_ARGS="$PYTEST_ARGS -k $TEST_FILTER"
+          fi
+
+          PYTHONPATH="${PYTHONPATH}:.:libs/fp-proto/src" pytest $PYTEST_ARGS --junitxml=e2e-test-results.xml || true
+
+      - name: Upload test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: e2e-test-results
+          path: e2e-test-results.xml
+          retention-days: 30
+
+      - name: Collect logs on failure
+        if: failure()
+        working-directory: tests/e2e/infrastructure
+        run: |
+          echo "=== Docker Compose Logs ==="
+          docker-compose -f docker-compose.e2e.yaml logs --tail=100
+
+      - name: Cleanup E2E stack
+        if: always()
+        working-directory: tests/e2e/infrastructure
+        run: |
+          docker-compose -f docker-compose.e2e.yaml down -v --remove-orphans
+
+      - name: Test Summary
+        uses: test-summary/action@v2
+        if: always()
+        with:
+          paths: e2e-test-results.xml

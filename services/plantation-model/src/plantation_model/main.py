@@ -12,7 +12,10 @@ import structlog
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from plantation_model.api import health
-from plantation_model.api.event_handlers import router as event_router
+from plantation_model.api.event_handlers import (
+    quality_result_router,
+    weather_updated_router,
+)
 from plantation_model.api.grpc_server import start_grpc_server, stop_grpc_server
 from plantation_model.config import settings
 from plantation_model.domain.services import QualityEventProcessor
@@ -151,7 +154,8 @@ app.add_middleware(
 
 # Include routers
 app.include_router(health.router)
-app.include_router(event_router)
+app.include_router(quality_result_router)
+app.include_router(weather_updated_router)
 
 # Instrument FastAPI with OpenTelemetry
 instrument_fastapi(app)

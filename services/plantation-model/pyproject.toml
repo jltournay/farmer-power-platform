@@ -27,6 +27,7 @@ opentelemetry-instrumentation-fastapi = ">=0.50b0"
 opentelemetry-instrumentation-grpc = ">=0.50b0"
 opentelemetry-instrumentation-pymongo = ">=0.50b0"
 fp-proto = { path = "../../libs/fp-proto" }
+httpx = ">=0.26.0,<0.28.0"  # Required for DAPR client
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^7.4.0"
