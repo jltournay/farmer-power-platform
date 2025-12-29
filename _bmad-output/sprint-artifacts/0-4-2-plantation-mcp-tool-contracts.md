@@ -96,25 +96,27 @@ So that AI agents can reliably query plantation data.
 **Read First:** `tests/e2e/E2E-TESTING-MENTAL-MODEL.md`
 
 ### Pre-Implementation
-- [ ] Read and understood `E2E-TESTING-MENTAL-MODEL.md`
-- [ ] Understand: Proto = source of truth, tests verify (not define) behavior
+- [x] Read and understood `E2E-TESTING-MENTAL-MODEL.md`
+- [x] Understand: Proto = source of truth, tests verify (not define) behavior
 
 ### Before Starting Docker
-- [ ] Validate seed data: `PYTHONPATH="${PYTHONPATH}:services/plantation-model/src" python tests/e2e/infrastructure/validate_seed_data.py`
-- [ ] All seed files pass validation
+- [x] Validate seed data: `PYTHONPATH="${PYTHONPATH}:services/plantation-model/src" python tests/e2e/infrastructure/validate_seed_data.py`
+- [x] All seed files pass validation
 
 ### During Implementation
-- [ ] If tests fail, investigate using the debugging checklist (not blindly modify code)
-- [ ] If seed data needs changes, fix seed data (not production code)
-- [ ] If production code has bugs, document each fix (see below)
+- [x] If tests fail, investigate using the debugging checklist (not blindly modify code)
+- [x] If seed data needs changes, fix seed data (not production code)
+- [x] If production code has bugs, document each fix (see below)
 
 ### Production Code Changes (if any)
 If you modified ANY production code, document each change here:
 
 | File:Lines | What Changed | Why (with evidence) | Type |
 |------------|--------------|---------------------|------|
-| _example: plantation_client.py:301-321_ | _Renamed avg_grade → primary_percentage_30d_ | _Proto:667 defines correct name_ | _Bug fix_ |
-| | | | |
+| plantation_client.py:301-312 | HistoricalMetrics: `avg_grade`, `total_kg`, `delivery_count` → `primary_percentage_30d/90d/year`, `total_kg_30d/90d/year` | Proto:667-675 defines these field names; old fields don't exist | Bug fix |
+| plantation_client.py:316-318 | TodayMetrics: `avg_grade`, `delivery_count` → `deliveries` | Proto:688 defines `deliveries` field; old fields don't exist | Bug fix |
+| plantation_client.py:326-335 | CollectionPoint: removed `code`, `is_active`; added `status` | Proto:361-375 has `status` (line 372), no `code` or `is_active` fields | Bug fix |
+| plantation_client.py:443-457 | GetCurrentFlush: direct field access → nested `response.current_flush.*` with HasField check | Proto:273-276 shows response has nested `current_flush` message | Bug fix |
 
 **Rules:**
 - "To pass tests" is NOT a valid reason

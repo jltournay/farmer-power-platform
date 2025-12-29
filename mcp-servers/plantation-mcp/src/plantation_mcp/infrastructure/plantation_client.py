@@ -301,9 +301,12 @@ class PlantationClient:
         if summary.HasField("historical"):
             hist = summary.historical
             result["historical"] = {
-                "avg_grade": hist.avg_grade,
-                "total_kg": hist.total_kg,
-                "delivery_count": hist.delivery_count,
+                "primary_percentage_30d": hist.primary_percentage_30d,
+                "primary_percentage_90d": hist.primary_percentage_90d,
+                "primary_percentage_year": hist.primary_percentage_year,
+                "total_kg_30d": hist.total_kg_30d,
+                "total_kg_90d": hist.total_kg_90d,
+                "total_kg_year": hist.total_kg_year,
                 "improvement_trend": plantation_pb2.TrendDirection.Name(hist.improvement_trend),
             }
 
@@ -313,8 +316,7 @@ class PlantationClient:
             result["today"] = {
                 "metrics_date": today.metrics_date,
                 "total_kg": today.total_kg,
-                "avg_grade": today.avg_grade,
-                "delivery_count": today.delivery_count,
+                "deliveries": today.deliveries,
             }
 
         return result
@@ -324,14 +326,13 @@ class PlantationClient:
         return {
             "collection_point_id": cp.id,
             "name": cp.name,
-            "code": cp.code,
             "factory_id": cp.factory_id,
             "region_id": cp.region_id,
             "location": {
                 "latitude": cp.location.latitude if cp.location else 0,
                 "longitude": cp.location.longitude if cp.location else 0,
             },
-            "is_active": cp.is_active,
+            "status": cp.status,
         }
 
     # =========================================================================
@@ -442,14 +443,17 @@ class PlantationClient:
 
             response = await stub.GetCurrentFlush(request, metadata=metadata)
 
-            return {
+            result: dict[str, Any] = {
                 "region_id": response.region_id,
-                "flush_name": response.flush_name,
-                "start": response.start,
-                "end": response.end,
-                "characteristics": response.characteristics,
-                "days_remaining": response.days_remaining,
             }
+            if response.HasField("current_flush"):
+                flush = response.current_flush
+                result["flush_name"] = flush.flush_name
+                result["start_date"] = flush.start_date
+                result["end_date"] = flush.end_date
+                result["characteristics"] = flush.characteristics
+                result["days_remaining"] = flush.days_remaining
+            return result
 
         except grpc.aio.AioRpcError as e:
             if e.code() == grpc.StatusCode.NOT_FOUND:

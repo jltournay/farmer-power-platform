@@ -121,11 +121,6 @@ class TestGetFarmerSummary:
     """Test get_farmer_summary MCP tool (AC3)."""
 
     @pytest.mark.asyncio
-    @pytest.mark.xfail(
-        reason="BUG: MCP client accesses non-existent proto fields (avg_grade, delivery_count). "
-        "See plantation_client.py _farmer_summary_to_dict - proto HistoricalMetrics/TodayMetrics "
-        "don't have these fields."
-    )
     async def test_get_farmer_summary_returns_metrics(
         self,
         plantation_mcp,
@@ -146,9 +141,7 @@ class TestGetFarmerSummary:
         # Performance data should include metrics
         result_str = str(result.get("result_json", "")).lower()
         # Check for performance indicators - could be in various formats
-        assert any(
-            term in result_str for term in ["primary", "quality", "score", "metrics", "trend", "deliveries"]
-        )
+        assert any(term in result_str for term in ["primary", "quality", "score", "metrics", "trend", "deliveries"])
 
 
 @pytest.mark.e2e
@@ -156,10 +149,6 @@ class TestGetCollectionPoints:
     """Test get_collection_points MCP tool (AC4)."""
 
     @pytest.mark.asyncio
-    @pytest.mark.xfail(
-        reason="BUG: MCP client accesses non-existent proto field 'code' on CollectionPoint. "
-        "See plantation_client.py _collection_point_to_dict - proto CollectionPoint doesn't have 'code' field."
-    )
     async def test_get_collection_points_returns_all_cps(
         self,
         plantation_mcp,
@@ -299,10 +288,6 @@ class TestGetCurrentFlush:
     """Test get_current_flush MCP tool (AC8)."""
 
     @pytest.mark.asyncio
-    @pytest.mark.xfail(
-        reason="BUG: MCP client accesses response.flush_name but proto has response.current_flush.flush_name. "
-        "See plantation_client.py get_current_flush - should access response.current_flush.flush_name."
-    )
     async def test_get_current_flush_returns_period(
         self,
         plantation_mcp,
@@ -350,5 +335,6 @@ class TestGetRegionWeather:
         result_str = str(result.get("result_json", "")).lower()
         # Should contain weather data
         assert any(
-            term in result_str for term in ["temperature", "temp", "precipitation", "humidity", "weather", "observation"]
+            term in result_str
+            for term in ["temperature", "temp", "precipitation", "humidity", "weather", "observation"]
         )
