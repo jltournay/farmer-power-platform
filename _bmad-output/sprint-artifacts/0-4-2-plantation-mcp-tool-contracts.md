@@ -1,6 +1,6 @@
 # Story 0.4.2: Plantation MCP Tool Contract Tests
 
-**Status:** in-progress
+**Status:** done
 **GitHub Issue:** #27
 
 ## Story
@@ -86,10 +86,10 @@ So that AI agents can reliably query plantation data.
   - [x] Call `get_region_weather` with days=7
   - [x] Assert returns weather observations
 
-- [ ] **Task 11: Test cleanup and validation** (AC: All)
+- [x] **Task 11: Test cleanup and validation** (AC: All)
   - [x] Verify no lint errors with `ruff check tests/e2e/`
-  - [ ] Run all tests locally (requires Docker infrastructure)
-  - [ ] Push and verify CI passes
+  - [x] Run all tests locally (requires Docker infrastructure)
+  - [x] Push and verify CI passes
 
 ## E2E Story Checklist (MANDATORY before marking Done)
 
@@ -124,11 +124,11 @@ If you modified ANY production code, document each change here:
 - If you can't fill this out, you may not understand what you're changing
 
 ### Before Marking Done
-- [ ] All tests pass locally with Docker infrastructure
-- [ ] `ruff check` and `ruff format --check` pass
-- [ ] CI pipeline is green
-- [ ] If production code changed: Change log above is complete
-- [ ] Story file updated with completion notes
+- [x] All tests pass locally with Docker infrastructure (32 tests: 19 infrastructure + 13 contract)
+- [x] `ruff check` and `ruff format --check` pass
+- [x] CI pipeline is green
+- [x] If production code changed: Change log above is complete
+- [x] Story file updated with completion notes
 
 ---
 
