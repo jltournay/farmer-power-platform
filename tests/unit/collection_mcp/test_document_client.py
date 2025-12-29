@@ -55,25 +55,34 @@ class TestDocumentClientQueryBuilding:
     def test_build_query_source_id(self, client: DocumentClient) -> None:
         """Verify query with source_id filter."""
         query = client._build_query(source_id="qc-analyzer-result")
-        assert query == {"source_id": "qc-analyzer-result"}
+        # Field path matches DocumentIndex.ingestion.source_id
+        assert query == {"ingestion.source_id": "qc-analyzer-result"}
 
     def test_build_query_farmer_id(self, client: DocumentClient) -> None:
         """Verify query with farmer_id filter."""
         query = client._build_query(farmer_id="WM-4521")
-        assert query == {"farmer_id": "WM-4521"}
+        # farmer_id can be in linkage_fields or extracted_fields per DocumentIndex schema
+        assert query == {
+            "$or": [
+                {"linkage_fields.farmer_id": "WM-4521"},
+                {"extracted_fields.farmer_id": "WM-4521"},
+            ]
+        }
 
     def test_build_query_linkage(self, client: DocumentClient) -> None:
         """Verify query with linkage filters."""
         query = client._build_query(linkage={"batch_id": "batch-001", "factory_id": "FAC-001"})
+        # Field path matches DocumentIndex.linkage_fields (not "linkage")
         assert query == {
-            "linkage.batch_id": "batch-001",
-            "linkage.factory_id": "FAC-001",
+            "linkage_fields.batch_id": "batch-001",
+            "linkage_fields.factory_id": "FAC-001",
         }
 
     def test_build_query_attributes_equality(self, client: DocumentClient) -> None:
         """Verify query with attribute equality filters."""
         query = client._build_query(attributes={"grade": "A"})
-        assert query == {"attributes.grade": "A"}
+        # Field path matches DocumentIndex.extracted_fields (not "attributes")
+        assert query == {"extracted_fields.grade": "A"}
 
     def test_build_query_attributes_operators(self, client: DocumentClient) -> None:
         """Verify query with attribute operator filters."""
@@ -83,9 +92,10 @@ class TestDocumentClientQueryBuilding:
                 "temperature": {"$gt": 25, "$lt": 35},
             }
         )
+        # Field path matches DocumentIndex.extracted_fields (not "attributes")
         assert query == {
-            "attributes.bag_summary.primary_percentage": {"$lt": 70},
-            "attributes.temperature": {"$gt": 25, "$lt": 35},
+            "extracted_fields.bag_summary.primary_percentage": {"$lt": 70},
+            "extracted_fields.temperature": {"$gt": 25, "$lt": 35},
         }
 
     def test_build_query_date_range(self, client: DocumentClient) -> None:
@@ -96,22 +106,22 @@ class TestDocumentClientQueryBuilding:
                 "end": "2024-12-31T23:59:59Z",
             }
         )
-        assert "ingested_at" in query
-        assert "$gte" in query["ingested_at"]
-        assert "$lte" in query["ingested_at"]
+        # Field path matches DocumentIndex.created_at (not "ingested_at")
+        assert "created_at" in query
+        assert "$gte" in query["created_at"]
+        assert "$lte" in query["created_at"]
 
     def test_build_query_combined(self, client: DocumentClient) -> None:
         """Verify query with multiple filters combined."""
         query = client._build_query(
             source_id="qc-analyzer-result",
-            farmer_id="WM-4521",
             linkage={"batch_id": "batch-001"},
             attributes={"grade": "B"},
         )
-        assert query["source_id"] == "qc-analyzer-result"
-        assert query["farmer_id"] == "WM-4521"
-        assert query["linkage.batch_id"] == "batch-001"
-        assert query["attributes.grade"] == "B"
+        # Field paths match DocumentIndex schema
+        assert query["ingestion.source_id"] == "qc-analyzer-result"
+        assert query["linkage_fields.batch_id"] == "batch-001"
+        assert query["extracted_fields.grade"] == "B"
 
 
 class TestDocumentClientGetDocuments:
@@ -257,10 +267,11 @@ class TestDocumentClientGetFarmerDocuments:
         )
 
         # Verify $in operator was used for source_ids
+        # Field path matches DocumentIndex.ingestion.source_id
         call_args = client._collection.find.call_args
         query = call_args[0][0]
-        assert "source_id" in query
-        assert "$in" in query["source_id"]
+        assert "ingestion.source_id" in query
+        assert "$in" in query["ingestion.source_id"]
 
 
 class TestDocumentClientSearchDocuments:
