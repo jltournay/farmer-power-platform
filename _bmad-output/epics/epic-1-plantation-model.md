@@ -384,4 +384,4 @@ So that farmers receive quality-based payment adjustments according to our chose
 
 ## Retrospective
 
-**[📋 Epic 1 Retrospective](../sprint-artifacts/epic-1-retrospective.md)** | Status: Ready (All stories complete)
+**[📋 Epic 1 Retrospective](../sprint-artifacts/epic-1-retrospective.md)** | Status: Done
