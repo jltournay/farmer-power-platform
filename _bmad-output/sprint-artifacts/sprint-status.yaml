@@ -95,7 +95,7 @@ development_status:
   0-4-1-infrastructure-verification: done  # 19 tests in test_00_infrastructure_verification.py
   0-4-2-plantation-mcp-tool-contracts: done  # 14 tests, github_issue: 27
   0-4-3-collection-mcp-tool-contracts: done  # 12 tests, github_issue: 28
-  0-4-4-factory-farmer-registration-flow: in-progress  # 5 tests, github_issue: 29
+  0-4-4-factory-farmer-registration-flow: review  # 6 tests, github_issue: 29
   0-4-5-quality-event-blob-ingestion: backlog  # 6 tests - JSON direct, no AI
   0-4-6-weather-data-ingestion-mock-ai: backlog  # 5 tests - Real weather API, mock AI
   0-4-7-cross-model-dapr-event-flow: backlog  # 4 tests - CRITICAL

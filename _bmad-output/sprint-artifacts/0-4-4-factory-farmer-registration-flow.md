@@ -1,6 +1,6 @@
 # Story 0.4.4: Factory-Farmer Registration Flow
 
-**Status:** in-progress
+**Status:** review
 **GitHub Issue:** [#29](https://github.com/jltournay/farmer-power-platform/issues/29)
 **Epic:** [Epic 0.4: E2E Test Scenarios](../epics/epic-0-4-e2e-tests.md)
 
@@ -59,10 +59,10 @@ So that new farmers are correctly assigned to regions based on GPS and altitude.
   - [x] Call `get_farmers_by_collection_point` and verify farmer in list
   - [x] Assert key fields present in response
 
-- [ ] **Task 7: Test cleanup and validation** (AC: All)
+- [x] **Task 7: Test cleanup and validation** (AC: All)
   - [x] Verify no lint errors with `ruff check tests/e2e/`
-  - [ ] Run all tests locally (requires Docker infrastructure)
-  - [ ] Push and verify CI passes
+  - [x] Run all tests locally (requires Docker infrastructure)
+  - [x] Push and verify CI passes
 
 ## E2E Story Checklist (MANDATORY before marking Done)
 
