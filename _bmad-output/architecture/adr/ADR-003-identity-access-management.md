@@ -592,6 +592,216 @@ api_permissions:
       - admin.full
 ```
 
+## Development Authentication Strategy (Mock-First)
+
+**Added:** 2025-12-29
+**Context:** Local development on Docker Desktop Kubernetes
+
+### Decision: Mock Auth for Local Development
+
+For local development, we implement a **mock authentication provider** that mimics the Azure AD B2C interface. This allows developers to:
+
+1. Build and test UI components without Azure configuration
+2. Quickly switch between user personas/roles
+3. Work offline without cloud dependencies
+4. Defer B2C setup until production deployment is needed
+
+### Architecture: Swappable Auth Provider
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                    Frontend (@fp/auth)                           │
+│     useAuth() → { user, isAuthenticated, login, logout }        │
+└─────────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+┌─────────────────────────────────────────────────────────────────┐
+│                      AuthProvider                                │
+│  ┌────────────────────────┐    ┌─────────────────────────────┐  │
+│  │     MockAuthProvider   │ OR │   AzureB2CAuthProvider      │  │
+│  │   (localStorage JWT)   │    │   (MSAL + real OAuth2)      │  │
+│  └────────────────────────┘    └─────────────────────────────┘  │
+└─────────────────────────────────────────────────────────────────┘
+                              │
+                   VITE_AUTH_PROVIDER=mock | azure-b2c
+```
+
+### Configuration
+
+**Frontend (React):**
+```bash
+# .env.local (development)
+VITE_AUTH_PROVIDER=mock
+
+# .env.production
+VITE_AUTH_PROVIDER=azure-b2c
+VITE_B2C_TENANT=farmerpower
+VITE_B2C_CLIENT_ID=<client-id>
+```
+
+**BFF (Python):**
+```bash
+# Local development
+AUTH_PROVIDER=mock
+MOCK_JWT_SECRET=local-dev-secret-key
+
+# Production
+AUTH_PROVIDER=azure-b2c
+B2C_TENANT=farmerpower.onmicrosoft.com
+B2C_CLIENT_ID=<client-id>
+```
+
+### Mock Auth Features
+
+| Feature | Implementation |
+|---------|----------------|
+| Login | Dropdown to select mock user persona |
+| JWT Token | Locally-signed JWT with same claims structure |
+| Token Storage | localStorage (dev only) |
+| Expiry | Simulated (configurable) |
+| Logout | Clear localStorage |
+
+### Mock User Personas
+
+Pre-configured test users matching the role definitions:
+
+```typescript
+// libs/auth/src/mock/users.ts
+export const MOCK_USERS = [
+  {
+    id: "mock-manager-001",
+    name: "Jane Mwangi",
+    email: "jane@kericho-factory.test",
+    role: "factory_manager",
+    factory_id: "KEN-FAC-001",
+    factory_ids: ["KEN-FAC-001"],
+    permissions: ["farmers:read", "quality_events:read", "diagnoses:read", "action_plans:read"]
+  },
+  {
+    id: "mock-owner-001",
+    name: "John Ochieng",
+    email: "john@kericho-factory.test",
+    role: "factory_owner",
+    factory_id: "KEN-FAC-001",
+    factory_ids: ["KEN-FAC-001", "KEN-FAC-002"],
+    permissions: ["farmers:read", "quality_events:read", "diagnoses:read", "action_plans:read", "payment_policies:write", "factory_settings:write"]
+  },
+  {
+    id: "mock-admin-001",
+    name: "Admin User",
+    email: "admin@farmerpower.test",
+    role: "platform_admin",
+    factory_id: null,
+    factory_ids: [],
+    permissions: ["*"]
+  },
+  {
+    id: "mock-clerk-001",
+    name: "Mary Wanjiku",
+    email: "mary@kericho-cp.test",
+    role: "registration_clerk",
+    factory_id: "KEN-FAC-001",
+    factory_ids: ["KEN-FAC-001"],
+    collection_point_id: "KEN-CP-001",
+    permissions: ["farmers:create"]
+  },
+  {
+    id: "mock-regulator-001",
+    name: "TBK Inspector",
+    email: "inspector@tbk.go.ke.test",
+    role: "regulator",
+    factory_id: null,
+    factory_ids: [],
+    region_ids: ["nandi", "kericho"],
+    permissions: ["national_stats:read", "regional_stats:read"]
+  }
+];
+```
+
+### BFF Mock Token Validation
+
+```python
+# bff/src/bff/api/auth.py
+
+async def validate_token(token: str, settings: Settings) -> TokenClaims:
+    """Validate JWT - supports both mock and Azure B2C."""
+
+    if settings.auth_provider == "mock":
+        # Mock: validate with local secret
+        payload = jwt.decode(
+            token,
+            settings.mock_jwt_secret,
+            algorithms=["HS256"]
+        )
+    else:
+        # Production: validate with Azure B2C JWKS
+        payload = await validate_azure_b2c_token(token, settings)
+
+    return TokenClaims(
+        sub=payload["sub"],
+        email=payload.get("email", ""),
+        name=payload.get("name", ""),
+        role=payload.get("role", payload.get("extension_farmerpower_role", "")),
+        factory_id=payload.get("factory_id", payload.get("extension_farmerpower_factory_id")),
+        factory_ids=payload.get("factory_ids", payload.get("extension_farmerpower_factory_ids", [])),
+        collection_point_id=payload.get("collection_point_id"),
+        region_ids=payload.get("region_ids", []),
+        permissions=payload.get("permissions", []),
+    )
+```
+
+### Mock Login UI Component
+
+```typescript
+// libs/auth/src/mock/MockLoginSelector.tsx
+export function MockLoginSelector({ onSelect }: { onSelect: (user: MockUser) => void }) {
+  return (
+    <div className="mock-login-selector">
+      <h3>Select Test User</h3>
+      <div className="user-list">
+        {MOCK_USERS.map(user => (
+          <button key={user.id} onClick={() => onSelect(user)}>
+            <span className="role-badge">{user.role}</span>
+            <span className="name">{user.name}</span>
+            {user.factory_id && <span className="factory">{user.factory_id}</span>}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+```
+
+### Story Impact
+
+This mock-first approach affects Epic 0.5 story ordering:
+
+| Story | Status | Notes |
+|-------|--------|-------|
+| 0.5.1: Shared Component Library | No change | No auth dependency |
+| 0.5.2: Azure AD B2C Configuration | **Deferred** | Do when ready for production |
+| 0.5.3: Shared Auth Library | **Modified** | Implement mock provider first, B2C later |
+| 0.5.4: Factory Portal Scaffold | No change | Uses auth library (mock mode) |
+| 0.5.5: BFF Authentication Middleware | **Modified** | Support both mock and B2C modes |
+| 0.5.6: BFF Service Setup | No change | Uses middleware |
+
+### When to Switch to Real B2C
+
+Transition from mock to Azure AD B2C when:
+
+1. Deploying to Azure AKS (staging/production)
+2. Testing real OAuth2 flows (token refresh, MFA)
+3. Integrating with external systems requiring real tokens
+4. Security testing/penetration testing
+
+### Security Considerations
+
+| Concern | Mitigation |
+|---------|------------|
+| Mock tokens in production | `AUTH_PROVIDER=mock` rejected in production builds |
+| Local secret exposure | Mock secret is development-only, not in git |
+| Test user data | Mock users have `.test` email domains |
+
 ## References
 
 - [Azure AD B2C Documentation](https://docs.microsoft.com/en-us/azure/active-directory-b2c/)
