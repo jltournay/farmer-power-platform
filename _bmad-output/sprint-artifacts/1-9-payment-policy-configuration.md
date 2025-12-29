@@ -1,6 +1,6 @@
 # Story 1.9: Factory Payment Policy Configuration
 
-**Status:** review
+**Status:** done
 **GitHub Issue:** #26
 
 ---

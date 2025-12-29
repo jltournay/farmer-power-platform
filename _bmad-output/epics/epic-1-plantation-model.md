@@ -336,7 +336,7 @@ So that weather data can be collected per region for quality correlation.
 
 ### Story 1.9: Factory Payment Policy Configuration
 
-**[📄 Story File](../sprint-artifacts/1-9-payment-policy-configuration.md)** | Status: Ready for Dev
+**[📄 Story File](../sprint-artifacts/1-9-payment-policy-configuration.md)** | Status: Done ✅
 
 As a **factory administrator**,
 I want to configure payment policies for my factory,
@@ -384,4 +384,4 @@ So that farmers receive quality-based payment adjustments according to our chose
 
 ## Retrospective
 
-**[📋 Epic 1 Retrospective](../sprint-artifacts/epic-1-retrospective.md)** | Status: In Progress (Story 1.9 pending)
+**[📋 Epic 1 Retrospective](../sprint-artifacts/epic-1-retrospective.md)** | Status: Ready (All stories complete)
