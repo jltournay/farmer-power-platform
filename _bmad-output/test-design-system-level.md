@@ -657,6 +657,442 @@ Before implementation begins, ALL of the following must be true:
 
 ---
 
+## E2E Test Infrastructure
+
+### Overview
+
+The E2E test infrastructure provides a complete local deployment of all Farmer Power Platform services using Docker Compose. Tests run against real services with DAPR sidecars, MongoDB, Redis, and Azurite (Azure Storage emulator).
+
+```
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│                         E2E TEST ARCHITECTURE                                    │
+├─────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                  │
+│  TEST CLIENT (pytest)                                                           │
+│  ┌────────────────────────────────────────────────────────────────────────────┐ │
+│  │  • PlantationClient (HTTP → localhost:8001)                                │ │
+│  │  • CollectionClient (HTTP → localhost:8002)                                │ │
+│  │  • PlantationMCPClient (gRPC → localhost:50052)                            │ │
+│  │  • CollectionMCPClient (gRPC → localhost:50053)                            │ │
+│  │  • AzuriteClient (Blob → localhost:10000)                                  │ │
+│  │  • MongoDBDirectClient (MongoDB → localhost:27017)                         │ │
+│  └────────────────────────────────────────────────────────────────────────────┘ │
+│                                      ↓                                           │
+│  DOCKER COMPOSE STACK                                                            │
+│  ┌────────────────────────────────────────────────────────────────────────────┐ │
+│  │  ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐        │ │
+│  │  │ plantation-model│    │ collection-model│    │ plantation-mcp  │        │ │
+│  │  │     :8001       │    │     :8002       │    │    :50052       │        │ │
+│  │  │ (+ DAPR sidecar)│    │ (+ DAPR sidecar)│    │ (+ DAPR sidecar)│        │ │
+│  │  └────────┬────────┘    └────────┬────────┘    └────────┬────────┘        │ │
+│  │           │                      │                      │                  │ │
+│  │           └──────────────────────┼──────────────────────┘                  │ │
+│  │                                  ↓                                          │ │
+│  │  ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐        │ │
+│  │  │    mongodb      │    │      redis      │    │    azurite      │        │ │
+│  │  │    :27017       │    │     :6379       │    │    :10000       │        │ │
+│  │  │ (plantation_e2e)│    │ (DAPR pubsub)   │    │ (blob storage)  │        │ │
+│  │  │ (collection_e2e)│    │ (DAPR state)    │    │                 │        │ │
+│  │  └─────────────────┘    └─────────────────┘    └─────────────────┘        │ │
+│  └────────────────────────────────────────────────────────────────────────────┘ │
+│                                                                                  │
+└─────────────────────────────────────────────────────────────────────────────────┘
+```
+
+### Directory Structure
+
+```
+tests/e2e/
+├── conftest.py                      # Fixtures and E2ETestDataFactory
+├── helpers/
+│   ├── api_clients.py               # HTTP clients for Model services
+│   ├── mcp_clients.py               # gRPC clients for MCP servers
+│   ├── azure_blob.py                # Azurite blob storage client
+│   ├── mongodb_direct.py            # Direct MongoDB client for verification
+│   └── cleanup.py                   # Post-test cleanup utilities
+├── infrastructure/
+│   ├── docker-compose.e2e.yaml      # Full stack deployment
+│   ├── dapr-components/
+│   │   ├── pubsub.yaml              # Redis pubsub config
+│   │   └── statestore.yaml          # Redis state store config
+│   ├── mock-servers/
+│   │   └── google-elevation/        # Mock Google Elevation API
+│   │       ├── Dockerfile
+│   │       └── main.py
+│   └── seed/
+│       ├── regions.json             # Required: Region seed data
+│       ├── grading_models.json      # Required: Grading model configs
+│       └── source_configs.json      # Required: Collection Model ingestion configs
+└── scenarios/
+    ├── test_01_factory_farmer_flow.py
+    ├── test_02_quality_ingestion_flow.py
+    ├── test_03_weather_integration.py
+    └── test_04_mcp_verification.py
+```
+
+### Seed Data Requirements
+
+E2E tests require seed data to be present before tests run. The `seed_data` fixture loads these automatically.
+
+#### 1. Regions (`seed/regions.json`)
+
+Regions must exist before farmers can be created (farmers are auto-assigned to regions based on GPS + altitude).
+
+```json
+[
+  {
+    "region_id": "kericho-highland",
+    "name": "Kericho Highland",
+    "county": "Kericho",
+    "country": "Kenya",
+    "geography": {
+      "center_gps": {"lat": -0.3667, "lng": 35.2833},
+      "radius_km": 25,
+      "altitude_band": {
+        "min_meters": 1800,
+        "max_meters": 2200,
+        "label": "highland"
+      }
+    },
+    "flush_calendar": {
+      "first_flush": {"start": "03-15", "end": "05-15", "characteristics": "..."},
+      "monsoon_flush": {"start": "06-15", "end": "09-30", "characteristics": "..."},
+      "autumn_flush": {"start": "10-15", "end": "12-15", "characteristics": "..."},
+      "dormant": {"start": "12-16", "end": "03-14", "characteristics": "..."}
+    },
+    "agronomic": {
+      "soil_type": "volcanic_red",
+      "typical_diseases": ["blister_blight", "grey_blight"],
+      "harvest_peak_hours": "06:00-10:00",
+      "frost_risk": true
+    },
+    "weather_config": {
+      "api_location": {"lat": -0.3667, "lng": 35.2833},
+      "altitude_for_api": 2000,
+      "collection_time": "06:00"
+    }
+  }
+]
+```
+
+#### 2. Grading Models (`seed/grading_models.json`)
+
+Grading models define how quality is graded. Two types exist:
+- **TBK (binary)**: Primary / Secondary
+- **KTDA (ternary)**: Grade A / Grade B / Rejected
+
+```json
+[
+  {
+    "model_id": "tbk_kenya_tea_v1",
+    "name": "TBK Kenya Tea Standard",
+    "version": "1.0.0",
+    "grades": ["Primary", "Secondary"],
+    "is_active": true
+  },
+  {
+    "model_id": "ktda_standard_v1",
+    "name": "KTDA Standard Grading",
+    "version": "1.0.0",
+    "grades": ["Grade A", "Grade B", "Rejected"],
+    "is_active": true
+  }
+]
+```
+
+#### 3. Source Configs (`seed/source_configs.json`)
+
+**CRITICAL**: Collection Model has NO direct document creation API. All documents are ingested via:
+1. Blob triggers (Azure Event Grid events)
+2. Scheduled pull jobs (DAPR Jobs API)
+
+Source configs define how each ingestion source is processed:
+
+For example (just one example)
+
+```json
+[
+  {
+    "source_id": "e2e-qc-analyzer-json",
+    "enabled": true,
+    "description": "E2E Test - QC Analyzer JSON results",
+    "config": {
+      "ingestion": {
+        "mode": "blob_trigger",
+        "processor_type": "json-extraction",
+        "landing_container": "quality-events-e2e",
+        "path_pattern": {
+          "pattern": "results/{factory_id}/{farmer_id}/{batch_id}.json",
+          "extract_fields": ["factory_id", "farmer_id", "batch_id"]
+        }
+      },
+      "transformation": {
+        "ai_agent_id": "qc_event_extractor",
+        "link_field": "farmer_id",
+        "extract_fields": ["farmer_id", "factory_id", "grading_model_id", "bag_summary"]
+      },
+      "storage": {
+        "index_collection": "quality_documents",
+        "raw_bucket": "raw-documents-e2e"
+      },
+      "events": {
+        "on_success": {"topic": "collection.quality_result.received"}
+      }
+    }
+  }
+]
+```
+
+Plantation client is accessible at `http://localhost:8001`.
+
+
+
+#### CollectionClient (HTTP)
+
+
+
+```python
+async with CollectionClient("http://localhost:8002") as client:
+    # Trigger blob ingestion (simulates Azure Event Grid)
+    accepted = await client.trigger_blob_event(
+        container="quality-events-e2e",
+        blob_path="results/FAC-001/WM-001/batch-001.json",
+        content_length=1024
+    )
+
+    # Trigger pull job (DAPR scheduled job callback)
+    result = await client.trigger_pull_job(source_id="e2e-qc-analyzer-json")
+
+    # Health
+    health = await client.health()
+```
+
+#### AzuriteClient (Blob Storage)
+
+```python
+async with AzuriteClient(connection_string) as client:
+    # Upload quality event with correct path pattern
+    blob_url, blob_path = await client.upload_quality_event(
+        farmer_id="WM-0001",
+        factory_id="KEN-FAC-001",
+        event_data={
+            "grading_model_id": "tbk_kenya_tea_v1",
+            "bag_summary": {"total_bags": 5, "grade_distribution": {"Primary": 3}}
+        }
+    )
+    # Path: results/{factory_id}/{farmer_id}/{batch_id}.json
+
+    # List blobs
+    blobs = await client.list_blobs("quality-events-e2e")
+```
+
+#### MongoDBDirectClient (Verification)
+
+Use for direct database verification (bypassing API):
+
+```python
+async with MongoDBDirectClient("mongodb://localhost:27017") as client:
+    # Plantation database (plantation_e2e)
+    farmer = await client.get_farmer_direct(farmer_id)
+    factory = await client.get_factory_direct(factory_id)
+    region = await client.get_region_direct(region_id)
+
+    # Collection database (collection_e2e)
+    doc_count = await client.count_quality_documents(farmer_id="WM-0001")
+    docs = await client.get_latest_quality_documents(farmer_id="WM-0001")
+    source_config = await client.get_source_config(source_id)
+```
+
+### Creating a New Test Scenario
+
+Follow these steps to create a new E2E test:
+
+#### Step 1: Identify Required Seed Data
+
+Determine what seed data your test needs:
+- [ ] Regions (for farmer registration)
+- [ ] Grading models (for quality events)
+- [ ] Source configs (for blob ingestion)
+- [ ] Collection points (if testing farmer registration)
+
+Add any missing seed data to the appropriate JSON file in `seed/`.
+
+#### Step 2: Create Test File
+
+Create a new file in `tests/e2e/scenarios/`:
+
+```python
+"""
+E2E Test: [Descriptive Name].
+
+Tests the complete flow of:
+1. Step 1 description
+2. Step 2 description
+
+Prerequisites:
+    docker-compose -f tests/e2e/infrastructure/docker-compose.e2e.yaml up -d
+"""
+
+import pytest
+
+from tests.e2e.conftest import E2ETestDataFactory
+from tests.e2e.helpers.api_clients import PlantationClient, CollectionClient
+from tests.e2e.helpers.azure_blob import AzuriteClient
+from tests.e2e.helpers.mongodb_direct import MongoDBDirectClient
+
+
+@pytest.mark.e2e
+class TestYourScenario:
+    """E2E tests for your scenario."""
+
+    @pytest.mark.asyncio
+    async def test_your_flow(
+        self,
+        plantation_api: PlantationClient,
+        collection_api: CollectionClient,
+        azurite_client: AzuriteClient,
+        mongodb_direct: MongoDBDirectClient,
+        e2e_data_factory: type[E2ETestDataFactory],
+        seed_data: dict,  # Use this to verify seed data is present
+    ):
+        """Test: Description of test.
+
+        Given: Preconditions
+        When: Actions
+        Then: Expected outcomes
+        """
+        # Verify required seed data
+        assert len(seed_data.get("regions", [])) > 0
+
+        # Arrange - Create test data using factory
+        farmer_data = e2e_data_factory.create_farmer_data(
+            first_name="Test",
+            last_name="Farmer",
+        )
+
+        # Act - Perform operations via API
+        result = await plantation_api.create_farmer(farmer_data)
+
+        # Assert - Verify API response
+        assert "id" in result
+        assert result["first_name"] == farmer_data["first_name"]
+
+        # Assert - Verify database state (optional)
+        db_farmer = await mongodb_direct.get_farmer_direct(result["id"])
+        assert db_farmer is not None
+```
+
+#### Step 3: Handle Collection Model Documents
+
+Collection Model documents require blob ingestion:
+
+```python
+@pytest.mark.asyncio
+async def test_quality_document_ingestion(
+    self,
+    azurite_client: AzuriteClient,
+    collection_api: CollectionClient,
+    mongodb_direct: MongoDBDirectClient,
+    e2e_data_factory: type[E2ETestDataFactory],
+    seed_data: dict,
+):
+    """Test quality document ingestion via blob trigger."""
+    # Verify source config is seeded
+    assert len(seed_data.get("source_configs", [])) > 0
+
+    # Step 1: Upload blob to Azurite
+    event_data = e2e_data_factory.create_quality_event_data(
+        farmer_id="WM-0001",
+        factory_id="KEN-FAC-001",
+    )
+    blob_url, blob_path = await azurite_client.upload_quality_event(
+        farmer_id="WM-0001",
+        factory_id="KEN-FAC-001",
+        event_data=event_data,
+    )
+
+    # Step 2: Trigger blob event (simulates Azure Event Grid)
+    accepted = await collection_api.trigger_blob_event(
+        container="quality-events-e2e",
+        blob_path=blob_path,
+    )
+    assert accepted is True
+
+    # Step 3: Wait for async processing
+    import asyncio
+    await asyncio.sleep(3)
+
+    # Step 4: Verify document was created
+    doc_count = await mongodb_direct.count_quality_documents(farmer_id="WM-0001")
+    assert doc_count >= 1
+```
+
+### Running E2E Tests
+
+#### Start Infrastructure
+
+```bash
+# Start all services
+docker-compose -f tests/e2e/infrastructure/docker-compose.e2e.yaml up -d
+
+# Wait for services to be healthy
+docker-compose -f tests/e2e/infrastructure/docker-compose.e2e.yaml ps
+
+# View logs if needed
+docker-compose -f tests/e2e/infrastructure/docker-compose.e2e.yaml logs -f plantation-model
+```
+
+#### Run Tests
+
+```bash
+# Run all E2E tests
+pytest tests/e2e/scenarios/ -v --tb=short -m e2e
+
+# Run specific test file
+pytest tests/e2e/scenarios/test_01_factory_farmer_flow.py -v
+
+# Run with slow tests
+pytest tests/e2e/scenarios/ -v -m "e2e and slow"
+
+# Skip slow tests
+pytest tests/e2e/scenarios/ -v -m "e2e and not slow"
+```
+
+#### Cleanup
+
+```bash
+# Stop and remove containers
+docker-compose -f tests/e2e/infrastructure/docker-compose.e2e.yaml down
+
+# Remove volumes (clears all data)
+docker-compose -f tests/e2e/infrastructure/docker-compose.e2e.yaml down -v
+```
+
+### Troubleshooting
+
+| Issue | Solution |
+|-------|----------|
+| Service not healthy | Check logs: `docker-compose logs <service>` |
+| MongoDB connection refused | Ensure MongoDB is running and healthy |
+| Farmer registration fails | Ensure region seed data exists |
+| Blob ingestion not working | Verify source_config matches container/path pattern |
+| MCP client timeout | Ensure DAPR sidecar is running for the service |
+| Test data conflicts | Run cleanup between test runs |
+
+### Mock Server: Google Elevation API
+
+The Google Elevation mock returns altitude based on latitude:
+
+| Latitude Range | Altitude | Altitude Band |
+|----------------|----------|---------------|
+| lat > 1.0 | 2000m | highland |
+| 0.5 < lat < 1.0 | 1500m | midland |
+| lat < 0.5 | 1000m | midland/highland |
+
+This allows deterministic testing of region assignment based on GPS coordinates.
+
+---
+
 ## Appendix
 
 ### A. Risk Category Legend
