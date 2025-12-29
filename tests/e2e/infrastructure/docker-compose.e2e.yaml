@@ -54,10 +54,12 @@ services:
       - "10002:10002"  # Table service
     command: "azurite --blobHost 0.0.0.0 --queueHost 0.0.0.0 --tableHost 0.0.0.0 --loose --skipApiVersionCheck"
     healthcheck:
-      test: ["CMD", "nc", "-z", "localhost", "10000"]
+      # Use node (available in Azurite image) instead of nc (not available)
+      test: ["CMD-SHELL", "node -e \"const http = require('http'); http.get('http://localhost:10000/', (r) => process.exit(0)).on('error', () => process.exit(1))\""]
       interval: 5s
       timeout: 5s
       retries: 10
+      start_period: 5s
     networks:
       - e2e-network
 
