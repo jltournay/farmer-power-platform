@@ -35,7 +35,8 @@ class DocumentClient:
         """
         self._client: AsyncIOMotorClient = AsyncIOMotorClient(mongodb_uri)
         self._db: AsyncIOMotorDatabase = self._client[database_name]
-        self._collection = self._db["documents"]
+        # Collection name matches source_config.storage.index_collection
+        self._collection = self._db["quality_documents"]
 
     def _build_query(
         self,
@@ -59,24 +60,29 @@ class DocumentClient:
         """
         query: dict[str, Any] = {}
 
+        # Field paths match DocumentIndex schema from collection_model.domain.document_index
         if source_id:
-            query["source_id"] = source_id
+            query["ingestion.source_id"] = source_id
 
         if farmer_id:
-            query["farmer_id"] = farmer_id
+            # Check both linkage_fields and extracted_fields for farmer_id
+            query["$or"] = [
+                {"linkage_fields.farmer_id": farmer_id},
+                {"extracted_fields.farmer_id": farmer_id},
+            ]
 
         if linkage:
             for key, value in linkage.items():
-                query[f"linkage.{key}"] = value
+                query[f"linkage_fields.{key}"] = value
 
         if attributes:
             for key, value in attributes.items():
                 if isinstance(value, dict):
                     # MongoDB operators: {"$lt": 70, "$gt": 50}
-                    query[f"attributes.{key}"] = value
+                    query[f"extracted_fields.{key}"] = value
                 else:
                     # Direct equality match
-                    query[f"attributes.{key}"] = value
+                    query[f"extracted_fields.{key}"] = value
 
         if date_range:
             start = date_range.get("start")
@@ -85,7 +91,8 @@ class DocumentClient:
                 # Parse ISO strings to datetime if needed
                 start_dt = datetime.fromisoformat(start.replace("Z", "+00:00")) if isinstance(start, str) else start
                 end_dt = datetime.fromisoformat(end.replace("Z", "+00:00")) if isinstance(end, str) else end
-                query["ingested_at"] = {"$gte": start_dt, "$lte": end_dt}
+                # Use created_at field from DocumentIndex schema
+                query["created_at"] = {"$gte": start_dt, "$lte": end_dt}
 
         return query
 
@@ -128,7 +135,7 @@ class DocumentClient:
             limit=limit,
         )
 
-        cursor = self._collection.find(query).sort("ingested_at", -1).limit(limit)
+        cursor = self._collection.find(query).sort("created_at", -1).limit(limit)
         documents = await cursor.to_list(length=limit)
 
         # Convert ObjectId to string for JSON serialization
@@ -190,10 +197,16 @@ class DocumentClient:
         Returns:
             List of matching documents sorted by ingested_at descending
         """
-        query: dict[str, Any] = {"farmer_id": farmer_id}
+        # Check both linkage_fields and extracted_fields for farmer_id
+        query: dict[str, Any] = {
+            "$or": [
+                {"linkage_fields.farmer_id": farmer_id},
+                {"extracted_fields.farmer_id": farmer_id},
+            ]
+        }
 
         if source_ids:
-            query["source_id"] = {"$in": source_ids}
+            query["ingestion.source_id"] = {"$in": source_ids}
 
         if date_range:
             start = date_range.get("start")
@@ -201,7 +214,7 @@ class DocumentClient:
             if start and end:
                 start_dt = datetime.fromisoformat(start.replace("Z", "+00:00")) if isinstance(start, str) else start
                 end_dt = datetime.fromisoformat(end.replace("Z", "+00:00")) if isinstance(end, str) else end
-                query["ingested_at"] = {"$gte": start_dt, "$lte": end_dt}
+                query["created_at"] = {"$gte": start_dt, "$lte": end_dt}
 
         # Enforce maximum limit
         limit = min(limit, 1000)
@@ -213,7 +226,7 @@ class DocumentClient:
             limit=limit,
         )
 
-        cursor = self._collection.find(query).sort("ingested_at", -1).limit(limit)
+        cursor = self._collection.find(query).sort("created_at", -1).limit(limit)
         documents = await cursor.to_list(length=limit)
 
         # Convert ObjectId to string
@@ -252,12 +265,15 @@ class DocumentClient:
         # Enforce maximum limit
         limit = min(limit, 100)
 
-        # Build base filter
+        # Build base filter using correct field paths from DocumentIndex schema
         filter_query: dict[str, Any] = {}
         if source_ids:
-            filter_query["source_id"] = {"$in": source_ids}
+            filter_query["ingestion.source_id"] = {"$in": source_ids}
         if farmer_id:
-            filter_query["farmer_id"] = farmer_id
+            filter_query["$or"] = [
+                {"linkage_fields.farmer_id": farmer_id},
+                {"extracted_fields.farmer_id": farmer_id},
+            ]
 
         logger.debug(
             "Searching documents",
@@ -296,11 +312,11 @@ class DocumentClient:
                 error=str(e),
             )
 
-        # Fallback to regex search on common fields
+        # Fallback to regex search on common fields using correct schema paths
         regex_pattern = {"$regex": query_text, "$options": "i"}
         regex_query = {
             "$or": [
-                {"attributes": regex_pattern},
+                {"extracted_fields": regex_pattern},
                 {"document_id": regex_pattern},
             ],
             **filter_query,

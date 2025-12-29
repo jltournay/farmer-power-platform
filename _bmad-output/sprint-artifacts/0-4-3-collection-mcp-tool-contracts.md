@@ -1,6 +1,6 @@
 # Story 0.4.3: Collection MCP Tool Contract Tests
 
-**Status:** in-progress
+**Status:** review
 **GitHub Issue:** [#28](https://github.com/jltournay/farmer-power-platform/issues/28)
 **Epic:** [Epic 0.4: E2E Test Scenarios](../epics/epic-0-4-e2e-tests.md)
 
@@ -89,7 +89,12 @@ If you modified ANY production code, document each change here:
 
 | File:Lines | What Changed | Why (with evidence) | Type |
 |------------|--------------|---------------------|------|
-| - | - | - | - |
+| `mcp-servers/collection-mcp/src/collection_mcp/infrastructure/document_client.py:38` | Changed collection from `documents` to `quality_documents` | Evidence: `source_configs.json:28,65` specifies `index_collection: quality_documents` | Bug fix |
+| `document_client.py:64-72` | Changed `source_id` → `ingestion.source_id`, `farmer_id` → `$or` query on `linkage_fields.farmer_id` and `extracted_fields.farmer_id` | Evidence: `document_index.py:90-98` and `document_repository.py:57,65` show nested field paths | Bug fix |
+| `document_client.py:74-85` | Changed `linkage.{key}` → `linkage_fields.{key}`, `attributes.{key}` → `extracted_fields.{key}` | Evidence: `document_index.py:91-98` defines `extracted_fields` and `linkage_fields` | Bug fix |
+| `document_client.py:94-95,131,223` | Changed `ingested_at` → `created_at` | Evidence: `document_index.py:99-102` defines `created_at`, no `ingested_at` field exists | Bug fix |
+| `document_client.py:200-217` | Fixed `get_farmer_documents` field paths | Same evidence as above | Bug fix |
+| `document_client.py:268-276,315-323` | Fixed `search_documents` field paths | Same evidence as above | Bug fix |
 
 **Rules:**
 - "To pass tests" is NOT a valid reason
@@ -97,7 +102,7 @@ If you modified ANY production code, document each change here:
 - If you can't fill this out, you may not understand what you're changing
 
 ### Before Marking Done
-- [ ] All tests pass locally with Docker infrastructure
+- [x] All tests pass locally with Docker infrastructure (12/12 passed)
 - [x] `ruff check` and `ruff format --check` pass
 - [x] CI pipeline is green
 - [x] If production code changed: Change log above is complete
@@ -240,4 +245,5 @@ Claude Opus 4.5 (claude-opus-4-5-20251101)
 **Modified:**
 - `tests/e2e/conftest.py` - Added document and blob seeding to seed_data fixture
 - `tests/e2e/helpers/mongodb_direct.py` - Added seed_documents method
+- `mcp-servers/collection-mcp/src/collection_mcp/infrastructure/document_client.py` - Fixed collection name and field paths to match DocumentIndex schema
 
