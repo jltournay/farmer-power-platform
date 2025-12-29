@@ -143,8 +143,7 @@ class TestGetFarmerPerformance:
         response_str = str(result)
         # Check for performance indicators - could be in various formats
         assert any(
-            term in response_str.lower()
-            for term in ["primary", "quality", "score", "metrics", "trend", "deliveries"]
+            term in response_str.lower() for term in ["primary", "quality", "score", "metrics", "trend", "deliveries"]
         )
 
 
@@ -172,10 +171,7 @@ class TestGetCollectionPoints:
 
         response_str = str(result)
         # Should contain at least one of the CP IDs or names
-        assert any(
-            cp in response_str
-            for cp in ["CP-E2E-001", "CP-E2E-002", "Ainamoi", "Kapsoit"]
-        )
+        assert any(cp in response_str for cp in ["CP-E2E-001", "CP-E2E-002", "Ainamoi", "Kapsoit"])
 
 
 @pytest.mark.e2e
@@ -202,10 +198,7 @@ class TestGetFarmersByCollectionPoint:
 
         response_str = str(result)
         # Should contain farmer info
-        assert any(
-            farmer in response_str
-            for farmer in ["FRM-E2E-001", "FRM-E2E-002", "James", "Grace"]
-        )
+        assert any(farmer in response_str for farmer in ["FRM-E2E-001", "FRM-E2E-002", "James", "Grace"])
 
 
 @pytest.mark.e2e
@@ -317,10 +310,7 @@ class TestGetCurrentFlush:
 
         response_str = str(result)
         # Should contain flush info - period name or days remaining
-        assert any(
-            term in response_str.lower()
-            for term in ["flush", "period", "days", "main", "dry", "secondary"]
-        )
+        assert any(term in response_str.lower() for term in ["flush", "period", "days", "main", "dry", "secondary"])
 
 
 @pytest.mark.e2e
@@ -348,6 +338,5 @@ class TestGetRegionWeather:
         response_str = str(result)
         # Should contain weather data
         assert any(
-            term in response_str.lower()
-            for term in ["temperature", "temp", "precipitation", "humidity", "weather"]
+            term in response_str.lower() for term in ["temperature", "temp", "precipitation", "humidity", "weather"]
         )
