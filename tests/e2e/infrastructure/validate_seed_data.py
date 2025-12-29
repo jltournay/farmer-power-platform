@@ -110,7 +110,7 @@ class SeedValidator:
             self.warnings.append(f"{filename} not found (optional)")
             return None
         try:
-            with open(filepath) as f:
+            with filepath.open() as f:
                 return json.load(f)
         except json.JSONDecodeError as e:
             self.errors.append(
