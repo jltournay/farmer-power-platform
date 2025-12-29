@@ -473,6 +473,38 @@ tests/e2e/fixtures/
 
 ---
 
+## E2E Story Requirements (ALL Stories in Epic 0.4)
+
+**MANDATORY:** Every E2E story in this epic must include and complete the following checklist.
+
+### Required Reading
+- `tests/e2e/E2E-TESTING-MENTAL-MODEL.md` - Truth hierarchy and debugging approach
+
+### Pre-Implementation Checklist
+- [ ] Read `E2E-TESTING-MENTAL-MODEL.md`
+- [ ] Validate seed data before starting Docker:
+  ```bash
+  PYTHONPATH="${PYTHONPATH}:services/plantation-model/src" python tests/e2e/infrastructure/validate_seed_data.py
+  ```
+
+### Production Code Change Log (MANDATORY if production code modified)
+Any changes to production code must be documented with:
+- **File:Lines** - Exact location
+- **What Changed** - Description of change
+- **Why (with evidence)** - Proto line reference or API spec
+- **Type** - Bug fix / Schema alignment / New feature
+
+**"To pass tests" is NOT a valid reason.**
+
+### Before Marking Done
+- [ ] All tests pass locally
+- [ ] Lint passes (`ruff check` + `ruff format --check`)
+- [ ] CI pipeline green
+- [ ] Production Code Change Log complete (if applicable)
+- [ ] Story file updated with completion notes
+
+---
+
 ## Summary
 
 | Story | Description | Tests | Priority | Status |

@@ -61,6 +61,12 @@ farmer-power-platform/
 - Golden samples required for all AI agents (see `tests/golden/`)
 - Mock ALL external APIs (LLM, Starfish, Weather, Africa's Talking)
 - Use fixtures from `tests/conftest.py` - **DO NOT override** `mock_mongodb_client` in local conftest.py
+- **E2E Tests:** Read `tests/e2e/E2E-TESTING-MENTAL-MODEL.md` before writing E2E tests
+  - Proto = source of truth, production code implements it, seed data/tests verify it
+  - NEVER modify production code to make tests pass
+  - NEVER modify production code to accept incorrect seed data
+  - **If you modify production code:** Document each change with file, what, why, evidence, and type
+  - Run `python tests/e2e/infrastructure/validate_seed_data.py` before starting Docker
 
 ### CI Validation (MANDATORY before marking story done)
 
@@ -117,6 +123,7 @@ When adding a new service (e.g., `services/new-model/`), you MUST:
 | Repository structure | `_bmad-output/architecture/repository-structure.md` |
 | Architecture decisions | `_bmad-output/architecture/index.md` |
 | Test strategy | `_bmad-output/test-design-system-level.md` |
+| **E2E testing mental model** | `tests/e2e/E2E-TESTING-MENTAL-MODEL.md` |
 | UX specifications | `_bmad-output/ux-design-specification/index.md` |
 | Epics & stories | `_bmad-output/epics.md` |
 

@@ -91,6 +91,45 @@ So that AI agents can reliably query plantation data.
   - [ ] Run all tests locally (requires Docker infrastructure)
   - [ ] Push and verify CI passes
 
+## E2E Story Checklist (MANDATORY before marking Done)
+
+**Read First:** `tests/e2e/E2E-TESTING-MENTAL-MODEL.md`
+
+### Pre-Implementation
+- [ ] Read and understood `E2E-TESTING-MENTAL-MODEL.md`
+- [ ] Understand: Proto = source of truth, tests verify (not define) behavior
+
+### Before Starting Docker
+- [ ] Validate seed data: `PYTHONPATH="${PYTHONPATH}:services/plantation-model/src" python tests/e2e/infrastructure/validate_seed_data.py`
+- [ ] All seed files pass validation
+
+### During Implementation
+- [ ] If tests fail, investigate using the debugging checklist (not blindly modify code)
+- [ ] If seed data needs changes, fix seed data (not production code)
+- [ ] If production code has bugs, document each fix (see below)
+
+### Production Code Changes (if any)
+If you modified ANY production code, document each change here:
+
+| File:Lines | What Changed | Why (with evidence) | Type |
+|------------|--------------|---------------------|------|
+| _example: plantation_client.py:301-321_ | _Renamed avg_grade → primary_percentage_30d_ | _Proto:667 defines correct name_ | _Bug fix_ |
+| | | | |
+
+**Rules:**
+- "To pass tests" is NOT a valid reason
+- Must reference proto line, API spec, or other evidence
+- If you can't fill this out, you may not understand what you're changing
+
+### Before Marking Done
+- [ ] All tests pass locally with Docker infrastructure
+- [ ] `ruff check` and `ruff format --check` pass
+- [ ] CI pipeline is green
+- [ ] If production code changed: Change log above is complete
+- [ ] Story file updated with completion notes
+
+---
+
 ## Dev Notes
 
 ### Architecture Patterns

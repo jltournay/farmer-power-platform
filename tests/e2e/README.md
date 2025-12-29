@@ -2,6 +2,8 @@
 
 End-to-end tests for the Farmer Power Platform that validate the full stack deployment with real services.
 
+> **Required Reading:** Before writing E2E tests, read [E2E-TESTING-MENTAL-MODEL.md](./E2E-TESTING-MENTAL-MODEL.md) to understand the truth hierarchy and debugging approach.
+
 ## Overview
 
 These tests deploy all 4 existing modules (plantation-model, plantation-mcp, collection-model, collection-mcp) in Docker containers with real dependencies:
@@ -21,7 +23,18 @@ These tests deploy all 4 existing modules (plantation-model, plantation-mcp, col
 
 ## Quick Start (Local)
 
-### 1. Start the E2E Stack
+### 1. Validate Seed Data (REQUIRED)
+
+**Run this BEFORE starting Docker to catch schema errors early:**
+
+```bash
+# From repository root
+PYTHONPATH="${PYTHONPATH}:services/plantation-model/src" python tests/e2e/infrastructure/validate_seed_data.py
+```
+
+This validates all seed JSON files against expected schemas and reports errors. Fix any errors before proceeding - it's much faster than discovering them after Docker starts!
+
+### 2. Start the E2E Stack
 
 ```bash
 # From repository root
@@ -31,7 +44,7 @@ docker compose -f tests/e2e/infrastructure/docker-compose.e2e.yaml up -d --build
 docker compose -f tests/e2e/infrastructure/docker-compose.e2e.yaml ps
 ```
 
-### 2. Run Infrastructure Verification Tests
+### 3. Run Infrastructure Verification Tests
 
 ```bash
 # Run all E2E tests
@@ -41,7 +54,7 @@ PYTHONPATH="${PYTHONPATH}:.:libs/fp-proto/src" pytest tests/e2e/scenarios/ -v --
 PYTHONPATH="${PYTHONPATH}:.:libs/fp-proto/src" pytest tests/e2e/scenarios/test_00_infrastructure_verification.py -v
 ```
 
-### 3. Stop the Stack
+### 4. Stop the Stack
 
 ```bash
 docker compose -f tests/e2e/infrastructure/docker-compose.e2e.yaml down -v
