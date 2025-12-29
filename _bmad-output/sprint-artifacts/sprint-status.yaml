@@ -72,7 +72,7 @@ development_status:
   1-7-quality-grading-event-subscription: done  # github_issue: 24
   1-8-region-entity-weather-configuration: done  # github_issue: 25
   1-9-payment-policy-configuration: done  # github_issue: 26
-  epic-1-retrospective: optional
+  epic-1-retrospective: done
 
   # Epic 2: Quality Data Ingestion (REVISED - BLOB_TRIGGER architecture)
   # Dependencies: Epic 0, Epic 1
