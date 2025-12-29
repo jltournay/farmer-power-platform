@@ -331,8 +331,8 @@ N/A
 - Updated CreateFactory and UpdateFactory handlers to accept payment_policy
 - Updated MCP get_factory tool description to mention payment_policy
 - All 435 plantation unit tests passing
-- All 12 gRPC factory tests passing
-- All 21 MCP service tests passing
+- All 16 gRPC factory tests passing (4 new payment_policy tests)
+- All 24 MCP service tests passing (3 new get_factory/payment_policy tests)
 - All 33 factory model tests passing (including 14 new PaymentPolicy tests)
 
 ### File List
@@ -344,10 +344,12 @@ N/A
 - proto/plantation/v1/plantation.proto
 - libs/fp-proto/src/fp_proto/plantation/v1/plantation_pb2.py
 - libs/fp-proto/src/fp_proto/plantation/v1/plantation_pb2.pyi
-- libs/fp-proto/src/fp_proto/plantation/v1/plantation_pb2_grpc.py
 - mcp-servers/plantation-mcp/src/plantation_mcp/tools/definitions.py
 - tests/unit/plantation/test_factory_model.py
+- tests/unit/plantation/test_grpc_factory.py
+- mcp-servers/plantation-mcp/tests/unit/test_mcp_service.py
 
 ### Change Log
 
 - 2025-12-29: Story 1.9 implementation complete - PaymentPolicy value object, Factory entity update, proto definitions, gRPC handlers, MCP tool description
+- 2025-12-29: Code review fixes - Added 4 gRPC tests and 3 MCP tests for payment_policy, corrected file list

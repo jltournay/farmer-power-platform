@@ -77,6 +77,36 @@ def sample_farmer_summary() -> dict:
 
 
 @pytest.fixture
+def sample_factory() -> dict:
+    """Sample factory data with payment_policy (Story 1.9)."""
+    return {
+        "factory_id": "nyeri-factory-001",
+        "name": "Nyeri Tea Factory",
+        "code": "NTF",
+        "region_id": "nyeri-highland",
+        "location": {"latitude": -0.4197, "longitude": 36.9553},
+        "contact_info": {
+            "email": "info@nyeritea.co.ke",
+            "phone": "+254700000001",
+        },
+        "processing_capacity_kg_per_day": 50000,
+        "quality_thresholds": {
+            "tier_1_min": 85.0,
+            "tier_2_min": 70.0,
+            "tier_3_min": 55.0,
+        },
+        "payment_policy": {
+            "policy_type": "PAYMENT_POLICY_TYPE_SPLIT_PAYMENT",
+            "tier_1_adjustment": 0.15,
+            "tier_2_adjustment": 0.0,
+            "tier_3_adjustment": -0.05,
+            "below_tier_3_adjustment": -0.10,
+        },
+        "is_active": True,
+    }
+
+
+@pytest.fixture
 def sample_region() -> dict:
     """Sample region data."""
     return {
@@ -178,6 +208,115 @@ class TestListTools:
         response = await servicer.ListTools(request, mock_context)
 
         assert len(response.tools) == 0
+
+
+# =============================================================================
+# Factory Tool Tests (Story 1.9 - Payment Policy)
+# =============================================================================
+
+
+class TestGetFactoryTool:
+    """Tests for get_factory tool including payment_policy (Story 1.9)."""
+
+    @pytest.mark.asyncio
+    async def test_get_factory_returns_payment_policy(
+        self,
+        servicer: McpToolServiceServicer,
+        mock_plantation_client: MagicMock,
+        mock_context: MagicMock,
+        sample_factory: dict,
+    ) -> None:
+        """AC #3: get_factory returns factory with payment_policy configuration."""
+        mock_plantation_client.get_factory = AsyncMock(return_value=sample_factory)
+
+        request = mcp_tool_pb2.ToolCallRequest(
+            tool_name="get_factory",
+            arguments_json=json.dumps({"factory_id": "nyeri-factory-001"}),
+        )
+
+        response = await servicer.CallTool(request, mock_context)
+
+        assert response.success is True
+        result = json.loads(response.result_json)
+        assert result["factory_id"] == "nyeri-factory-001"
+        assert result["name"] == "Nyeri Tea Factory"
+
+        # Story 1.9: Verify payment_policy is returned
+        assert "payment_policy" in result
+        payment_policy = result["payment_policy"]
+        assert payment_policy["policy_type"] == "PAYMENT_POLICY_TYPE_SPLIT_PAYMENT"
+        assert payment_policy["tier_1_adjustment"] == 0.15
+        assert payment_policy["tier_2_adjustment"] == 0.0
+        assert payment_policy["tier_3_adjustment"] == -0.05
+        assert payment_policy["below_tier_3_adjustment"] == -0.10
+
+        mock_plantation_client.get_factory.assert_called_once_with("nyeri-factory-001")
+
+    @pytest.mark.asyncio
+    async def test_get_factory_default_payment_policy(
+        self,
+        servicer: McpToolServiceServicer,
+        mock_plantation_client: MagicMock,
+        mock_context: MagicMock,
+    ) -> None:
+        """AC #2: Factory without payment_policy configured returns defaults."""
+        factory_no_policy = {
+            "factory_id": "kiambu-factory-001",
+            "name": "Kiambu Factory",
+            "code": "KMB",
+            "region_id": "kiambu-highland",
+            "is_active": True,
+            "payment_policy": {
+                "policy_type": "PAYMENT_POLICY_TYPE_FEEDBACK_ONLY",
+                "tier_1_adjustment": 0.0,
+                "tier_2_adjustment": 0.0,
+                "tier_3_adjustment": 0.0,
+                "below_tier_3_adjustment": 0.0,
+            },
+        }
+        mock_plantation_client.get_factory = AsyncMock(return_value=factory_no_policy)
+
+        request = mcp_tool_pb2.ToolCallRequest(
+            tool_name="get_factory",
+            arguments_json=json.dumps({"factory_id": "kiambu-factory-001"}),
+        )
+
+        response = await servicer.CallTool(request, mock_context)
+
+        assert response.success is True
+        result = json.loads(response.result_json)
+
+        # Verify default payment_policy values
+        assert "payment_policy" in result
+        payment_policy = result["payment_policy"]
+        assert payment_policy["policy_type"] == "PAYMENT_POLICY_TYPE_FEEDBACK_ONLY"
+        assert payment_policy["tier_1_adjustment"] == 0.0
+        assert payment_policy["tier_2_adjustment"] == 0.0
+        assert payment_policy["tier_3_adjustment"] == 0.0
+        assert payment_policy["below_tier_3_adjustment"] == 0.0
+
+    @pytest.mark.asyncio
+    async def test_get_factory_not_found(
+        self,
+        servicer: McpToolServiceServicer,
+        mock_plantation_client: MagicMock,
+        mock_context: MagicMock,
+    ) -> None:
+        """get_factory with non-existent factory returns error."""
+        mock_plantation_client.get_factory = AsyncMock(
+            side_effect=NotFoundError("Factory not found: nonexistent-factory")
+        )
+
+        request = mcp_tool_pb2.ToolCallRequest(
+            tool_name="get_factory",
+            arguments_json=json.dumps({"factory_id": "nonexistent-factory"}),
+        )
+
+        response = await servicer.CallTool(request, mock_context)
+
+        assert response.success is False
+        assert response.error_code == mcp_tool_pb2.ERROR_CODE_INVALID_ARGUMENTS
+        assert "not found" in response.error_message.lower()
 
 
 class TestGetFarmerTool:

@@ -82,6 +82,23 @@ VALID_CP_STATUSES: set[str] = {"active", "inactive", "seasonal"}
 VALID_STORAGE_TYPES: set[str] = {"covered_shed", "open_air", "refrigerated"}
 VALID_COLLECTION_DAYS: set[str] = {"mon", "tue", "wed", "thu", "fri", "sat", "sun"}
 
+# PaymentPolicyType mappings (Story 1.9)
+# Domain enum -> Proto enum (for outgoing responses)
+PAYMENT_POLICY_TYPE_TO_PROTO: dict[PaymentPolicyType, int] = {
+    PaymentPolicyType.SPLIT_PAYMENT: plantation_pb2.PAYMENT_POLICY_TYPE_SPLIT_PAYMENT,
+    PaymentPolicyType.WEEKLY_BONUS: plantation_pb2.PAYMENT_POLICY_TYPE_WEEKLY_BONUS,
+    PaymentPolicyType.DELAYED_PAYMENT: plantation_pb2.PAYMENT_POLICY_TYPE_DELAYED_PAYMENT,
+    PaymentPolicyType.FEEDBACK_ONLY: plantation_pb2.PAYMENT_POLICY_TYPE_FEEDBACK_ONLY,
+}
+# Proto enum -> Domain enum (for incoming requests)
+PAYMENT_POLICY_TYPE_FROM_PROTO: dict[int, PaymentPolicyType] = {
+    plantation_pb2.PAYMENT_POLICY_TYPE_SPLIT_PAYMENT: PaymentPolicyType.SPLIT_PAYMENT,
+    plantation_pb2.PAYMENT_POLICY_TYPE_WEEKLY_BONUS: PaymentPolicyType.WEEKLY_BONUS,
+    plantation_pb2.PAYMENT_POLICY_TYPE_DELAYED_PAYMENT: PaymentPolicyType.DELAYED_PAYMENT,
+    plantation_pb2.PAYMENT_POLICY_TYPE_FEEDBACK_ONLY: PaymentPolicyType.FEEDBACK_ONLY,
+    plantation_pb2.PAYMENT_POLICY_TYPE_UNSPECIFIED: PaymentPolicyType.FEEDBACK_ONLY,
+}
+
 
 def datetime_to_timestamp(dt: datetime) -> Timestamp:
     """Convert datetime to protobuf Timestamp."""
@@ -143,13 +160,6 @@ class PlantationServiceServicer(plantation_pb2_grpc.PlantationServiceServicer):
 
     def _factory_to_proto(self, factory: Factory) -> plantation_pb2.Factory:
         """Convert Factory domain model to protobuf message."""
-        # Map PaymentPolicyType enum to proto enum
-        policy_type_map = {
-            PaymentPolicyType.SPLIT_PAYMENT: plantation_pb2.PAYMENT_POLICY_TYPE_SPLIT_PAYMENT,
-            PaymentPolicyType.WEEKLY_BONUS: plantation_pb2.PAYMENT_POLICY_TYPE_WEEKLY_BONUS,
-            PaymentPolicyType.DELAYED_PAYMENT: plantation_pb2.PAYMENT_POLICY_TYPE_DELAYED_PAYMENT,
-            PaymentPolicyType.FEEDBACK_ONLY: plantation_pb2.PAYMENT_POLICY_TYPE_FEEDBACK_ONLY,
-        }
         return plantation_pb2.Factory(
             id=factory.id,
             name=factory.name,
@@ -172,7 +182,7 @@ class PlantationServiceServicer(plantation_pb2_grpc.PlantationServiceServicer):
                 tier_3=factory.quality_thresholds.tier_3,
             ),
             payment_policy=plantation_pb2.PaymentPolicy(
-                policy_type=policy_type_map.get(
+                policy_type=PAYMENT_POLICY_TYPE_TO_PROTO.get(
                     factory.payment_policy.policy_type,
                     plantation_pb2.PAYMENT_POLICY_TYPE_FEEDBACK_ONLY,
                 ),
@@ -191,17 +201,8 @@ class PlantationServiceServicer(plantation_pb2_grpc.PlantationServiceServicer):
         if proto_policy is None:
             return PaymentPolicy()  # Return defaults
 
-        # Map proto enum to domain enum
-        policy_type_map = {
-            plantation_pb2.PAYMENT_POLICY_TYPE_SPLIT_PAYMENT: PaymentPolicyType.SPLIT_PAYMENT,
-            plantation_pb2.PAYMENT_POLICY_TYPE_WEEKLY_BONUS: PaymentPolicyType.WEEKLY_BONUS,
-            plantation_pb2.PAYMENT_POLICY_TYPE_DELAYED_PAYMENT: PaymentPolicyType.DELAYED_PAYMENT,
-            plantation_pb2.PAYMENT_POLICY_TYPE_FEEDBACK_ONLY: PaymentPolicyType.FEEDBACK_ONLY,
-            plantation_pb2.PAYMENT_POLICY_TYPE_UNSPECIFIED: PaymentPolicyType.FEEDBACK_ONLY,
-        }
-
         return PaymentPolicy(
-            policy_type=policy_type_map.get(proto_policy.policy_type, PaymentPolicyType.FEEDBACK_ONLY),
+            policy_type=PAYMENT_POLICY_TYPE_FROM_PROTO.get(proto_policy.policy_type, PaymentPolicyType.FEEDBACK_ONLY),
             tier_1_adjustment=proto_policy.tier_1_adjustment,
             tier_2_adjustment=proto_policy.tier_2_adjustment,
             tier_3_adjustment=proto_policy.tier_3_adjustment,

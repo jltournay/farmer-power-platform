@@ -28,6 +28,7 @@ from plantation_model.domain.models.grading_model import (
 from plantation_model.domain.models.region import Region, RegionCreate, RegionUpdate
 from plantation_model.domain.models.regional_weather import RegionalWeather, WeatherObservation
 from plantation_model.domain.models.value_objects import (
+    GPS,
     Agronomic,
     AltitudeBand,
     AltitudeBandLabel,
@@ -37,12 +38,14 @@ from plantation_model.domain.models.value_objects import (
     FlushPeriod,
     Geography,
     GeoLocation,
-    GPS,
     OperatingHours,
+    PaymentPolicy,
+    PaymentPolicyType,
     WeatherConfig,
 )
 
 __all__ = [
+    "GPS",
     "Agronomic",
     "AltitudeBand",
     "AltitudeBandLabel",
@@ -62,19 +65,20 @@ __all__ = [
     "FarmerUpdate",
     "FlushCalendar",
     "FlushPeriod",
-    "Geography",
     "GeoLocation",
-    "GPS",
+    "Geography",
     "GradeRules",
     "GradingAttribute",
     "GradingModel",
     "GradingType",
     "HistoricalMetrics",
     "OperatingHours",
+    "PaymentPolicy",
+    "PaymentPolicyType",
     "Region",
     "RegionCreate",
-    "RegionalWeather",
     "RegionUpdate",
+    "RegionalWeather",
     "TodayMetrics",
     "TrendDirection",
     "WeatherConfig",
