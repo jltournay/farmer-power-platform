@@ -73,6 +73,10 @@ So that I can validate all services are healthy before running functional tests.
 
 #### Story 0.4.2: Plantation MCP Tool Contract Tests
 
+**Status:** ✅ Done (13 tests in `test_01_plantation_mcp_contracts.py`)
+**Story File:** [`_bmad-output/sprint-artifacts/0-4-2-plantation-mcp-tool-contracts.md`](../sprint-artifacts/0-4-2-plantation-mcp-tool-contracts.md)
+**GitHub Issue:** [#27](https://github.com/jltournay/farmer-power-platform/issues/27)
+
 As a **developer integrating with Plantation Model**,
 I want all 9 Plantation MCP tools validated with contract tests,
 So that AI agents can reliably query plantation data.
@@ -510,7 +514,7 @@ Any changes to production code must be documented with:
 | Story | Description | Tests | Priority | Status |
 |-------|-------------|-------|----------|--------|
 | 0.4.1 | Infrastructure Verification | 19 | P0 | ✅ Done |
-| 0.4.2 | Plantation MCP Contracts | 9 | P0 | To Do |
+| 0.4.2 | Plantation MCP Contracts | 13 | P0 | ✅ Done |
 | 0.4.3 | Collection MCP Contracts | 5 | P0 | To Do |
 | 0.4.4 | Factory-Farmer Flow | 5 | P0 | To Do |
 | 0.4.5 | Quality Blob Ingestion | 6 | P0 | To Do |

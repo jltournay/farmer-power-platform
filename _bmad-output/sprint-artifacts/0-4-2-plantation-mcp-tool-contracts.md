@@ -1,7 +1,8 @@
 # Story 0.4.2: Plantation MCP Tool Contract Tests
 
 **Status:** done
-**GitHub Issue:** #27
+**GitHub Issue:** [#27](https://github.com/jltournay/farmer-power-platform/issues/27)
+**Epic:** [Epic 0.4: E2E Test Scenarios](../epics/epic-0-4-e2e-tests.md)
 
 ## Story
 
