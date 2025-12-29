@@ -1,0 +1,148 @@
+[
+  {
+    "container": "quality-events-e2e",
+    "blob_path": "results/FAC-E2E-001/FRM-E2E-001/batch-001.json",
+    "content": {
+      "farmer_id": "FRM-E2E-001",
+      "factory_id": "FAC-E2E-001",
+      "batch_id": "batch-001",
+      "grading_model_id": "tbk_kenya_tea_v1",
+      "grading_model_version": "1.0",
+      "timestamp": "2025-01-15T08:00:00Z",
+      "bag_summary": {
+        "total_weight_kg": 45.5,
+        "primary_percentage": 78.5,
+        "secondary_percentage": 21.5,
+        "grade": "primary",
+        "leaf_analysis": {
+          "coarse_leaf": 5.2,
+          "banjhi": 3.1,
+          "flat_leaf": 8.7,
+          "fiber": 3.5
+        }
+      },
+      "collection_point_id": "CP-E2E-001",
+      "operator_id": "OP-001",
+      "device_id": "QC-ANALYZER-001"
+    }
+  },
+  {
+    "container": "quality-events-e2e",
+    "blob_path": "results/FAC-E2E-001/FRM-E2E-001/batch-002.json",
+    "content": {
+      "farmer_id": "FRM-E2E-001",
+      "factory_id": "FAC-E2E-001",
+      "batch_id": "batch-002",
+      "grading_model_id": "tbk_kenya_tea_v1",
+      "grading_model_version": "1.0",
+      "timestamp": "2025-01-16T09:00:00Z",
+      "bag_summary": {
+        "total_weight_kg": 52.3,
+        "primary_percentage": 82.1,
+        "secondary_percentage": 17.9,
+        "grade": "primary",
+        "leaf_analysis": {
+          "coarse_leaf": 4.1,
+          "banjhi": 2.8,
+          "flat_leaf": 7.2,
+          "fiber": 3.8
+        }
+      },
+      "collection_point_id": "CP-E2E-001",
+      "operator_id": "OP-001",
+      "device_id": "QC-ANALYZER-001"
+    }
+  },
+  {
+    "container": "quality-events-e2e",
+    "blob_path": "results/FAC-E2E-001/FRM-E2E-002/batch-001.json",
+    "content": {
+      "farmer_id": "FRM-E2E-002",
+      "factory_id": "FAC-E2E-001",
+      "batch_id": "batch-001",
+      "grading_model_id": "tbk_kenya_tea_v1",
+      "grading_model_version": "1.0",
+      "timestamp": "2025-01-15T10:00:00Z",
+      "bag_summary": {
+        "total_weight_kg": 38.7,
+        "primary_percentage": 65.2,
+        "secondary_percentage": 34.8,
+        "grade": "secondary",
+        "leaf_analysis": {
+          "coarse_leaf": 12.3,
+          "banjhi": 8.5,
+          "flat_leaf": 10.2,
+          "fiber": 3.8
+        }
+      },
+      "collection_point_id": "CP-E2E-001",
+      "operator_id": "OP-002",
+      "device_id": "QC-ANALYZER-001",
+      "notes": "Higher coarse leaf content - quality improvement advice given"
+    }
+  },
+  {
+    "container": "manual-uploads-e2e",
+    "blob_path": "FRM-E2E-001/manual-quality-check.json",
+    "content": {
+      "farmer_id": "FRM-E2E-001",
+      "factory_id": "FAC-E2E-001",
+      "document_id": "manual-quality-check",
+      "grading_model_id": "tbk_kenya_tea_v1",
+      "timestamp": "2025-01-17T11:00:00Z",
+      "upload_type": "manual",
+      "bag_summary": {
+        "total_weight_kg": 25.0,
+        "primary_percentage": 90.5,
+        "secondary_percentage": 9.5,
+        "grade": "primary",
+        "notes": "Excellent quality batch from highland harvest"
+      },
+      "uploaded_by": "field-officer-001",
+      "verification_status": "verified"
+    }
+  },
+  {
+    "container": "manual-uploads-e2e",
+    "blob_path": "FRM-E2E-003/manual-quality-check.json",
+    "content": {
+      "farmer_id": "FRM-E2E-003",
+      "factory_id": "FAC-E2E-001",
+      "document_id": "manual-quality-check",
+      "grading_model_id": "tbk_kenya_tea_v1",
+      "timestamp": "2025-01-18T14:00:00Z",
+      "upload_type": "manual",
+      "bag_summary": {
+        "total_weight_kg": 42.8,
+        "primary_percentage": 71.3,
+        "secondary_percentage": 28.7,
+        "grade": "primary",
+        "notes": "Moisture content slightly elevated"
+      },
+      "uploaded_by": "field-officer-002",
+      "verification_status": "pending"
+    }
+  },
+  {
+    "container": "manual-uploads-e2e",
+    "blob_path": "FRM-E2E-004/manual-quality-check.json",
+    "content": {
+      "farmer_id": "FRM-E2E-004",
+      "factory_id": "FAC-E2E-002",
+      "document_id": "manual-quality-check",
+      "grading_model_id": "ktda_ternary_v1",
+      "timestamp": "2025-01-19T16:00:00Z",
+      "upload_type": "manual",
+      "bag_summary": {
+        "total_weight_kg": 55.2,
+        "primary_percentage": 68.4,
+        "secondary_percentage": 24.1,
+        "tertiary_percentage": 7.5,
+        "grade": "primary",
+        "notes": "Nandi highlands quality batch"
+      },
+      "uploaded_by": "field-officer-003",
+      "verification_status": "verified"
+    }
+  }
+]

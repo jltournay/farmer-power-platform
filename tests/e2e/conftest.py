@@ -190,6 +190,7 @@ async def collection_mcp(
 async def seed_data(
     wait_for_services: None,
     mongodb_direct: MongoDBDirectClient,
+    azurite_client: AzuriteClient,
 ) -> AsyncGenerator[dict[str, Any], None]:
     """
     Seed initial data for E2E tests.
@@ -209,6 +210,7 @@ async def seed_data(
         "farmer_performance": [],
         "weather_observations": [],
         "documents": [],
+        "document_blobs": [],
     }
 
     # Load and seed grading models
@@ -273,5 +275,17 @@ async def seed_data(
         documents = json.loads(documents_file.read_text())
         await mongodb_direct.seed_documents(documents)
         seeded_data["documents"] = documents
+
+    # Load and seed document blobs to Azurite (for Collection MCP tests)
+    document_blobs_file = seed_dir / "document_blobs.json"
+    if document_blobs_file.exists():
+        document_blobs = json.loads(document_blobs_file.read_text())
+        for blob_spec in document_blobs:
+            await azurite_client.upload_json(
+                container_name=blob_spec["container"],
+                blob_name=blob_spec["blob_path"],
+                data=blob_spec["content"],
+            )
+        seeded_data["document_blobs"] = document_blobs
 
     yield seeded_data
