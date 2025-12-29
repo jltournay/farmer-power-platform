@@ -93,8 +93,8 @@ development_status:
   # Tests the full stack: Plantation Model, Collection Model, MCP Servers, DAPR events
   epic-0-4: in-progress
   0-4-1-infrastructure-verification: done  # 19 tests in test_00_infrastructure_verification.py
-  0-4-2-plantation-mcp-tool-contracts: in-progress  # 9 tests, github_issue: 27
-  0-4-3-collection-mcp-tool-contracts: backlog  # 5 tests
+  0-4-2-plantation-mcp-tool-contracts: done  # 14 tests, github_issue: 27
+  0-4-3-collection-mcp-tool-contracts: in-progress  # 11 tests, github_issue: 28
   0-4-4-factory-farmer-registration-flow: backlog  # 5 tests
   0-4-5-quality-event-blob-ingestion: backlog  # 6 tests - JSON direct, no AI
   0-4-6-weather-data-ingestion-mock-ai: backlog  # 5 tests - Real weather API, mock AI
@@ -141,7 +141,7 @@ development_status:
   # P2: FIRST FRONTEND APPS (Simple React validation)
   # ═══════════════════════════════════════════════════════════════════════════
 
-  # Epic 11: Registration Kiosk PWA (1st UI - SIMPLEST)
+  # Epic 11: Registration Kiosk PWA The (1st UI - SIMPLEST)
   # Dependencies: Epic 0.5, Epic 1
   epic-11: backlog
   11-1-registration-kiosk-application-scaffold: backlog

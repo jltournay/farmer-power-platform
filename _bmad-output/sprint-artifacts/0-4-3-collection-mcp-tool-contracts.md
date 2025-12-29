@@ -24,46 +24,46 @@ So that AI agents can reliably query collected documents.
 
 ## Tasks / Subtasks
 
-- [ ] **Task 1: Create test file scaffold** (AC: All)
-  - [ ] Create `tests/e2e/scenarios/test_02_collection_mcp_contracts.py`
-  - [ ] Import fixtures: `collection_mcp`, `mongodb_direct`, `seed_data`
-  - [ ] Add `@pytest.mark.e2e` class marker
-  - [ ] Add file docstring with prerequisites
+- [x] **Task 1: Create test file scaffold** (AC: All)
+  - [x] Create `tests/e2e/scenarios/test_02_collection_mcp_contracts.py`
+  - [x] Import fixtures: `collection_mcp`, `mongodb_direct`, `seed_data`
+  - [x] Add `@pytest.mark.e2e` class marker
+  - [x] Add file docstring with prerequisites
 
-- [ ] **Task 2: Create document seed data** (AC: 1, 2, 3, 4)
-  - [ ] Create `tests/e2e/infrastructure/seed/documents.json` with test documents
-  - [ ] Documents linked to existing farmers (FRM-E2E-001 to FRM-E2E-004)
-  - [ ] Documents from multiple sources (e2e-qc-analyzer-json, e2e-manual-upload)
-  - [ ] Update conftest.py to seed documents
-  - [ ] Update mongodb_direct.py with seed_documents method
+- [x] **Task 2: Create document seed data** (AC: 1, 2, 3, 4)
+  - [x] Create `tests/e2e/infrastructure/seed/documents.json` with test documents
+  - [x] Documents linked to existing farmers (FRM-E2E-001 to FRM-E2E-004)
+  - [x] Documents from multiple sources (e2e-qc-analyzer-json, e2e-manual-upload)
+  - [x] Update conftest.py to seed documents
+  - [x] Update mongodb_direct.py with seed_documents method
 
-- [ ] **Task 3: Implement get_documents test** (AC: 1)
-  - [ ] Test filtering by source_id
-  - [ ] Test filtering by farmer_id
-  - [ ] Test filtering by attributes
-  - [ ] Verify results sorted by ingested_at descending
+- [x] **Task 3: Implement get_documents test** (AC: 1)
+  - [x] Test filtering by source_id
+  - [x] Test filtering by farmer_id
+  - [x] Test filtering by attributes
+  - [x] Verify results sorted by ingested_at descending
 
-- [ ] **Task 4: Implement get_document_by_id test** (AC: 2)
-  - [ ] Test retrieval with known document_id
-  - [ ] Test with include_files=true for SAS URLs
-  - [ ] Test error for non-existent document_id
+- [x] **Task 4: Implement get_document_by_id test** (AC: 2)
+  - [x] Test retrieval with known document_id
+  - [x] Test with include_files=true for SAS URLs
+  - [x] Test error for non-existent document_id
 
-- [ ] **Task 5: Implement get_farmer_documents test** (AC: 3)
-  - [ ] Test with farmer having multiple documents
-  - [ ] Test filtering by source_ids
-  - [ ] Verify aggregation across sources
+- [x] **Task 5: Implement get_farmer_documents test** (AC: 3)
+  - [x] Test with farmer having multiple documents
+  - [x] Test filtering by source_ids
+  - [x] Verify aggregation across sources
 
-- [ ] **Task 6: Implement search_documents test** (AC: 4)
-  - [ ] Test full-text search with query string
-  - [ ] Verify relevance scoring in results
+- [x] **Task 6: Implement search_documents test** (AC: 4)
+  - [x] Test full-text search with query string
+  - [x] Verify relevance scoring in results
 
-- [ ] **Task 7: Implement list_sources test** (AC: 5)
-  - [ ] Test with enabled_only=true
-  - [ ] Test with enabled_only=false
-  - [ ] Verify source configs returned
+- [x] **Task 7: Implement list_sources test** (AC: 5)
+  - [x] Test with enabled_only=true
+  - [x] Test with enabled_only=false
+  - [x] Verify source configs returned
 
-- [ ] **Task 8: Test cleanup and validation** (AC: All)
-  - [ ] Verify no lint errors with `ruff check tests/e2e/`
+- [x] **Task 8: Test cleanup and validation** (AC: All)
+  - [x] Verify no lint errors with `ruff check tests/e2e/`
   - [ ] Run all tests locally (requires Docker infrastructure)
   - [ ] Push and verify CI passes
 
@@ -233,6 +233,11 @@ Claude Opus 4.5 (claude-opus-4-5-20251101)
 ### File List
 
 **Created:**
+- `tests/e2e/scenarios/test_02_collection_mcp_contracts.py` - 12 tests for 5 Collection MCP tools
+- `tests/e2e/infrastructure/seed/documents.json` - 6 document index records (DOC-E2E-001 to DOC-E2E-006)
+- `tests/e2e/infrastructure/seed/document_blobs.json` - 6 raw blob fixtures
 
 **Modified:**
+- `tests/e2e/conftest.py` - Added document and blob seeding to seed_data fixture
+- `tests/e2e/helpers/mongodb_direct.py` - Added seed_documents method
 

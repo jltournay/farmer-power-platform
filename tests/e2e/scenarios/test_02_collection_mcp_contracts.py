@@ -43,10 +43,7 @@ class TestGetDocuments:
         # Verify documents are in response
         result_str = str(result.get("result_json", ""))
         # Should contain at least one document ID
-        assert any(
-            doc_id in result_str
-            for doc_id in ["DOC-E2E-001", "DOC-E2E-002", "DOC-E2E-003"]
-        )
+        assert any(doc_id in result_str for doc_id in ["DOC-E2E-001", "DOC-E2E-002", "DOC-E2E-003"])
 
     @pytest.mark.asyncio
     async def test_get_documents_filter_by_source_id(
@@ -87,8 +84,7 @@ class TestGetDocuments:
         result_str = str(result.get("result_json", ""))
         # FRM-E2E-001 has 3 documents (DOC-E2E-001, DOC-E2E-002, DOC-E2E-004)
         assert "FRM-E2E-001" in result_str or any(
-            doc_id in result_str
-            for doc_id in ["DOC-E2E-001", "DOC-E2E-002", "DOC-E2E-004"]
+            doc_id in result_str for doc_id in ["DOC-E2E-001", "DOC-E2E-002", "DOC-E2E-004"]
         )
 
 
@@ -262,10 +258,7 @@ class TestListSources:
 
         result_str = str(result.get("result_json", ""))
         # Should contain our seeded sources
-        assert any(
-            source in result_str
-            for source in ["e2e-qc-analyzer-json", "e2e-manual-upload"]
-        )
+        assert any(source in result_str for source in ["e2e-qc-analyzer-json", "e2e-manual-upload"])
 
     @pytest.mark.asyncio
     async def test_list_sources_returns_all_sources(
