@@ -160,19 +160,20 @@ All seed data files are located in `tests/e2e/infrastructure/seed/`:
 |------|----------|---------|
 | `source_configs.json` | 2 sources | `e2e-qc-analyzer-json`, `e2e-manual-upload` |
 | `documents.json` | 6 documents | `DOC-E2E-001` to `DOC-E2E-006` |
+| `document_blobs.json` | 6 raw blobs | Matching blob files for documents |
 | `farmers.json` | 4 farmers | `FRM-E2E-001` to `FRM-E2E-004` |
 
 **Test Data Relationships:**
 ```
 e2e-qc-analyzer-json (source)
-├── DOC-E2E-001 (FRM-E2E-001, quality result)
-├── DOC-E2E-002 (FRM-E2E-001, quality result)
-└── DOC-E2E-003 (FRM-E2E-002, quality result)
+├── DOC-E2E-001 (FRM-E2E-001) → blob: quality-events-e2e/results/FAC-E2E-001/FRM-E2E-001/batch-001.json
+├── DOC-E2E-002 (FRM-E2E-001) → blob: quality-events-e2e/results/FAC-E2E-001/FRM-E2E-001/batch-002.json
+└── DOC-E2E-003 (FRM-E2E-002) → blob: quality-events-e2e/results/FAC-E2E-001/FRM-E2E-002/batch-001.json
 
 e2e-manual-upload (source)
-├── DOC-E2E-004 (FRM-E2E-001, manual upload)
-├── DOC-E2E-005 (FRM-E2E-003, manual upload)
-└── DOC-E2E-006 (FRM-E2E-004, manual upload)
+├── DOC-E2E-004 (FRM-E2E-001) → blob: manual-uploads-e2e/FRM-E2E-001/manual-quality-check.json
+├── DOC-E2E-005 (FRM-E2E-003) → blob: manual-uploads-e2e/FRM-E2E-003/manual-quality-check.json
+└── DOC-E2E-006 (FRM-E2E-004) → blob: manual-uploads-e2e/FRM-E2E-004/manual-quality-check.json
 ```
 
 ### References
