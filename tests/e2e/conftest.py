@@ -208,6 +208,7 @@ async def seed_data(
         "farmers": [],
         "farmer_performance": [],
         "weather_observations": [],
+        "documents": [],
     }
 
     # Load and seed grading models
@@ -265,5 +266,12 @@ async def seed_data(
         weather_observations = json.loads(weather_observations_file.read_text())
         await mongodb_direct.seed_weather_observations(weather_observations)
         seeded_data["weather_observations"] = weather_observations
+
+    # Load and seed documents (for Collection MCP tests)
+    documents_file = seed_dir / "documents.json"
+    if documents_file.exists():
+        documents = json.loads(documents_file.read_text())
+        await mongodb_direct.seed_documents(documents)
+        seeded_data["documents"] = documents
 
     yield seeded_data

@@ -233,3 +233,13 @@ class MongoDBDirectClient:
                     {"$set": obs},
                     upsert=True,
                 )
+
+    async def seed_documents(self, documents: list[dict[str, Any]]) -> None:
+        """Seed documents into collection database (quality_documents collection)."""
+        if documents:
+            for doc in documents:
+                await self.collection_db.quality_documents.update_one(
+                    {"document_id": doc["document_id"]},
+                    {"$set": doc},
+                    upsert=True,
+                )

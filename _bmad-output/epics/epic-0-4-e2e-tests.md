@@ -515,7 +515,7 @@ Any changes to production code must be documented with:
 |-------|-------------|-------|----------|--------|
 | 0.4.1 | Infrastructure Verification | 19 | P0 | ✅ Done |
 | 0.4.2 | Plantation MCP Contracts | 13 | P0 | ✅ Done |
-| 0.4.3 | Collection MCP Contracts | 5 | P0 | To Do |
+| 0.4.3 | Collection MCP Contracts | 5 | P0 | In Progress |
 | 0.4.4 | Factory-Farmer Flow | 5 | P0 | To Do |
 | 0.4.5 | Quality Blob Ingestion | 6 | P0 | To Do |
 | 0.4.6 | Weather + Mock AI | 5 | P1 | To Do |

@@ -1,0 +1,249 @@
+[
+  {
+    "document_id": "DOC-E2E-001",
+    "raw_document": {
+      "blob_container": "quality-events-e2e",
+      "blob_path": "results/FAC-E2E-001/FRM-E2E-001/batch-001.json",
+      "content_hash": "sha256:abc123def456",
+      "size_bytes": 1024,
+      "stored_at": "2025-01-15T08:00:00Z"
+    },
+    "extraction": {
+      "ai_agent_id": "qc_event_extractor",
+      "extraction_timestamp": "2025-01-15T08:01:00Z",
+      "confidence": 0.95,
+      "validation_passed": true,
+      "validation_warnings": []
+    },
+    "ingestion": {
+      "ingestion_id": "ING-E2E-001",
+      "source_id": "e2e-qc-analyzer-json",
+      "received_at": "2025-01-15T08:00:00Z",
+      "processed_at": "2025-01-15T08:01:00Z"
+    },
+    "extracted_fields": {
+      "farmer_id": "FRM-E2E-001",
+      "factory_id": "FAC-E2E-001",
+      "grading_model_id": "tbk_kenya_tea_v1",
+      "grading_model_version": "1.0",
+      "bag_summary": {
+        "total_weight_kg": 45.5,
+        "primary_percentage": 78.5,
+        "secondary_percentage": 21.5,
+        "grade": "primary"
+      }
+    },
+    "linkage_fields": {
+      "farmer_id": "FRM-E2E-001",
+      "factory_id": "FAC-E2E-001",
+      "grading_model_id": "tbk_kenya_tea_v1"
+    },
+    "created_at": "2025-01-15T08:01:00Z"
+  },
+  {
+    "document_id": "DOC-E2E-002",
+    "raw_document": {
+      "blob_container": "quality-events-e2e",
+      "blob_path": "results/FAC-E2E-001/FRM-E2E-001/batch-002.json",
+      "content_hash": "sha256:def456ghi789",
+      "size_bytes": 1156,
+      "stored_at": "2025-01-16T09:00:00Z"
+    },
+    "extraction": {
+      "ai_agent_id": "qc_event_extractor",
+      "extraction_timestamp": "2025-01-16T09:01:00Z",
+      "confidence": 0.92,
+      "validation_passed": true,
+      "validation_warnings": []
+    },
+    "ingestion": {
+      "ingestion_id": "ING-E2E-002",
+      "source_id": "e2e-qc-analyzer-json",
+      "received_at": "2025-01-16T09:00:00Z",
+      "processed_at": "2025-01-16T09:01:00Z"
+    },
+    "extracted_fields": {
+      "farmer_id": "FRM-E2E-001",
+      "factory_id": "FAC-E2E-001",
+      "grading_model_id": "tbk_kenya_tea_v1",
+      "grading_model_version": "1.0",
+      "bag_summary": {
+        "total_weight_kg": 52.3,
+        "primary_percentage": 82.1,
+        "secondary_percentage": 17.9,
+        "grade": "primary"
+      }
+    },
+    "linkage_fields": {
+      "farmer_id": "FRM-E2E-001",
+      "factory_id": "FAC-E2E-001",
+      "grading_model_id": "tbk_kenya_tea_v1"
+    },
+    "created_at": "2025-01-16T09:01:00Z"
+  },
+  {
+    "document_id": "DOC-E2E-003",
+    "raw_document": {
+      "blob_container": "quality-events-e2e",
+      "blob_path": "results/FAC-E2E-001/FRM-E2E-002/batch-001.json",
+      "content_hash": "sha256:ghi789jkl012",
+      "size_bytes": 980,
+      "stored_at": "2025-01-15T10:00:00Z"
+    },
+    "extraction": {
+      "ai_agent_id": "qc_event_extractor",
+      "extraction_timestamp": "2025-01-15T10:01:00Z",
+      "confidence": 0.88,
+      "validation_passed": true,
+      "validation_warnings": ["Low confidence on leaf classification"]
+    },
+    "ingestion": {
+      "ingestion_id": "ING-E2E-003",
+      "source_id": "e2e-qc-analyzer-json",
+      "received_at": "2025-01-15T10:00:00Z",
+      "processed_at": "2025-01-15T10:01:00Z"
+    },
+    "extracted_fields": {
+      "farmer_id": "FRM-E2E-002",
+      "factory_id": "FAC-E2E-001",
+      "grading_model_id": "tbk_kenya_tea_v1",
+      "grading_model_version": "1.0",
+      "bag_summary": {
+        "total_weight_kg": 38.7,
+        "primary_percentage": 65.2,
+        "secondary_percentage": 34.8,
+        "grade": "secondary"
+      }
+    },
+    "linkage_fields": {
+      "farmer_id": "FRM-E2E-002",
+      "factory_id": "FAC-E2E-001",
+      "grading_model_id": "tbk_kenya_tea_v1"
+    },
+    "created_at": "2025-01-15T10:01:00Z"
+  },
+  {
+    "document_id": "DOC-E2E-004",
+    "raw_document": {
+      "blob_container": "manual-uploads-e2e",
+      "blob_path": "FRM-E2E-001/manual-quality-check.json",
+      "content_hash": "sha256:jkl012mno345",
+      "size_bytes": 756,
+      "stored_at": "2025-01-17T11:00:00Z"
+    },
+    "extraction": {
+      "ai_agent_id": "qc_event_extractor",
+      "extraction_timestamp": "2025-01-17T11:01:00Z",
+      "confidence": 0.97,
+      "validation_passed": true,
+      "validation_warnings": []
+    },
+    "ingestion": {
+      "ingestion_id": "ING-E2E-004",
+      "source_id": "e2e-manual-upload",
+      "received_at": "2025-01-17T11:00:00Z",
+      "processed_at": "2025-01-17T11:01:00Z"
+    },
+    "extracted_fields": {
+      "farmer_id": "FRM-E2E-001",
+      "factory_id": "FAC-E2E-001",
+      "grading_model_id": "tbk_kenya_tea_v1",
+      "bag_summary": {
+        "total_weight_kg": 25.0,
+        "primary_percentage": 90.5,
+        "secondary_percentage": 9.5,
+        "grade": "primary",
+        "notes": "Excellent quality batch from highland harvest"
+      }
+    },
+    "linkage_fields": {
+      "farmer_id": "FRM-E2E-001",
+      "factory_id": "FAC-E2E-001",
+      "grading_model_id": "tbk_kenya_tea_v1"
+    },
+    "created_at": "2025-01-17T11:01:00Z"
+  },
+  {
+    "document_id": "DOC-E2E-005",
+    "raw_document": {
+      "blob_container": "manual-uploads-e2e",
+      "blob_path": "FRM-E2E-003/manual-quality-check.json",
+      "content_hash": "sha256:mno345pqr678",
+      "size_bytes": 812,
+      "stored_at": "2025-01-18T14:00:00Z"
+    },
+    "extraction": {
+      "ai_agent_id": "qc_event_extractor",
+      "extraction_timestamp": "2025-01-18T14:01:00Z",
+      "confidence": 0.91,
+      "validation_passed": true,
+      "validation_warnings": []
+    },
+    "ingestion": {
+      "ingestion_id": "ING-E2E-005",
+      "source_id": "e2e-manual-upload",
+      "received_at": "2025-01-18T14:00:00Z",
+      "processed_at": "2025-01-18T14:01:00Z"
+    },
+    "extracted_fields": {
+      "farmer_id": "FRM-E2E-003",
+      "factory_id": "FAC-E2E-001",
+      "grading_model_id": "tbk_kenya_tea_v1",
+      "bag_summary": {
+        "total_weight_kg": 42.8,
+        "primary_percentage": 71.3,
+        "secondary_percentage": 28.7,
+        "grade": "primary",
+        "notes": "Moisture content slightly elevated"
+      }
+    },
+    "linkage_fields": {
+      "farmer_id": "FRM-E2E-003",
+      "factory_id": "FAC-E2E-001",
+      "grading_model_id": "tbk_kenya_tea_v1"
+    },
+    "created_at": "2025-01-18T14:01:00Z"
+  },
+  {
+    "document_id": "DOC-E2E-006",
+    "raw_document": {
+      "blob_container": "manual-uploads-e2e",
+      "blob_path": "FRM-E2E-004/manual-quality-check.json",
+      "content_hash": "sha256:pqr678stu901",
+      "size_bytes": 945,
+      "stored_at": "2025-01-19T16:00:00Z"
+    },
+    "extraction": {
+      "ai_agent_id": "qc_event_extractor",
+      "extraction_timestamp": "2025-01-19T16:01:00Z",
+      "confidence": 0.89,
+      "validation_passed": true,
+      "validation_warnings": []
+    },
+    "ingestion": {
+      "ingestion_id": "ING-E2E-006",
+      "source_id": "e2e-manual-upload",
+      "received_at": "2025-01-19T16:00:00Z",
+      "processed_at": "2025-01-19T16:01:00Z"
+    },
+    "extracted_fields": {
+      "farmer_id": "FRM-E2E-004",
+      "factory_id": "FAC-E2E-002",
+      "grading_model_id": "ktda_ternary_v1",
+      "bag_summary": {
+        "total_weight_kg": 55.2,
+        "primary_percentage": 68.4,
+        "secondary_percentage": 24.1,
+        "tertiary_percentage": 7.5,
+        "grade": "primary",
+        "notes": "Nandi highlands quality batch"
+      }
+    },
+    "linkage_fields": {
+      "farmer_id": "FRM-E2E-004",
+      "factory_id": "FAC-E2E-002",
+      "grading_model_id": "ktda_ternary_v1"
+    },
+    "created_at": "2025-01-19T16:01:00Z"
+  }
+]
