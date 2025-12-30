@@ -1,6 +1,6 @@
 # Story 0.4.8: TBK/KTDA Grading Model Validation
 
-**Status:** review
+**Status:** in-progress
 **GitHub Issue:** #39
 **Epic:** [Epic 0.4: E2E Test Scenarios](../epics/epic-0-4-e2e-tests.md)
 **Story Points:** 2
@@ -582,7 +582,42 @@ docker compose -f tests/e2e/infrastructure/docker-compose.e2e.yaml down -v
 ### Verification Required:
 
 - [ ] Run E2E tests locally with Docker to verify strengthened assertions pass
-- [ ] Push changes and verify CI/E2E workflows pass
+- [x] Push changes and verify CI/E2E workflows pass
+
+### 🚨 CRITICAL FINDING: Production Bug Discovered!
+
+**Date:** 2025-12-30
+**E2E Run:** 20606713136 (FAILED)
+
+The strengthened assertions revealed that **grade_distribution_30d is NEVER updated**:
+
+```
+[AC1] Initial grade distribution: {}
+[AC1] Final grade distribution: {}
+...
+[AC6] Initial grade distribution: {}
+[AC6] Final grade distribution: {}
+```
+
+**Root Cause Analysis:**
+1. Quality events ARE being ingested (test_06_cross_model_events passes)
+2. DAPR events ARE propagating to Plantation Model (verified)
+3. BUT `grade_distribution_30d` remains empty `{}`
+
+**Likely Issues:**
+1. `QualityEventProcessor._extract_grade_counts()` may not be implemented
+2. OR the grading model lookup is failing silently
+3. OR `FarmerPerformance.historical.grade_distribution_30d` isn't being updated
+
+**The old weak assertions were HIDING this bug!**
+
+### Follow-up Actions Required:
+
+- [ ] Investigate `QualityEventProcessor` in `services/plantation-model/src/plantation_model/domain/services/quality_event_processor.py`
+- [ ] Check if `_extract_grade_counts()` method exists and is being called
+- [ ] Verify grading model lookup logic
+- [ ] Add debug logging to trace grading flow
+- [ ] Fix production code and re-run tests
 
 ---
 
