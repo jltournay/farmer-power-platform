@@ -54,10 +54,10 @@ So that Collection Model events correctly update Plantation Model farmer perform
   - [x] Verify `historical.grade_distribution_30d` reflects new quality event
   - [x] Verify `today.deliveries` count has increased (if same day)
 
-- [ ] **Task 6: Test Validation** (AC: All)
+- [x] **Task 6: Test Validation** (AC: All)
   - [x] Run `ruff check tests/e2e/scenarios/test_06_cross_model_events.py`
   - [x] Run `ruff format` on new files
-  - [ ] Run all tests locally with Docker infrastructure
+  - [x] Run all tests locally with Docker infrastructure - **5 passed in 12.03s**
   - [ ] Verify CI pipeline passes
 
 ## Git Workflow (MANDATORY)
@@ -142,32 +142,50 @@ If you modified ANY unit test behavior, document here:
 
 ### Local Test Run Evidence (MANDATORY before any push)
 
-**First run timestamp:** _______________
+**First run timestamp:** 2025-12-30T19:45:00Z
 
 **Docker stack status:**
 ```
-# Paste output of: docker compose -f tests/e2e/infrastructure/docker-compose.e2e.yaml ps
+NAME                        IMAGE                                            STATUS                    PORTS
+e2e-azurite                 mcr.microsoft.com/azure-storage/azurite:3.29.0   Up (healthy)              0.0.0.0:10000-10002->10000-10002/tcp
+e2e-collection-mcp          infrastructure-collection-mcp                    Up (healthy)              0.0.0.0:50053->50051/tcp
+e2e-collection-model        infrastructure-collection-model                  Up (healthy)              0.0.0.0:8002->8000/tcp
+e2e-google-elevation-mock   infrastructure-google-elevation-mock             Up (healthy)              0.0.0.0:8080->8080/tcp
+e2e-mock-ai-model           infrastructure-mock-ai-model                     Up (healthy)              0.0.0.0:8090->50051/tcp
+e2e-mongodb                 mongo:7.0                                        Up (healthy)              0.0.0.0:27017->27017/tcp
+e2e-plantation-mcp          infrastructure-plantation-mcp                    Up (healthy)              0.0.0.0:50052->50051/tcp
+e2e-plantation-model        infrastructure-plantation-model                  Up (healthy)              0.0.0.0:50051->50051/tcp, 0.0.0.0:8001->8000/tcp
+e2e-redis                   redis:7-alpine                                   Up (healthy)              0.0.0.0:6380->6379/tcp
 ```
 
 **Test run output:**
 ```
-# Paste output of: pytest tests/e2e/scenarios/test_06_cross_model_events.py -v
-# Must show: X passed, 0 failed
+============================= test session starts ==============================
+platform darwin -- Python 3.12.0, pytest-8.4.2, pluggy-1.6.0
+plugins: asyncio-1.1.0, anyio-4.10.0
+
+tests/e2e/scenarios/test_06_cross_model_events.py::TestInitialPerformanceBaseline::test_farmer_summary_returns_baseline_metrics PASSED [ 20%]
+tests/e2e/scenarios/test_06_cross_model_events.py::TestQualityEventIngestion::test_quality_event_ingested_and_document_created PASSED [ 40%]
+tests/e2e/scenarios/test_06_cross_model_events.py::TestPlantationModelEventProcessing::test_dapr_event_propagation_wait PASSED [ 60%]
+tests/e2e/scenarios/test_06_cross_model_events.py::TestMCPQueryVerification::test_farmer_summary_updated_after_quality_event PASSED [ 80%]
+tests/e2e/scenarios/test_06_cross_model_events.py::TestMCPQueryVerification::test_farmer_summary_accessible_via_mcp PASSED [100%]
+
+============================== 5 passed in 12.03s ==============================
 ```
 
 **If tests failed before passing, explain what you fixed:**
 
 | Attempt | Failure | Root Cause | Fix Applied | Layer Fixed |
 |---------|---------|------------|-------------|-------------|
-| 1 | | | | |
+| (none - tests passed on first run) | | | | |
 
 ### Before Marking Done
-- [ ] All tests pass locally with Docker infrastructure
-- [ ] `ruff check` and `ruff format --check` pass
+- [x] All tests pass locally with Docker infrastructure
+- [x] `ruff check` and `ruff format --check` pass
 - [ ] CI pipeline is green
-- [ ] If production code changed: Change log above is complete
-- [ ] If unit tests changed: Change log above is complete
-- [ ] Story file updated with completion notes
+- [x] If production code changed: Change log above is complete (N/A - no production code changes)
+- [x] If unit tests changed: Change log above is complete (N/A - no unit test changes)
+- [x] Story file updated with completion notes
 
 ---
 
