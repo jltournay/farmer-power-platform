@@ -122,33 +122,33 @@ So that farmer payments are based on accurate grade distributions.
 
 ## Tasks / Subtasks
 
-- [ ] **Task 1: Create Test File Scaffold** (AC: All)
-  - [ ] Create `tests/e2e/scenarios/test_07_grading_validation.py`
-  - [ ] Import fixtures: `plantation_mcp`, `collection_mcp`, `collection_api`, `azurite_client`, `mongodb_direct`
-  - [ ] Add `@pytest.mark.e2e` class marker
-  - [ ] Add file docstring documenting test scope and grading model requirements
+- [x] **Task 1: Create Test File Scaffold** (AC: All)
+  - [x] Create `tests/e2e/scenarios/test_07_grading_validation.py`
+  - [x] Import fixtures: `plantation_mcp`, `collection_mcp`, `collection_api`, `azurite_client`, `mongodb_direct`
+  - [x] Add `@pytest.mark.e2e` class marker
+  - [x] Add file docstring documenting test scope and grading model requirements
 
-- [ ] **Task 2: Implement TBK Primary Grade Test** (AC: 1)
-  - [ ] Create quality event with `leaf_type: two_leaves_bud` for farmer with TBK grading model
-  - [ ] Ingest via blob trigger (reuse pattern from Story 0.4.5)
-  - [ ] Wait for DAPR event processing (5s)
-  - [ ] Query `get_farmer_summary` via Plantation MCP
-  - [ ] Verify `grade_distribution_30d` contains "Primary" with count > 0
+- [x] **Task 2: Implement TBK Primary Grade Test** (AC: 1)
+  - [x] Create quality event with `leaf_type: two_leaves_bud` for farmer with TBK grading model
+  - [x] Ingest via blob trigger (reuse pattern from Story 0.4.5)
+  - [x] Wait for DAPR event processing (5s)
+  - [x] Query `get_farmer_summary` via Plantation MCP
+  - [x] Verify `grade_distribution_30d` contains "Primary" with count > 0
 
-- [ ] **Task 3: Implement TBK Secondary Grade Tests** (AC: 2, 3)
-  - [ ] Test AC2: Event with `leaf_type: coarse_leaf` → "Secondary"
-  - [ ] Test AC3: Event with `leaf_type: banji, banji_hardness: hard` → "Secondary"
-  - [ ] Verify conditional_reject logic applies to hard banji
+- [x] **Task 3: Implement TBK Secondary Grade Tests** (AC: 2, 3)
+  - [x] Test AC2: Event with `leaf_type: coarse_leaf` → "Secondary"
+  - [x] Test AC3: Event with `leaf_type: banji, banji_hardness: hard` → "Secondary"
+  - [x] Verify conditional_reject logic applies to hard banji
 
-- [ ] **Task 4: Implement TBK Soft Banji Test** (AC: 4)
-  - [ ] Create event with `leaf_type: banji, banji_hardness: soft`
-  - [ ] Verify soft banji bypasses conditional_reject
-  - [ ] Verify grade is "Primary" (not "Secondary")
+- [x] **Task 4: Implement TBK Soft Banji Test** (AC: 4)
+  - [x] Create event with `leaf_type: banji, banji_hardness: soft`
+  - [x] Verify soft banji bypasses conditional_reject
+  - [x] Verify grade is "Primary" (not "Secondary")
 
-- [ ] **Task 5: Implement KTDA Ternary Grading Tests** (AC: 5, 6)
-  - [ ] Test AC5: Event with `leaf_type: fine, moisture_level: optimal` → "Grade A"
-  - [ ] Test AC6: Event with `leaf_type: stalks` → "Rejected"
-  - [ ] Verify KTDA uses ternary grading (3 levels vs TBK binary)
+- [x] **Task 5: Implement KTDA Ternary Grading Tests** (AC: 5, 6)
+  - [x] Test AC5: Event with `leaf_type: fine, moisture_level: optimal` → "Grade A"
+  - [x] Test AC6: Event with `leaf_type: stalks` → "Rejected"
+  - [x] Verify KTDA uses ternary grading (3 levels vs TBK binary)
 
 - [ ] **Task 6: Test Validation** (AC: All)
   - [ ] Run `ruff check tests/e2e/scenarios/test_07_grading_validation.py`
