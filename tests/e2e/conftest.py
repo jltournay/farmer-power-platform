@@ -62,6 +62,14 @@ def pytest_configure(config: pytest.Config) -> None:
     config.addinivalue_line("markers", "slow: mark test as slow running")
 
 
+@pytest.fixture(scope="session")
+def event_loop():
+    """Create a session-scoped event loop for async fixtures."""
+    loop = asyncio.new_event_loop()
+    yield loop
+    loop.close()
+
+
 # ═══════════════════════════════════════════════════════════════════════════════
 # FIXTURES - All function-scoped for clean event loop handling
 # ═══════════════════════════════════════════════════════════════════════════════
