@@ -442,6 +442,22 @@
       </output>
     </check>
 
+    <!-- Update GitHub issue with development completion -->
+    <check if="{{github_issue_number}} exists and is not null">
+      <action>Add comment to GitHub issue #{{github_issue_number}} with development completion summary:
+        - Status: Development Complete - Ready for Review
+        - Tasks completed (count)
+        - Tests added/updated (summary)
+        - Files modified (list from File List section)
+        - Acceptance criteria addressed
+      </action>
+      <output>📝 GitHub issue #{{github_issue_number}} updated with development completion status</output>
+    </check>
+
+    <check if="{{github_issue_number}} is null or does not exist">
+      <output>ℹ️ No GitHub issue linked - skipping issue update</output>
+    </check>
+
     <!-- Final validation gates -->
     <action if="any task is incomplete">HALT - Complete remaining tasks before marking ready for review</action>
     <action if="regression failures exist">HALT - Fix regression issues before completing</action>

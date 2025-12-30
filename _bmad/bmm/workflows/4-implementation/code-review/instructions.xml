@@ -246,4 +246,75 @@
     </check>
   </step>
 
+  <step n="7" goal="Create Pull Request and verify CI">
+    <critical>🚀 PR CREATION - All CI must pass before merge!</critical>
+
+    <check if="{{new_status}} == 'done'">
+      <action>Get current branch name: `git branch --show-current`</action>
+      <action>Set {{feature_branch}} = current branch name</action>
+
+      <check if="{{feature_branch}} starts with 'feature/'">
+        <action>Ensure all changes are committed</action>
+        <action>Push branch to remote: `git push -u origin {{feature_branch}}`</action>
+
+        <action>Create Pull Request using gh CLI:
+          - Title: "{{story_key}}: {{story_title}}"
+          - Body: Include story summary, acceptance criteria completed, review findings fixed
+          - Base: main
+          - Head: {{feature_branch}}
+        </action>
+
+        <output>🔗 **Pull Request created:** {{pr_url}}
+
+          **CI Requirements:**
+          - ✅ Unit tests must pass
+          - ✅ E2E tests must pass
+          - ✅ Linting/formatting checks must pass
+
+          ⚠️ **Branch cannot be merged until ALL CI checks pass!**
+        </output>
+
+        <ask>Would you like me to:
+          1. **Monitor CI status** - Wait for CI and report results
+          2. **Continue** - PR created, you'll check CI manually
+
+          Choose [1] or [2]:</ask>
+
+        <check if="user chooses 1">
+          <action>Poll PR status using: `gh pr checks {{pr_url}} --watch`</action>
+          <check if="all checks pass">
+            <output>✅ **All CI checks passed!** PR is ready for merge.</output>
+            <ask>Merge PR now? [y/n]</ask>
+            <check if="user confirms merge">
+              <action>Merge PR: `gh pr merge {{pr_url}} --squash --delete-branch`</action>
+              <output>🎉 **PR merged and branch deleted!**</output>
+            </check>
+          </check>
+          <check if="any check fails">
+            <output>❌ **CI checks failed!**
+
+              Failed checks:
+              {{failed_checks_list}}
+
+              Branch cannot be merged. Fix issues and push again.
+            </output>
+            <action>Set story status back to "in-progress"</action>
+            <action>Update sprint-status.yaml: {{story_key}} → "in-progress"</action>
+          </check>
+        </check>
+      </check>
+
+      <check if="{{feature_branch}} does NOT start with 'feature/'">
+        <output>⚠️ Not on a feature branch (current: {{feature_branch}})
+
+          PR creation skipped. Please create PR manually if needed.
+        </output>
+      </check>
+    </check>
+
+    <check if="{{new_status}} != 'done'">
+      <output>ℹ️ Story not complete - PR creation deferred until review passes.</output>
+    </check>
+  </step>
+
 </workflow>

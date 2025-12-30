@@ -351,4 +351,27 @@
     </output>
   </step>
 
+  <step n="7" goal="Create feature branch for story implementation">
+    <critical>🌿 GIT BRANCH MANAGEMENT - Ensure clean branch from updated main!</critical>
+
+    <action>Check if git repository detected</action>
+    <check if="git repository exists">
+      <action>Get current branch name: `git branch --show-current`</action>
+      <action>Stash any uncommitted changes: `git stash --include-untracked`</action>
+      <action>Switch to main branch: `git checkout main`</action>
+      <action>Pull latest changes: `git pull origin main`</action>
+      <action>Create and switch to feature branch: `git checkout -b feature/{{story_key}}`</action>
+      <action>Pop stashed changes if any: `git stash pop` (ignore if empty stash)</action>
+
+      <output>🌿 **Feature branch created:** `feature/{{story_key}}`
+
+        Branch is based on latest main. Ready for development.
+      </output>
+    </check>
+
+    <check if="git repository NOT detected">
+      <output>⚠️ No git repository detected - skipping branch creation</output>
+    </check>
+  </step>
+
 </workflow>
