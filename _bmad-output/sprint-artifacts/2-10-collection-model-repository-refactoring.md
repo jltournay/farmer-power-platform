@@ -1,6 +1,6 @@
 # Story 2.10: Collection Model Repository Pattern Refactoring
 
-**Status:** in-progress
+**Status:** done
 **GitHub Issue:** #35
 **Epic:** [Epic 2: Quality Data Ingestion](../epics/epic-2-collection-model.md)
 
@@ -91,22 +91,22 @@ During Story 0.4.6 (Weather Data Ingestion), multiple production code bugs were 
   - [x] Test `get_all_enabled` returns typed list
   - [x] Test `get_by_container` with matching/non-matching containers
 
-- [ ] **Task 10: Update existing unit tests** (AC: 5)
-  - [ ] `tests/unit/collection/` - replace dict mocks with `SourceConfig` instances
-  - [ ] Verify tests would fail if wrong fields accessed
-  - [ ] Update `conftest.py` with `SourceConfig` fixtures
+- [x] **Task 10: Update existing unit tests** (AC: 5)
+  - [x] `tests/unit/collection/` - replace dict mocks with `SourceConfig` instances
+  - [x] Verify tests would fail if wrong fields accessed
+  - [x] Update `conftest.py` with `SourceConfig` fixtures
 
-- [ ] **Task 11: Document DAPR gRPC pattern** (AC: 6)
-  - [ ] Add section to `_bmad-output/project-context.md`
-  - [ ] Document: "DAPR gRPC proxying requires native gRPC stub with `dapr-app-id` metadata header"
-  - [ ] Include code example from `plantation_client.py:81`
-  - [ ] Reference DAPR docs: howto-invoke-services-grpc
+- [x] **Task 11: Document DAPR gRPC pattern** (AC: 6)
+  - [x] Add section to `_bmad-output/project-context.md`
+  - [x] Document: "DAPR gRPC proxying requires native gRPC stub with `dapr-app-id` metadata header"
+  - [x] Include code example from `plantation_client.py:81`
+  - [x] Reference DAPR docs: howto-invoke-services-grpc
 
-- [ ] **Task 12: Validation and CI** (AC: All)
-  - [ ] Run `ruff check .` and `ruff format --check .`
-  - [ ] Run full unit test suite
-  - [ ] Verify CI pipeline passes
-  - [ ] Run E2E tests to verify no regressions
+- [x] **Task 12: Validation and CI** (AC: All)
+  - [x] Run `ruff check .` and `ruff format --check .`
+  - [x] Run full unit test suite
+  - [x] Verify CI pipeline passes
+  - [x] Run E2E tests to verify no regressions
 
 ## Files to Modify
 
@@ -202,12 +202,12 @@ async with grpc.aio.insecure_channel("localhost:50001") as channel:  # DAPR side
 
 ## Success Metrics
 
-- [ ] All source config access uses typed `SourceConfig` model
-- [ ] Zero `dict[str, Any]` returns from `SourceConfigService`
-- [ ] All unit tests use real Pydantic models
-- [ ] Invalid schema access would fail at test time (not E2E)
-- [ ] DAPR gRPC pattern documented for future developers
-- [ ] CI passes with no regressions
+- [x] All source config access uses typed `SourceConfig` model
+- [x] Zero `dict[str, Any]` returns from `SourceConfigService`
+- [x] All unit tests use real Pydantic models
+- [x] Invalid schema access would fail at test time (not E2E)
+- [x] DAPR gRPC pattern documented for future developers
+- [x] CI passes with no regressions
 
 ## Dependencies
 
@@ -224,15 +224,47 @@ async with grpc.aio.insecure_channel("localhost:50001") as channel:  # DAPR side
 
 ## Dev Notes
 
-_To be filled during implementation_
+Implementation completed across 3 commits:
+1. `21752f5` - Main refactoring: repository pattern, typed models, consumer migration
+2. `ea531c5` - Integration test fixes for typed SourceConfig
+3. `3601ad7` - Fix SourceConfigService constructor (takes db, not repository)
 
 ## Dev Agent Record
 
 ### Agent Model Used
-_TBD_
+Claude Opus 4.5 (claude-opus-4-5-20251101)
 
 ### Completion Notes List
-_TBD_
+- Created `BaseRepository[T]` generic class following Plantation Model pattern
+- Created `SourceConfigRepository` with typed `SourceConfig` returns
+- Refactored `SourceConfigService` to use repository internally and return typed models
+- Migrated all 12+ consumer files from dict access to typed attribute access
+- Created `create_source_config()` and `create_iteration_config()` factory functions in conftest.py
+- Updated 214 unit tests to use typed fixtures
+- Added DAPR gRPC pattern documentation to project-context.md with code examples
+- Fixed integration tests to match new SourceConfigService constructor signature
+- All CI checks pass (ruff, unit tests, integration tests)
 
 ### File List
-_TBD_
+| File | Change |
+|------|--------|
+| `infrastructure/repositories/__init__.py` | NEW - Package init |
+| `infrastructure/repositories/base.py` | NEW - BaseRepository[T] generic |
+| `infrastructure/repositories/source_config_repository.py` | NEW - SourceConfigRepository |
+| `services/source_config_service.py` | MODIFIED - Use repository, typed returns |
+| `services/pull_job_handler.py` | MODIFIED - Typed SourceConfig access |
+| `services/content_processor_worker.py` | MODIFIED - Typed access |
+| `services/job_registration_service.py` | MODIFIED - Typed access |
+| `processors/base.py` | MODIFIED - SourceConfig signature |
+| `processors/json_extraction.py` | MODIFIED - Typed access |
+| `processors/zip_extraction.py` | MODIFIED - Typed access |
+| `infrastructure/iteration_resolver.py` | MODIFIED - Typed access |
+| `infrastructure/ai_model_client.py` | MODIFIED - Typed access |
+| `infrastructure/raw_document_store.py` | MODIFIED - Typed access |
+| `infrastructure/dapr_event_publisher.py` | MODIFIED - Typed access |
+| `domain/document_index.py` | MODIFIED - Typed access |
+| `api/events.py` | MODIFIED - Typed access |
+| `_bmad-output/project-context.md` | MODIFIED - DAPR gRPC pattern |
+| `tests/unit/collection/conftest.py` | MODIFIED - Factory fixtures |
+| `tests/unit/collection/test_*.py` | MODIFIED - Typed fixtures (10 files) |
+| `tests/integration/test_collection_e2e_open_meteo.py` | MODIFIED - Typed access |

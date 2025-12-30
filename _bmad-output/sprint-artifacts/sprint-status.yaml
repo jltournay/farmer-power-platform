@@ -86,7 +86,7 @@ development_status:
   2-7-scheduled-pull-ingestion-framework: done  # github_issue: 22
   2-8-market-prices-pull-mode: covered-by-2-7  # Configuration-only
   2-9-collection-model-mcp-server: done  # github_issue: 23
-  2-10-collection-model-repository-refactoring: in-progress  # github_issue: 35 - Tech debt: Pydantic models + repository pattern
+  2-10-collection-model-repository-refactoring: done  # github_issue: 35 - Tech debt: Pydantic models + repository pattern
   epic-2-retrospective: done
 
   # Epic 0.4: E2E Test Scenarios for Plantation & Collection Models
