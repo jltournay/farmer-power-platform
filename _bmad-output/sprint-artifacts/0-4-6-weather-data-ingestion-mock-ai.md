@@ -167,36 +167,29 @@ If you modified ANY production code, document each change here:
 | AI Extraction | **MOCK** | Deterministic responses for E2E |
 | MongoDB | **REAL** | Full database behavior |
 
-### Mock AI Extractor Specification (DAPR Service Invocation)
+### Mock AI Model Specification (DAPR Service Invocation)
 
-**CRITICAL:** The AI Model client uses DAPR gRPC Service Invocation, NOT direct HTTP!
+**Architecture:** Collection Model → DAPR Sidecar → Mock AI Model DAPR Sidecar → Mock AI Model
 
-**From `ai_model_client.py`:**
-```python
-client.invoke_method(
-    app_id=self._ai_model_app_id,  # "ai-model" or "mock-ai-model"
-    method_name="Extract",
-    data=json.dumps(request_data),
-    content_type="application/json",
-)
+```
+Collection Model                    Mock AI Model
+     │                                   │
+     │  invoke_method(                   │
+     │    app_id="mock-ai-model",        │
+     │    method_name="Extract"          │
+     │  )                                │
+     ▼                                   │
+DAPR Sidecar ──── gRPC ────► DAPR Sidecar ──── HTTP POST /Extract ────► FastAPI
 ```
 
-**Mock Server Requirements:**
-1. Must be a DAPR-enabled service (needs DAPR sidecar)
-2. Must respond to DAPR service invocation method "Extract"
-3. Alternatively: Use FastAPI + configure Collection Model to use mock app_id
-
-**Option A: DAPR-enabled Mock (Recommended)**
-- Create mock service with DAPR sidecar
-- Configure `app_id: mock-ai-model`
+**Mock Server Implementation:**
+- FastAPI server with DAPR sidecar
+- DAPR translates `invoke_method("Extract")` → `POST /Extract`
 - Collection Model env: `COLLECTION_AI_MODEL_APP_ID=mock-ai-model`
 
-**Option B: HTTP Mock via DAPR HTTP Invoke**
-- Create FastAPI server
-- DAPR invokes HTTP methods as POST to `/<method_name>`
-- Endpoint: `POST /Extract` accepting DAPR-wrapped request
+**Endpoint: `POST /Extract`**
 
-**Request Payload (from Collection Model):**
+Request (from DAPR):
 ```json
 {
   "raw_content": "<Open-Meteo JSON response>",
@@ -206,7 +199,7 @@ client.invoke_method(
 }
 ```
 
-**Expected Response:**
+Response:
 ```json
 {
   "success": true,
@@ -218,9 +211,9 @@ client.invoke_method(
 ```
 
 **Deterministic Extraction Logic:**
-- Parse Open-Meteo response from `raw_content`
+- Parse Open-Meteo JSON from `raw_content`
 - Extract `temperature_2m_max`, `temperature_2m_min`, `precipitation_sum`
-- Return deterministic fields with region_id from linkage
+- Return deterministic fields (region_id comes from iteration linkage)
 
 ### Source Config Schema (with Iteration)
 
