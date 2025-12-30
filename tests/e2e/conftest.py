@@ -232,6 +232,16 @@ async def seed_data(
         "document_blobs": [],
     }
 
+    # Create required blob containers for E2E tests
+    # These are needed for Collection Model ingestion/storage
+    required_containers = [
+        "quality-events-e2e",  # Landing container for blob triggers
+        "raw-documents-e2e",  # Storage for processed raw documents
+        "manual-uploads-e2e",  # Manual upload landing container
+    ]
+    for container_name in required_containers:
+        await azurite_client.create_container(container_name)
+
     # Load and seed grading models
     grading_models_file = seed_dir / "grading_models.json"
     if grading_models_file.exists():

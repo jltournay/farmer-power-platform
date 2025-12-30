@@ -303,16 +303,35 @@ class JsonExtractionProcessor(ContentProcessor):
         raw_content: str,
         source_config: dict[str, Any],
     ) -> dict[str, Any]:
-        """Call AI Model for structured extraction."""
-        if not self._ai_client:
-            raise ConfigurationError("AI Model client not configured")
+        """Call AI Model for structured extraction or extract directly if no AI agent."""
+        import json
 
         # Get AI agent ID from config
         transformation = source_config.get("config", {}).get("transformation", {})
         ai_agent_id = transformation.get("ai_agent_id") or transformation.get("agent")
 
         if not ai_agent_id:
-            raise ConfigurationError("No ai_agent_id in transformation config")
+            # Direct JSON extraction without AI - extract fields directly from JSON
+            try:
+                json_data = json.loads(raw_content)
+            except json.JSONDecodeError as e:
+                raise ConfigurationError(f"Failed to parse JSON for direct extraction: {e}") from e
+
+            extract_fields = transformation.get("extract_fields", [])
+            extracted = {}
+            for field in extract_fields:
+                if field in json_data:
+                    extracted[field] = json_data[field]
+
+            return {
+                "extracted_fields": extracted,
+                "confidence": 1.0,  # Direct extraction is deterministic
+                "validation_passed": True,
+                "validation_warnings": [],
+            }
+
+        if not self._ai_client:
+            raise ConfigurationError("AI Model client not configured")
 
         request = ExtractionRequest(
             raw_content=raw_content,
@@ -343,7 +362,7 @@ class JsonExtractionProcessor(ContentProcessor):
         are merged into the extracted_fields before building linkage_fields.
         """
         transformation = source_config.get("config", {}).get("transformation", {})
-        ai_agent_id = transformation.get("ai_agent_id") or transformation.get("agent", "unknown")
+        ai_agent_id = transformation.get("ai_agent_id") or transformation.get("agent") or "direct-extraction"
 
         raw_ref = RawDocumentRef(
             blob_container=raw_doc["blob_container"],

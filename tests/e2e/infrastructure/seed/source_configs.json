@@ -26,7 +26,7 @@
       },
       "storage": {
         "index_collection": "quality_documents",
-        "raw_bucket": "raw-documents-e2e"
+        "raw_container": "raw-documents-e2e"
       },
       "events": {
         "on_success": {
@@ -64,7 +64,7 @@
       },
       "storage": {
         "index_collection": "quality_documents",
-        "raw_bucket": "raw-documents-e2e"
+        "raw_container": "raw-documents-e2e"
       },
       "events": {
         "on_success": {
@@ -101,7 +101,7 @@
       },
       "storage": {
         "index_collection": "quality_documents",
-        "raw_bucket": "raw-documents-e2e"
+        "raw_container": "raw-documents-e2e"
       },
       "events": {
         "on_success": {

@@ -90,7 +90,10 @@ If you modified ANY production code, document each change here:
 
 | File:Lines | What Changed | Why (with evidence) | Type |
 |------------|--------------|---------------------|------|
-| None | No production code changes | Tests use existing infrastructure | N/A |
+| `services/collection-model/.../blob_storage.py:11,141` | Import ContentSettings and use object instead of dict | Azure SDK requires ContentSettings object, not dict. Error: `'dict' object has no attribute 'cache_control'` | Bug fix |
+| `services/collection-model/.../json_extraction.py:306-331,365` | Support `ai_agent_id: null` for direct JSON extraction | Story 0.4.5 requires direct extraction without AI. Per `TransformationConfig` model, `ai_agent_id` is Optional | Enhancement |
+| `tests/e2e/infrastructure/seed/source_configs.json` | Changed `raw_bucket` to `raw_container` | Per `StorageConfig` in `fp_common/models/source_config.py:167`, field name is `raw_container` | Seed data fix |
+| `tests/e2e/conftest.py:235-243` | Create required blob containers on seed | Containers must exist for Collection Model to upload raw documents | Test infra |
 
 **Rules:**
 - "To pass tests" is NOT a valid reason
@@ -98,10 +101,10 @@ If you modified ANY production code, document each change here:
 - If you can't fill this out, you may not understand what you're changing
 
 ### Before Marking Done
-- [ ] All tests pass locally with Docker infrastructure - *Manual verification pending*
+- [ ] All tests pass locally with Docker infrastructure - *5/6 tests pass, 1 test (duplicate detection) needs investigation*
 - [x] `ruff check` and `ruff format --check` pass
 - [x] CI pipeline is green
-- [x] If production code changed: Change log above is complete (No production code changes)
+- [x] If production code changed: Change log above is complete
 - [x] Story file updated with completion notes
 
 ---
@@ -247,7 +250,11 @@ None - implementation followed existing patterns from Story 0.4.2, 0.4.3, 0.4.4
 3. **Blob trigger via HTTP** - Uses `POST /api/events/blob-created` endpoint (not `/events/blob`)
 4. **DAPR event verification indirect** - Verified via successful document creation (source config has `on_success.topic`)
 5. **Farmer ID correction** - Story referenced `WM-E2E-001` but seed data uses `FRM-E2E-001` - updated story
-6. **Duplicate detection assumes implementation** - Test documents expected behavior for content hash deduplication
+6. **Fixed ContentSettings bug** - Azure SDK requires `ContentSettings` object, not dict
+7. **Added direct JSON extraction** - `ai_agent_id: null` now extracts fields directly from JSON without AI
+8. **Fixed seed data schema** - Changed `raw_bucket` to `raw_container` per Pydantic model
+9. **Added container creation** - E2E fixtures now create required blob containers before seeding
+10. **Duplicate detection test failing** - 5/6 tests pass; duplicate detection needs deeper investigation (may be timing issue)
 
 ### File List
 
@@ -255,6 +262,9 @@ None - implementation followed existing patterns from Story 0.4.2, 0.4.3, 0.4.4
 - `tests/e2e/scenarios/test_04_quality_blob_ingestion.py` - 6 tests covering AC1-AC6
 
 **Modified:**
-- `tests/e2e/infrastructure/seed/source_configs.json` - Added `e2e-qc-direct-json` (previous session)
+- `services/collection-model/src/collection_model/infrastructure/blob_storage.py` - Fixed ContentSettings import and usage
+- `services/collection-model/src/collection_model/processors/json_extraction.py` - Added direct JSON extraction support
+- `tests/e2e/infrastructure/seed/source_configs.json` - Fixed `raw_bucket` -> `raw_container`
+- `tests/e2e/conftest.py` - Added container creation in seed_data fixture
 - `_bmad-output/sprint-artifacts/sprint-status.yaml` - Updated 0-4-5 to in-progress
-- `_bmad-output/sprint-artifacts/0-4-5-quality-event-blob-ingestion.md` - Updated tasks, fixed farmer_id references
+- `_bmad-output/sprint-artifacts/0-4-5-quality-event-blob-ingestion.md` - Updated tasks, documented changes

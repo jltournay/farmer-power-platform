@@ -8,6 +8,7 @@ from datetime import UTC, datetime
 from typing import Any
 
 import structlog
+from azure.storage.blob import ContentSettings
 from azure.storage.blob.aio import BlobServiceClient
 from collection_model.config import settings
 from collection_model.domain.exceptions import BlobNotFoundError, StorageError
@@ -137,7 +138,7 @@ class BlobStorageClient:
             result = await blob_client.upload_blob(
                 content,
                 overwrite=True,
-                content_settings={"content_type": content_type},
+                content_settings=ContentSettings(content_type=content_type),
                 metadata=metadata or {},
             )
 
