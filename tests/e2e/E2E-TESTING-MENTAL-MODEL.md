@@ -6,6 +6,161 @@ This document explains the conceptual framework for understanding E2E contract t
 
 ---
 
+## Feature Branch Workflow (MANDATORY)
+
+**All story development MUST use feature branches.** Direct pushes to main are blocked.
+
+### Workflow Overview
+
+```
+STORY LIFECYCLE
+══════════════════════════════════════════════════════════════════════════════
+
+1. STORY START                 2. DEVELOPMENT                   3. STORY DONE
+   ─────────────                  ───────────                      ──────────
+
+   Create/Update GitHub Issue     Create Feature Branch            Create Pull Request
+   ┌─────────────────────────┐    ┌─────────────────────────┐      ┌─────────────────────────┐
+   │ gh issue create         │    │ git checkout main       │      │ gh pr create            │
+   │   --title "Story X.Y.Z" │    │ git pull                │      │   --title "Story X.Y.Z" │
+   │   --body "..."          │    │ git checkout -b         │      │   --base main           │
+   │                         │    │   story/X-Y-Z-name      │      │                         │
+   │ Or use existing issue   │    │                         │      │ Fill PR template        │
+   └─────────────────────────┘    └─────────────────────────┘      └─────────────────────────┘
+                                           │                                │
+                                           ▼                                ▼
+                                  Implement + Test Locally          Code Review Gate
+                                  ┌─────────────────────────┐      ┌─────────────────────────┐
+                                  │ - Write code            │      │ - CI must pass          │
+                                  │ - Run local E2E tests   │      │ - Run /code-review      │
+                                  │ - Document changes      │      │ - Address feedback      │
+                                  │ - Atomic commits        │      │ - Get approval          │
+                                  └─────────────────────────┘      └─────────────────────────┘
+                                           │                                │
+                                           ▼                                ▼
+                                  Push to Feature Branch            Merge to Main
+                                  ┌─────────────────────────┐      ┌─────────────────────────┐
+                                  │ git push -u origin      │      │ gh pr merge             │
+                                  │   story/X-Y-Z-name      │      │   --squash              │
+                                  │                         │      │                         │
+                                  │ (triggers CI)           │      │ Update issue status     │
+                                  └─────────────────────────┘      └─────────────────────────┘
+
+══════════════════════════════════════════════════════════════════════════════
+```
+
+### Branch Naming Convention
+
+| Type | Pattern | Example |
+|------|---------|---------|
+| Story | `story/{epic}-{story}-{short-name}` | `story/0-4-7-cross-model-dapr` |
+| Hotfix | `fix/{issue}-{short-name}` | `fix/32-blob-upload-error` |
+| Docs | `docs/{short-description}` | `docs/update-mental-model` |
+
+### Step-by-Step Commands
+
+**1. Story Start (create or update GitHub issue):**
+```bash
+# Create new issue
+gh issue create \
+  --title "Story 0.4.7: Cross-Model DAPR Event Flow" \
+  --body "## Story
+As a **platform operator**...
+
+## Acceptance Criteria
+1. AC1: ...
+"
+
+# Or update existing issue
+gh issue edit 32 --add-label "in-progress"
+```
+
+**2. Create Feature Branch:**
+```bash
+git checkout main
+git pull origin main
+git checkout -b story/0-4-7-cross-model-dapr
+```
+
+**3. Development (atomic commits):**
+```bash
+# Production code change
+git add services/collection-model/src/...
+git commit -m "fix(collection): description
+
+Relates to #32
+"
+
+# Test infrastructure change (separate commit)
+git add tests/e2e/infrastructure/...
+git commit -m "feat(e2e): description
+
+Relates to #32
+"
+
+# Push to feature branch
+git push -u origin story/0-4-7-cross-model-dapr
+```
+
+**4. Create Pull Request:**
+```bash
+gh pr create \
+  --title "Story 0.4.7: Cross-Model DAPR Event Flow" \
+  --base main \
+  --body "## Summary
+- Implemented cross-model DAPR event publishing
+- Added E2E tests for event flow verification
+
+## Changes
+- [x] Production code changes documented
+- [x] Local E2E tests pass
+- [x] CI passing
+
+## Test Evidence
+\`\`\`
+pytest tests/e2e/scenarios/test_06_*.py -v
+6 passed in 12.34s
+\`\`\`
+
+Closes #32
+"
+```
+
+**5. Code Review + Merge:**
+```bash
+# Run code review workflow
+/code-review
+
+# After approval, merge (squash recommended)
+gh pr merge --squash
+
+# Clean up local branch
+git checkout main
+git pull
+git branch -d story/0-4-7-cross-model-dapr
+```
+
+### Protection Rules (Enforced by GitHub)
+
+| Rule | Setting | Why |
+|------|---------|-----|
+| Require PR | ✅ Enabled | No direct pushes to main |
+| Require CI pass | ✅ Enabled | Broken code can't merge |
+| Require approval | ✅ 1 reviewer | Code review gate |
+| Dismiss stale reviews | ✅ Enabled | New commits need re-review |
+| Require branch up-to-date | ✅ Enabled | Must rebase before merge |
+
+### Why Feature Branches?
+
+1. **Code review gate** - Changes reviewed before reaching main
+2. **CI validation** - Tests must pass before merge
+3. **Clear history** - Each story is one squashed commit
+4. **Easy revert** - Can revert entire story if needed
+5. **Parallel work** - Multiple stories can develop simultaneously
+6. **Trust but verify** - Developer work is validated before integration
+
+---
+
 ## The Truth Hierarchy
 
 In E2E testing, there is a strict hierarchy of what defines "correct":

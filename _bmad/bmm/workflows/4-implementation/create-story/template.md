@@ -22,6 +22,36 @@ so that {{benefit}}.
 - [ ] Task 2 (AC: #)
   - [ ] Subtask 2.1
 
+## Git Workflow (MANDATORY)
+
+**All story development MUST use feature branches.** Direct pushes to main are blocked.
+
+### Story Start
+- [ ] GitHub Issue exists or created: `gh issue create --title "Story {{epic_num}}.{{story_num}}: {{story_title}}"`
+- [ ] Feature branch created from main:
+  ```bash
+  git checkout main && git pull origin main
+  git checkout -b story/{{epic_num}}-{{story_num}}-{{short_name}}
+  ```
+
+**Branch name:** `story/_______________` (fill in)
+
+### During Development
+- [ ] All commits reference GitHub issue: `Relates to #XX`
+- [ ] Commits are atomic by type (production, test, seed - not mixed)
+- [ ] Push to feature branch: `git push -u origin story/...`
+
+### Story Done
+- [ ] Create Pull Request: `gh pr create --title "Story {{epic_num}}.{{story_num}}: {{story_title}}" --base main`
+- [ ] CI passes on PR
+- [ ] Code review completed (`/code-review` or human review)
+- [ ] PR approved and merged (squash)
+- [ ] Local branch cleaned up: `git branch -d story/...`
+
+**PR URL:** _______________ (fill in when created)
+
+---
+
 ## E2E Story Checklist (MANDATORY for E2E stories)
 
 **Read First:** `tests/e2e/E2E-TESTING-MENTAL-MODEL.md`
