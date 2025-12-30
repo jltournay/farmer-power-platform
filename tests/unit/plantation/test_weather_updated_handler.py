@@ -3,7 +3,6 @@
 from datetime import date
 from unittest.mock import AsyncMock, MagicMock
 
-import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 from plantation_model.api.event_handlers.weather_updated_handler import (
