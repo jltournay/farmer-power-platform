@@ -34,18 +34,32 @@ docker compose -f tests/e2e/infrastructure/docker-compose.e2e.yaml down -v
 
 ### 2. CI Runs on Feature Branches (NOT just main)
 
-After pushing to your feature branch, CI automatically runs. Check it:
+**IMPORTANT:** CI automatically runs when you push to ANY branch - you do NOT need to merge to main first!
+
+**Step-by-step to verify CI on your branch:**
 
 ```bash
-# Check CI status for your branch
+# 1. Push your changes to the feature branch
+git push origin story/0-4-8-tbk-ktda-grading-validation
+
+# 2. Wait ~30 seconds for CI to start, then check status
 gh run list --branch story/0-4-8-tbk-ktda-grading-validation --limit 3
 
-# Watch CI in real-time
+# 3. You'll see output like:
+#    STATUS  TITLE                    BRANCH                                      RUN-ID
+#    ✓       CI                       story/0-4-8-tbk-ktda-grading-validation    12345678
+#    The ✓ means passed, X means failed, * means in progress
+
+# 4. Watch CI in real-time (optional)
 gh run watch
 
-# If CI failed, view logs
+# 5. If CI failed, view the logs
 gh run view <run-id> --log-failed
 ```
+
+**Both CI workflows must pass:**
+1. **CI workflow** - Unit tests, lint, format check
+2. **E2E Tests workflow** - End-to-end tests with Docker
 
 **You do NOT need to merge to main to run CI.** CI runs on every push to any branch.
 
@@ -239,13 +253,19 @@ ruff check . && ruff format --check .
 ```
 **Lint passed:** [ ] Yes / [ ] No (if no, fix before continuing)
 
-**4. CI Check on Feature Branch:**
+**4. CI Check on Feature Branch (BOTH workflows must pass):**
 ```bash
-# After pushing, run:
-gh run list --branch story/0-4-8-tbk-ktda-grading-validation --limit 1
+# After pushing, wait 30 seconds then run:
+gh run list --branch story/0-4-8-tbk-ktda-grading-validation --limit 5
 ```
-**CI Run ID:** (paste run ID here)
-**CI Status:** [ ] Passed / [ ] Failed
+**Paste CI output here:**
+```
+(PASTE gh run list OUTPUT HERE - should show ✓ for both CI and E2E Tests)
+```
+**CI workflow:** [ ] Passed / [ ] Failed - Run ID: ___________
+**E2E Tests workflow:** [ ] Passed / [ ] Failed - Run ID: ___________
+
+If failed, check logs with: `gh run view <run-id> --log-failed`
 
 **5. GitHub Issue Updated:**
 ```bash
