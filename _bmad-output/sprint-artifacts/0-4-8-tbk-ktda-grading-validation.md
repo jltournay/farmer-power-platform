@@ -1,6 +1,6 @@
 # Story 0.4.8: TBK/KTDA Grading Model Validation
 
-**Status:** in-progress
+**Status:** review
 **GitHub Issue:** #39
 **Epic:** [Epic 0.4: E2E Test Scenarios](../epics/epic-0-4-e2e-tests.md)
 **Story Points:** 2
@@ -584,12 +584,12 @@ docker compose -f tests/e2e/infrastructure/docker-compose.e2e.yaml down -v
 - [ ] Run E2E tests locally with Docker to verify strengthened assertions pass
 - [x] Push changes and verify CI/E2E workflows pass
 
-### 🚨 CRITICAL FINDING: Production Bug Discovered!
+### 🚨 CRITICAL FINDING: Test Bug Found & Fixed
 
 **Date:** 2025-12-30
 **E2E Run:** 20606713136 (FAILED)
 
-The strengthened assertions revealed that **grade_distribution_30d is NEVER updated**:
+The strengthened assertions revealed that **tests were querying the WRONG field**:
 
 ```
 [AC1] Initial grade distribution: {}
@@ -599,25 +599,35 @@ The strengthened assertions revealed that **grade_distribution_30d is NEVER upda
 [AC6] Final grade distribution: {}
 ```
 
-**Root Cause Analysis:**
-1. Quality events ARE being ingested (test_06_cross_model_events passes)
-2. DAPR events ARE propagating to Plantation Model (verified)
-3. BUT `grade_distribution_30d` remains empty `{}`
+**Root Cause Found:**
+1. Quality events ARE being ingested correctly
+2. DAPR events ARE propagating to Plantation Model
+3. `QualityEventProcessor.increment_today_delivery()` updates `today.grade_counts` (REAL-TIME)
+4. BUT tests were querying `historical.grade_distribution_30d` (BATCH-COMPUTED by nightly jobs)
 
-**Likely Issues:**
-1. `QualityEventProcessor._extract_grade_counts()` may not be implemented
-2. OR the grading model lookup is failing silently
-3. OR `FarmerPerformance.historical.grade_distribution_30d` isn't being updated
+**The old weak assertions were HIDING this data model misunderstanding!**
 
-**The old weak assertions were HIDING this bug!**
+### Fix Applied:
 
-### Follow-up Actions Required:
+**File:** `tests/e2e/scenarios/test_07_grading_validation.py`
+**Commit:** 235558d
 
-- [ ] Investigate `QualityEventProcessor` in `services/plantation-model/src/plantation_model/domain/services/quality_event_processor.py`
-- [ ] Check if `_extract_grade_counts()` method exists and is being called
-- [ ] Verify grading model lookup logic
-- [ ] Add debug logging to trace grading flow
-- [ ] Fix production code and re-run tests
+Changed `get_grade_distribution()` helper from:
+```python
+historical = data.get("historical", {})
+return historical.get("grade_distribution_30d", {})  # WRONG - batch computed
+```
+
+To:
+```python
+today = data.get("today", {})
+return today.get("grade_counts", {})  # CORRECT - real-time updates
+```
+
+### Verification:
+
+- [x] CI Run 20606910797 - PASSED
+- [ ] E2E Tests pending manual trigger
 
 ---
 
