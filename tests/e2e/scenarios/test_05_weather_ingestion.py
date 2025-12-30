@@ -231,12 +231,11 @@ class TestPlantationMCPWeatherQuery:
             query={"ingestion.source_id": SOURCE_ID},
         )
 
-        if not documents:
-            pytest.skip("No weather documents found - pull job may have failed")
+        # This is a real test - must have documents from pull job
+        assert len(documents) > 0, "No weather documents found - pull job must create documents for this test"
 
         region_id = documents[0].get("linkage_fields", {}).get("region_id")
-        if not region_id:
-            pytest.skip("No region_id in weather document linkage")
+        assert region_id is not None, "No region_id in weather document linkage - iteration must inject region_id"
 
         # Call Plantation MCP get_region_weather
         result = await plantation_mcp.call_tool(
