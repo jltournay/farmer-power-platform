@@ -210,16 +210,13 @@ class TestCollectionE2EOpenMeteo:
         from collection_model.infrastructure.document_repository import DocumentRepository
         from collection_model.infrastructure.pull_data_fetcher import PullDataFetcher
         from collection_model.infrastructure.raw_document_store import RawDocumentStore
-        from collection_model.infrastructure.repositories.source_config_repository import (
-            SourceConfigRepository,
-        )
         from collection_model.services.source_config_service import SourceConfigService
 
         # =================================================================
         # Step 1: Verify source config is deployed
         # =================================================================
-        repository = SourceConfigRepository(collection_test_db)
-        source_config_service = SourceConfigService(repository)
+        # SourceConfigService expects database, not repository - it creates repository internally
+        source_config_service = SourceConfigService(collection_test_db)
         config = await source_config_service.get_config("weather-api-test")
 
         assert config is not None, "Source config should be deployed"
@@ -439,13 +436,10 @@ class TestCollectionE2EOpenMeteo:
         deployed_source_config: dict[str, Any],
     ) -> None:
         """Test that SourceConfigService correctly caches and retrieves configs."""
-        from collection_model.infrastructure.repositories.source_config_repository import (
-            SourceConfigRepository,
-        )
         from collection_model.services.source_config_service import SourceConfigService
 
-        repository = SourceConfigRepository(collection_test_db)
-        service = SourceConfigService(repository)
+        # SourceConfigService expects database, not repository - it creates repository internally
+        service = SourceConfigService(collection_test_db)
 
         # First call - loads from DB
         config1 = await service.get_config("weather-api-test")
