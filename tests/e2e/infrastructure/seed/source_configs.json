@@ -1,5 +1,43 @@
 [
   {
+    "source_id": "e2e-qc-direct-json",
+    "enabled": true,
+    "description": "E2E Test - Direct JSON ingestion without AI extraction (Story 0.4.5)",
+    "config": {
+      "ingestion": {
+        "mode": "blob_trigger",
+        "processor_type": "json-extraction",
+        "landing_container": "quality-events-e2e",
+        "path_pattern": {
+          "pattern": "{farmer_id}/{event_id}.json",
+          "extract_fields": ["farmer_id", "event_id"]
+        }
+      },
+      "transformation": {
+        "ai_agent_id": null,
+        "link_field": "farmer_id",
+        "extract_fields": [
+          "farmer_id",
+          "collection_point_id",
+          "leaf_analysis",
+          "weight_kg",
+          "grade"
+        ]
+      },
+      "storage": {
+        "index_collection": "quality_documents",
+        "raw_bucket": "raw-documents-e2e"
+      },
+      "events": {
+        "on_success": {
+          "topic": "collection.quality_result.received"
+        }
+      }
+    },
+    "created_at": "2025-01-01T00:00:00Z",
+    "updated_at": "2025-01-01T00:00:00Z"
+  },
+  {
     "source_id": "e2e-qc-analyzer-json",
     "enabled": true,
     "description": "E2E Test - QC Analyzer JSON results from blob storage",
