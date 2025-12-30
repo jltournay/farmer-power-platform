@@ -311,6 +311,20 @@ assert "deliveries" in result["today"]
 
 If you modify ANY production code while working on E2E tests, you MUST document it using this format. Add this to your PR description or commit message:
 
+### What Counts as "Production Code"?
+
+| Category | Examples | Must Document? |
+|----------|----------|----------------|
+| Service code | `services/*/src/*.py` | YES |
+| MCP server code | `mcp-servers/*/src/*.py` | YES |
+| Shared libraries | `libs/*/src/*.py` | YES |
+| Proto definitions | `proto/*/*.proto` | YES |
+| **Infrastructure** | Mock servers, docker-compose changes, env vars | YES |
+| Seed data | `tests/e2e/infrastructure/seed/*.json` | YES (separate section) |
+| Test scenarios | `tests/e2e/scenarios/*.py` | NO (unless behavior change) |
+
+**Key insight:** If a change affects how production services BEHAVE (even via configuration), document it.
+
 ```markdown
 ## Production Code Changes
 
@@ -344,6 +358,140 @@ If you modify ANY production code while working on E2E tests, you MUST document 
 
 ---
 
+## Unit Test Change Log (MANDATORY)
+
+If you modify ANY unit test behavior (not just E2E tests), you MUST document it:
+
+```markdown
+## Unit Test Changes
+
+| Test File | Test Name Before | Test Name After | Behavior Change | Justification |
+|-----------|------------------|-----------------|-----------------|---------------|
+| test_json_extraction.py | test_process_missing_ai_agent_id | test_process_direct_extraction_without_ai_agent | Expected FAILURE → Expected SUCCESS | AC1 specifies ai_agent_id:null is valid (Story 0.4.5 line 15) |
+```
+
+### Rules:
+
+1. **Changing "expect failure" to "expect success" REQUIRES justification**
+2. **Reference the AC, proto, or requirement** that proves the new behavior is correct
+3. **If you can't justify, the original test was probably right** - investigate more
+4. **Renaming tests is fine** - but behavior changes need explanation
+
+### Red Flags (Stop and Think):
+
+- You're changing `assert result.success is False` to `assert result.success is True`
+- You're removing error assertions
+- You're changing expected exceptions
+- You're lowering test coverage
+
+These changes might be legitimate, but they REQUIRE documentation explaining WHY.
+
+---
+
+## Commit Discipline (MANDATORY)
+
+Commits must be **atomic by type**. Never mix these in one commit:
+
+| Commit Type | Prefix | Contains |
+|-------------|--------|----------|
+| Production fix | `fix(service):` | Only production code (`services/*/src/`) |
+| Test infrastructure | `feat(e2e):` | Only test infra/seed (`tests/e2e/infrastructure/`) |
+| Test scenarios | `test(e2e):` | Only test scenarios (`tests/e2e/scenarios/`) |
+| Unit test change | `test(unit):` | Only unit test files (`tests/unit/`) |
+| Documentation | `docs:` | Only docs/story files |
+
+### Anti-Pattern (DO NOT DO):
+
+```bash
+# WRONG - mixes production + test + seed in one commit
+git commit -m "fix(collection): support direct JSON extraction"
+# Files: json_extraction.py, test_json_extraction.py, source_configs.json
+```
+
+### Correct Pattern:
+
+```bash
+# Commit 1: Production code only
+git commit -m "fix(collection): support ai_agent_id null in json_extraction.py
+
+Relates to #30
+
+When ai_agent_id is null, extract fields directly from JSON without AI.
+Per TransformationConfig model, ai_agent_id is Optional[str].
+"
+
+# Commit 2: Unit test update (with justification)
+git commit -m "test(unit): update test to expect success for direct extraction
+
+Relates to #30
+
+Renamed: test_process_missing_ai_agent_id → test_process_direct_extraction_without_ai_agent
+Behavior: Expected FAILURE → Expected SUCCESS
+Justification: Story 0.4.5 AC1 specifies ai_agent_id:null for direct extraction
+"
+
+# Commit 3: Seed data
+git commit -m "chore(seed): add e2e-qc-direct-json source config
+
+Relates to #30
+"
+```
+
+### Why Atomic Commits Matter:
+
+1. **Easier to review** - Each commit has one purpose
+2. **Easier to revert** - Can undo production change without losing tests
+3. **Clearer history** - `git log --oneline` tells the story
+4. **Audit trail** - Can see exactly what production code changed
+
+---
+
+## Local Test Run Evidence (MANDATORY for E2E Stories)
+
+Before ANY push, you must have evidence of local test runs in your story file:
+
+```markdown
+### Local Test Run Evidence
+
+**First run timestamp:** 2025-12-30 10:30:00
+**Docker stack status:**
+```
+# Output of: docker compose -f tests/e2e/infrastructure/docker-compose.e2e.yaml ps
+NAME                  STATUS
+mongodb               running (healthy)
+redis                 running (healthy)
+plantation-model      running (healthy)
+collection-model      running (healthy)
+...
+```
+
+**Test run output:**
+```
+# Output of: pytest tests/e2e/scenarios/test_04_*.py -v
+========================= test session starts =========================
+tests/e2e/scenarios/test_04_quality_blob_ingestion.py::TestQualityBlobIngestion::test_01_blob_upload PASSED
+tests/e2e/scenarios/test_04_quality_blob_ingestion.py::TestQualityBlobIngestion::test_02_blob_event_trigger PASSED
+...
+========================= 6 passed in 12.34s =========================
+```
+
+**If tests failed before passing, explain what you fixed:**
+
+| Attempt | Failure | Root Cause | Fix Applied | Layer Fixed |
+|---------|---------|------------|-------------|-------------|
+| 1 | Source config not found | Missing seed data | Added e2e-qc-direct-json to source_configs.json | Seed Data |
+| 2 | ContentSettings error | Azure SDK requires object | Fixed blob_storage.py import | Production (Bug) |
+```
+
+### Why This Matters:
+
+1. **Proves you tested locally** - Not just hoping CI will catch issues
+2. **Documents debugging journey** - Future devs understand what was tried
+3. **Prevents CI spam** - No more 4+ pushes to fix obvious issues
+4. **Builds trust** - User can see actual test output, not just claims
+
+---
+
 ## Before You Start: Validate Seed Data
 
 **Always validate seed data before starting Docker:**
@@ -356,17 +504,30 @@ This catches schema errors in seconds instead of minutes (after Docker startup).
 
 ---
 
-## Before You Push: Checklist
+## Pre-Push Blocking Checklist
 
-- [ ] I validated seed data with `validate_seed_data.py`
-- [ ] I ran the E2E tests locally and they pass
-- [ ] If I modified production code:
-  - [ ] I documented each change in the Production Code Change Log format
-  - [ ] I can explain WHY the original code was wrong (with evidence)
-  - [ ] The change fixes a real bug, not just "makes tests pass"
-- [ ] If I modified seed data, it now matches the expected schema
-- [ ] I understand WHY my tests pass, not just THAT they pass
-- [ ] CI is green (check with `gh run list --limit 1`)
+**STOP. Before running `git push`, complete ALL items below.**
+
+### Gate 1: Local Validation (no Docker needed)
+- [ ] `ruff check .` passes
+- [ ] `ruff format --check .` passes
+- [ ] `python tests/e2e/infrastructure/validate_seed_data.py` passes
+
+### Gate 2: Docker E2E (MANDATORY for any E2E story)
+- [ ] Docker stack is running: `docker compose ps` shows all healthy
+- [ ] E2E tests pass locally: Paste test output in "Local Test Run Evidence" section of story
+- [ ] I understand WHY tests pass, not just THAT they pass
+
+### Gate 3: Change Documentation
+- [ ] If production code changed: Filled "Production Code Changes" table with evidence
+- [ ] If unit test changed: Filled "Unit Test Changes" table with justification
+- [ ] If seed data changed: Verified it matches proto schema
+
+### Gate 4: Commit Hygiene
+- [ ] Commits are atomic by type (not mixing production + test + seed)
+- [ ] Each commit message references GitHub issue (e.g., "Relates to #30")
+
+**Only after ALL gates pass: `git push`**
 
 ---
 

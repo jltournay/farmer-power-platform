@@ -105,12 +105,55 @@ If you modified ANY production code, document each change here:
 
 | File:Lines | What Changed | Why (with evidence) | Type |
 |------------|--------------|---------------------|------|
-| (none expected) | | | |
+| (no `services/` code changed) | | | |
+
+### Infrastructure/Integration Changes
+
+| File | What Changed | Why | Impact |
+|------|--------------|-----|--------|
+| `tests/e2e/infrastructure/mock-servers/ai-model/server.py` | Created gRPC Mock AI Model server | Story 0.4.6 requires mock AI extraction for weather data (AC1) | New mock server implementing `AiModelService` proto |
+| `tests/e2e/infrastructure/mock-servers/ai-model/Dockerfile` | Created Dockerfile for mock server | Container deployment for E2E stack | Builds grpcio-based Python image |
+| `tests/e2e/infrastructure/docker-compose.e2e.yaml` | Added `mock-ai-model` service + `mock-ai-model-dapr` sidecar | Collection Model needs AI Model for extraction | Service registered as `app-id: ai-model` via DAPR |
+| `tests/e2e/infrastructure/docker-compose.e2e.yaml` | Added `COLLECTION_AI_MODEL_APP_ID=ai-model` to collection-model env | Collection Model must know AI Model's DAPR app-id | Enables DAPR service invocation from Collection → AI Model |
+| `tests/e2e/infrastructure/seed/source_configs.json` | Added `e2e-weather-api` source config | Story requires weather source with iteration + AI extraction | Config uses `ai_agent_id: mock-weather-extractor` |
+
+**Proto Evidence:**
+- `proto/ai_model/v1/ai_model.proto` defines `AiModelService` with `Extract` and `HealthCheck` RPCs
+- Mock server implements this proto contract exactly
 
 **Rules:**
 - "To pass tests" is NOT a valid reason
 - Must reference proto line, API spec, or other evidence
 - If you can't fill this out, you may not understand what you're changing
+
+### Unit Test Changes (if any)
+If you modified ANY unit test behavior, document here:
+
+| Test File | Test Name Before | Test Name After | Behavior Change | Justification |
+|-----------|------------------|-----------------|-----------------|---------------|
+| (none) | | | No unit tests modified | Story only added E2E tests |
+
+### Local Test Run Evidence
+
+**Status:** NOT YET RUN LOCALLY - Story is in review status
+
+**First run timestamp:** _pending local verification_
+
+**Docker stack status:**
+```
+# TODO: Paste output of: docker compose -f tests/e2e/infrastructure/docker-compose.e2e.yaml ps
+```
+
+**Test run output:**
+```
+# TODO: Paste output of: pytest tests/e2e/scenarios/test_05_weather_ingestion.py -v
+```
+
+**If tests failed before passing, explain what you fixed:**
+
+| Attempt | Failure | Root Cause | Fix Applied | Layer Fixed |
+|---------|---------|------------|-------------|-------------|
+| - | - | - | - | - |
 
 ### Before Marking Done
 - [ ] All tests pass locally with Docker infrastructure (reviewer task)
