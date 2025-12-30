@@ -37,11 +37,14 @@ So that real weather API data flows through the pipeline with deterministic extr
   - [ ] Add healthcheck
   - [ ] Add to e2e-network
 
-- [ ] **Task 3: Create Weather Source Config** (AC: 2)
+- [ ] **Task 3: Create Weather Source Config with Iteration** (AC: 2)
   - [ ] Add `e2e-weather-api` to `seed/source_configs.json`
-  - [ ] Configure `mode: scheduled_pull` for weather API
+  - [ ] Configure `mode: scheduled_pull` with `request.base_url` for Open-Meteo
+  - [ ] Add `iteration` block: `source_mcp: plantation-mcp`, `source_tool: list_regions`
+  - [ ] Configure `inject_linkage: [region_id, latitude, longitude]`
   - [ ] Configure `ai_agent_id: mock-weather-extractor`
   - [ ] Set `link_field: region_id` for region linkage
+  - [ ] Verify regions.json has `latitude` and `longitude` fields
 
 - [ ] **Task 4: Create E2E Test File** (AC: All)
   - [ ] Create `tests/e2e/scenarios/test_05_weather_ingestion.py`
@@ -123,23 +126,31 @@ If you modified ANY production code, document each change here:
 │                     WEATHER INGESTION FLOW (Story 0.4.6)                │
 ├─────────────────────────────────────────────────────────────────────────┤
 │                                                                         │
-│  1. Trigger: Scheduled Pull Job OR Manual API Call                      │
+│  1. Trigger: Pull Job for "e2e-weather-api"                             │
 │         │                                                               │
 │         ▼                                                               │
-│  2. Collection Model fetches from Open-Meteo API (REAL)                 │
+│  2. IterationResolver calls plantation-mcp.list_regions                 │
+│     └─► Returns: [{ region_id, latitude, longitude }, ...]              │
 │         │                                                               │
 │         ▼                                                               │
-│  3. Raw weather JSON sent to Mock AI Extractor (MOCK)                   │
+│  3. FOR EACH region (concurrency: 3):                                   │
+│     │   a. Substitute {latitude}, {longitude} into URL                  │
+│     │   b. Fetch from Open-Meteo API (REAL)                             │
+│     │      GET /v1/forecast?latitude=-1.286&longitude=36.817&...        │
+│     │                                                                   │
+│     ▼                                                                   │
+│  4. Raw weather JSON sent to Mock AI Extractor (MOCK)                   │
 │     └─► http://mock-ai-extractor:8080/extract                           │
 │         │                                                               │
 │         ▼                                                               │
-│  4. Mock returns deterministic extraction (temp, precip, humidity)      │
+│  5. Mock returns deterministic extraction (temp, precip, humidity)      │
+│     + region_id injected from iteration linkage                         │
 │         │                                                               │
 │         ▼                                                               │
-│  5. Weather document stored in MongoDB (collection_e2e.weather_docs)    │
+│  6. Weather document stored in MongoDB (collection_e2e.weather_docs)    │
 │         │                                                               │
 │         ▼                                                               │
-│  6. Query via:                                                          │
+│  7. Query via:                                                          │
 │     - Collection MCP: get_documents(source_id="e2e-weather-api")        │
 │     - Plantation MCP: get_region_weather(region_id, days)               │
 │                                                                         │
@@ -184,7 +195,9 @@ The mock server should:
 }
 ```
 
-### Source Config Schema
+### Source Config Schema (with Iteration)
+
+**CRITICAL:** Weather pull must iterate over regions from Plantation MCP. Each region's lat/lng is used to call Open-Meteo API.
 
 **`e2e-weather-api` config structure:**
 ```json
@@ -196,8 +209,19 @@ The mock server should:
     "ingestion": {
       "mode": "scheduled_pull",
       "processor_type": "json-extraction",
-      "api_endpoint": "https://api.open-meteo.com/v1/forecast",
-      "schedule": "0 */6 * * *"
+      "request": {
+        "base_url": "https://api.open-meteo.com/v1/forecast?latitude={latitude}&longitude={longitude}&daily=temperature_2m_max,temperature_2m_min,precipitation_sum,relative_humidity_2m_mean&timezone=Africa/Nairobi",
+        "auth_type": "none"
+      },
+      "iteration": {
+        "foreach": "region",
+        "source_mcp": "plantation-mcp",
+        "source_tool": "list_regions",
+        "tool_arguments": {},
+        "result_path": "regions",
+        "inject_linkage": ["region_id", "name", "latitude", "longitude"],
+        "concurrency": 3
+      }
     },
     "transformation": {
       "ai_agent_id": "mock-weather-extractor",
@@ -206,6 +230,8 @@ The mock server should:
         "region_id",
         "observation_date",
         "temperature_c",
+        "temperature_min_c",
+        "temperature_max_c",
         "precipitation_mm",
         "humidity_percent"
       ]
@@ -221,6 +247,25 @@ The mock server should:
     }
   }
 }
+```
+
+**Iteration Flow:**
+```
+1. Collection Model triggers pull job for "e2e-weather-api"
+   │
+   ▼
+2. IterationResolver calls plantation-mcp.list_regions
+   │  Returns: [{ region_id: "REG-001", latitude: -1.286, longitude: 36.817 }, ...]
+   │
+   ▼
+3. For each region (concurrency: 3):
+   │  a. Substitute {latitude} and {longitude} into base_url
+   │  b. Fetch from Open-Meteo API
+   │  c. Send to Mock AI Extractor for extraction
+   │  d. Store document with inject_linkage (region_id)
+   │
+   ▼
+4. Weather documents created with region_id linkage
 ```
 
 ### Open-Meteo API Reference
@@ -278,8 +323,23 @@ GET /v1/forecast?latitude=-1.286&longitude=36.817&daily=temperature_2m_max,tempe
 
 | File | Required Data |
 |------|---------------|
-| `source_configs.json` | `e2e-weather-api` source config |
-| `regions.json` | Region `REG-E2E-001` for weather linkage |
+| `source_configs.json` | `e2e-weather-api` source config with iteration block |
+| `regions.json` | Regions with `region_id`, `latitude`, `longitude` fields for iteration |
+
+**Region Seed Data Example:**
+```json
+{
+  "region_id": "REG-E2E-001",
+  "name": "Nairobi-Highland",
+  "county": "Nairobi",
+  "altitude_band": "highland",
+  "latitude": -1.2921,
+  "longitude": 36.8219,
+  "active": true
+}
+```
+
+**CRITICAL:** Regions must have `latitude` and `longitude` fields for Open-Meteo API substitution.
 
 ### File Structure to Create
 
@@ -368,5 +428,6 @@ None - story creation phase
 - `tests/e2e/scenarios/test_05_weather_ingestion.py`
 
 **To Modify:**
-- `tests/e2e/infrastructure/docker-compose.e2e.yaml`
-- `tests/e2e/infrastructure/seed/source_configs.json`
+- `tests/e2e/infrastructure/docker-compose.e2e.yaml` - Add mock-ai-extractor service
+- `tests/e2e/infrastructure/seed/source_configs.json` - Add e2e-weather-api config
+- `tests/e2e/infrastructure/seed/regions.json` - Ensure latitude/longitude fields exist
