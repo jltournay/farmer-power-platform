@@ -312,6 +312,7 @@ class JsonExtractionProcessor(ContentProcessor):
 
         if not ai_agent_id:
             # Direct JSON extraction without AI - extract fields directly from JSON
+            # This path is used when ai_agent_id is null in source config (Story 0.4.5)
             try:
                 json_data = json.loads(raw_content)
             except json.JSONDecodeError as e:
@@ -319,15 +320,30 @@ class JsonExtractionProcessor(ContentProcessor):
 
             extract_fields = transformation.get("extract_fields", [])
             extracted = {}
+            missing_fields = []
             for field in extract_fields:
                 if field in json_data:
                     extracted[field] = json_data[field]
+                else:
+                    missing_fields.append(field)
+
+            # Log warning for missing fields (observability)
+            if missing_fields:
+                logger.warning(
+                    "Direct extraction: configured fields not found in JSON",
+                    missing_fields=missing_fields,
+                    available_fields=list(json_data.keys()),
+                    source_id=source_config.get("source_id"),
+                )
 
             return {
                 "extracted_fields": extracted,
-                "confidence": 1.0,  # Direct extraction is deterministic
+                # Confidence is 1.0 because direct extraction is deterministic -
+                # the field either exists and is extracted exactly, or it doesn't.
+                # This differs from AI extraction which has probabilistic confidence.
+                "confidence": 1.0,
                 "validation_passed": True,
-                "validation_warnings": [],
+                "validation_warnings": [f"Missing field: {f}" for f in missing_fields],
             }
 
         if not self._ai_client:
