@@ -24,16 +24,18 @@ So that real weather API data flows through the pipeline with deterministic extr
 
 ## Tasks / Subtasks
 
-- [ ] **Task 1: Create Mock AI Extractor Server** (AC: 1)
-  - [ ] Create `tests/e2e/infrastructure/mock-servers/ai-extractor/` directory
-  - [ ] Create `server.py` FastAPI server returning deterministic weather extraction
-  - [ ] Create `Dockerfile` for containerization
+- [ ] **Task 1: Create Mock AI Model Server (DAPR-enabled)** (AC: 1)
+  - [ ] Create `tests/e2e/infrastructure/mock-servers/ai-model/` directory
+  - [ ] Create `server.py` FastAPI server with DAPR service invocation endpoints
+  - [ ] Add `POST /Extract` endpoint matching DAPR service invocation pattern
   - [ ] Add `/health` endpoint for healthcheck
-  - [ ] Add `/extract` endpoint matching AI Model extraction contract
+  - [ ] Parse Open-Meteo response and return deterministic extraction
+  - [ ] Create `Dockerfile` for containerization
 
-- [ ] **Task 2: Add Mock AI Extractor to Docker Compose** (AC: 1)
-  - [ ] Add `mock-ai-extractor` service to `docker-compose.e2e.yaml`
-  - [ ] Configure port mapping (8090:8080)
+- [ ] **Task 2: Add Mock AI Model to Docker Compose with DAPR Sidecar** (AC: 1)
+  - [ ] Add `mock-ai-model` service to `docker-compose.e2e.yaml`
+  - [ ] Add `mock-ai-model-dapr` sidecar with `app-id: mock-ai-model`
+  - [ ] Configure Collection Model env: `COLLECTION_AI_MODEL_APP_ID=mock-ai-model`
   - [ ] Add healthcheck
   - [ ] Add to e2e-network
 
@@ -165,35 +167,60 @@ If you modified ANY production code, document each change here:
 | AI Extraction | **MOCK** | Deterministic responses for E2E |
 | MongoDB | **REAL** | Full database behavior |
 
-### Mock AI Extractor Specification
+### Mock AI Extractor Specification (DAPR Service Invocation)
 
-The mock server should:
-1. Listen on port 8080 (mapped to host 8090)
-2. Accept POST requests to `/extract` with weather JSON
-3. Return deterministic weather attributes:
-   - `temperature_c`: Based on input timestamp
-   - `precipitation_mm`: Based on input data
-   - `humidity_percent`: Deterministic value
-   - `region_id`: From input or default
+**CRITICAL:** The AI Model client uses DAPR gRPC Service Invocation, NOT direct HTTP!
 
-**Mock Extraction Response Schema:**
+**From `ai_model_client.py`:**
+```python
+client.invoke_method(
+    app_id=self._ai_model_app_id,  # "ai-model" or "mock-ai-model"
+    method_name="Extract",
+    data=json.dumps(request_data),
+    content_type="application/json",
+)
+```
+
+**Mock Server Requirements:**
+1. Must be a DAPR-enabled service (needs DAPR sidecar)
+2. Must respond to DAPR service invocation method "Extract"
+3. Alternatively: Use FastAPI + configure Collection Model to use mock app_id
+
+**Option A: DAPR-enabled Mock (Recommended)**
+- Create mock service with DAPR sidecar
+- Configure `app_id: mock-ai-model`
+- Collection Model env: `COLLECTION_AI_MODEL_APP_ID=mock-ai-model`
+
+**Option B: HTTP Mock via DAPR HTTP Invoke**
+- Create FastAPI server
+- DAPR invokes HTTP methods as POST to `/<method_name>`
+- Endpoint: `POST /Extract` accepting DAPR-wrapped request
+
+**Request Payload (from Collection Model):**
 ```json
 {
-  "extracted_fields": {
-    "region_id": "REG-E2E-001",
-    "observation_date": "2025-01-15",
-    "temperature_c": 22.5,
-    "temperature_min_c": 18.0,
-    "temperature_max_c": 27.0,
-    "precipitation_mm": 5.2,
-    "humidity_percent": 75.0,
-    "source": "open-meteo"
-  },
+  "raw_content": "<Open-Meteo JSON response>",
+  "ai_agent_id": "mock-weather-extractor",
+  "source_config_json": "{...}",
+  "content_type": "application/json"
+}
+```
+
+**Expected Response:**
+```json
+{
+  "success": true,
+  "extracted_fields_json": "{\"region_id\":\"REG-E2E-001\",\"temperature_c\":22.5,...}",
   "confidence": 0.95,
   "validation_passed": true,
   "validation_warnings": []
 }
 ```
+
+**Deterministic Extraction Logic:**
+- Parse Open-Meteo response from `raw_content`
+- Extract `temperature_2m_max`, `temperature_2m_min`, `precipitation_sum`
+- Return deterministic fields with region_id from linkage
 
 ### Source Config Schema (with Iteration)
 
@@ -348,12 +375,13 @@ tests/e2e/
 ├── infrastructure/
 │   ├── mock-servers/
 │   │   ├── google-elevation/  (existing)
-│   │   └── ai-extractor/      (NEW)
+│   │   └── ai-model/          (NEW - DAPR-enabled mock)
 │   │       ├── Dockerfile
 │   │       └── server.py
-│   └── docker-compose.e2e.yaml  (UPDATE)
+│   └── docker-compose.e2e.yaml  (UPDATE - add mock-ai-model + dapr sidecar)
 ├── infrastructure/seed/
-│   └── source_configs.json      (UPDATE)
+│   ├── source_configs.json      (UPDATE - add e2e-weather-api)
+│   └── regions.json             (UPDATE - ensure lat/lng fields)
 └── scenarios/
     └── test_05_weather_ingestion.py  (NEW)
 ```
@@ -423,11 +451,12 @@ None - story creation phase
 ### File List
 
 **To Create:**
-- `tests/e2e/infrastructure/mock-servers/ai-extractor/server.py`
-- `tests/e2e/infrastructure/mock-servers/ai-extractor/Dockerfile`
+- `tests/e2e/infrastructure/mock-servers/ai-model/server.py` - DAPR-enabled FastAPI mock
+- `tests/e2e/infrastructure/mock-servers/ai-model/Dockerfile`
 - `tests/e2e/scenarios/test_05_weather_ingestion.py`
 
 **To Modify:**
-- `tests/e2e/infrastructure/docker-compose.e2e.yaml` - Add mock-ai-extractor service
+- `tests/e2e/infrastructure/docker-compose.e2e.yaml` - Add mock-ai-model + DAPR sidecar
 - `tests/e2e/infrastructure/seed/source_configs.json` - Add e2e-weather-api config
 - `tests/e2e/infrastructure/seed/regions.json` - Ensure latitude/longitude fields exist
+- `services/collection-model` environment - Set `COLLECTION_AI_MODEL_APP_ID=mock-ai-model`
