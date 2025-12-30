@@ -1,6 +1,6 @@
 # Story 0.4.8: TBK/KTDA Grading Model Validation
 
-**Status:** ready-for-dev
+**Status:** review
 **GitHub Issue:** #39
 **Epic:** [Epic 0.4: E2E Test Scenarios](../epics/epic-0-4-e2e-tests.md)
 **Story Points:** 2
@@ -82,15 +82,15 @@ gh issue comment 39 --body "## Implementation Complete
 
 Story is **NOT DONE** until ALL of these are true:
 
-- [ ] **Tests written** - All 6 tests in `test_07_grading_validation.py`
-- [ ] **Docker running** - E2E infrastructure started with `docker compose up`
-- [ ] **Tests pass locally** - `pytest` output shows all green (paste evidence below)
-- [ ] **Lint passes** - `ruff check . && ruff format --check .`
-- [ ] **Pushed to feature branch** - `git push origin story/0-4-8-tbk-ktda-grading-validation`
-- [ ] **CI workflow passes on branch** - Run `gh run list --branch story/0-4-8-tbk-ktda-grading-validation` and verify ✓ for "CI"
-- [ ] **E2E Tests workflow passes on branch** - Same command, verify ✓ for "E2E Tests"
-- [ ] **GitHub issue #39 updated** - Run `gh issue comment 39 --body "Implementation complete"`
-- [ ] **Story file updated** - Fill in "Local Test Run Evidence" section below with actual output
+- [x] **Tests written** - All 6 tests in `test_07_grading_validation.py`
+- [x] **Docker running** - E2E infrastructure started with `docker compose up`
+- [x] **Tests pass locally** - `pytest` output shows all green (paste evidence below)
+- [x] **Lint passes** - `ruff check . && ruff format --check .`
+- [x] **Pushed to feature branch** - `git push origin story/0-4-8-tbk-ktda-grading-validation`
+- [x] **CI workflow passes on branch** - Run `gh run list --branch story/0-4-8-tbk-ktda-grading-validation` and verify ✓ for "CI"
+- [x] **E2E Tests workflow passes on branch** - Same command, verify ✓ for "E2E Tests"
+- [x] **GitHub issue #39 updated** - Run `gh issue comment 39 --body "Implementation complete"`
+- [x] **Story file updated** - Fill in "Local Test Run Evidence" section below with actual output
 
 > **HOW TO CHECK CI ON YOUR BRANCH:**
 > ```bash
@@ -150,11 +150,11 @@ So that farmer payments are based on accurate grade distributions.
   - [x] Test AC6: Event with `leaf_type: stalks` → "Rejected"
   - [x] Verify KTDA uses ternary grading (3 levels vs TBK binary)
 
-- [ ] **Task 6: Test Validation** (AC: All)
-  - [ ] Run `ruff check tests/e2e/scenarios/test_07_grading_validation.py`
-  - [ ] Run `ruff format` on new files
-  - [ ] Run all tests locally with Docker infrastructure
-  - [ ] Verify CI pipeline passes
+- [x] **Task 6: Test Validation** (AC: All)
+  - [x] Run `ruff check tests/e2e/scenarios/test_07_grading_validation.py`
+  - [x] Run `ruff format` on new files
+  - [x] Run all tests locally with Docker infrastructure
+  - [x] Verify CI pipeline passes
 
 ## Git Workflow (MANDATORY)
 
@@ -171,18 +171,18 @@ So that farmer payments are based on accurate grade distributions.
 **Branch name:** `story/0-4-8-tbk-ktda-grading-validation`
 
 ### During Development
-- [ ] All commits reference GitHub issue: `Relates to #XX`
-- [ ] Commits are atomic by type (production, test, seed - not mixed)
-- [ ] Push to feature branch: `git push -u origin story/0-4-8-tbk-ktda-grading-validation`
+- [x] All commits reference GitHub issue: `Relates to #39`
+- [x] Commits are atomic by type (production, test, seed - not mixed)
+- [x] Push to feature branch: `git push -u origin story/0-4-8-tbk-ktda-grading-validation`
 
 ### Story Done
-- [ ] Create Pull Request: `gh pr create --title "Story 0.4.8: TBK/KTDA Grading Model Validation" --base main`
-- [ ] CI passes on PR
+- [x] Create Pull Request: `gh pr create --title "Story 0.4.8: TBK/KTDA Grading Model Validation" --base main`
+- [x] CI passes on PR
 - [ ] Code review completed (`/code-review` or human review)
 - [ ] PR approved and merged (squash)
 - [ ] Local branch cleaned up: `git branch -d story/0-4-8-tbk-ktda-grading-validation`
 
-**PR URL:** (to be created)
+**PR URL:** https://github.com/jltournay/farmer-power-platform/pull/40
 
 ---
 
@@ -238,9 +238,17 @@ If you modified ANY unit test behavior, document here:
 # Run this command and paste output below:
 docker compose -f tests/e2e/infrastructure/docker-compose.e2e.yaml ps
 ```
-**Output (paste here - all must show "healthy"):**
+**Output (all services healthy):**
 ```
-(PASTE DOCKER PS OUTPUT HERE - DO NOT SKIP THIS)
+NAME                                      IMAGE                              STATUS
+e2e-azurite-1                            mcr.microsoft.com/azure-storage... Up 2 minutes (healthy)
+e2e-collection-model-1                   farmer-power-platform/collection.. Up 2 minutes (healthy)
+e2e-collection-model-dapr-1              daprio/daprd:1.15.4                Up 2 minutes
+e2e-dapr-placement-1                     daprio/placement:1.15.4            Up 2 minutes (healthy)
+e2e-mongodb-1                            mongo:7.0                          Up 2 minutes (healthy)
+e2e-plantation-model-1                   farmer-power-platform/plantation.. Up 2 minutes (healthy)
+e2e-plantation-model-dapr-1              daprio/daprd:1.15.4                Up 2 minutes
+e2e-redis-1                              redis:7-alpine                     Up 2 minutes (healthy)
 ```
 
 **2. Test Run Output:**
@@ -248,9 +256,16 @@ docker compose -f tests/e2e/infrastructure/docker-compose.e2e.yaml ps
 # Run this command and paste output below:
 PYTHONPATH="${PYTHONPATH}:.:libs/fp-proto/src" pytest tests/e2e/scenarios/test_07_grading_validation.py -v
 ```
-**Output (paste here - must show all tests passed):**
+**Output (6 tests passed in 59.92s):**
 ```
-(PASTE PYTEST OUTPUT HERE - DO NOT SKIP THIS)
+tests/e2e/scenarios/test_07_grading_validation.py::TestTBKPrimaryGrade::test_two_leaves_bud_grades_primary PASSED
+tests/e2e/scenarios/test_07_grading_validation.py::TestTBKSecondaryGradeRejectCondition::test_three_plus_leaves_bud_grades_secondary PASSED
+tests/e2e/scenarios/test_07_grading_validation.py::TestTBKConditionalReject::test_hard_banji_grades_secondary PASSED
+tests/e2e/scenarios/test_07_grading_validation.py::TestTBKSoftBanjiAcceptable::test_soft_banji_grades_primary PASSED
+tests/e2e/scenarios/test_07_grading_validation.py::TestKTDAGradeA::test_two_leaves_bud_grades_a PASSED
+tests/e2e/scenarios/test_07_grading_validation.py::TestKTDARejected::test_stalks_grades_rejected PASSED
+
+====== 6 passed in 59.92s ======
 ```
 
 **3. Lint Check:**
@@ -258,28 +273,27 @@ PYTHONPATH="${PYTHONPATH}:.:libs/fp-proto/src" pytest tests/e2e/scenarios/test_0
 # Run this command:
 ruff check . && ruff format --check .
 ```
-**Lint passed:** [ ] Yes / [ ] No (if no, fix before continuing)
+**Lint passed:** [x] Yes / [ ] No
 
 **4. CI Check on Feature Branch (BOTH workflows must pass):**
 ```bash
 # After pushing, wait 30 seconds then run:
 gh run list --branch story/0-4-8-tbk-ktda-grading-validation --limit 5
 ```
-**Paste CI output here:**
+**CI output:**
 ```
-(PASTE gh run list OUTPUT HERE - should show ✓ for both CI and E2E Tests)
+completed  success  Story 0.4.8: TBK/KTDA Grading Model Validation  CI          story/0-4-8-tbk-ktda-grading-validation  pull_request      20605401824  1m19s
+completed  success  E2E Tests                                       E2E Tests   story/0-4-8-tbk-ktda-grading-validation  workflow_dispatch 20605433274  4m6s
 ```
-**CI workflow:** [ ] Passed / [ ] Failed - Run ID: ___________
-**E2E Tests workflow:** [ ] Passed / [ ] Failed - Run ID: ___________
-
-If failed, check logs with: `gh run view <run-id> --log-failed`
+**CI workflow:** [x] Passed / [ ] Failed - Run ID: 20605401824
+**E2E Tests workflow:** [x] Passed / [ ] Failed - Run ID: 20605433274
 
 **5. GitHub Issue Updated:**
 ```bash
 # Add implementation comment to issue:
 gh issue comment 39 --body "Implementation complete - see PR"
 ```
-**Comment added:** [ ] Yes / [ ] No
+**Comment added:** [x] Yes / [ ] No
 
 **If tests failed before passing, explain what you fixed:**
 
@@ -291,15 +305,15 @@ gh issue comment 39 --body "Implementation complete - see PR"
 
 > **Do NOT mark story as done until ALL boxes are checked!**
 
-- [ ] All tests pass locally with Docker infrastructure (evidence pasted above)
-- [ ] `ruff check` and `ruff format --check` pass (evidence above)
-- [ ] Pushed to feature branch: `git push origin story/0-4-8-tbk-ktda-grading-validation`
-- [ ] **CI workflow passes ON YOUR BRANCH** - Verified with `gh run list --branch story/0-4-8-tbk-ktda-grading-validation`
-- [ ] **E2E Tests workflow passes ON YOUR BRANCH** - Same command, both must show ✓
-- [ ] GitHub Issue #39 updated: `gh issue comment 39 --body "Implementation complete"`
-- [ ] If production code changed: Change log above is complete
-- [ ] If unit tests changed: Change log above is complete
-- [ ] Story file updated with completion notes and ALL evidence pasted above
+- [x] All tests pass locally with Docker infrastructure (evidence pasted above)
+- [x] `ruff check` and `ruff format --check` pass (evidence above)
+- [x] Pushed to feature branch: `git push origin story/0-4-8-tbk-ktda-grading-validation`
+- [x] **CI workflow passes ON YOUR BRANCH** - Verified with `gh run list --branch story/0-4-8-tbk-ktda-grading-validation`
+- [x] **E2E Tests workflow passes ON YOUR BRANCH** - Same command, both must show ✓
+- [x] GitHub Issue #39 updated: `gh issue comment 39 --body "Implementation complete"`
+- [x] If production code changed: Change log above is complete (N/A - no production code changes)
+- [x] If unit tests changed: Change log above is complete (N/A - no unit test changes)
+- [x] Story file updated with completion notes and ALL evidence pasted above
 
 > **REMINDER:** CI runs automatically on feature branches. You do NOT need to merge to main first!
 > Run `gh run list --branch story/0-4-8-tbk-ktda-grading-validation --limit 5` to check status.
@@ -518,20 +532,26 @@ docker compose -f tests/e2e/infrastructure/docker-compose.e2e.yaml down -v
 
 ### Agent Model Used
 
-(to be filled)
+Claude Opus 4.5 (claude-opus-4-5-20251101)
 
 ### Debug Log References
 
-(to be filled)
+- N/A - All tests passed on first run
 
 ### Completion Notes List
 
-(to be filled)
+1. Created comprehensive E2E test file `test_07_grading_validation.py` with 6 test classes
+2. Tests cover all 6 acceptance criteria for TBK binary and KTDA ternary grading models
+3. Reused blob ingestion pattern from Story 0.4.5 (`test_05_quality_event_blob.py`)
+4. Verified grading model seed data mapping: farmers → collection points → factories → grading models
+5. All tests passed locally (59.92s) and in CI (4m6s)
+6. No production code changes required
 
 ### File List
 
 **Created:**
-- (to be filled)
+- `tests/e2e/scenarios/test_07_grading_validation.py` - 6 E2E tests for grading model validation
 
 **Modified:**
-- (to be filled)
+- `_bmad-output/sprint-artifacts/sprint-status.yaml` - Updated story status to in-progress
+- `_bmad-output/sprint-artifacts/0-4-8-tbk-ktda-grading-validation.md` - Updated with implementation evidence
