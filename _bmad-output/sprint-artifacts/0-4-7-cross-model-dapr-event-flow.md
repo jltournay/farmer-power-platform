@@ -58,7 +58,7 @@ So that Collection Model events correctly update Plantation Model farmer perform
   - [x] Run `ruff check tests/e2e/scenarios/test_06_cross_model_events.py`
   - [x] Run `ruff format` on new files
   - [x] Run all tests locally with Docker infrastructure - **5 passed in 12.03s**
-  - [ ] Verify CI pipeline passes
+  - [x] Verify CI pipeline passes - **E2E Tests passed in 2m52s (Run ID: 20604554197)**
 
 ## Git Workflow (MANDATORY)
 
@@ -182,7 +182,7 @@ tests/e2e/scenarios/test_06_cross_model_events.py::TestMCPQueryVerification::tes
 ### Before Marking Done
 - [x] All tests pass locally with Docker infrastructure
 - [x] `ruff check` and `ruff format --check` pass
-- [ ] CI pipeline is green
+- [x] CI pipeline is green - **E2E Tests passed (Run ID: 20604554197)**
 - [x] If production code changed: Change log above is complete (N/A - no production code changes)
 - [x] If unit tests changed: Change log above is complete (N/A - no unit test changes)
 - [x] Story file updated with completion notes
