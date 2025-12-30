@@ -6,6 +6,7 @@ Used when source configs have an iteration block to dynamically expand
 API calls based on runtime data (e.g., list of regions, farmers).
 """
 
+import asyncio
 import json
 from typing import Any
 
@@ -83,13 +84,18 @@ class IterationResolver:
             }
 
             # Call MCP server via DAPR Service Invocation
-            with DaprClient() as client:
-                response = client.invoke_method(
-                    app_id=source_mcp,
-                    method_name="CallTool",
-                    data=json.dumps(request_data),
-                    content_type="application/json",
-                )
+            # Note: DaprClient.invoke_method is synchronous, so we run it in a
+            # thread pool to avoid blocking the event loop (Story 0.4.6 fix)
+            def _invoke_dapr():
+                with DaprClient() as client:
+                    return client.invoke_method(
+                        app_id=source_mcp,
+                        method_name="CallTool",
+                        data=json.dumps(request_data),
+                        content_type="application/json",
+                    )
+
+            response = await asyncio.to_thread(_invoke_dapr)
 
             # Parse response
             response_data = json.loads(response.data.decode("utf-8"))
