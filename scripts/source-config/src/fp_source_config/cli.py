@@ -360,14 +360,19 @@ def diff(
                     has_diff = True
                     continue
 
-                # Compare configs
+                # Compare configs (flat schema)
                 local_dict = {
                     "ingestion": local_config.model_dump()["ingestion"],
                     "validation": local_config.model_dump().get("validation"),
                     "transformation": local_config.model_dump()["transformation"],
                     "storage": local_config.model_dump()["storage"],
                 }
-                deployed_dict = deployed.config
+                deployed_dict = {
+                    "ingestion": deployed.ingestion,
+                    "validation": deployed.validation,
+                    "transformation": deployed.transformation,
+                    "storage": deployed.storage,
+                }
 
                 diff_result = DeepDiff(
                     deployed_dict, local_dict, ignore_order=True, verbose_level=2
