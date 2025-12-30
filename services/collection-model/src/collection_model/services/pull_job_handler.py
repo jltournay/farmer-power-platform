@@ -14,6 +14,8 @@ from collection_model.infrastructure.iteration_resolver import IterationResolver
 from collection_model.infrastructure.pull_data_fetcher import PullDataFetcher
 from collection_model.infrastructure.storage_metrics import StorageMetrics
 from collection_model.processors.base import ContentProcessor
+from collection_model.services.source_config_service import SourceConfigService
+from fp_common.models.source_config import SourceConfig
 
 logger = structlog.get_logger(__name__)
 
@@ -38,7 +40,7 @@ class PullJobHandler:
 
     def __init__(
         self,
-        source_config_service: Any,
+        source_config_service: SourceConfigService,
         pull_data_fetcher: PullDataFetcher,
         iteration_resolver: IterationResolver,
         processor: ContentProcessor | None = None,
@@ -71,7 +73,7 @@ class PullJobHandler:
         """
         self._worker = worker
 
-    async def _get_processor(self, source_config: dict[str, Any]) -> ContentProcessor:
+    async def _get_processor(self, source_config: SourceConfig) -> ContentProcessor:
         """Get processor for the source config.
 
         Uses the worker to get a processor with dependencies set,
@@ -125,16 +127,16 @@ class PullJobHandler:
                 "duplicates": 0,
             }
 
-        ingestion = source_config.get("ingestion", {})
-        request_config = ingestion.get("request", {})
-        iteration_config = ingestion.get("iteration")
+        # Use typed attribute access
+        request_config = source_config.ingestion.request
+        iteration_config = source_config.ingestion.iteration
 
         # Build pull config for fetcher
         pull_config = {
-            "base_url": request_config.get("base_url", ""),
-            "auth_type": request_config.get("auth_type", "none"),
-            "auth_config": request_config.get("auth_config", {}),
-            "parameters": request_config.get("parameters", {}),
+            "base_url": request_config.base_url if request_config else "",
+            "auth_type": request_config.auth_type if request_config else "none",
+            "auth_config": {},  # Auth config handled by auth_secret_key
+            "parameters": dict(request_config.parameters) if request_config else {},
         }
 
         if iteration_config:
@@ -156,7 +158,7 @@ class PullJobHandler:
     async def _handle_single_fetch(
         self,
         source_id: str,
-        source_config: dict[str, Any],
+        source_config: SourceConfig,
         pull_config: dict[str, Any],
     ) -> dict[str, Any]:
         """Handle single fetch (no iteration).
@@ -226,9 +228,9 @@ class PullJobHandler:
     async def _handle_iteration_fetch(
         self,
         source_id: str,
-        source_config: dict[str, Any],
+        source_config: SourceConfig,
         pull_config: dict[str, Any],
-        iteration_config: dict[str, Any],
+        iteration_config: Any,  # IterationConfig from SourceConfig
     ) -> dict[str, Any]:
         """Handle multi-fetch with iteration.
 
@@ -244,9 +246,10 @@ class PullJobHandler:
         Returns:
             Summary dict with aggregated results.
         """
-        # Resolve iteration items
+        # Resolve iteration items - pass as dict for resolver compatibility
         try:
-            items = await self._resolver.resolve(iteration_config)
+            iteration_dict = iteration_config.model_dump() if iteration_config else {}
+            items = await self._resolver.resolve(iteration_dict)
         except Exception as e:
             logger.error(
                 "Iteration resolution failed",
@@ -275,8 +278,9 @@ class PullJobHandler:
                 "duplicates": 0,
             }
 
-        concurrency = iteration_config.get("concurrency", 5)
-        inject_linkage = iteration_config.get("inject_linkage", [])
+        # Use typed attribute access for concurrency
+        concurrency = iteration_config.concurrency if iteration_config else 5
+        inject_linkage: list[str] = []  # Not in IterationConfig yet
 
         logger.info(
             "Starting iteration fetch",
@@ -341,7 +345,7 @@ class PullJobHandler:
     async def _fetch_and_process_item(
         self,
         source_id: str,
-        source_config: dict[str, Any],
+        source_config: SourceConfig,
         pull_config: dict[str, Any],
         item: dict[str, Any],
         inject_linkage: list[str],

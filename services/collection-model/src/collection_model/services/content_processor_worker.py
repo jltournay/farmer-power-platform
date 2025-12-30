@@ -20,6 +20,7 @@ from collection_model.infrastructure.metrics import ProcessingMetrics
 from collection_model.infrastructure.raw_document_store import RawDocumentStore
 from collection_model.processors import ProcessorNotFoundError, ProcessorRegistry
 from collection_model.services.source_config_service import SourceConfigService
+from fp_common.models.source_config import SourceConfig
 from motor.motor_asyncio import AsyncIOMotorDatabase
 
 logger = structlog.get_logger(__name__)
@@ -206,22 +207,21 @@ class ContentProcessorWorker:
             await self._handle_failure(job, str(e), "unknown")
             self._record_metrics(job.source_id, False, time.time() - start_time, "unknown")
 
-    async def _get_source_config(self, source_id: str) -> dict[str, Any]:
+    async def _get_source_config(self, source_id: str) -> SourceConfig:
         """Get source config by source_id."""
         configs = await self.config_service.get_all_configs()
         for config in configs:
-            if config.get("source_id") == source_id:
+            if config.source_id == source_id:
                 return config
 
         raise ConfigurationError(f"Source config not found: {source_id}")
 
-    async def _get_processor(self, source_config: dict[str, Any]) -> Any:
+    async def _get_processor(self, source_config: SourceConfig) -> Any:
         """Get the appropriate processor for the source config."""
-        ingestion = source_config.get("ingestion", {})
-        processor_type = ingestion.get("processor_type")
+        processor_type = source_config.ingestion.processor_type
 
         if not processor_type:
-            raise ConfigurationError(f"No ingestion.processor_type in source config: {source_config.get('source_id')}")
+            raise ConfigurationError(f"No ingestion.processor_type in source config: {source_config.source_id}")
 
         processor = ProcessorRegistry.get_processor(processor_type)
 

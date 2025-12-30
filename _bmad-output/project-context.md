@@ -1,10 +1,10 @@
 ---
 project_name: 'farmer-power-platform'
 user_name: 'Jeanlouistournay'
-date: '2025-12-23'
+date: '2025-12-30'
 sections_completed: ['technology_stack', 'python_rules', 'code_design_principles', 'framework_rules', 'architecture_rules', 'testing_rules', 'ui_ux_rules', 'critical_rules']
 status: 'complete'
-rule_count: 192
+rule_count: 198
 optimized_for_llm: true
 ---
 
@@ -161,6 +161,43 @@ from fp_proto.collection.v1 import collection_pb2
 - Use `model_validate()` NOT `parse_obj()`
 - Use `Field(description=...)` for LLM output schemas
 - Define `model_config` as class attribute, NOT `Config` inner class
+
+### Pydantic Models vs Dicts (CRITICAL)
+
+**ALWAYS prefer Pydantic models over `dict[str, Any]`**. This is a critical rule discovered from Story 0.4.6 bugs.
+
+| Approach | Result |
+|----------|--------|
+| `dict[str, Any]` | Bugs found at E2E/runtime, no IDE autocomplete, typos compile |
+| Pydantic model | Bugs found at test time, full IDE support, validation on load |
+
+**Anti-pattern (Collection Model before refactor):**
+```python
+# BAD: Returns raw dict, no validation
+async def get_config(self, source_id: str) -> dict[str, Any]:
+    return await self.collection.find_one({"source_id": source_id})
+
+# BAD: Dict access - typos not caught, no autocomplete
+ingestion = config.get("ingestion", {})
+mode = ingestion.get("mode")  # Could be "mod" and Python won't complain
+```
+
+**Correct pattern (Plantation Model):**
+```python
+# GOOD: Returns typed Pydantic model
+async def get_by_id(self, entity_id: str) -> Farmer | None:
+    doc = await self._collection.find_one({"_id": entity_id})
+    return Farmer.model_validate(doc)  # Pydantic validates schema!
+
+# GOOD: Typed access - IDE catches typos, autocomplete works
+mode = config.ingestion.mode  # AttributeError if wrong field name
+```
+
+**Rules:**
+- Repository methods MUST return Pydantic models, not dicts
+- Service methods MUST accept and return Pydantic models
+- If a Pydantic model exists in `fp_common/models/`, USE IT
+- Type hint `dict[str, Any]` is a code smell - refactor to Pydantic
 
 ### Error Handling
 
@@ -460,6 +497,44 @@ class NotificationService:
 - **Scheduling**: DAPR Jobs (NOT cron in code)
 - **State**: DAPR State Store (NOT direct MongoDB for cross-model state)
 - **Secrets**: DAPR Secret Store (NOT environment variables for sensitive data)
+
+### DAPR gRPC Service Invocation (CRITICAL)
+
+**When invoking gRPC services via DAPR, use native gRPC with `dapr-app-id` metadata header.**
+
+This pattern was discovered in Story 0.4.6 - `DaprClient().invoke_method()` is HTTP-based and returns HTTP 501 when calling gRPC services.
+
+**Anti-pattern (WRONG):**
+```python
+# BAD: DaprClient HTTP invocation cannot proxy to gRPC services
+from dapr.clients import DaprClient
+
+async with DaprClient() as client:
+    response = await client.invoke_method(
+        app_id="plantation-mcp",
+        method_name="CallTool",  # This is gRPC, not HTTP!
+        data=request_bytes,
+    )
+# Result: HTTP 501 "Not Implemented"
+```
+
+**Correct pattern:**
+```python
+# GOOD: Native gRPC stub with dapr-app-id metadata header
+import grpc
+from fp_proto.mcp.v1 import mcp_tool_pb2_grpc
+
+async with grpc.aio.insecure_channel("localhost:50001") as channel:  # DAPR sidecar port
+    stub = mcp_tool_pb2_grpc.McpToolServiceStub(channel)
+    metadata = [("dapr-app-id", "plantation-mcp")]  # Target service app-id
+    response = await stub.CallTool(request, metadata=metadata)
+```
+
+**References:**
+- Plantation MCP: `mcp-servers/plantation-mcp/src/plantation_mcp/infrastructure/plantation_client.py:81`
+- Collection Model IterationResolver: `services/collection-model/src/collection_model/infrastructure/iteration_resolver.py:50`
+
+**DAPR Docs:** https://docs.dapr.io/developing-applications/building-blocks/service-invocation/howto-invoke-services-grpc/
 
 ### DAPR Event Naming
 
@@ -1056,4 +1131,4 @@ This file contains critical rules. For detailed decisions not covered here:
 
 ---
 
-_Last Updated: 2025-12-23_
+_Last Updated: 2025-12-30_

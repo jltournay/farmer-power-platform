@@ -22,6 +22,7 @@ from collection_model.domain.manifest import ManifestFile, ZipManifest
 from collection_model.infrastructure.blob_storage import BlobReference
 from collection_model.processors.registry import ProcessorRegistry
 from collection_model.processors.zip_extraction import ZipExtractionProcessor
+from fp_common.models.source_config import SourceConfig
 
 
 def create_test_zip(
@@ -203,35 +204,42 @@ class TestZipExtractionProcessor:
         )
 
     @pytest.fixture
-    def sample_source_config(self) -> dict[str, Any]:
-        """Create sample source configuration."""
-        return {
-            "source_id": "qc-analyzer-exceptions",
-            "ingestion": {
-                "mode": "blob_trigger",
-                "processor_type": "zip-extraction",
-                "zip_config": {
-                    "manifest_file": "manifest.json",
+    def sample_source_config(self) -> SourceConfig:
+        """Create sample source configuration as typed SourceConfig."""
+        return SourceConfig.model_validate(
+            {
+                "source_id": "qc-analyzer-exceptions",
+                "display_name": "QC Analyzer Exceptions",
+                "description": "Exception images from QC analyzer",
+                "enabled": True,
+                "ingestion": {
+                    "mode": "blob_trigger",
+                    "processor_type": "zip-extraction",
+                    "zip_config": {
+                        "manifest_file": "manifest.json",
+                        "images_folder": "images",
+                        "image_storage_container": "exception-images",
+                    },
                 },
-            },
-            "transformation": {
-                "ai_agent_id": "qc-exception-extraction-agent",
-                "extract_fields": ["plantation_id", "batch_id"],
-                "link_field": "plantation_id",
-            },
-            "storage": {
-                "raw_container": "exception-images-raw",
-                "file_container": "exception-images",
-                "file_path_pattern": "{plantation_id}/{batch_id}/{doc_id}/{filename}",
-                "index_collection": "documents",
-            },
-            "events": {
-                "on_success": {
-                    "topic": "collection.exception_images.received",
-                    "payload_fields": ["plantation_id", "batch_id", "document_count"],
+                "transformation": {
+                    "ai_agent_id": "qc-exception-extraction-agent",
+                    "extract_fields": ["plantation_id", "batch_id"],
+                    "link_field": "plantation_id",
                 },
-            },
-        }
+                "storage": {
+                    "raw_container": "exception-images-raw",
+                    "file_container": "exception-images",
+                    "file_path_pattern": "{plantation_id}/{batch_id}/{doc_id}/{filename}",
+                    "index_collection": "documents",
+                },
+                "events": {
+                    "on_success": {
+                        "topic": "collection.exception_images.received",
+                        "payload_fields": ["plantation_id", "batch_id", "document_count"],
+                    },
+                },
+            }
+        )
 
     @pytest.mark.asyncio
     async def test_process_success(
@@ -241,7 +249,7 @@ class TestZipExtractionProcessor:
         mock_doc_repo: MagicMock,
         mock_event_publisher: MagicMock,
         sample_job: IngestionJob,
-        sample_source_config: dict[str, Any],
+        sample_source_config: SourceConfig,
     ) -> None:
         """Test successful ZIP processing."""
         # Create test ZIP with manifest and files
@@ -282,7 +290,7 @@ class TestZipExtractionProcessor:
         mock_doc_repo: MagicMock,
         mock_event_publisher: MagicMock,
         sample_job: IngestionJob,
-        sample_source_config: dict[str, Any],
+        sample_source_config: SourceConfig,
     ) -> None:
         """Test handling of corrupt ZIP file."""
         mock_blob_client.download_blob = AsyncMock(return_value=b"not a valid zip")
@@ -310,7 +318,7 @@ class TestZipExtractionProcessor:
         mock_doc_repo: MagicMock,
         mock_event_publisher: MagicMock,
         sample_job: IngestionJob,
-        sample_source_config: dict[str, Any],
+        sample_source_config: SourceConfig,
     ) -> None:
         """Test handling of ZIP without manifest.json."""
         # Create ZIP without manifest
@@ -343,7 +351,7 @@ class TestZipExtractionProcessor:
         mock_doc_repo: MagicMock,
         mock_event_publisher: MagicMock,
         sample_job: IngestionJob,
-        sample_source_config: dict[str, Any],
+        sample_source_config: SourceConfig,
     ) -> None:
         """Test handling of invalid JSON in manifest."""
         buffer = io.BytesIO()
@@ -377,16 +385,34 @@ class TestZipExtractionProcessor:
         sample_job: IngestionJob,
     ) -> None:
         """Test that missing file_container in config raises ConfigurationError."""
-        bad_config = {
-            "source_id": "test",
-            "ingestion": {"zip_config": {"manifest_file": "manifest.json"}},
-            "transformation": {"link_field": "id"},
-            "storage": {
-                "raw_container": "raw",
-                "index_collection": "documents",
-                # Missing file_container!
-            },
-        }
+        # Create a SourceConfig with file_container=None (missing)
+        bad_config = SourceConfig.model_validate(
+            {
+                "source_id": "test",
+                "display_name": "Test Source",
+                "description": "Test source without file_container",
+                "enabled": True,
+                "ingestion": {
+                    "mode": "blob_trigger",
+                    "landing_container": "test-landing",
+                    "file_format": "zip",
+                    "zip_config": {
+                        "manifest_file": "manifest.json",
+                        "images_folder": "images",
+                        "image_storage_container": "images",
+                    },
+                },
+                "transformation": {
+                    "extract_fields": ["document_id"],
+                    "link_field": "id",
+                },
+                "storage": {
+                    "raw_container": "raw",
+                    "index_collection": "documents",
+                    # file_container intentionally None to test error handling
+                },
+            }
+        )
 
         manifest = create_sample_manifest()
         files = {"images/leaf_001.jpg": b"image data"}
@@ -416,7 +442,7 @@ class TestZipExtractionProcessor:
         mock_doc_repo: MagicMock,
         mock_event_publisher: MagicMock,
         sample_job: IngestionJob,
-        sample_source_config: dict[str, Any],
+        sample_source_config: SourceConfig,
     ) -> None:
         """Test processing ZIP with multiple documents."""
         documents = [
@@ -471,7 +497,7 @@ class TestZipExtractionProcessor:
         mock_doc_repo: MagicMock,
         mock_event_publisher: MagicMock,
         sample_job: IngestionJob,
-        sample_source_config: dict[str, Any],
+        sample_source_config: SourceConfig,
     ) -> None:
         """Test handling of file referenced in manifest but not in ZIP."""
         manifest = create_sample_manifest()  # References images/leaf_001.jpg
@@ -519,9 +545,7 @@ class TestZipExtractionProcessor:
             source_id="test",
             content_length=100,
         )
-        source_config = {
-            "transformation": {"link_field": "plantation_id"},
-        }
+        source_config = create_minimal_source_config(link_field="plantation_id")
 
         path = processor._build_blob_path(
             pattern="{plantation_id}/{batch_id}/{doc_id}/{filename}",
@@ -607,32 +631,42 @@ class TestZipExtractionProcessorDeduplication:
         )
 
     @pytest.fixture
-    def sample_source_config(self) -> dict[str, Any]:
-        """Create sample source configuration."""
-        return {
-            "source_id": "qc-analyzer-exceptions",
-            "ingestion": {
-                "mode": "blob_trigger",
-                "processor_type": "zip-extraction",
-                "zip_config": {"manifest_file": "manifest.json"},
-            },
-            "transformation": {
-                "ai_agent_id": "qc-exception-extraction-agent",
-                "link_field": "plantation_id",
-            },
-            "storage": {
-                "raw_container": "exception-images-raw",
-                "file_container": "exception-images",
-                "file_path_pattern": "{plantation_id}/{batch_id}/{doc_id}/{filename}",
-                "index_collection": "documents",
-            },
-            "events": {
-                "on_success": {
-                    "topic": "collection.exception_images.received",
-                    "payload_fields": ["plantation_id", "batch_id"],
+    def sample_source_config(self) -> SourceConfig:
+        """Create sample source configuration as typed SourceConfig."""
+        return SourceConfig.model_validate(
+            {
+                "source_id": "qc-analyzer-exceptions",
+                "display_name": "QC Analyzer Exceptions",
+                "description": "Exception images from QC analyzer",
+                "enabled": True,
+                "ingestion": {
+                    "mode": "blob_trigger",
+                    "processor_type": "zip-extraction",
+                    "zip_config": {
+                        "manifest_file": "manifest.json",
+                        "images_folder": "images",
+                        "image_storage_container": "exception-images",
+                    },
                 },
-            },
-        }
+                "transformation": {
+                    "ai_agent_id": "qc-exception-extraction-agent",
+                    "extract_fields": ["plantation_id", "batch_id"],
+                    "link_field": "plantation_id",
+                },
+                "storage": {
+                    "raw_container": "exception-images-raw",
+                    "file_container": "exception-images",
+                    "file_path_pattern": "{plantation_id}/{batch_id}/{doc_id}/{filename}",
+                    "index_collection": "documents",
+                },
+                "events": {
+                    "on_success": {
+                        "topic": "collection.exception_images.received",
+                        "payload_fields": ["plantation_id", "batch_id"],
+                    },
+                },
+            }
+        )
 
     @pytest.mark.asyncio
     async def test_duplicate_zip_returns_is_duplicate_true(
@@ -642,7 +676,7 @@ class TestZipExtractionProcessorDeduplication:
         mock_doc_repo: MagicMock,
         mock_event_publisher: MagicMock,
         sample_job: IngestionJob,
-        sample_source_config: dict[str, Any],
+        sample_source_config: SourceConfig,
     ) -> None:
         """Test that duplicate ZIP returns ProcessorResult with is_duplicate=True."""
         from collection_model.domain.exceptions import DuplicateDocumentError
@@ -681,7 +715,7 @@ class TestZipExtractionProcessorDeduplication:
         mock_doc_repo: MagicMock,
         mock_event_publisher: MagicMock,
         sample_job: IngestionJob,
-        sample_source_config: dict[str, Any],
+        sample_source_config: SourceConfig,
     ) -> None:
         """Test that duplicate ZIP does not emit domain event."""
         from collection_model.domain.exceptions import DuplicateDocumentError
@@ -714,7 +748,7 @@ class TestZipExtractionProcessorDeduplication:
         mock_doc_repo: MagicMock,
         mock_event_publisher: MagicMock,
         sample_job: IngestionJob,
-        sample_source_config: dict[str, Any],
+        sample_source_config: SourceConfig,
     ) -> None:
         """Test that duplicate ZIP does not store documents to index collection."""
         from collection_model.domain.exceptions import DuplicateDocumentError
@@ -747,7 +781,7 @@ class TestZipExtractionProcessorDeduplication:
         mock_doc_repo: MagicMock,
         mock_event_publisher: MagicMock,
         sample_job: IngestionJob,
-        sample_source_config: dict[str, Any],
+        sample_source_config: SourceConfig,
     ) -> None:
         """Test that duplicate ZIP increments StorageMetrics.record_duplicate()."""
         from unittest.mock import patch
@@ -784,7 +818,7 @@ class TestZipExtractionProcessorDeduplication:
         mock_doc_repo: MagicMock,
         mock_event_publisher: MagicMock,
         sample_job: IngestionJob,
-        sample_source_config: dict[str, Any],
+        sample_source_config: SourceConfig,
     ) -> None:
         """Test that successful ZIP processing calls StorageMetrics.record_stored()."""
         from unittest.mock import patch
@@ -831,6 +865,36 @@ class TestZipExtractionProcessorRegistration:
         assert isinstance(processor, ZipExtractionProcessor)
 
 
+def create_minimal_source_config(link_field: str = "plantation_id") -> SourceConfig:
+    """Create a minimal SourceConfig for DocumentIndex tests."""
+    return SourceConfig.model_validate(
+        {
+            "source_id": "test-source",
+            "display_name": "Test Source",
+            "description": "Test source for unit tests",
+            "enabled": True,
+            "ingestion": {
+                "mode": "blob_trigger",
+                "processor_type": "zip-extraction",
+                "zip_config": {
+                    "manifest_file": "manifest.json",
+                    "images_folder": "images",
+                    "image_storage_container": "test-images",
+                },
+            },
+            "transformation": {
+                "extract_fields": ["plantation_id", "batch_id"],
+                "link_field": link_field,
+            },
+            "storage": {
+                "raw_container": "raw",
+                "file_container": "images",
+                "index_collection": "documents",
+            },
+        }
+    )
+
+
 class TestDocumentIndexCreation:
     """Tests for DocumentIndex creation from manifest."""
 
@@ -859,9 +923,7 @@ class TestDocumentIndexCreation:
             source_id="qc-analyzer-exceptions",
             content_length=100,
         )
-        source_config = {
-            "transformation": {"link_field": "plantation_id"},
-        }
+        source_config = create_minimal_source_config(link_field="plantation_id")
 
         doc = processor._create_document_index(
             doc_entry=doc_entry,
@@ -901,7 +963,7 @@ class TestDocumentIndexCreation:
             source_id="test",
             content_length=100,
         )
-        source_config = {"transformation": {"link_field": "plantation_id"}}
+        source_config = create_minimal_source_config(link_field="plantation_id")
 
         doc = processor._create_document_index(
             doc_entry=doc_entry,
@@ -941,7 +1003,7 @@ class TestDocumentIndexCreation:
             source_id="test",
             content_length=100,
         )
-        source_config = {"transformation": {"link_field": "plantation_id"}}
+        source_config = create_minimal_source_config(link_field="plantation_id")
 
         doc = processor._create_document_index(
             doc_entry=doc_entry,
@@ -981,7 +1043,7 @@ class TestDocumentIndexCreation:
             source_id="test",
             content_length=100,
         )
-        source_config = {"transformation": {"link_field": "plantation_id"}}
+        source_config = create_minimal_source_config(link_field="plantation_id")
 
         # Create file refs by role
         image_ref = BlobReference(

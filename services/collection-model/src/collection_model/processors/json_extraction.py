@@ -33,6 +33,7 @@ from collection_model.infrastructure.document_repository import DocumentReposito
 from collection_model.infrastructure.raw_document_store import RawDocumentStore
 from collection_model.infrastructure.storage_metrics import StorageMetrics
 from collection_model.processors.base import ContentProcessor, ProcessorResult
+from fp_common.models.source_config import SourceConfig
 
 logger = structlog.get_logger(__name__)
 
@@ -81,7 +82,7 @@ class JsonExtractionProcessor(ContentProcessor):
     async def process(
         self,
         job: IngestionJob,
-        source_config: dict[str, Any],
+        source_config: SourceConfig,
     ) -> ProcessorResult:
         """Process a JSON ingestion job.
 
@@ -90,12 +91,12 @@ class JsonExtractionProcessor(ContentProcessor):
 
         Args:
             job: The queued ingestion job.
-            source_config: Full source configuration from MongoDB.
+            source_config: Typed SourceConfig from MongoDB.
 
         Returns:
             ProcessorResult with success status and extracted data.
         """
-        source_id = source_config.get("source_id", job.source_id)
+        source_id = source_config.source_id or job.source_id
         is_pull_mode = job.is_pull_mode
 
         logger.info(
@@ -276,7 +277,7 @@ class JsonExtractionProcessor(ContentProcessor):
     async def _store_raw_document(
         self,
         content: bytes,
-        source_config: dict[str, Any],
+        source_config: SourceConfig,
         job: IngestionJob,
     ) -> dict[str, Any]:
         """Store raw document in blob storage with content hash."""
@@ -301,14 +302,14 @@ class JsonExtractionProcessor(ContentProcessor):
     async def _call_ai_model(
         self,
         raw_content: str,
-        source_config: dict[str, Any],
+        source_config: SourceConfig,
     ) -> dict[str, Any]:
         """Call AI Model for structured extraction or extract directly if no AI agent."""
         import json
 
-        # Get AI agent ID from config
-        transformation = source_config.get("transformation", {})
-        ai_agent_id = transformation.get("ai_agent_id") or transformation.get("agent")
+        # Get AI agent ID from config using typed access
+        transformation = source_config.transformation
+        ai_agent_id = transformation.get_ai_agent_id()
 
         if not ai_agent_id:
             # Direct JSON extraction without AI - extract fields directly from JSON
@@ -318,7 +319,7 @@ class JsonExtractionProcessor(ContentProcessor):
             except json.JSONDecodeError as e:
                 raise ConfigurationError(f"Failed to parse JSON for direct extraction: {e}") from e
 
-            extract_fields = transformation.get("extract_fields", [])
+            extract_fields = transformation.extract_fields
             extracted = {}
             missing_fields = []
             for field in extract_fields:
@@ -333,7 +334,7 @@ class JsonExtractionProcessor(ContentProcessor):
                     "Direct extraction: configured fields not found in JSON",
                     missing_fields=missing_fields,
                     available_fields=list(json_data.keys()),
-                    source_id=source_config.get("source_id"),
+                    source_id=source_config.source_id,
                 )
 
             return {
@@ -370,15 +371,15 @@ class JsonExtractionProcessor(ContentProcessor):
         raw_doc: dict[str, Any],
         extraction_result: dict[str, Any],
         job: IngestionJob,
-        source_config: dict[str, Any],
+        source_config: SourceConfig,
     ) -> DocumentIndex:
         """Create a document index from extraction results.
 
         For pull mode jobs with linkage, the linkage fields from iteration
         are merged into the extracted_fields before building linkage_fields.
         """
-        transformation = source_config.get("transformation", {})
-        ai_agent_id = transformation.get("ai_agent_id") or transformation.get("agent") or "direct-extraction"
+        transformation = source_config.transformation
+        ai_agent_id = transformation.get_ai_agent_id() or "direct-extraction"
 
         raw_ref = RawDocumentRef(
             blob_container=raw_doc["blob_container"],
@@ -419,22 +420,20 @@ class JsonExtractionProcessor(ContentProcessor):
     async def _store_document(
         self,
         document: DocumentIndex,
-        source_config: dict[str, Any],
+        source_config: SourceConfig,
     ) -> None:
         """Store document to config-driven collection."""
         if not self._doc_repo:
             raise ConfigurationError("Document repository not configured")
 
         # Get collection name FROM CONFIG - not hardcoded!
-        storage = source_config.get("storage", {})
-        collection_name = storage.get("index_collection")
+        collection_name = source_config.storage.index_collection
 
         if not collection_name:
             raise ConfigurationError("No index_collection in storage config")
 
         # Get link field for indexing
-        transformation = source_config.get("transformation", {})
-        link_field = transformation.get("link_field", "")
+        link_field = source_config.transformation.link_field
 
         # Ensure indexes exist
         await self._doc_repo.ensure_indexes(collection_name, link_field)
@@ -445,7 +444,7 @@ class JsonExtractionProcessor(ContentProcessor):
     async def _emit_success_event(
         self,
         document: DocumentIndex,
-        source_config: dict[str, Any],
+        source_config: SourceConfig,
     ) -> None:
         """Emit success event to config-driven topic."""
         if not self._event_publisher:

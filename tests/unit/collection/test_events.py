@@ -12,9 +12,40 @@ from collection_model.infrastructure.ingestion_queue import IngestionQueue
 from collection_model.main import app
 from collection_model.services.source_config_service import SourceConfigService
 from fastapi.testclient import TestClient
+from fp_common.models.source_config import SourceConfig
 
 if TYPE_CHECKING:
     from collection_model.domain.ingestion_job import IngestionJob
+
+
+def create_source_config(
+    source_id: str = "test-source",
+    enabled: bool = True,
+    landing_container: str = "test-landing",
+) -> SourceConfig:
+    """Create a valid SourceConfig for testing."""
+    return SourceConfig.model_validate(
+        {
+            "source_id": source_id,
+            "display_name": f"{source_id} Test Source",
+            "description": "Test source configuration",
+            "enabled": enabled,
+            "ingestion": {
+                "mode": "blob_trigger",
+                "landing_container": landing_container,
+                "file_format": "json",
+                "processor_type": "json-extraction",
+            },
+            "transformation": {
+                "extract_fields": ["document_id", "data"],
+                "link_field": "farmer_id",
+            },
+            "storage": {
+                "raw_container": "test-raw",
+                "index_collection": "test_documents",
+            },
+        }
+    )
 
 
 @pytest.fixture
@@ -159,15 +190,12 @@ class TestBlobCreatedEventProcessing:
         mock_ingestion_queue: MagicMock,
     ) -> None:
         """Test that matching config results in job being queued."""
-        # Configure mock to return a matching config
-        mock_source_config_service.get_config_by_container.return_value = {
-            "source_id": "qc-analyzer",
-            "enabled": True,
-            "ingestion": {
-                "mode": "blob_trigger",
-                "landing_container": "qc-analyzer-results",
-            },
-        }
+        # Configure mock to return a matching config (typed SourceConfig)
+        mock_source_config_service.get_config_by_container.return_value = create_source_config(
+            source_id="qc-analyzer",
+            enabled=True,
+            landing_container="qc-analyzer-results",
+        )
         mock_source_config_service.extract_path_metadata.return_value = {"batch_id": "batch-001"}
 
         payload = [
@@ -205,10 +233,11 @@ class TestBlobCreatedEventProcessing:
         mock_ingestion_queue: MagicMock,
     ) -> None:
         """Test that disabled source config doesn't queue job."""
-        mock_source_config_service.get_config_by_container.return_value = {
-            "source_id": "qc-analyzer",
-            "enabled": False,  # Disabled
-        }
+        # Use typed SourceConfig with enabled=False
+        mock_source_config_service.get_config_by_container.return_value = create_source_config(
+            source_id="qc-analyzer",
+            enabled=False,  # Disabled
+        )
 
         payload = [
             {
@@ -237,10 +266,11 @@ class TestBlobCreatedEventProcessing:
         mock_ingestion_queue: MagicMock,
     ) -> None:
         """Test that duplicate events are detected (queue returns False)."""
-        mock_source_config_service.get_config_by_container.return_value = {
-            "source_id": "qc-analyzer",
-            "enabled": True,
-        }
+        # Use typed SourceConfig
+        mock_source_config_service.get_config_by_container.return_value = create_source_config(
+            source_id="qc-analyzer",
+            enabled=True,
+        )
         # Simulate duplicate - queue_job returns False
         mock_ingestion_queue.queue_job.return_value = False
 
@@ -309,11 +339,9 @@ class TestProcessBlobCreatedEvent:
     async def test_process_event_extracts_trace_id(self) -> None:
         """Test that trace_id is passed to the job."""
         mock_service = MagicMock(spec=SourceConfigService)
+        # Use typed SourceConfig
         mock_service.get_config_by_container = AsyncMock(
-            return_value={
-                "source_id": "test",
-                "enabled": True,
-            }
+            return_value=create_source_config(source_id="test", enabled=True)
         )
         mock_service.extract_path_metadata = MagicMock(return_value={})
 
@@ -371,11 +399,9 @@ class TestProcessBlobCreatedEvent:
     async def test_process_event_calls_metrics_on_success(self) -> None:
         """Test that metrics increment functions are called on successful queue."""
         mock_service = MagicMock(spec=SourceConfigService)
+        # Use typed SourceConfig
         mock_service.get_config_by_container = AsyncMock(
-            return_value={
-                "source_id": "test-source",
-                "enabled": True,
-            }
+            return_value=create_source_config(source_id="test-source", enabled=True)
         )
         mock_service.extract_path_metadata = MagicMock(return_value={})
 
@@ -405,11 +431,9 @@ class TestProcessBlobCreatedEvent:
     async def test_process_event_calls_metrics_on_duplicate(self) -> None:
         """Test that duplicate metric is called when queue returns False."""
         mock_service = MagicMock(spec=SourceConfigService)
+        # Use typed SourceConfig
         mock_service.get_config_by_container = AsyncMock(
-            return_value={
-                "source_id": "test-source",
-                "enabled": True,
-            }
+            return_value=create_source_config(source_id="test-source", enabled=True)
         )
         mock_service.extract_path_metadata = MagicMock(return_value={})
 

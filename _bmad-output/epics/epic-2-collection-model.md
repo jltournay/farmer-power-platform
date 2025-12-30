@@ -727,6 +727,41 @@ So that I can access any source's data using consistent, config-driven queries.
 
 ---
 
+---
+
+### Story 2.10: Collection Model Repository Pattern Refactoring (Tech Debt)
+
+**[📄 Story File](../sprint-artifacts/2-10-collection-model-repository-refactoring.md)** | Status: Backlog
+
+As a **developer**,
+I want Collection Model to use Pydantic models and repository pattern for source configs,
+So that type safety catches bugs at development time instead of E2E testing.
+
+**Problem Statement:**
+
+During Story 0.4.6 (Weather Data Ingestion), multiple production code bugs were discovered that should have been caught by type safety:
+- DAPR gRPC invocation pattern misunderstood
+- Source config accessed as `config.get("config", {}).get(X)` instead of direct fields
+- `SourceConfigService` returns `dict[str, Any]` instead of `SourceConfig` Pydantic model
+
+**Root Cause:** Collection Model doesn't follow the repository pattern used by Plantation Model.
+
+**Acceptance Criteria:**
+
+1. **AC1:** `BaseRepository` pattern implemented in Collection Model
+2. **AC2:** `SourceConfigRepository` returns `SourceConfig` Pydantic models
+3. **AC3:** `SourceConfigService` refactored to use repository
+4. **AC4:** All 12+ consumer files migrated to typed attribute access
+5. **AC5:** Unit tests updated to use real Pydantic models
+6. **AC6:** DAPR gRPC pattern documented in `project-context.md`
+
+**Technical Notes:**
+- Reference: Plantation Model's `BaseRepository` pattern
+- Target: Zero `dict[str, Any]` for source config access
+- Existing model: `fp_common.models.source_config.SourceConfig`
+
+---
+
 ## Retrospective
 
 **[📋 Epic 2 Retrospective](../sprint-artifacts/epic-2-retro-2025-12-27.md)** | Completed: 2025-12-27

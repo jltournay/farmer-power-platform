@@ -28,6 +28,7 @@ import structlog
 from bson import ObjectId
 from collection_model.config import settings
 from collection_model.domain.exceptions import ExtractionError
+from fp_common.models.source_config import SourceConfig
 from fp_proto.ai_model.v1 import ai_model_pb2, ai_model_pb2_grpc
 from pydantic import BaseModel, Field
 
@@ -52,13 +53,15 @@ class ExtractionRequest(BaseModel):
     Attributes:
         raw_content: The raw content to extract from.
         ai_agent_id: AI Model agent ID (from transformation.ai_agent_id).
-        source_config: Extraction hints from source configuration.
+        source_config: Typed SourceConfig model for extraction hints.
         content_type: MIME type of the content.
     """
 
+    model_config = {"arbitrary_types_allowed": True}
+
     raw_content: str
     ai_agent_id: str
-    source_config: dict[str, Any]
+    source_config: SourceConfig
     content_type: str = "application/json"
 
 
@@ -120,11 +123,13 @@ class AiModelClient:
         )
 
         # Build gRPC request protobuf message
-        # Use MongoJSONEncoder to handle ObjectId from MongoDB source_config
+        # Serialize SourceConfig Pydantic model to JSON for gRPC transport
+        # Use MongoJSONEncoder to handle any remaining MongoDB ObjectId fields
+        source_config_dict = request.source_config.model_dump(mode="json")
         grpc_request = ai_model_pb2.ExtractionRequest(
             raw_content=request.raw_content,
             ai_agent_id=request.ai_agent_id,
-            source_config_json=json.dumps(request.source_config, cls=MongoJSONEncoder),
+            source_config_json=json.dumps(source_config_dict, cls=MongoJSONEncoder),
             content_type=request.content_type,
         )
 

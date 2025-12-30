@@ -20,6 +20,7 @@ from collection_model.processors.base import (
 )
 from collection_model.processors.json_extraction import JsonExtractionProcessor
 from collection_model.processors.registry import ProcessorRegistry
+from fp_common.models.source_config import SourceConfig
 
 
 class TestProcessorRegistry:
@@ -201,31 +202,38 @@ class TestJsonExtractionProcessor:
         )
 
     @pytest.fixture
-    def sample_source_config(self) -> dict[str, Any]:
+    def sample_source_config(self) -> SourceConfig:
         """Create sample source configuration."""
-        return {
-            "source_id": "qc-analyzer-result",
-            "ingestion": {
-                "mode": "blob_trigger",
-                "processor_type": "json-extraction",
-            },
-            "transformation": {
-                "ai_agent_id": "qc-result-extraction-agent",
-                "extract_fields": ["plantation_id", "batch_id"],
-                "link_field": "plantation_id",
-                "field_mappings": {"plantation_id": "farmer_id"},
-            },
-            "storage": {
-                "raw_container": "quality-results-raw",
-                "index_collection": "quality_results_index",
-            },
-            "events": {
-                "on_success": {
-                    "topic": "collection.quality_result.received",
-                    "payload_fields": ["document_id", "source_id"],
+        return SourceConfig.model_validate(
+            {
+                "source_id": "qc-analyzer-result",
+                "display_name": "QC Analyzer Results",
+                "description": "QC analyzer result processing",
+                "enabled": True,
+                "ingestion": {
+                    "mode": "blob_trigger",
+                    "landing_container": "qc-analyzer-landing",
+                    "file_format": "json",
+                    "processor_type": "json-extraction",
                 },
-            },
-        }
+                "transformation": {
+                    "ai_agent_id": "qc-result-extraction-agent",
+                    "extract_fields": ["plantation_id", "batch_id"],
+                    "link_field": "plantation_id",
+                    "field_mappings": {"plantation_id": "farmer_id"},
+                },
+                "storage": {
+                    "raw_container": "quality-results-raw",
+                    "index_collection": "quality_results_index",
+                },
+                "events": {
+                    "on_success": {
+                        "topic": "collection.quality_result.received",
+                        "payload_fields": ["document_id", "source_id"],
+                    },
+                },
+            }
+        )
 
     @pytest.mark.asyncio
     async def test_process_success(
@@ -236,7 +244,7 @@ class TestJsonExtractionProcessor:
         mock_doc_repo: MagicMock,
         mock_event_publisher: MagicMock,
         sample_job: IngestionJob,
-        sample_source_config: dict[str, Any],
+        sample_source_config: SourceConfig,
     ) -> None:
         """Test successful JSON processing."""
         processor = JsonExtractionProcessor()
@@ -270,7 +278,7 @@ class TestJsonExtractionProcessor:
         mock_doc_repo: MagicMock,
         mock_event_publisher: MagicMock,
         sample_job: IngestionJob,
-        sample_source_config: dict[str, Any],
+        sample_source_config: SourceConfig,
     ) -> None:
         """Test processing invalid JSON returns validation error."""
         mock_blob_client.download_blob = AsyncMock(return_value=b"not valid json")
@@ -305,18 +313,30 @@ class TestJsonExtractionProcessor:
         When ai_agent_id is null, the processor performs direct field extraction
         from the JSON without calling the AI model (Story 0.4.5).
         """
-        direct_config = {
-            "source_id": "test-direct",
-            "transformation": {
-                "ai_agent_id": None,  # Direct extraction mode
-                "extract_fields": ["farmer_id", "weight_kg"],
-                "link_field": "farmer_id",
-            },
-            "storage": {
-                "raw_container": "raw",
-                "index_collection": "index",
-            },
-        }
+        # Create SourceConfig with no ai_agent_id for direct extraction mode
+        direct_config = SourceConfig.model_validate(
+            {
+                "source_id": "test-direct",
+                "display_name": "Test Direct Extraction",
+                "description": "Direct JSON extraction without AI",
+                "enabled": True,
+                "ingestion": {
+                    "mode": "blob_trigger",
+                    "landing_container": "test-landing",
+                    "file_format": "json",
+                    "processor_type": "json-extraction",
+                },
+                "transformation": {
+                    "ai_agent_id": None,  # Direct extraction mode
+                    "extract_fields": ["farmer_id", "weight_kg"],
+                    "link_field": "farmer_id",
+                },
+                "storage": {
+                    "raw_container": "raw",
+                    "index_collection": "index",
+                },
+            }
+        )
 
         # Mock blob content with fields to extract
         mock_blob_client.download_blob = AsyncMock(

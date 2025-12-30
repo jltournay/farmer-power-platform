@@ -26,6 +26,7 @@ from typing import Any
 
 import grpc
 import structlog
+from fp_common.models.source_config import IterationConfig
 from fp_proto.mcp.v1 import mcp_tool_pb2, mcp_tool_pb2_grpc
 
 logger = structlog.get_logger(__name__)
@@ -62,7 +63,7 @@ class IterationResolver:
 
     async def resolve(
         self,
-        iteration_config: dict[str, Any],
+        iteration_config: IterationConfig,
     ) -> list[dict[str, Any]]:
         """Resolve iteration items by calling MCP tool.
 
@@ -70,7 +71,7 @@ class IterationResolver:
         Invocation and returns the list of items for iteration.
 
         Args:
-            iteration_config: Iteration configuration with source_mcp,
+            iteration_config: Typed IterationConfig with source_mcp,
                             source_tool, and optional tool_arguments.
 
         Returns:
@@ -79,10 +80,12 @@ class IterationResolver:
         Raises:
             IterationResolverError: On MCP call failure or invalid response.
         """
-        source_mcp = iteration_config.get("source_mcp", "")
-        source_tool = iteration_config.get("source_tool", "")
-        tool_arguments = iteration_config.get("tool_arguments", {})
-        result_path = iteration_config.get("result_path")
+        # Use typed attribute access from Pydantic model
+        source_mcp = iteration_config.source_mcp
+        source_tool = iteration_config.source_tool
+        # tool_arguments and result_path are not in the base model - get from model if present
+        tool_arguments = getattr(iteration_config, "tool_arguments", {}) or {}
+        result_path = getattr(iteration_config, "result_path", None)
 
         if not source_mcp or not source_tool:
             raise IterationResolverError("Missing source_mcp or source_tool in iteration config")

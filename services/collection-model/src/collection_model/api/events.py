@@ -209,10 +209,11 @@ async def _process_blob_created_event(
             event_metrics.increment_unmatched(container)
         return False
 
-    source_id = config.get("source_id", "")
+    # Use typed attribute access from SourceConfig Pydantic model
+    source_id = config.source_id or ""
 
     # Check if source is enabled
-    if not config.get("enabled", True):
+    if not config.enabled:
         logger.info(
             "Source config is disabled",
             source_id=source_id,

@@ -1,9 +1,49 @@
 """Unit tests for SourceConfigService."""
 
 from datetime import UTC, datetime, timedelta
+from typing import Any
 
 import pytest
 from collection_model.services.source_config_service import SourceConfigService
+from fp_common.models.source_config import SourceConfig
+
+
+def create_source_config_doc(
+    source_id: str = "test-source",
+    enabled: bool = True,
+    mode: str = "blob_trigger",
+    landing_container: str = "test-landing",
+    path_pattern: dict | None = None,
+) -> dict[str, Any]:
+    """Create a valid source config document for MongoDB insertion."""
+    ingestion: dict[str, Any] = {
+        "mode": mode,
+        "file_format": "json",
+        "processor_type": "json-extraction",
+    }
+    if mode == "blob_trigger":
+        ingestion["landing_container"] = landing_container
+        if path_pattern:
+            ingestion["path_pattern"] = path_pattern
+    elif mode == "scheduled_pull":
+        ingestion["schedule"] = "0 */6 * * *"
+        ingestion["provider"] = "test-provider"
+
+    return {
+        "source_id": source_id,
+        "display_name": f"{source_id} Test Source",
+        "description": f"Test source configuration for {source_id}",
+        "enabled": enabled,
+        "ingestion": ingestion,
+        "transformation": {
+            "extract_fields": ["document_id", "data"],
+            "link_field": "farmer_id",
+        },
+        "storage": {
+            "raw_container": "test-raw",
+            "index_collection": "test_documents",
+        },
+    }
 
 
 class TestSourceConfigServiceCaching:
@@ -14,14 +54,8 @@ class TestSourceConfigServiceCaching:
         """Test that configs are cached after first call."""
         db = mock_mongodb_client["collection_model"]
 
-        # Insert test config
-        await db["source_configs"].insert_one(
-            {
-                "source_id": "qc-analyzer",
-                "enabled": True,
-                "ingestion": {"mode": "blob_trigger"},
-            }
-        )
+        # Insert test config (using helper for complete schema)
+        await db["source_configs"].insert_one(create_source_config_doc(source_id="qc-analyzer"))
 
         service = SourceConfigService(db)
 
@@ -30,13 +64,7 @@ class TestSourceConfigServiceCaching:
         assert len(configs1) == 1
 
         # Insert another config
-        await db["source_configs"].insert_one(
-            {
-                "source_id": "qc-analyzer-2",
-                "enabled": True,
-                "ingestion": {"mode": "blob_trigger"},
-            }
-        )
+        await db["source_configs"].insert_one(create_source_config_doc(source_id="qc-analyzer-2"))
 
         # Second call should return cached results
         configs2 = await service.get_all_configs()
@@ -47,13 +75,7 @@ class TestSourceConfigServiceCaching:
         """Test that invalidate_cache forces refresh on next call."""
         db = mock_mongodb_client["collection_model"]
 
-        await db["source_configs"].insert_one(
-            {
-                "source_id": "qc-analyzer",
-                "enabled": True,
-                "ingestion": {"mode": "blob_trigger"},
-            }
-        )
+        await db["source_configs"].insert_one(create_source_config_doc(source_id="qc-analyzer"))
 
         service = SourceConfigService(db)
 
@@ -62,13 +84,7 @@ class TestSourceConfigServiceCaching:
         assert len(configs1) == 1
 
         # Insert another config
-        await db["source_configs"].insert_one(
-            {
-                "source_id": "qc-analyzer-2",
-                "enabled": True,
-                "ingestion": {"mode": "blob_trigger"},
-            }
-        )
+        await db["source_configs"].insert_one(create_source_config_doc(source_id="qc-analyzer-2"))
 
         # Invalidate cache
         service.invalidate_cache()
@@ -82,13 +98,7 @@ class TestSourceConfigServiceCaching:
         """Test that cache expires after TTL."""
         db = mock_mongodb_client["collection_model"]
 
-        await db["source_configs"].insert_one(
-            {
-                "source_id": "qc-analyzer",
-                "enabled": True,
-                "ingestion": {"mode": "blob_trigger"},
-            }
-        )
+        await db["source_configs"].insert_one(create_source_config_doc(source_id="qc-analyzer"))
 
         service = SourceConfigService(db)
 
@@ -99,13 +109,7 @@ class TestSourceConfigServiceCaching:
         service._cache_expires = datetime.now(UTC) - timedelta(minutes=1)
 
         # Insert another config
-        await db["source_configs"].insert_one(
-            {
-                "source_id": "qc-analyzer-2",
-                "enabled": True,
-                "ingestion": {"mode": "blob_trigger"},
-            }
-        )
+        await db["source_configs"].insert_one(create_source_config_doc(source_id="qc-analyzer-2"))
 
         # Next call should fetch fresh data due to expired cache
         configs = await service.get_all_configs()
@@ -116,14 +120,14 @@ class TestSourceConfigServiceCaching:
         """Test that only enabled configs are returned."""
         db = mock_mongodb_client["collection_model"]
 
-        await db["source_configs"].insert_one({"source_id": "enabled-source", "enabled": True})
-        await db["source_configs"].insert_one({"source_id": "disabled-source", "enabled": False})
+        await db["source_configs"].insert_one(create_source_config_doc(source_id="enabled-source", enabled=True))
+        await db["source_configs"].insert_one(create_source_config_doc(source_id="disabled-source", enabled=False))
 
         service = SourceConfigService(db)
         configs = await service.get_all_configs()
 
         assert len(configs) == 1
-        assert configs[0]["source_id"] == "enabled-source"
+        assert configs[0].source_id == "enabled-source"
 
 
 class TestSourceConfigServiceContainerLookup:
@@ -135,21 +139,17 @@ class TestSourceConfigServiceContainerLookup:
         db = mock_mongodb_client["collection_model"]
 
         await db["source_configs"].insert_one(
-            {
-                "source_id": "qc-analyzer",
-                "enabled": True,
-                "ingestion": {
-                    "mode": "blob_trigger",
-                    "landing_container": "qc-analyzer-landing",
-                },
-            }
+            create_source_config_doc(
+                source_id="qc-analyzer",
+                landing_container="qc-analyzer-landing",
+            )
         )
 
         service = SourceConfigService(db)
         config = await service.get_config_by_container("qc-analyzer-landing")
 
         assert config is not None
-        assert config["source_id"] == "qc-analyzer"
+        assert config.source_id == "qc-analyzer"
 
     @pytest.mark.asyncio
     async def test_get_config_by_container_returns_none_for_no_match(self, mock_mongodb_client) -> None:
@@ -157,14 +157,10 @@ class TestSourceConfigServiceContainerLookup:
         db = mock_mongodb_client["collection_model"]
 
         await db["source_configs"].insert_one(
-            {
-                "source_id": "qc-analyzer",
-                "enabled": True,
-                "ingestion": {
-                    "mode": "blob_trigger",
-                    "landing_container": "qc-analyzer-landing",
-                },
-            }
+            create_source_config_doc(
+                source_id="qc-analyzer",
+                landing_container="qc-analyzer-landing",
+            )
         )
 
         service = SourceConfigService(db)
@@ -178,14 +174,10 @@ class TestSourceConfigServiceContainerLookup:
         db = mock_mongodb_client["collection_model"]
 
         await db["source_configs"].insert_one(
-            {
-                "source_id": "weather-api",
-                "enabled": True,
-                "ingestion": {
-                    "mode": "api_pull",  # Not blob_trigger
-                    "landing_container": "weather-data",
-                },
-            }
+            create_source_config_doc(
+                source_id="weather-api",
+                mode="scheduled_pull",  # Not blob_trigger
+            )
         )
 
         service = SourceConfigService(db)
@@ -199,14 +191,14 @@ class TestPathMetadataExtraction:
 
     def test_extract_path_metadata_basic_pattern(self) -> None:
         """Test basic path pattern extraction."""
-        config = {
-            "ingestion": {
-                "path_pattern": {
+        config = SourceConfig.model_validate(
+            create_source_config_doc(
+                path_pattern={
                     "pattern": "results/{plantation_id}/{crop}/{batch_id}.json",
                     "extract_fields": ["plantation_id", "crop", "batch_id"],
                 }
-            }
-        }
+            )
+        )
 
         metadata = SourceConfigService.extract_path_metadata("results/WM-4521/tea/batch-001.json", config)
 
@@ -218,14 +210,14 @@ class TestPathMetadataExtraction:
 
     def test_extract_path_metadata_partial_fields(self) -> None:
         """Test extracting only specified fields."""
-        config = {
-            "ingestion": {
-                "path_pattern": {
+        config = SourceConfig.model_validate(
+            create_source_config_doc(
+                path_pattern={
                     "pattern": "results/{plantation_id}/{crop}/{batch_id}.json",
                     "extract_fields": ["plantation_id"],  # Only extract one field
                 }
-            }
-        }
+            )
+        )
 
         metadata = SourceConfigService.extract_path_metadata("results/WM-4521/tea/batch-001.json", config)
 
@@ -233,14 +225,14 @@ class TestPathMetadataExtraction:
 
     def test_extract_path_metadata_no_match(self) -> None:
         """Test returns empty dict when path doesn't match pattern."""
-        config = {
-            "ingestion": {
-                "path_pattern": {
+        config = SourceConfig.model_validate(
+            create_source_config_doc(
+                path_pattern={
                     "pattern": "results/{plantation_id}/{batch_id}.json",
                     "extract_fields": ["plantation_id"],
                 }
-            }
-        }
+            )
+        )
 
         metadata = SourceConfigService.extract_path_metadata("other/path/to/file.json", config)
 
@@ -248,7 +240,9 @@ class TestPathMetadataExtraction:
 
     def test_extract_path_metadata_no_pattern(self) -> None:
         """Test returns empty dict when no path_pattern in config."""
-        config = {"ingestion": {}}
+        config = SourceConfig.model_validate(
+            create_source_config_doc()  # No path_pattern
+        )
 
         metadata = SourceConfigService.extract_path_metadata("results/WM-4521/tea/batch-001.json", config)
 
@@ -256,14 +250,14 @@ class TestPathMetadataExtraction:
 
     def test_extract_path_metadata_with_dots_in_filename(self) -> None:
         """Test extraction works with dots in filename pattern."""
-        config = {
-            "ingestion": {
-                "path_pattern": {
+        config = SourceConfig.model_validate(
+            create_source_config_doc(
+                path_pattern={
                     "pattern": "data/{device_id}/{date}.data.json",
                     "extract_fields": ["device_id", "date"],
                 }
-            }
-        }
+            )
+        )
 
         metadata = SourceConfigService.extract_path_metadata("data/device-001/2025-12-26.data.json", config)
 
@@ -271,14 +265,14 @@ class TestPathMetadataExtraction:
 
     def test_extract_path_metadata_deeply_nested(self) -> None:
         """Test extraction with deeply nested paths."""
-        config = {
-            "ingestion": {
-                "path_pattern": {
+        config = SourceConfig.model_validate(
+            create_source_config_doc(
+                path_pattern={
                     "pattern": "{year}/{month}/{day}/{factory}/{device}/{file}.json",
                     "extract_fields": ["year", "month", "day", "factory", "device"],
                 }
-            }
-        }
+            )
+        )
 
         metadata = SourceConfigService.extract_path_metadata("2025/12/26/FAC-001/device-001/result.json", config)
 

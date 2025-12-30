@@ -9,6 +9,7 @@ from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, Any
 
 from collection_model.domain.ingestion_job import IngestionJob
+from fp_common.models.source_config import SourceConfig
 from pydantic import BaseModel, Field
 
 if TYPE_CHECKING:
@@ -66,7 +67,7 @@ class ContentProcessor(ABC):
     async def process(
         self,
         job: IngestionJob,
-        source_config: dict[str, Any],
+        source_config: SourceConfig,
     ) -> ProcessorResult:
         """Process the ingestion job according to source config.
 
@@ -76,7 +77,7 @@ class ContentProcessor(ABC):
 
         Args:
             job: The queued ingestion job with blob path and metadata.
-            source_config: Full source configuration from MongoDB.
+            source_config: Typed SourceConfig from MongoDB.
 
         Returns:
             ProcessorResult with success status and extracted data.

@@ -6,11 +6,10 @@ on startup and handles dynamic job registration when source configs
 are created/updated/deleted.
 """
 
-from typing import Any
-
 import structlog
 from collection_model.infrastructure.dapr_jobs_client import DaprJobsClient
 from collection_model.services.source_config_service import SourceConfigService
+from fp_common.models.source_config import SourceConfig
 
 logger = structlog.get_logger(__name__)
 
@@ -62,9 +61,9 @@ class JobRegistrationService:
             configs = await self._source_config.get_all_configs()
 
             for config in configs:
-                source_id = config.get("source_id", "unknown")
-                ingestion = config.get("ingestion", {})
-                mode = ingestion.get("mode", "")
+                # Use typed attribute access from SourceConfig Pydantic model
+                source_id = config.source_id or "unknown"
+                mode = config.ingestion.mode
 
                 if mode != "scheduled_pull":
                     logger.debug(
@@ -101,7 +100,7 @@ class JobRegistrationService:
 
     async def register_job_for_source(
         self,
-        source_config: dict[str, Any],
+        source_config: SourceConfig,
     ) -> bool:
         """Register a DAPR Job for a single source configuration.
 
@@ -109,14 +108,14 @@ class JobRegistrationService:
         Other modes are skipped and return False.
 
         Args:
-            source_config: Full source configuration dictionary.
+            source_config: Typed SourceConfig Pydantic model.
 
         Returns:
             True if job was registered, False otherwise.
         """
-        source_id = source_config.get("source_id", "")
-        ingestion = source_config.get("ingestion", {})
-        mode = ingestion.get("mode", "")
+        # Use typed attribute access from SourceConfig Pydantic model
+        source_id = source_config.source_id or ""
+        mode = source_config.ingestion.mode
 
         if mode != "scheduled_pull":
             logger.debug(
@@ -126,7 +125,7 @@ class JobRegistrationService:
             )
             return False
 
-        schedule = ingestion.get("schedule", "")
+        schedule = source_config.ingestion.schedule or ""
         if not schedule:
             logger.warning(
                 "No schedule defined for scheduled_pull source",

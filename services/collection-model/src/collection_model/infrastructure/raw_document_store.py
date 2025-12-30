@@ -7,12 +7,12 @@ for deduplication.
 
 import hashlib
 from datetime import UTC, datetime
-from typing import Any
 
 import structlog
 from collection_model.domain.exceptions import DuplicateDocumentError, StorageError
 from collection_model.domain.raw_document import RawDocument
 from collection_model.infrastructure.blob_storage import BlobStorageClient
+from fp_common.models.source_config import SourceConfig
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from pymongo.errors import DuplicateKeyError
 
@@ -81,7 +81,7 @@ class RawDocumentStore:
     async def store_raw_document(
         self,
         content: bytes,
-        source_config: dict[str, Any],
+        source_config: SourceConfig,
         ingestion_id: str,
         metadata: dict[str, str] | None = None,
     ) -> RawDocument:
@@ -92,7 +92,7 @@ class RawDocumentStore:
 
         Args:
             content: The raw content bytes to store.
-            source_config: Source configuration with storage settings.
+            source_config: Typed SourceConfig with storage settings.
             ingestion_id: ID of the ingestion job.
             metadata: Optional metadata from path extraction.
 
@@ -103,9 +103,9 @@ class RawDocumentStore:
             DuplicateDocumentError: If content with same hash exists for source.
             StorageError: If storage operation fails.
         """
-        source_id = source_config.get("source_id", "unknown")
-        storage = source_config.get("storage", {})
-        raw_container = storage.get("raw_container", "raw-documents")
+        # Use typed attribute access from SourceConfig Pydantic model
+        source_id = source_config.source_id or "unknown"
+        raw_container = source_config.storage.raw_container
 
         content_hash = self.compute_content_hash(content)
 
@@ -225,17 +225,17 @@ class RawDocumentStore:
         return None
 
     @staticmethod
-    def _get_content_type(source_config: dict[str, Any]) -> str:
+    def _get_content_type(source_config: SourceConfig) -> str:
         """Get content type from source configuration.
 
         Args:
-            source_config: The source configuration.
+            source_config: Typed SourceConfig with ingestion settings.
 
         Returns:
             MIME type string.
         """
-        ingestion = source_config.get("ingestion", {})
-        file_format = ingestion.get("file_format", "")
+        # Use typed attribute access from SourceConfig Pydantic model
+        file_format = source_config.ingestion.file_format
 
         if file_format == "json":
             return "application/json"

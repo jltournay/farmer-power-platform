@@ -13,6 +13,10 @@ import pytest
 from collection_model.infrastructure.dapr_jobs_client import DaprJobsClient
 from collection_model.services.job_registration_service import JobRegistrationService
 from collection_model.services.source_config_service import SourceConfigService
+from fp_common.models.source_config import SourceConfig
+
+# Import the shared helper from conftest
+from .conftest import create_source_config
 
 
 class TestJobRegistrationService:
@@ -36,30 +40,23 @@ class TestJobRegistrationService:
         return service
 
     @pytest.fixture
-    def sample_pull_source_config(self) -> dict[str, Any]:
+    def sample_pull_source_config(self) -> SourceConfig:
         """Create sample scheduled_pull source config."""
-        return {
-            "source_id": "weather-api",
-            "ingestion": {
-                "mode": "scheduled_pull",
-                "schedule": "0 6 * * *",
-                "request": {
-                    "base_url": "https://api.open-meteo.com/v1/forecast",
-                    "auth_type": "none",
-                },
-            },
-        }
+        return create_source_config(
+            source_id="weather-api",
+            mode="scheduled_pull",
+            schedule="0 6 * * *",
+            provider="open-meteo",
+        )
 
     @pytest.fixture
-    def sample_blob_trigger_source_config(self) -> dict[str, Any]:
+    def sample_blob_trigger_source_config(self) -> SourceConfig:
         """Create sample blob_trigger source config (should be skipped)."""
-        return {
-            "source_id": "qc-analyzer",
-            "ingestion": {
-                "mode": "blob_trigger",
-                "container": "qc-landing",
-            },
-        }
+        return create_source_config(
+            source_id="qc-analyzer",
+            mode="blob_trigger",
+            landing_container="qc-landing",
+        )
 
     @pytest.fixture
     def job_registration_service(
@@ -118,21 +115,16 @@ class TestJobRegistrationService:
         job_registration_service: JobRegistrationService,
         mock_dapr_jobs_client: MagicMock,
         mock_source_config_service: MagicMock,
-        sample_pull_source_config: dict[str, Any],
-        sample_blob_trigger_source_config: dict[str, Any],
+        sample_pull_source_config: SourceConfig,
+        sample_blob_trigger_source_config: SourceConfig,
     ) -> None:
         """Test sync_all_jobs handles mix of source types."""
-        market_prices_config = {
-            "source_id": "market-prices",
-            "ingestion": {
-                "mode": "scheduled_pull",
-                "schedule": "0 */4 * * *",
-                "request": {
-                    "base_url": "https://api.prices.example.com/v1/prices",
-                    "auth_type": "api_key",
-                },
-            },
-        }
+        market_prices_config = create_source_config(
+            source_id="market-prices",
+            mode="scheduled_pull",
+            schedule="0 */4 * * *",
+            provider="market-api",
+        )
         mock_source_config_service.get_all_configs = AsyncMock(
             return_value=[
                 sample_pull_source_config,
@@ -244,16 +236,12 @@ class TestJobRegistrationService:
         mock_dapr_jobs_client: MagicMock,
     ) -> None:
         """Test that schedule is extracted from nested config correctly."""
-        config = {
-            "source_id": "test-source",
-            "ingestion": {
-                "mode": "scheduled_pull",
-                "schedule": "@every 30m",  # DAPR-style schedule
-                "request": {
-                    "base_url": "https://example.com",
-                },
-            },
-        }
+        config = create_source_config(
+            source_id="test-source",
+            mode="scheduled_pull",
+            schedule="@every 30m",  # DAPR-style schedule
+            provider="test-provider",
+        )
 
         await job_registration_service.register_job_for_source(config)
 

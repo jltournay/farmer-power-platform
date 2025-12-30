@@ -12,6 +12,7 @@ from uuid import uuid4
 import httpx
 import structlog
 from collection_model.config import settings
+from fp_common.models.source_config import SourceConfig
 from pydantic import BaseModel, Field
 
 logger = structlog.get_logger(__name__)
@@ -146,7 +147,7 @@ class DaprEventPublisher:
 
     async def publish_success(
         self,
-        source_config: dict[str, Any],
+        source_config: SourceConfig,
         document: Any,
     ) -> bool:
         """Publish a success event using config-driven topic and payload.
@@ -155,28 +156,29 @@ class DaprEventPublisher:
         payload fields from source_config.events.on_success.payload_fields.
 
         Args:
-            source_config: The source configuration with events section.
+            source_config: Typed SourceConfig with events section.
             document: The document to extract payload fields from.
 
         Returns:
             True if published successfully, False if no event configured.
         """
-        events_config = source_config.get("events", {})
-        on_success = events_config.get("on_success")
-        if not on_success:
+        # Use typed attribute access from SourceConfig Pydantic model
+        events_config = source_config.events
+        if not events_config or not events_config.on_success:
             logger.debug(
                 "No on_success event configured",
-                source_id=source_config.get("source_id"),
+                source_id=source_config.source_id,
             )
             return False
 
-        topic = on_success.get("topic")
-        payload_fields = on_success.get("payload_fields", [])
+        on_success = events_config.on_success
+        topic = on_success.topic
+        payload_fields = on_success.payload_fields or []
 
         if not topic:
             logger.warning(
                 "on_success event has no topic",
-                source_id=source_config.get("source_id"),
+                source_id=source_config.source_id,
             )
             return False
 
@@ -186,12 +188,12 @@ class DaprEventPublisher:
         return await self.publish(
             topic=topic,
             payload=payload,
-            source_id=source_config.get("source_id", "unknown"),
+            source_id=source_config.source_id or "unknown",
         )
 
     async def publish_failure(
         self,
-        source_config: dict[str, Any],
+        source_config: SourceConfig,
         error_type: str,
         error_message: str,
         document_id: str | None = None,
@@ -201,7 +203,7 @@ class DaprEventPublisher:
         Reads topic from source_config.events.on_failure.topic.
 
         Args:
-            source_config: The source configuration with events section.
+            source_config: Typed SourceConfig with events section.
             error_type: The type of error.
             error_message: Error description.
             document_id: Optional document ID if available.
@@ -209,23 +211,24 @@ class DaprEventPublisher:
         Returns:
             True if published successfully, False if no event configured.
         """
-        events_config = source_config.get("events", {})
-        on_failure = events_config.get("on_failure")
-        if not on_failure:
+        # Use typed attribute access from SourceConfig Pydantic model
+        events_config = source_config.events
+        if not events_config or not events_config.on_failure:
             logger.debug(
                 "No on_failure event configured",
-                source_id=source_config.get("source_id"),
+                source_id=source_config.source_id,
             )
             return False
 
-        topic = on_failure.get("topic")
+        on_failure = events_config.on_failure
+        topic = on_failure.topic
         if not topic:
             return False
 
         payload = {
             "error_type": error_type,
             "error_message": error_message,
-            "source_id": source_config.get("source_id"),
+            "source_id": source_config.source_id,
         }
         if document_id:
             payload["document_id"] = document_id
@@ -233,7 +236,7 @@ class DaprEventPublisher:
         return await self.publish(
             topic=topic,
             payload=payload,
-            source_id=source_config.get("source_id", "unknown"),
+            source_id=source_config.source_id or "unknown",
         )
 
     @staticmethod

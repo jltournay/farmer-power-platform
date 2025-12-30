@@ -36,6 +36,7 @@ from collection_model.infrastructure.document_repository import DocumentReposito
 from collection_model.infrastructure.raw_document_store import RawDocumentStore
 from collection_model.infrastructure.storage_metrics import StorageMetrics
 from collection_model.processors.base import ContentProcessor, ProcessorResult
+from fp_common.models.source_config import SourceConfig
 from pydantic import ValidationError as PydanticValidationError
 
 logger = structlog.get_logger(__name__)
@@ -90,7 +91,7 @@ class ZipExtractionProcessor(ContentProcessor):
     async def process(
         self,
         job: IngestionJob,
-        source_config: dict[str, Any],
+        source_config: SourceConfig,
     ) -> ProcessorResult:
         """Process a ZIP ingestion job.
 
@@ -99,12 +100,12 @@ class ZipExtractionProcessor(ContentProcessor):
 
         Args:
             job: The queued ingestion job.
-            source_config: Full source configuration from MongoDB.
+            source_config: Typed SourceConfig from MongoDB.
 
         Returns:
             ProcessorResult with success status and document count.
         """
-        source_id = source_config.get("source_id", job.source_id)
+        source_id = source_config.source_id or job.source_id
 
         logger.info(
             "Processing ZIP blob",
@@ -291,7 +292,7 @@ class ZipExtractionProcessor(ContentProcessor):
         self,
         zip_content: bytes,
         job: IngestionJob,
-        source_config: dict[str, Any],
+        source_config: SourceConfig,
     ) -> RawDocumentRef:
         """Store raw ZIP in blob storage before processing."""
         if not self._raw_store:
@@ -315,13 +316,13 @@ class ZipExtractionProcessor(ContentProcessor):
     def _extract_and_validate_manifest(
         self,
         zip_content: bytes,
-        source_config: dict[str, Any],
+        source_config: SourceConfig,
     ) -> ZipManifest:
         """Extract and validate manifest.json from ZIP.
 
         Args:
             zip_content: ZIP file content bytes.
-            source_config: Source configuration with validation settings.
+            source_config: Typed SourceConfig with validation settings.
 
         Returns:
             Validated ZipManifest instance.
@@ -337,8 +338,8 @@ class ZipExtractionProcessor(ContentProcessor):
                     raise ZipExtractionError("Corrupt ZIP file detected")
 
                 # Get manifest file name from config (default: manifest.json)
-                zip_config = source_config.get("ingestion", {}).get("zip_config", {})
-                manifest_file = zip_config.get("manifest_file", "manifest.json")
+                zip_config = source_config.ingestion.zip_config
+                manifest_file = zip_config.manifest_file if zip_config else "manifest.json"
 
                 # Extract manifest
                 if manifest_file not in zf.namelist():
@@ -378,7 +379,7 @@ class ZipExtractionProcessor(ContentProcessor):
         manifest: ZipManifest,
         raw_zip_ref: RawDocumentRef,
         job: IngestionJob,
-        source_config: dict[str, Any],
+        source_config: SourceConfig,
     ) -> DocumentIndex:
         """Process a single document from the manifest.
 
@@ -438,7 +439,7 @@ class ZipExtractionProcessor(ContentProcessor):
         doc_entry: ManifestDocument,
         manifest: ZipManifest,
         job: IngestionJob,
-        source_config: dict[str, Any],
+        source_config: SourceConfig,
     ) -> BlobReference:
         """Extract a file from ZIP and store to blob storage.
 
@@ -448,7 +449,7 @@ class ZipExtractionProcessor(ContentProcessor):
             doc_entry: Document this file belongs to.
             manifest: Full manifest.
             job: Ingestion job.
-            source_config: Source configuration.
+            source_config: Typed SourceConfig.
 
         Returns:
             BlobReference to the stored file.
@@ -470,13 +471,15 @@ class ZipExtractionProcessor(ContentProcessor):
         file_content = zf.read(file_entry.path)
 
         # Get container from config (NO hardcoded container names)
-        storage = source_config.get("storage", {})
-        container = storage.get("file_container")
+        # Note: StorageConfig may not have file_container - use getattr for optional field
+        container = getattr(source_config.storage, "file_container", None)
         if not container:
             raise ConfigurationError("No file_container in storage config")
 
         # Build blob path from pattern in config
-        path_pattern = storage.get("file_path_pattern", "{source_id}/{link_value}/{doc_id}/{filename}")
+        path_pattern = getattr(
+            source_config.storage, "file_path_pattern", "{source_id}/{link_value}/{doc_id}/{filename}"
+        )
 
         blob_path = self._build_blob_path(
             pattern=path_pattern,
@@ -505,7 +508,7 @@ class ZipExtractionProcessor(ContentProcessor):
         doc_entry: ManifestDocument,
         file_entry: ManifestFile,
         job: IngestionJob,
-        source_config: dict[str, Any],
+        source_config: SourceConfig,
     ) -> str:
         """Build blob path from config-driven pattern.
 
@@ -519,8 +522,7 @@ class ZipExtractionProcessor(ContentProcessor):
         - {ingestion_id}: Ingestion job ID
         - {linkage.*}: Any field from manifest.linkage
         """
-        transformation = source_config.get("transformation", {})
-        link_field = transformation.get("link_field", "")
+        link_field = source_config.transformation.link_field
         link_value = manifest.linkage.get(link_field, "unknown")
 
         # Get filename and extension from path
@@ -571,7 +573,7 @@ class ZipExtractionProcessor(ContentProcessor):
         file_refs: dict[str, list[BlobReference]],
         raw_zip_ref: RawDocumentRef,
         job: IngestionJob,
-        source_config: dict[str, Any],
+        source_config: SourceConfig,
     ) -> DocumentIndex:
         """Create a DocumentIndex for a manifest document.
 
@@ -581,13 +583,12 @@ class ZipExtractionProcessor(ContentProcessor):
             file_refs: Dict of file references by role.
             raw_zip_ref: Reference to raw ZIP storage.
             job: Ingestion job.
-            source_config: Source configuration.
+            source_config: Typed SourceConfig.
 
         Returns:
             DocumentIndex instance.
         """
-        transformation = source_config.get("transformation", {})
-        link_field = transformation.get("link_field", "")
+        link_field = source_config.transformation.link_field
         link_value = manifest.linkage.get(link_field, "unknown")
 
         # Build globally unique document_id
@@ -636,7 +637,7 @@ class ZipExtractionProcessor(ContentProcessor):
     async def _store_documents_atomic(
         self,
         documents: list[DocumentIndex],
-        source_config: dict[str, Any],
+        source_config: SourceConfig,
     ) -> None:
         """Store all documents atomically using MongoDB transaction.
 
@@ -644,7 +645,7 @@ class ZipExtractionProcessor(ContentProcessor):
 
         Args:
             documents: List of documents to store.
-            source_config: Source configuration.
+            source_config: Typed SourceConfig.
 
         Raises:
             BatchProcessingError: If any document fails to store.
@@ -653,14 +654,12 @@ class ZipExtractionProcessor(ContentProcessor):
             raise ConfigurationError("Document repository not configured")
 
         # Get collection name FROM CONFIG - not hardcoded!
-        storage = source_config.get("storage", {})
-        collection_name = storage.get("index_collection")
+        collection_name = source_config.storage.index_collection
         if not collection_name:
             raise ConfigurationError("No index_collection in storage config")
 
         # Get link field for indexing
-        transformation = source_config.get("transformation", {})
-        link_field = transformation.get("link_field", "")
+        link_field = source_config.transformation.link_field
 
         # Ensure indexes exist
         await self._doc_repo.ensure_indexes(collection_name, link_field)
@@ -697,35 +696,35 @@ class ZipExtractionProcessor(ContentProcessor):
         self,
         documents: list[DocumentIndex],
         manifest: ZipManifest,
-        source_config: dict[str, Any],
+        source_config: SourceConfig,
     ) -> None:
         """Emit success event to config-driven topic.
 
         Args:
             documents: List of processed documents.
             manifest: The manifest that was processed.
-            source_config: Source configuration.
+            source_config: Typed SourceConfig.
         """
         if not self._event_publisher:
             logger.debug("Event publisher not configured, skipping event emission")
             return
 
-        events_config = source_config.get("events", {})
-        on_success = events_config.get("on_success")
-        if not on_success:
+        events_config = source_config.events
+        if not events_config or not events_config.on_success:
             logger.debug(
                 "No on_success event configured",
-                source_id=source_config.get("source_id"),
+                source_id=source_config.source_id,
             )
             return
 
-        topic = on_success.get("topic")
-        payload_fields = on_success.get("payload_fields", [])
+        on_success = events_config.on_success
+        topic = on_success.topic
+        payload_fields = on_success.payload_fields or []
 
         if not topic:
             logger.warning(
                 "on_success event has no topic",
-                source_id=source_config.get("source_id"),
+                source_id=source_config.source_id,
             )
             return
 
@@ -746,7 +745,7 @@ class ZipExtractionProcessor(ContentProcessor):
         await self._event_publisher.publish(
             topic=topic,
             payload=payload,
-            source_id=source_config.get("source_id", "unknown"),
+            source_id=source_config.source_id or "unknown",
         )
 
     @staticmethod

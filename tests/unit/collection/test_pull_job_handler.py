@@ -13,6 +13,7 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 from collection_model.services.pull_job_handler import PullJobHandler
+from fp_common.models.source_config import SourceConfig
 
 
 class TestPullJobHandler:
@@ -73,61 +74,78 @@ class TestPullJobHandler:
         )
 
     @pytest.fixture
-    def sample_source_config_no_iteration(self) -> dict[str, Any]:
+    def sample_source_config_no_iteration(self) -> SourceConfig:
         """Sample source config without iteration."""
-        return {
-            "source_id": "weather-api",
-            "ingestion": {
-                "mode": "scheduled_pull",
-                "schedule": "0 6 * * *",
-                "request": {
-                    "base_url": "https://api.open-meteo.com/v1/forecast",
-                    "auth_type": "none",
-                    "parameters": {
-                        "latitude": "52.52",
-                        "longitude": "13.41",
+        return SourceConfig.model_validate(
+            {
+                "source_id": "weather-api",
+                "display_name": "Weather API",
+                "description": "Weather data from Open-Meteo",
+                "enabled": True,
+                "ingestion": {
+                    "mode": "scheduled_pull",
+                    "schedule": "0 6 * * *",
+                    "provider": "open-meteo",
+                    "request": {
+                        "base_url": "https://api.open-meteo.com/v1/forecast",
+                        "auth_type": "none",
+                        "parameters": {
+                            "latitude": "52.52",
+                            "longitude": "13.41",
+                        },
                     },
                 },
-            },
-            "transformation": {
-                "ai_agent_id": "weather-extractor",
-            },
-            "storage": {
-                "index_collection": "weather_data",
-            },
-        }
+                "transformation": {
+                    "ai_agent_id": "weather-extractor",
+                    "extract_fields": ["temperature", "humidity"],
+                    "link_field": "location_id",
+                },
+                "storage": {
+                    "raw_container": "weather-raw",
+                    "index_collection": "weather_data",
+                },
+            }
+        )
 
     @pytest.fixture
-    def sample_source_config_with_iteration(self) -> dict[str, Any]:
+    def sample_source_config_with_iteration(self) -> SourceConfig:
         """Sample source config with iteration."""
-        return {
-            "source_id": "weather-api-regions",
-            "ingestion": {
-                "mode": "scheduled_pull",
-                "schedule": "0 6 * * *",
-                "request": {
-                    "base_url": "https://api.open-meteo.com/v1/forecast",
-                    "auth_type": "none",
-                    "parameters": {
-                        "latitude": "{item.latitude}",
-                        "longitude": "{item.longitude}",
+        return SourceConfig.model_validate(
+            {
+                "source_id": "weather-api-regions",
+                "display_name": "Weather API Regions",
+                "description": "Weather data for all regions",
+                "enabled": True,
+                "ingestion": {
+                    "mode": "scheduled_pull",
+                    "schedule": "0 6 * * *",
+                    "provider": "open-meteo",
+                    "request": {
+                        "base_url": "https://api.open-meteo.com/v1/forecast",
+                        "auth_type": "none",
+                        "parameters": {
+                            "latitude": "{item.latitude}",
+                            "longitude": "{item.longitude}",
+                        },
+                    },
+                    "iteration": {
+                        "foreach": "region",
+                        "source_mcp": "plantation-mcp",
+                        "source_tool": "list_active_regions",
+                        "concurrency": 2,
                     },
                 },
-                "iteration": {
-                    "foreach": "region",
-                    "source_mcp": "plantation-mcp",
-                    "source_tool": "list_active_regions",
-                    "inject_linkage": ["region_id", "name"],
-                    "concurrency": 2,
+                "transformation": {
+                    "ai_agent_id": "weather-extractor",
+                    "extract_fields": ["temperature", "humidity"],
+                    "link_field": "region_id",
                 },
-            },
-            "transformation": {
-                "ai_agent_id": "weather-extractor",
-            },
-            "storage": {
-                "index_collection": "weather_data",
-            },
-        }
+                "storage": {
+                    "raw_container": "weather-raw",
+                    "index_collection": "weather_data",
+                },
+            }
+        )
 
     @pytest.fixture
     def sample_regions(self) -> list[dict[str, Any]]:
@@ -143,7 +161,7 @@ class TestPullJobHandler:
         self,
         pull_job_handler: PullJobHandler,
         mock_source_config_service: MagicMock,
-        sample_source_config_no_iteration: dict[str, Any],
+        sample_source_config_no_iteration: SourceConfig,
     ) -> None:
         """Test handle_job_trigger loads source config."""
         mock_source_config_service.get_config = AsyncMock(return_value=sample_source_config_no_iteration)
@@ -173,7 +191,7 @@ class TestPullJobHandler:
         mock_source_config_service: MagicMock,
         mock_pull_data_fetcher: MagicMock,
         mock_processor: MagicMock,
-        sample_source_config_no_iteration: dict[str, Any],
+        sample_source_config_no_iteration: SourceConfig,
     ) -> None:
         """Test single fetch when no iteration block."""
         mock_source_config_service.get_config = AsyncMock(return_value=sample_source_config_no_iteration)
@@ -196,7 +214,7 @@ class TestPullJobHandler:
         mock_pull_data_fetcher: MagicMock,
         mock_iteration_resolver: MagicMock,
         mock_processor: MagicMock,
-        sample_source_config_with_iteration: dict[str, Any],
+        sample_source_config_with_iteration: SourceConfig,
         sample_regions: list[dict[str, Any]],
     ) -> None:
         """Test multi-fetch with iteration block."""
@@ -221,7 +239,7 @@ class TestPullJobHandler:
         pull_job_handler: PullJobHandler,
         mock_source_config_service: MagicMock,
         mock_pull_data_fetcher: MagicMock,
-        sample_source_config_no_iteration: dict[str, Any],
+        sample_source_config_no_iteration: SourceConfig,
     ) -> None:
         """Test fetch passes correct pull config to fetcher."""
         mock_source_config_service.get_config = AsyncMock(return_value=sample_source_config_no_iteration)
@@ -240,7 +258,7 @@ class TestPullJobHandler:
         mock_source_config_service: MagicMock,
         mock_pull_data_fetcher: MagicMock,
         mock_iteration_resolver: MagicMock,
-        sample_source_config_with_iteration: dict[str, Any],
+        sample_source_config_with_iteration: SourceConfig,
         sample_regions: list[dict[str, Any]],
     ) -> None:
         """Test fetch passes iteration item for URL substitution."""
@@ -261,7 +279,7 @@ class TestPullJobHandler:
         mock_source_config_service: MagicMock,
         mock_pull_data_fetcher: MagicMock,
         mock_processor: MagicMock,
-        sample_source_config_no_iteration: dict[str, Any],
+        sample_source_config_no_iteration: SourceConfig,
     ) -> None:
         """Test processor receives job with inline content."""
         mock_source_config_service.get_config = AsyncMock(return_value=sample_source_config_no_iteration)
@@ -283,7 +301,7 @@ class TestPullJobHandler:
         mock_pull_data_fetcher: MagicMock,
         mock_iteration_resolver: MagicMock,
         mock_processor: MagicMock,
-        sample_source_config_with_iteration: dict[str, Any],
+        sample_source_config_with_iteration: SourceConfig,
     ) -> None:
         """Test processor receives linkage extracted from iteration item."""
         mock_source_config_service.get_config = AsyncMock(return_value=sample_source_config_with_iteration)
@@ -307,7 +325,7 @@ class TestPullJobHandler:
         mock_pull_data_fetcher: MagicMock,
         mock_iteration_resolver: MagicMock,
         mock_processor: MagicMock,
-        sample_source_config_with_iteration: dict[str, Any],
+        sample_source_config_with_iteration: SourceConfig,
         sample_regions: list[dict[str, Any]],
     ) -> None:
         """Test handler continues on partial fetch failures."""
@@ -342,7 +360,7 @@ class TestPullJobHandler:
         mock_iteration_resolver: MagicMock,
         mock_processor: MagicMock,
         mock_ingestion_queue: MagicMock,
-        sample_source_config_with_iteration: dict[str, Any],
+        sample_source_config_with_iteration: SourceConfig,
         sample_regions: list[dict[str, Any]],
     ) -> None:
         """Test handler respects concurrency limit from config."""
@@ -388,7 +406,7 @@ class TestPullJobHandler:
         pull_job_handler: PullJobHandler,
         mock_source_config_service: MagicMock,
         mock_iteration_resolver: MagicMock,
-        sample_source_config_with_iteration: dict[str, Any],
+        sample_source_config_with_iteration: SourceConfig,
         sample_regions: list[dict[str, Any]],
     ) -> None:
         """Test handler returns complete job summary."""

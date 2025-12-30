@@ -1,15 +1,16 @@
 """Runtime service for looking up source configurations.
 
 This module provides SourceConfigService which loads source configurations
-from MongoDB and caches them with a TTL for efficient runtime lookups
-when processing Event Grid blob-created events.
+from MongoDB via SourceConfigRepository and caches them with a TTL for
+efficient runtime lookups when processing Event Grid blob-created events.
 """
 
 import re
 from datetime import UTC, datetime, timedelta
-from typing import Any
 
 import structlog
+from collection_model.infrastructure.repositories import SourceConfigRepository
+from fp_common.models.source_config import SourceConfig
 from motor.motor_asyncio import AsyncIOMotorDatabase
 
 logger = structlog.get_logger(__name__)
@@ -18,19 +19,15 @@ logger = structlog.get_logger(__name__)
 class SourceConfigService:
     """Runtime service for looking up source configurations.
 
-    Uses in-memory caching with TTL instead of aiocache to avoid
-    serialization issues with Motor async cursors.
+    Uses in-memory caching with TTL for efficient lookups.
+    All methods return typed SourceConfig Pydantic models.
 
     Attributes:
         CACHE_TTL_MINUTES: Cache time-to-live in minutes.
-        MAX_CONFIGS: Maximum number of source configs to cache.
-        COLLECTION_NAME: MongoDB collection name for source configs.
 
     """
 
     CACHE_TTL_MINUTES = 5
-    MAX_CONFIGS = 100  # Maximum source configs expected per deployment
-    COLLECTION_NAME = "source_configs"
 
     def __init__(self, db: AsyncIOMotorDatabase) -> None:
         """Initialize the source config service.
@@ -39,17 +36,16 @@ class SourceConfigService:
             db: MongoDB database instance.
 
         """
-        self.db = db
-        self.collection = db[self.COLLECTION_NAME]
-        # In-memory cache (avoids aiocache async serialization issues)
-        self._cache: list[dict[str, Any]] | None = None
+        self._repository = SourceConfigRepository(db)
+        # In-memory cache of typed SourceConfig objects
+        self._cache: list[SourceConfig] | None = None
         self._cache_expires: datetime | None = None
 
-    async def get_all_configs(self) -> list[dict[str, Any]]:
+    async def get_all_configs(self) -> list[SourceConfig]:
         """Get all enabled source configs (cached with 5-min TTL).
 
         Returns:
-            List of enabled source configuration documents.
+            List of enabled source configurations as typed SourceConfig models.
 
         """
         now = datetime.now(UTC)
@@ -57,8 +53,7 @@ class SourceConfigService:
             logger.debug("Returning cached source configs", count=len(self._cache))
             return self._cache
 
-        cursor = self.collection.find({"enabled": True})
-        self._cache = await cursor.to_list(length=self.MAX_CONFIGS)
+        self._cache = await self._repository.get_all_enabled()
         self._cache_expires = now + timedelta(minutes=self.CACHE_TTL_MINUTES)
 
         logger.info(
@@ -74,52 +69,49 @@ class SourceConfigService:
         self._cache_expires = None
         logger.debug("Source config cache invalidated")
 
-    async def get_config(self, source_id: str) -> dict[str, Any] | None:
+    async def get_config(self, source_id: str) -> SourceConfig | None:
         """Get a single source config by source_id.
 
         Args:
             source_id: Source identifier.
 
         Returns:
-            Source config document or None if not found.
+            Source config or None if not found.
         """
         configs = await self.get_all_configs()
         for config in configs:
-            if config.get("source_id") == source_id:
+            if config.source_id == source_id:
                 return config
         return None
 
-    async def get_config_by_container(self, container: str) -> dict[str, Any] | None:
+    async def get_config_by_container(self, container: str) -> SourceConfig | None:
         """Find source config matching the given container.
 
-        Searches through enabled source configs for one with BLOB_TRIGGER mode
+        Searches through enabled source configs for one with blob_trigger mode
         and matching landing_container.
 
         Args:
             container: Azure Blob Storage container name.
 
         Returns:
-            Matching source config document or None if not found.
+            Matching source config or None if not found.
 
         """
         configs = await self.get_all_configs()
         for config in configs:
-            ingestion = config.get("ingestion", {})
-            if ingestion.get("mode") == "blob_trigger":
-                landing_container = ingestion.get("landing_container")
-                if landing_container == container:
-                    logger.debug(
-                        "Found source config for container",
-                        container=container,
-                        source_id=config.get("source_id"),
-                    )
-                    return config
+            if config.ingestion.mode == "blob_trigger" and config.ingestion.landing_container == container:
+                logger.debug(
+                    "Found source config for container",
+                    container=container,
+                    source_id=config.source_id,
+                )
+                return config
         return None
 
     @staticmethod
     def extract_path_metadata(
         blob_path: str,
-        config: dict[str, Any],
+        config: SourceConfig,
     ) -> dict[str, str]:
         """Extract metadata from blob path using config pattern.
 
@@ -132,19 +124,18 @@ class SourceConfigService:
 
         Args:
             blob_path: Full blob path from Event Grid event.
-            config: Source configuration document with path_pattern.
+            config: Source configuration with path_pattern.
 
         Returns:
             Dict of extracted field values, empty if pattern doesn't match.
 
         """
-        ingestion = config.get("ingestion", {})
-        path_pattern = ingestion.get("path_pattern")
+        path_pattern = config.ingestion.path_pattern
         if not path_pattern:
             return {}
 
-        pattern = path_pattern.get("pattern", "")
-        extract_fields = set(path_pattern.get("extract_fields", []))
+        pattern = path_pattern.pattern
+        extract_fields = set(path_pattern.extract_fields)
 
         if not pattern:
             return {}

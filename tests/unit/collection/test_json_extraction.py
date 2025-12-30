@@ -14,6 +14,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 from collection_model.domain.ingestion_job import IngestionJob
 from collection_model.processors.json_extraction import JsonExtractionProcessor
+from fp_common.models.source_config import SourceConfig
 
 
 class TestJsonExtractionProcessorDeduplication:
@@ -81,29 +82,37 @@ class TestJsonExtractionProcessorDeduplication:
         )
 
     @pytest.fixture
-    def sample_source_config(self) -> dict[str, Any]:
+    def sample_source_config(self) -> SourceConfig:
         """Create sample source configuration."""
-        return {
-            "source_id": "test-json-source",
-            "ingestion": {
-                "mode": "blob_trigger",
-                "processor_type": "json-extraction",
-            },
-            "transformation": {
-                "ai_agent_id": "test-agent",
-                "link_field": "batch_id",
-            },
-            "storage": {
-                "raw_container": "raw-json",
-                "index_collection": "json_documents",
-            },
-            "events": {
-                "on_success": {
-                    "topic": "collection.json.received",
-                    "payload_fields": ["batch_id"],
+        return SourceConfig.model_validate(
+            {
+                "source_id": "test-json-source",
+                "display_name": "Test JSON Source",
+                "description": "Test JSON extraction source",
+                "enabled": True,
+                "ingestion": {
+                    "mode": "blob_trigger",
+                    "landing_container": "test-landing",
+                    "file_format": "json",
+                    "processor_type": "json-extraction",
                 },
-            },
-        }
+                "transformation": {
+                    "ai_agent_id": "test-agent",
+                    "extract_fields": ["batch_id"],
+                    "link_field": "batch_id",
+                },
+                "storage": {
+                    "raw_container": "raw-json",
+                    "index_collection": "json_documents",
+                },
+                "events": {
+                    "on_success": {
+                        "topic": "collection.quality_result.received",
+                        "payload_fields": ["batch_id"],
+                    },
+                },
+            }
+        )
 
     @pytest.mark.asyncio
     async def test_duplicate_json_returns_is_duplicate_true(

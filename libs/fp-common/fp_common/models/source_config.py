@@ -166,6 +166,8 @@ class StorageConfig(BaseModel):
 
     raw_container: str = Field(..., description="Container for raw data storage")
     index_collection: str = Field(..., description="MongoDB collection for index")
+    file_container: str | None = Field(None, description="Container for extracted files (ZIP)")
+    file_path_pattern: str | None = Field(None, description="Pattern for file blob paths")
     ttl_days: int | None = Field(None, description="Days to retain data")
 
 

@@ -6,10 +6,13 @@ is determined by source_config.storage.index_collection.
 """
 
 from datetime import UTC, datetime
-from typing import Any
+from typing import TYPE_CHECKING, Any
 from uuid import uuid4
 
 from pydantic import BaseModel, Field
+
+if TYPE_CHECKING:
+    from fp_common.models.source_config import SourceConfig
 
 
 class RawDocumentRef(BaseModel):
@@ -108,7 +111,7 @@ class DocumentIndex(BaseModel):
         extraction: ExtractionMetadata,
         ingestion: IngestionMetadata,
         extracted_fields: dict[str, Any],
-        source_config: dict[str, Any],
+        source_config: "SourceConfig",
     ) -> "DocumentIndex":
         """Create a DocumentIndex from extraction results.
 
@@ -120,15 +123,15 @@ class DocumentIndex(BaseModel):
             extraction: Extraction metadata.
             ingestion: Ingestion metadata.
             extracted_fields: Fields extracted by AI Model.
-            source_config: Source configuration for field mapping.
+            source_config: Typed SourceConfig for field mapping.
 
         Returns:
             New DocumentIndex instance.
         """
-        # Get extract_fields from transformation config
-        transformation = source_config.get("transformation", {})
-        extract_field_names = transformation.get("extract_fields", [])
-        field_mappings = transformation.get("field_mappings", {})
+        # Use typed attribute access from SourceConfig Pydantic model
+        transformation = source_config.transformation
+        extract_field_names = transformation.extract_fields or []
+        field_mappings = transformation.field_mappings or {}
 
         # Build linkage_fields by copying specified fields
         linkage = {}
