@@ -1,7 +1,7 @@
 # Story 2.11: Source Config CLI Schema Alignment
 
-**Status:** review
-**GitHub Issue:** TBD
+**Status:** done
+**GitHub Issue:** #36
 **Epic:** [Epic 2: Quality Data Ingestion](../epics/epic-2-collection-model.md)
 
 ## Story
