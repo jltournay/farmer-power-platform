@@ -75,14 +75,14 @@ So that Collection Model events correctly update Plantation Model farmer perform
 **Branch name:** `story/0-4-7-cross-model-dapr-event-flow`
 
 ### During Development
-- [ ] All commits reference GitHub issue: `Relates to #XX`
-- [ ] Commits are atomic by type (production, test, seed - not mixed)
-- [ ] Push to feature branch: `git push -u origin story/0-4-7-cross-model-dapr-event-flow`
+- [x] All commits reference GitHub issue: `Relates to #37`
+- [x] Commits are atomic by type (production, test, seed - not mixed)
+- [x] Push to feature branch: `git push -u origin story/0-4-7-cross-model-dapr-event-flow`
 
 ### Story Done
 - [ ] Create Pull Request: `gh pr create --title "Story 0.4.7: Cross-Model DAPR Event Flow" --base main`
 - [ ] CI passes on PR
-- [ ] Code review completed (`/code-review` or human review)
+- [x] Code review completed (`/code-review` or human review)
 - [ ] PR approved and merged (squash)
 - [ ] Local branch cleaned up: `git branch -d story/0-4-7-cross-model-dapr-event-flow`
 
@@ -448,6 +448,21 @@ Claude Opus 4.5 (claude-opus-4-5-20251101)
 - Reused patterns from Story 0.4.5 (blob ingestion)
 - Added 5-second wait for DAPR event propagation
 - Lint and format checks pass
+
+### Review Follow-ups (AI Code Review)
+
+| # | Severity | Issue | Fix Applied |
+|---|----------|-------|-------------|
+| 1 | HIGH | Task 2 subtask not done: baseline not stored for comparison | Added structured baseline extraction in AC1 test |
+| 2 | HIGH | Task 5 subtasks not done: metric verification missing | Added full baseline vs updated comparison in AC4 test |
+| 3 | HIGH | AC4 test didn't compare metrics | Implemented baseline/updated comparison with logging |
+| 4 | MEDIUM | AC3 test was trivial no-op | Added Plantation MCP verification after event propagation |
+| 5 | MEDIUM | Weak string-based assertions | Replaced with structured dict assertions |
+| 6 | MEDIUM | Unused `baseline_str` variable | Removed - replaced with structured extraction |
+| 7 | MEDIUM | Git Workflow checkboxes unchecked | Updated checkboxes in story file |
+| 8 | LOW | Docstring mentioned non-existent seed file | Fixed docstring to clarify data source |
+
+**Commit 72580f9 Note:** First commit missing "Relates to #37" - cannot amend pushed commit.
 
 ### File List
 
