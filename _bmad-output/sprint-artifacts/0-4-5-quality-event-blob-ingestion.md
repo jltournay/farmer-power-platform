@@ -255,6 +255,7 @@ None - implementation followed existing patterns from Story 0.4.2, 0.4.3, 0.4.4
 8. **Fixed seed data schema** - Changed `raw_bucket` to `raw_container` per Pydantic model
 9. **Added container creation** - E2E fixtures now create required blob containers before seeding
 10. **Duplicate detection test failing** - 5/6 tests pass; duplicate detection needs deeper investigation (may be timing issue)
+11. **Unit test updated** - `test_process_missing_ai_agent_id` renamed to `test_process_direct_extraction_without_ai_agent` to validate new direct extraction behavior
 
 ### File List
 
