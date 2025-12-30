@@ -125,7 +125,7 @@ class PullJobHandler:
                 "duplicates": 0,
             }
 
-        ingestion = source_config.get("config", {}).get("ingestion", {})
+        ingestion = source_config.get("ingestion", {})
         request_config = ingestion.get("request", {})
         iteration_config = ingestion.get("iteration")
 

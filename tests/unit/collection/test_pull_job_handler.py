@@ -77,25 +77,23 @@ class TestPullJobHandler:
         """Sample source config without iteration."""
         return {
             "source_id": "weather-api",
-            "config": {
-                "ingestion": {
-                    "mode": "scheduled_pull",
-                    "schedule": "0 6 * * *",
-                    "request": {
-                        "base_url": "https://api.open-meteo.com/v1/forecast",
-                        "auth_type": "none",
-                        "parameters": {
-                            "latitude": "52.52",
-                            "longitude": "13.41",
-                        },
+            "ingestion": {
+                "mode": "scheduled_pull",
+                "schedule": "0 6 * * *",
+                "request": {
+                    "base_url": "https://api.open-meteo.com/v1/forecast",
+                    "auth_type": "none",
+                    "parameters": {
+                        "latitude": "52.52",
+                        "longitude": "13.41",
                     },
                 },
-                "transformation": {
-                    "ai_agent_id": "weather-extractor",
-                },
-                "storage": {
-                    "index_collection": "weather_data",
-                },
+            },
+            "transformation": {
+                "ai_agent_id": "weather-extractor",
+            },
+            "storage": {
+                "index_collection": "weather_data",
             },
         }
 
@@ -104,32 +102,30 @@ class TestPullJobHandler:
         """Sample source config with iteration."""
         return {
             "source_id": "weather-api-regions",
-            "config": {
-                "ingestion": {
-                    "mode": "scheduled_pull",
-                    "schedule": "0 6 * * *",
-                    "request": {
-                        "base_url": "https://api.open-meteo.com/v1/forecast",
-                        "auth_type": "none",
-                        "parameters": {
-                            "latitude": "{item.latitude}",
-                            "longitude": "{item.longitude}",
-                        },
-                    },
-                    "iteration": {
-                        "foreach": "region",
-                        "source_mcp": "plantation-mcp",
-                        "source_tool": "list_active_regions",
-                        "inject_linkage": ["region_id", "name"],
-                        "concurrency": 2,
+            "ingestion": {
+                "mode": "scheduled_pull",
+                "schedule": "0 6 * * *",
+                "request": {
+                    "base_url": "https://api.open-meteo.com/v1/forecast",
+                    "auth_type": "none",
+                    "parameters": {
+                        "latitude": "{item.latitude}",
+                        "longitude": "{item.longitude}",
                     },
                 },
-                "transformation": {
-                    "ai_agent_id": "weather-extractor",
+                "iteration": {
+                    "foreach": "region",
+                    "source_mcp": "plantation-mcp",
+                    "source_tool": "list_active_regions",
+                    "inject_linkage": ["region_id", "name"],
+                    "concurrency": 2,
                 },
-                "storage": {
-                    "index_collection": "weather_data",
-                },
+            },
+            "transformation": {
+                "ai_agent_id": "weather-extractor",
+            },
+            "storage": {
+                "index_collection": "weather_data",
             },
         }
 

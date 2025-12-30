@@ -161,7 +161,7 @@ class DaprEventPublisher:
         Returns:
             True if published successfully, False if no event configured.
         """
-        events_config = source_config.get("config", {}).get("events", {})
+        events_config = source_config.get("events", {})
         on_success = events_config.get("on_success")
         if not on_success:
             logger.debug(
@@ -209,7 +209,7 @@ class DaprEventPublisher:
         Returns:
             True if published successfully, False if no event configured.
         """
-        events_config = source_config.get("config", {}).get("events", {})
+        events_config = source_config.get("events", {})
         on_failure = events_config.get("on_failure")
         if not on_failure:
             logger.debug(

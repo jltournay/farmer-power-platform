@@ -126,7 +126,7 @@ class DocumentIndex(BaseModel):
             New DocumentIndex instance.
         """
         # Get extract_fields from transformation config
-        transformation = source_config.get("config", {}).get("transformation", {})
+        transformation = source_config.get("transformation", {})
         extract_field_names = transformation.get("extract_fields", [])
         field_mappings = transformation.get("field_mappings", {})
 

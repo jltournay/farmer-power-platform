@@ -163,11 +163,9 @@ class TestBlobCreatedEventProcessing:
         mock_source_config_service.get_config_by_container.return_value = {
             "source_id": "qc-analyzer",
             "enabled": True,
-            "config": {
-                "ingestion": {
-                    "mode": "blob_trigger",
-                    "landing_container": "qc-analyzer-results",
-                }
+            "ingestion": {
+                "mode": "blob_trigger",
+                "landing_container": "qc-analyzer-results",
             },
         }
         mock_source_config_service.extract_path_metadata.return_value = {"batch_id": "batch-001"}
@@ -210,7 +208,6 @@ class TestBlobCreatedEventProcessing:
         mock_source_config_service.get_config_by_container.return_value = {
             "source_id": "qc-analyzer",
             "enabled": False,  # Disabled
-            "config": {},
         }
 
         payload = [
@@ -243,7 +240,6 @@ class TestBlobCreatedEventProcessing:
         mock_source_config_service.get_config_by_container.return_value = {
             "source_id": "qc-analyzer",
             "enabled": True,
-            "config": {},
         }
         # Simulate duplicate - queue_job returns False
         mock_ingestion_queue.queue_job.return_value = False
@@ -317,7 +313,6 @@ class TestProcessBlobCreatedEvent:
             return_value={
                 "source_id": "test",
                 "enabled": True,
-                "config": {},
             }
         )
         mock_service.extract_path_metadata = MagicMock(return_value={})
@@ -380,7 +375,6 @@ class TestProcessBlobCreatedEvent:
             return_value={
                 "source_id": "test-source",
                 "enabled": True,
-                "config": {},
             }
         )
         mock_service.extract_path_metadata = MagicMock(return_value={})
@@ -415,7 +409,6 @@ class TestProcessBlobCreatedEvent:
             return_value={
                 "source_id": "test-source",
                 "enabled": True,
-                "config": {},
             }
         )
         mock_service.extract_path_metadata = MagicMock(return_value={})

@@ -19,7 +19,7 @@ class TestSourceConfigServiceCaching:
             {
                 "source_id": "qc-analyzer",
                 "enabled": True,
-                "config": {"ingestion": {"mode": "blob_trigger"}},
+                "ingestion": {"mode": "blob_trigger"},
             }
         )
 
@@ -34,7 +34,7 @@ class TestSourceConfigServiceCaching:
             {
                 "source_id": "qc-analyzer-2",
                 "enabled": True,
-                "config": {"ingestion": {"mode": "blob_trigger"}},
+                "ingestion": {"mode": "blob_trigger"},
             }
         )
 
@@ -51,7 +51,7 @@ class TestSourceConfigServiceCaching:
             {
                 "source_id": "qc-analyzer",
                 "enabled": True,
-                "config": {"ingestion": {"mode": "blob_trigger"}},
+                "ingestion": {"mode": "blob_trigger"},
             }
         )
 
@@ -66,7 +66,7 @@ class TestSourceConfigServiceCaching:
             {
                 "source_id": "qc-analyzer-2",
                 "enabled": True,
-                "config": {"ingestion": {"mode": "blob_trigger"}},
+                "ingestion": {"mode": "blob_trigger"},
             }
         )
 
@@ -86,7 +86,7 @@ class TestSourceConfigServiceCaching:
             {
                 "source_id": "qc-analyzer",
                 "enabled": True,
-                "config": {"ingestion": {"mode": "blob_trigger"}},
+                "ingestion": {"mode": "blob_trigger"},
             }
         )
 
@@ -103,7 +103,7 @@ class TestSourceConfigServiceCaching:
             {
                 "source_id": "qc-analyzer-2",
                 "enabled": True,
-                "config": {"ingestion": {"mode": "blob_trigger"}},
+                "ingestion": {"mode": "blob_trigger"},
             }
         )
 
@@ -116,8 +116,8 @@ class TestSourceConfigServiceCaching:
         """Test that only enabled configs are returned."""
         db = mock_mongodb_client["collection_model"]
 
-        await db["source_configs"].insert_one({"source_id": "enabled-source", "enabled": True, "config": {}})
-        await db["source_configs"].insert_one({"source_id": "disabled-source", "enabled": False, "config": {}})
+        await db["source_configs"].insert_one({"source_id": "enabled-source", "enabled": True})
+        await db["source_configs"].insert_one({"source_id": "disabled-source", "enabled": False})
 
         service = SourceConfigService(db)
         configs = await service.get_all_configs()
@@ -138,11 +138,9 @@ class TestSourceConfigServiceContainerLookup:
             {
                 "source_id": "qc-analyzer",
                 "enabled": True,
-                "config": {
-                    "ingestion": {
-                        "mode": "blob_trigger",
-                        "landing_container": "qc-analyzer-landing",
-                    }
+                "ingestion": {
+                    "mode": "blob_trigger",
+                    "landing_container": "qc-analyzer-landing",
                 },
             }
         )
@@ -162,11 +160,9 @@ class TestSourceConfigServiceContainerLookup:
             {
                 "source_id": "qc-analyzer",
                 "enabled": True,
-                "config": {
-                    "ingestion": {
-                        "mode": "blob_trigger",
-                        "landing_container": "qc-analyzer-landing",
-                    }
+                "ingestion": {
+                    "mode": "blob_trigger",
+                    "landing_container": "qc-analyzer-landing",
                 },
             }
         )
@@ -185,11 +181,9 @@ class TestSourceConfigServiceContainerLookup:
             {
                 "source_id": "weather-api",
                 "enabled": True,
-                "config": {
-                    "ingestion": {
-                        "mode": "api_pull",  # Not blob_trigger
-                        "landing_container": "weather-data",
-                    }
+                "ingestion": {
+                    "mode": "api_pull",  # Not blob_trigger
+                    "landing_container": "weather-data",
                 },
             }
         )
@@ -206,12 +200,10 @@ class TestPathMetadataExtraction:
     def test_extract_path_metadata_basic_pattern(self) -> None:
         """Test basic path pattern extraction."""
         config = {
-            "config": {
-                "ingestion": {
-                    "path_pattern": {
-                        "pattern": "results/{plantation_id}/{crop}/{batch_id}.json",
-                        "extract_fields": ["plantation_id", "crop", "batch_id"],
-                    }
+            "ingestion": {
+                "path_pattern": {
+                    "pattern": "results/{plantation_id}/{crop}/{batch_id}.json",
+                    "extract_fields": ["plantation_id", "crop", "batch_id"],
                 }
             }
         }
@@ -227,12 +219,10 @@ class TestPathMetadataExtraction:
     def test_extract_path_metadata_partial_fields(self) -> None:
         """Test extracting only specified fields."""
         config = {
-            "config": {
-                "ingestion": {
-                    "path_pattern": {
-                        "pattern": "results/{plantation_id}/{crop}/{batch_id}.json",
-                        "extract_fields": ["plantation_id"],  # Only extract one field
-                    }
+            "ingestion": {
+                "path_pattern": {
+                    "pattern": "results/{plantation_id}/{crop}/{batch_id}.json",
+                    "extract_fields": ["plantation_id"],  # Only extract one field
                 }
             }
         }
@@ -244,12 +234,10 @@ class TestPathMetadataExtraction:
     def test_extract_path_metadata_no_match(self) -> None:
         """Test returns empty dict when path doesn't match pattern."""
         config = {
-            "config": {
-                "ingestion": {
-                    "path_pattern": {
-                        "pattern": "results/{plantation_id}/{batch_id}.json",
-                        "extract_fields": ["plantation_id"],
-                    }
+            "ingestion": {
+                "path_pattern": {
+                    "pattern": "results/{plantation_id}/{batch_id}.json",
+                    "extract_fields": ["plantation_id"],
                 }
             }
         }
@@ -260,7 +248,7 @@ class TestPathMetadataExtraction:
 
     def test_extract_path_metadata_no_pattern(self) -> None:
         """Test returns empty dict when no path_pattern in config."""
-        config = {"config": {"ingestion": {}}}
+        config = {"ingestion": {}}
 
         metadata = SourceConfigService.extract_path_metadata("results/WM-4521/tea/batch-001.json", config)
 
@@ -269,12 +257,10 @@ class TestPathMetadataExtraction:
     def test_extract_path_metadata_with_dots_in_filename(self) -> None:
         """Test extraction works with dots in filename pattern."""
         config = {
-            "config": {
-                "ingestion": {
-                    "path_pattern": {
-                        "pattern": "data/{device_id}/{date}.data.json",
-                        "extract_fields": ["device_id", "date"],
-                    }
+            "ingestion": {
+                "path_pattern": {
+                    "pattern": "data/{device_id}/{date}.data.json",
+                    "extract_fields": ["device_id", "date"],
                 }
             }
         }
@@ -286,12 +272,10 @@ class TestPathMetadataExtraction:
     def test_extract_path_metadata_deeply_nested(self) -> None:
         """Test extraction with deeply nested paths."""
         config = {
-            "config": {
-                "ingestion": {
-                    "path_pattern": {
-                        "pattern": "{year}/{month}/{day}/{factory}/{device}/{file}.json",
-                        "extract_fields": ["year", "month", "day", "factory", "device"],
-                    }
+            "ingestion": {
+                "path_pattern": {
+                    "pattern": "{year}/{month}/{day}/{factory}/{device}/{file}.json",
+                    "extract_fields": ["year", "month", "day", "factory", "device"],
                 }
             }
         }

@@ -307,7 +307,7 @@ class JsonExtractionProcessor(ContentProcessor):
         import json
 
         # Get AI agent ID from config
-        transformation = source_config.get("config", {}).get("transformation", {})
+        transformation = source_config.get("transformation", {})
         ai_agent_id = transformation.get("ai_agent_id") or transformation.get("agent")
 
         if not ai_agent_id:
@@ -377,7 +377,7 @@ class JsonExtractionProcessor(ContentProcessor):
         For pull mode jobs with linkage, the linkage fields from iteration
         are merged into the extracted_fields before building linkage_fields.
         """
-        transformation = source_config.get("config", {}).get("transformation", {})
+        transformation = source_config.get("transformation", {})
         ai_agent_id = transformation.get("ai_agent_id") or transformation.get("agent") or "direct-extraction"
 
         raw_ref = RawDocumentRef(
@@ -426,14 +426,14 @@ class JsonExtractionProcessor(ContentProcessor):
             raise ConfigurationError("Document repository not configured")
 
         # Get collection name FROM CONFIG - not hardcoded!
-        storage = source_config.get("config", {}).get("storage", {})
+        storage = source_config.get("storage", {})
         collection_name = storage.get("index_collection")
 
         if not collection_name:
             raise ConfigurationError("No index_collection in storage config")
 
         # Get link field for indexing
-        transformation = source_config.get("config", {}).get("transformation", {})
+        transformation = source_config.get("transformation", {})
         link_field = transformation.get("link_field", "")
 
         # Ensure indexes exist
