@@ -293,7 +293,7 @@ class TestJsonExtractionProcessor:
         assert "Invalid JSON" in result.error_message
 
     @pytest.mark.asyncio
-    async def test_process_missing_ai_agent_id(
+    async def test_process_direct_extraction_without_ai_agent(
         self,
         mock_blob_client: MagicMock,
         mock_raw_store: MagicMock,
@@ -302,14 +302,18 @@ class TestJsonExtractionProcessor:
         mock_event_publisher: MagicMock,
         sample_job: IngestionJob,
     ) -> None:
-        """Test processing fails with config error when ai_agent_id missing."""
-        bad_config = {
-            "source_id": "test",
+        """Test direct JSON extraction when ai_agent_id is null/missing.
+
+        When ai_agent_id is null, the processor performs direct field extraction
+        from the JSON without calling the AI model (Story 0.4.5).
+        """
+        direct_config = {
+            "source_id": "test-direct",
             "config": {
                 "transformation": {
-                    # Missing ai_agent_id
-                    "extract_fields": [],
-                    "link_field": "id",
+                    "ai_agent_id": None,  # Direct extraction mode
+                    "extract_fields": ["farmer_id", "weight_kg"],
+                    "link_field": "farmer_id",
                 },
                 "storage": {
                     "raw_container": "raw",
@@ -317,6 +321,11 @@ class TestJsonExtractionProcessor:
                 },
             },
         }
+
+        # Mock blob content with fields to extract
+        mock_blob_client.download_blob = AsyncMock(
+            return_value=b'{"farmer_id": "FRM-001", "weight_kg": 12.5, "extra": "ignored"}'
+        )
 
         processor = JsonExtractionProcessor()
         processor.set_dependencies(
@@ -327,11 +336,19 @@ class TestJsonExtractionProcessor:
             event_publisher=mock_event_publisher,
         )
 
-        result = await processor.process(sample_job, bad_config)
+        result = await processor.process(sample_job, direct_config)
 
-        assert result.success is False
-        assert result.error_type == "config"
-        assert "ai_agent_id" in result.error_message
+        # Direct extraction should succeed
+        assert result.success is True
+        assert result.document_id is not None
+        assert result.error_message is None
+
+        # AI client should NOT be called for direct extraction
+        mock_ai_client.extract.assert_not_called()
+
+        # Document should still be saved and event published
+        mock_doc_repo.save.assert_called_once()
+        mock_event_publisher.publish_success.assert_called_once()
 
     def test_supports_content_type(self) -> None:
         """Test content type support."""
