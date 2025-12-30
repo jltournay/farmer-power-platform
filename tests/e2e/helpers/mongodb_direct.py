@@ -243,3 +243,14 @@ class MongoDBDirectClient:
                     {"$set": doc},
                     upsert=True,
                 )
+
+    async def find_documents(
+        self,
+        collection: str,
+        query: dict[str, Any],
+        limit: int = 100,
+    ) -> list[dict[str, Any]]:
+        """Find documents in a collection with a query."""
+        db = self.collection_db
+        cursor = db[collection].find(query).limit(limit)
+        return await cursor.to_list(length=limit)
