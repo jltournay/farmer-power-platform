@@ -83,13 +83,20 @@ gh issue comment 39 --body "## Implementation Complete
 Story is **NOT DONE** until ALL of these are true:
 
 - [ ] **Tests written** - All 6 tests in `test_07_grading_validation.py`
-- [ ] **Docker running** - E2E infrastructure started
-- [ ] **Tests pass locally** - `pytest` output shows all green
+- [ ] **Docker running** - E2E infrastructure started with `docker compose up`
+- [ ] **Tests pass locally** - `pytest` output shows all green (paste evidence below)
 - [ ] **Lint passes** - `ruff check . && ruff format --check .`
-- [ ] **Pushed to branch** - `git push`
-- [ ] **CI passes on branch** - Check with `gh run list --branch <branch>`
-- [ ] **GitHub issue updated** - Comment added to #39 with status
-- [ ] **Story file updated** - Fill in "Local Test Run Evidence" section below
+- [ ] **Pushed to feature branch** - `git push origin story/0-4-8-tbk-ktda-grading-validation`
+- [ ] **CI workflow passes on branch** - Run `gh run list --branch story/0-4-8-tbk-ktda-grading-validation` and verify ✓ for "CI"
+- [ ] **E2E Tests workflow passes on branch** - Same command, verify ✓ for "E2E Tests"
+- [ ] **GitHub issue #39 updated** - Run `gh issue comment 39 --body "Implementation complete"`
+- [ ] **Story file updated** - Fill in "Local Test Run Evidence" section below with actual output
+
+> **HOW TO CHECK CI ON YOUR BRANCH:**
+> ```bash
+> gh run list --branch story/0-4-8-tbk-ktda-grading-validation --limit 5
+> ```
+> Look for ✓ next to BOTH "CI" and "E2E Tests". If you see X, run `gh run view <run-id> --log-failed`
 
 ---
 
@@ -284,14 +291,18 @@ gh issue comment 39 --body "Implementation complete - see PR"
 
 > **Do NOT mark story as done until ALL boxes are checked!**
 
-- [ ] All tests pass locally with Docker infrastructure (evidence above)
+- [ ] All tests pass locally with Docker infrastructure (evidence pasted above)
 - [ ] `ruff check` and `ruff format --check` pass (evidence above)
-- [ ] Pushed to feature branch
-- [ ] CI pipeline is green ON YOUR BRANCH (not main!)
-- [ ] GitHub Issue #39 updated with implementation comment
+- [ ] Pushed to feature branch: `git push origin story/0-4-8-tbk-ktda-grading-validation`
+- [ ] **CI workflow passes ON YOUR BRANCH** - Verified with `gh run list --branch story/0-4-8-tbk-ktda-grading-validation`
+- [ ] **E2E Tests workflow passes ON YOUR BRANCH** - Same command, both must show ✓
+- [ ] GitHub Issue #39 updated: `gh issue comment 39 --body "Implementation complete"`
 - [ ] If production code changed: Change log above is complete
 - [ ] If unit tests changed: Change log above is complete
-- [ ] Story file updated with completion notes and evidence above
+- [ ] Story file updated with completion notes and ALL evidence pasted above
+
+> **REMINDER:** CI runs automatically on feature branches. You do NOT need to merge to main first!
+> Run `gh run list --branch story/0-4-8-tbk-ktda-grading-validation --limit 5` to check status.
 
 ---
 
