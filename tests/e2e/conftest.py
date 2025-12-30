@@ -67,7 +67,7 @@ def pytest_configure(config: pytest.Config) -> None:
 # ═══════════════════════════════════════════════════════════════════════════════
 
 
-@pytest.fixture
+@pytest.fixture(scope="session")
 def e2e_config() -> dict[str, Any]:
     """Provide E2E configuration."""
     return E2E_CONFIG
@@ -201,21 +201,122 @@ async def collection_mcp(
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# SEED DATA FIXTURE
+# SEED DATA FIXTURE (SESSION-SCOPED)
 # ═══════════════════════════════════════════════════════════════════════════════
+
+# Module-level storage for seeded data (shared across session)
+_seeded_data: dict[str, Any] | None = None
+
+
+@pytest_asyncio.fixture(scope="session")
+async def seed_data_session(
+    e2e_config: dict[str, Any],
+) -> AsyncGenerator[dict[str, Any], None]:
+    """
+    Seed initial data ONCE for all E2E tests (session-scoped).
+
+    This runs before any tests, ensuring seed data is loaded
+    before services cache their configs.
+    """
+    global _seeded_data
+
+    # Wait for services to be healthy first
+    async with httpx.AsyncClient(timeout=5.0) as client:
+        for _service_name, url in [
+            ("Plantation Model", f"{e2e_config['plantation_model_url']}/health"),
+            ("Collection Model", f"{e2e_config['collection_model_url']}/health"),
+        ]:
+            for _ in range(60):
+                try:
+                    response = await client.get(url)
+                    if response.status_code == 200:
+                        break
+                except (httpx.ConnectError, httpx.TimeoutException):
+                    pass
+                await asyncio.sleep(2)
+
+    seed_dir = Path(__file__).parent / "infrastructure" / "seed"
+
+    seeded_data: dict[str, Any] = {
+        "grading_models": [],
+        "regions": [],
+        "source_configs": [],
+        "factories": [],
+        "collection_points": [],
+        "farmers": [],
+        "farmer_performance": [],
+        "weather_observations": [],
+        "documents": [],
+        "document_blobs": [],
+    }
+
+    # Create clients for seeding
+    async with (
+        MongoDBDirectClient(e2e_config["mongodb_uri"]) as mongodb,
+        AzuriteClient(e2e_config["azurite_connection_string"]) as azurite,
+    ):
+        # Create required blob containers
+        for container_name in ["quality-events-e2e", "raw-documents-e2e", "manual-uploads-e2e"]:
+            await azurite.create_container(container_name)
+
+        # Load and seed all data files
+        seed_files = [
+            ("grading_models.json", "grading_models", mongodb.seed_grading_models),
+            ("regions.json", "regions", mongodb.seed_regions),
+            ("source_configs.json", "source_configs", mongodb.seed_source_configs),
+            ("factories.json", "factories", mongodb.seed_factories),
+            ("collection_points.json", "collection_points", mongodb.seed_collection_points),
+            ("farmers.json", "farmers", mongodb.seed_farmers),
+            ("farmer_performance.json", "farmer_performance", mongodb.seed_farmer_performance),
+            ("weather_observations.json", "weather_observations", mongodb.seed_weather_observations),
+            ("documents.json", "documents", mongodb.seed_documents),
+        ]
+
+        for filename, key, seed_func in seed_files:
+            filepath = seed_dir / filename
+            if filepath.exists():
+                data = json.loads(filepath.read_text())
+                await seed_func(data)
+                seeded_data[key] = data
+
+        # Load document blobs
+        blobs_file = seed_dir / "document_blobs.json"
+        if blobs_file.exists():
+            blobs = json.loads(blobs_file.read_text())
+            for blob_spec in blobs:
+                await azurite.upload_json(
+                    container_name=blob_spec["container"],
+                    blob_name=blob_spec["blob_path"],
+                    data=blob_spec["content"],
+                )
+            seeded_data["document_blobs"] = blobs
+
+    _seeded_data = seeded_data
+    yield seeded_data
 
 
 @pytest_asyncio.fixture
 async def seed_data(
+    seed_data_session: dict[str, Any],
+) -> AsyncGenerator[dict[str, Any], None]:
+    """
+    Seed data fixture (function-scoped wrapper).
+
+    This depends on the session-scoped seed_data_session,
+    ensuring data is seeded once at the start of the test session.
+    """
+    yield seed_data_session
+
+
+# Legacy fixture for tests that still use the old pattern
+@pytest_asyncio.fixture
+async def _seed_data_legacy(
     wait_for_services: None,
     mongodb_direct: MongoDBDirectClient,
     azurite_client: AzuriteClient,
 ) -> AsyncGenerator[dict[str, Any], None]:
     """
-    Seed initial data for E2E tests.
-
-    This fixture loads seed data from JSON files and populates
-    the databases before tests run.
+    Legacy seed data fixture (kept for reference, not used).
     """
     seed_dir = Path(__file__).parent / "infrastructure" / "seed"
 
