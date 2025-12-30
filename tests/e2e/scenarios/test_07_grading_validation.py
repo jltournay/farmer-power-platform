@@ -173,6 +173,27 @@ def parse_mcp_result(result: dict[str, Any]) -> dict[str, Any]:
     return json.loads(result_json) if isinstance(result_json, str) else result_json
 
 
+async def get_grade_distribution(plantation_mcp, farmer_id: str) -> dict[str, int]:
+    """Get current grade distribution for a farmer.
+
+    Args:
+        plantation_mcp: Plantation MCP client fixture
+        farmer_id: Farmer ID to query
+
+    Returns:
+        Grade distribution dict (grade_name -> count)
+    """
+    result = await plantation_mcp.call_tool(
+        tool_name="get_farmer_summary",
+        arguments={"farmer_id": farmer_id},
+    )
+    if not result.get("success"):
+        return {}
+    data = parse_mcp_result(result)
+    historical = data.get("historical", {})
+    return historical.get("grade_distribution_30d", {})
+
+
 async def ingest_quality_event_and_wait(
     azurite_client,
     collection_api,
@@ -249,11 +270,17 @@ class TestTBKPrimaryGrade:
         Then the grade is calculated as "Primary".
 
         Test Flow:
-        1. Ingest quality event with leaf_type="two_leaves_bud"
-        2. Wait for DAPR event processing
-        3. Query get_farmer_summary via Plantation MCP
-        4. Verify grade_distribution_30d contains "Primary"
+        1. Get initial grade distribution
+        2. Ingest quality event with leaf_type="two_leaves_bud"
+        3. Wait for DAPR event processing
+        4. Get final grade distribution
+        5. Verify "Primary" grade count increased
         """
+        # Get initial grade distribution BEFORE ingestion
+        initial_dist = await get_grade_distribution(plantation_mcp, TBK_FARMER_ID)
+        initial_primary = initial_dist.get("Primary", 0)
+        print(f"[AC1] Initial grade distribution: {initial_dist}")
+
         # Create quality event with two_leaves_bud (should be Primary)
         event_id = f"QC-AC1-TBK-{uuid.uuid4().hex[:6].upper()}"
         quality_event = create_grading_quality_event(
@@ -273,26 +300,16 @@ class TestTBKPrimaryGrade:
             TBK_FARMER_ID,
         )
 
-        # Query farmer summary via Plantation MCP
-        result = await plantation_mcp.call_tool(
-            tool_name="get_farmer_summary",
-            arguments={"farmer_id": TBK_FARMER_ID},
+        # Get final grade distribution AFTER ingestion
+        final_dist = await get_grade_distribution(plantation_mcp, TBK_FARMER_ID)
+        final_primary = final_dist.get("Primary", 0)
+        print(f"[AC1] Final grade distribution: {final_dist}")
+
+        # Verify Primary grade count increased (two_leaves_bud → Primary)
+        assert final_primary > initial_primary, (
+            f"Expected Primary grade count to increase from {initial_primary}, "
+            f"but got {final_primary}. Grade distribution: {final_dist}"
         )
-        assert result.get("success") is True, f"MCP call failed: {result}"
-
-        # Parse and verify grade distribution
-        data = parse_mcp_result(result)
-        assert isinstance(data, dict), f"Expected dict response, got: {type(data)}"
-
-        historical = data.get("historical", {})
-        grade_dist = historical.get("grade_distribution_30d", {})
-
-        print(f"[AC1] TBK two_leaves_bud - grade_distribution_30d: {grade_dist}")
-
-        # Verify Primary grade exists (two_leaves_bud is not rejected)
-        # Note: Grade updates depend on QualityEventProcessor implementation
-        # At minimum, verify the response structure is valid
-        assert isinstance(grade_dist, dict), f"Expected grade_distribution_30d to be dict, got: {type(grade_dist)}"
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -319,6 +336,11 @@ class TestTBKSecondaryGradeRejectCondition:
 
         coarse_leaf is in TBK reject_conditions, so it should always be Secondary.
         """
+        # Get initial grade distribution BEFORE ingestion
+        initial_dist = await get_grade_distribution(plantation_mcp, TBK_FARMER_ID)
+        initial_secondary = initial_dist.get("Secondary", 0)
+        print(f"[AC2] Initial grade distribution: {initial_dist}")
+
         # Create quality event with coarse_leaf (should be Secondary due to reject condition)
         event_id = f"QC-AC2-TBK-{uuid.uuid4().hex[:6].upper()}"
         quality_event = create_grading_quality_event(
@@ -338,22 +360,16 @@ class TestTBKSecondaryGradeRejectCondition:
             TBK_FARMER_ID,
         )
 
-        # Query farmer summary via Plantation MCP
-        result = await plantation_mcp.call_tool(
-            tool_name="get_farmer_summary",
-            arguments={"farmer_id": TBK_FARMER_ID},
+        # Get final grade distribution AFTER ingestion
+        final_dist = await get_grade_distribution(plantation_mcp, TBK_FARMER_ID)
+        final_secondary = final_dist.get("Secondary", 0)
+        print(f"[AC2] Final grade distribution: {final_dist}")
+
+        # Verify Secondary grade count increased (coarse_leaf → Secondary via reject_conditions)
+        assert final_secondary > initial_secondary, (
+            f"Expected Secondary grade count to increase from {initial_secondary}, "
+            f"but got {final_secondary}. Grade distribution: {final_dist}"
         )
-        assert result.get("success") is True, f"MCP call failed: {result}"
-
-        # Parse and verify grade distribution
-        data = parse_mcp_result(result)
-        historical = data.get("historical", {})
-        grade_dist = historical.get("grade_distribution_30d", {})
-
-        print(f"[AC2] TBK coarse_leaf - grade_distribution_30d: {grade_dist}")
-
-        # Verify response structure is valid
-        assert isinstance(grade_dist, dict), f"Expected grade_distribution_30d to be dict, got: {type(grade_dist)}"
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -380,6 +396,11 @@ class TestTBKConditionalReject:
 
         TBK conditional_reject: if leaf_type="banji" AND banji_hardness="hard" → Secondary
         """
+        # Get initial grade distribution BEFORE ingestion
+        initial_dist = await get_grade_distribution(plantation_mcp, TBK_FARMER_ID)
+        initial_secondary = initial_dist.get("Secondary", 0)
+        print(f"[AC3] Initial grade distribution: {initial_dist}")
+
         # Create quality event with banji + hard (should be Secondary due to conditional reject)
         event_id = f"QC-AC3-TBK-{uuid.uuid4().hex[:6].upper()}"
         quality_event = create_grading_quality_event(
@@ -400,22 +421,16 @@ class TestTBKConditionalReject:
             TBK_FARMER_ID,
         )
 
-        # Query farmer summary via Plantation MCP
-        result = await plantation_mcp.call_tool(
-            tool_name="get_farmer_summary",
-            arguments={"farmer_id": TBK_FARMER_ID},
+        # Get final grade distribution AFTER ingestion
+        final_dist = await get_grade_distribution(plantation_mcp, TBK_FARMER_ID)
+        final_secondary = final_dist.get("Secondary", 0)
+        print(f"[AC3] Final grade distribution: {final_dist}")
+
+        # Verify Secondary grade count increased (banji + hard → Secondary via conditional_reject)
+        assert final_secondary > initial_secondary, (
+            f"Expected Secondary grade count to increase from {initial_secondary}, "
+            f"but got {final_secondary}. Grade distribution: {final_dist}"
         )
-        assert result.get("success") is True, f"MCP call failed: {result}"
-
-        # Parse and verify grade distribution
-        data = parse_mcp_result(result)
-        historical = data.get("historical", {})
-        grade_dist = historical.get("grade_distribution_30d", {})
-
-        print(f"[AC3] TBK banji+hard - grade_distribution_30d: {grade_dist}")
-
-        # Verify response structure is valid
-        assert isinstance(grade_dist, dict), f"Expected grade_distribution_30d to be dict, got: {type(grade_dist)}"
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -442,6 +457,11 @@ class TestTBKSoftBanjiAcceptable:
 
         Soft banji bypasses the conditional_reject rule (only hard triggers reject).
         """
+        # Get initial grade distribution BEFORE ingestion
+        initial_dist = await get_grade_distribution(plantation_mcp, TBK_FARMER_ID)
+        initial_primary = initial_dist.get("Primary", 0)
+        print(f"[AC4] Initial grade distribution: {initial_dist}")
+
         # Create quality event with banji + soft (should be Primary - bypasses conditional reject)
         event_id = f"QC-AC4-TBK-{uuid.uuid4().hex[:6].upper()}"
         quality_event = create_grading_quality_event(
@@ -462,22 +482,16 @@ class TestTBKSoftBanjiAcceptable:
             TBK_FARMER_ID,
         )
 
-        # Query farmer summary via Plantation MCP
-        result = await plantation_mcp.call_tool(
-            tool_name="get_farmer_summary",
-            arguments={"farmer_id": TBK_FARMER_ID},
+        # Get final grade distribution AFTER ingestion
+        final_dist = await get_grade_distribution(plantation_mcp, TBK_FARMER_ID)
+        final_primary = final_dist.get("Primary", 0)
+        print(f"[AC4] Final grade distribution: {final_dist}")
+
+        # Verify Primary grade count increased (banji + soft → Primary, bypasses conditional_reject)
+        assert final_primary > initial_primary, (
+            f"Expected Primary grade count to increase from {initial_primary}, "
+            f"but got {final_primary}. Grade distribution: {final_dist}"
         )
-        assert result.get("success") is True, f"MCP call failed: {result}"
-
-        # Parse and verify grade distribution
-        data = parse_mcp_result(result)
-        historical = data.get("historical", {})
-        grade_dist = historical.get("grade_distribution_30d", {})
-
-        print(f"[AC4] TBK banji+soft - grade_distribution_30d: {grade_dist}")
-
-        # Verify response structure is valid
-        assert isinstance(grade_dist, dict), f"Expected grade_distribution_30d to be dict, got: {type(grade_dist)}"
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -505,6 +519,11 @@ class TestKTDAGradeA:
         KTDA uses ternary grading with 3 grade levels.
         Fine leaf with optimal moisture = highest quality = Grade A.
         """
+        # Get initial grade distribution BEFORE ingestion
+        initial_dist = await get_grade_distribution(plantation_mcp, KTDA_FARMER_ID)
+        initial_grade_a = initial_dist.get("Grade A", 0)
+        print(f"[AC5] Initial grade distribution: {initial_dist}")
+
         # Create quality event with fine + optimal (should be Grade A)
         event_id = f"QC-AC5-KTDA-{uuid.uuid4().hex[:6].upper()}"
         quality_event = create_grading_quality_event(
@@ -525,22 +544,16 @@ class TestKTDAGradeA:
             KTDA_FARMER_ID,
         )
 
-        # Query farmer summary via Plantation MCP
-        result = await plantation_mcp.call_tool(
-            tool_name="get_farmer_summary",
-            arguments={"farmer_id": KTDA_FARMER_ID},
+        # Get final grade distribution AFTER ingestion
+        final_dist = await get_grade_distribution(plantation_mcp, KTDA_FARMER_ID)
+        final_grade_a = final_dist.get("Grade A", 0)
+        print(f"[AC5] Final grade distribution: {final_dist}")
+
+        # Verify Grade A count increased (fine + optimal → Grade A)
+        assert final_grade_a > initial_grade_a, (
+            f"Expected 'Grade A' count to increase from {initial_grade_a}, "
+            f"but got {final_grade_a}. Grade distribution: {final_dist}"
         )
-        assert result.get("success") is True, f"MCP call failed: {result}"
-
-        # Parse and verify grade distribution
-        data = parse_mcp_result(result)
-        historical = data.get("historical", {})
-        grade_dist = historical.get("grade_distribution_30d", {})
-
-        print(f"[AC5] KTDA fine+optimal - grade_distribution_30d: {grade_dist}")
-
-        # Verify response structure is valid
-        assert isinstance(grade_dist, dict), f"Expected grade_distribution_30d to be dict, got: {type(grade_dist)}"
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -567,6 +580,11 @@ class TestKTDARejected:
 
         stalks is in KTDA reject_conditions, so it should always be Rejected.
         """
+        # Get initial grade distribution BEFORE ingestion
+        initial_dist = await get_grade_distribution(plantation_mcp, KTDA_FARMER_ID)
+        initial_rejected = initial_dist.get("Rejected", 0)
+        print(f"[AC6] Initial grade distribution: {initial_dist}")
+
         # Create quality event with stalks (should be Rejected due to reject condition)
         event_id = f"QC-AC6-KTDA-{uuid.uuid4().hex[:6].upper()}"
         quality_event = create_grading_quality_event(
@@ -586,19 +604,13 @@ class TestKTDARejected:
             KTDA_FARMER_ID,
         )
 
-        # Query farmer summary via Plantation MCP
-        result = await plantation_mcp.call_tool(
-            tool_name="get_farmer_summary",
-            arguments={"farmer_id": KTDA_FARMER_ID},
+        # Get final grade distribution AFTER ingestion
+        final_dist = await get_grade_distribution(plantation_mcp, KTDA_FARMER_ID)
+        final_rejected = final_dist.get("Rejected", 0)
+        print(f"[AC6] Final grade distribution: {final_dist}")
+
+        # Verify Rejected count increased (stalks → Rejected via reject_conditions)
+        assert final_rejected > initial_rejected, (
+            f"Expected 'Rejected' count to increase from {initial_rejected}, "
+            f"but got {final_rejected}. Grade distribution: {final_dist}"
         )
-        assert result.get("success") is True, f"MCP call failed: {result}"
-
-        # Parse and verify grade distribution
-        data = parse_mcp_result(result)
-        historical = data.get("historical", {})
-        grade_dist = historical.get("grade_distribution_30d", {})
-
-        print(f"[AC6] KTDA stalks - grade_distribution_30d: {grade_dist}")
-
-        # Verify response structure is valid
-        assert isinstance(grade_dist, dict), f"Expected grade_distribution_30d to be dict, got: {type(grade_dist)}"
