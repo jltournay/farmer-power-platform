@@ -1,10 +1,13 @@
 """Health check endpoints for Kubernetes probes."""
 
 from collections.abc import Callable, Coroutine
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
-from fastapi import APIRouter, status
+from fastapi import APIRouter, Request, status
 from fastapi.responses import JSONResponse
+
+if TYPE_CHECKING:
+    from collection_model.services.source_config_service import SourceConfigService
 
 router = APIRouter(tags=["Health"])
 
@@ -90,3 +93,24 @@ async def ready() -> JSONResponse:
         status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
         content={"status": "not_ready", "checks": checks},
     )
+
+
+@router.post(
+    "/admin/invalidate-cache",
+    status_code=status.HTTP_200_OK,
+    summary="Invalidate source config cache",
+    description="Forces the SourceConfigService to refresh its cache on next request. Used by E2E tests.",
+)
+async def invalidate_cache(request: Request) -> dict[str, str]:
+    """Invalidate the source config cache.
+
+    This endpoint is used by E2E tests to ensure the service
+    picks up newly seeded source configurations after database reset.
+    """
+    source_config_service: SourceConfigService | None = getattr(
+        request.app.state, "source_config_service", None
+    )
+    if source_config_service is not None:
+        source_config_service.invalidate_cache()
+        return {"status": "cache_invalidated"}
+    return {"status": "no_cache_configured"}
