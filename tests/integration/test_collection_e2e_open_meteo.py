@@ -31,6 +31,7 @@ from unittest.mock import AsyncMock, MagicMock
 import pytest
 import pytest_asyncio
 import yaml
+from fp_common.models.source_config import SourceConfig
 
 if TYPE_CHECKING:
     from motor.motor_asyncio import AsyncIOMotorDatabase
@@ -75,21 +76,20 @@ async def deployed_source_config(
     """Deploy weather-api-test config to MongoDB.
 
     This simulates what fp-source-config CLI does.
+    The SourceConfig Pydantic model expects fields directly (not nested in 'config').
     """
     config = load_weather_config()
 
-    # Format as stored in MongoDB by fp-source-config CLI
+    # Format as stored in MongoDB - matches SourceConfig Pydantic model
     source_doc = {
         "source_id": config["source_id"],
         "display_name": config["display_name"],
         "description": config.get("description", ""),
         "enabled": True,
-        "config": {
-            "ingestion": config["ingestion"],
-            "transformation": config["transformation"],
-            "storage": config["storage"],
-            "events": config.get("events", {}),
-        },
+        "ingestion": config["ingestion"],
+        "transformation": config["transformation"],
+        "storage": config["storage"],
+        "events": config.get("events", {}),
         "created_at": datetime.now(UTC),
         "updated_at": datetime.now(UTC),
     }
@@ -210,17 +210,22 @@ class TestCollectionE2EOpenMeteo:
         from collection_model.infrastructure.document_repository import DocumentRepository
         from collection_model.infrastructure.pull_data_fetcher import PullDataFetcher
         from collection_model.infrastructure.raw_document_store import RawDocumentStore
+        from collection_model.infrastructure.repositories.source_config_repository import (
+            SourceConfigRepository,
+        )
         from collection_model.services.source_config_service import SourceConfigService
 
         # =================================================================
         # Step 1: Verify source config is deployed
         # =================================================================
-        source_config_service = SourceConfigService(collection_test_db)
+        repository = SourceConfigRepository(collection_test_db)
+        source_config_service = SourceConfigService(repository)
         config = await source_config_service.get_config("weather-api-test")
 
         assert config is not None, "Source config should be deployed"
-        assert config["source_id"] == "weather-api-test"
-        assert config["config"]["ingestion"]["mode"] == "scheduled_pull"
+        assert isinstance(config, SourceConfig)
+        assert config.source_id == "weather-api-test"
+        assert config.ingestion.mode == "scheduled_pull"
 
         # =================================================================
         # Step 2: Fetch real data from Open-Meteo
@@ -230,10 +235,12 @@ class TestCollectionE2EOpenMeteo:
             max_retries=1,
         )
 
-        pull_config = config["config"]["ingestion"]["request"]
+        # Access request config via typed attribute
+        pull_config = config.ingestion.request
+        assert pull_config is not None, "Request config should be present"
 
-        # Real HTTP call to Open-Meteo
-        raw_content = await pull_fetcher.fetch(pull_config)
+        # Real HTTP call to Open-Meteo (convert Pydantic model to dict for fetcher)
+        raw_content = await pull_fetcher.fetch(pull_config.model_dump())
 
         # Verify we got real weather data
         assert raw_content is not None
@@ -258,7 +265,7 @@ class TestCollectionE2EOpenMeteo:
 
         raw_doc = await raw_store.store_raw_document(
             content=raw_content,
-            source_config=config,
+            source_config=config,  # Now passes typed SourceConfig
             ingestion_id=ingestion_id,
         )
 
@@ -293,9 +300,9 @@ class TestCollectionE2EOpenMeteo:
 
         doc_repo = DocumentRepository(collection_test_db)
 
-        storage_config = config["config"]["storage"]
-        index_collection = storage_config["index_collection"]
-        link_field = config["config"]["transformation"]["link_field"]
+        # Access config via typed attributes
+        index_collection = config.storage.index_collection
+        link_field = config.transformation.link_field
 
         await doc_repo.ensure_indexes(index_collection, link_field)
 
@@ -304,7 +311,7 @@ class TestCollectionE2EOpenMeteo:
         document = DocumentIndex(
             document_id=f"weather-{uuid.uuid4().hex[:8]}",
             raw_document=RawDocumentRef(
-                blob_container=storage_config["raw_container"],
+                blob_container=config.storage.raw_container,
                 blob_path=f"weather-api-test/{ingestion_id}/{raw_doc.content_hash}",
                 content_hash=raw_doc.content_hash,
                 size_bytes=raw_doc.size_bytes,
@@ -400,7 +407,8 @@ class TestCollectionE2EOpenMeteo:
         )
         await raw_store.ensure_indexes()
 
-        config = deployed_source_config
+        # Convert dict to SourceConfig Pydantic model
+        config = SourceConfig.model_validate(deployed_source_config)
 
         # Store first document
         content1 = json.dumps({"temperature": 25.0, "timestamp": "2024-01-01T00:00:00Z"}).encode()
@@ -431,23 +439,29 @@ class TestCollectionE2EOpenMeteo:
         deployed_source_config: dict[str, Any],
     ) -> None:
         """Test that SourceConfigService correctly caches and retrieves configs."""
+        from collection_model.infrastructure.repositories.source_config_repository import (
+            SourceConfigRepository,
+        )
         from collection_model.services.source_config_service import SourceConfigService
 
-        service = SourceConfigService(collection_test_db)
+        repository = SourceConfigRepository(collection_test_db)
+        service = SourceConfigService(repository)
 
         # First call - loads from DB
         config1 = await service.get_config("weather-api-test")
         assert config1 is not None
+        assert isinstance(config1, SourceConfig)
 
         # Second call - should use cache
         config2 = await service.get_config("weather-api-test")
         assert config2 is not None
-        assert config2["source_id"] == config1["source_id"]
+        assert config2.source_id == config1.source_id  # Typed attribute access
 
         # Invalidate and reload
         service.invalidate_cache()
         config3 = await service.get_config("weather-api-test")
         assert config3 is not None
+        assert config3.source_id == "weather-api-test"
 
 
 # =============================================================================
