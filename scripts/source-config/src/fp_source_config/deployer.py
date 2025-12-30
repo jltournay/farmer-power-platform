@@ -44,13 +44,25 @@ class SchemaDeploymentAction(NamedTuple):
 
 
 class DeployedConfig(BaseModel):
-    """A deployed source configuration stored in MongoDB."""
+    """A deployed source configuration stored in MongoDB.
+
+    This model represents the MongoDB document schema for deployed configs.
+    It uses flat schema (ingestion/transformation/storage at root level)
+    to match the SourceConfig Pydantic model exactly, enabling direct
+    model_validate() calls from Collection Model's repository.
+    """
 
     source_id: str
     display_name: str
     description: str
     enabled: bool
-    config: dict
+    # Flat schema fields (matching SourceConfig Pydantic model)
+    ingestion: dict
+    transformation: dict
+    storage: dict
+    validation: dict | None = None
+    events: dict | None = None
+    # Deployment metadata
     version: int
     deployed_at: datetime
     deployed_by: str
@@ -58,11 +70,25 @@ class DeployedConfig(BaseModel):
 
 
 class ConfigHistory(BaseModel):
-    """Historical version of a source configuration."""
+    """Historical version of a source configuration.
+
+    Uses flat schema to match SourceConfig Pydantic model.
+    Includes config metadata (display_name, description, enabled) for rollback.
+    """
 
     source_id: str
     version: int
-    config: dict
+    # Config metadata (needed for rollback)
+    display_name: str = ""
+    description: str = ""
+    enabled: bool = True
+    # Flat schema fields (matching SourceConfig Pydantic model)
+    ingestion: dict
+    transformation: dict
+    storage: dict
+    validation: dict | None = None
+    events: dict | None = None
+    # Deployment metadata
     deployed_at: datetime
     deployed_by: str
     git_sha: str | None = None
@@ -156,7 +182,8 @@ class SourceConfigDeployer:
             config_dict = config.model_dump()
 
             if existing is None:
-                # Create new config
+                # Create new config using flat schema (no 'config' wrapper)
+                # This matches SourceConfig Pydantic model for direct model_validate()
                 if not dry_run:
                     doc = {
                         "_id": config.source_id,
@@ -164,13 +191,13 @@ class SourceConfigDeployer:
                         "display_name": config.display_name,
                         "description": config.description,
                         "enabled": config.enabled,
-                        "config": {
-                            "ingestion": config_dict["ingestion"],
-                            "validation": config_dict.get("validation"),
-                            "transformation": config_dict["transformation"],
-                            "storage": config_dict["storage"],
-                            "events": config_dict.get("events"),
-                        },
+                        # Flat schema: fields at root level
+                        "ingestion": config_dict["ingestion"],
+                        "transformation": config_dict["transformation"],
+                        "storage": config_dict["storage"],
+                        "validation": config_dict.get("validation"),
+                        "events": config_dict.get("events"),
+                        # Deployment metadata
                         "version": 1,
                         "deployed_at": deployed_at,
                         "deployed_by": deployed_by,
@@ -178,11 +205,21 @@ class SourceConfigDeployer:
                     }
                     await self.db[self.CONFIGS_COLLECTION].insert_one(doc)
 
-                    # Also add to history
+                    # Also add to history (flat schema + metadata for rollback)
                     history_doc = {
                         "source_id": config.source_id,
                         "version": 1,
-                        "config": doc["config"],
+                        # Config metadata (needed for rollback)
+                        "display_name": config.display_name,
+                        "description": config.description,
+                        "enabled": config.enabled,
+                        # Flat schema fields
+                        "ingestion": config_dict["ingestion"],
+                        "transformation": config_dict["transformation"],
+                        "storage": config_dict["storage"],
+                        "validation": config_dict.get("validation"),
+                        "events": config_dict.get("events"),
+                        # Deployment metadata
                         "deployed_at": deployed_at,
                         "deployed_by": deployed_by,
                         "git_sha": git_sha,
@@ -197,18 +234,24 @@ class SourceConfigDeployer:
                     )
                 )
             else:
-                # Check if config changed
-                new_config = {
+                # Check if config changed (compare flat schema fields)
+                new_config_fields = {
                     "ingestion": config_dict["ingestion"],
-                    "validation": config_dict.get("validation"),
                     "transformation": config_dict["transformation"],
                     "storage": config_dict["storage"],
+                    "validation": config_dict.get("validation"),
                     "events": config_dict.get("events"),
                 }
 
-                # Simple equality check (deep comparison would be better)
-                existing_config = existing.get("config", {})
-                if new_config == existing_config:
+                # Compare flat schema fields from existing document
+                existing_config_fields = {
+                    "ingestion": existing.get("ingestion", {}),
+                    "transformation": existing.get("transformation", {}),
+                    "storage": existing.get("storage", {}),
+                    "validation": existing.get("validation"),
+                    "events": existing.get("events"),
+                }
+                if new_config_fields == existing_config_fields:
                     actions.append(
                         DeploymentAction(
                             source_id=config.source_id,
@@ -217,7 +260,7 @@ class SourceConfigDeployer:
                         )
                     )
                 else:
-                    # Update config
+                    # Update config using flat schema
                     new_version = existing.get("version", 0) + 1
 
                     if not dry_run:
@@ -228,7 +271,13 @@ class SourceConfigDeployer:
                                     "display_name": config.display_name,
                                     "description": config.description,
                                     "enabled": config.enabled,
-                                    "config": new_config,
+                                    # Flat schema: fields at root level
+                                    "ingestion": config_dict["ingestion"],
+                                    "transformation": config_dict["transformation"],
+                                    "storage": config_dict["storage"],
+                                    "validation": config_dict.get("validation"),
+                                    "events": config_dict.get("events"),
+                                    # Deployment metadata
                                     "version": new_version,
                                     "deployed_at": deployed_at,
                                     "deployed_by": deployed_by,
@@ -237,11 +286,21 @@ class SourceConfigDeployer:
                             },
                         )
 
-                        # Add to history
+                        # Add to history (flat schema + metadata for rollback)
                         history_doc = {
                             "source_id": config.source_id,
                             "version": new_version,
-                            "config": new_config,
+                            # Config metadata (needed for rollback)
+                            "display_name": config.display_name,
+                            "description": config.description,
+                            "enabled": config.enabled,
+                            # Flat schema fields
+                            "ingestion": config_dict["ingestion"],
+                            "transformation": config_dict["transformation"],
+                            "storage": config_dict["storage"],
+                            "validation": config_dict.get("validation"),
+                            "events": config_dict.get("events"),
+                            # Deployment metadata
                             "deployed_at": deployed_at,
                             "deployed_by": deployed_by,
                             "git_sha": git_sha,
@@ -274,7 +333,13 @@ class SourceConfigDeployer:
                     display_name=doc.get("display_name", ""),
                     description=doc.get("description", ""),
                     enabled=doc.get("enabled", True),
-                    config=doc.get("config", {}),
+                    # Flat schema fields
+                    ingestion=doc.get("ingestion", {}),
+                    transformation=doc.get("transformation", {}),
+                    storage=doc.get("storage", {}),
+                    validation=doc.get("validation"),
+                    events=doc.get("events"),
+                    # Deployment metadata
                     version=doc.get("version", 1),
                     deployed_at=doc.get("deployed_at", datetime.now(timezone.utc)),
                     deployed_by=doc.get("deployed_by", "unknown"),
@@ -302,7 +367,13 @@ class SourceConfigDeployer:
             display_name=doc.get("display_name", ""),
             description=doc.get("description", ""),
             enabled=doc.get("enabled", True),
-            config=doc.get("config", {}),
+            # Flat schema fields
+            ingestion=doc.get("ingestion", {}),
+            transformation=doc.get("transformation", {}),
+            storage=doc.get("storage", {}),
+            validation=doc.get("validation"),
+            events=doc.get("events"),
+            # Deployment metadata
             version=doc.get("version", 1),
             deployed_at=doc.get("deployed_at", datetime.now(timezone.utc)),
             deployed_by=doc.get("deployed_by", "unknown"),
@@ -336,7 +407,17 @@ class SourceConfigDeployer:
                 ConfigHistory(
                     source_id=doc["source_id"],
                     version=doc["version"],
-                    config=doc.get("config", {}),
+                    # Config metadata
+                    display_name=doc.get("display_name", ""),
+                    description=doc.get("description", ""),
+                    enabled=doc.get("enabled", True),
+                    # Flat schema fields
+                    ingestion=doc.get("ingestion", {}),
+                    transformation=doc.get("transformation", {}),
+                    storage=doc.get("storage", {}),
+                    validation=doc.get("validation"),
+                    events=doc.get("events"),
+                    # Deployment metadata
                     deployed_at=doc.get("deployed_at", datetime.now(timezone.utc)),
                     deployed_by=doc.get("deployed_by", "unknown"),
                     git_sha=doc.get("git_sha"),
@@ -380,12 +461,29 @@ class SourceConfigDeployer:
         deployed_by = get_current_user()
         git_sha = get_git_sha()
 
-        # Update to the historical config
+        # Update to the historical config (flat schema + metadata)
+        # Fallback to current values if history doesn't have metadata (old docs)
+        hist_display = history_doc.get("display_name")
+        hist_desc = history_doc.get("description")
+        display_name = hist_display if hist_display else current.get("display_name", "")
+        description = hist_desc if hist_desc else current.get("description", "")
+        enabled = history_doc.get("enabled", current.get("enabled", True))
+
         await self.db[self.CONFIGS_COLLECTION].update_one(
             {"source_id": source_id},
             {
                 "$set": {
-                    "config": history_doc["config"],
+                    # Config metadata from history
+                    "display_name": display_name,
+                    "description": description,
+                    "enabled": enabled,
+                    # Flat schema fields from history
+                    "ingestion": history_doc.get("ingestion", {}),
+                    "transformation": history_doc.get("transformation", {}),
+                    "storage": history_doc.get("storage", {}),
+                    "validation": history_doc.get("validation"),
+                    "events": history_doc.get("events"),
+                    # Deployment metadata
                     "version": new_version,
                     "deployed_at": deployed_at,
                     "deployed_by": deployed_by,
@@ -394,11 +492,21 @@ class SourceConfigDeployer:
             },
         )
 
-        # Add rollback to history
+        # Add rollback to history (flat schema + metadata)
         history_entry = {
             "source_id": source_id,
             "version": new_version,
-            "config": history_doc["config"],
+            # Config metadata
+            "display_name": display_name,
+            "description": description,
+            "enabled": enabled,
+            # Flat schema fields
+            "ingestion": history_doc.get("ingestion", {}),
+            "transformation": history_doc.get("transformation", {}),
+            "storage": history_doc.get("storage", {}),
+            "validation": history_doc.get("validation"),
+            "events": history_doc.get("events"),
+            # Deployment metadata
             "deployed_at": deployed_at,
             "deployed_by": deployed_by,
             "git_sha": git_sha,

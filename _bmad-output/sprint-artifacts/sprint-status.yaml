@@ -87,7 +87,7 @@ development_status:
   2-8-market-prices-pull-mode: covered-by-2-7  # Configuration-only
   2-9-collection-model-mcp-server: done  # github_issue: 23
   2-10-collection-model-repository-refactoring: done  # github_issue: 35 - Tech debt: Pydantic models + repository pattern
-  2-11-source-config-cli-schema-alignment: ready-for-dev  # github_issue: 36 - Tech debt: CLI writes nested schema, Collection Model expects flat
+  2-11-source-config-cli-schema-alignment: review  # github_issue: 36 - Tech debt: CLI writes nested schema, Collection Model expects flat
   epic-2-retrospective: done
 
   # Epic 0.4: E2E Test Scenarios for Plantation & Collection Models
@@ -99,7 +99,7 @@ development_status:
   0-4-3-collection-mcp-tool-contracts: done  # 12 tests, github_issue: 28
   0-4-4-factory-farmer-registration-flow: done  # 6 tests, github_issue: 29
   0-4-5-quality-event-blob-ingestion: done  # 6 tests pass after code review fixes, github_issue: 30
-  0-4-6-weather-data-ingestion-mock-ai: review  # 6 tests - Real weather API, mock AI, github_issue: 31
+  0-4-6-weather-data-ingestion-mock-ai: done  # 6 tests - Real weather API, mock AI, github_issue: 31
   0-4-7-cross-model-dapr-event-flow: backlog  # 4 tests - CRITICAL
   0-4-8-tbk-ktda-grading-validation: backlog  # 6 tests
   0-4-9-zip-processor-ingestion: backlog  # 9 tests

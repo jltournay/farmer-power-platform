@@ -130,13 +130,18 @@ class TestDeployedConfig:
     """Tests for the DeployedConfig model."""
 
     def test_deployed_config(self) -> None:
-        """Test creating a deployed config."""
+        """Test creating a deployed config with flat schema."""
         config = DeployedConfig(
             source_id="test-source",
             display_name="Test Source",
             description="A test source",
             enabled=True,
-            config={"ingestion": {}},
+            # Flat schema fields (no 'config' wrapper)
+            ingestion={"mode": "blob_trigger"},
+            transformation={"link_field": "farmer_id"},
+            storage={"index_collection": "test"},
+            validation=None,
+            events=None,
             version=1,
             deployed_at=datetime.now(UTC),
             deployed_by="testuser",
@@ -144,6 +149,10 @@ class TestDeployedConfig:
         )
         assert config.source_id == "test-source"
         assert config.version == 1
+        # Verify flat schema fields
+        assert config.ingestion == {"mode": "blob_trigger"}
+        assert config.transformation == {"link_field": "farmer_id"}
+        assert config.storage == {"index_collection": "test"}
 
 
 @pytest.mark.unit
@@ -151,17 +160,34 @@ class TestConfigHistory:
     """Tests for the ConfigHistory model."""
 
     def test_config_history(self) -> None:
-        """Test creating a config history entry."""
+        """Test creating a config history entry with flat schema."""
         history = ConfigHistory(
             source_id="test-source",
             version=1,
-            config={"ingestion": {}},
+            # Config metadata (for rollback)
+            display_name="Test Source",
+            description="Test description",
+            enabled=True,
+            # Flat schema fields (no 'config' wrapper)
+            ingestion={"mode": "blob_trigger"},
+            transformation={"link_field": "farmer_id"},
+            storage={"index_collection": "test"},
+            validation=None,
+            events=None,
             deployed_at=datetime.now(UTC),
             deployed_by="testuser",
             git_sha="abc123",
         )
         assert history.source_id == "test-source"
         assert history.version == 1
+        # Verify config metadata
+        assert history.display_name == "Test Source"
+        assert history.description == "Test description"
+        assert history.enabled is True
+        # Verify flat schema fields
+        assert history.ingestion == {"mode": "blob_trigger"}
+        assert history.transformation == {"link_field": "farmer_id"}
+        assert history.storage == {"index_collection": "test"}
 
 
 @pytest.mark.unit
@@ -774,3 +800,229 @@ class TestValidateSchemaReferences:
         errors = await deployer.validate_schema_references([config])
 
         assert len(errors) == 0
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+class TestFlatSchemaDeployment:
+    """Tests verifying CLI deploys configs in flat schema format (Story 2-11).
+
+    These tests ensure deployed MongoDB documents match the SourceConfig
+    Pydantic model exactly (no 'config' wrapper), enabling direct
+    model_validate() calls from Collection Model's repository.
+    """
+
+    async def test_deployed_doc_has_no_config_wrapper(
+        self,
+        mock_mongodb_client,
+        sample_valid_config: dict[str, Any],
+    ) -> None:
+        """AC1: Deployed document must NOT have 'config' wrapper key."""
+        deployer = SourceConfigDeployer("dev")
+        deployer._db = mock_mongodb_client["collection_model"]
+
+        config = SourceConfig.model_validate(sample_valid_config)
+        await deployer.deploy([config])
+
+        # Verify raw MongoDB document structure
+        doc = await deployer._db["source_configs"].find_one({"source_id": "test-source"})
+        assert doc is not None
+        assert "config" not in doc, "Deployed doc should NOT have 'config' wrapper"
+
+    async def test_deployed_doc_has_flat_schema_fields(
+        self,
+        mock_mongodb_client,
+        sample_valid_config: dict[str, Any],
+    ) -> None:
+        """AC1: Deployed document must have ingestion/transformation/storage at root level."""
+        deployer = SourceConfigDeployer("dev")
+        deployer._db = mock_mongodb_client["collection_model"]
+
+        config = SourceConfig.model_validate(sample_valid_config)
+        await deployer.deploy([config])
+
+        # Verify flat schema fields at root level
+        doc = await deployer._db["source_configs"].find_one({"source_id": "test-source"})
+        assert doc is not None
+        assert "ingestion" in doc, "Deployed doc should have 'ingestion' at root"
+        assert "transformation" in doc, "Deployed doc should have 'transformation' at root"
+        assert "storage" in doc, "Deployed doc should have 'storage' at root"
+
+    async def test_deployed_doc_model_validate_succeeds(
+        self,
+        mock_mongodb_client,
+        sample_valid_config: dict[str, Any],
+    ) -> None:
+        """AC3: SourceConfig.model_validate(deployed_doc) must succeed."""
+        deployer = SourceConfigDeployer("dev")
+        deployer._db = mock_mongodb_client["collection_model"]
+
+        config = SourceConfig.model_validate(sample_valid_config)
+        await deployer.deploy([config])
+
+        # Get raw MongoDB document (excluding _id)
+        doc = await deployer._db["source_configs"].find_one({"source_id": "test-source"})
+        assert doc is not None
+        doc.pop("_id", None)
+        # Remove deployment metadata not in SourceConfig
+        doc.pop("version", None)
+        doc.pop("deployed_at", None)
+        doc.pop("deployed_by", None)
+        doc.pop("git_sha", None)
+
+        # This must succeed - proves CLI schema matches SourceConfig Pydantic model
+        validated = SourceConfig.model_validate(doc)
+        assert validated.source_id == "test-source"
+        assert validated.ingestion.mode == "blob_trigger"
+
+    async def test_round_trip_validate_deploy_read_validate(
+        self,
+        mock_mongodb_client,
+        sample_valid_config: dict[str, Any],
+    ) -> None:
+        """AC3: Round-trip: validate → deploy → read → validate again."""
+        deployer = SourceConfigDeployer("dev")
+        deployer._db = mock_mongodb_client["collection_model"]
+
+        # Step 1: Validate original config
+        original_config = SourceConfig.model_validate(sample_valid_config)
+
+        # Step 2: Deploy
+        await deployer.deploy([original_config])
+
+        # Step 3: Read raw document
+        doc = await deployer._db["source_configs"].find_one({"source_id": "test-source"})
+        assert doc is not None
+        doc.pop("_id", None)
+        doc.pop("version", None)
+        doc.pop("deployed_at", None)
+        doc.pop("deployed_by", None)
+        doc.pop("git_sha", None)
+
+        # Step 4: Validate again - must produce equivalent config
+        round_tripped = SourceConfig.model_validate(doc)
+        assert round_tripped.source_id == original_config.source_id
+        assert round_tripped.ingestion.mode == original_config.ingestion.mode
+        assert round_tripped.storage.index_collection == original_config.storage.index_collection
+
+    async def test_history_doc_has_flat_schema(
+        self,
+        mock_mongodb_client,
+        sample_valid_config: dict[str, Any],
+    ) -> None:
+        """History documents must also use flat schema (no 'config' wrapper)."""
+        deployer = SourceConfigDeployer("dev")
+        deployer._db = mock_mongodb_client["collection_model"]
+
+        config = SourceConfig.model_validate(sample_valid_config)
+        await deployer.deploy([config])
+
+        # Verify history document structure
+        history_doc = await deployer._db["source_config_history"].find_one({"source_id": "test-source"})
+        assert history_doc is not None
+        assert "config" not in history_doc, "History doc should NOT have 'config' wrapper"
+        assert "ingestion" in history_doc, "History doc should have 'ingestion' at root"
+        assert "transformation" in history_doc, "History doc should have 'transformation' at root"
+        assert "storage" in history_doc, "History doc should have 'storage' at root"
+
+    async def test_updated_doc_maintains_flat_schema(
+        self,
+        mock_mongodb_client,
+        sample_valid_config: dict[str, Any],
+    ) -> None:
+        """Updated configs must maintain flat schema format."""
+        import copy
+
+        deployer = SourceConfigDeployer("dev")
+        deployer._db = mock_mongodb_client["collection_model"]
+
+        config = SourceConfig.model_validate(sample_valid_config)
+        await deployer.deploy([config])
+
+        # Update config
+        config_v2 = copy.deepcopy(sample_valid_config)
+        config_v2["storage"]["ttl_days"] = 730
+        updated_config = SourceConfig.model_validate(config_v2)
+        await deployer.deploy([updated_config])
+
+        # Verify updated document still has flat schema
+        doc = await deployer._db["source_configs"].find_one({"source_id": "test-source"})
+        assert doc is not None
+        assert "config" not in doc, "Updated doc should NOT have 'config' wrapper"
+        assert doc["storage"]["ttl_days"] == 730
+
+    async def test_rollback_maintains_flat_schema(
+        self,
+        mock_mongodb_client,
+        sample_valid_config: dict[str, Any],
+    ) -> None:
+        """Rollback must maintain flat schema format and restore all fields."""
+        import copy
+
+        deployer = SourceConfigDeployer("dev")
+        deployer._db = mock_mongodb_client["collection_model"]
+
+        # Deploy v1 with original values
+        config_v1 = SourceConfig.model_validate(sample_valid_config)
+        await deployer.deploy([config_v1])
+
+        # Deploy v2 with different display_name and storage
+        config_v2_data = copy.deepcopy(sample_valid_config)
+        config_v2_data["display_name"] = "Updated Display Name"
+        config_v2_data["storage"]["ttl_days"] = 730
+        config_v2 = SourceConfig.model_validate(config_v2_data)
+        await deployer.deploy([config_v2])
+
+        # Verify v2 is current
+        doc_v2 = await deployer._db["source_configs"].find_one({"source_id": "test-source"})
+        assert doc_v2["display_name"] == "Updated Display Name"
+        assert doc_v2["storage"]["ttl_days"] == 730
+        assert doc_v2["version"] == 2
+
+        # Rollback to v1
+        action = await deployer.rollback("test-source", target_version=1)
+        assert action is not None
+        assert action.version == 3  # New version after rollback
+
+        # Verify rollback restored flat schema and metadata
+        doc_v3 = await deployer._db["source_configs"].find_one({"source_id": "test-source"})
+        assert doc_v3 is not None
+        assert "config" not in doc_v3, "Rollback doc should NOT have 'config' wrapper"
+        assert "ingestion" in doc_v3, "Rollback doc should have 'ingestion' at root"
+        assert "transformation" in doc_v3, "Rollback doc should have 'transformation' at root"
+        assert "storage" in doc_v3, "Rollback doc should have 'storage' at root"
+        # Verify metadata was restored from v1
+        assert doc_v3["display_name"] == "Test Source"  # Original from sample_valid_config
+        assert doc_v3["storage"]["ttl_days"] == 365  # Original value
+
+    async def test_rollback_history_has_flat_schema(
+        self,
+        mock_mongodb_client,
+        sample_valid_config: dict[str, Any],
+    ) -> None:
+        """Rollback history entry must use flat schema."""
+        import copy
+
+        deployer = SourceConfigDeployer("dev")
+        deployer._db = mock_mongodb_client["collection_model"]
+
+        # Deploy v1 and v2
+        config_v1 = SourceConfig.model_validate(sample_valid_config)
+        await deployer.deploy([config_v1])
+
+        config_v2_data = copy.deepcopy(sample_valid_config)
+        config_v2_data["storage"]["ttl_days"] = 730
+        config_v2 = SourceConfig.model_validate(config_v2_data)
+        await deployer.deploy([config_v2])
+
+        # Rollback to v1
+        await deployer.rollback("test-source", target_version=1)
+
+        # Verify rollback created history entry with flat schema
+        history_v3 = await deployer._db["source_config_history"].find_one({"source_id": "test-source", "version": 3})
+        assert history_v3 is not None
+        assert "config" not in history_v3, "Rollback history should NOT have 'config' wrapper"
+        assert "ingestion" in history_v3, "Rollback history should have 'ingestion' at root"
+        assert "display_name" in history_v3, "Rollback history should have 'display_name'"
+        assert "description" in history_v3, "Rollback history should have 'description'"
+        assert "enabled" in history_v3, "Rollback history should have 'enabled'"
