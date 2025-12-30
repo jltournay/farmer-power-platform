@@ -14,6 +14,7 @@ Usage:
 from __future__ import annotations
 
 import asyncio
+import contextlib
 import json
 from collections.abc import AsyncGenerator
 from pathlib import Path
@@ -309,10 +310,8 @@ async def seed_data_session(
     # Step 3: Invalidate caches so services pick up new data
     async with httpx.AsyncClient(timeout=5.0) as client:
         # Invalidate collection-model's source config cache
-        try:
+        with contextlib.suppress(Exception):
             await client.post(f"{e2e_config['collection_model_url']}/admin/invalidate-cache")
-        except Exception:
-            pass  # Service might not have the endpoint yet
 
     _seeded_data = seeded_data
     yield seeded_data
