@@ -5,6 +5,80 @@
 **Epic:** [Epic 0.4: E2E Test Scenarios](../epics/epic-0-4-e2e-tests.md)
 **Story Points:** 2
 
+---
+
+## CRITICAL REQUIREMENTS FOR DEV AGENT
+
+> **READ THIS FIRST - Story is NOT done until ALL these steps are completed!**
+
+### 1. E2E Tests REQUIRE Docker (MANDATORY)
+
+This is an E2E story. Tests run against **real Docker containers**, not mocks.
+
+```bash
+# STEP 1: Start Docker infrastructure BEFORE writing any test code
+docker compose -f tests/e2e/infrastructure/docker-compose.e2e.yaml up -d
+
+# STEP 2: Wait for ALL services to be healthy (takes ~60 seconds)
+docker compose -f tests/e2e/infrastructure/docker-compose.e2e.yaml ps
+# All services must show "healthy" status before running tests
+
+# STEP 3: Run tests locally (MANDATORY before any push)
+PYTHONPATH="${PYTHONPATH}:.:libs/fp-proto/src" pytest tests/e2e/scenarios/test_07_grading_validation.py -v
+
+# STEP 4: Cleanup when done
+docker compose -f tests/e2e/infrastructure/docker-compose.e2e.yaml down -v
+```
+
+**DO NOT say story is done without running tests locally with Docker!**
+
+### 2. CI Runs on Feature Branches (NOT just main)
+
+After pushing to your feature branch, CI automatically runs. Check it:
+
+```bash
+# Check CI status for your branch
+gh run list --branch story/0-4-8-tbk-ktda-grading-validation --limit 3
+
+# Watch CI in real-time
+gh run watch
+
+# If CI failed, view logs
+gh run view <run-id> --log-failed
+```
+
+**You do NOT need to merge to main to run CI.** CI runs on every push to any branch.
+
+### 3. Update GitHub Issue (MANDATORY)
+
+After implementation, add a comment to GitHub Issue #39 with:
+- Implementation summary
+- Test results (pass/fail count)
+- Any issues encountered
+
+```bash
+gh issue comment 39 --body "## Implementation Complete
+- Created test_07_grading_validation.py with 6 tests
+- All tests passing locally
+- CI status: [link to run]
+"
+```
+
+### 4. Definition of Done Checklist
+
+Story is **NOT DONE** until ALL of these are true:
+
+- [ ] **Tests written** - All 6 tests in `test_07_grading_validation.py`
+- [ ] **Docker running** - E2E infrastructure started
+- [ ] **Tests pass locally** - `pytest` output shows all green
+- [ ] **Lint passes** - `ruff check . && ruff format --check .`
+- [ ] **Pushed to branch** - `git push`
+- [ ] **CI passes on branch** - Check with `gh run list --branch <branch>`
+- [ ] **GitHub issue updated** - Comment added to #39 with status
+- [ ] **Story file updated** - Fill in "Local Test Run Evidence" section below
+
+---
+
 ## Story
 
 As a **quality assurance manager**,
@@ -134,19 +208,51 @@ If you modified ANY unit test behavior, document here:
 |-----------|------------------|-----------------|-----------------|---------------|
 | (none) | | | | |
 
-### Local Test Run Evidence (MANDATORY before any push)
+### Local Test Run Evidence (MANDATORY - Fill this BEFORE saying story is done)
 
-**First run timestamp:** (to be filled)
+> **STOP! Did you actually run the tests? Fill in the evidence below.**
 
-**Docker stack status:**
+**1. Docker Infrastructure Started:**
+```bash
+# Run this command and paste output below:
+docker compose -f tests/e2e/infrastructure/docker-compose.e2e.yaml ps
 ```
-(to be filled after docker-compose up)
+**Output (paste here - all must show "healthy"):**
+```
+(PASTE DOCKER PS OUTPUT HERE - DO NOT SKIP THIS)
 ```
 
-**Test run output:**
+**2. Test Run Output:**
+```bash
+# Run this command and paste output below:
+PYTHONPATH="${PYTHONPATH}:.:libs/fp-proto/src" pytest tests/e2e/scenarios/test_07_grading_validation.py -v
 ```
-(to be filled after pytest run)
+**Output (paste here - must show all tests passed):**
 ```
+(PASTE PYTEST OUTPUT HERE - DO NOT SKIP THIS)
+```
+
+**3. Lint Check:**
+```bash
+# Run this command:
+ruff check . && ruff format --check .
+```
+**Lint passed:** [ ] Yes / [ ] No (if no, fix before continuing)
+
+**4. CI Check on Feature Branch:**
+```bash
+# After pushing, run:
+gh run list --branch story/0-4-8-tbk-ktda-grading-validation --limit 1
+```
+**CI Run ID:** (paste run ID here)
+**CI Status:** [ ] Passed / [ ] Failed
+
+**5. GitHub Issue Updated:**
+```bash
+# Add implementation comment to issue:
+gh issue comment 39 --body "Implementation complete - see PR"
+```
+**Comment added:** [ ] Yes / [ ] No
 
 **If tests failed before passing, explain what you fixed:**
 
@@ -154,13 +260,18 @@ If you modified ANY unit test behavior, document here:
 |---------|---------|------------|-------------|-------------|
 | | | | | |
 
-### Before Marking Done
-- [ ] All tests pass locally with Docker infrastructure
-- [ ] `ruff check` and `ruff format --check` pass
-- [ ] CI pipeline is green
+### Before Marking Done - FINAL CHECKLIST
+
+> **Do NOT mark story as done until ALL boxes are checked!**
+
+- [ ] All tests pass locally with Docker infrastructure (evidence above)
+- [ ] `ruff check` and `ruff format --check` pass (evidence above)
+- [ ] Pushed to feature branch
+- [ ] CI pipeline is green ON YOUR BRANCH (not main!)
+- [ ] GitHub Issue #39 updated with implementation comment
 - [ ] If production code changed: Change log above is complete
 - [ ] If unit tests changed: Change log above is complete
-- [ ] Story file updated with completion notes
+- [ ] Story file updated with completion notes and evidence above
 
 ---
 
