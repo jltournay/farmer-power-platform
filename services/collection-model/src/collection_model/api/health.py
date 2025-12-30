@@ -107,9 +107,7 @@ async def invalidate_cache(request: Request) -> dict[str, str]:
     This endpoint is used by E2E tests to ensure the service
     picks up newly seeded source configurations after database reset.
     """
-    source_config_service: SourceConfigService | None = getattr(
-        request.app.state, "source_config_service", None
-    )
+    source_config_service: SourceConfigService | None = getattr(request.app.state, "source_config_service", None)
     if source_config_service is not None:
         source_config_service.invalidate_cache()
         return {"status": "cache_invalidated"}
