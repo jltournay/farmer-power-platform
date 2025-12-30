@@ -86,7 +86,7 @@ So that Collection Model events correctly update Plantation Model farmer perform
 - [ ] PR approved and merged (squash)
 - [ ] Local branch cleaned up: `git branch -d story/0-4-7-cross-model-dapr-event-flow`
 
-**PR URL:** _______________ (fill in when created)
+**PR URL:** https://github.com/jltournay/farmer-power-platform/pull/38
 
 ---
 
