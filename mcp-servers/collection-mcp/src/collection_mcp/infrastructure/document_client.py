@@ -189,7 +189,7 @@ class DocumentClient:
         """
         logger.debug("Getting document by ID", document_id=document_id)
 
-        document = await self._collection.find_one({"document_id": document_id})
+        document = await self._default_collection.find_one({"document_id": document_id})
 
         if document is None:
             logger.warning("Document not found", document_id=document_id)
@@ -249,7 +249,7 @@ class DocumentClient:
             limit=limit,
         )
 
-        cursor = self._collection.find(query).sort("created_at", -1).limit(limit)
+        cursor = self._default_collection.find(query).sort("created_at", -1).limit(limit)
         documents = await cursor.to_list(length=limit)
 
         # Convert ObjectId to string
@@ -310,7 +310,7 @@ class DocumentClient:
         try:
             text_query = {"$text": {"$search": query_text}, **filter_query}
             cursor = (
-                self._collection.find(text_query, {"score": {"$meta": "textScore"}})
+                self._default_collection.find(text_query, {"score": {"$meta": "textScore"}})
                 .sort([("score", {"$meta": "textScore"})])
                 .limit(limit)
             )
@@ -345,7 +345,7 @@ class DocumentClient:
             **filter_query,
         }
 
-        cursor = self._collection.find(regex_query).limit(limit)
+        cursor = self._default_collection.find(regex_query).limit(limit)
         documents = await cursor.to_list(length=limit)
 
         # Convert ObjectId
