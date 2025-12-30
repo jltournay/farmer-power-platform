@@ -101,7 +101,7 @@ development_status:
   0-4-5-quality-event-blob-ingestion: done  # 6 tests pass after code review fixes, github_issue: 30
   0-4-6-weather-data-ingestion-mock-ai: done  # 6 tests - Real weather API, mock AI, github_issue: 31
   0-4-7-cross-model-dapr-event-flow: done  # 5 tests passed, github_issue: 37
-  0-4-8-tbk-ktda-grading-validation: backlog  # 6 tests
+  0-4-8-tbk-ktda-grading-validation: ready-for-dev  # 6 tests, github_issue: 39
   0-4-9-zip-processor-ingestion: backlog  # 9 tests
   epic-0-4-retrospective: optional
 
