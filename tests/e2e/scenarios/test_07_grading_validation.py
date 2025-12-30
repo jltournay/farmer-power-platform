@@ -18,7 +18,7 @@ Grading Model Architecture:
        - Check reject_conditions → lowest grade if match
        - Check conditional_reject → lower grade if condition matches
        - Otherwise → highest grade (Primary/Grade A)
-    5. FarmerPerformance.historical.grade_distribution_30d is updated
+    5. FarmerPerformance.today.grade_counts is updated (real-time)
 
 Test Data Mapping:
     - TBK tests: FRM-E2E-001 → CP-E2E-001 → FAC-E2E-001 → tbk_kenya_tea_v1
@@ -174,14 +174,17 @@ def parse_mcp_result(result: dict[str, Any]) -> dict[str, Any]:
 
 
 async def get_grade_distribution(plantation_mcp, farmer_id: str) -> dict[str, int]:
-    """Get current grade distribution for a farmer.
+    """Get current grade distribution for a farmer from today's real-time counts.
+
+    Note: Real-time quality events update `today.grade_counts` (via QualityEventProcessor).
+    The `historical.grade_distribution_30d` is batch-computed by nightly jobs.
 
     Args:
         plantation_mcp: Plantation MCP client fixture
         farmer_id: Farmer ID to query
 
     Returns:
-        Grade distribution dict (grade_name -> count)
+        Grade counts dict (grade_name -> count) from today's deliveries
     """
     result = await plantation_mcp.call_tool(
         tool_name="get_farmer_summary",
@@ -190,8 +193,8 @@ async def get_grade_distribution(plantation_mcp, farmer_id: str) -> dict[str, in
     if not result.get("success"):
         return {}
     data = parse_mcp_result(result)
-    historical = data.get("historical", {})
-    return historical.get("grade_distribution_30d", {})
+    today = data.get("today", {})
+    return today.get("grade_counts", {})
 
 
 async def ingest_quality_event_and_wait(
