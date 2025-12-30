@@ -5,7 +5,7 @@
 # - Infrastructure: MongoDB, Redis, Azurite
 # - Services: Plantation Model, Collection Model (with DAPR sidecars)
 # - MCP Servers: Plantation MCP, Collection MCP (both with DAPR sidecars)
-# - Mock servers: Google Elevation API
+# - Mock servers: Google Elevation API, Mock AI Model
 #
 # All services use E2E-specific databases that are cleaned after tests.
 
@@ -84,6 +84,48 @@ services:
       - e2e-network
 
   # ==========================================================================
+  # Mock AI Model gRPC Server + DAPR Sidecar
+  # Used by Collection Model for AI-based extraction (Story 0.4.6)
+  # ==========================================================================
+
+  mock-ai-model:
+    build:
+      context: ../../..
+      dockerfile: tests/e2e/infrastructure/mock-servers/ai-model/Dockerfile
+    container_name: e2e-mock-ai-model
+    ports:
+      - "8090:50051"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import grpc; channel = grpc.insecure_channel('localhost:50051'); grpc.channel_ready_future(channel).result(timeout=5)"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 5s
+    networks:
+      - e2e-network
+
+  mock-ai-model-dapr:
+    image: daprio/daprd:1.12.0
+    container_name: e2e-mock-ai-model-dapr
+    command: [
+      "./daprd",
+      "-app-id", "ai-model",
+      "-app-port", "50051",
+      "-app-protocol", "grpc",
+      "-dapr-http-port", "3500",
+      "-dapr-grpc-port", "50001",
+      "-components-path", "/components"
+    ]
+    volumes:
+      - ./dapr-components:/components
+    network_mode: "service:mock-ai-model"
+    depends_on:
+      mock-ai-model:
+        condition: service_started
+      redis:
+        condition: service_healthy
+
+  # ==========================================================================
   # Plantation Model Service + DAPR Sidecar
   # ==========================================================================
 
@@ -160,10 +202,13 @@ services:
       COLLECTION_AZURE_STORAGE_CONNECTION_STRING: "DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;BlobEndpoint=http://azurite:10000/devstoreaccount1"
       COLLECTION_DAPR_HOST: localhost
       COLLECTION_DAPR_HTTP_PORT: "3500"
+      COLLECTION_AI_MODEL_APP_ID: ai-model
     depends_on:
       mongodb:
         condition: service_healthy
       azurite:
+        condition: service_healthy
+      mock-ai-model:
         condition: service_healthy
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]

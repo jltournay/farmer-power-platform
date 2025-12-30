@@ -1,7 +1,7 @@
 # Story 0.4.6: Weather Data Ingestion with Mock AI
 
-**Status:** ready-for-dev
-**GitHub Issue:** <!-- Auto-created by dev-story workflow -->
+**Status:** in-progress
+**GitHub Issue:** [#31](https://github.com/jltournay/farmer-power-platform/issues/31)
 **Epic:** [Epic 0.4: E2E Test Scenarios](../epics/epic-0-4-e2e-tests.md)
 
 ## Story
@@ -24,60 +24,62 @@ So that real weather API data flows through the pipeline with deterministic extr
 
 ## Tasks / Subtasks
 
-- [ ] **Task 1: Create Mock AI Model Server (DAPR-enabled)** (AC: 1)
-  - [ ] Create `tests/e2e/infrastructure/mock-servers/ai-model/` directory
-  - [ ] Create `server.py` FastAPI server with DAPR service invocation endpoints
-  - [ ] Add `POST /Extract` endpoint matching DAPR service invocation pattern
-  - [ ] Add `/health` endpoint for healthcheck
-  - [ ] Parse Open-Meteo response and return deterministic extraction
-  - [ ] Create `Dockerfile` for containerization
+- [x] **Task 1: Create Mock AI Model gRPC Server** (AC: 1)
+  - [x] Create `tests/e2e/infrastructure/mock-servers/ai-model/` directory
+  - [x] Create `server.py` gRPC server implementing `AiModelService` from `proto/ai_model/v1/ai_model.proto`
+  - [x] Implement `Extract` RPC method with deterministic weather extraction
+  - [x] Implement `HealthCheck` RPC method
+  - [x] Parse Open-Meteo response JSON and return structured extraction
+  - [x] Create `Dockerfile` for containerization with grpcio
 
-- [ ] **Task 2: Add Mock AI Model to Docker Compose with DAPR Sidecar** (AC: 1)
-  - [ ] Add `mock-ai-model` service to `docker-compose.e2e.yaml`
-  - [ ] Add `mock-ai-model-dapr` sidecar with `app-id: mock-ai-model`
-  - [ ] Configure Collection Model env: `COLLECTION_AI_MODEL_APP_ID=mock-ai-model`
-  - [ ] Add healthcheck
-  - [ ] Add to e2e-network
+- [x] **Task 2: Add Mock AI Model to Docker Compose with DAPR Sidecar** (AC: 1)
+  - [x] Add `mock-ai-model` service to `docker-compose.e2e.yaml` (gRPC on port 50051)
+  - [x] Add `mock-ai-model-dapr` sidecar with `app-id: ai-model`, `app-protocol: grpc`
+  - [x] Use `network_mode: "service:mock-ai-model"` for sidecar
+  - [x] Configure Collection Model env: `COLLECTION_AI_MODEL_APP_ID=ai-model`
+  - [x] Add gRPC healthcheck (similar to MCP servers)
+  - [x] Add to e2e-network
 
-- [ ] **Task 3: Create Weather Source Config with Iteration** (AC: 2)
-  - [ ] Add `e2e-weather-api` to `seed/source_configs.json`
-  - [ ] Configure `mode: scheduled_pull` with `request.base_url` for Open-Meteo
-  - [ ] Add `iteration` block: `source_mcp: plantation-mcp`, `source_tool: list_regions`
-  - [ ] Configure `inject_linkage: [region_id, latitude, longitude]`
-  - [ ] Configure `ai_agent_id: mock-weather-extractor`
-  - [ ] Set `link_field: region_id` for region linkage
-  - [ ] Verify regions.json has `latitude` and `longitude` fields
+- [x] **Task 3: Create Weather Source Config with Iteration** (AC: 2)
+  - [x] Add `e2e-weather-api` to `seed/source_configs.json`
+  - [x] Configure `mode: scheduled_pull` with `request.base_url` for Open-Meteo
+  - [x] Add `iteration` block: `source_mcp: plantation-mcp`, `source_tool: list_regions`
+  - [x] Configure `inject_linkage: [region_id, name]`
+  - [x] Configure `ai_agent_id: mock-weather-extractor`
+  - [x] Set `link_field: region_id` for region linkage
+  - [x] Use `parameters` with `{item.weather_config.api_location.lat}` template for nested fields
 
-- [ ] **Task 4: Create E2E Test File** (AC: All)
-  - [ ] Create `tests/e2e/scenarios/test_05_weather_ingestion.py`
-  - [ ] Import fixtures: `collection_mcp`, `plantation_mcp`, `collection_api`, `seed_data`
-  - [ ] Add `@pytest.mark.e2e` class marker
-  - [ ] Add file docstring with prerequisites
+- [x] **Task 4: Create E2E Test File** (AC: All)
+  - [x] Create `tests/e2e/scenarios/test_05_weather_ingestion.py`
+  - [x] Import fixtures: `collection_mcp`, `plantation_mcp`, `collection_api`, `seed_data`
+  - [x] Add `@pytest.mark.e2e` class marker
+  - [x] Add file docstring with prerequisites
 
-- [ ] **Task 5: Implement Mock AI Test** (AC: 1)
-  - [ ] Test mock server is accessible at :8090
-  - [ ] Test extraction endpoint returns deterministic weather structure
-  - [ ] Verify response schema matches expected format
+- [x] **Task 5: Implement Mock AI Test** (AC: 1)
+  - [x] Test mock server is accessible at :8090
+  - [x] Test HealthCheck RPC returns healthy status
+  - [x] Verify mock version is "mock-1.0.0"
 
-- [ ] **Task 6: Implement Weather Pull Test** (AC: 2)
-  - [ ] Call Collection Model API to trigger weather pull
-  - [ ] Verify Open-Meteo API is called (real data)
-  - [ ] Verify weather data is received successfully
+- [x] **Task 6: Implement Weather Pull Test** (AC: 2)
+  - [x] Call Collection Model API to trigger weather pull
+  - [x] Verify Open-Meteo API is called (real data)
+  - [x] Verify weather data is received successfully
 
-- [ ] **Task 7: Implement Document Creation Test** (AC: 3)
-  - [ ] Wait for async processing after pull trigger
-  - [ ] Query MongoDB for weather documents
-  - [ ] Verify document has region_id linkage
-  - [ ] Verify extracted weather attributes
+- [x] **Task 7: Implement Document Creation Test** (AC: 3)
+  - [x] Wait for async processing after pull trigger
+  - [x] Query MongoDB for weather documents
+  - [x] Verify document has region_id linkage
+  - [x] Verify extracted weather attributes
 
-- [ ] **Task 8: Implement MCP Query Tests** (AC: 4, 5)
-  - [ ] Test `get_region_weather` via Plantation MCP
-  - [ ] Verify weather observations returned
-  - [ ] Test `get_documents(source_id="e2e-weather-api")` via Collection MCP
-  - [ ] Verify document attributes
+- [x] **Task 8: Implement MCP Query Tests** (AC: 4, 5)
+  - [x] Test `get_region_weather` via Plantation MCP
+  - [x] Verify weather observations returned
+  - [x] Test `get_documents(source_id="e2e-weather-api")` via Collection MCP
+  - [x] Verify document attributes
 
-- [ ] **Task 9: Test Validation** (AC: All)
-  - [ ] Run `ruff check tests/e2e/scenarios/test_05_weather_ingestion.py`
+- [x] **Task 9: Test Validation** (AC: All)
+  - [x] Run `ruff check tests/e2e/scenarios/test_05_weather_ingestion.py`
+  - [x] Run `ruff format` on new files
   - [ ] Run all tests locally with Docker infrastructure
   - [ ] Verify CI pipeline passes
 
@@ -167,46 +169,50 @@ If you modified ANY production code, document each change here:
 | AI Extraction | **MOCK** | Deterministic responses for E2E |
 | MongoDB | **REAL** | Full database behavior |
 
-### Mock AI Model Specification (DAPR Service Invocation)
+### Mock AI Model Specification (gRPC Server)
 
-**Architecture:** Collection Model → DAPR Sidecar → Mock AI Model DAPR Sidecar → Mock AI Model
+**Architecture:** Collection Model → DAPR Sidecar → Mock AI Model (gRPC)
 
 ```
-Collection Model                    Mock AI Model
-     │                                   │
-     │  invoke_method(                   │
-     │    app_id="mock-ai-model",        │
-     │    method_name="Extract"          │
-     │  )                                │
-     ▼                                   │
-DAPR Sidecar ──── gRPC ────► DAPR Sidecar ──── HTTP POST /Extract ────► FastAPI
+Collection Model                       Mock AI Model (gRPC)
+     │                                        │
+     │  DaprClient().invoke_method(           │
+     │    app_id="ai-model",                  │
+     │    method_name="Extract"               │  AiModelService.Extract()
+     │  )                                     │
+     ▼                                        ▼
+DAPR Sidecar ─────────── gRPC ───────────► gRPC Server
+(collection-model)                        (app-id: ai-model)
 ```
 
 **Mock Server Implementation:**
-- FastAPI server with DAPR sidecar
-- DAPR translates `invoke_method("Extract")` → `POST /Extract`
-- Collection Model env: `COLLECTION_AI_MODEL_APP_ID=mock-ai-model`
+- gRPC server implementing `AiModelService` from `proto/ai_model/v1/ai_model.proto`
+- Implements `rpc Extract(ExtractionRequest) returns (ExtractionResponse)`
+- DAPR sidecar registered with `app-id: ai-model`
+- Collection Model env: `COLLECTION_AI_MODEL_APP_ID=ai-model`
 
-**Endpoint: `POST /Extract`**
-
-Request (from DAPR):
-```json
-{
-  "raw_content": "<Open-Meteo JSON response>",
-  "ai_agent_id": "mock-weather-extractor",
-  "source_config_json": "{...}",
-  "content_type": "application/json"
+**Proto Definition (`ai_model.proto`):**
+```protobuf
+service AiModelService {
+  rpc Extract(ExtractionRequest) returns (ExtractionResponse);
+  rpc HealthCheck(HealthCheckRequest) returns (HealthCheckResponse);
 }
-```
 
-Response:
-```json
-{
-  "success": true,
-  "extracted_fields_json": "{\"region_id\":\"REG-E2E-001\",\"temperature_c\":22.5,...}",
-  "confidence": 0.95,
-  "validation_passed": true,
-  "validation_warnings": []
+message ExtractionRequest {
+  string raw_content = 1;
+  string ai_agent_id = 2;
+  string source_config_json = 3;
+  string content_type = 4;
+  string trace_id = 5;
+}
+
+message ExtractionResponse {
+  bool success = 1;
+  string extracted_fields_json = 2;
+  float confidence = 3;
+  bool validation_passed = 4;
+  repeated string validation_warnings = 5;
+  string error_message = 6;
 }
 ```
 
@@ -318,11 +324,10 @@ GET /v1/forecast?latitude=-1.286&longitude=36.817&daily=temperature_2m_max,tempe
 4. Use `mongodb_direct` for verification queries
 5. Path patterns extract fields from blob path
 
-**From google-elevation mock server:**
-- FastAPI server structure
+**From google-elevation mock server (pattern - but use gRPC not HTTP):**
 - Deterministic responses based on input
-- `/health` endpoint for healthcheck
-- Dockerfile with uvicorn
+- Health check endpoint
+- Dockerfile structure
 
 ### Test File Location
 
@@ -443,13 +448,15 @@ None - story creation phase
 
 ### File List
 
-**To Create:**
-- `tests/e2e/infrastructure/mock-servers/ai-model/server.py` - DAPR-enabled FastAPI mock
+**Created:**
+- `tests/e2e/infrastructure/mock-servers/ai-model/server.py` - gRPC server implementing `AiModelService`
 - `tests/e2e/infrastructure/mock-servers/ai-model/Dockerfile`
-- `tests/e2e/scenarios/test_05_weather_ingestion.py`
+- `tests/e2e/scenarios/test_05_weather_ingestion.py` - 6 E2E tests for all acceptance criteria
 
-**To Modify:**
-- `tests/e2e/infrastructure/docker-compose.e2e.yaml` - Add mock-ai-model + DAPR sidecar
-- `tests/e2e/infrastructure/seed/source_configs.json` - Add e2e-weather-api config
-- `tests/e2e/infrastructure/seed/regions.json` - Ensure latitude/longitude fields exist
-- `services/collection-model` environment - Set `COLLECTION_AI_MODEL_APP_ID=mock-ai-model`
+**Modified:**
+- `tests/e2e/infrastructure/docker-compose.e2e.yaml` - Added mock-ai-model + DAPR sidecar, COLLECTION_AI_MODEL_APP_ID env
+- `tests/e2e/infrastructure/seed/source_configs.json` - Added e2e-weather-api config with iteration
+
+**Notes:**
+- regions.json already has `weather_config.api_location.lat/lng` - used nested path templates in source config
+- DAPR sidecar app-id is `ai-model` (matching Collection Model default)

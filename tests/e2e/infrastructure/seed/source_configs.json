@@ -111,5 +111,59 @@
     },
     "created_at": "2025-01-01T00:00:00Z",
     "updated_at": "2025-01-01T00:00:00Z"
+  },
+  {
+    "source_id": "e2e-weather-api",
+    "enabled": true,
+    "description": "E2E Test - Weather data from Open-Meteo with mock AI extraction (Story 0.4.6)",
+    "config": {
+      "ingestion": {
+        "mode": "scheduled_pull",
+        "processor_type": "json-extraction",
+        "request": {
+          "base_url": "https://api.open-meteo.com/v1/forecast",
+          "auth_type": "none",
+          "parameters": {
+            "latitude": "{item.weather_config.api_location.lat}",
+            "longitude": "{item.weather_config.api_location.lng}",
+            "daily": "temperature_2m_max,temperature_2m_min,precipitation_sum,relative_humidity_2m_mean",
+            "timezone": "Africa/Nairobi"
+          }
+        },
+        "iteration": {
+          "foreach": "region",
+          "source_mcp": "plantation-mcp",
+          "source_tool": "list_regions",
+          "tool_arguments": {},
+          "result_path": "regions",
+          "inject_linkage": ["region_id", "name"],
+          "concurrency": 3
+        }
+      },
+      "transformation": {
+        "ai_agent_id": "mock-weather-extractor",
+        "link_field": "region_id",
+        "extract_fields": [
+          "region_id",
+          "observation_date",
+          "temperature_c",
+          "temperature_min_c",
+          "temperature_max_c",
+          "precipitation_mm",
+          "humidity_percent"
+        ]
+      },
+      "storage": {
+        "index_collection": "weather_documents",
+        "raw_container": "raw-documents-e2e"
+      },
+      "events": {
+        "on_success": {
+          "topic": "collection.weather_observation.received"
+        }
+      }
+    },
+    "created_at": "2025-01-01T00:00:00Z",
+    "updated_at": "2025-01-01T00:00:00Z"
   }
 ]
