@@ -1,6 +1,6 @@
 # Story 0.4.7: Cross-Model DAPR Event Flow
 
-**Status:** in-progress
+**Status:** done
 **GitHub Issue:** #37
 **Epic:** [Epic 0.4: E2E Test Scenarios](../epics/epic-0-4-e2e-tests.md)
 **Risk Level:** CRITICAL (TBK Score: 9)
