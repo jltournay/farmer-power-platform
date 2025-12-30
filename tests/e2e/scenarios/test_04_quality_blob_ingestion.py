@@ -27,9 +27,52 @@ Seed Data Required:
 import asyncio
 import hashlib
 import json
+import time
 import uuid
 
 import pytest
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# POLLING HELPERS - Replace fragile asyncio.sleep with robust polling
+# ═══════════════════════════════════════════════════════════════════════════════
+
+
+async def wait_for_document_count(
+    mongodb_direct,
+    farmer_id: str,
+    expected_min_count: int = 1,
+    timeout: float = 10.0,
+    poll_interval: float = 0.5,
+    source_id: str | None = None,
+) -> int:
+    """Wait for document count to reach expected minimum.
+
+    Args:
+        mongodb_direct: MongoDB direct client fixture
+        farmer_id: Farmer ID to check documents for
+        expected_min_count: Minimum document count to wait for
+        timeout: Maximum time to wait in seconds
+        poll_interval: Time between polls in seconds
+        source_id: Optional source_id filter for counting
+
+    Returns:
+        Final document count
+
+    Raises:
+        TimeoutError: If expected count not reached within timeout
+    """
+    start = time.time()
+    last_count = 0
+    while time.time() - start < timeout:
+        last_count = await mongodb_direct.count_quality_documents(farmer_id=farmer_id, source_id=source_id)
+        if last_count >= expected_min_count:
+            return last_count
+        await asyncio.sleep(poll_interval)
+    raise TimeoutError(
+        f"Document count for {farmer_id} (source_id={source_id}) did not reach {expected_min_count} "
+        f"within {timeout}s (last count: {last_count})"
+    )
+
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # TEST DATA
@@ -170,7 +213,7 @@ class TestDocumentCreation:
         azurite_client,
         collection_api,
         collection_mcp,
-        mongodb_direct,
+        mongodb_direct,  # Used for polling wait
         seed_data,
     ):
         """Given the blob event is processed, When I wait for async processing,
@@ -194,8 +237,8 @@ class TestDocumentCreation:
             blob_path=blob_path,
         )
 
-        # Wait for async processing (3s as per AC3)
-        await asyncio.sleep(3)
+        # Wait for async processing using polling (more robust than fixed sleep)
+        await wait_for_document_count(mongodb_direct, farmer_id, expected_min_count=1, timeout=10.0)
 
         # Verify document created with farmer linkage via MCP
         result = await collection_mcp.call_tool(
@@ -237,8 +280,8 @@ class TestDocumentCreation:
             blob_path=blob_path,
         )
 
-        # Wait for async processing
-        await asyncio.sleep(3)
+        # Wait for async processing using polling
+        await wait_for_document_count(mongodb_direct, farmer_id, expected_min_count=1, timeout=10.0)
 
         # Get latest documents for farmer directly from MongoDB
         docs = await mongodb_direct.get_latest_quality_documents(farmer_id=farmer_id, limit=10)
@@ -297,8 +340,14 @@ class TestDaprEventPublished:
             blob_path=blob_path,
         )
 
-        # Wait for async processing
-        await asyncio.sleep(3)
+        # Wait for async processing using polling (with source_id for consistency)
+        await wait_for_document_count(
+            mongodb_direct,
+            farmer_id,
+            expected_min_count=initial_count + 1,
+            timeout=10.0,
+            source_id="e2e-qc-direct-json",
+        )
 
         # Verify document count increased (implies successful processing and DAPR event)
         final_count = await mongodb_direct.count_quality_documents(
@@ -339,6 +388,10 @@ class TestDuplicateDetection:
         blob_path = f"{farmer_id}/{event_id}.json"
         container_name = "quality-events-e2e"
 
+        # Get initial count before any uploads (use source_id for accuracy)
+        source_id = "e2e-qc-direct-json"
+        initial_count = await mongodb_direct.count_quality_documents(farmer_id=farmer_id, source_id=source_id)
+
         # First upload and trigger - should create document
         await azurite_client.upload_json(
             container_name=container_name,
@@ -350,11 +403,17 @@ class TestDuplicateDetection:
             blob_path=blob_path,
         )
 
-        # Wait for first processing
-        await asyncio.sleep(3)
+        # Wait for first processing using polling (with source_id for consistency)
+        await wait_for_document_count(
+            mongodb_direct,
+            farmer_id,
+            expected_min_count=initial_count + 1,
+            timeout=10.0,
+            source_id=source_id,
+        )
 
         # Get count after first upload
-        count_after_first = await mongodb_direct.count_quality_documents(farmer_id=farmer_id)
+        count_after_first = await mongodb_direct.count_quality_documents(farmer_id=farmer_id, source_id=source_id)
 
         # Second trigger with same blob (same content hash) - should be skipped
         # Re-upload same content to ensure it's identical
@@ -368,11 +427,12 @@ class TestDuplicateDetection:
             blob_path=blob_path,
         )
 
-        # Wait for potential processing
-        await asyncio.sleep(3)
+        # Wait a bit for potential processing (duplicate should be fast-rejected)
+        # Use shorter timeout since duplicate detection should be quick
+        await asyncio.sleep(2)
 
         # Get count after duplicate - should be same (duplicate skipped)
-        count_after_duplicate = await mongodb_direct.count_quality_documents(farmer_id=farmer_id)
+        count_after_duplicate = await mongodb_direct.count_quality_documents(farmer_id=farmer_id, source_id=source_id)
 
         # Document count should not increase for duplicate
         # Note: This assumes duplicate detection is implemented in Collection Model

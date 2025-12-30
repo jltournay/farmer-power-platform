@@ -216,7 +216,7 @@ async def collection_mcp(
 _seeded_data: dict[str, Any] | None = None
 
 
-@pytest_asyncio.fixture(scope="session")
+@pytest_asyncio.fixture(scope="session", loop_scope="session")
 async def seed_data_session(
     e2e_config: dict[str, Any],
 ) -> AsyncGenerator[dict[str, Any], None]:

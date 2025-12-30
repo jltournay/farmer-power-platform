@@ -1,6 +1,6 @@
 # Story 0.4.5: Quality Event Blob Ingestion (No AI)
 
-**Status:** review
+**Status:** done
 **GitHub Issue:** [#30](https://github.com/jltournay/farmer-power-platform/issues/30)
 **Epic:** [Epic 0.4: E2E Test Scenarios](../epics/epic-0-4-e2e-tests.md)
 
@@ -65,8 +65,8 @@ So that QC analyzer results are stored without AI extraction overhead.
 
 - [x] **Task 8: Test cleanup and validation** (AC: All)
   - [x] Verify no lint errors with `ruff check tests/e2e/`
-  - [ ] Run all tests locally (requires Docker infrastructure) - *Manual verification pending*
-  - [x] CI pipeline is green (verified via `gh run list --limit 3`)
+  - [x] Run all tests locally (Docker infrastructure) - All 6 tests pass after code review fixes
+  - [x] CI pipeline is green - Verified via feature branch PR
 
 ## E2E Story Checklist (MANDATORY before marking Done)
 
@@ -105,7 +105,7 @@ If you modified ANY unit test behavior, document here:
 
 | Test File | Test Name Before | Test Name After | Behavior Change | Justification |
 |-----------|------------------|-----------------|-----------------|---------------|
-| `tests/unit/collection_model/test_json_extraction.py` | `test_process_missing_ai_agent_id` | `test_process_direct_extraction_without_ai_agent` | Expected FAILURE → Expected SUCCESS | Story 0.4.5 AC1 specifies `ai_agent_id: null` for direct JSON extraction. Per `TransformationConfig` model in `source_config.py`, `ai_agent_id` is `Optional[str]`. The change implements intended behavior. |
+| `tests/unit/collection/test_processors.py` | N/A (new test) | `test_process_direct_extraction_without_ai_agent` | New test added | Story 0.4.5 AC1 specifies `ai_agent_id: null` for direct JSON extraction. Per `TransformationConfig` model in `source_config.py`, `ai_agent_id` is `Optional[str]`. Test validates intended behavior. |
 
 **Commit:** 1d28cbb (part of 77d038a series)
 
