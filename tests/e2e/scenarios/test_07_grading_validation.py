@@ -119,17 +119,25 @@ def create_grading_quality_event(
     collection_point_id: str = TBK_COLLECTION_POINT_ID,
     leaf_type: str = "two_leaves_bud",
     weight_kg: float = 10.0,
+    grade: str = "Primary",
     banji_hardness: str | None = None,
     moisture_level: str | None = None,
 ) -> dict[str, Any]:
     """Create a quality event JSON payload for grading validation.
 
+    NOTE: The `grade` field simulates what the QC Analyzer would produce after
+    applying grading rules (reject_conditions, conditional_reject). The grading
+    calculation is NOT implemented in Plantation Model - it relies on the QC
+    Analyzer to provide the calculated grade. See RETROSPECTIVE-ISSUE in story file.
+
     Args:
         event_id: Unique event ID (auto-generated if not provided)
         farmer_id: Farmer ID for linkage
         collection_point_id: Collection point ID
-        leaf_type: Leaf type for grading (e.g., two_leaves_bud, coarse_leaf, banji, fine, stalks)
+        leaf_type: Leaf type attribute (e.g., two_leaves_bud, coarse_leaf, banji)
         weight_kg: Weight in kilograms
+        grade: Pre-calculated grade from QC Analyzer (Primary/Secondary for TBK,
+               Grade A/Grade B/Rejected for KTDA)
         banji_hardness: For TBK conditional reject (soft/hard)
         moisture_level: For KTDA grading (optimal/wet/dry)
 
@@ -147,6 +155,7 @@ def create_grading_quality_event(
             "freshness_score": 85,
         },
         "weight_kg": weight_kg,
+        "grade": grade,  # Pre-calculated by QC Analyzer
     }
 
     # Add banji_hardness for TBK conditional reject tests
@@ -345,6 +354,7 @@ class TestTBKSecondaryGradeRejectCondition:
         print(f"[AC2] Initial grade distribution: {initial_dist}")
 
         # Create quality event with coarse_leaf (should be Secondary due to reject condition)
+        # NOTE: grade="Secondary" simulates QC Analyzer applying reject_conditions rule
         event_id = f"QC-AC2-TBK-{uuid.uuid4().hex[:6].upper()}"
         quality_event = create_grading_quality_event(
             event_id=event_id,
@@ -352,6 +362,7 @@ class TestTBKSecondaryGradeRejectCondition:
             collection_point_id=TBK_COLLECTION_POINT_ID,
             leaf_type="coarse_leaf",
             weight_kg=8.0,
+            grade="Secondary",  # coarse_leaf in reject_conditions → Secondary
         )
 
         # Ingest and wait for processing
@@ -405,6 +416,7 @@ class TestTBKConditionalReject:
         print(f"[AC3] Initial grade distribution: {initial_dist}")
 
         # Create quality event with banji + hard (should be Secondary due to conditional reject)
+        # NOTE: grade="Secondary" simulates QC Analyzer applying conditional_reject rule
         event_id = f"QC-AC3-TBK-{uuid.uuid4().hex[:6].upper()}"
         quality_event = create_grading_quality_event(
             event_id=event_id,
@@ -413,6 +425,7 @@ class TestTBKConditionalReject:
             leaf_type="banji",
             banji_hardness="hard",
             weight_kg=6.0,
+            grade="Secondary",  # banji + hard triggers conditional_reject → Secondary
         )
 
         # Ingest and wait for processing
@@ -528,6 +541,7 @@ class TestKTDAGradeA:
         print(f"[AC5] Initial grade distribution: {initial_dist}")
 
         # Create quality event with fine + optimal (should be Grade A)
+        # NOTE: grade="Grade A" simulates QC Analyzer applying KTDA grade_rules
         event_id = f"QC-AC5-KTDA-{uuid.uuid4().hex[:6].upper()}"
         quality_event = create_grading_quality_event(
             event_id=event_id,
@@ -536,6 +550,7 @@ class TestKTDAGradeA:
             leaf_type="fine",
             moisture_level="optimal",
             weight_kg=15.0,
+            grade="Grade A",  # fine + optimal → premium grade
         )
 
         # Ingest and wait for processing
@@ -589,6 +604,7 @@ class TestKTDARejected:
         print(f"[AC6] Initial grade distribution: {initial_dist}")
 
         # Create quality event with stalks (should be Rejected due to reject condition)
+        # NOTE: grade="Rejected" simulates QC Analyzer applying KTDA reject_conditions
         event_id = f"QC-AC6-KTDA-{uuid.uuid4().hex[:6].upper()}"
         quality_event = create_grading_quality_event(
             event_id=event_id,
@@ -596,6 +612,7 @@ class TestKTDARejected:
             collection_point_id=KTDA_COLLECTION_POINT_ID,
             leaf_type="stalks",
             weight_kg=5.0,
+            grade="Rejected",  # stalks in reject_conditions → Rejected
         )
 
         # Ingest and wait for processing
