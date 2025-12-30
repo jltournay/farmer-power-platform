@@ -1,20 +1,36 @@
-"""Unit tests for IterationResolver (Story 2.7).
+"""Unit tests for IterationResolver (Story 2.7, updated Story 0.4.6).
 
 Tests cover MCP tool invocation for dynamic iteration:
-- Calling MCP tools via DAPR Service Invocation
+- Calling MCP tools via DAPR gRPC proxying
 - Parsing tool results as iteration items
 - Error handling for failed tool calls
 - Linkage field extraction
+
+Note: Tests mock the gRPC channel and stub to simulate DAPR gRPC proxying.
 """
 
+import json
 from typing import Any
-from unittest.mock import MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 from collection_model.infrastructure.iteration_resolver import (
     IterationResolver,
     IterationResolverError,
 )
+
+
+def _create_mock_response(
+    success: bool = True,
+    result_json: str = "[]",
+    error_message: str = "",
+) -> MagicMock:
+    """Create a mock gRPC response that mimics ToolCallResponse protobuf."""
+    mock = MagicMock()
+    mock.success = success
+    mock.result_json = result_json
+    mock.error_message = error_message
+    return mock
 
 
 class TestIterationResolver:
@@ -69,16 +85,23 @@ class TestIterationResolver:
         sample_mcp_response: list[dict[str, Any]],
     ) -> None:
         """Test resolve returns items from MCP tool call."""
-        # Mock DAPR client
-        mock_response = MagicMock()
-        mock_response.data = b'{"success": true, "result_json": "[{\\"region_id\\": \\"nyeri\\", \\"latitude\\": -0.4167, \\"longitude\\": 36.95, \\"name\\": \\"Nyeri\\"}, {\\"region_id\\": \\"kericho\\", \\"latitude\\": -0.3689, \\"longitude\\": 35.2863, \\"name\\": \\"Kericho\\"}, {\\"region_id\\": \\"nandi\\", \\"latitude\\": 0.1833, \\"longitude\\": 35.1, \\"name\\": \\"Nandi\\"}]"}'
+        mock_response = _create_mock_response(
+            success=True,
+            result_json=json.dumps(sample_mcp_response),
+        )
 
-        with patch("collection_model.infrastructure.iteration_resolver.DaprClient") as mock_dapr:
-            mock_client = MagicMock()
-            mock_client.invoke_method.return_value = mock_response
-            mock_dapr.return_value.__enter__.return_value = mock_client
+        # Mock the gRPC channel and stub for DAPR gRPC proxying
+        mock_stub = MagicMock()
+        mock_stub.CallTool = AsyncMock(return_value=mock_response)
 
-            items = await iteration_resolver.resolve(sample_iteration_config)
+        with patch("grpc.aio.insecure_channel") as mock_channel:
+            mock_channel.return_value.__aenter__ = AsyncMock(return_value=MagicMock())
+            mock_channel.return_value.__aexit__ = AsyncMock(return_value=None)
+            with patch(
+                "collection_model.infrastructure.iteration_resolver.mcp_tool_pb2_grpc.McpToolServiceStub",
+                return_value=mock_stub,
+            ):
+                items = await iteration_resolver.resolve(sample_iteration_config)
 
         assert len(items) == 3
         assert items[0]["region_id"] == "nyeri"
@@ -91,23 +114,27 @@ class TestIterationResolver:
         iteration_resolver: IterationResolver,
         sample_iteration_config: dict[str, Any],
     ) -> None:
-        """Test resolve calls the correct MCP server and tool."""
-        mock_response = MagicMock()
-        mock_response.data = b'{"success": true, "result_json": "[]"}'
+        """Test resolve calls the correct MCP server and tool via DAPR metadata."""
+        mock_response = _create_mock_response(success=True, result_json="[]")
 
-        with patch("collection_model.infrastructure.iteration_resolver.DaprClient") as mock_dapr:
-            mock_client = MagicMock()
-            mock_client.invoke_method.return_value = mock_response
-            mock_dapr.return_value.__enter__.return_value = mock_client
+        mock_stub = MagicMock()
+        mock_stub.CallTool = AsyncMock(return_value=mock_response)
 
-            await iteration_resolver.resolve(sample_iteration_config)
+        with patch("grpc.aio.insecure_channel") as mock_channel:
+            mock_channel.return_value.__aenter__ = AsyncMock(return_value=MagicMock())
+            mock_channel.return_value.__aexit__ = AsyncMock(return_value=None)
+            with patch(
+                "collection_model.infrastructure.iteration_resolver.mcp_tool_pb2_grpc.McpToolServiceStub",
+                return_value=mock_stub,
+            ):
+                await iteration_resolver.resolve(sample_iteration_config)
 
-        # Verify DAPR invocation
-        mock_client.invoke_method.assert_called_once()
-        call_kwargs = mock_client.invoke_method.call_args[1]
-        assert call_kwargs["app_id"] == "plantation-mcp"
-        assert call_kwargs["method_name"] == "CallTool"
-        assert call_kwargs["content_type"] == "application/json"
+        # Verify gRPC call with DAPR metadata
+        mock_stub.CallTool.assert_called_once()
+        call_args = mock_stub.CallTool.call_args
+        # Check metadata contains dapr-app-id
+        metadata = call_args.kwargs.get("metadata", [])
+        assert ("dapr-app-id", "plantation-mcp") in metadata
 
     @pytest.mark.asyncio
     async def test_resolve_passes_tool_arguments(
@@ -121,23 +148,32 @@ class TestIterationResolver:
             "tool_arguments": {"region_id": "nyeri"},
         }
 
-        mock_response = MagicMock()
-        mock_response.data = b'{"success": true, "result_json": "[]"}'
+        mock_response = _create_mock_response(success=True, result_json="[]")
 
-        with patch("collection_model.infrastructure.iteration_resolver.DaprClient") as mock_dapr:
-            mock_client = MagicMock()
-            mock_client.invoke_method.return_value = mock_response
-            mock_dapr.return_value.__enter__.return_value = mock_client
+        mock_stub = MagicMock()
+        mock_stub.CallTool = AsyncMock(return_value=mock_response)
 
-            await iteration_resolver.resolve(config)
+        with patch("grpc.aio.insecure_channel") as mock_channel:
+            mock_channel.return_value.__aenter__ = AsyncMock(return_value=MagicMock())
+            mock_channel.return_value.__aexit__ = AsyncMock(return_value=None)
+            with (
+                patch(
+                    "collection_model.infrastructure.iteration_resolver.mcp_tool_pb2_grpc.McpToolServiceStub",
+                    return_value=mock_stub,
+                ) as mock_stub_class,
+                patch(
+                    "collection_model.infrastructure.iteration_resolver.mcp_tool_pb2.ToolCallRequest"
+                ) as mock_request_class,
+            ):
+                mock_request = MagicMock()
+                mock_request_class.return_value = mock_request
+                await iteration_resolver.resolve(config)
 
-        # Verify arguments were passed
-        call_kwargs = mock_client.invoke_method.call_args[1]
-        request_data = call_kwargs["data"]
-        assert '"tool_name": "get_farmers_by_region"' in request_data
-        # Arguments are JSON-encoded, so they appear escaped in the string
-        assert "region_id" in request_data
-        assert "nyeri" in request_data
+        # Verify request was created with correct tool_name and arguments
+        mock_request_class.assert_called_once()
+        call_kwargs = mock_request_class.call_args.kwargs
+        assert call_kwargs["tool_name"] == "get_farmers_by_region"
+        assert "nyeri" in call_kwargs["arguments_json"]
 
     @pytest.mark.asyncio
     async def test_resolve_handles_nested_result(
@@ -151,15 +187,22 @@ class TestIterationResolver:
             "result_path": "regions",  # Path to extract from result
         }
 
-        mock_response = MagicMock()
-        mock_response.data = b'{"success": true, "result_json": "{\\"regions\\": [{\\"id\\": 1}, {\\"id\\": 2}]}"}'
+        mock_response = _create_mock_response(
+            success=True,
+            result_json=json.dumps({"regions": [{"id": 1}, {"id": 2}]}),
+        )
 
-        with patch("collection_model.infrastructure.iteration_resolver.DaprClient") as mock_dapr:
-            mock_client = MagicMock()
-            mock_client.invoke_method.return_value = mock_response
-            mock_dapr.return_value.__enter__.return_value = mock_client
+        mock_stub = MagicMock()
+        mock_stub.CallTool = AsyncMock(return_value=mock_response)
 
-            items = await iteration_resolver.resolve(config)
+        with patch("grpc.aio.insecure_channel") as mock_channel:
+            mock_channel.return_value.__aenter__ = AsyncMock(return_value=MagicMock())
+            mock_channel.return_value.__aexit__ = AsyncMock(return_value=None)
+            with patch(
+                "collection_model.infrastructure.iteration_resolver.mcp_tool_pb2_grpc.McpToolServiceStub",
+                return_value=mock_stub,
+            ):
+                items = await iteration_resolver.resolve(config)
 
         assert len(items) == 2
         assert items[0]["id"] == 1
@@ -172,17 +215,24 @@ class TestIterationResolver:
         sample_iteration_config: dict[str, Any],
     ) -> None:
         """Test resolve raises error when MCP tool not found."""
-        mock_response = MagicMock()
-        mock_response.data = (
-            b'{"success": false, "error_code": 3, "error_message": "Unknown tool: list_active_regions"}'
+        mock_response = _create_mock_response(
+            success=False,
+            error_message="Unknown tool: list_active_regions",
         )
 
-        with patch("collection_model.infrastructure.iteration_resolver.DaprClient") as mock_dapr:
-            mock_client = MagicMock()
-            mock_client.invoke_method.return_value = mock_response
-            mock_dapr.return_value.__enter__.return_value = mock_client
+        mock_stub = MagicMock()
+        mock_stub.CallTool = AsyncMock(return_value=mock_response)
 
-            with pytest.raises(IterationResolverError) as exc_info:
+        with patch("grpc.aio.insecure_channel") as mock_channel:
+            mock_channel.return_value.__aenter__ = AsyncMock(return_value=MagicMock())
+            mock_channel.return_value.__aexit__ = AsyncMock(return_value=None)
+            with (
+                patch(
+                    "collection_model.infrastructure.iteration_resolver.mcp_tool_pb2_grpc.McpToolServiceStub",
+                    return_value=mock_stub,
+                ),
+                pytest.raises(IterationResolverError) as exc_info,
+            ):
                 await iteration_resolver.resolve(sample_iteration_config)
 
         assert "tool not found" in str(exc_info.value).lower() or "Unknown tool" in str(exc_info.value)
@@ -194,15 +244,24 @@ class TestIterationResolver:
         sample_iteration_config: dict[str, Any],
     ) -> None:
         """Test resolve raises error on MCP service failure."""
-        mock_response = MagicMock()
-        mock_response.data = b'{"success": false, "error_code": 2, "error_message": "Service unavailable"}'
+        mock_response = _create_mock_response(
+            success=False,
+            error_message="Service unavailable",
+        )
 
-        with patch("collection_model.infrastructure.iteration_resolver.DaprClient") as mock_dapr:
-            mock_client = MagicMock()
-            mock_client.invoke_method.return_value = mock_response
-            mock_dapr.return_value.__enter__.return_value = mock_client
+        mock_stub = MagicMock()
+        mock_stub.CallTool = AsyncMock(return_value=mock_response)
 
-            with pytest.raises(IterationResolverError) as exc_info:
+        with patch("grpc.aio.insecure_channel") as mock_channel:
+            mock_channel.return_value.__aenter__ = AsyncMock(return_value=MagicMock())
+            mock_channel.return_value.__aexit__ = AsyncMock(return_value=None)
+            with (
+                patch(
+                    "collection_model.infrastructure.iteration_resolver.mcp_tool_pb2_grpc.McpToolServiceStub",
+                    return_value=mock_stub,
+                ),
+                pytest.raises(IterationResolverError) as exc_info,
+            ):
                 await iteration_resolver.resolve(sample_iteration_config)
 
         assert "Service unavailable" in str(exc_info.value)
@@ -213,9 +272,11 @@ class TestIterationResolver:
         iteration_resolver: IterationResolver,
         sample_iteration_config: dict[str, Any],
     ) -> None:
-        """Test resolve raises error on DAPR connection failure."""
-        with patch("collection_model.infrastructure.iteration_resolver.DaprClient") as mock_dapr:
-            mock_dapr.return_value.__enter__.side_effect = Exception("Connection refused")
+        """Test resolve raises error on gRPC connection failure."""
+        with patch("grpc.aio.insecure_channel") as mock_channel:
+            # Simulate connection error when entering async context
+            mock_channel.return_value.__aenter__ = AsyncMock(side_effect=Exception("Connection refused"))
+            mock_channel.return_value.__aexit__ = AsyncMock(return_value=None)
 
             with pytest.raises(IterationResolverError) as exc_info:
                 await iteration_resolver.resolve(sample_iteration_config)
@@ -229,15 +290,19 @@ class TestIterationResolver:
         sample_iteration_config: dict[str, Any],
     ) -> None:
         """Test resolve returns empty list when MCP returns no items."""
-        mock_response = MagicMock()
-        mock_response.data = b'{"success": true, "result_json": "[]"}'
+        mock_response = _create_mock_response(success=True, result_json="[]")
 
-        with patch("collection_model.infrastructure.iteration_resolver.DaprClient") as mock_dapr:
-            mock_client = MagicMock()
-            mock_client.invoke_method.return_value = mock_response
-            mock_dapr.return_value.__enter__.return_value = mock_client
+        mock_stub = MagicMock()
+        mock_stub.CallTool = AsyncMock(return_value=mock_response)
 
-            items = await iteration_resolver.resolve(sample_iteration_config)
+        with patch("grpc.aio.insecure_channel") as mock_channel:
+            mock_channel.return_value.__aenter__ = AsyncMock(return_value=MagicMock())
+            mock_channel.return_value.__aexit__ = AsyncMock(return_value=None)
+            with patch(
+                "collection_model.infrastructure.iteration_resolver.mcp_tool_pb2_grpc.McpToolServiceStub",
+                return_value=mock_stub,
+            ):
+                items = await iteration_resolver.resolve(sample_iteration_config)
 
         assert items == []
 

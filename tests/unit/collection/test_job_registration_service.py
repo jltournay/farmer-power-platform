@@ -40,14 +40,12 @@ class TestJobRegistrationService:
         """Create sample scheduled_pull source config."""
         return {
             "source_id": "weather-api",
-            "config": {
-                "ingestion": {
-                    "mode": "scheduled_pull",
-                    "schedule": "0 6 * * *",
-                    "request": {
-                        "base_url": "https://api.open-meteo.com/v1/forecast",
-                        "auth_type": "none",
-                    },
+            "ingestion": {
+                "mode": "scheduled_pull",
+                "schedule": "0 6 * * *",
+                "request": {
+                    "base_url": "https://api.open-meteo.com/v1/forecast",
+                    "auth_type": "none",
                 },
             },
         }
@@ -57,11 +55,9 @@ class TestJobRegistrationService:
         """Create sample blob_trigger source config (should be skipped)."""
         return {
             "source_id": "qc-analyzer",
-            "config": {
-                "ingestion": {
-                    "mode": "blob_trigger",
-                    "container": "qc-landing",
-                },
+            "ingestion": {
+                "mode": "blob_trigger",
+                "container": "qc-landing",
             },
         }
 
@@ -128,14 +124,12 @@ class TestJobRegistrationService:
         """Test sync_all_jobs handles mix of source types."""
         market_prices_config = {
             "source_id": "market-prices",
-            "config": {
-                "ingestion": {
-                    "mode": "scheduled_pull",
-                    "schedule": "0 */4 * * *",
-                    "request": {
-                        "base_url": "https://api.prices.example.com/v1/prices",
-                        "auth_type": "api_key",
-                    },
+            "ingestion": {
+                "mode": "scheduled_pull",
+                "schedule": "0 */4 * * *",
+                "request": {
+                    "base_url": "https://api.prices.example.com/v1/prices",
+                    "auth_type": "api_key",
                 },
             },
         }
@@ -252,13 +246,11 @@ class TestJobRegistrationService:
         """Test that schedule is extracted from nested config correctly."""
         config = {
             "source_id": "test-source",
-            "config": {
-                "ingestion": {
-                    "mode": "scheduled_pull",
-                    "schedule": "@every 30m",  # DAPR-style schedule
-                    "request": {
-                        "base_url": "https://example.com",
-                    },
+            "ingestion": {
+                "mode": "scheduled_pull",
+                "schedule": "@every 30m",  # DAPR-style schedule
+                "request": {
+                    "base_url": "https://example.com",
                 },
             },
         }

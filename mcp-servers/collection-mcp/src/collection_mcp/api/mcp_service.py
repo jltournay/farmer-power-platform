@@ -204,13 +204,30 @@ class McpToolServiceServicer(mcp_tool_pb2_grpc.McpToolServiceServicer):
         Returns:
             Dict with documents list and metadata.
         """
+        source_id = arguments.get("source_id")
+        collection_name = None
+
+        # Look up source config to get the correct collection name
+        # Per Pydantic model (fp_common/models/source_config.py:239), storage is a direct field
+        if source_id:
+            source_config = await self._source_config_client.get_source(source_id)
+            if source_config:
+                storage = source_config.get("storage", {})
+                collection_name = storage.get("index_collection")
+                logger.debug(
+                    "Resolved collection from source config",
+                    source_id=source_id,
+                    collection_name=collection_name,
+                )
+
         documents = await self._document_client.get_documents(
-            source_id=arguments.get("source_id"),
+            source_id=source_id,
             farmer_id=arguments.get("farmer_id"),
             linkage=arguments.get("linkage"),
             attributes=arguments.get("attributes"),
             date_range=arguments.get("date_range"),
             limit=arguments.get("limit", 50),
+            collection_name=collection_name,
         )
 
         return {

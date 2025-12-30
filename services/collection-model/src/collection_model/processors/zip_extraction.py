@@ -337,7 +337,7 @@ class ZipExtractionProcessor(ContentProcessor):
                     raise ZipExtractionError("Corrupt ZIP file detected")
 
                 # Get manifest file name from config (default: manifest.json)
-                zip_config = source_config.get("config", {}).get("ingestion", {}).get("zip_config", {})
+                zip_config = source_config.get("ingestion", {}).get("zip_config", {})
                 manifest_file = zip_config.get("manifest_file", "manifest.json")
 
                 # Extract manifest
@@ -470,7 +470,7 @@ class ZipExtractionProcessor(ContentProcessor):
         file_content = zf.read(file_entry.path)
 
         # Get container from config (NO hardcoded container names)
-        storage = source_config.get("config", {}).get("storage", {})
+        storage = source_config.get("storage", {})
         container = storage.get("file_container")
         if not container:
             raise ConfigurationError("No file_container in storage config")
@@ -519,7 +519,7 @@ class ZipExtractionProcessor(ContentProcessor):
         - {ingestion_id}: Ingestion job ID
         - {linkage.*}: Any field from manifest.linkage
         """
-        transformation = source_config.get("config", {}).get("transformation", {})
+        transformation = source_config.get("transformation", {})
         link_field = transformation.get("link_field", "")
         link_value = manifest.linkage.get(link_field, "unknown")
 
@@ -586,7 +586,7 @@ class ZipExtractionProcessor(ContentProcessor):
         Returns:
             DocumentIndex instance.
         """
-        transformation = source_config.get("config", {}).get("transformation", {})
+        transformation = source_config.get("transformation", {})
         link_field = transformation.get("link_field", "")
         link_value = manifest.linkage.get(link_field, "unknown")
 
@@ -653,13 +653,13 @@ class ZipExtractionProcessor(ContentProcessor):
             raise ConfigurationError("Document repository not configured")
 
         # Get collection name FROM CONFIG - not hardcoded!
-        storage = source_config.get("config", {}).get("storage", {})
+        storage = source_config.get("storage", {})
         collection_name = storage.get("index_collection")
         if not collection_name:
             raise ConfigurationError("No index_collection in storage config")
 
         # Get link field for indexing
-        transformation = source_config.get("config", {}).get("transformation", {})
+        transformation = source_config.get("transformation", {})
         link_field = transformation.get("link_field", "")
 
         # Ensure indexes exist
@@ -710,7 +710,7 @@ class ZipExtractionProcessor(ContentProcessor):
             logger.debug("Event publisher not configured, skipping event emission")
             return
 
-        events_config = source_config.get("config", {}).get("events", {})
+        events_config = source_config.get("events", {})
         on_success = events_config.get("on_success")
         if not on_success:
             logger.debug(

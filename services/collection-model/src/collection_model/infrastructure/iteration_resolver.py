@@ -4,15 +4,34 @@ This module provides the IterationResolver class for calling MCP tools
 via DAPR Service Invocation to get lists of items for parallel fetching.
 Used when source configs have an iteration block to dynamically expand
 API calls based on runtime data (e.g., list of regions, farmers).
+
+DAPR gRPC Proxying Pattern (Story 0.4.6 fix):
+--------------------------------------------
+To invoke gRPC services (like MCP servers) via DAPR, we use native gRPC
+with the `dapr-app-id` metadata header. This is the recommended approach
+for gRPC-to-gRPC communication in DAPR (see DAPR docs: howto-invoke-services-grpc).
+
+Pattern:
+1. Connect to DAPR sidecar's gRPC port (default 50001)
+2. Use native proto stubs (McpToolServiceStub)
+3. Add metadata: [("dapr-app-id", target_service)]
+4. DAPR routes the call to the target service
+
+This replaces the previous DaprClient.invoke_method() approach which uses
+HTTP and doesn't support HTTP-to-gRPC transcoding for protobuf messages.
 """
 
 import json
 from typing import Any
 
+import grpc
 import structlog
-from dapr.clients import DaprClient
+from fp_proto.mcp.v1 import mcp_tool_pb2, mcp_tool_pb2_grpc
 
 logger = structlog.get_logger(__name__)
+
+# DAPR sidecar gRPC port (used for gRPC proxying to other services)
+DAPR_GRPC_PORT = 50001
 
 
 class IterationResolverError(Exception):
@@ -76,30 +95,28 @@ class IterationResolver:
         )
 
         try:
-            # Build MCP ToolCallRequest
-            request_data = {
-                "tool_name": source_tool,
-                "arguments_json": json.dumps(tool_arguments),
-            }
+            # Build MCP ToolCallRequest protobuf message
+            request = mcp_tool_pb2.ToolCallRequest(
+                tool_name=source_tool,
+                arguments_json=json.dumps(tool_arguments),
+            )
 
-            # Call MCP server via DAPR Service Invocation
-            with DaprClient() as client:
-                response = client.invoke_method(
-                    app_id=source_mcp,
-                    method_name="CallTool",
-                    data=json.dumps(request_data),
-                    content_type="application/json",
-                )
+            # Call MCP server via DAPR gRPC proxying
+            # Connect to DAPR sidecar's gRPC port and use dapr-app-id metadata
+            # to route the request to the target MCP service
+            target = f"localhost:{DAPR_GRPC_PORT}"
+            async with grpc.aio.insecure_channel(target) as channel:
+                stub = mcp_tool_pb2_grpc.McpToolServiceStub(channel)
+                # DAPR routes the call to the target app via dapr-app-id metadata
+                metadata = [("dapr-app-id", source_mcp)]
+                response = await stub.CallTool(request, metadata=metadata)
 
-            # Parse response
-            response_data = json.loads(response.data.decode("utf-8"))
-
-            if not response_data.get("success", False):
-                error_message = response_data.get("error_message", "Unknown error")
+            if not response.success:
+                error_message = response.error_message or "Unknown error"
                 raise IterationResolverError(f"MCP tool call failed: {error_message}")
 
-            # Parse result_json
-            result_json = response_data.get("result_json", "[]")
+            # Parse result_json from response
+            result_json = response.result_json or "[]"
             result = json.loads(result_json)
 
             # Extract items from result path if specified

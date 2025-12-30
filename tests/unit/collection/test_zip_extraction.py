@@ -207,30 +207,28 @@ class TestZipExtractionProcessor:
         """Create sample source configuration."""
         return {
             "source_id": "qc-analyzer-exceptions",
-            "config": {
-                "ingestion": {
-                    "mode": "blob_trigger",
-                    "processor_type": "zip-extraction",
-                    "zip_config": {
-                        "manifest_file": "manifest.json",
-                    },
+            "ingestion": {
+                "mode": "blob_trigger",
+                "processor_type": "zip-extraction",
+                "zip_config": {
+                    "manifest_file": "manifest.json",
                 },
-                "transformation": {
-                    "ai_agent_id": "qc-exception-extraction-agent",
-                    "extract_fields": ["plantation_id", "batch_id"],
-                    "link_field": "plantation_id",
-                },
-                "storage": {
-                    "raw_container": "exception-images-raw",
-                    "file_container": "exception-images",
-                    "file_path_pattern": "{plantation_id}/{batch_id}/{doc_id}/{filename}",
-                    "index_collection": "documents",
-                },
-                "events": {
-                    "on_success": {
-                        "topic": "collection.exception_images.received",
-                        "payload_fields": ["plantation_id", "batch_id", "document_count"],
-                    },
+            },
+            "transformation": {
+                "ai_agent_id": "qc-exception-extraction-agent",
+                "extract_fields": ["plantation_id", "batch_id"],
+                "link_field": "plantation_id",
+            },
+            "storage": {
+                "raw_container": "exception-images-raw",
+                "file_container": "exception-images",
+                "file_path_pattern": "{plantation_id}/{batch_id}/{doc_id}/{filename}",
+                "index_collection": "documents",
+            },
+            "events": {
+                "on_success": {
+                    "topic": "collection.exception_images.received",
+                    "payload_fields": ["plantation_id", "batch_id", "document_count"],
                 },
             },
         }
@@ -381,14 +379,12 @@ class TestZipExtractionProcessor:
         """Test that missing file_container in config raises ConfigurationError."""
         bad_config = {
             "source_id": "test",
-            "config": {
-                "ingestion": {"zip_config": {"manifest_file": "manifest.json"}},
-                "transformation": {"link_field": "id"},
-                "storage": {
-                    "raw_container": "raw",
-                    "index_collection": "documents",
-                    # Missing file_container!
-                },
+            "ingestion": {"zip_config": {"manifest_file": "manifest.json"}},
+            "transformation": {"link_field": "id"},
+            "storage": {
+                "raw_container": "raw",
+                "index_collection": "documents",
+                # Missing file_container!
             },
         }
 
@@ -524,7 +520,7 @@ class TestZipExtractionProcessor:
             content_length=100,
         )
         source_config = {
-            "config": {"transformation": {"link_field": "plantation_id"}},
+            "transformation": {"link_field": "plantation_id"},
         }
 
         path = processor._build_blob_path(
@@ -615,27 +611,25 @@ class TestZipExtractionProcessorDeduplication:
         """Create sample source configuration."""
         return {
             "source_id": "qc-analyzer-exceptions",
-            "config": {
-                "ingestion": {
-                    "mode": "blob_trigger",
-                    "processor_type": "zip-extraction",
-                    "zip_config": {"manifest_file": "manifest.json"},
-                },
-                "transformation": {
-                    "ai_agent_id": "qc-exception-extraction-agent",
-                    "link_field": "plantation_id",
-                },
-                "storage": {
-                    "raw_container": "exception-images-raw",
-                    "file_container": "exception-images",
-                    "file_path_pattern": "{plantation_id}/{batch_id}/{doc_id}/{filename}",
-                    "index_collection": "documents",
-                },
-                "events": {
-                    "on_success": {
-                        "topic": "collection.exception_images.received",
-                        "payload_fields": ["plantation_id", "batch_id"],
-                    },
+            "ingestion": {
+                "mode": "blob_trigger",
+                "processor_type": "zip-extraction",
+                "zip_config": {"manifest_file": "manifest.json"},
+            },
+            "transformation": {
+                "ai_agent_id": "qc-exception-extraction-agent",
+                "link_field": "plantation_id",
+            },
+            "storage": {
+                "raw_container": "exception-images-raw",
+                "file_container": "exception-images",
+                "file_path_pattern": "{plantation_id}/{batch_id}/{doc_id}/{filename}",
+                "index_collection": "documents",
+            },
+            "events": {
+                "on_success": {
+                    "topic": "collection.exception_images.received",
+                    "payload_fields": ["plantation_id", "batch_id"],
                 },
             },
         }
@@ -866,7 +860,7 @@ class TestDocumentIndexCreation:
             content_length=100,
         )
         source_config = {
-            "config": {"transformation": {"link_field": "plantation_id"}},
+            "transformation": {"link_field": "plantation_id"},
         }
 
         doc = processor._create_document_index(
@@ -907,7 +901,7 @@ class TestDocumentIndexCreation:
             source_id="test",
             content_length=100,
         )
-        source_config = {"config": {"transformation": {"link_field": "plantation_id"}}}
+        source_config = {"transformation": {"link_field": "plantation_id"}}
 
         doc = processor._create_document_index(
             doc_entry=doc_entry,
@@ -947,7 +941,7 @@ class TestDocumentIndexCreation:
             source_id="test",
             content_length=100,
         )
-        source_config = {"config": {"transformation": {"link_field": "plantation_id"}}}
+        source_config = {"transformation": {"link_field": "plantation_id"}}
 
         doc = processor._create_document_index(
             doc_entry=doc_entry,
@@ -987,7 +981,7 @@ class TestDocumentIndexCreation:
             source_id="test",
             content_length=100,
         )
-        source_config = {"config": {"transformation": {"link_field": "plantation_id"}}}
+        source_config = {"transformation": {"link_field": "plantation_id"}}
 
         # Create file refs by role
         image_ref = BlobReference(

@@ -101,11 +101,79 @@ So that real weather API data flows through the pipeline with deterministic extr
 - [x] If production code has bugs, document each fix (see below)
 
 ### Production Code Changes (if any)
-If you modified ANY production code, document each change here:
 
-| File:Lines | What Changed | Why (with evidence) | Type |
-|------------|--------------|---------------------|------|
-| (no `services/` code changed) | | | |
+## Production Code Changes
+
+### Change 1: iteration_resolver.py - DAPR gRPC proxying pattern
+- **File:** `services/collection-model/src/collection_model/infrastructure/iteration_resolver.py:1-22, 82-105`
+- **What changed:** Replaced `DaprClient().invoke_method()` (HTTP-based) with native gRPC stub using `dapr-app-id` metadata header for DAPR gRPC proxying
+- **Why:** The original code used DAPR's HTTP invocation API which cannot proxy to gRPC services. When Collection Model called plantation-mcp (a gRPC service), DAPR returned HTTP 501 "Not Implemented" because HTTP-to-gRPC transcoding is not supported for protobuf messages.
+- **Evidence:**
+  - DAPR docs (howto-invoke-services-grpc): "To invoke a gRPC service through Dapr, you connect to your local Dapr sidecar (default port 50001) and add the `dapr-app-id` metadata header"
+  - Same pattern used in `mcp-servers/plantation-mcp/src/plantation_mcp/infrastructure/plantation_client.py:81` for DAPR gRPC proxying
+  - Runtime error: `DaprHttpError: Unknown Dapr Error. HTTP status code: 501`
+- **Type:** Bug fix (DAPR service invocation pattern misalignment)
+
+### Change 2: ai_model_client.py - DAPR gRPC proxying + ObjectId serialization
+- **File:** `services/collection-model/src/collection_model/infrastructure/ai_model_client.py:1-46, 122-195`
+- **What changed:**
+  1. Replaced `DaprClient().invoke_method()` (HTTP) with native gRPC stub using `dapr-app-id` metadata header
+  2. Added `MongoJSONEncoder` class to handle MongoDB ObjectId serialization
+- **Why:**
+  1. Same DAPR HTTP-to-gRPC issue as iteration_resolver - AI Model is a gRPC service
+  2. Source config from MongoDB contains `_id` field which is `ObjectId`, causing `TypeError: Object of type ObjectId is not JSON serializable`
+- **Evidence:**
+  - Same DAPR pattern issue as Change 1
+  - Runtime error: `TypeError: Object of type ObjectId is not JSON serializable` at line 100
+  - MongoDB documents always have `_id` field which is BSON ObjectId
+- **Type:** Bug fix (DAPR pattern + JSON serialization)
+
+### Change 3: Collection MCP document_client.py + mcp_service.py - Dynamic collection lookup
+- **File:** `mcp-servers/collection-mcp/src/collection_mcp/infrastructure/document_client.py:26-56, 116-161`
+- **What changed:**
+  1. Added `_get_collection()` helper method to return collection by name or default
+  2. Added `collection_name` parameter to `get_documents()` method
+  3. Query now uses the collection specified by source config's `storage.index_collection`
+- **File:** `mcp-servers/collection-mcp/src/collection_mcp/api/mcp_service.py:210-221`
+- **What changed:**
+  1. `_handle_get_documents` now looks up source config to get `storage.index_collection`
+  2. Passes collection name to `document_client.get_documents()`
+- **Why:** Collection MCP was hardcoded to query `quality_documents` collection, but different sources store in different collections (per `storage.index_collection`). When querying by source_id, the MCP must query the correct collection.
+- **Evidence:**
+  - Pydantic model `fp_common/models/source_config.py:239` defines `storage: StorageConfig` as direct field
+  - Runtime error: Collection MCP returned 0 documents when weather_documents had 25
+- **Type:** Bug fix (Collection MCP hardcoded collection name instead of config-driven)
+
+### Change 4: Production code - Remove incorrect config wrapper
+- **Files:** Multiple files in `services/collection-model/src/collection_model/`:
+  - `processors/json_extraction.py`
+  - `processors/zip_extraction.py`
+  - `infrastructure/raw_document_store.py`
+  - `infrastructure/dapr_event_publisher.py`
+  - `domain/document_index.py`
+  - `services/content_processor_worker.py`
+  - `services/job_registration_service.py`
+  - `services/pull_job_handler.py`
+  - `services/source_config_service.py` (2 occurrences)
+- **What changed:** Replaced `source_config.get("config", {}).get(X)` with `source_config.get(X)` and `config.get("config", {}).get(X)` with `config.get(X)`
+- **Why:** The Pydantic model `SourceConfig` defines fields like `storage`, `ingestion`, `transformation`, `events` as direct fields, NOT nested under a `config` wrapper.
+- **Evidence:**
+  - Pydantic model `fp_common/models/source_config.py:236-240` shows direct fields
+  - Code was accessing `config.storage` when model defines `storage` directly
+  - Runtime error: "No matching source config for container" when blob triggers processed
+- **Type:** Bug fix (production code didn't match Pydantic model schema)
+
+### Seed Data Fix
+- **File:** `tests/e2e/infrastructure/seed/source_configs.json`
+- **What changed:** Flattened structure - removed `config` wrapper, made `ingestion`, `transformation`, `storage`, `events` direct fields
+- **Why:** Seed data must match Pydantic model `SourceConfig` schema
+- **Evidence:** Pydantic model `fp_common/models/source_config.py:222-240`
+
+## Unit Test Changes
+
+| Test File | Test Name Before | Test Name After | Behavior Change | Justification |
+|-----------|------------------|-----------------|-----------------|---------------|
+| `tests/unit/collection/test_iteration_resolver.py` | All tests mocked `DaprClient` | All tests mock `grpc.aio.insecure_channel` + `McpToolServiceStub` | Mock pattern changed to match production code | Production code now uses native gRPC instead of DaprClient HTTP; tests must mock the same interfaces |
 
 ### Infrastructure/Integration Changes
 

@@ -145,8 +145,8 @@ class TestDocumentClientGetDocuments:
             {"_id": "id2", "document_id": "doc-002", "source_id": "test"},
         ]
         mock_cursor = MockAsyncCursor(mock_docs)
-        client._collection = MagicMock()
-        client._collection.find = MagicMock(return_value=mock_cursor)
+        client._default_collection = MagicMock()
+        client._default_collection.find = MagicMock(return_value=mock_cursor)
 
         result = await client.get_documents(source_id="test")
 
@@ -160,8 +160,8 @@ class TestDocumentClientGetDocuments:
         """Verify get_documents respects limit parameter."""
         mock_docs = [{"_id": f"id{i}", "document_id": f"doc-{i:03d}"} for i in range(100)]
         mock_cursor = MockAsyncCursor(mock_docs)
-        client._collection = MagicMock()
-        client._collection.find = MagicMock(return_value=mock_cursor)
+        client._default_collection = MagicMock()
+        client._default_collection.find = MagicMock(return_value=mock_cursor)
 
         result = await client.get_documents(limit=10)
 
@@ -172,8 +172,8 @@ class TestDocumentClientGetDocuments:
         """Verify get_documents enforces maximum limit of 1000."""
         mock_docs = [{"_id": "id1", "document_id": "doc-001"}]
         mock_cursor = MockAsyncCursor(mock_docs)
-        client._collection = MagicMock()
-        client._collection.find = MagicMock(return_value=mock_cursor)
+        client._default_collection = MagicMock()
+        client._default_collection.find = MagicMock(return_value=mock_cursor)
 
         # Request more than max limit
         await client.get_documents(limit=2000)
@@ -204,8 +204,8 @@ class TestDocumentClientGetDocumentById:
             "source_id": "qc-analyzer-exceptions",
             "files": [{"blob_uri": "https://storage.blob.core.windows.net/test/file.jpg"}],
         }
-        client._collection = MagicMock()
-        client._collection.find_one = AsyncMock(return_value=mock_doc)
+        client._default_collection = MagicMock()
+        client._default_collection.find_one = AsyncMock(return_value=mock_doc)
 
         result = await client.get_document_by_id("qc-analyzer/batch-001/leaf_001")
 
@@ -215,8 +215,8 @@ class TestDocumentClientGetDocumentById:
     @pytest.mark.asyncio
     async def test_get_document_by_id_raises_not_found(self, client: DocumentClient) -> None:
         """Verify get_document_by_id raises DocumentNotFoundError."""
-        client._collection = MagicMock()
-        client._collection.find_one = AsyncMock(return_value=None)
+        client._default_collection = MagicMock()
+        client._default_collection.find_one = AsyncMock(return_value=None)
 
         with pytest.raises(DocumentNotFoundError) as exc_info:
             await client.get_document_by_id("nonexistent")
@@ -245,8 +245,8 @@ class TestDocumentClientGetFarmerDocuments:
             {"_id": "id2", "document_id": "doc-002", "farmer_id": "WM-4521"},
         ]
         mock_cursor = MockAsyncCursor(mock_docs)
-        client._collection = MagicMock()
-        client._collection.find = MagicMock(return_value=mock_cursor)
+        client._default_collection = MagicMock()
+        client._default_collection.find = MagicMock(return_value=mock_cursor)
 
         result = await client.get_farmer_documents(farmer_id="WM-4521")
 
@@ -258,8 +258,8 @@ class TestDocumentClientGetFarmerDocuments:
         """Verify get_farmer_documents filters by source_ids."""
         mock_docs = [{"_id": "id1", "document_id": "doc-001", "farmer_id": "WM-4521"}]
         mock_cursor = MockAsyncCursor(mock_docs)
-        client._collection = MagicMock()
-        client._collection.find = MagicMock(return_value=mock_cursor)
+        client._default_collection = MagicMock()
+        client._default_collection.find = MagicMock(return_value=mock_cursor)
 
         await client.get_farmer_documents(
             farmer_id="WM-4521",
@@ -268,7 +268,7 @@ class TestDocumentClientGetFarmerDocuments:
 
         # Verify $in operator was used for source_ids
         # Field path matches DocumentIndex.ingestion.source_id
-        call_args = client._collection.find.call_args
+        call_args = client._default_collection.find.call_args
         query = call_args[0][0]
         assert "ingestion.source_id" in query
         assert "$in" in query["ingestion.source_id"]
@@ -300,14 +300,14 @@ class TestDocumentClientSearchDocuments:
         mock_cursor_with_sort.sort = MagicMock(return_value=mock_cursor)
         mock_cursor_with_sort.limit = MagicMock(return_value=mock_cursor)
 
-        client._collection = MagicMock()
-        client._collection.find = MagicMock(return_value=mock_cursor_with_sort)
+        client._default_collection = MagicMock()
+        client._default_collection.find = MagicMock(return_value=mock_cursor_with_sort)
 
         result = await client.search_documents(query_text="coarse leaf")
 
         assert len(result) == 1
         # Verify text search query was used
-        call_args = client._collection.find.call_args
+        call_args = client._default_collection.find.call_args
         query = call_args[0][0]
         assert "$text" in query
 
@@ -319,8 +319,8 @@ class TestDocumentClientSearchDocuments:
         mock_cursor_with_sort = MagicMock()
         mock_cursor_with_sort.sort = MagicMock(return_value=mock_cursor)
 
-        client._collection = MagicMock()
-        client._collection.find = MagicMock(return_value=mock_cursor_with_sort)
+        client._default_collection = MagicMock()
+        client._default_collection.find = MagicMock(return_value=mock_cursor_with_sort)
 
         # Request more than max limit
         await client.search_documents(query_text="test", limit=500)

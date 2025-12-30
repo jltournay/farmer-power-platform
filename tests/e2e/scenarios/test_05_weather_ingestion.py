@@ -24,6 +24,7 @@ Seed Data Required:
 """
 
 import asyncio
+import time
 
 import grpc
 import pytest
@@ -34,6 +35,50 @@ import pytest
 
 SOURCE_ID = "e2e-weather-api"
 MOCK_AI_MODEL_PORT = 8090  # External port mapped in docker-compose
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# POLLING HELPERS - Replace fragile asyncio.sleep with robust polling
+# ═══════════════════════════════════════════════════════════════════════════════
+
+
+async def wait_for_weather_documents(
+    mongodb_direct,
+    source_id: str,
+    expected_min_count: int = 1,
+    timeout: float = 15.0,
+    poll_interval: float = 0.5,
+) -> int:
+    """Wait for weather document count to reach expected minimum.
+
+    Args:
+        mongodb_direct: MongoDB direct client fixture
+        source_id: Source ID to filter documents
+        expected_min_count: Minimum document count to wait for
+        timeout: Maximum time to wait in seconds
+        poll_interval: Time between polls in seconds
+
+    Returns:
+        Final document count
+
+    Raises:
+        TimeoutError: If expected count not reached within timeout
+    """
+    start = time.time()
+    last_count = 0
+    while time.time() - start < timeout:
+        documents = await mongodb_direct.find_documents(
+            collection="weather_documents",
+            query={"ingestion.source_id": source_id},
+        )
+        last_count = len(documents)
+        if last_count >= expected_min_count:
+            return last_count
+        await asyncio.sleep(poll_interval)
+    raise TimeoutError(
+        f"Weather document count for {source_id} did not reach {expected_min_count} "
+        f"within {timeout}s (last count: {last_count})"
+    )
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -141,10 +186,10 @@ class TestWeatherDocumentCreation:
         """
         # Trigger pull job first
         result = await collection_api.trigger_pull_job(SOURCE_ID)
-        assert result["success"] is True
+        assert result["success"] is True, f"Pull job failed: {result.get('error')}"
 
-        # Wait for async processing
-        await asyncio.sleep(3)
+        # Wait for async processing using polling (more robust than fixed sleep)
+        await wait_for_weather_documents(mongodb_direct, SOURCE_ID, expected_min_count=1, timeout=15.0)
 
         # Query weather documents from MongoDB
         documents = await mongodb_direct.find_documents(
@@ -177,8 +222,11 @@ class TestWeatherDocumentCreation:
         Then weather attributes from Open-Meteo are present.
         """
         # Trigger pull job
-        await collection_api.trigger_pull_job(SOURCE_ID)
-        await asyncio.sleep(3)
+        result = await collection_api.trigger_pull_job(SOURCE_ID)
+        assert result["success"] is True, f"Pull job failed: {result.get('error')}"
+
+        # Wait for async processing using polling
+        await wait_for_weather_documents(mongodb_direct, SOURCE_ID, expected_min_count=1, timeout=15.0)
 
         # Query weather documents
         documents = await mongodb_direct.find_documents(
@@ -222,8 +270,11 @@ class TestPlantationMCPWeatherQuery:
         Then weather observations are returned.
         """
         # First ensure weather data exists
-        await collection_api.trigger_pull_job(SOURCE_ID)
-        await asyncio.sleep(3)
+        result = await collection_api.trigger_pull_job(SOURCE_ID)
+        assert result["success"] is True, f"Pull job failed: {result.get('error')}"
+
+        # Wait for async processing using polling
+        await wait_for_weather_documents(mongodb_direct, SOURCE_ID, expected_min_count=1, timeout=15.0)
 
         # Get a region_id from the weather documents
         documents = await mongodb_direct.find_documents(
@@ -262,14 +313,18 @@ class TestCollectionMCPWeatherQuery:
         self,
         collection_mcp,
         collection_api,
+        mongodb_direct,  # Added for polling
         seed_data,
     ):
         """Given weather document is stored, When I query via Collection MCP,
         Then the weather document is returned with attributes.
         """
         # Trigger pull job to create weather documents
-        await collection_api.trigger_pull_job(SOURCE_ID)
-        await asyncio.sleep(3)
+        result = await collection_api.trigger_pull_job(SOURCE_ID)
+        assert result["success"] is True, f"Pull job failed: {result.get('error')}"
+
+        # Wait for async processing using polling
+        await wait_for_weather_documents(mongodb_direct, SOURCE_ID, expected_min_count=1, timeout=15.0)
 
         # Query via Collection MCP get_documents
         result = await collection_mcp.call_tool(

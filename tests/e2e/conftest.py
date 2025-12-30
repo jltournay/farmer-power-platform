@@ -14,6 +14,7 @@ Usage:
 from __future__ import annotations
 
 import asyncio
+import contextlib
 import json
 from collections.abc import AsyncGenerator
 from pathlib import Path
@@ -225,6 +226,11 @@ async def seed_data_session(
 
     This runs before any tests, ensuring seed data is loaded
     before services cache their configs.
+
+    Test Isolation Strategy:
+    1. Drop all E2E databases to ensure clean state
+    2. Seed fresh data from JSON files
+    3. Call /admin/invalidate-cache on collection-model to refresh cache
     """
     global _seeded_data
 
@@ -263,6 +269,8 @@ async def seed_data_session(
         MongoDBDirectClient(e2e_config["mongodb_uri"]) as mongodb,
         AzuriteClient(e2e_config["azurite_connection_string"]) as azurite,
     ):
+        # Step 1: Drop all E2E databases for test isolation
+        await mongodb.drop_all_e2e_databases()
         # Create required blob containers
         for container_name in ["quality-events-e2e", "raw-documents-e2e", "manual-uploads-e2e"]:
             await azurite.create_container(container_name)
@@ -298,6 +306,12 @@ async def seed_data_session(
                     data=blob_spec["content"],
                 )
             seeded_data["document_blobs"] = blobs
+
+    # Step 3: Invalidate caches so services pick up new data
+    async with httpx.AsyncClient(timeout=5.0) as client:
+        # Invalidate collection-model's source config cache
+        with contextlib.suppress(Exception):
+            await client.post(f"{e2e_config['collection_model_url']}/admin/invalidate-cache")
 
     _seeded_data = seeded_data
     yield seeded_data

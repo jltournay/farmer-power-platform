@@ -63,7 +63,7 @@ class JobRegistrationService:
 
             for config in configs:
                 source_id = config.get("source_id", "unknown")
-                ingestion = config.get("config", {}).get("ingestion", {})
+                ingestion = config.get("ingestion", {})
                 mode = ingestion.get("mode", "")
 
                 if mode != "scheduled_pull":
@@ -115,7 +115,7 @@ class JobRegistrationService:
             True if job was registered, False otherwise.
         """
         source_id = source_config.get("source_id", "")
-        ingestion = source_config.get("config", {}).get("ingestion", {})
+        ingestion = source_config.get("ingestion", {})
         mode = ingestion.get("mode", "")
 
         if mode != "scheduled_pull":

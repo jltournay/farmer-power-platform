@@ -104,7 +104,7 @@ class RawDocumentStore:
             StorageError: If storage operation fails.
         """
         source_id = source_config.get("source_id", "unknown")
-        storage = source_config.get("config", {}).get("storage", {})
+        storage = source_config.get("storage", {})
         raw_container = storage.get("raw_container", "raw-documents")
 
         content_hash = self.compute_content_hash(content)
@@ -234,7 +234,7 @@ class RawDocumentStore:
         Returns:
             MIME type string.
         """
-        ingestion = source_config.get("config", {}).get("ingestion", {})
+        ingestion = source_config.get("ingestion", {})
         file_format = ingestion.get("file_format", "")
 
         if file_format == "json":

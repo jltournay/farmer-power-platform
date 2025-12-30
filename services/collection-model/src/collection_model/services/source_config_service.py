@@ -104,7 +104,7 @@ class SourceConfigService:
         """
         configs = await self.get_all_configs()
         for config in configs:
-            ingestion = config.get("config", {}).get("ingestion", {})
+            ingestion = config.get("ingestion", {})
             if ingestion.get("mode") == "blob_trigger":
                 landing_container = ingestion.get("landing_container")
                 if landing_container == container:
@@ -138,7 +138,7 @@ class SourceConfigService:
             Dict of extracted field values, empty if pattern doesn't match.
 
         """
-        ingestion = config.get("config", {}).get("ingestion", {})
+        ingestion = config.get("ingestion", {})
         path_pattern = ingestion.get("path_pattern")
         if not path_pattern:
             return {}

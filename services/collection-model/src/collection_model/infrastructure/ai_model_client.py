@@ -6,18 +6,44 @@ all LLM operations go through AI Model.
 
 Architecture Decision: All inter-service communication uses gRPC via DAPR
 (see infrastructure-decisions.md).
+
+DAPR gRPC Proxying Pattern (Story 0.4.6 fix):
+--------------------------------------------
+To invoke gRPC services (like AI Model) via DAPR, we use native gRPC
+with the `dapr-app-id` metadata header. This is the recommended approach
+for gRPC-to-gRPC communication in DAPR (see DAPR docs: howto-invoke-services-grpc).
+
+Pattern:
+1. Connect to DAPR sidecar's gRPC port (default 50001)
+2. Use native proto stubs (AiModelServiceStub)
+3. Add metadata: [("dapr-app-id", ai_model_app_id)]
+4. DAPR routes the call to the target service
 """
 
 import json
 from typing import Any
 
+import grpc
 import structlog
+from bson import ObjectId
 from collection_model.config import settings
 from collection_model.domain.exceptions import ExtractionError
-from dapr.clients import DaprClient
+from fp_proto.ai_model.v1 import ai_model_pb2, ai_model_pb2_grpc
 from pydantic import BaseModel, Field
 
 logger = structlog.get_logger(__name__)
+
+# DAPR sidecar gRPC port (used for gRPC proxying to other services)
+DAPR_GRPC_PORT = 50001
+
+
+class MongoJSONEncoder(json.JSONEncoder):
+    """Custom JSON encoder that handles MongoDB ObjectId."""
+
+    def default(self, obj: Any) -> Any:
+        if isinstance(obj, ObjectId):
+            return str(obj)
+        return super().default(obj)
 
 
 class ExtractionRequest(BaseModel):
@@ -93,50 +119,49 @@ class AiModelClient:
             content_length=len(request.raw_content),
         )
 
-        # Prepare gRPC request payload as JSON (DAPR handles serialization)
-        request_data = {
-            "raw_content": request.raw_content,
-            "ai_agent_id": request.ai_agent_id,
-            "source_config_json": json.dumps(request.source_config),
-            "content_type": request.content_type,
-        }
+        # Build gRPC request protobuf message
+        # Use MongoJSONEncoder to handle ObjectId from MongoDB source_config
+        grpc_request = ai_model_pb2.ExtractionRequest(
+            raw_content=request.raw_content,
+            ai_agent_id=request.ai_agent_id,
+            source_config_json=json.dumps(request.source_config, cls=MongoJSONEncoder),
+            content_type=request.content_type,
+        )
 
         try:
-            with DaprClient() as client:
-                response = client.invoke_method(
-                    app_id=self._ai_model_app_id,
-                    method_name="Extract",
-                    data=json.dumps(request_data),
-                    content_type="application/json",
-                )
+            # Call AI Model service via DAPR gRPC proxying
+            # Connect to DAPR sidecar's gRPC port and use dapr-app-id metadata
+            target = f"localhost:{DAPR_GRPC_PORT}"
+            async with grpc.aio.insecure_channel(target) as channel:
+                stub = ai_model_pb2_grpc.AiModelServiceStub(channel)
+                # DAPR routes the call to AI Model via dapr-app-id metadata
+                metadata = [("dapr-app-id", self._ai_model_app_id)]
+                response = await stub.Extract(grpc_request, metadata=metadata)
 
-                # Parse response
-                response_data = json.loads(response.data.decode("utf-8"))
+            if not response.success:
+                error_msg = response.error_message or "Unknown extraction error"
+                raise ExtractionError(f"AI Model extraction failed: {error_msg}")
 
-                if not response_data.get("success", True):
-                    error_msg = response_data.get("error_message", "Unknown extraction error")
-                    raise ExtractionError(f"AI Model extraction failed: {error_msg}")
+            # Parse extracted fields from JSON response
+            extracted_fields_json = response.extracted_fields_json or "{}"
+            extracted_fields = json.loads(extracted_fields_json)
 
-                # Parse extracted fields from JSON
-                extracted_fields_json = response_data.get("extracted_fields_json", "{}")
-                extracted_fields = json.loads(extracted_fields_json)
+            result = ExtractionResponse(
+                extracted_fields=extracted_fields,
+                confidence=response.confidence,
+                validation_passed=response.validation_passed,
+                validation_warnings=list(response.validation_warnings),
+            )
 
-                result = ExtractionResponse(
-                    extracted_fields=extracted_fields,
-                    confidence=response_data.get("confidence", 1.0),
-                    validation_passed=response_data.get("validation_passed", True),
-                    validation_warnings=response_data.get("validation_warnings", []),
-                )
+            logger.info(
+                "AI Model extraction completed via gRPC",
+                ai_agent_id=request.ai_agent_id,
+                confidence=result.confidence,
+                validation_passed=result.validation_passed,
+                field_count=len(result.extracted_fields),
+            )
 
-                logger.info(
-                    "AI Model extraction completed via gRPC",
-                    ai_agent_id=request.ai_agent_id,
-                    confidence=result.confidence,
-                    validation_passed=result.validation_passed,
-                    field_count=len(result.extracted_fields),
-                )
-
-                return result
+            return result
 
         except ExtractionError:
             raise
@@ -156,16 +181,14 @@ class AiModelClient:
             True if healthy, False otherwise.
         """
         try:
-            with DaprClient() as client:
-                response = client.invoke_method(
-                    app_id=self._ai_model_app_id,
-                    method_name="HealthCheck",
-                    data="{}",
-                    content_type="application/json",
-                )
-
-                response_data = json.loads(response.data.decode("utf-8"))
-                return response_data.get("healthy", False)
+            # Call AI Model health check via DAPR gRPC proxying
+            target = f"localhost:{DAPR_GRPC_PORT}"
+            async with grpc.aio.insecure_channel(target) as channel:
+                stub = ai_model_pb2_grpc.AiModelServiceStub(channel)
+                metadata = [("dapr-app-id", self._ai_model_app_id)]
+                grpc_request = ai_model_pb2.HealthCheckRequest()
+                response = await stub.HealthCheck(grpc_request, metadata=metadata)
+                return response.healthy
 
         except Exception as e:
             logger.warning("AI Model health check failed", error=str(e))

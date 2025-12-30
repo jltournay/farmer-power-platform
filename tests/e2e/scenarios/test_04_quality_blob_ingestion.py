@@ -381,14 +381,16 @@ class TestDuplicateDetection:
         """Given a duplicate blob is uploaded (same content hash), When the blob
         event is triggered, Then the duplicate is detected and skipped (no new document).
         """
-        # Create unique test data with fixed content for duplication
-        event_id = f"QC-AC6-{uuid.uuid4().hex[:6].upper()}"
-        farmer_id = "FRM-E2E-001"
+        # Use a UNIQUE farmer_id for this test to avoid race conditions with other tests
+        # Other tests use FRM-E2E-001 which can cause count interference
+        unique_suffix = uuid.uuid4().hex[:6].upper()
+        farmer_id = f"FRM-DUP-{unique_suffix}"
+        event_id = f"QC-AC6-{unique_suffix}"
         quality_event = create_quality_event(event_id=event_id, farmer_id=farmer_id)
         blob_path = f"{farmer_id}/{event_id}.json"
         container_name = "quality-events-e2e"
 
-        # Get initial count before any uploads (use source_id for accuracy)
+        # Get initial count (should be 0 for this unique farmer_id)
         source_id = "e2e-qc-direct-json"
         initial_count = await mongodb_direct.count_quality_documents(farmer_id=farmer_id, source_id=source_id)
 

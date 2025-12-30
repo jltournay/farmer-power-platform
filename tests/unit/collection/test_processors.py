@@ -205,26 +205,24 @@ class TestJsonExtractionProcessor:
         """Create sample source configuration."""
         return {
             "source_id": "qc-analyzer-result",
-            "config": {
-                "ingestion": {
-                    "mode": "blob_trigger",
-                    "processor_type": "json-extraction",
-                },
-                "transformation": {
-                    "ai_agent_id": "qc-result-extraction-agent",
-                    "extract_fields": ["plantation_id", "batch_id"],
-                    "link_field": "plantation_id",
-                    "field_mappings": {"plantation_id": "farmer_id"},
-                },
-                "storage": {
-                    "raw_container": "quality-results-raw",
-                    "index_collection": "quality_results_index",
-                },
-                "events": {
-                    "on_success": {
-                        "topic": "collection.quality_result.received",
-                        "payload_fields": ["document_id", "source_id"],
-                    },
+            "ingestion": {
+                "mode": "blob_trigger",
+                "processor_type": "json-extraction",
+            },
+            "transformation": {
+                "ai_agent_id": "qc-result-extraction-agent",
+                "extract_fields": ["plantation_id", "batch_id"],
+                "link_field": "plantation_id",
+                "field_mappings": {"plantation_id": "farmer_id"},
+            },
+            "storage": {
+                "raw_container": "quality-results-raw",
+                "index_collection": "quality_results_index",
+            },
+            "events": {
+                "on_success": {
+                    "topic": "collection.quality_result.received",
+                    "payload_fields": ["document_id", "source_id"],
                 },
             },
         }
@@ -309,16 +307,14 @@ class TestJsonExtractionProcessor:
         """
         direct_config = {
             "source_id": "test-direct",
-            "config": {
-                "transformation": {
-                    "ai_agent_id": None,  # Direct extraction mode
-                    "extract_fields": ["farmer_id", "weight_kg"],
-                    "link_field": "farmer_id",
-                },
-                "storage": {
-                    "raw_container": "raw",
-                    "index_collection": "index",
-                },
+            "transformation": {
+                "ai_agent_id": None,  # Direct extraction mode
+                "extract_fields": ["farmer_id", "weight_kg"],
+                "link_field": "farmer_id",
+            },
+            "storage": {
+                "raw_container": "raw",
+                "index_collection": "index",
             },
         }
 

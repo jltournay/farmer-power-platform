@@ -3,13 +3,13 @@
 import pytest
 from plantation_model.domain.models.region import Region
 from plantation_model.domain.models.value_objects import (
+    GPS,
     Agronomic,
     AltitudeBand,
     AltitudeBandLabel,
     FlushCalendar,
     FlushPeriod,
     Geography,
-    GPS,
     WeatherConfig,
 )
 from plantation_model.infrastructure.repositories.region_repository import RegionRepository

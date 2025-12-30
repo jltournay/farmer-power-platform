@@ -217,7 +217,7 @@ class ContentProcessorWorker:
 
     async def _get_processor(self, source_config: dict[str, Any]) -> Any:
         """Get the appropriate processor for the source config."""
-        ingestion = source_config.get("config", {}).get("ingestion", {})
+        ingestion = source_config.get("ingestion", {})
         processor_type = ingestion.get("processor_type")
 
         if not processor_type:

@@ -85,24 +85,22 @@ class TestJsonExtractionProcessorDeduplication:
         """Create sample source configuration."""
         return {
             "source_id": "test-json-source",
-            "config": {
-                "ingestion": {
-                    "mode": "blob_trigger",
-                    "processor_type": "json-extraction",
-                },
-                "transformation": {
-                    "ai_agent_id": "test-agent",
-                    "link_field": "batch_id",
-                },
-                "storage": {
-                    "raw_container": "raw-json",
-                    "index_collection": "json_documents",
-                },
-                "events": {
-                    "on_success": {
-                        "topic": "collection.json.received",
-                        "payload_fields": ["batch_id"],
-                    },
+            "ingestion": {
+                "mode": "blob_trigger",
+                "processor_type": "json-extraction",
+            },
+            "transformation": {
+                "ai_agent_id": "test-agent",
+                "link_field": "batch_id",
+            },
+            "storage": {
+                "raw_container": "raw-json",
+                "index_collection": "json_documents",
+            },
+            "events": {
+                "on_success": {
+                    "topic": "collection.json.received",
+                    "payload_fields": ["batch_id"],
                 },
             },
         }

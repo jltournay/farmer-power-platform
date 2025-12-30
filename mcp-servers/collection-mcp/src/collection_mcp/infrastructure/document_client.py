@@ -26,6 +26,9 @@ class DocumentClientError(Exception):
 class DocumentClient:
     """Async MongoDB client for document operations."""
 
+    # Default collection for backward compatibility
+    DEFAULT_COLLECTION = "quality_documents"
+
     def __init__(self, mongodb_uri: str, database_name: str) -> None:
         """Initialize the document client.
 
@@ -35,8 +38,22 @@ class DocumentClient:
         """
         self._client: AsyncIOMotorClient = AsyncIOMotorClient(mongodb_uri)
         self._db: AsyncIOMotorDatabase = self._client[database_name]
-        # Collection name matches source_config.storage.index_collection
-        self._collection = self._db["quality_documents"]
+        # Default collection, can be overridden per-query via collection_name parameter
+        self._default_collection = self._db[self.DEFAULT_COLLECTION]
+
+    def _get_collection(self, collection_name: str | None = None):
+        """Get the collection to query.
+
+        Args:
+            collection_name: Optional specific collection name.
+                            If None, uses the default collection.
+
+        Returns:
+            MongoDB collection object.
+        """
+        if collection_name:
+            return self._db[collection_name]
+        return self._default_collection
 
     def _build_query(
         self,
@@ -104,6 +121,7 @@ class DocumentClient:
         attributes: dict[str, Any] | None = None,
         date_range: dict[str, str] | None = None,
         limit: int = 50,
+        collection_name: str | None = None,
     ) -> list[dict[str, Any]]:
         """Query documents with flexible filters.
 
@@ -114,6 +132,7 @@ class DocumentClient:
             attributes: Filter by attribute values (supports MongoDB operators)
             date_range: Filter by ingestion date range
             limit: Maximum number of results (default 50, max 1000)
+            collection_name: Optional collection to query (from source_config.storage.index_collection)
 
         Returns:
             List of matching documents sorted by created_at descending
@@ -129,13 +148,17 @@ class DocumentClient:
         # Enforce maximum limit
         limit = min(limit, 1000)
 
+        # Get the appropriate collection
+        collection = self._get_collection(collection_name)
+
         logger.debug(
             "Querying documents",
             query=query,
             limit=limit,
+            collection=collection_name or self.DEFAULT_COLLECTION,
         )
 
-        cursor = self._collection.find(query).sort("created_at", -1).limit(limit)
+        cursor = collection.find(query).sort("created_at", -1).limit(limit)
         documents = await cursor.to_list(length=limit)
 
         # Convert ObjectId to string for JSON serialization
@@ -166,7 +189,7 @@ class DocumentClient:
         """
         logger.debug("Getting document by ID", document_id=document_id)
 
-        document = await self._collection.find_one({"document_id": document_id})
+        document = await self._default_collection.find_one({"document_id": document_id})
 
         if document is None:
             logger.warning("Document not found", document_id=document_id)
@@ -226,7 +249,7 @@ class DocumentClient:
             limit=limit,
         )
 
-        cursor = self._collection.find(query).sort("created_at", -1).limit(limit)
+        cursor = self._default_collection.find(query).sort("created_at", -1).limit(limit)
         documents = await cursor.to_list(length=limit)
 
         # Convert ObjectId to string
@@ -287,7 +310,7 @@ class DocumentClient:
         try:
             text_query = {"$text": {"$search": query_text}, **filter_query}
             cursor = (
-                self._collection.find(text_query, {"score": {"$meta": "textScore"}})
+                self._default_collection.find(text_query, {"score": {"$meta": "textScore"}})
                 .sort([("score", {"$meta": "textScore"})])
                 .limit(limit)
             )
@@ -322,7 +345,7 @@ class DocumentClient:
             **filter_query,
         }
 
-        cursor = self._collection.find(regex_query).limit(limit)
+        cursor = self._default_collection.find(regex_query).limit(limit)
         documents = await cursor.to_list(length=limit)
 
         # Convert ObjectId

@@ -65,6 +65,7 @@ def mock_source_config_client() -> MagicMock:
     """Create a mock source config client."""
     client = MagicMock(spec=SourceConfigClient)
     client.list_sources = AsyncMock(return_value=[])
+    client.get_source = AsyncMock(return_value=None)
     return client
 
 
@@ -216,6 +217,7 @@ class TestGetDocumentsHandler:
             attributes={"grade": "B"},
             date_range=None,
             limit=25,
+            collection_name=None,
         )
 
 
