@@ -87,6 +87,7 @@ development_status:
   2-8-market-prices-pull-mode: covered-by-2-7  # Configuration-only
   2-9-collection-model-mcp-server: done  # github_issue: 23
   2-10-collection-model-repository-refactoring: done  # github_issue: 35 - Tech debt: Pydantic models + repository pattern
+  2-11-source-config-cli-schema-alignment: ready-for-dev  # github_issue: 36 - Tech debt: CLI writes nested schema, Collection Model expects flat
   epic-2-retrospective: done
 
   # Epic 0.4: E2E Test Scenarios for Plantation & Collection Models
