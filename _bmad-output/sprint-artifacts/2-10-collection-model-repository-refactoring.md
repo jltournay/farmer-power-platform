@@ -224,6 +224,34 @@ async with grpc.aio.insecure_channel("localhost:50001") as channel:  # DAPR side
 
 ## Dev Notes
 
+### E2E Follow-up Fixes (2025-12-30)
+
+During E2E testing with rebuilt Docker containers, the Pydantic type enforcement exposed additional issues that were missed in the initial implementation. All 63 E2E tests now pass after these fixes.
+
+#### Production Code Changes
+
+| File | Change | Why | Evidence | Type |
+|------|--------|-----|----------|------|
+| `libs/fp-common/fp_common/models/source_config.py:63-66` | Added `tool_arguments`, `result_path`, `inject_linkage` fields to `IterationConfig` | Model was incomplete - fields existed in seed data and were expected by iteration resolver | `iteration_resolver.py:57-61` documents usage | Schema alignment |
+| `services/collection-model/src/.../pull_job_handler.py:249-251` | Removed `.model_dump()` call, pass typed `IterationConfig` directly | Resolver expects typed model, not dict | Error: `'dict' object has no attribute 'source_mcp'` | Bug fix |
+| `services/collection-model/src/.../pull_job_handler.py:282` | Changed `inject_linkage = []` to `= iteration_config.inject_linkage or []` | Linkage fields weren't injected into documents | Test: `test_weather_document_created_with_region_linkage` | Bug fix |
+| `services/collection-model/src/.../iteration_resolver.py:86-87` | Replaced `getattr()` workaround with direct attribute access | Fields now exist in model | Fields added above | Code cleanup |
+| `services/collection-model/Dockerfile:63,66` | Added `COPY` for `fp-common` lib and updated `PYTHONPATH` | Story 2-10 added import but Dockerfile not updated | Error: `ModuleNotFoundError: No module named 'fp_common'` | Deployment fix |
+| `mcp-servers/collection-mcp/Dockerfile:63,66` | Same as above | Same dependency on fp-common | Same error | Deployment fix |
+
+#### Seed Data Changes
+
+| File | Change | Why |
+|------|--------|-----|
+| `tests/e2e/infrastructure/seed/source_configs.json:159` | `collection.weather_observation.received` → `collection.weather.updated` | Invalid topic not in `EventTopic` enum, Pydantic validation failed |
+
+#### Commit
+- `c3fd744` - fix(e2e): resolve Story 2-10 Pydantic schema enforcement issues
+
+---
+
+### Initial Implementation
+
 Implementation completed across 3 commits:
 1. `21752f5` - Main refactoring: repository pattern, typed models, consumer migration
 2. `ea531c5` - Integration test fixes for typed SourceConfig
