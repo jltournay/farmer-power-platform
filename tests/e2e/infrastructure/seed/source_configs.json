@@ -156,7 +156,7 @@
     },
     "events": {
       "on_success": {
-        "topic": "collection.weather_observation.received"
+        "topic": "collection.weather.updated"
       }
     },
     "created_at": "2025-01-01T00:00:00Z",

@@ -83,9 +83,8 @@ class IterationResolver:
         # Use typed attribute access from Pydantic model
         source_mcp = iteration_config.source_mcp
         source_tool = iteration_config.source_tool
-        # tool_arguments and result_path are not in the base model - get from model if present
-        tool_arguments = getattr(iteration_config, "tool_arguments", {}) or {}
-        result_path = getattr(iteration_config, "result_path", None)
+        tool_arguments = iteration_config.tool_arguments or {}
+        result_path = iteration_config.result_path
 
         if not source_mcp or not source_tool:
             raise IterationResolverError("Missing source_mcp or source_tool in iteration config")

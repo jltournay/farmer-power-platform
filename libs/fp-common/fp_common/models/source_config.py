@@ -60,6 +60,11 @@ class IterationConfig(BaseModel):
     foreach: str = Field(..., description="Entity type to iterate over")
     source_mcp: str = Field(..., description="MCP server to get list from")
     source_tool: str = Field(..., description="MCP tool to call for the list")
+    tool_arguments: dict[str, Any] | None = Field(None, description="Arguments to pass to the MCP tool")
+    result_path: str | None = Field(None, description="Dot-path to extract list from MCP response")
+    inject_linkage: list[str] | None = Field(
+        None, description="Fields to inject from iteration item into document linkage"
+    )
     concurrency: int = Field(5, description="Maximum concurrent requests")
 
 

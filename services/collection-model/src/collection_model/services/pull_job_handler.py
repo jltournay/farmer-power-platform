@@ -246,10 +246,9 @@ class PullJobHandler:
         Returns:
             Summary dict with aggregated results.
         """
-        # Resolve iteration items - pass as dict for resolver compatibility
+        # Resolve iteration items using typed IterationConfig
         try:
-            iteration_dict = iteration_config.model_dump() if iteration_config else {}
-            items = await self._resolver.resolve(iteration_dict)
+            items = await self._resolver.resolve(iteration_config)
         except Exception as e:
             logger.error(
                 "Iteration resolution failed",
@@ -278,9 +277,9 @@ class PullJobHandler:
                 "duplicates": 0,
             }
 
-        # Use typed attribute access for concurrency
+        # Use typed attribute access for concurrency and inject_linkage
         concurrency = iteration_config.concurrency if iteration_config else 5
-        inject_linkage: list[str] = []  # Not in IterationConfig yet
+        inject_linkage = iteration_config.inject_linkage or []
 
         logger.info(
             "Starting iteration fetch",
