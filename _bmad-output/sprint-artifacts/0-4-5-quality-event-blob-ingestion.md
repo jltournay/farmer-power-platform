@@ -26,10 +26,10 @@ So that QC analyzer results are stored without AI extraction overhead.
 
 ## Tasks / Subtasks
 
-- [ ] **Task 1: Verify/Create source config** (AC: 1)
-  - [ ] Check `seed/source_configs.json` for `e2e-qc-direct-json`
-  - [ ] Verify `processor_type: json-extraction` and `ai_agent_id: null`
-  - [ ] Add source config if missing
+- [x] **Task 1: Verify/Create source config** (AC: 1)
+  - [x] Check `seed/source_configs.json` for `e2e-qc-direct-json`
+  - [x] Verify `processor_type: json-extraction` and `ai_agent_id: null`
+  - [x] Add source config if missing
 
 - [ ] **Task 2: Create test file scaffold** (AC: All)
   - [ ] Create `tests/e2e/scenarios/test_04_quality_blob_ingestion.py`
