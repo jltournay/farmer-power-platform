@@ -9,6 +9,14 @@ This folder contains Architecture Decision Records (ADRs) documenting significan
 | [ADR-001](./ADR-001-weather-api-selection.md) | Weather API Selection (Open-Meteo) | Accepted | 2025-12-26 |
 | [ADR-002](./ADR-002-frontend-architecture.md) | Frontend Architecture (4-App Hybrid) | Accepted | 2025-12-26 |
 | [ADR-003](./ADR-003-identity-access-management.md) | Identity & Access Management (Azure AD B2C) | Accepted | 2025-12-26 |
+| [ADR-004](./ADR-004-type-safety-shared-pydantic-models.md) | Type Safety - Shared Pydantic Models in MCP | Accepted | 2025-12-31 |
+| [ADR-005](./ADR-005-grpc-client-retry-strategy.md) | gRPC Client Retry and Reconnection Strategy | Accepted | 2025-12-31 |
+| [ADR-006](./ADR-006-event-delivery-dead-letter-queue.md) | Event Delivery Guarantees and Dead Letter Queue | Accepted | 2025-12-31 |
+| [ADR-007](./ADR-007-source-config-cache-change-streams.md) | Source Config Cache with MongoDB Change Streams | Accepted | 2025-12-31 |
+| [ADR-008](./ADR-008-invalid-linkage-field-handling.md) | Invalid Linkage Field Handling with Metrics | Accepted | 2025-12-31 |
+| [ADR-009](./ADR-009-logging-standards-runtime-configuration.md) | Logging Standards and Runtime Configuration | Accepted | 2025-12-31 |
+| [ADR-010](./ADR-010-dapr-patterns-configuration.md) | DAPR Patterns and Configuration Standards | Accepted | 2025-12-31 |
+| [ADR-011](./ADR-011-grpc-fastapi-dapr-architecture.md) | gRPC/FastAPI/DAPR Service Architecture | Accepted | 2025-12-31 |
 
 ## ADR Template
 
