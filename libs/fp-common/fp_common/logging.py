@@ -19,6 +19,9 @@ from typing import Any
 import structlog
 from opentelemetry import trace
 
+# Type alias for structlog wrapped logger (varies by factory)
+WrappedLogger = Any
+
 
 def add_service_context(service_name: str) -> structlog.types.Processor:
     """Create processor that adds service name to all logs.
@@ -31,7 +34,7 @@ def add_service_context(service_name: str) -> structlog.types.Processor:
     """
 
     def processor(
-        logger: logging.Logger,
+        logger: WrappedLogger,
         method_name: str,
         event_dict: dict[str, Any],
     ) -> dict[str, Any]:
@@ -42,7 +45,7 @@ def add_service_context(service_name: str) -> structlog.types.Processor:
 
 
 def add_trace_context(
-    logger: logging.Logger,
+    logger: WrappedLogger,
     method_name: str,
     event_dict: dict[str, Any],
 ) -> dict[str, Any]:
@@ -135,8 +138,17 @@ def configure_logging(
 
 
 def reset_logging() -> None:
-    """Reset structlog configuration.
+    """Reset structlog and stdlib logging configuration.
 
     Useful in tests to ensure clean state between test cases.
+    Resets both structlog configuration and removes stdlib logging handlers.
     """
+    # Reset structlog
     structlog.reset_defaults()
+
+    # Reset stdlib logging handlers
+    for handler in logging.root.handlers[:]:
+        logging.root.removeHandler(handler)
+
+    # Reset root logger level
+    logging.root.setLevel(logging.WARNING)

@@ -19,7 +19,7 @@ Usage:
 import logging
 from typing import Any
 
-from fastapi import APIRouter, Query
+from fastapi import APIRouter, HTTPException, Path, Query
 from pydantic import BaseModel
 
 
@@ -57,7 +57,11 @@ def create_admin_router(prefix: str = "/admin") -> APIRouter:
 
     @router.post("/logging/{logger_name}", response_model=LogLevelUpdateResponse)
     async def set_log_level(
-        logger_name: str,
+        logger_name: str = Path(
+            ...,
+            description="Fully qualified logger name",
+            max_length=256,
+        ),
         level: str = Query(..., description="Log level (DEBUG, INFO, WARNING, ERROR)"),
     ) -> dict[str, Any]:
         """Set log level for a specific logger at runtime.
@@ -71,22 +75,30 @@ def create_admin_router(prefix: str = "/admin") -> APIRouter:
 
         Returns:
             Confirmation of the level change
+
+        Raises:
+            HTTPException: 400 if level is not a valid log level
         """
         normalized_level = level.upper()
 
         # Validate level is valid
         if not hasattr(logging, normalized_level):
-            return {
-                "logger": logger_name,
-                "level": level,
-                "status": f"error: invalid level '{level}'",
-            }
+            raise HTTPException(
+                status_code=400,
+                detail=f"Invalid log level '{level}'. Valid levels: DEBUG, INFO, WARNING, ERROR, CRITICAL",
+            )
 
         logging.getLogger(logger_name).setLevel(normalized_level)
         return {"logger": logger_name, "level": normalized_level, "status": "updated"}
 
     @router.delete("/logging/{logger_name}", response_model=LogLevelResetResponse)
-    async def reset_log_level(logger_name: str) -> dict[str, Any]:
+    async def reset_log_level(
+        logger_name: str = Path(
+            ...,
+            description="Fully qualified logger name",
+            max_length=256,
+        ),
+    ) -> dict[str, Any]:
         """Reset logger to default level (inherit from parent).
 
         Args:

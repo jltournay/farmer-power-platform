@@ -64,14 +64,15 @@ class TestLoggingEndpoint:
         assert response.status_code == 200
         assert logging.getLogger("test_logger").level == logging.ERROR
 
-    def test_set_log_level_invalid_returns_error(self, client: TestClient) -> None:
-        """POST /admin/logging with invalid level returns error status."""
+    def test_set_log_level_invalid_returns_400(self, client: TestClient) -> None:
+        """POST /admin/logging with invalid level returns 400 error."""
         response = client.post("/admin/logging/test_logger?level=INVALID")
 
-        assert response.status_code == 200
+        assert response.status_code == 400
         data = response.json()
-        assert "error" in data["status"]
-        assert "INVALID" in data["status"]
+        assert "detail" in data
+        assert "Invalid log level" in data["detail"]
+        assert "INVALID" in data["detail"]
 
     def test_reset_log_level_restores_default(self, client: TestClient) -> None:
         """DELETE /admin/logging/{name} resets level to NOTSET."""
@@ -142,3 +143,36 @@ class TestLoggingEndpoint:
         # Custom prefix should work
         response = client.get("/api/admin/logging")
         assert response.status_code == 200
+
+    def test_child_logger_inherits_parent_level(self, client: TestClient) -> None:
+        """Setting parent logger level affects child loggers (AC3).
+
+        Per AC3: "Then that logger and children are set to DEBUG"
+        Python logging propagates levels to child loggers.
+        """
+        parent_name = "plantation_model.domain"
+        child_name = "plantation_model.domain.services"
+
+        # Get child logger first (creates hierarchy)
+        child_logger = logging.getLogger(child_name)
+        assert child_logger.getEffectiveLevel() == logging.WARNING  # Default
+
+        # Set parent to DEBUG via API
+        response = client.post(f"/admin/logging/{parent_name}?level=DEBUG")
+        assert response.status_code == 200
+
+        # Parent should be DEBUG
+        parent_logger = logging.getLogger(parent_name)
+        assert parent_logger.level == logging.DEBUG
+
+        # Child should inherit DEBUG effective level (via propagation)
+        assert child_logger.getEffectiveLevel() == logging.DEBUG
+
+    def test_logger_name_max_length_enforced(self, client: TestClient) -> None:
+        """Logger name exceeding max length returns 422 validation error."""
+        long_name = "a" * 300  # Exceeds 256 max_length
+
+        response = client.post(f"/admin/logging/{long_name}?level=DEBUG")
+
+        # FastAPI returns 422 for validation errors
+        assert response.status_code == 422
