@@ -1,6 +1,6 @@
 # Story 0.6.6: Collection Model Streaming Subscriptions
 
-**Status:** In Progress
+**Status:** Done
 **GitHub Issue:** #51
 **Epic:** [Epic 0.6: Infrastructure Hardening](../epics/epic-0-6-infrastructure-hardening.md)
 **ADRs:** [ADR-010](../architecture/adr/ADR-010-dapr-patterns-configuration.md), [ADR-011](../architecture/adr/ADR-011-grpc-fastapi-dapr-architecture.md)
