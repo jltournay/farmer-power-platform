@@ -1,0 +1,289 @@
+# Story 0.6.4: gRPC Client Retry - IterationResolver
+
+**Status:** To Do
+**GitHub Issue:** TBD
+**Epic:** [Epic 0.6: Infrastructure Hardening](../epics/epic-0-6-infrastructure-hardening.md)
+**ADR:** [ADR-005: gRPC Client Retry and Reconnection Strategy](../architecture/adr/ADR-005-grpc-client-retry-strategy.md)
+**Story Points:** 2
+
+---
+
+## CRITICAL REQUIREMENTS FOR DEV AGENT
+
+> **READ THIS FIRST - Story is NOT done until ALL these steps are completed!**
+
+### 1. Same Pattern as Story 0.6.3
+
+This story applies the EXACT same pattern as Story 0.6.3 (AiModelClient) to IterationResolver.
+
+**Reference implementation:**
+- Story 0.6.3: AiModelClient (do this first)
+- PlantationClient: `mcp-servers/plantation-mcp/src/plantation_mcp/plantation_client.py`
+
+### 2. CI Verification
+
+```bash
+git push origin story/0-6-4-grpc-retry-iteration-resolver
+gh run list --branch story/0-6-4-grpc-retry-iteration-resolver --limit 3
+```
+
+### 3. Definition of Done Checklist
+
+- [ ] **Singleton channel** - IterationResolver uses lazy singleton pattern
+- [ ] **Retry decorator** - ALL RPC methods have `@retry` decorator
+- [ ] **Unit tests pass** - New tests in tests/unit/collection_model/infrastructure/
+- [ ] **E2E tests pass** - No regressions
+- [ ] **Lint passes** - `ruff check . && ruff format --check .`
+
+---
+
+## Story
+
+As a **platform engineer**,
+I want IterationResolver to auto-recover from gRPC connection failures,
+So that transient network issues don't require pod restarts.
+
+## Acceptance Criteria
+
+1. **AC1: Current State (Anti-pattern)** - Given IterationResolver has no retry logic, When I review `services/collection-model/src/collection_model/infrastructure/iteration_resolver.py`, Then it uses per-request channel creation (anti-pattern)
+
+2. **AC2: Singleton Channel Pattern** - Given IterationResolver is refactored, When I check the updated implementation, Then it uses singleton channel pattern with lazy initialization And all RPC methods have `@retry` decorator from Tenacity And retry config matches AiModelClient (3 attempts, exponential 1-10s)
+
+3. **AC3: Auto-recovery Works** - Given the gRPC connection is lost, When the next RPC method is called, Then the retry decorator catches the error And reconnection is attempted automatically
+
+## Tasks / Subtasks
+
+- [ ] **Task 1: Analyze Current Implementation** (AC: 1)
+  - [ ] Read `services/collection-model/src/collection_model/infrastructure/iteration_resolver.py`
+  - [ ] Document current anti-patterns
+  - [ ] Identify all RPC methods that need retry decorator
+
+- [ ] **Task 2: Implement Singleton Channel** (AC: 2)
+  - [ ] Add `_channel: grpc.aio.Channel | None = None` attribute
+  - [ ] Add `_stub: IterationServiceStub | None = None` attribute
+  - [ ] Create `async def _get_stub(self)` method
+  - [ ] Configure keepalive options (same as AiModelClient)
+
+- [ ] **Task 3: Add Tenacity Retry to All Methods** (AC: 2, 3)
+  - [ ] Apply same retry decorator pattern as Story 0.6.3
+  - [ ] Add channel reset on UNAVAILABLE error
+
+- [ ] **Task 4: Create Unit Tests** (AC: All)
+  - [ ] Create `tests/unit/collection_model/infrastructure/test_iteration_resolver.py`
+  - [ ] Test singleton channel reuse
+  - [ ] Test retry on UNAVAILABLE
+  - [ ] Test retry exhaustion
+
+- [ ] **Task 5: Verify Integration** (AC: 3)
+  - [ ] Run unit tests
+  - [ ] Run E2E suite
+
+## Git Workflow (MANDATORY)
+
+### Story Start
+- [ ] GitHub Issue created
+- [ ] Feature branch created:
+  ```bash
+  git checkout main && git pull origin main
+  git checkout -b story/0-6-4-grpc-retry-iteration-resolver
+  ```
+
+**Branch name:** `story/0-6-4-grpc-retry-iteration-resolver`
+
+---
+
+## Unit Tests Required
+
+### New Tests to Create
+
+```python
+# tests/unit/collection_model/infrastructure/test_iteration_resolver.py
+import pytest
+from unittest.mock import AsyncMock, patch, MagicMock
+import grpc.aio
+
+from collection_model.infrastructure.iteration_resolver import IterationResolver
+
+
+class TestIterationResolverSingletonChannel:
+    """Tests for singleton channel pattern."""
+
+    @pytest.mark.asyncio
+    async def test_singleton_channel_reused(self):
+        """Same channel is reused across multiple calls."""
+        resolver = IterationResolver()
+
+        # First call creates channel
+        stub1 = await resolver._get_stub()
+        channel1 = resolver._channel
+
+        # Second call reuses channel
+        stub2 = await resolver._get_stub()
+        channel2 = resolver._channel
+
+        assert channel1 is channel2
+        assert stub1 is stub2
+
+    @pytest.mark.asyncio
+    async def test_lazy_channel_initialization(self):
+        """Channel is not created until first use."""
+        resolver = IterationResolver()
+        assert resolver._channel is None
+        assert resolver._stub is None
+
+
+class TestIterationResolverRetry:
+    """Tests for retry behavior."""
+
+    @pytest.mark.asyncio
+    async def test_retry_on_unavailable(self):
+        """Retry triggers on UNAVAILABLE status code."""
+        resolver = IterationResolver()
+
+        mock_stub = AsyncMock()
+        call_count = 0
+
+        async def failing_then_succeeding(*args, **kwargs):
+            nonlocal call_count
+            call_count += 1
+            if call_count < 3:
+                raise grpc.aio.AioRpcError(
+                    grpc.StatusCode.UNAVAILABLE,
+                    "Connection refused"
+                )
+            return MagicMock()
+
+        mock_stub.ResolveIteration = failing_then_succeeding
+
+        with patch.object(resolver, '_get_stub', return_value=mock_stub):
+            await resolver.resolve_iteration(...)
+
+        assert call_count == 3
+
+    @pytest.mark.asyncio
+    async def test_retry_exhausted_raises(self):
+        """Error raised after max retries exhausted."""
+        resolver = IterationResolver()
+
+        mock_stub = AsyncMock()
+        mock_stub.ResolveIteration.side_effect = grpc.aio.AioRpcError(
+            grpc.StatusCode.UNAVAILABLE,
+            "Connection refused"
+        )
+
+        with patch.object(resolver, '_get_stub', return_value=mock_stub):
+            with pytest.raises(grpc.aio.AioRpcError):
+                await resolver.resolve_iteration(...)
+
+        assert mock_stub.ResolveIteration.call_count == 3
+```
+
+---
+
+## E2E Test Impact
+
+### Expected Behavior
+- **No breaking changes** - IterationResolver API unchanged
+- **Improved resilience** - Transient failures auto-recovered
+
+### Verification
+After implementation, existing E2E tests should pass. The IterationResolver is used in document processing pipelines.
+
+---
+
+## Implementation Reference
+
+### Required Pattern (same as Story 0.6.3)
+
+```python
+from tenacity import retry, retry_if_exception_type, stop_after_attempt, wait_exponential
+import grpc.aio
+
+class IterationResolver:
+    """Iteration resolver gRPC client with retry and singleton channel."""
+
+    def __init__(self, target: str | None = None) -> None:
+        self._target = target or os.getenv("ITERATION_GRPC_ADDRESS", "localhost:50051")
+        self._channel: grpc.aio.Channel | None = None
+        self._stub: IterationServiceStub | None = None
+
+    async def _get_stub(self) -> IterationServiceStub:
+        """Lazy singleton channel - created once, reused."""
+        if self._stub is None:
+            if self._channel is None:
+                self._channel = grpc.aio.insecure_channel(
+                    self._target,
+                    options=[
+                        ("grpc.keepalive_time_ms", 30000),
+                        ("grpc.keepalive_timeout_ms", 10000),
+                    ]
+                )
+            self._stub = IterationServiceStub(self._channel)
+        return self._stub
+
+    def _reset_channel(self) -> None:
+        """Reset channel on connection error."""
+        self._channel = None
+        self._stub = None
+
+    @retry(
+        retry=retry_if_exception_type(grpc.aio.AioRpcError),
+        stop=stop_after_attempt(3),
+        wait=wait_exponential(multiplier=1, min=1, max=10),
+        reraise=True,
+    )
+    async def resolve_iteration(self, document_id: str) -> IterationResult:
+        """Resolve iteration with retry on transient errors."""
+        stub = await self._get_stub()
+        try:
+            request = ResolveRequest(document_id=document_id)
+            response = await stub.ResolveIteration(request)
+            return response
+        except grpc.aio.AioRpcError as e:
+            if e.code() == grpc.StatusCode.UNAVAILABLE:
+                self._reset_channel()
+            raise
+
+    async def close(self) -> None:
+        """Clean up resources."""
+        if self._channel:
+            await self._channel.close()
+            self._channel = None
+            self._stub = None
+```
+
+---
+
+## Local Test Run Evidence (MANDATORY)
+
+**1. Unit Tests:**
+```bash
+pytest tests/unit/collection_model/infrastructure/test_iteration_resolver.py -v
+```
+**Output:**
+```
+(paste test output here)
+```
+
+**2. E2E Tests Pass:**
+```bash
+PYTHONPATH="${PYTHONPATH}:.:libs/fp-proto/src" pytest tests/e2e/scenarios/ -v
+```
+**Output:**
+```
+(paste test output here)
+```
+
+**3. Lint Check:**
+```bash
+ruff check . && ruff format --check .
+```
+**Lint passed:** [ ] Yes / [ ] No
+
+---
+
+## References
+
+- [ADR-005: gRPC Client Retry Strategy](../architecture/adr/ADR-005-grpc-client-retry-strategy.md)
+- [Story 0.6.3: AiModelClient Retry](./0-6-3-grpc-retry-ai-model-client.md)
+- [Reference: PlantationClient](../../../mcp-servers/plantation-mcp/src/plantation_mcp/plantation_client.py)

@@ -8,13 +8,15 @@ This document provides the complete epic and story breakdown for farmer-power-pl
 
 ## Epic Files (Priority Order)
 
-**Note:** Epics are ordered by implementation priority based on dependency analysis (2025-12-28).
+**Note:** Epics are ordered by implementation priority based on dependency analysis (updated 2026-01-01).
 
 | Priority | Epic | File | Status | Stories | Dependencies |
 |----------|------|------|--------|---------|--------------|
 | P0 | Epic 0 | [epic-0-infrastructure.md](epic-0-infrastructure.md) | Done | 0.1-0.3 | None |
-| P0 | Epic 1 | [epic-1-plantation-model.md](epic-1-plantation-model.md) | In Progress | 1.1-1.8 | Epic 0 |
-| P0 | Epic 2 | [epic-2-collection-model.md](epic-2-collection-model.md) | Done | 2.1-2.9 | Epic 0, 1 |
+| P0 | Epic 1 | [epic-1-plantation-model.md](epic-1-plantation-model.md) | Done | 1.1-1.9 | Epic 0 |
+| P0 | Epic 2 | [epic-2-collection-model.md](epic-2-collection-model.md) | Done | 2.1-2.11 | Epic 0, 1 |
+| P0 | **Epic 0.4** | [epic-0-4-e2e-tests.md](epic-0-4-e2e-tests.md) | **In Progress** | **0.4.1-0.4.9** | **Epic 0, 1, 2** |
+| P0 | **Epic 0.6** | [epic-0-6-infrastructure-hardening.md](epic-0-6-infrastructure-hardening.md) | **Backlog** | **0.6.1-0.6.10** | **Epic 0.4** |
 | P1 | Epic 0.5 | [epic-0-5-frontend.md](epic-0-5-frontend.md) | Backlog | 0.5.1-0.5.6 | Epic 0 |
 | P1 | **Epic 0.75** | [epic-0-75-ai-model.md](epic-0-75-ai-model.md) | **Backlog** | **0.75.1-0.75.7** | **Epic 0** |
 | P2 | **Epic 11** | [epic-11-registration-kiosk.md](epic-11-registration-kiosk.md) | Backlog | 11.1-11.4 | Epic 0.5, 1 |
@@ -27,6 +29,13 @@ This document provides the complete epic and story breakdown for farmer-power-pl
 | P5 | Epic 8 | [epic-8-voice-advisor.md](epic-8-voice-advisor.md) | Backlog | 8.1-8.7 | **Epic 0.75**, 5, 6 |
 | P5 | **Epic 12** | [epic-12-engagement-model.md](epic-12-engagement-model.md) | **Backlog** | **12.1-12.8** | **Epic 0.75**, 1 |
 | P6 | **Epic 3** | [epic-3-dashboard.md](epic-3-dashboard.md) | Backlog | 3.1-3.11 | Epic 0.5, 1, 2, 4, 5, 6 |
+
+### Key Changes (2026-01-01)
+
+1. **Epic 0.4 (E2E Tests)** - NEW: 9 test scenarios validating full stack integration
+2. **Epic 0.6 (Infrastructure Hardening)** - NEW: Implements ADRs 004-011 (35 story points, 10 stories)
+3. **Epic 1 & 2 marked Done** - Plantation Model and Collection Model complete
+4. **Story 0.4.9 blocked** - Blocked by Epic 0.6 (needs DAPR streaming patterns)
 
 ### Key Changes (2025-12-28)
 
@@ -203,6 +212,18 @@ For React/frontend development, the recommended progression is:
 ### Epic 0: Platform Infrastructure Foundation
 Cross-cutting infrastructure that enables domain model services. These stories establish shared libraries, proto definitions, and foundational patterns used across all epics.
 **Dependencies:** None (foundational)
+
+### Epic 0.4: E2E Test Scenarios
+End-to-end integration tests validating the full stack: Plantation Model, Collection Model, MCP Servers, and DAPR events. Ensures all domain models work together correctly.
+**Dependencies:** Epic 0, 1, 2
+**Stories:** 9 test scenarios covering infrastructure, MCP contracts, registration flows, blob ingestion, cross-model events
+
+### Epic 0.6: Infrastructure Hardening (ADR Implementation)
+Cross-cutting infrastructure improvements implementing 8 accepted Architecture Decision Records (ADRs). Establishes shared patterns, type safety, resilience mechanisms, and DAPR SDK streaming subscriptions.
+**Dependencies:** Epic 0.4
+**ADRs Implemented:** ADR-004 (Type Safety), ADR-005 (gRPC Retry), ADR-006 (DLQ), ADR-007 (Cache), ADR-008 (Linkage), ADR-009 (Logging), ADR-010 (DAPR Patterns), ADR-011 (Service Architecture)
+**Validated By:** PoC at `tests/e2e/poc-dapr-patterns/` (5/5 tests passing)
+**Story Points:** 35 total (10 stories)
 
 ### Epic 0.5: Frontend & Identity Infrastructure
 Cross-cutting frontend and authentication infrastructure that enables all web applications. These stories establish the shared component library, authentication flow, and foundational frontend patterns.

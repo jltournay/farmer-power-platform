@@ -1,5 +1,5 @@
 # Sprint Status - farmer-power-platform
-# generated: 2025-12-29
+# generated: 2026-01-01
 # project: farmer-power-platform
 # tracking_system: file-system
 # story_location: _bmad-output/sprint-artifacts
@@ -18,6 +18,7 @@
 # Story Status:
 #   - backlog: Story only exists in epic file
 #   - ready-for-dev: Story file created in stories folder
+#   - blocked: Story cannot proceed until dependency is resolved
 #   - in-progress: Developer actively working on implementation
 #   - review: Ready for code review (via Dev's code-review workflow)
 #   - done: Story completed
@@ -33,9 +34,9 @@
 # - SM typically creates next story after previous one is 'done' to incorporate learnings
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 #
-# PRIORITY ORDER (2025-12-29 update):
+# PRIORITY ORDER (2026-01-01 update):
 # ========================================
-# P0: Epic 0 (Done), Epic 1 (Done), Epic 2 (Done), Epic 0.4 (E2E Tests - NEW)
+# P0: Epic 0 (Done), Epic 1 (Done), Epic 2 (Done), Epic 0.4 (E2E Tests), Epic 0.6 (Infrastructure Hardening - NEW)
 # P1: Epic 0.5, Epic 0.75 (AI Model Foundation)
 # P2: Epic 11 (Kiosk - 1st UI), Epic 9 (Admin - 2nd UI)
 # P3: Epic 5, Epic 10 (Regulator - 3rd UI)
@@ -43,7 +44,7 @@
 # P5: Epic 7, Epic 8, Epic 12 (NEW - Engagement)
 # P6: Epic 3 (Dashboard - LAST UI, needs Epic 4,5,6)
 
-generated: 2025-12-29
+generated: 2026-01-01
 project: farmer-power-platform
 tracking_system: file-system
 story_location: _bmad-output/sprint-artifacts
@@ -102,8 +103,24 @@ development_status:
   0-4-6-weather-data-ingestion-mock-ai: done  # 6 tests - Real weather API, mock AI, github_issue: 31
   0-4-7-cross-model-dapr-event-flow: done  # 5 tests passed, github_issue: 37
   0-4-8-tbk-ktda-grading-validation: in-progress  # 6 tests, github_issue: 39, PR: #40 - CODE REVIEW FOUND PRODUCTION BUG
-  0-4-9-zip-processor-ingestion: backlog  # 9 tests
+  0-4-9-zip-processor-ingestion: blocked  # 9 tests, blocked by Epic 0.6 (needs DAPR streaming patterns)
   epic-0-4-retrospective: optional
+
+  # Epic 0.6: Infrastructure Hardening (ADR Implementation)
+  # Dependencies: Epic 0.4 (E2E Tests). Blocks: All future epics
+  # Implements ADRs: 004-011 (35 story points total)
+  epic-0-6: backlog
+  0-6-1-shared-pydantic-models: ready-for-dev  # ADR-004, 5 points
+  0-6-2-shared-logging-module: ready-for-dev  # ADR-009, 3 points
+  0-6-3-grpc-retry-ai-model-client: ready-for-dev  # ADR-005, 2 points
+  0-6-4-grpc-retry-iteration-resolver: ready-for-dev  # ADR-005, 2 points
+  0-6-5-plantation-streaming-subscriptions: ready-for-dev  # ADR-010/011, 5 points, prereq: 0.6.2
+  0-6-6-collection-streaming-subscriptions: ready-for-dev  # ADR-010/011, 5 points, prereq: 0.6.2
+  0-6-7-dapr-resiliency-config: ready-for-dev  # ADR-006, 2 points
+  0-6-8-dead-letter-queue-handler: ready-for-dev  # ADR-006, 3 points, prereq: 0.6.5/0.6.6
+  0-6-9-source-config-cache-change-streams: ready-for-dev  # ADR-007, 5 points, prereq: 0.6.8
+  0-6-10-linkage-field-validation: ready-for-dev  # ADR-008, 3 points, prereq: 0.6.5, 0.6.8
+  epic-0-6-retrospective: optional
 
   # ═══════════════════════════════════════════════════════════════════════════
   # P1: HORIZONTAL INFRASTRUCTURE

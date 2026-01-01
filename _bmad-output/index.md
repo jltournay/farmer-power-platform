@@ -61,20 +61,22 @@ _Single entry point for all platform documentation. This index ensures coherence
 | Priority | Epic | File | Status | Stories |
 |----------|------|------|--------|---------|
 | P0 | Epic 0 | [`epics/epic-0-infrastructure.md`](./epics/epic-0-infrastructure.md) | Done | 0.1-0.3 |
-| P0 | Epic 1 | [`epics/epic-1-plantation-model.md`](./epics/epic-1-plantation-model.md) | In Progress | 1.1-1.8 |
-| P0 | Epic 2 | [`epics/epic-2-collection-model.md`](./epics/epic-2-collection-model.md) | Done | 2.1-2.9 |
+| P0 | Epic 1 | [`epics/epic-1-plantation-model.md`](./epics/epic-1-plantation-model.md) | Done | 1.1-1.9 |
+| P0 | Epic 2 | [`epics/epic-2-collection-model.md`](./epics/epic-2-collection-model.md) | Done | 2.1-2.11 |
+| P0 | **Epic 0.4** | [`epics/epic-0-4-e2e-tests.md`](./epics/epic-0-4-e2e-tests.md) | **In Progress** | **0.4.1-0.4.9** |
+| P0 | **Epic 0.6** | [`epics/epic-0-6-infrastructure-hardening.md`](./epics/epic-0-6-infrastructure-hardening.md) | **Backlog** | **0.6.1-0.6.10** |
 | P1 | Epic 0.5 | [`epics/epic-0-5-frontend.md`](./epics/epic-0-5-frontend.md) | Backlog | 0.5.1-0.5.6 |
-| P1 | **Epic 0.75** | [`epics/epic-0-75-ai-model.md`](./epics/epic-0-75-ai-model.md) | **Backlog** | **0.75.1-0.75.7** |
+| P1 | **Epic 0.75** | [`epics/epic-0-75-ai-model.md`](./epics/epic-0-75-ai-model.md) | **Backlog** | **0.75.1-0.75.11** |
 | P2 | Epic 11 | [`epics/epic-11-registration-kiosk.md`](./epics/epic-11-registration-kiosk.md) | Backlog | 11.1-11.4 |
 | P2 | Epic 9 | [`epics/epic-9-admin-portal.md`](./epics/epic-9-admin-portal.md) | Backlog | 9.1-9.4 |
-| P3 | Epic 5 | [`epics/epic-5-diagnosis-ai.md`](./epics/epic-5-diagnosis-ai.md) | Backlog | 5.1-5.9 |
+| P3 | Epic 5 | [`epics/epic-5-diagnosis-ai.md`](./epics/epic-5-diagnosis-ai.md) | Backlog | 5.1-5.7 |
 | P3 | Epic 10 | [`epics/epic-10-regulator.md`](./epics/epic-10-regulator.md) | Backlog | 10.1-10.4 |
 | P4 | Epic 6 | [`epics/epic-6-action-plans.md`](./epics/epic-6-action-plans.md) | Backlog | 6.1-6.6 |
 | P4 | Epic 4 | [`epics/epic-4-sms-feedback.md`](./epics/epic-4-sms-feedback.md) | Backlog | 4.1-4.7 |
 | P5 | Epic 7 | [`epics/epic-7-voice-ivr.md`](./epics/epic-7-voice-ivr.md) | Backlog | 7.1-7.5 |
 | P5 | Epic 8 | [`epics/epic-8-voice-advisor.md`](./epics/epic-8-voice-advisor.md) | Backlog | 8.1-8.7 |
 | P5 | **Epic 12** | [`epics/epic-12-engagement-model.md`](./epics/epic-12-engagement-model.md) | **Backlog** | **12.1-12.8** |
-| P6 | Epic 3 | [`epics/epic-3-dashboard.md`](./epics/epic-3-dashboard.md) | Backlog | 3.1-3.12 |
+| P6 | Epic 3 | [`epics/epic-3-dashboard.md`](./epics/epic-3-dashboard.md) | Backlog | 3.1-3.11 |
 
 **Sprint Status:** [`sprint-artifacts/sprint-status.yaml`](./sprint-artifacts/sprint-status.yaml)
 
@@ -118,26 +120,47 @@ _Single entry point for all platform documentation. This index ensures coherence
        ▼              ▼              ▼               ▼              ▼              ▼
 ┌─────────────┐ ┌───────────┐ ┌───────────┐ ┌─────────────┐ ┌───────────┐ ┌───────────┐
 │architecture/│ │ project-  │ │ Product   │ │   epics/    │ │test-design│ │   ux-     │
-│(12 sharded) │ │context.md │ │ Briefs    │ │(12 sharded) │ │system-    │ │design-    │
+│(12 sharded) │ │context.md │ │ Briefs    │ │(16 epics)   │ │system-    │ │design-    │
 │Source Truth │ │AI Rules   │ │+ TBK Spec │ │ Stories     │ │level.md   │ │spec/      │
-└──────┬──────┘ └─────┬─────┘ └───────────┘ └─────────────┘ └───────────┘ └───────────┘
-       │              │
-       │ Traces to    │ Derived from
-       ▼              ▼
-┌─────────────────────┐  ┌─────────────────────────────┐
-│ architecture-       │  │ ai-model-developer-guide/   │
-│ decision-index.md   │  │ (12 sharded files)          │
-│ (Decision Matrix)   │  │                             │
-└─────────────────────┘  └─────────────────────────────┘
+└──────┬──────┘ └─────┬─────┘ └───────────┘ └──────┬──────┘ └───────────┘ └───────────┘
+       │              │                            │
+       │ Contains     │ Derived from               │ Implements
+       ▼              ▼                            ▼
+┌─────────────────────┐  ┌─────────────────────┐  ┌─────────────────────┐
+│ architecture/adr/   │  │ ai-model-developer- │  │ sprint-artifacts/   │
+│ ADR-001 to ADR-011  │  │ guide/ (12 files)   │  │ Story files + YAML  │
+│ (Tech Decisions)    │  │                     │  │                     │
+└──────────┬──────────┘  └─────────────────────┘  └─────────────────────┘
+           │
+           │ Implemented by
+           ▼
+┌─────────────────────────────────────────────────┐
+│ Epic 0.6: Infrastructure Hardening              │
+│ Stories 0.6.1-0.6.10 implement ADRs 004-011     │
+└─────────────────────────────────────────────────┘
 ```
 
 ### Traceability Flow
 
 ```
-Product Brief → Architecture → Epics → Stories → Test Design → Implementation
-     ↓              ↓           ↓        ↓            ↓
-  Vision      Decisions    Features  Tasks      Validation
+Product Brief → Architecture → ADRs → Epics → Stories → Test Design → Implementation
+     ↓              ↓           ↓        ↓        ↓            ↓
+  Vision      Decisions    Technical  Features  Tasks      Validation
+                           Standards
 ```
+
+### ADR to Story Mapping
+
+| ADR | Title | Implemented By |
+|-----|-------|----------------|
+| ADR-004 | Type Safety - Shared Pydantic Models | Story 0.6.1 |
+| ADR-005 | gRPC Client Retry Strategy | Stories 0.6.3, 0.6.4 |
+| ADR-006 | Event Delivery and Dead Letter Queue | Stories 0.6.7, 0.6.8 |
+| ADR-007 | Source Config Cache with Change Streams | Story 0.6.9 |
+| ADR-008 | Invalid Linkage Field Handling | Story 0.6.10 |
+| ADR-009 | Logging Standards and Runtime Configuration | Story 0.6.2 |
+| ADR-010 | DAPR Patterns and Configuration | Stories 0.6.5, 0.6.6 |
+| ADR-011 | gRPC/FastAPI/DAPR Service Architecture | Stories 0.6.5, 0.6.6 |
 
 ---
 
@@ -207,8 +230,9 @@ When making significant changes, verify:
 | 1.4 | 2025-12-28 | Added Engagement Model (9th model) - Duolingo-style farmer motivation engine |
 | 1.5 | 2025-12-28 | Sharded epics.md (4,500+ lines) into 12 separate epic files for maintainability |
 | 1.6 | 2025-12-28 | **Epic restructure:** Added Epic 0.75 (AI Model Foundation), Epic 12 (Engagement Model). Reordered epics by priority - Epic 3 (Dashboard) moved to P6 (last), Epic 11 (Kiosk) moved to P2 (first UI). Total: 14 epics. |
+| 1.7 | 2026-01-01 | **Added Epic 0.4 (E2E Tests)** and **Epic 0.6 (Infrastructure Hardening)** implementing ADRs 004-011. Updated Epic 1, 2 to Done. Total: 16 epics. |
 
 ---
 
-_Last Updated: 2025-12-28_
+_Last Updated: 2026-01-01_
 _Maintainer: Platform Architecture Team_
