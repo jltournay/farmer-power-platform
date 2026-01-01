@@ -37,6 +37,115 @@ Collection Model handles blob events which trigger the entire ingestion pipeline
 
 ---
 
+## LESSONS LEARNED FROM STORY 0.6.5 (CRITICAL)
+
+> **READ THIS BEFORE IMPLEMENTING!** These issues were discovered during Story 0.6.5 and WILL affect this story.
+
+### 1. DAPR Configuration Changes Required
+
+The E2E `docker-compose.e2e.yaml` needs these updates for streaming subscriptions:
+
+**DAPR Version:** Must be 1.14.0 (not 1.12.0) for streaming subscription support:
+```yaml
+collection-model-dapr:
+  image: daprio/daprd:1.14.0  # NOT 1.12.0!
+```
+
+**App Protocol:** For services with gRPC, use `-app-protocol grpc`:
+```yaml
+command: [
+  "./daprd",
+  "-app-id", "collection-model",
+  "-app-port", "50051",
+  "-app-protocol", "grpc",  # Changed from http
+  ...
+]
+```
+
+**Declarative Subscriptions:** Remove all subscriptions from `subscription.yaml` - streaming subscriptions are programmatic:
+```yaml
+# subscription.yaml should be empty or only contain comments
+# Streaming subscriptions are configured in code via subscribe_with_handler()
+```
+
+### 2. Event Loop Error (CRITICAL FIX)
+
+**The Problem:** DAPR streaming handlers run in a separate thread, but Motor (MongoDB async driver) and other async clients are bound to the main event loop. Using `asyncio.run()` creates a NEW event loop that can't access Motor's connections:
+
+```
+RuntimeError: no running event loop
+RuntimeError: Event loop is closed
+```
+
+**The Fix:** Pass the main event loop to handlers and use `asyncio.run_coroutine_threadsafe()`:
+
+```python
+# In subscriber.py:
+_main_event_loop: asyncio.AbstractEventLoop | None = None
+
+def set_main_event_loop(loop: asyncio.AbstractEventLoop) -> None:
+    """Set the main event loop for async operations."""
+    global _main_event_loop
+    _main_event_loop = loop
+
+def handle_blob_event(message) -> TopicEventResponse:
+    # Check main event loop initialization
+    if _main_event_loop is None:
+        logger.error("Main event loop not initialized - will retry")
+        return TopicEventResponse("retry")
+
+    # Run async operations on the MAIN event loop
+    future = asyncio.run_coroutine_threadsafe(
+        process_blob(...),  # Your async processing function
+        _main_event_loop,
+    )
+    future.result(timeout=30)
+```
+
+```python
+# In main.py (during startup):
+from collection_model.events.subscriber import set_main_event_loop
+
+# CRITICAL: Pass the main event loop before starting subscription thread
+main_loop = asyncio.get_running_loop()
+set_main_event_loop(main_loop)
+
+# Then start the subscription thread
+subscription_thread = threading.Thread(
+    target=run_streaming_subscriptions,
+    daemon=True,
+)
+subscription_thread.start()
+```
+
+### 3. Subscription Thread Pattern
+
+The DaprClient must stay alive for subscriptions to work. Use a single function with an infinite loop:
+
+```python
+def run_streaming_subscriptions() -> None:
+    """Run in a daemon thread - keeps DaprClient alive."""
+    time.sleep(5)  # Wait for DAPR sidecar
+    close_fns = []
+    try:
+        client = DaprClient()  # Must stay alive!
+        close_fn = client.subscribe_with_handler(
+            pubsub_name="pubsub",
+            topic="your.topic.name",
+            handler_fn=your_handler,
+            dead_letter_topic="events.dlq",
+        )
+        close_fns.append(close_fn)
+
+        while True:  # Keep client alive
+            time.sleep(1)
+    finally:
+        for close_fn in close_fns:
+            close_fn()
+```
+
+---
+
 ## Story
 
 As a **platform engineer**,
@@ -99,21 +208,30 @@ So that event handling is simplified and consistent with Plantation Model.
 
 ## Unit Tests Required
 
+> **NOTE:** Tests MUST mock the main event loop since handlers use `asyncio.run_coroutine_threadsafe()`.
+
 ```python
 # tests/unit/collection_model/events/test_subscriber.py
+import asyncio
 import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
-from dapr.clients.grpc._response import TopicEventResponse
+from dapr.clients.grpc._response import TopicEventResponse, TopicEventResponseStatus
 
-from collection_model.events.subscriber import handle_blob_event
+
+@pytest.fixture
+def mock_event_loop():
+    """Create a mock event loop for testing handlers."""
+    loop = MagicMock(spec=asyncio.AbstractEventLoop)
+    return loop
 
 
 class TestBlobEventHandler:
     """Tests for blob event handler."""
 
-    @pytest.mark.asyncio
-    async def test_handler_returns_success_on_valid_blob(self):
+    def test_handler_returns_success_on_valid_blob(self, mock_event_loop):
         """Handler returns success when blob processing succeeds."""
+        from collection_model.events import subscriber
+
         message = MagicMock()
         message.data.return_value = {
             "container": "quality-events",
@@ -121,38 +239,70 @@ class TestBlobEventHandler:
             "source_id": "qc-analyzer",
         }
 
-        with patch("collection_model.events.subscriber.blob_processor") as mock_processor:
-            mock_processor.process = AsyncMock()
+        # Mock run_coroutine_threadsafe to return a completed future
+        mock_future = MagicMock()
+        mock_future.result.return_value = {"status": "success"}
 
-            result = handle_blob_event(message)
+        with (
+            patch.object(subscriber, "_blob_processor", MagicMock()),
+            patch.object(subscriber, "_main_event_loop", mock_event_loop),
+            patch("asyncio.run_coroutine_threadsafe", return_value=mock_future),
+        ):
+            result = subscriber.handle_blob_event(message)
 
-            assert result.status == "success"
+        assert result.status == TopicEventResponseStatus.success
 
-    @pytest.mark.asyncio
-    async def test_handler_returns_retry_on_transient_error(self):
+    def test_handler_returns_retry_on_transient_error(self, mock_event_loop):
         """Handler returns retry on transient errors (storage unavailable)."""
+        from collection_model.events import subscriber
+
         message = MagicMock()
         message.data.return_value = {"container": "test", "blob_path": "test.json"}
 
-        with patch("collection_model.events.subscriber.blob_processor") as mock_processor:
-            mock_processor.process = AsyncMock(side_effect=ConnectionError("Storage unavailable"))
+        # Mock run_coroutine_threadsafe to raise ConnectionError
+        mock_future = MagicMock()
+        mock_future.result.side_effect = ConnectionError("Storage unavailable")
 
-            result = handle_blob_event(message)
+        with (
+            patch.object(subscriber, "_blob_processor", MagicMock()),
+            patch.object(subscriber, "_main_event_loop", mock_event_loop),
+            patch("asyncio.run_coroutine_threadsafe", return_value=mock_future),
+        ):
+            result = subscriber.handle_blob_event(message)
 
-            assert result.status == "retry"
+        assert result.status == TopicEventResponseStatus.retry
 
-    @pytest.mark.asyncio
-    async def test_handler_returns_drop_on_corrupt_blob(self):
+    def test_handler_returns_drop_on_corrupt_blob(self, mock_event_loop):
         """Handler returns drop on permanent errors (corrupt blob)."""
+        from collection_model.events import subscriber
+
         message = MagicMock()
         message.data.return_value = {"container": "test", "blob_path": "corrupt.json"}
 
-        with patch("collection_model.events.subscriber.blob_processor") as mock_processor:
-            mock_processor.process = AsyncMock(side_effect=ValueError("Corrupt blob"))
+        # Mock run_coroutine_threadsafe to raise ValueError
+        mock_future = MagicMock()
+        mock_future.result.side_effect = ValueError("Corrupt blob")
 
-            result = handle_blob_event(message)
+        with (
+            patch.object(subscriber, "_blob_processor", MagicMock()),
+            patch.object(subscriber, "_main_event_loop", mock_event_loop),
+            patch("asyncio.run_coroutine_threadsafe", return_value=mock_future),
+        ):
+            result = subscriber.handle_blob_event(message)
 
-            assert result.status == "drop"
+        assert result.status == TopicEventResponseStatus.drop
+
+    def test_handler_returns_retry_when_event_loop_not_initialized(self):
+        """Handler returns retry when main event loop is not initialized."""
+        from collection_model.events import subscriber
+
+        message = MagicMock()
+        message.data.return_value = {"container": "test", "blob_path": "test.json"}
+
+        with patch.object(subscriber, "_main_event_loop", None):
+            result = subscriber.handle_blob_event(message)
+
+        assert result.status == TopicEventResponseStatus.retry
 ```
 
 ---
