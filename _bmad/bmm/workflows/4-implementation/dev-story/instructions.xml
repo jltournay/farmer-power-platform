@@ -365,6 +365,30 @@
       <action>Rebuild and start E2E infrastructure (--build is MANDATORY to avoid testing stale images):
         docker compose -f tests/e2e/infrastructure/docker-compose.e2e.yaml up -d --build
       </action>
+
+      <!-- CRITICAL: Verify Docker images were actually rebuilt -->
+      <critical>VERIFY Docker images were ACTUALLY rebuilt - do NOT proceed with cached images</critical>
+      <action>Check the docker compose build output for evidence of actual rebuilding:
+        - Look for `COPY services/` lines in the build output
+        - If you see `CACHED` next to COPY commands for services you modified, the rebuild FAILED
+        - You MUST see actual build steps (not CACHED) for modified service directories
+      </action>
+      <check if="build output shows CACHED for modified service COPY commands">
+        <output>❌ **Docker Build Used Cached Images - INVALID**
+
+          The Docker build used cached layers for services you modified.
+          This means you are NOT testing your current code changes.
+
+          **Required action:** Force rebuild without cache:
+          ```
+          docker compose -f tests/e2e/infrastructure/docker-compose.e2e.yaml build --no-cache
+          docker compose -f tests/e2e/infrastructure/docker-compose.e2e.yaml up -d
+          ```
+        </output>
+        <action>Force rebuild: docker compose -f tests/e2e/infrastructure/docker-compose.e2e.yaml build --no-cache</action>
+        <action>Restart: docker compose -f tests/e2e/infrastructure/docker-compose.e2e.yaml up -d</action>
+      </check>
+
       <action>Wait for services to be healthy (use docker compose logs to verify)</action>
       <action>Run E2E test suite:
         PYTHONPATH="${PYTHONPATH}:.:libs/fp-proto/src" pytest tests/e2e/scenarios/ -v
@@ -441,6 +465,31 @@
   </step>
 
   <step n="9" goal="Story completion and mark for review" tag="sprint-status">
+    <!-- VERIFICATION GATE: Ensure Local E2E (Step 7b) was completed properly -->
+    <critical>Before proceeding, verify Local E2E evidence exists in story file</critical>
+
+    <action>Check story file for "Local Test Run Evidence → E2E Tests" section</action>
+    <check if="E2E evidence section is empty, missing, or contains placeholder text like '(to be verified)'">
+      <output>❌ **GATE BLOCKED: Missing Local E2E Evidence**
+
+        Step 7b (Local E2E) was not completed properly.
+        The story file must contain actual E2E test output, not placeholders.
+
+        **Required action:** Return to Step 7b and run:
+        ```
+        docker compose -f tests/e2e/infrastructure/docker-compose.e2e.yaml up -d --build
+        ```
+
+        **CRITICAL:** Verify Docker images were ACTUALLY rebuilt:
+        - Check build output for `COPY services/` lines
+        - If you see `CACHED` next to COPY commands for modified services, rebuild failed
+        - Use `--no-cache` if needed: `docker compose ... build --no-cache`
+
+        Then run tests and capture FULL output in story file before proceeding.
+      </output>
+      <action>HALT: "Missing Local E2E evidence - complete Step 7b before proceeding"</action>
+    </check>
+
     <action>Verify ALL tasks and subtasks are marked [x] (re-scan the story document now)</action>
     <action>Run the full regression suite (do not skip)</action>
     <action>Confirm File List includes every changed file</action>
@@ -683,6 +732,28 @@
   <step n="9e" goal="Trigger mandatory code review (REQUIRED)">
     <critical>Code review MUST be executed before story can be marked done - NO EXCEPTIONS</critical>
     <critical>This step CANNOT be skipped - story will be rejected without code review evidence</critical>
+
+    <!-- VERIFICATION GATE: Ensure E2E CI (Step 9c) was completed properly -->
+    <critical>Before code review, verify E2E CI has passed</critical>
+
+    <action>Check story file for "E2E CI Run ID" and "E2E CI Status: PASSED" in Dev Agent Record</action>
+    <check if="E2E CI evidence is missing, E2E CI Run ID is not recorded, or status is not PASSED">
+      <output>❌ **GATE BLOCKED: Missing E2E CI Evidence**
+
+        Step 9c (E2E CI) was not completed properly.
+        Code review CANNOT proceed without E2E CI passing.
+
+        **Required action:** Return to Step 9c and:
+        1. Trigger: `gh workflow run e2e.yaml --ref {{story_branch}}`
+        2. Wait: `sleep 10 && gh run list --workflow=e2e.yaml --branch {{story_branch}} --limit 1`
+        3. Monitor: `gh run watch <run-id>`
+        4. Record E2E CI Run ID and PASSED status in story file
+
+        **Note:** Local E2E passing does NOT substitute for E2E CI.
+        CI rebuilds images from scratch and catches issues local testing misses.
+      </output>
+      <action>HALT: "Missing E2E CI evidence - complete Step 9c before code review"</action>
+    </check>
 
     <action>Verify story status is "review" (set in Step 9)</action>
 

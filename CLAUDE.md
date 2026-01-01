@@ -71,14 +71,14 @@ When running any BMAD workflow (dev-story, code-review, create-story, etc.):
 
 **Correct behavior:**
 ```
-Workflow says: Step 7 → Step 7b (E2E) → Step 8 → Step 9 → Step 9d (Code Review) → Step 10
-You execute:    Step 7 → Step 7b (E2E) → Step 8 → Step 9 → Step 9d (Code Review) → Step 10
+Workflow says: Step 7 → Step 7b (Local E2E) → Step 8 → Step 9 → Step 9b (Quality CI) → Step 9c (E2E CI) → Step 9d (GitHub) → Step 9e (Code Review) → Step 10
+You execute:    Step 7 → Step 7b (Local E2E) → Step 8 → Step 9 → Step 9b (Quality CI) → Step 9c (E2E CI) → Step 9d (GitHub) → Step 9e (Code Review) → Step 10
 ```
 
 **Incorrect behavior:**
 ```
-Workflow says: Step 7 → Step 7b (E2E) → Step 8 → Step 9 → Step 9d (Code Review) → Step 10
-You create:    Own todo: Unit tests → Lint → Push → Done  ← WRONG! (skipped E2E and Code Review)
+Workflow says: Step 7 → Step 7b (Local E2E) → ... → Step 9c (E2E CI) → ... → Step 9e (Code Review) → Step 10
+You create:    Own todo: Unit tests → Lint → Push → Done  ← WRONG! (skipped Local E2E, E2E CI, and Code Review)
 ```
 
 ### Testing Requirements
@@ -97,6 +97,15 @@ You create:    Own todo: Unit tests → Lint → Push → Done  ← WRONG! (skip
 
 > **⛔ CRITICAL: This gate CANNOT be skipped, deferred, or worked around.**
 
+**TWO E2E VALIDATION STEPS ARE REQUIRED:**
+
+| Step | What | When | Command |
+|------|------|------|---------|
+| **7b** | Local E2E | Before marking tasks complete | `docker compose ... up -d --build` |
+| **9c** | CI E2E | After push, before code review | `gh workflow run e2e.yaml` |
+
+#### Step 7b: Local E2E (MANDATORY)
+
 **BEFORE marking ANY story complete or pushing final commits:**
 
 1. **Rebuild and start E2E infrastructure (--build is MANDATORY):**
@@ -105,27 +114,57 @@ You create:    Own todo: Unit tests → Lint → Push → Done  ← WRONG! (skip
    ```
    > ⚠️ **WARNING:** You MUST use `--build` to rebuild Docker images. Without it, you test stale code and get false positives that fail in CI.
 
-2. **Run E2E test suite:**
+2. **VERIFY Docker images were actually rebuilt (NOT cached):**
+   - Check the build output for `COPY services/` lines
+   - If you see `CACHED` next to COPY commands for services you modified, the rebuild FAILED
+   - You MUST see actual build steps (not CACHED) for modified service directories
+   - If images are cached, run: `docker compose -f tests/e2e/infrastructure/docker-compose.e2e.yaml build --no-cache`
+
+3. **Run E2E test suite:**
    ```bash
    PYTHONPATH="${PYTHONPATH}:.:libs/fp-proto/src" pytest tests/e2e/scenarios/ -v
    ```
 
-3. **Capture output in story file** - Paste actual test results, not placeholders
+4. **Capture output in story file** - Paste actual test results, not placeholders
 
-4. **Tear down infrastructure:**
+5. **Tear down infrastructure:**
    ```bash
    docker compose -f tests/e2e/infrastructure/docker-compose.e2e.yaml down -v
    ```
 
-**⛔ BLOCKED ACTIONS without E2E evidence:**
+#### Step 9c: E2E CI (MANDATORY - SEPARATE FROM LOCAL)
+
+**AFTER pushing to story branch, BEFORE code review:**
+
+1. **Trigger E2E CI workflow (it does NOT auto-run):**
+   ```bash
+   gh workflow run e2e.yaml --ref <story-branch>
+   ```
+
+2. **Wait for workflow to start and get run ID:**
+   ```bash
+   sleep 10
+   gh run list --workflow=e2e.yaml --branch <story-branch> --limit 1
+   ```
+
+3. **Monitor until completion:**
+   ```bash
+   gh run watch <run-id>
+   ```
+
+4. **Verify PASSED status and record run ID in story file**
+
+> ⚠️ **WARNING:** Local E2E passing does NOT mean CI E2E will pass. CI rebuilds images from scratch and may catch Dockerfile issues, environment problems, or cache inconsistencies that local misses.
+
+**⛔ BLOCKED ACTIONS without BOTH E2E gates:**
 - Do NOT mark story status as 'review' or 'done'
-- Do NOT push to remote branch
+- Do NOT proceed to code review
 - Do NOT declare story complete
 - Do NOT write "(to be verified later)" - this is NOT acceptable
 
-**If E2E tests fail:** HALT immediately and fix before proceeding.
+**If either E2E gate fails:** HALT immediately and fix before proceeding.
 
-This corresponds to **Step 7b** in the dev-story workflow - it is NON-NEGOTIABLE.
+This corresponds to **Steps 7b and 9c** in the dev-story workflow - both are NON-NEGOTIABLE.
 
 ### CI Validation (MANDATORY before marking story done)
 
@@ -172,7 +211,7 @@ This corresponds to **Step 7b** in the dev-story workflow - it is NON-NEGOTIABLE
 
 **If code review requests changes:** Address findings, then re-run code-review until approved.
 
-This corresponds to **Step 9d** in the dev-story workflow - it is NON-NEGOTIABLE.
+This corresponds to **Step 9e** in the dev-story workflow - it is NON-NEGOTIABLE.
 
 **Best Practice:** Run code-review using a **different LLM** than the one that implemented the story for unbiased review.
 
