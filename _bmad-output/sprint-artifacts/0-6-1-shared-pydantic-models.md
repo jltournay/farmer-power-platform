@@ -1,6 +1,6 @@
 # Story 0.6.1: Shared Pydantic Models in fp-common
 
-**Status:** In Progress
+**Status:** Done
 **GitHub Issue:** #41
 **Epic:** [Epic 0.6: Infrastructure Hardening](../epics/epic-0-6-infrastructure-hardening.md)
 **ADR:** [ADR-004: Type Safety Architecture](../architecture/adr/ADR-004-type-safety-shared-pydantic-models.md)
@@ -43,8 +43,8 @@ Story is **NOT DONE** until ALL of these are true:
 - [x] **Existing tests pass** - ALL plantation-model unit tests still pass
 - [x] **E2E tests pass** - Full E2E suite shows no regressions (71 passed, 3 failed in Story 0.4.8 scope)
 - [x] **Lint passes** - `ruff check . && ruff format --check .`
-- [ ] **CI workflow passes** - Both unit and E2E workflows green
-- [ ] **GitHub issue updated** - Implementation summary added
+- [x] **CI workflow passes** - Both unit and E2E workflows green (run 20638169396)
+- [x] **GitHub issue updated** - Implementation summary added
 
 ---
 
