@@ -483,7 +483,7 @@
 
   <step n="9b" goal="Push to story branch and verify CI E2E passes (MANDATORY)">
     <critical>CI E2E tests MUST pass on the story branch before story can be merged</critical>
-    <critical>Story remains in "review" status until CI verification completes</critical>
+    <critical>Story remains in "progress" status until E2E CI verification completes</critical>
 
     <!-- Push changes to story branch -->
     <action>Ensure all changes are committed to the story branch</action>
@@ -572,6 +572,31 @@
     <action if="regression failures exist">HALT - Fix regression issues before completing</action>
     <action if="File List is incomplete">HALT - Update File List with all changed files</action>
     <action if="definition-of-done validation fails">HALT - Address DoD failures before completing</action>
+  </step>
+
+  <step n="9d" goal="Trigger mandatory code review (REQUIRED)">
+    <critical>Code review MUST be executed before story can be marked done - NO EXCEPTIONS</critical>
+    <critical>This step CANNOT be skipped - story will be rejected without code review evidence</critical>
+
+    <action>Verify story status is "review" (set in Step 9)</action>
+
+    <output>📋 **MANDATORY CODE REVIEW REQUIRED**
+
+      Story implementation is complete. Code review is REQUIRED before story can move to "done".
+
+      **Current Status:** review (awaiting code review)
+
+      **Required Action:** Run `/code-review` workflow
+
+      ⛔ **BLOCKED:** Story CANNOT move to "done" status until:
+      - Code review workflow has been executed
+      - All review findings have been addressed (or explicitly waived)
+      - Review evidence is captured in story file
+
+      💡 **Tip:** For best results, run code-review using a **different** LLM than the one that implemented this story.
+    </output>
+
+    <action>HALT: "Run /code-review workflow - story cannot be completed without code review"</action>
   </step>
 
   <step n="10" goal="Completion communication and user support">

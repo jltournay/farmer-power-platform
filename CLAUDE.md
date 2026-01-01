@@ -67,18 +67,18 @@ When running any BMAD workflow (dev-story, code-review, create-story, etc.):
 3. **NEVER substitute your own task list** - The workflow steps ARE the task list
 4. **NEVER make "judgment calls" to defer steps** - If a step says MANDATORY, do it
 
-**Why this matters:** The workflow steps exist to prevent errors. When you create your own todo list, you bypass critical gates (like E2E testing) that the workflow enforces.
+**Why this matters:** The workflow steps exist to prevent errors. When you create your own todo list, you bypass critical gates (like E2E testing and Code Review) that the workflow enforces.
 
 **Correct behavior:**
 ```
-Workflow says: Step 7 → Step 7b (E2E) → Step 8 → Step 9
-You execute:    Step 7 → Step 7b (E2E) → Step 8 → Step 9
+Workflow says: Step 7 → Step 7b (E2E) → Step 8 → Step 9 → Step 9d (Code Review) → Step 10
+You execute:    Step 7 → Step 7b (E2E) → Step 8 → Step 9 → Step 9d (Code Review) → Step 10
 ```
 
 **Incorrect behavior:**
 ```
-Workflow says: Step 7 → Step 7b (E2E) → Step 8 → Step 9
-You create:    Own todo: Unit tests → Lint → Push → Done  ← WRONG!
+Workflow says: Step 7 → Step 7b (E2E) → Step 8 → Step 9 → Step 9d (Code Review) → Step 10
+You create:    Own todo: Unit tests → Lint → Push → Done  ← WRONG! (skipped E2E and Code Review)
 ```
 
 ### Testing Requirements
@@ -140,6 +140,40 @@ This corresponds to **Step 7b** in the dev-story workflow - it is NON-NEGOTIABLE
    ```
 
 3. **Story is NOT done until CI passes** - Definition of Done includes green CI
+
+### Code Review Gate (MANDATORY - NO EXCEPTIONS)
+
+> **⛔ CRITICAL: This gate CANNOT be skipped, deferred, or worked around.**
+
+**AFTER dev-story workflow completes (status = "review"):**
+
+1. **Run code review workflow:**
+   ```bash
+   # In Claude Code, run:
+   /code-review
+   ```
+
+2. **Address ALL review findings:**
+   - High severity: MUST be fixed before proceeding
+   - Medium severity: MUST be fixed or explicitly justified
+   - Low severity: Should be fixed or documented for future
+
+3. **Capture review evidence in story file:**
+   - Review outcome (Approve/Changes Requested/Blocked)
+   - Action items with checkboxes
+   - Resolution notes for each finding
+
+**⛔ BLOCKED ACTIONS without Code Review:**
+- Do NOT mark story status as 'done'
+- Do NOT merge to main branch
+- Do NOT close the GitHub issue
+- Do NOT declare story complete
+
+**If code review requests changes:** Address findings, then re-run code-review until approved.
+
+This corresponds to **Step 9d** in the dev-story workflow - it is NON-NEGOTIABLE.
+
+**Best Practice:** Run code-review using a **different LLM** than the one that implemented the story for unbiased review.
 
 ### New Service Checklist
 
