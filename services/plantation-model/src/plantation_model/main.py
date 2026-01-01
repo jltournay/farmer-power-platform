@@ -10,6 +10,7 @@ Architecture (ADR-011):
 - Pub/sub: DAPR streaming subscriptions (outbound, no extra port)
 """
 
+import asyncio
 import threading
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
@@ -23,6 +24,7 @@ from plantation_model.config import settings
 from plantation_model.domain.services import QualityEventProcessor
 from plantation_model.events.subscriber import (
     run_streaming_subscriptions,
+    set_main_event_loop,
     set_quality_event_processor,
     set_regional_weather_repo,
 )
@@ -118,6 +120,14 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
         set_quality_event_processor(quality_event_processor)
         set_regional_weather_repo(regional_weather_repo)
         logger.info("Subscription handler dependencies configured")
+
+        # CRITICAL: Pass the main event loop to streaming subscription handlers
+        # The handlers run in a separate thread, but Motor (MongoDB) and other
+        # async clients are bound to this loop. Handlers use run_coroutine_threadsafe()
+        # to schedule async operations on this loop.
+        main_loop = asyncio.get_running_loop()
+        set_main_event_loop(main_loop)
+        logger.info("Main event loop configured for streaming subscriptions")
 
         # Start DAPR streaming subscriptions in background thread (Story 0.6.5)
         # ADR-010/011 pattern: run_streaming_subscriptions keeps DaprClient alive

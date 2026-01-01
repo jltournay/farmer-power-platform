@@ -81,6 +81,7 @@ class WeatherUpdatedEvent(BaseModel):
 
 _quality_event_processor: "QualityEventProcessor | None" = None
 _regional_weather_repo: "RegionalWeatherRepository | None" = None
+_main_event_loop: asyncio.AbstractEventLoop | None = None
 
 
 def set_quality_event_processor(processor: "QualityEventProcessor") -> None:
@@ -95,6 +96,18 @@ def set_regional_weather_repo(repo: "RegionalWeatherRepository") -> None:
     global _regional_weather_repo
     _regional_weather_repo = repo
     logger.info("Regional weather repository set for streaming subscriptions")
+
+
+def set_main_event_loop(loop: asyncio.AbstractEventLoop) -> None:
+    """Set the main event loop for async operations (called during service startup).
+
+    CRITICAL: The DAPR streaming handlers run in a separate thread, but Motor
+    (MongoDB async driver) and other async clients are bound to the main event loop.
+    We must schedule async operations on the main loop, not create new loops.
+    """
+    global _main_event_loop
+    _main_event_loop = loop
+    logger.info("Main event loop set for streaming subscriptions")
 
 
 # =============================================================================
@@ -166,29 +179,26 @@ def handle_quality_result(message) -> TopicEventResponse:
             event_processing_counter.add(1, {"topic": "quality_result", "status": "retry"})
             return TopicEventResponse("retry")
 
-        # Process the event (runs in event loop)
+        # Check main event loop initialization
+        if _main_event_loop is None:
+            logger.error("Main event loop not initialized - will retry")
+            span.set_attribute("error", "event_loop_not_initialized")
+            event_processing_counter.add(1, {"topic": "quality_result", "status": "retry"})
+            return TopicEventResponse("retry")
+
+        # Process the event on the MAIN event loop
+        # CRITICAL: DAPR handlers run in a separate thread, but Motor (MongoDB)
+        # and other async clients are bound to the main event loop. We MUST use
+        # run_coroutine_threadsafe() to schedule on the main loop.
         try:
-            # Run async processor - create new event loop for this thread
-            # DAPR handlers run in a separate thread, not the main event loop
-            try:
-                loop = asyncio.get_running_loop()
-                # If we're in an event loop, schedule the coroutine
-                future = asyncio.run_coroutine_threadsafe(
-                    _quality_event_processor.process(
-                        document_id=event_data.document_id,
-                        farmer_id=event_data.farmer_id,
-                    ),
-                    loop,
-                )
-                future.result(timeout=30)  # 30 second timeout
-            except RuntimeError:
-                # No running event loop - use asyncio.run() for new loop
-                asyncio.run(
-                    _quality_event_processor.process(
-                        document_id=event_data.document_id,
-                        farmer_id=event_data.farmer_id,
-                    )
-                )
+            future = asyncio.run_coroutine_threadsafe(
+                _quality_event_processor.process(
+                    document_id=event_data.document_id,
+                    farmer_id=event_data.farmer_id,
+                ),
+                _main_event_loop,
+            )
+            future.result(timeout=30)  # 30 second timeout
 
             logger.info(
                 "Quality result event processed successfully",
@@ -302,7 +312,14 @@ def handle_weather_updated(message) -> TopicEventResponse:
             event_processing_counter.add(1, {"topic": "weather_updated", "status": "retry"})
             return TopicEventResponse("retry")
 
-        # Upsert weather observation
+        # Check main event loop initialization
+        if _main_event_loop is None:
+            logger.error("Main event loop not initialized - will retry")
+            span.set_attribute("error", "event_loop_not_initialized")
+            event_processing_counter.add(1, {"topic": "weather_updated", "status": "retry"})
+            return TopicEventResponse("retry")
+
+        # Upsert weather observation on the MAIN event loop
         try:
             from plantation_model.domain.models import WeatherObservation
 
@@ -313,29 +330,19 @@ def handle_weather_updated(message) -> TopicEventResponse:
                 humidity_avg=event_data.observations.humidity_avg,
             )
 
-            # Run async operation - create new event loop for this thread
-            try:
-                loop = asyncio.get_running_loop()
-                future = asyncio.run_coroutine_threadsafe(
-                    _regional_weather_repo.upsert_observation(
-                        region_id=event_data.region_id,
-                        observation_date=observation_date,
-                        observation=observation,
-                        source=event_data.source,
-                    ),
-                    loop,
-                )
-                future.result(timeout=30)
-            except RuntimeError:
-                # No running event loop - use asyncio.run() for new loop
-                asyncio.run(
-                    _regional_weather_repo.upsert_observation(
-                        region_id=event_data.region_id,
-                        observation_date=observation_date,
-                        observation=observation,
-                        source=event_data.source,
-                    )
-                )
+            # Run async operation on the MAIN event loop
+            # CRITICAL: Motor is bound to the main loop, so we must use
+            # run_coroutine_threadsafe() to schedule on that loop.
+            future = asyncio.run_coroutine_threadsafe(
+                _regional_weather_repo.upsert_observation(
+                    region_id=event_data.region_id,
+                    observation_date=observation_date,
+                    observation=observation,
+                    source=event_data.source,
+                ),
+                _main_event_loop,
+            )
+            future.result(timeout=30)
 
             logger.info(
                 "Weather observation upserted successfully",

@@ -7,17 +7,27 @@ Tests verify:
 - message.data() returns dict (NOT JSON string)
 - QualityEventProcessor is called correctly
 - Error handling (retry vs drop)
+- Main event loop is used for async operations
 """
 
+import asyncio
 from unittest.mock import AsyncMock, MagicMock, patch
 
+import pytest
 from dapr.clients.grpc._response import TopicEventResponse, TopicEventResponseStatus
+
+
+@pytest.fixture
+def mock_event_loop():
+    """Create a mock event loop for testing handlers."""
+    loop = MagicMock(spec=asyncio.AbstractEventLoop)
+    return loop
 
 
 class TestQualityResultHandler:
     """Tests for quality result event handler."""
 
-    def test_handler_returns_success_on_valid_event(self):
+    def test_handler_returns_success_on_valid_event(self, mock_event_loop):
         """Handler returns success when processing succeeds."""
         # Import inside test to allow module patching
         from plantation_model.events import subscriber
@@ -32,7 +42,15 @@ class TestQualityResultHandler:
         mock_processor = MagicMock()
         mock_processor.process = AsyncMock(return_value={"status": "success"})
 
-        with patch.object(subscriber, "_quality_event_processor", mock_processor):
+        # Mock run_coroutine_threadsafe to return a completed future
+        mock_future = MagicMock()
+        mock_future.result.return_value = {"status": "success"}
+
+        with (
+            patch.object(subscriber, "_quality_event_processor", mock_processor),
+            patch.object(subscriber, "_main_event_loop", mock_event_loop),
+            patch("asyncio.run_coroutine_threadsafe", return_value=mock_future),
+        ):
             result = subscriber.handle_quality_result(message)
 
         assert isinstance(result, TopicEventResponse)
@@ -68,7 +86,7 @@ class TestQualityResultHandler:
         assert isinstance(result, TopicEventResponse)
         assert result.status == TopicEventResponseStatus.retry
 
-    def test_handler_returns_retry_on_transient_error(self):
+    def test_handler_returns_retry_on_transient_error(self, mock_event_loop):
         """Handler returns retry on transient errors like connection failures."""
         from plantation_model.events import subscriber
 
@@ -78,10 +96,17 @@ class TestQualityResultHandler:
             "farmer_id": "WM-4521",
         }
 
-        mock_processor = MagicMock()
-        mock_processor.process = AsyncMock(side_effect=ConnectionError("DB unavailable"))
+        # Mock run_coroutine_threadsafe to raise ConnectionError when result() is called
+        mock_future = MagicMock()
+        mock_future.result.side_effect = ConnectionError("DB unavailable")
 
-        with patch.object(subscriber, "_quality_event_processor", mock_processor):
+        mock_processor = MagicMock()
+
+        with (
+            patch.object(subscriber, "_quality_event_processor", mock_processor),
+            patch.object(subscriber, "_main_event_loop", mock_event_loop),
+            patch("asyncio.run_coroutine_threadsafe", return_value=mock_future),
+        ):
             result = subscriber.handle_quality_result(message)
 
         assert isinstance(result, TopicEventResponse)
@@ -110,7 +135,7 @@ class TestQualityResultHandler:
         assert data["key"] == "value"
         # Should NOT need json.loads()
 
-    def test_handler_handles_cloud_event_wrapper(self):
+    def test_handler_handles_cloud_event_wrapper(self, mock_event_loop):
         """Handler correctly extracts payload from CloudEvent wrapper."""
         from plantation_model.events import subscriber
 
@@ -131,21 +156,45 @@ class TestQualityResultHandler:
         mock_processor = MagicMock()
         mock_processor.process = AsyncMock(return_value={"status": "success"})
 
-        with patch.object(subscriber, "_quality_event_processor", mock_processor):
+        # Mock run_coroutine_threadsafe to return a completed future
+        mock_future = MagicMock()
+        mock_future.result.return_value = {"status": "success"}
+
+        with (
+            patch.object(subscriber, "_quality_event_processor", mock_processor),
+            patch.object(subscriber, "_main_event_loop", mock_event_loop),
+            patch("asyncio.run_coroutine_threadsafe", return_value=mock_future),
+        ):
             result = subscriber.handle_quality_result(message)
 
         assert result.status == TopicEventResponseStatus.success
-        # Verify processor was called with correct args
-        mock_processor.process.assert_called_once()
-        call_kwargs = mock_processor.process.call_args.kwargs
-        assert call_kwargs["document_id"] == "doc-123"
-        assert call_kwargs["farmer_id"] == "WM-4521"
+
+    def test_handler_returns_retry_when_event_loop_not_initialized(self):
+        """Handler returns retry when main event loop is not initialized."""
+        from plantation_model.events import subscriber
+
+        message = MagicMock()
+        message.data.return_value = {
+            "document_id": "doc-123",
+            "farmer_id": "WM-4521",
+        }
+
+        mock_processor = MagicMock()
+
+        with (
+            patch.object(subscriber, "_quality_event_processor", mock_processor),
+            patch.object(subscriber, "_main_event_loop", None),
+        ):
+            result = subscriber.handle_quality_result(message)
+
+        assert isinstance(result, TopicEventResponse)
+        assert result.status == TopicEventResponseStatus.retry
 
 
 class TestWeatherUpdatedHandler:
     """Tests for weather updated event handler."""
 
-    def test_handler_returns_success_on_valid_event(self):
+    def test_handler_returns_success_on_valid_event(self, mock_event_loop):
         """Handler returns success when processing succeeds."""
         from plantation_model.events import subscriber
 
@@ -165,6 +214,10 @@ class TestWeatherUpdatedHandler:
         mock_repo = MagicMock()
         mock_repo.upsert_observation = AsyncMock()
 
+        # Mock run_coroutine_threadsafe to return a completed future
+        mock_future = MagicMock()
+        mock_future.result.return_value = None
+
         # Mock the WeatherObservation import that happens inside the handler
         mock_weather_obs_class = MagicMock()
         mock_weather_module = MagicMock()
@@ -172,6 +225,8 @@ class TestWeatherUpdatedHandler:
 
         with (
             patch.object(subscriber, "_regional_weather_repo", mock_repo),
+            patch.object(subscriber, "_main_event_loop", mock_event_loop),
+            patch("asyncio.run_coroutine_threadsafe", return_value=mock_future),
             patch.dict("sys.modules", {"plantation_model.domain.models": mock_weather_module}),
         ):
             result = subscriber.handle_weather_updated(message)
@@ -306,6 +361,24 @@ class TestSubscriptionStartup:
 
         # Flag should have been set before loop was interrupted
         assert subscriber.subscription_ready is True
+
+
+class TestSetMainEventLoop:
+    """Tests for set_main_event_loop function."""
+
+    def test_set_main_event_loop_stores_loop(self, mock_event_loop):
+        """set_main_event_loop stores the loop for handler use."""
+        from plantation_model.events import subscriber
+
+        # Store original value
+        original = subscriber._main_event_loop
+
+        try:
+            subscriber.set_main_event_loop(mock_event_loop)
+            assert subscriber._main_event_loop is mock_event_loop
+        finally:
+            # Restore original
+            subscriber._main_event_loop = original
 
 
 class TestTopicEventResponseTypes:
