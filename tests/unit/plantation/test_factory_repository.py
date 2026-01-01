@@ -4,8 +4,7 @@ from datetime import UTC, datetime
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
-from plantation_model.domain.models.factory import Factory
-from plantation_model.domain.models.value_objects import ContactInfo, GeoLocation
+from plantation_model.domain.models import ContactInfo, Factory, GeoLocation
 from plantation_model.infrastructure.repositories.factory_repository import (
     FactoryRepository,
 )

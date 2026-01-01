@@ -1,7 +1,7 @@
 # Story 0.6.1: Shared Pydantic Models in fp-common
 
-**Status:** To Do
-**GitHub Issue:** TBD
+**Status:** In Progress
+**GitHub Issue:** #41
 **Epic:** [Epic 0.6: Infrastructure Hardening](../epics/epic-0-6-infrastructure-hardening.md)
 **ADR:** [ADR-004: Type Safety Architecture](../architecture/adr/ADR-004-type-safety-shared-pydantic-models.md)
 **Story Points:** 5
@@ -106,7 +106,7 @@ So that IDE autocomplete works and validation catches errors at MCP boundaries.
 
 - [ ] **Task 7: Verify No Regressions** (AC: 4)
   - [ ] Run `pytest tests/unit/ -v` - ALL existing tests pass
-  - [ ] Run E2E suite - ALL scenarios pass
+  - [ ] exu
   - [ ] Run `ruff check . && ruff format --check .`
   - [ ] Verify CI pipeline passes
 

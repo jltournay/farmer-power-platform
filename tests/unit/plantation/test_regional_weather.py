@@ -3,7 +3,7 @@
 from datetime import date
 
 import pytest
-from plantation_model.domain.models.regional_weather import RegionalWeather, WeatherObservation
+from plantation_model.domain.models import RegionalWeather, WeatherObservation
 from pydantic import ValidationError
 
 

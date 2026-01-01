@@ -3,14 +3,14 @@
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
-from plantation_model.domain.models.collection_point import CollectionPoint
-from plantation_model.domain.models.factory import Factory
-from plantation_model.domain.models.id_generator import IDGenerator
-from plantation_model.domain.models.value_objects import (
+from plantation_model.domain.models import (
+    CollectionPoint,
     CollectionPointCapacity,
+    Factory,
     GeoLocation,
     OperatingHours,
 )
+from plantation_model.domain.models.id_generator import IDGenerator
 from plantation_model.infrastructure.repositories.collection_point_repository import (
     CollectionPointRepository,
 )

@@ -7,7 +7,7 @@ from datetime import date
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from plantation_model.domain.models.value_objects import FlushCalendar, FlushPeriod
+    from plantation_model.domain.models import FlushCalendar, FlushPeriod
 
 
 @dataclass

@@ -1,13 +1,14 @@
 """Unit tests for Farmer domain model."""
 
 import pytest
-from plantation_model.domain.models.farmer import (
+from plantation_model.domain.models import (
+    ContactInfo,
     Farmer,
     FarmerCreate,
     FarmerUpdate,
     FarmScale,
+    GeoLocation,
 )
-from plantation_model.domain.models.value_objects import ContactInfo, GeoLocation
 from pydantic import ValidationError
 
 

@@ -1,7 +1,7 @@
 """Unit tests for GradingModel domain model."""
 
 import pytest
-from plantation_model.domain.models.grading_model import (
+from plantation_model.domain.models import (
     ConditionalReject,
     GradeRules,
     GradingAttribute,

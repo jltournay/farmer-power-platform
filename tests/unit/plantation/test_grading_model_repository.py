@@ -3,7 +3,7 @@
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
-from plantation_model.domain.models.grading_model import (
+from plantation_model.domain.models import (
     GradeRules,
     GradingAttribute,
     GradingModel,

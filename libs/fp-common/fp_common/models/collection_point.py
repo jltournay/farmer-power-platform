@@ -2,12 +2,13 @@
 
 from datetime import UTC, datetime
 
-from plantation_model.domain.models.value_objects import (
+from pydantic import BaseModel, Field
+
+from fp_common.models.value_objects import (
     CollectionPointCapacity,
     GeoLocation,
     OperatingHours,
 )
-from pydantic import BaseModel, Field
 
 
 class CollectionPoint(BaseModel):

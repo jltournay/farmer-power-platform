@@ -11,15 +11,16 @@ import grpc
 import pytest
 from fp_proto.plantation.v1 import plantation_pb2
 from plantation_model.api.plantation_service import PlantationServiceServicer
-from plantation_model.domain.models.farmer import (
+from plantation_model.domain.models import (
+    ContactInfo,
     Farmer,
     FarmScale,
+    GeoLocation,
     InteractionPreference,
     NotificationChannel,
     PreferredLanguage,
 )
 from plantation_model.domain.models.id_generator import IDGenerator
-from plantation_model.domain.models.value_objects import ContactInfo, GeoLocation
 from plantation_model.infrastructure.dapr_client import DaprPubSubClient
 from plantation_model.infrastructure.google_elevation import GoogleElevationClient
 from plantation_model.infrastructure.repositories.collection_point_repository import (
@@ -517,7 +518,7 @@ class TestFarmerCommunicationPreferences:
         """AC #3: GetFarmerSummary returns notification_channel, interaction_pref, pref_lang for Notification Model."""
         from datetime import date
 
-        from plantation_model.domain.models.farmer_performance import (
+        from plantation_model.domain.models import (
             FarmerPerformance,
             HistoricalMetrics,
             TodayMetrics,

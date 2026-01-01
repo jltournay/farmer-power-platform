@@ -4,14 +4,15 @@ import re
 from datetime import UTC, datetime
 from typing import ClassVar
 
-from plantation_model.domain.models.value_objects import (
+from pydantic import BaseModel, Field, field_validator
+
+from fp_common.models.value_objects import (
     Agronomic,
     AltitudeBandLabel,
     FlushCalendar,
     Geography,
     WeatherConfig,
 )
-from pydantic import BaseModel, Field, field_validator
 
 
 class Region(BaseModel):

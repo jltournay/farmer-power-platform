@@ -8,46 +8,41 @@ from fp_proto.plantation.v1 import plantation_pb2, plantation_pb2_grpc
 from google.protobuf.timestamp_pb2 import Timestamp
 from plantation_model.config import settings
 from plantation_model.domain.events.farmer_events import FarmerRegisteredEvent
-from plantation_model.domain.models.collection_point import CollectionPoint
-from plantation_model.domain.models.factory import Factory
-from plantation_model.domain.models.farmer import (
-    Farmer,
-    FarmScale,
-    InteractionPreference,
-    NotificationChannel,
-    PreferredLanguage,
-)
-from plantation_model.domain.models.farmer_performance import (
-    FarmerPerformance,
-    TrendDirection,
-)
-from plantation_model.domain.models.grading_model import (
-    ConditionalReject,
-    GradeRules,
-    GradingAttribute,
-    GradingModel,
-    GradingType,
-)
-from plantation_model.domain.models.id_generator import IDGenerator
-from plantation_model.domain.models.region import Region, RegionCreate
-from plantation_model.domain.models.regional_weather import RegionalWeather
-from plantation_model.domain.models.value_objects import (
+from plantation_model.domain.models import (
     GPS,
     Agronomic,
     AltitudeBand,
     AltitudeBandLabel,
+    CollectionPoint,
     CollectionPointCapacity,
+    ConditionalReject,
     ContactInfo,
+    Factory,
+    Farmer,
+    FarmerPerformance,
+    FarmScale,
     FlushCalendar,
     FlushPeriod,
     Geography,
     GeoLocation,
+    GradeRules,
+    GradingAttribute,
+    GradingModel,
+    GradingType,
+    InteractionPreference,
+    NotificationChannel,
     OperatingHours,
     PaymentPolicy,
     PaymentPolicyType,
+    PreferredLanguage,
     QualityThresholds,
+    Region,
+    RegionalWeather,
+    RegionCreate,
+    TrendDirection,
     WeatherConfig,
 )
+from plantation_model.domain.models.id_generator import IDGenerator
 from plantation_model.infrastructure.dapr_client import DaprPubSubClient
 from plantation_model.infrastructure.google_elevation import (
     GoogleElevationClient,

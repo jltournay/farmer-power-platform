@@ -1,8 +1,7 @@
 """Unit tests for Region domain model and value objects (Story 1.8)."""
 
 import pytest
-from plantation_model.domain.models.region import Region, RegionCreate, RegionUpdate
-from plantation_model.domain.models.value_objects import (
+from plantation_model.domain.models import (
     GPS,
     Agronomic,
     AltitudeBand,
@@ -10,6 +9,9 @@ from plantation_model.domain.models.value_objects import (
     FlushCalendar,
     FlushPeriod,
     Geography,
+    Region,
+    RegionCreate,
+    RegionUpdate,
     WeatherConfig,
 )
 from pydantic import ValidationError

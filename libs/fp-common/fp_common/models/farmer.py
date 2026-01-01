@@ -3,8 +3,9 @@
 from datetime import UTC, datetime
 from enum import Enum
 
-from plantation_model.domain.models.value_objects import ContactInfo, GeoLocation
 from pydantic import BaseModel, Field
+
+from fp_common.models.value_objects import ContactInfo, GeoLocation
 
 
 class FarmScale(str, Enum):

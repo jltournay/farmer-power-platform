@@ -7,14 +7,14 @@ import grpc
 import pytest
 from fp_proto.plantation.v1 import plantation_pb2
 from plantation_model.api.plantation_service import PlantationServiceServicer
-from plantation_model.domain.models.factory import Factory
-from plantation_model.domain.models.id_generator import IDGenerator
-from plantation_model.domain.models.value_objects import (
+from plantation_model.domain.models import (
     ContactInfo,
+    Factory,
     GeoLocation,
     PaymentPolicy,
     PaymentPolicyType,
 )
+from plantation_model.domain.models.id_generator import IDGenerator
 from plantation_model.infrastructure.dapr_client import DaprPubSubClient
 from plantation_model.infrastructure.google_elevation import GoogleElevationClient
 from plantation_model.infrastructure.repositories.collection_point_repository import (

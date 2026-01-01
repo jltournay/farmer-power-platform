@@ -3,9 +3,8 @@
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
-from plantation_model.domain.models.factory import Factory
+from plantation_model.domain.models import ContactInfo, Factory, GeoLocation
 from plantation_model.domain.models.id_generator import IDGenerator
-from plantation_model.domain.models.value_objects import ContactInfo, GeoLocation
 from plantation_model.infrastructure.google_elevation import GoogleElevationClient
 from plantation_model.infrastructure.repositories.factory_repository import (
     FactoryRepository,

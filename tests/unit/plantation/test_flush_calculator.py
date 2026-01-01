@@ -2,7 +2,7 @@
 
 from datetime import date
 
-from plantation_model.domain.models.value_objects import FlushCalendar, FlushPeriod
+from plantation_model.domain.models import FlushCalendar, FlushPeriod
 from plantation_model.domain.services.flush_calculator import FlushCalculator
 
 

@@ -125,7 +125,7 @@ class SeedValidator:
             return
 
         try:
-            from plantation_model.domain.models.factory import Factory
+            from plantation_model.domain.models import Factory
 
             for i, record in enumerate(data):
                 record_id = record.get("id", f"index-{i}")
@@ -150,7 +150,7 @@ class SeedValidator:
             return
 
         try:
-            from plantation_model.domain.models.farmer import Farmer
+            from plantation_model.domain.models import Farmer
 
             for i, record in enumerate(data):
                 record_id = record.get("id", f"index-{i}")
@@ -175,7 +175,7 @@ class SeedValidator:
             return
 
         try:
-            from plantation_model.domain.models.collection_point import CollectionPoint
+            from plantation_model.domain.models import CollectionPoint
 
             for i, record in enumerate(data):
                 record_id = record.get("id", f"index-{i}")
@@ -200,7 +200,7 @@ class SeedValidator:
             return
 
         try:
-            from plantation_model.domain.models.region import Region
+            from plantation_model.domain.models import Region
 
             for i, record in enumerate(data):
                 record_id = record.get("region_id", f"index-{i}")
@@ -263,7 +263,7 @@ class SeedValidator:
             return
 
         try:
-            from plantation_model.domain.models.farmer_performance import (
+            from plantation_model.domain.models import (
                 FarmerPerformance,
             )
 
