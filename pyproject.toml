@@ -205,11 +205,12 @@ target-version = "py312"
 line-length = 120
 fix = true
 
-# Exclude auto-generated protobuf files
+# Exclude auto-generated protobuf files and standalone PoC
 exclude = [
     "libs/fp-proto/src/fp_proto/**/*_pb2.py",
     "libs/fp-proto/src/fp_proto/**/*_pb2.pyi",
     "libs/fp-proto/src/fp_proto/**/*_pb2_grpc.py",
+    "tests/e2e/poc-dapr-patterns/**",  # Standalone PoC for ADR validation
 ]
 
 [tool.ruff.lint]

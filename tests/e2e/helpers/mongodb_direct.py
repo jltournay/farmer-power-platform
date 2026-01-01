@@ -218,9 +218,11 @@ class MongoDBDirectClient:
         """Seed farmer performance summaries into plantation database."""
         if performance_data:
             for perf in performance_data:
-                await self.plantation_db.farmer_performance.update_one(
-                    {"farmer_id": perf["farmer_id"]},
-                    {"$set": perf},
+                # Set _id to match farmer_id for repository lookups
+                perf_doc = {**perf, "_id": perf["farmer_id"]}
+                await self.plantation_db.farmer_performances.update_one(
+                    {"_id": perf["farmer_id"]},
+                    {"$set": perf_doc},
                     upsert=True,
                 )
 

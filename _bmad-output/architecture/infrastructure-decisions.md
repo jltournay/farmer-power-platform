@@ -684,4 +684,15 @@ spec:
         key: connectionString
 ```
 
----
+## Related ADRs
+
+For detailed architecture decisions discovered during E2E testing (Epic 0-4), see the ADR folder:
+
+- [ADR-004: Type Safety - Shared Pydantic Models](./adr/ADR-004-type-safety-shared-pydantic-models.md)
+- [ADR-005: gRPC Client Retry Strategy](./adr/ADR-005-grpc-client-retry-strategy.md)
+- [ADR-006: Event Delivery & Dead Letter Queue](./adr/ADR-006-event-delivery-dead-letter-queue.md)
+- [ADR-007: Source Config Cache with Change Streams](./adr/ADR-007-source-config-cache-change-streams.md)
+- [ADR-008: Invalid Linkage Field Handling](./adr/ADR-008-invalid-linkage-field-handling.md)
+- [ADR-009: Logging Standards](./adr/ADR-009-logging-standards-runtime-configuration.md)
+- [ADR-010: DAPR Patterns](./adr/ADR-010-dapr-patterns-configuration.md)
+- [ADR-011: gRPC/FastAPI/DAPR Architecture](./adr/ADR-011-grpc-fastapi-dapr-architecture.md)

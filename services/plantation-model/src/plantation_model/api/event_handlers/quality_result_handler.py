@@ -30,15 +30,13 @@ router = APIRouter(prefix="/api/v1/events", tags=["events"])
 class QualityResultEvent(BaseModel):
     """Event payload for collection.quality_result.received.
 
-    This matches the payload defined in qc-analyzer-result.yaml config:
+    This matches the payload defined in source config's payload_fields:
     - document_id: The stored document ID in Collection Model
-    - plantation_id: The farmer ID (mapped from plantation_id field)
-    - batch_timestamp: When the QC result was created
+    - farmer_id: The farmer ID from the quality document
     """
 
     document_id: str = Field(description="Collection Model document ID")
-    plantation_id: str = Field(description="Farmer ID (plantation_id in QC result)")
-    batch_timestamp: datetime | None = Field(default=None, description="Timestamp of the QC batch")
+    farmer_id: str = Field(description="Farmer ID from quality document")
 
 
 class CloudEventWrapper(BaseModel):
@@ -138,14 +136,13 @@ async def handle_quality_result(request: Request) -> Response:
         try:
             event_data = QualityResultEvent.model_validate(cloud_event.data.get("payload", cloud_event.data))
             span.set_attribute("event.document_id", event_data.document_id)
-            span.set_attribute("event.plantation_id", event_data.plantation_id)
+            span.set_attribute("event.farmer_id", event_data.farmer_id)
 
             logger.info(
                 "Processing quality result event",
                 event_id=event_id,
                 document_id=event_data.document_id,
-                plantation_id=event_data.plantation_id,
-                batch_timestamp=event_data.batch_timestamp,
+                farmer_id=event_data.farmer_id,
             )
 
         except Exception as e:
@@ -177,15 +174,14 @@ async def handle_quality_result(request: Request) -> Response:
         try:
             await quality_event_processor.process(
                 document_id=event_data.document_id,
-                farmer_id=event_data.plantation_id,
-                batch_timestamp=event_data.batch_timestamp,
+                farmer_id=event_data.farmer_id,
             )
 
             logger.info(
                 "Quality result event processed successfully",
                 event_id=event_id,
                 document_id=event_data.document_id,
-                farmer_id=event_data.plantation_id,
+                farmer_id=event_data.farmer_id,
             )
             span.set_attribute("processing.success", True)
 

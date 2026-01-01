@@ -281,29 +281,47 @@ class QualityEventProcessor:
 
     def _get_grading_model_id(self, document: dict[str, Any]) -> str | None:
         """Extract grading model ID from document."""
-        # Check attributes first (where extraction stores it)
-        attributes = document.get("attributes", {})
-        if "grading_model_id" in attributes:
-            return attributes["grading_model_id"]
-        # Check top-level (raw document)
+        # Check extracted_fields first (where DocumentIndex stores it)
+        extracted_fields = document.get("extracted_fields", {})
+        if "grading_model_id" in extracted_fields:
+            return extracted_fields["grading_model_id"]
+        # Check linkage_fields (also populated by DocumentIndex)
+        linkage_fields = document.get("linkage_fields", {})
+        if "grading_model_id" in linkage_fields:
+            return linkage_fields["grading_model_id"]
+        # Check top-level (raw document fallback)
         return document.get("grading_model_id")
 
     def _get_grading_model_version(self, document: dict[str, Any]) -> str | None:
         """Extract grading model version from document."""
-        attributes = document.get("attributes", {})
-        if "grading_model_version" in attributes:
-            return attributes["grading_model_version"]
+        # Check extracted_fields first (where DocumentIndex stores it)
+        extracted_fields = document.get("extracted_fields", {})
+        if "grading_model_version" in extracted_fields:
+            return extracted_fields["grading_model_version"]
+        # Check top-level (raw document fallback)
         return document.get("grading_model_version")
 
     def _get_factory_id(self, document: dict[str, Any]) -> str:
         """Extract factory ID from document."""
-        attributes = document.get("attributes", {})
-        return attributes.get("factory_id") or document.get("factory_id", "unknown")
+        # Check extracted_fields first (where DocumentIndex stores it)
+        extracted_fields = document.get("extracted_fields", {})
+        if "factory_id" in extracted_fields:
+            return extracted_fields["factory_id"]
+        # Check linkage_fields (also populated by DocumentIndex)
+        linkage_fields = document.get("linkage_fields", {})
+        if "factory_id" in linkage_fields:
+            return linkage_fields["factory_id"]
+        # Check top-level (raw document fallback)
+        return document.get("factory_id", "unknown")
 
     def _get_bag_summary(self, document: dict[str, Any]) -> dict[str, Any]:
         """Extract bag summary from document."""
-        attributes = document.get("attributes", {})
-        return attributes.get("bag_summary") or document.get("bag_summary", {})
+        # Check extracted_fields first (where DocumentIndex stores it)
+        extracted_fields = document.get("extracted_fields", {})
+        if "bag_summary" in extracted_fields:
+            return extracted_fields["bag_summary"]
+        # Check top-level (raw document fallback)
+        return document.get("bag_summary", {})
 
     def _get_total_weight(self, bag_summary: dict[str, Any]) -> float:
         """Extract total weight from bag summary."""

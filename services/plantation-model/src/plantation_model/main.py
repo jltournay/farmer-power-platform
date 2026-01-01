@@ -171,6 +171,27 @@ async def root() -> dict[str, str]:
     }
 
 
+@app.get("/dapr/subscribe", include_in_schema=False)
+async def dapr_subscribe() -> list[dict]:
+    """DAPR subscription discovery endpoint.
+
+    DAPR calls this endpoint at startup to discover Pub/Sub subscriptions.
+    See: https://docs.dapr.io/developing-applications/building-blocks/pubsub/subscription-methods/
+    """
+    return [
+        {
+            "pubsubname": "pubsub",
+            "topic": "collection.quality_result.received",
+            "route": "/api/v1/events/quality-result",
+        },
+        {
+            "pubsubname": "pubsub",
+            "topic": "weather.observation.updated",
+            "route": "/api/v1/events/weather-updated",
+        },
+    ]
+
+
 if __name__ == "__main__":
     import uvicorn
 

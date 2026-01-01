@@ -1,10 +1,10 @@
 ---
 project_name: 'farmer-power-platform'
 user_name: 'Jeanlouistournay'
-date: '2025-12-30'
+date: '2026-01-01'
 sections_completed: ['technology_stack', 'python_rules', 'code_design_principles', 'framework_rules', 'architecture_rules', 'testing_rules', 'ui_ux_rules', 'critical_rules']
 status: 'complete'
-rule_count: 198
+rule_count: 202
 optimized_for_llm: true
 ---
 
@@ -75,6 +75,17 @@ services/{service-name}/
 └── pyproject.toml
 ```
 
+### Two-Port Service Architecture (ADR-011)
+
+**Services expose exactly TWO ports** - no extra port for pub/sub with streaming:
+
+| Port | Purpose |
+|------|---------|
+| **8000** | FastAPI health endpoints (`/health`, `/ready`) - direct, no DAPR |
+| **50051** | gRPC API server - domain operations via DAPR sidecar |
+
+**Reference:** ADR-011, PoC at `tests/e2e/poc-dapr-patterns/`
+
 ### Naming Conventions
 
 | Element | Convention | Example |
@@ -125,7 +136,8 @@ from fp_proto.collection.v1 import collection_pb2
 | FastAPI | Latest | Async endpoints required for all I/O operations |
 | LangChain | Latest | Use for simple linear chains ONLY |
 | LangGraph | Latest | Use for stateful/conditional workflows |
-| DAPR | Latest | ALL inter-service communication via DAPR sidecar |
+| DAPR | 1.14.0+ | Streaming subscriptions require 1.14.0+ (see ADR-006, ADR-010) |
+| dapr Python SDK | 1.14.0+ | Required for `subscribe_with_handler()` streaming pattern |
 | MongoDB | Managed | Atlas or CosmosDB - NOT self-hosted |
 | Pinecone | Latest | Namespace-per-version for knowledge versioning |
 | OpenRouter | N/A | Single LLM gateway - NO direct provider calls |
@@ -147,6 +159,19 @@ from fp_proto.collection.v1 import collection_pb2
 - Use `async def` for FastAPI endpoints
 - Use `asyncio.gather()` for parallel operations, NOT sequential awaits
 - Use `asyncio.wait()` with timeout for parallel analyzers
+
+### gRPC Client Requirements (CRITICAL)
+
+**ALL gRPC clients MUST have retry logic.** Without retry, a lost connection requires pod restart.
+
+| Requirement | Details |
+|-------------|---------|
+| Retry decorator | Tenacity with 3-5 attempts, exponential backoff 1-10s |
+| Channel pattern | Singleton (lazy init), NOT per-request |
+| Keepalive | 10-30s interval, 5-10s timeout |
+| **Reset on error** | Set `_channel = None` and `_stub = None` to force reconnection |
+
+**Reference:** ADR-005, `PlantationClient` in `plantation-mcp`, PoC at `tests/e2e/poc-dapr-patterns/`
 
 ### Type Hints
 
@@ -535,6 +560,19 @@ async with grpc.aio.insecure_channel("localhost:50001") as channel:  # DAPR side
 - Collection Model IterationResolver: `services/collection-model/src/collection_model/infrastructure/iteration_resolver.py:50`
 
 **DAPR Docs:** https://docs.dapr.io/developing-applications/building-blocks/service-invocation/howto-invoke-services-grpc/
+
+### DAPR Streaming Pub/Sub (CRITICAL)
+
+**Use `subscribe_with_handler()` for event subscriptions.** Requires DAPR 1.14.0+ and dapr SDK 1.14.0+.
+
+| Requirement | Details |
+|-------------|---------|
+| Handler return | MUST return `TopicEventResponse("success"\|"retry"\|"drop")` |
+| Message data | `message.data()` returns **dict**, NOT JSON string - no `json.loads()`! |
+| Dead letter | Configure via `dead_letter_topic` parameter in code |
+| No extra port | Streaming is outbound - no HTTP callback port needed |
+
+**Reference:** ADR-006, ADR-010, PoC at `tests/e2e/poc-dapr-patterns/`
 
 ### DAPR Event Naming
 
@@ -1094,6 +1132,10 @@ This file contains critical rules. For detailed decisions not covered here:
 | **Repository Structure** | `_bmad-output/architecture/repository-structure.md` |
 | Decision inventory + traceability | `_bmad-output/architecture-decision-index.md` |
 | Full architectural rationale | `_bmad-output/architecture/index.md` |
+| **gRPC Client Retry (ADR-005)** | `_bmad-output/architecture/adr/ADR-005-grpc-client-retry-strategy.md` |
+| **Dead Letter Queue (ADR-006)** | `_bmad-output/architecture/adr/ADR-006-event-delivery-dead-letter-queue.md` |
+| **DAPR Patterns (ADR-010)** | `_bmad-output/architecture/adr/ADR-010-dapr-event-pubsub-pattern.md` |
+| **Service Architecture (ADR-011)** | `_bmad-output/architecture/adr/ADR-011-service-architecture-grpc-fastapi-dapr.md` |
 | AI Model implementation details | `_bmad-output/ai-model-developer-guide/index.md` |
 | **Test Architecture & Strategy** | `_bmad-output/test-design-system-level.md` |
 | **UX Design Specification** | `_bmad-output/ux-design-specification/index.md` |
@@ -1131,4 +1173,4 @@ This file contains critical rules. For detailed decisions not covered here:
 
 ---
 
-_Last Updated: 2025-12-30_
+_Last Updated: 2026-01-01 (ADR-005, ADR-006, ADR-010, ADR-011 patterns added)_

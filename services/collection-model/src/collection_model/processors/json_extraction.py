@@ -447,8 +447,19 @@ class JsonExtractionProcessor(ContentProcessor):
         source_config: SourceConfig,
     ) -> None:
         """Emit success event to config-driven topic."""
+        logger.info(
+            "Attempting to emit success event",
+            document_id=document.document_id,
+            source_id=source_config.source_id,
+            has_event_publisher=self._event_publisher is not None,
+        )
         if not self._event_publisher:
-            logger.debug("Event publisher not configured, skipping event emission")
+            logger.warning("Event publisher not configured, skipping event emission")
             return
 
-        await self._event_publisher.publish_success(source_config, document)
+        result = await self._event_publisher.publish_success(source_config, document)
+        logger.info(
+            "Event publish result",
+            document_id=document.document_id,
+            success=result,
+        )

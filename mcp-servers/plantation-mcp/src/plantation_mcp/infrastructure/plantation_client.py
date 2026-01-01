@@ -45,13 +45,39 @@ class PlantationClient:
         """Get or create the gRPC stub."""
         if self._stub is None:
             if self._channel is None:
-                # Connect via DAPR sidecar (localhost:50001 is DAPR's gRPC port)
-                # DAPR routes to plantation-model app
-                dapr_grpc_port = 50001
-                target = f"localhost:{dapr_grpc_port}"
+                if settings.plantation_grpc_host:
+                    # Direct connection to Plantation Model gRPC server
+                    # Used when DAPR service invocation is not available
+                    target = settings.plantation_grpc_host
+                    logger.info(
+                        "Connecting directly to Plantation Model gRPC",
+                        target=target,
+                    )
+                else:
+                    # Connect via DAPR sidecar (localhost:50001 is DAPR's gRPC port)
+                    # DAPR routes to plantation-model app
+                    dapr_grpc_port = 50001
+                    target = f"localhost:{dapr_grpc_port}"
+                    logger.info(
+                        "Connecting via DAPR service invocation",
+                        target=target,
+                        app_id=settings.plantation_app_id,
+                    )
                 self._channel = grpc.aio.insecure_channel(target)
             self._stub = plantation_pb2_grpc.PlantationServiceStub(self._channel)
         return self._stub
+
+    def _get_metadata(self) -> list[tuple[str, str]]:
+        """Get gRPC call metadata.
+
+        Returns DAPR metadata for service invocation when using DAPR,
+        or empty list for direct connections.
+        """
+        if settings.plantation_grpc_host:
+            # Direct connection - no DAPR metadata needed
+            return []
+        # DAPR service invocation - add app-id metadata
+        return [("dapr-app-id", settings.plantation_app_id)]
 
     @retry(
         retry=retry_if_exception_type(grpc.aio.AioRpcError),
@@ -77,10 +103,7 @@ class PlantationClient:
             stub = await self._get_stub()
             request = plantation_pb2.GetFarmerRequest(id=farmer_id)
 
-            # Add DAPR metadata for service invocation
-            metadata = [("dapr-app-id", settings.plantation_app_id)]
-
-            response = await stub.GetFarmer(request, metadata=metadata)
+            response = await stub.GetFarmer(request, metadata=self._get_metadata())
 
             return self._farmer_to_dict(response)
 
@@ -114,9 +137,8 @@ class PlantationClient:
         try:
             stub = await self._get_stub()
             request = plantation_pb2.GetFarmerSummaryRequest(farmer_id=farmer_id)
-            metadata = [("dapr-app-id", settings.plantation_app_id)]
 
-            response = await stub.GetFarmerSummary(request, metadata=metadata)
+            response = await stub.GetFarmerSummary(request, metadata=self._get_metadata())
 
             return self._farmer_summary_to_dict(response)
 
@@ -149,9 +171,8 @@ class PlantationClient:
         try:
             stub = await self._get_stub()
             request = plantation_pb2.ListCollectionPointsRequest(factory_id=factory_id)
-            metadata = [("dapr-app-id", settings.plantation_app_id)]
 
-            response = await stub.ListCollectionPoints(request, metadata=metadata)
+            response = await stub.ListCollectionPoints(request, metadata=self._get_metadata())
 
             return [self._collection_point_to_dict(cp) for cp in response.collection_points]
 
@@ -182,9 +203,8 @@ class PlantationClient:
         try:
             stub = await self._get_stub()
             request = plantation_pb2.ListFarmersRequest(collection_point_id=collection_point_id)
-            metadata = [("dapr-app-id", settings.plantation_app_id)]
 
-            response = await stub.ListFarmers(request, metadata=metadata)
+            response = await stub.ListFarmers(request, metadata=self._get_metadata())
 
             return [self._farmer_to_dict(f) for f in response.farmers]
 
@@ -216,9 +236,8 @@ class PlantationClient:
         try:
             stub = await self._get_stub()
             request = plantation_pb2.GetFactoryRequest(id=factory_id)
-            metadata = [("dapr-app-id", settings.plantation_app_id)]
 
-            response = await stub.GetFactory(request, metadata=metadata)
+            response = await stub.GetFactory(request, metadata=self._get_metadata())
 
             return self._factory_to_dict(response)
 
@@ -317,6 +336,7 @@ class PlantationClient:
                 "metrics_date": today.metrics_date,
                 "total_kg": today.total_kg,
                 "deliveries": today.deliveries,
+                "grade_counts": dict(today.grade_counts),
             }
 
         return result
@@ -362,9 +382,8 @@ class PlantationClient:
         try:
             stub = await self._get_stub()
             request = plantation_pb2.GetRegionRequest(region_id=region_id)
-            metadata = [("dapr-app-id", settings.plantation_app_id)]
 
-            response = await stub.GetRegion(request, metadata=metadata)
+            response = await stub.GetRegion(request, metadata=self._get_metadata())
 
             return self._region_to_dict(response)
 
@@ -405,9 +424,8 @@ class PlantationClient:
                 county=county or "",
                 altitude_band=altitude_band or "",
             )
-            metadata = [("dapr-app-id", settings.plantation_app_id)]
 
-            response = await stub.ListRegions(request, metadata=metadata)
+            response = await stub.ListRegions(request, metadata=self._get_metadata())
 
             return [self._region_to_dict(r) for r in response.regions]
 
@@ -439,9 +457,8 @@ class PlantationClient:
         try:
             stub = await self._get_stub()
             request = plantation_pb2.GetCurrentFlushRequest(region_id=region_id)
-            metadata = [("dapr-app-id", settings.plantation_app_id)]
 
-            response = await stub.GetCurrentFlush(request, metadata=metadata)
+            response = await stub.GetCurrentFlush(request, metadata=self._get_metadata())
 
             result: dict[str, Any] = {
                 "region_id": response.region_id,
@@ -489,9 +506,8 @@ class PlantationClient:
                 region_id=region_id,
                 days=days,
             )
-            metadata = [("dapr-app-id", settings.plantation_app_id)]
 
-            response = await stub.GetRegionWeather(request, metadata=metadata)
+            response = await stub.GetRegionWeather(request, metadata=self._get_metadata())
 
             observations = []
             for obs in response.observations:
