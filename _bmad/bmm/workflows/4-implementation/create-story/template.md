@@ -66,6 +66,9 @@ pytest tests/unit/ -v
 ```
 
 ### 2. E2E Tests (MANDATORY)
+
+> **Before running E2E tests:** Read `tests/e2e/E2E-TESTING-MENTAL-MODEL.md`
+
 ```bash
 # Start infrastructure
 docker compose -f tests/e2e/infrastructure/docker-compose.e2e.yaml up -d
