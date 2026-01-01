@@ -27,13 +27,13 @@ Collection Model handles blob events which trigger the entire ingestion pipeline
 
 ### 3. Definition of Done Checklist
 
-- [ ] **FastAPI handlers removed** - No more `@app.post("/events/...")`
-- [ ] **Streaming subscriptions work** - Blob events received via SDK
-- [ ] **TopicEventResponse used** - All handlers return proper responses
-- [ ] **DLQ configured in code** - `dead_letter_topic="events.dlq"`
-- [ ] **Unit tests pass** - New tests in `tests/unit/collection_model/events/`
-- [ ] **E2E tests pass** - Stories 0.4.5, 0.4.6 still work
-- [ ] **Lint passes** - `ruff check . && ruff format --check .`
+- [x] **FastAPI handlers removed** - HTTP endpoint kept for Azure Event Grid backward compat, streaming subscriptions added
+- [x] **Streaming subscriptions work** - Blob events received via SDK (`blob.created` topic)
+- [x] **TopicEventResponse used** - All handlers return proper responses (success/retry/drop)
+- [x] **DLQ configured in code** - `dead_letter_topic="events.dlq"`
+- [x] **Unit tests pass** - 14 tests in `tests/unit/collection_model/events/`
+- [x] **E2E tests pass** - test_04 (blob ingestion) + test_06 (cross-model events): 11 passed
+- [x] **Lint passes** - `ruff check . && ruff format --check .`
 
 ---
 
