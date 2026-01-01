@@ -338,14 +338,52 @@
     <action>Cover edge cases and error handling scenarios identified in story Dev Notes</action>
   </step>
 
-  <step n="7" goal="Run validations and tests">
+  <step n="7" goal="Run validations and unit/integration tests">
     <action>Determine how to run tests for this repo (infer test framework from project structure)</action>
-    <action>Run all existing tests to ensure no regressions</action>
+    <action>Run all existing unit tests to ensure no regressions</action>
     <action>Run the new tests to verify implementation correctness</action>
     <action>Run linting and code quality checks if configured in project</action>
     <action>Validate implementation meets ALL story acceptance criteria; enforce quantitative thresholds explicitly</action>
     <action if="regression tests fail">STOP and fix before continuing - identify breaking changes immediately</action>
     <action if="new tests fail">STOP and fix before continuing - ensure implementation correctness</action>
+  </step>
+
+  <step n="7b" goal="Run E2E tests locally (MANDATORY)">
+    <critical>E2E tests MUST pass locally before marking story ready for review - NO EXCEPTIONS</critical>
+    <critical>This step CANNOT be skipped - story will be rejected without E2E evidence</critical>
+
+    <action>Check if E2E test infrastructure exists: tests/e2e/infrastructure/docker-compose.e2e.yaml</action>
+
+    <check if="E2E infrastructure exists">
+      <output>🧪 **Starting E2E Test Suite (MANDATORY)**
+        E2E tests must pass before story can move to review status.
+      </output>
+
+      <action>Start E2E infrastructure:
+        docker compose -f tests/e2e/infrastructure/docker-compose.e2e.yaml up -d
+      </action>
+      <action>Wait for services to be healthy (use docker compose logs to verify)</action>
+      <action>Run E2E test suite:
+        PYTHONPATH="${PYTHONPATH}:.:libs/fp-proto/src" pytest tests/e2e/scenarios/ -v
+      </action>
+      <action>Capture COMPLETE E2E output including pass/fail counts</action>
+      <action>Tear down infrastructure:
+        docker compose -f tests/e2e/infrastructure/docker-compose.e2e.yaml down -v
+      </action>
+
+      <action if="E2E tests fail">HALT: "E2E tests failed - MUST fix before proceeding to review"</action>
+
+      <action>Paste E2E output in story file under "Local Test Run Evidence → E2E Tests" section</action>
+      <action>Mark E2E evidence checkbox in story file</action>
+
+      <output>✅ **E2E Tests Passed**
+        Evidence captured in story file. Proceeding to task completion.
+      </output>
+    </check>
+
+    <check if="E2E infrastructure does NOT exist">
+      <output>ℹ️ No E2E infrastructure configured for this project - skipping E2E step</output>
+    </check>
   </step>
 
   <step n="8" goal="Validate and mark task complete ONLY when fully done">
@@ -441,7 +479,78 @@
         Story status is set to "review" in file, but sprint-status.yaml may be out of sync.
       </output>
     </check>
+  </step>
 
+  <step n="9b" goal="Push to story branch and verify CI E2E passes (MANDATORY)">
+    <critical>CI E2E tests MUST pass on the story branch before story can be merged</critical>
+    <critical>Story remains in "review" status until CI verification completes</critical>
+
+    <!-- Push changes to story branch -->
+    <action>Ensure all changes are committed to the story branch</action>
+    <action>Push to remote story branch:
+      git push origin {{story_branch}}
+    </action>
+
+    <output>🚀 **Pushed to Story Branch**
+      Branch: {{story_branch}}
+      Waiting for CI to complete...
+    </output>
+
+    <!-- Wait and verify CI -->
+    <action>Wait ~30 seconds for CI to start</action>
+    <action>Check CI status on story branch:
+      gh run list --branch {{story_branch}} --limit 3
+    </action>
+
+    <check if="CI run is in progress">
+      <output>⏳ **CI Running on Story Branch**
+        Run: {{run_id}}
+        Status: In Progress
+
+        Wait for completion before proceeding...
+      </output>
+      <action>Monitor CI status until complete:
+        gh run watch {{run_id}}
+      </action>
+    </check>
+
+    <check if="CI E2E job passed">
+      <output>✅ **CI E2E Passed on Story Branch**
+        Branch: {{story_branch}}
+        Run: {{run_id}}
+        E2E Status: PASSED
+
+        Story is ready for code review and merge.
+      </output>
+      <action>Record CI run ID in story file Dev Agent Record</action>
+    </check>
+
+    <check if="CI E2E job failed">
+      <action>Get failure details:
+        gh run view {{run_id}} --log-failed
+      </action>
+      <output>❌ **CI E2E Failed on Story Branch**
+        Branch: {{story_branch}}
+        Run: {{run_id}}
+
+        **Failure Details:**
+        {{failure_logs}}
+
+        HALT: Fix E2E failures before story can proceed.
+      </output>
+      <action>HALT: "CI E2E failed on story branch - fix before proceeding"</action>
+    </check>
+
+    <!-- Update story file with CI evidence -->
+    <action>Add CI verification evidence to story file:
+      - Branch: {{story_branch}}
+      - CI Run ID: {{run_id}}
+      - E2E Status: PASSED
+      - Verification Date: {{date}}
+    </action>
+  </step>
+
+  <step n="9c" goal="Update GitHub issue with development completion" tag="github-update">
     <!-- Update GitHub issue with development completion -->
     <check if="{{github_issue_number}} exists and is not null">
       <action>Add comment to GitHub issue #{{github_issue_number}} with development completion summary:
