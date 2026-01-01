@@ -117,7 +117,7 @@ development_status:
   0-6-5-plantation-streaming-subscriptions: done  # ADR-010/011, 5 points, github_issue: 49, PR: #50
   0-6-6-collection-streaming-subscriptions: done  # ADR-010/011, 5 points, github_issue: 51, PR: #52
   0-6-7-dapr-resiliency-config: done  # ADR-006, 2 points, github_issue: 53, PR: #54
-  0-6-8-dead-letter-queue-handler: in-progress  # ADR-006, 3 points, github_issue: 55, prereq: 0.6.5/0.6.6
+  0-6-8-dead-letter-queue-handler: done  # ADR-006, 3 points, github_issue: 55, prereq: 0.6.5/0.6.6
   0-6-9-source-config-cache-change-streams: ready-for-dev  # ADR-007, 5 points, prereq: 0.6.8
   0-6-10-linkage-field-validation: ready-for-dev  # ADR-008, 3 points, prereq: 0.6.5, 0.6.8
   epic-0-6-retrospective: optional

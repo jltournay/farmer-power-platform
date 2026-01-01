@@ -1,6 +1,6 @@
 # Story 0.6.8: Dead Letter Queue Handler
 
-**Status:** Review
+**Status:** Done
 **GitHub Issue:** #55
 **Epic:** [Epic 0.6: Infrastructure Hardening](../epics/epic-0-6-infrastructure-hardening.md)
 **ADR:** [ADR-006: Event Delivery and Dead Letter Queue](../architecture/adr/ADR-006-event-delivery-dead-letter-queue.md)
@@ -30,7 +30,7 @@ Failed events are stored in MongoDB for:
 - [x] **DLQ handler module created** - `fp_common/events/dlq_handler.py`
 - [x] **MongoDB storage works** - Events stored in `event_dead_letter` collection
 - [x] **Metrics emitted** - `event_dead_letter_total` counter incremented
-- [x] **Unit tests pass** - Tests in `tests/unit/fp_common/events/` (15 tests pass)
+- [x] **Unit tests pass** - Tests in `tests/unit/fp_common/events/` (19 tests pass)
 - [x] **PoC DLQ test passes** - E2E tests pass, DLQ subscription starts correctly
 - [x] **Lint passes**
 
@@ -77,7 +77,7 @@ So that failed events are visible and can be replayed after fixes.
   - [x] Test handler handles string/bytes/dict data formats
   - [x] Test handler continues on storage failure
   - [x] Mock MongoDB for isolation
-  - [x] 15 unit tests passing
+  - [x] 19 unit tests passing (4 added in code review)
 
 - [x] **Task 5: Integrate with Services** (AC: 1)
   - [x] Add DLQ subscription to plantation-model startup (main.py)
@@ -510,6 +510,25 @@ Is failure related to DLQ handler?
     │
     └── NO (unrelated failure) ──► Investigate per Mental Model
 ```
+
+---
+
+## Code Review (Step 9e)
+
+**Review Date:** 2026-01-01
+**Reviewer:** Claude Opus 4.5
+
+### Issues Found: 0 Critical, 3 Medium, 2 Low
+
+| # | Severity | Issue | Resolution |
+|---|----------|-------|------------|
+| 1 | MEDIUM | Missing tests for query methods | Added 4 new tests for `get_pending_events()`, `count_by_status()`, `ensure_indexes()` |
+| 2 | MEDIUM | Missing MongoDB index creation | Added `ensure_indexes()` method to `DLQRepository` |
+| 3 | MEDIUM | Status field not type-constrained | Changed to `Literal["pending_review", "replayed", "discarded"]` |
+| 4 | LOW | No unit test for `start_dlq_subscription()` | Acceptable - daemon thread with DAPR integration |
+| 5 | LOW | Uncommitted documentation | Committed with fixes |
+
+**All issues fixed and committed.** Final test count: 19 tests passing.
 
 ---
 
