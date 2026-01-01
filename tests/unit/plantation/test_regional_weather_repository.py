@@ -3,7 +3,7 @@
 from datetime import date, timedelta
 
 import pytest
-from plantation_model.domain.models.regional_weather import WeatherObservation
+from plantation_model.domain.models import WeatherObservation
 from plantation_model.infrastructure.repositories.regional_weather_repository import (
     RegionalWeatherRepository,
 )

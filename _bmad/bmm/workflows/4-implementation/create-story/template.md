@@ -43,7 +43,7 @@ so that {{benefit}}.
 
 ### Story Done
 - [ ] Create Pull Request: `gh pr create --title "Story {{epic_num}}.{{story_num}}: {{story_title}}" --base main`
-- [ ] CI passes on PR
+- [ ] CI passes on PR (including E2E tests)
 - [ ] Code review completed (`/code-review` or human review)
 - [ ] PR approved and merged (squash)
 - [ ] Local branch cleaned up: `git branch -d story/...`
@@ -52,7 +52,63 @@ so that {{benefit}}.
 
 ---
 
-## E2E Story Checklist (MANDATORY for E2E stories)
+## Local Test Run Evidence (MANDATORY - ALL STORIES)
+
+> **This section MUST be completed before marking story as "review"**
+
+### 1. Unit Tests
+```bash
+pytest tests/unit/ -v
+```
+**Output:**
+```
+(paste test summary here - e.g., "42 passed in 5.23s")
+```
+
+### 2. E2E Tests (MANDATORY)
+
+> **Before running E2E tests:** Read `tests/e2e/E2E-TESTING-MENTAL-MODEL.md`
+
+```bash
+# Start infrastructure
+docker compose -f tests/e2e/infrastructure/docker-compose.e2e.yaml up -d
+
+# Wait for services, then run tests
+PYTHONPATH="${PYTHONPATH}:.:libs/fp-proto/src" pytest tests/e2e/scenarios/ -v
+
+# Tear down
+docker compose -f tests/e2e/infrastructure/docker-compose.e2e.yaml down -v
+```
+**Output:**
+```
+(paste E2E test output here - story is NOT ready for review without this)
+```
+**E2E passed:** [ ] Yes / [ ] No
+
+### 3. Lint Check
+```bash
+ruff check . && ruff format --check .
+```
+**Lint passed:** [ ] Yes / [ ] No
+
+### 4. CI Verification on Story Branch (MANDATORY)
+
+> **After pushing to story branch, CI must pass before creating PR**
+
+```bash
+# Push to story branch
+git push origin story/{{epic_num}}-{{story_num}}-{{short_name}}
+
+# Wait ~30s, then check CI status
+gh run list --branch story/{{epic_num}}-{{story_num}}-{{short_name}} --limit 3
+```
+**CI Run ID:** _______________
+**CI E2E Status:** [ ] Passed / [ ] Failed
+**Verification Date:** _______________
+
+---
+
+## E2E Story Checklist (Additional guidance for E2E-focused stories)
 
 **Read First:** `tests/e2e/E2E-TESTING-MENTAL-MODEL.md`
 

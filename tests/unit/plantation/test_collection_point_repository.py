@@ -4,8 +4,8 @@ from datetime import UTC, datetime
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
-from plantation_model.domain.models.collection_point import CollectionPoint
-from plantation_model.domain.models.value_objects import (
+from plantation_model.domain.models import (
+    CollectionPoint,
     CollectionPointCapacity,
     GeoLocation,
     OperatingHours,

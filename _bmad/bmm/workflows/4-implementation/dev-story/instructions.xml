@@ -338,14 +338,52 @@
     <action>Cover edge cases and error handling scenarios identified in story Dev Notes</action>
   </step>
 
-  <step n="7" goal="Run validations and tests">
+  <step n="7" goal="Run validations and unit/integration tests">
     <action>Determine how to run tests for this repo (infer test framework from project structure)</action>
-    <action>Run all existing tests to ensure no regressions</action>
+    <action>Run all existing unit tests to ensure no regressions</action>
     <action>Run the new tests to verify implementation correctness</action>
     <action>Run linting and code quality checks if configured in project</action>
     <action>Validate implementation meets ALL story acceptance criteria; enforce quantitative thresholds explicitly</action>
     <action if="regression tests fail">STOP and fix before continuing - identify breaking changes immediately</action>
     <action if="new tests fail">STOP and fix before continuing - ensure implementation correctness</action>
+  </step>
+
+  <step n="7b" goal="Run E2E tests locally (MANDATORY)">
+    <critical>E2E tests MUST pass locally before marking story ready for review - NO EXCEPTIONS</critical>
+    <critical>This step CANNOT be skipped - story will be rejected without E2E evidence</critical>
+
+    <action>Check if E2E test infrastructure exists: tests/e2e/infrastructure/docker-compose.e2e.yaml</action>
+
+    <check if="E2E infrastructure exists">
+      <output>🧪 **Starting E2E Test Suite (MANDATORY)**
+        E2E tests must pass before story can move to review status.
+      </output>
+
+      <action>Start E2E infrastructure:
+        docker compose -f tests/e2e/infrastructure/docker-compose.e2e.yaml up -d
+      </action>
+      <action>Wait for services to be healthy (use docker compose logs to verify)</action>
+      <action>Run E2E test suite:
+        PYTHONPATH="${PYTHONPATH}:.:libs/fp-proto/src" pytest tests/e2e/scenarios/ -v
+      </action>
+      <action>Capture COMPLETE E2E output including pass/fail counts</action>
+      <action>Tear down infrastructure:
+        docker compose -f tests/e2e/infrastructure/docker-compose.e2e.yaml down -v
+      </action>
+
+      <action if="E2E tests fail">HALT: "E2E tests failed - MUST fix before proceeding to review"</action>
+
+      <action>Paste E2E output in story file under "Local Test Run Evidence → E2E Tests" section</action>
+      <action>Mark E2E evidence checkbox in story file</action>
+
+      <output>✅ **E2E Tests Passed**
+        Evidence captured in story file. Proceeding to task completion.
+      </output>
+    </check>
+
+    <check if="E2E infrastructure does NOT exist">
+      <output>ℹ️ No E2E infrastructure configured for this project - skipping E2E step</output>
+    </check>
   </step>
 
   <step n="8" goal="Validate and mark task complete ONLY when fully done">
@@ -441,7 +479,181 @@
         Story status is set to "review" in file, but sprint-status.yaml may be out of sync.
       </output>
     </check>
+  </step>
 
+  <step n="9b" goal="Push to story branch and verify Quality CI passes (MANDATORY)">
+    <critical>Quality CI (ci.yaml) MUST pass on the story branch before proceeding</critical>
+    <critical>Quality CI is AUTO-TRIGGERED on push - verify it completes successfully</critical>
+
+    <!-- Push changes to story branch -->
+    <action>Ensure all changes are committed to the story branch</action>
+    <action>Push to remote story branch:
+      git push origin {{story_branch}}
+    </action>
+
+    <output>🚀 **Pushed to Story Branch**
+      Branch: {{story_branch}}
+      Waiting for Quality CI (ci.yaml) to complete...
+    </output>
+
+    <!-- Wait and verify Quality CI -->
+    <action>Wait ~30 seconds for Quality CI to start</action>
+    <action>Check Quality CI status on story branch:
+      gh run list --workflow=ci.yaml --branch {{story_branch}} --limit 1
+    </action>
+
+    <check if="Quality CI run is in progress">
+      <output>⏳ **Quality CI Running on Story Branch**
+        Workflow: ci.yaml
+        Run: {{quality_ci_run_id}}
+        Status: In Progress
+
+        Wait for completion before proceeding...
+      </output>
+      <action>Monitor Quality CI status until complete:
+        gh run watch {{quality_ci_run_id}}
+      </action>
+    </check>
+
+    <check if="Quality CI passed">
+      <output>✅ **Quality CI Passed**
+        Workflow: ci.yaml
+        Branch: {{story_branch}}
+        Run: {{quality_ci_run_id}}
+        Status: PASSED (lint, format, unit tests)
+
+        Proceeding to E2E CI verification...
+      </output>
+      <action>Record Quality CI run ID in story file Dev Agent Record</action>
+    </check>
+
+    <check if="Quality CI failed">
+      <action>Get failure details:
+        gh run view {{quality_ci_run_id}} --log-failed
+      </action>
+      <output>❌ **Quality CI Failed on Story Branch**
+        Workflow: ci.yaml
+        Branch: {{story_branch}}
+        Run: {{quality_ci_run_id}}
+
+        **Failure Details:**
+        {{failure_logs}}
+
+        HALT: Fix Quality CI failures before proceeding.
+      </output>
+      <action>HALT: "Quality CI (ci.yaml) failed - fix before proceeding"</action>
+    </check>
+
+    <!-- Update story file with Quality CI evidence -->
+    <action>Add Quality CI verification evidence to story file:
+      - Branch: {{story_branch}}
+      - Workflow: ci.yaml
+      - Quality CI Run ID: {{quality_ci_run_id}}
+      - Quality CI Status: PASSED
+      - Verification Date: {{date}}
+    </action>
+  </step>
+
+  <step n="9c" goal="Trigger and verify E2E CI passes (MANDATORY - MANUAL TRIGGER)">
+    <critical>E2E CI (e2e.yaml) MUST be MANUALLY TRIGGERED - it does NOT auto-run on push</critical>
+    <critical>You MUST trigger, wait, and verify E2E CI passes before proceeding</critical>
+    <critical>This step CANNOT be skipped - story will be rejected without E2E CI evidence</critical>
+
+    <output>🧪 **E2E CI Verification (MANUAL TRIGGER REQUIRED)**
+      E2E workflow must be manually triggered on the story branch.
+      This is separate from Quality CI which runs automatically.
+    </output>
+
+    <!-- Step 1: Trigger E2E workflow -->
+    <action>Trigger E2E CI workflow on current branch:
+      gh workflow run e2e.yaml --ref {{story_branch}}
+    </action>
+
+    <output>🚀 **E2E CI Triggered**
+      Workflow: e2e.yaml
+      Branch: {{story_branch}}
+      Waiting for workflow to start...
+    </output>
+
+    <!-- Step 2: Wait for workflow to appear and get run ID -->
+    <action>Wait for E2E workflow run to appear (~5-10 seconds):
+      sleep 10
+      gh run list --workflow=e2e.yaml --branch {{story_branch}} --limit 1 --json databaseId,status,conclusion
+    </action>
+
+    <!-- Step 3: Monitor until completion -->
+    <check if="E2E CI run is in progress">
+      <output>⏳ **E2E CI Running**
+        Workflow: e2e.yaml
+        Run: {{e2e_run_id}}
+        Status: In Progress
+        Expected duration: 3-5 minutes
+
+        Monitoring until completion...
+      </output>
+      <action>Monitor E2E CI until complete (timeout 10 minutes):
+        gh run watch {{e2e_run_id}}
+      </action>
+    </check>
+
+    <!-- Step 4: Verify final status -->
+    <check if="E2E CI passed">
+      <action>Get E2E run details:
+        gh run view {{e2e_run_id}}
+      </action>
+      <output>✅ **E2E CI Passed**
+        Workflow: e2e.yaml
+        Branch: {{story_branch}}
+        Run: {{e2e_run_id}}
+        Status: PASSED
+
+        Both Quality CI and E2E CI have passed. Story is ready for code review.
+      </output>
+      <action>Record E2E CI run ID in story file Dev Agent Record</action>
+    </check>
+
+    <check if="E2E CI failed">
+      <action>Get failure details:
+        gh run view {{e2e_run_id}} --log-failed
+      </action>
+      <output>❌ **E2E CI Failed**
+        Workflow: e2e.yaml
+        Branch: {{story_branch}}
+        Run: {{e2e_run_id}}
+
+        **Failure Details:**
+        {{failure_logs}}
+
+        HALT: Fix E2E CI failures before story can proceed.
+      </output>
+      <action>HALT: "E2E CI (e2e.yaml) failed - fix before proceeding"</action>
+    </check>
+
+    <check if="E2E workflow trigger failed">
+      <output>❌ **E2E CI Trigger Failed**
+        Could not trigger e2e.yaml workflow.
+
+        **Possible causes:**
+        - Workflow file does not exist at .github/workflows/e2e.yaml
+        - Workflow missing `workflow_dispatch` trigger
+        - Insufficient permissions
+
+        HALT: Investigate E2E workflow configuration.
+      </output>
+      <action>HALT: "Cannot trigger E2E CI - check workflow configuration"</action>
+    </check>
+
+    <!-- Update story file with E2E CI evidence -->
+    <action>Add E2E CI verification evidence to story file:
+      - Branch: {{story_branch}}
+      - Workflow: e2e.yaml
+      - E2E CI Run ID: {{e2e_run_id}}
+      - E2E CI Status: PASSED
+      - Verification Date: {{date}}
+    </action>
+  </step>
+
+  <step n="9d" goal="Update GitHub issue with development completion" tag="github-update">
     <!-- Update GitHub issue with development completion -->
     <check if="{{github_issue_number}} exists and is not null">
       <action>Add comment to GitHub issue #{{github_issue_number}} with development completion summary:
@@ -463,6 +675,31 @@
     <action if="regression failures exist">HALT - Fix regression issues before completing</action>
     <action if="File List is incomplete">HALT - Update File List with all changed files</action>
     <action if="definition-of-done validation fails">HALT - Address DoD failures before completing</action>
+  </step>
+
+  <step n="9e" goal="Trigger mandatory code review (REQUIRED)">
+    <critical>Code review MUST be executed before story can be marked done - NO EXCEPTIONS</critical>
+    <critical>This step CANNOT be skipped - story will be rejected without code review evidence</critical>
+
+    <action>Verify story status is "review" (set in Step 9)</action>
+
+    <output>📋 **MANDATORY CODE REVIEW REQUIRED**
+
+      Story implementation is complete. Code review is REQUIRED before story can move to "done".
+
+      **Current Status:** review (awaiting code review)
+
+      **Required Action:** Run `/code-review` workflow
+
+      ⛔ **BLOCKED:** Story CANNOT move to "done" status until:
+      - Code review workflow has been executed
+      - All review findings have been addressed (or explicitly waived)
+      - Review evidence is captured in story file
+
+      💡 **Tip:** For best results, run code-review using a **different** LLM than the one that implemented this story.
+    </output>
+
+    <action>HALT: "Run /code-review workflow - story cannot be completed without code review"</action>
   </step>
 
   <step n="10" goal="Completion communication and user support">

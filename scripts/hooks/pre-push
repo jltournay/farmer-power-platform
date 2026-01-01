@@ -1,0 +1,78 @@
+#!/bin/bash
+# Pre-push hook: Validates E2E test evidence in story files before allowing push
+#
+# Install: cp scripts/hooks/pre-push .git/hooks/pre-push && chmod +x .git/hooks/pre-push
+#
+# This hook prevents pushing if:
+# 1. Story files have placeholder E2E evidence
+# 2. Story files are missing the E2E completion checkbox
+
+set -e
+
+echo "🔍 Validating E2E test evidence in story files..."
+
+# Get the remote and branch being pushed to
+remote="$1"
+url="$2"
+
+# Find story files modified in commits being pushed
+# Compare against the remote tracking branch
+STORY_FILES=$(git diff --name-only "origin/main...HEAD" 2>/dev/null | grep '_bmad-output/sprint-artifacts/.*\.md$' || true)
+
+if [ -z "$STORY_FILES" ]; then
+    echo "✅ No story files modified - skipping E2E validation"
+    exit 0
+fi
+
+ERRORS=0
+
+for file in $STORY_FILES; do
+    if [ ! -f "$file" ]; then
+        continue
+    fi
+
+    echo "  Checking: $file"
+
+    # Check for placeholder E2E evidence (common patterns agents use to defer)
+    if grep -q "to be verified after push\|to be verified later\|E2E tests require Docker\|paste test output here\|paste E2E output here" "$file" 2>/dev/null; then
+        echo "  ❌ BLOCKED: $file has placeholder E2E evidence"
+        echo "     Run E2E tests and capture actual output before pushing"
+        ERRORS=$((ERRORS + 1))
+    fi
+
+    # Check if E2E Tests checkbox exists and is checked
+    # Look for patterns like "- [x] **E2E tests pass**" or "[x] E2E"
+    if grep -q "\- \[ \].*E2E tests pass" "$file" 2>/dev/null; then
+        echo "  ❌ BLOCKED: $file has unchecked E2E tests checkbox"
+        echo "     Run E2E tests and mark the checkbox before pushing"
+        ERRORS=$((ERRORS + 1))
+    fi
+
+    # Verify E2E section has actual content (not just headers)
+    if grep -q "## Local Test Run Evidence" "$file" 2>/dev/null; then
+        # Check if E2E section has actual pytest output
+        if ! grep -q "passed\|failed\|error" "$file" 2>/dev/null; then
+            echo "  ⚠️  WARNING: $file may be missing actual E2E test output"
+            echo "     Ensure test results are captured, not just placeholders"
+        fi
+    fi
+done
+
+if [ $ERRORS -gt 0 ]; then
+    echo ""
+    echo "═══════════════════════════════════════════════════════════════"
+    echo "⛔ PUSH BLOCKED: $ERRORS story file(s) missing E2E evidence"
+    echo "═══════════════════════════════════════════════════════════════"
+    echo ""
+    echo "To fix this:"
+    echo "1. Run: docker compose -f tests/e2e/infrastructure/docker-compose.e2e.yaml up -d"
+    echo "2. Run: PYTHONPATH=\"\${PYTHONPATH}:.:libs/fp-proto/src\" pytest tests/e2e/scenarios/ -v"
+    echo "3. Capture the output in your story file"
+    echo "4. Mark the E2E checkbox as [x]"
+    echo "5. Commit and push again"
+    echo ""
+    exit 1
+fi
+
+echo "✅ E2E evidence validated in all story files"
+exit 0

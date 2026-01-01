@@ -1,4 +1,8 @@
-"""Value objects for the Plantation Model service."""
+"""Value objects for the Farmer Power Platform.
+
+Shared value objects used across domain models including geographic
+locations, contact information, payment policies, and region configuration.
+"""
 
 import re
 from enum import Enum

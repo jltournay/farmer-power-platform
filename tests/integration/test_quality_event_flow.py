@@ -19,17 +19,15 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 from fastapi.testclient import TestClient
-from plantation_model.domain.models.farmer import FarmScale
-from plantation_model.domain.models.farmer_performance import (
+from plantation_model.domain.models import (
     FarmerPerformance,
-    HistoricalMetrics,
-    TodayMetrics,
-    TrendDirection,
-)
-from plantation_model.domain.models.grading_model import (
+    FarmScale,
     GradeRules,
     GradingModel,
     GradingType,
+    HistoricalMetrics,
+    TodayMetrics,
+    TrendDirection,
 )
 
 

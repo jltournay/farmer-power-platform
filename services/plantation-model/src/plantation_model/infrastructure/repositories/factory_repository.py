@@ -3,7 +3,7 @@
 import logging
 
 from motor.motor_asyncio import AsyncIOMotorDatabase
-from plantation_model.domain.models.factory import Factory
+from plantation_model.domain.models import Factory
 from plantation_model.infrastructure.repositories.base import BaseRepository
 from pymongo import ASCENDING
 

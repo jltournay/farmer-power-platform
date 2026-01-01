@@ -17,7 +17,7 @@ from typing import TYPE_CHECKING, Any
 import structlog
 from fastapi import APIRouter, Request, Response
 from opentelemetry import trace
-from plantation_model.domain.models.regional_weather import WeatherObservation
+from plantation_model.domain.models import WeatherObservation
 from pydantic import BaseModel, Field
 
 if TYPE_CHECKING:

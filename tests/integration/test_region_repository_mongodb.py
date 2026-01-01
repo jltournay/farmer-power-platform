@@ -14,9 +14,7 @@ Usage:
 from datetime import date, timedelta
 
 import pytest
-from plantation_model.domain.models.region import Region
-from plantation_model.domain.models.regional_weather import WeatherObservation
-from plantation_model.domain.models.value_objects import (
+from plantation_model.domain.models import (
     GPS,
     Agronomic,
     AltitudeBand,
@@ -24,7 +22,9 @@ from plantation_model.domain.models.value_objects import (
     FlushCalendar,
     FlushPeriod,
     Geography,
+    Region,
     WeatherConfig,
+    WeatherObservation,
 )
 from plantation_model.infrastructure.repositories.region_repository import RegionRepository
 from plantation_model.infrastructure.repositories.regional_weather_repository import (

@@ -1,13 +1,11 @@
 """Unit tests for CollectionPoint domain model."""
 
 import pytest
-from plantation_model.domain.models.collection_point import (
+from plantation_model.domain.models import (
     CollectionPoint,
+    CollectionPointCapacity,
     CollectionPointCreate,
     CollectionPointUpdate,
-)
-from plantation_model.domain.models.value_objects import (
-    CollectionPointCapacity,
     GeoLocation,
     OperatingHours,
 )

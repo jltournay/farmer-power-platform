@@ -14,8 +14,9 @@ import datetime as dt
 from datetime import datetime
 from enum import Enum
 
-from plantation_model.domain.models.farmer import FarmScale
 from pydantic import BaseModel, Field
+
+from fp_common.models.farmer import FarmScale
 
 
 class TrendDirection(str, Enum):

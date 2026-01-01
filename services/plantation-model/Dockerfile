@@ -60,9 +60,10 @@ COPY --from=builder /usr/local/bin /usr/local/bin
 # Copy application code and set ownership
 COPY --from=builder --chown=appuser:appgroup /app/services/plantation-model/src/ ./src/
 COPY --from=builder --chown=appuser:appgroup /app/libs/fp-proto/src/ ./libs/fp-proto/src/
+COPY --from=builder --chown=appuser:appgroup /app/libs/fp-common/fp_common/ ./libs/fp-common/fp_common/
 
 # Set Python path
-ENV PYTHONPATH=/app/src:/app/libs/fp-proto/src
+ENV PYTHONPATH=/app/src:/app/libs/fp-proto/src:/app/libs/fp-common
 ENV PYTHONUNBUFFERED=1
 
 # Switch to non-root user

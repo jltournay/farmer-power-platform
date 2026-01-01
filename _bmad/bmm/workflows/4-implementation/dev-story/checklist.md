@@ -41,11 +41,24 @@ validation-rules:
 
 - [ ] **Unit Tests:** Unit tests added/updated for ALL core functionality introduced/changed by this story
 - [ ] **Integration Tests:** Integration tests added/updated for component interactions when story requirements demand them
-- [ ] **End-to-End Tests:** End-to-end tests created for critical user flows when story requirements specify them
 - [ ] **Test Coverage:** Tests cover acceptance criteria and edge cases from story Dev Notes
-- [ ] **Regression Prevention:** ALL existing tests pass (no regressions introduced)
+- [ ] **Regression Prevention:** ALL existing unit/integration tests pass (no regressions introduced)
 - [ ] **Code Quality:** Linting and static checks pass when configured in project
 - [ ] **Test Framework Compliance:** Tests use project's testing frameworks and patterns from Dev Notes
+
+## 🔬 E2E Testing (MANDATORY - Cannot Skip)
+
+- [ ] **E2E Tests Run Locally:**
+  - [ ] Docker Compose E2E infrastructure started (`docker compose -f tests/e2e/infrastructure/docker-compose.e2e.yaml up -d`)
+  - [ ] E2E test suite executed (`pytest tests/e2e/scenarios/ -v`)
+  - [ ] All E2E tests passed (no failures)
+  - [ ] E2E infrastructure torn down (`docker compose ... down -v`)
+- [ ] **E2E Evidence Documented:** E2E test output pasted in story file "Local Test Run Evidence" section
+- [ ] **CI E2E Verified on Story Branch:**
+  - [ ] Changes pushed to story branch
+  - [ ] CI workflow completed on story branch (`gh run list --branch <story-branch>`)
+  - [ ] E2E job passed in CI
+  - [ ] CI run ID recorded in story file
 
 ## 📝 Documentation & Tracking
 

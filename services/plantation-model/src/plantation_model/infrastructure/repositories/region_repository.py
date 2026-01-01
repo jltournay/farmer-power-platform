@@ -6,7 +6,7 @@ import logging
 from datetime import UTC, datetime
 from typing import TYPE_CHECKING
 
-from plantation_model.domain.models.region import Region
+from plantation_model.domain.models import Region
 from pymongo import ASCENDING
 
 if TYPE_CHECKING:

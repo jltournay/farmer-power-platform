@@ -14,9 +14,9 @@ Usage:
 from datetime import UTC, datetime
 
 import pytest
-from plantation_model.domain.models.farmer import FarmScale
-from plantation_model.domain.models.farmer_performance import (
+from plantation_model.domain.models import (
     FarmerPerformance,
+    FarmScale,
     HistoricalMetrics,
     TodayMetrics,
     TrendDirection,

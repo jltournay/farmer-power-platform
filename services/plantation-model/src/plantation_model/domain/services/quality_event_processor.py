@@ -19,7 +19,7 @@ from typing import Any
 import structlog
 from opentelemetry import trace
 from plantation_model.config import settings
-from plantation_model.domain.models.farmer_performance import TrendDirection
+from plantation_model.domain.models import TrendDirection
 from plantation_model.infrastructure.collection_client import (
     CollectionClient,
     CollectionClientError,

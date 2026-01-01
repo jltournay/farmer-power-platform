@@ -1,47 +1,59 @@
-"""Domain models for the Plantation Model service."""
+"""Domain models for the Plantation Model service.
 
-from plantation_model.domain.models.collection_point import (
-    CollectionPoint,
-    CollectionPointCreate,
-    CollectionPointUpdate,
-)
-from plantation_model.domain.models.factory import Factory, FactoryCreate, FactoryUpdate
-from plantation_model.domain.models.farmer import (
-    Farmer,
-    FarmerCreate,
-    FarmerUpdate,
-    FarmScale,
-)
-from plantation_model.domain.models.farmer_performance import (
-    FarmerPerformance,
-    HistoricalMetrics,
-    TodayMetrics,
-    TrendDirection,
-)
-from plantation_model.domain.models.grading_model import (
-    ConditionalReject,
-    GradeRules,
-    GradingAttribute,
-    GradingModel,
-    GradingType,
-)
-from plantation_model.domain.models.region import Region, RegionCreate, RegionUpdate
-from plantation_model.domain.models.regional_weather import RegionalWeather, WeatherObservation
-from plantation_model.domain.models.value_objects import (
+This module re-exports all domain models from fp-common for backwards compatibility.
+Models have been moved to fp-common to enable sharing across services and MCP servers.
+
+Import patterns that continue to work:
+    from plantation_model.domain.models import Farmer, Factory, Region
+    from plantation_model.domain.models import FarmScale, GradingModel
+"""
+
+# Re-export all models from fp-common
+from fp_common.models import (
     GPS,
     Agronomic,
     AltitudeBand,
     AltitudeBandLabel,
+    CollectionPoint,
     CollectionPointCapacity,
+    CollectionPointCreate,
+    CollectionPointUpdate,
+    ConditionalReject,
     ContactInfo,
+    Factory,
+    FactoryCreate,
+    FactoryUpdate,
+    Farmer,
+    FarmerCreate,
+    FarmerPerformance,
+    FarmerUpdate,
+    FarmScale,
+    Flush,
     FlushCalendar,
     FlushPeriod,
     Geography,
     GeoLocation,
+    GradeRules,
+    GradingAttribute,
+    GradingModel,
+    GradingType,
+    HistoricalMetrics,
+    InteractionPreference,
+    NotificationChannel,
     OperatingHours,
     PaymentPolicy,
     PaymentPolicyType,
+    PreferredChannel,
+    PreferredLanguage,
+    QualityThresholds,
+    Region,
+    RegionalWeather,
+    RegionCreate,
+    RegionUpdate,
+    TodayMetrics,
+    TrendDirection,
     WeatherConfig,
+    WeatherObservation,
 )
 
 __all__ = [
@@ -63,6 +75,7 @@ __all__ = [
     "FarmerCreate",
     "FarmerPerformance",
     "FarmerUpdate",
+    "Flush",
     "FlushCalendar",
     "FlushPeriod",
     "GeoLocation",
@@ -72,9 +85,14 @@ __all__ = [
     "GradingModel",
     "GradingType",
     "HistoricalMetrics",
+    "InteractionPreference",
+    "NotificationChannel",
     "OperatingHours",
     "PaymentPolicy",
     "PaymentPolicyType",
+    "PreferredChannel",
+    "PreferredLanguage",
+    "QualityThresholds",
     "Region",
     "RegionCreate",
     "RegionUpdate",

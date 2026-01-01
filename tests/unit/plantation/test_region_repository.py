@@ -1,8 +1,7 @@
 """Unit tests for Region repository (Story 1.8)."""
 
 import pytest
-from plantation_model.domain.models.region import Region
-from plantation_model.domain.models.value_objects import (
+from plantation_model.domain.models import (
     GPS,
     Agronomic,
     AltitudeBand,
@@ -10,6 +9,7 @@ from plantation_model.domain.models.value_objects import (
     FlushCalendar,
     FlushPeriod,
     Geography,
+    Region,
     WeatherConfig,
 )
 from plantation_model.infrastructure.repositories.region_repository import RegionRepository

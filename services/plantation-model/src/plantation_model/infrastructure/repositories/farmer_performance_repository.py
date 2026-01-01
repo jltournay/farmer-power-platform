@@ -5,9 +5,9 @@ import logging
 from datetime import datetime
 
 from motor.motor_asyncio import AsyncIOMotorDatabase
-from plantation_model.domain.models.farmer import FarmScale
-from plantation_model.domain.models.farmer_performance import (
+from plantation_model.domain.models import (
     FarmerPerformance,
+    FarmScale,
     HistoricalMetrics,
     TodayMetrics,
 )

@@ -4,7 +4,7 @@ import logging
 from datetime import UTC, datetime
 
 from motor.motor_asyncio import AsyncIOMotorDatabase
-from plantation_model.domain.models.grading_model import GradingModel
+from plantation_model.domain.models import GradingModel
 from plantation_model.infrastructure.repositories.base import BaseRepository
 from pymongo import ASCENDING
 

@@ -56,6 +56,31 @@ farmer-power-platform/
 5. **MCP servers are STATELESS** - no in-memory caching
 6. **Use Pydantic 2.0 syntax** - `model_dump()` not `dict()`
 
+### Workflow Execution Rules (CRITICAL)
+
+> **⛔ NEVER create your own todo list when executing a BMAD workflow.**
+
+When running any BMAD workflow (dev-story, code-review, create-story, etc.):
+
+1. **ALWAYS load and follow `instructions.xml`** - Execute steps in EXACT order
+2. **NEVER skip workflow steps** - Even if you think they're not needed
+3. **NEVER substitute your own task list** - The workflow steps ARE the task list
+4. **NEVER make "judgment calls" to defer steps** - If a step says MANDATORY, do it
+
+**Why this matters:** The workflow steps exist to prevent errors. When you create your own todo list, you bypass critical gates (like E2E testing and Code Review) that the workflow enforces.
+
+**Correct behavior:**
+```
+Workflow says: Step 7 → Step 7b (E2E) → Step 8 → Step 9 → Step 9d (Code Review) → Step 10
+You execute:    Step 7 → Step 7b (E2E) → Step 8 → Step 9 → Step 9d (Code Review) → Step 10
+```
+
+**Incorrect behavior:**
+```
+Workflow says: Step 7 → Step 7b (E2E) → Step 8 → Step 9 → Step 9d (Code Review) → Step 10
+You create:    Own todo: Unit tests → Lint → Push → Done  ← WRONG! (skipped E2E and Code Review)
+```
+
 ### Testing Requirements
 
 - Golden samples required for all AI agents (see `tests/golden/`)
@@ -67,6 +92,39 @@ farmer-power-platform/
   - NEVER modify production code to accept incorrect seed data
   - **If you modify production code:** Document each change with file, what, why, evidence, and type
   - Run `python tests/e2e/infrastructure/validate_seed_data.py` before starting Docker
+
+### E2E Testing Gate (MANDATORY - NO EXCEPTIONS)
+
+> **⛔ CRITICAL: This gate CANNOT be skipped, deferred, or worked around.**
+
+**BEFORE marking ANY story complete or pushing final commits:**
+
+1. **Start E2E infrastructure:**
+   ```bash
+   docker compose -f tests/e2e/infrastructure/docker-compose.e2e.yaml up -d
+   ```
+
+2. **Run E2E test suite:**
+   ```bash
+   PYTHONPATH="${PYTHONPATH}:.:libs/fp-proto/src" pytest tests/e2e/scenarios/ -v
+   ```
+
+3. **Capture output in story file** - Paste actual test results, not placeholders
+
+4. **Tear down infrastructure:**
+   ```bash
+   docker compose -f tests/e2e/infrastructure/docker-compose.e2e.yaml down -v
+   ```
+
+**⛔ BLOCKED ACTIONS without E2E evidence:**
+- Do NOT mark story status as 'review' or 'done'
+- Do NOT push to remote branch
+- Do NOT declare story complete
+- Do NOT write "(to be verified later)" - this is NOT acceptable
+
+**If E2E tests fail:** HALT immediately and fix before proceeding.
+
+This corresponds to **Step 7b** in the dev-story workflow - it is NON-NEGOTIABLE.
 
 ### CI Validation (MANDATORY before marking story done)
 
@@ -82,6 +140,40 @@ farmer-power-platform/
    ```
 
 3. **Story is NOT done until CI passes** - Definition of Done includes green CI
+
+### Code Review Gate (MANDATORY - NO EXCEPTIONS)
+
+> **⛔ CRITICAL: This gate CANNOT be skipped, deferred, or worked around.**
+
+**AFTER dev-story workflow completes (status = "review"):**
+
+1. **Run code review workflow:**
+   ```bash
+   # In Claude Code, run:
+   /code-review
+   ```
+
+2. **Address ALL review findings:**
+   - High severity: MUST be fixed before proceeding
+   - Medium severity: MUST be fixed or explicitly justified
+   - Low severity: Should be fixed or documented for future
+
+3. **Capture review evidence in story file:**
+   - Review outcome (Approve/Changes Requested/Blocked)
+   - Action items with checkboxes
+   - Resolution notes for each finding
+
+**⛔ BLOCKED ACTIONS without Code Review:**
+- Do NOT mark story status as 'done'
+- Do NOT merge to main branch
+- Do NOT close the GitHub issue
+- Do NOT declare story complete
+
+**If code review requests changes:** Address findings, then re-run code-review until approved.
+
+This corresponds to **Step 9d** in the dev-story workflow - it is NON-NEGOTIABLE.
+
+**Best Practice:** Run code-review using a **different LLM** than the one that implemented the story for unbiased review.
 
 ### New Service Checklist
 

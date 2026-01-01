@@ -8,17 +8,15 @@ from datetime import datetime
 from unittest.mock import AsyncMock
 
 import pytest
-from plantation_model.domain.models.farmer import FarmScale
-from plantation_model.domain.models.farmer_performance import (
+from plantation_model.domain.models import (
     FarmerPerformance,
-    HistoricalMetrics,
-    TodayMetrics,
-    TrendDirection,
-)
-from plantation_model.domain.models.grading_model import (
+    FarmScale,
     GradeRules,
     GradingModel,
     GradingType,
+    HistoricalMetrics,
+    TodayMetrics,
+    TrendDirection,
 )
 from plantation_model.domain.services.quality_event_processor import (
     QualityEventProcessingError,
