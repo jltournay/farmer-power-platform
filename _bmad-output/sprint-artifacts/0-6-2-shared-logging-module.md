@@ -1,6 +1,6 @@
 # Story 0.6.2: Shared Logging Module with Runtime Configuration
 
-**Status:** in-progress
+**Status:** review
 **GitHub Issue:** #43
 **Epic:** [Epic 0.6: Infrastructure Hardening](../epics/epic-0-6-infrastructure-hardening.md)
 **ADR:** [ADR-009: Logging Standards and Runtime Configuration](../architecture/adr/ADR-009-logging-standards-runtime-configuration.md)
@@ -31,7 +31,7 @@ gh run list --branch story/0-6-2-shared-logging-module --limit 3
 - [x] **Unit tests pass** - New tests in tests/unit/fp_common/logging/ (21 new tests)
 - [x] **E2E tests pass** - No regressions (71 passed, 3 xfailed)
 - [x] **Lint passes** - `ruff check . && ruff format --check .`
-- [ ] **CI workflow passes**
+- [x] **CI workflow passes** (Run 20640899337)
 
 ---
 
