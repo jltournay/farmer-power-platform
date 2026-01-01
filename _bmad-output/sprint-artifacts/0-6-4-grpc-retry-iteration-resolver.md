@@ -351,6 +351,21 @@ response = await stub.CallTool(request, metadata=metadata, timeout=15.0)
 
 This ensures the retry mechanism can kick in instead of blocking until the HTTP timeout (30s) is reached.
 
+### Docker Image Rebuild Verification
+
+**IMPORTANT:** When testing E2E locally, always use `--no-cache` to ensure Docker images contain latest code:
+
+```bash
+# Force rebuild (not cached)
+docker compose -f tests/e2e/infrastructure/docker-compose.e2e.yaml build --no-cache collection-model
+
+# Verify fix is in image
+docker run --rm infrastructure-collection-model grep -n "timeout=15" /app/src/collection_model/infrastructure/iteration_resolver.py
+# Output: 243:            response = await stub.CallTool(request, metadata=metadata, timeout=15.0)
+```
+
+**Verified:** [x] Docker image contains timeout fix at line 243
+
 ---
 
 ## E2E Test Strategy (Mental Model Alignment)
