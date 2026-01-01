@@ -108,29 +108,25 @@ So that IDE autocomplete works and validation catches errors at MCP boundaries.
 - [x] **Task 7: Verify No Regressions** (AC: 4)
   - [x] Run `pytest tests/unit/ -v` - 962 tests pass, 2 skipped
   - [x] Run `ruff check . && ruff format --check .` - All checks passed
-  - [ ] Verify CI pipeline passes
+  - [x] Verify CI pipeline passes - Quality CI 20640358816, E2E CI 20640377342
 
 ## Git Workflow (MANDATORY)
 
 ### Story Start
-- [ ] GitHub Issue exists or created: `gh issue create --title "Story 0.6.1: Shared Pydantic Models in fp-common"`
-- [ ] Feature branch created from main:
-  ```bash
-  git checkout main && git pull origin main
-  git checkout -b story/0-6-1-shared-pydantic-models
-  ```
+- [x] GitHub Issue exists or created: #41
+- [x] Feature branch created from main: `story/0-6-1-shared-pydantic-models`
 
 **Branch name:** `story/0-6-1-shared-pydantic-models`
 
 ### During Development
-- [ ] All commits reference GitHub issue: `Relates to #XX`
-- [ ] Commits are atomic by phase (model move, import update, test)
-- [ ] Push to feature branch: `git push -u origin story/0-6-1-shared-pydantic-models`
+- [x] All commits reference GitHub issue: `Relates to #41`
+- [x] Commits are atomic by phase (model move, import update, test)
+- [x] Push to feature branch: `git push -u origin story/0-6-1-shared-pydantic-models`
 
 ### Story Done
-- [ ] Create Pull Request: `gh pr create --title "Story 0.6.1: Shared Pydantic Models" --base main`
-- [ ] CI passes on PR
-- [ ] Code review completed
+- [x] Create Pull Request: PR #42
+- [x] CI passes on PR - Quality CI 20640358816, E2E CI 20640377342
+- [x] Code review completed - Adversarial review 2026-01-01
 - [ ] PR approved and merged (squash)
 - [ ] Local branch cleaned up
 

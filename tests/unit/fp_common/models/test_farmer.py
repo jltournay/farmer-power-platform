@@ -166,7 +166,7 @@ class TestFarmerModel:
         farmer = Farmer(**valid_farmer_data)
         data = farmer.model_dump(exclude_none=True)
         # grower_number is None by default and should be excluded
-        assert "grower_number" not in data or data.get("grower_number") is not None
+        assert "grower_number" not in data
 
 
 class TestFarmerCreate:

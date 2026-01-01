@@ -110,7 +110,7 @@ development_status:
   # Dependencies: Epic 0.4 (E2E Tests). Blocks: All future epics
   # Implements ADRs: 004-011 (35 story points total)
   epic-0-6: in-progress
-  0-6-1-shared-pydantic-models: in-progress  # ADR-004, 5 points, github_issue: 41, PR: #42
+  0-6-1-shared-pydantic-models: done  # ADR-004, 5 points, github_issue: 41, PR: #42
   0-6-2-shared-logging-module: ready-for-dev  # ADR-009, 3 points
   0-6-3-grpc-retry-ai-model-client: ready-for-dev  # ADR-005, 2 points
   0-6-4-grpc-retry-iteration-resolver: ready-for-dev  # ADR-005, 2 points
