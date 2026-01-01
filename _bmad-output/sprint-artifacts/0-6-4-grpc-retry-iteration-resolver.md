@@ -315,6 +315,42 @@ ruff check . && ruff format --check .
 ```
 **Lint passed:** [x] Yes / [ ] No
 
+**4. E2E CI Verification:**
+```bash
+gh workflow run "E2E Tests" --ref story/0-6-4-grpc-retry-iteration-resolver
+gh run list --workflow="E2E Tests" --branch story/0-6-4-grpc-retry-iteration-resolver --limit 1
+```
+**Output:**
+```
+completed  success  E2E Tests  E2E Tests  story/0-6-4-grpc-retry-iteration-resolver  workflow_dispatch  20642591862  4m2s  2026-01-01T17:24:13Z
+```
+**E2E CI passed:** [x] Yes / [ ] No
+
+**5. Regular CI Verification:**
+```bash
+gh run list --branch story/0-6-4-grpc-retry-iteration-resolver --limit 1
+```
+**Output:**
+```
+completed  success  Story 0.6.4: gRPC Client Retry - IterationResolver  CI  story/0-6-4-grpc-retry-iteration-resolver  pull_request  20642590824  2m1s
+```
+**Regular CI passed:** [x] Yes / [ ] No
+
+---
+
+## Implementation Notes
+
+### gRPC Call Timeout (Fix for E2E CI)
+
+Initial E2E CI runs failed with `httpx.ReadTimeout` on `test_get_documents_returns_weather_document`. Root cause: the gRPC call in `_resolve_with_retry` had no timeout, causing it to hang indefinitely in Docker/CI environment when connection issues occurred.
+
+**Fix applied:** Added `timeout=15.0` to the gRPC call:
+```python
+response = await stub.CallTool(request, metadata=metadata, timeout=15.0)
+```
+
+This ensures the retry mechanism can kick in instead of blocking until the HTTP timeout (30s) is reached.
+
 ---
 
 ## E2E Test Strategy (Mental Model Alignment)
