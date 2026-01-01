@@ -99,10 +99,10 @@ You create:    Own todo: Unit tests → Lint → Push → Done  ← WRONG! (skip
 
 **TWO E2E VALIDATION STEPS ARE REQUIRED:**
 
-| Step   | What      | When                                                                                   | Command                                                |
-|--------|-----------|----------------------------------------------------------------------------------------|--------------------------------------------------------|
-| **7b** | Local E2E | Before marking tasks complete                                                          | `docker compose ... up -d --build`                     |
-| **9c** | CI E2E    | After push in the story branch, run the e2e workflow on your brach, before code review | `gh workflow run e2e-tests.yaml --ref <storyn branch>` |
+| Step   | What      | When                                                                                         | Command                                               |
+|--------|-----------|----------------------------------------------------------------------------------------------|-------------------------------------------------------|
+| **7b** | Local E2E | Before marking tasks complete                                                                | `docker compose ... up -d --build`                    |
+| **9c** | CI E2E    | After push in the story branch, run the e2e workflow in the story branch, before code review | `gh workflow run e2e-tests.yaml --ref <story branch>` |
 
 #### Step 7b: Local E2E (MANDATORY)
 
