@@ -3,10 +3,13 @@
 Quality data ingestion gateway for the Farmer Power Platform.
 Collects, validates, transforms, links, stores, and serves documents
 related to quality events from various sources.
+
+Story 0.6.6: Added DAPR streaming subscriptions for blob events (ADR-010/ADR-011).
 """
 
 import asyncio
 import contextlib
+import threading
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 
@@ -15,6 +18,11 @@ import collection_model.processors  # noqa: F401
 import structlog
 from collection_model.api import events, health
 from collection_model.config import settings
+from collection_model.events.subscriber import (
+    run_streaming_subscriptions,
+    set_blob_processor,
+    set_main_event_loop,
+)
 from collection_model.infrastructure.dapr_event_publisher import DaprEventPublisher
 from collection_model.infrastructure.dapr_jobs_client import DaprJobsClient
 from collection_model.infrastructure.dapr_secret_client import DaprSecretClient
@@ -158,6 +166,28 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
                 "PullJobHandler",
             ],
         )
+
+        # Story 0.6.6: Set up streaming subscriptions (ADR-010/ADR-011)
+        # Set the main event loop for async operations in subscription handlers
+        set_main_event_loop(asyncio.get_running_loop())
+
+        # Set blob processor services for the subscription handler
+        set_blob_processor(
+            source_config_service=app.state.source_config_service,
+            ingestion_queue=app.state.ingestion_queue,
+            event_metrics=app.state.event_metrics,
+        )
+
+        # Start streaming subscriptions in daemon thread
+        subscription_thread = threading.Thread(
+            target=run_streaming_subscriptions,
+            name="dapr-subscriptions",
+            daemon=True,
+        )
+        subscription_thread.start()
+        app.state.subscription_thread = subscription_thread
+        logger.info("DAPR streaming subscriptions thread started")
+
     except Exception as e:
         logger.warning("MongoDB connection failed at startup", error=str(e))
         # Service can still start - readiness probe will report not ready
