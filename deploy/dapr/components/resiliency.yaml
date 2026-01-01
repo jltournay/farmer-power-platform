@@ -10,6 +10,7 @@
 # - After 3 failures: event goes to Dead Letter Queue (DLQ)
 #
 # Retry Timing (exponential backoff with jitter):
+# - Multiplier: 2.0 (default, not explicitly set)
 # | Attempt     | Wait Before  | Cumulative Time |
 # |-------------|--------------|-----------------|
 # | 1st retry   | ~1s          | ~1s             |

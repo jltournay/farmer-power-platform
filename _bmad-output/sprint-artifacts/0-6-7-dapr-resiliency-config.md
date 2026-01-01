@@ -1,6 +1,6 @@
 # Story 0.6.7: DAPR Resiliency Configuration
 
-**Status:** review
+**Status:** done
 **GitHub Issue:** #53
 **Pull Request:** #54
 **Epic:** [Epic 0.6: Infrastructure Hardening](../epics/epic-0-6-infrastructure-hardening.md)
@@ -126,7 +126,7 @@ spec:
 | Action | File | Change |
 |--------|------|--------|
 | CREATE | `deploy/dapr/components/resiliency.yaml` | Resiliency configuration |
-| MODIFY | `tests/e2e/infrastructure/dapr/components/` | Copy resiliency.yaml |
+| CREATE | `tests/e2e/infrastructure/dapr-components/resiliency.yaml` | E2E resiliency configuration |
 
 ---
 
@@ -190,6 +190,8 @@ PYTHONPATH="${PYTHONPATH}:.:libs/fp-proto/src:libs/fp-common" pytest tests/e2e/s
 ```
 
 **Note on PoC Tests:** The PoC resiliency.yaml was updated from `constant` to `exponential` backoff to match production configuration. The retry and DLQ behavior is validated by the E2E test infrastructure which uses the same resiliency configuration.
+
+**Note on naming:** PoC uses `poc-resiliency`/`pubsubRetry` while production uses `pubsub-resiliency`/`eventRetry`. This is intentional - PoC is isolated and naming difference helps identify which config is active in logs.
 
 **4. E2E CI (GitHub Actions):**
 - Run 1 (20646502327): 70 passed, 1 failed (flaky timeout), 3 xfailed
@@ -265,6 +267,20 @@ YAML-only story - created resiliency configuration for DAPR pub/sub with:
 
 ### Debug Log
 N/A - Clean implementation
+
+### Code Review (2026-01-01)
+**Reviewer:** Senior Dev Code Review (Adversarial)
+**Outcome:** ✅ Approved with minor fixes applied
+
+| Severity | Issue | Resolution |
+|----------|-------|------------|
+| MEDIUM | Incorrect path in "Files to Create/Modify" table | Fixed: `dapr/components/` → `dapr-components/` |
+| MEDIUM | Inconsistent PoC vs production naming | Documented: intentional for isolation |
+| LOW | Missing multiplier documentation | Added comment in production file |
+| LOW | Comment verbosity difference | Accepted as-is (not impactful) |
+
+**All HIGH issues:** None found
+**All ACs verified:** ✅ AC1, AC2, AC3 implemented correctly
 
 ---
 
