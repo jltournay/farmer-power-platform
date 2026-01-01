@@ -190,6 +190,11 @@ PYTHONPATH="${PYTHONPATH}:.:libs/fp-proto/src:libs/fp-common" pytest tests/e2e/s
 
 **Note on PoC Tests:** The PoC resiliency.yaml was updated from `constant` to `exponential` backoff to match production configuration. The retry and DLQ behavior is validated by the E2E test infrastructure which uses the same resiliency configuration.
 
+**4. E2E CI (GitHub Actions):**
+- Run 1 (20646502327): 70 passed, 1 failed (flaky timeout), 3 xfailed
+- Run 2 (20646584970): 71 passed, 3 xfailed ✅
+- **E2E CI Passed** on retry (flaky test was transient)
+
 ---
 
 ## E2E Test Strategy (Mental Model Alignment)
