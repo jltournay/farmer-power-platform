@@ -54,6 +54,55 @@
     </action>
   </step>
 
+  <step n="2b" goal="Validate E2E test evidence (BLOCKING)">
+    <critical>E2E evidence is MANDATORY - Story cannot be approved without it!</critical>
+    <critical>This check happens BEFORE code review - if E2E is missing, REJECT immediately</critical>
+
+    <action>Search story file for "E2E Tests Pass" checkbox</action>
+    <action>Search story file for "Local Test Run Evidence" section</action>
+
+    <check if="E2E checkbox is unchecked [ ]">
+      <output>⛔ **REVIEW BLOCKED: E2E Tests Not Run**
+
+        The story has an unchecked E2E tests checkbox.
+        The dev agent MUST run E2E tests before this review can proceed.
+
+        **Required Actions (by dev agent):**
+        1. Run: `docker compose -f tests/e2e/infrastructure/docker-compose.e2e.yaml up -d`
+        2. Run: `PYTHONPATH="${PYTHONPATH}:.:libs/fp-proto/src" pytest tests/e2e/scenarios/ -v`
+        3. Capture output in story file
+        4. Mark E2E checkbox as [x]
+        5. Re-submit for review
+      </output>
+      <action>Set story status to "in-progress"</action>
+      <action>HALT: "Cannot proceed with review - E2E tests not executed"</action>
+    </check>
+
+    <check if="E2E section contains placeholder text">
+      <action>Search for: "to be verified", "paste test output here", "E2E tests require Docker"</action>
+      <check if="placeholder found">
+        <output>⛔ **REVIEW BLOCKED: E2E Evidence is Placeholder**
+
+          The story file contains placeholder E2E evidence instead of actual test output.
+          The dev agent wrote: "(to be verified later)" or similar - this is NOT acceptable.
+
+          **Required Actions (by dev agent):**
+          1. Actually run the E2E tests with Docker
+          2. Paste the REAL test output
+          3. Re-submit for review
+        </output>
+        <action>Set story status to "in-progress"</action>
+        <action>HALT: "Cannot proceed with review - E2E evidence is placeholder"</action>
+      </check>
+    </check>
+
+    <check if="E2E checkbox is checked [x] AND no placeholder text">
+      <output>✅ **E2E Evidence Validated**
+        E2E tests appear to have been run. Proceeding with code review.
+      </output>
+    </check>
+  </step>
+
   <step n="3" goal="Execute adversarial review">
     <critical>VALIDATE EVERY CLAIM - Check git reality vs story claims</critical>
 

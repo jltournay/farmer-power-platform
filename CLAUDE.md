@@ -56,6 +56,31 @@ farmer-power-platform/
 5. **MCP servers are STATELESS** - no in-memory caching
 6. **Use Pydantic 2.0 syntax** - `model_dump()` not `dict()`
 
+### Workflow Execution Rules (CRITICAL)
+
+> **⛔ NEVER create your own todo list when executing a BMAD workflow.**
+
+When running any BMAD workflow (dev-story, code-review, create-story, etc.):
+
+1. **ALWAYS load and follow `instructions.xml`** - Execute steps in EXACT order
+2. **NEVER skip workflow steps** - Even if you think they're not needed
+3. **NEVER substitute your own task list** - The workflow steps ARE the task list
+4. **NEVER make "judgment calls" to defer steps** - If a step says MANDATORY, do it
+
+**Why this matters:** The workflow steps exist to prevent errors. When you create your own todo list, you bypass critical gates (like E2E testing) that the workflow enforces.
+
+**Correct behavior:**
+```
+Workflow says: Step 7 → Step 7b (E2E) → Step 8 → Step 9
+You execute:    Step 7 → Step 7b (E2E) → Step 8 → Step 9
+```
+
+**Incorrect behavior:**
+```
+Workflow says: Step 7 → Step 7b (E2E) → Step 8 → Step 9
+You create:    Own todo: Unit tests → Lint → Push → Done  ← WRONG!
+```
+
 ### Testing Requirements
 
 - Golden samples required for all AI agents (see `tests/golden/`)
@@ -67,6 +92,39 @@ farmer-power-platform/
   - NEVER modify production code to accept incorrect seed data
   - **If you modify production code:** Document each change with file, what, why, evidence, and type
   - Run `python tests/e2e/infrastructure/validate_seed_data.py` before starting Docker
+
+### E2E Testing Gate (MANDATORY - NO EXCEPTIONS)
+
+> **⛔ CRITICAL: This gate CANNOT be skipped, deferred, or worked around.**
+
+**BEFORE marking ANY story complete or pushing final commits:**
+
+1. **Start E2E infrastructure:**
+   ```bash
+   docker compose -f tests/e2e/infrastructure/docker-compose.e2e.yaml up -d
+   ```
+
+2. **Run E2E test suite:**
+   ```bash
+   PYTHONPATH="${PYTHONPATH}:.:libs/fp-proto/src" pytest tests/e2e/scenarios/ -v
+   ```
+
+3. **Capture output in story file** - Paste actual test results, not placeholders
+
+4. **Tear down infrastructure:**
+   ```bash
+   docker compose -f tests/e2e/infrastructure/docker-compose.e2e.yaml down -v
+   ```
+
+**⛔ BLOCKED ACTIONS without E2E evidence:**
+- Do NOT mark story status as 'review' or 'done'
+- Do NOT push to remote branch
+- Do NOT declare story complete
+- Do NOT write "(to be verified later)" - this is NOT acceptable
+
+**If E2E tests fail:** HALT immediately and fix before proceeding.
+
+This corresponds to **Step 7b** in the dev-story workflow - it is NON-NEGOTIABLE.
 
 ### CI Validation (MANDATORY before marking story done)
 

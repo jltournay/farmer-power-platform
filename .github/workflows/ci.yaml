@@ -132,10 +132,86 @@ jobs:
           PYTHONPATH="${PYTHONPATH}:libs/fp-common:libs/fp-proto/src:libs/fp-testing:services/plantation-model/src:services/collection-model/src:mcp-servers/plantation-mcp/src:mcp-servers/collection-mcp/src" \
             pytest tests/integration/ -v -m mongodb --tb=short
 
+  validate-e2e-evidence:
+    name: Validate E2E Evidence in Story Files
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check story files for E2E evidence
+        run: |
+          echo "🔍 Checking story files for E2E test evidence..."
+
+          # Find story files modified in this PR
+          STORY_FILES=$(git diff --name-only origin/main...HEAD | grep '_bmad-output/sprint-artifacts/.*\.md$' || true)
+
+          if [ -z "$STORY_FILES" ]; then
+            echo "✅ No story files modified - skipping E2E validation"
+            exit 0
+          fi
+
+          ERRORS=0
+
+          for file in $STORY_FILES; do
+            if [ ! -f "$file" ]; then
+              continue
+            fi
+
+            echo "  Checking: $file"
+
+            # Check for placeholder E2E evidence
+            if grep -q "to be verified after push\|to be verified later\|E2E tests require Docker\|paste test output here\|paste E2E output here" "$file" 2>/dev/null; then
+              echo "  ❌ FAILED: $file has placeholder E2E evidence"
+              echo "     The dev agent must run actual E2E tests before pushing"
+              ERRORS=$((ERRORS + 1))
+            fi
+
+            # Check if E2E Tests checkbox is unchecked
+            if grep -q "\- \[ \].*E2E tests pass" "$file" 2>/dev/null; then
+              echo "  ❌ FAILED: $file has unchecked E2E tests checkbox"
+              ERRORS=$((ERRORS + 1))
+            fi
+          done
+
+          if [ $ERRORS -gt 0 ]; then
+            echo ""
+            echo "═══════════════════════════════════════════════════════════════"
+            echo "⛔ E2E EVIDENCE VALIDATION FAILED"
+            echo "═══════════════════════════════════════════════════════════════"
+            echo ""
+            echo "$ERRORS story file(s) are missing proper E2E test evidence."
+            echo ""
+            echo "The dev agent MUST:"
+            echo "1. Run E2E tests locally with Docker"
+            echo "2. Capture actual test output in the story file"
+            echo "3. Mark the E2E checkbox as complete"
+            echo ""
+            exit 1
+          fi
+
+          echo "✅ E2E evidence validated in all story files"
+
   all-tests-pass:
     name: All Tests Pass
-    needs: [lint, unit-tests, integration-tests]
+    needs: [lint, unit-tests, integration-tests, validate-e2e-evidence]
     runs-on: ubuntu-latest
+    if: always()
     steps:
-      - name: All checks passed
-        run: echo "All CI checks passed successfully!"
+      - name: Check all jobs passed
+        run: |
+          if [ "${{ needs.lint.result }}" != "success" ] || \
+             [ "${{ needs.unit-tests.result }}" != "success" ] || \
+             [ "${{ needs.integration-tests.result }}" != "success" ]; then
+            echo "❌ Some required jobs failed"
+            exit 1
+          fi
+          # validate-e2e-evidence only runs on PRs, so check if it ran and passed
+          if [ "${{ needs.validate-e2e-evidence.result }}" != "success" ] && \
+             [ "${{ needs.validate-e2e-evidence.result }}" != "skipped" ]; then
+            echo "❌ E2E evidence validation failed"
+            exit 1
+          fi
+          echo "✅ All CI checks passed successfully!"
