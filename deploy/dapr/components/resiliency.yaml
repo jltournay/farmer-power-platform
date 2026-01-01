@@ -1,0 +1,38 @@
+# DAPR Resiliency Configuration for Farmer Power Platform
+#
+# This resiliency policy defines retry behavior for pub/sub event processing.
+# Story 0.6.7: DAPR Resiliency Configuration (ADR-006)
+#
+# Retry Policy:
+# - 3 retry attempts with exponential backoff
+# - Initial delay: 1 second
+# - Max delay between retries: 30 seconds
+# - After 3 failures: event goes to Dead Letter Queue (DLQ)
+#
+# Retry Timing (exponential backoff with jitter):
+# - Multiplier: 2.0 (default, not explicitly set)
+# | Attempt     | Wait Before  | Cumulative Time |
+# |-------------|--------------|-----------------|
+# | 1st retry   | ~1s          | ~1s             |
+# | 2nd retry   | ~2s          | ~3s             |
+# | 3rd retry   | ~4s          | ~7s             |
+# | DLQ         | -            | After 3rd fail  |
+
+apiVersion: dapr.io/v1alpha1
+kind: Resiliency
+metadata:
+  name: pubsub-resiliency
+spec:
+  policies:
+    retries:
+      eventRetry:
+        policy: exponential
+        maxRetries: 3
+        duration: 1s
+        maxInterval: 30s
+
+  targets:
+    components:
+      pubsub:
+        inbound:
+          retry: eventRetry

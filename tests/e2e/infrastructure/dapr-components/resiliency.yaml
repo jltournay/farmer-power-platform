@@ -1,27 +1,29 @@
-# DAPR Resiliency Configuration for PoC Tests
+# DAPR Resiliency Configuration for E2E Tests
 #
-# Updated Story 0.6.7: Now uses exponential backoff to match production config
-# ADR-006: Event Delivery and Dead Letter Queue
+# This resiliency policy defines retry behavior for pub/sub event processing.
+# Story 0.6.7: DAPR Resiliency Configuration (ADR-006)
 #
 # Retry Policy:
 # - 3 retry attempts with exponential backoff
 # - Initial delay: 1 second
 # - Max delay between retries: 30 seconds
+# - After 3 failures: event goes to Dead Letter Queue (DLQ)
 
 apiVersion: dapr.io/v1alpha1
 kind: Resiliency
 metadata:
-  name: poc-resiliency
+  name: pubsub-resiliency
 spec:
   policies:
     retries:
-      pubsubRetry:
+      eventRetry:
         policy: exponential
-        duration: 1s
         maxRetries: 3
+        duration: 1s
         maxInterval: 30s
+
   targets:
     components:
       pubsub:
         inbound:
-          retry: pubsubRetry
+          retry: eventRetry
