@@ -165,6 +165,7 @@ You create:    Own todo: Unit tests → Lint → Push → Done  ← WRONG! (skip
 **If either E2E gate fails:** HALT immediately and fix before proceeding.
 
 This corresponds to **Steps 7b and 9c** in the dev-story workflow - both are NON-NEGOTIABLE.
+Remember the Step 9d to update the GitHub issue. 
 
 ### CI Validation (MANDATORY before marking story done)
 
