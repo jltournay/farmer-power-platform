@@ -239,7 +239,8 @@ class IterationResolver:
         try:
             stub = await self._get_stub()
             metadata = self._get_metadata(source_mcp)
-            response = await stub.CallTool(request, metadata=metadata)
+            # Add timeout to prevent hanging - allows retry to kick in
+            response = await stub.CallTool(request, metadata=metadata, timeout=15.0)
 
             if not response.success:
                 error_message = response.error_message or "Unknown error"
