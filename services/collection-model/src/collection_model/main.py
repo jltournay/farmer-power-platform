@@ -47,6 +47,12 @@ from collection_model.services.pull_job_handler import PullJobHandler
 from collection_model.services.source_config_service import SourceConfigService
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fp_common.events import (
+    DLQRepository,
+    set_dlq_event_loop,
+    set_dlq_repository,
+    start_dlq_subscription,
+)
 
 # Configure structured logging
 structlog.configure(
@@ -169,7 +175,8 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
 
         # Story 0.6.6: Set up streaming subscriptions (ADR-010/ADR-011)
         # Set the main event loop for async operations in subscription handlers
-        set_main_event_loop(asyncio.get_running_loop())
+        main_loop = asyncio.get_running_loop()
+        set_main_event_loop(main_loop)
 
         # Set blob processor services for the subscription handler
         set_blob_processor(
@@ -177,6 +184,12 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
             ingestion_queue=app.state.ingestion_queue,
             event_metrics=app.state.event_metrics,
         )
+
+        # Story 0.6.8: Initialize DLQ repository and configure DLQ handler (ADR-006)
+        dlq_repository = DLQRepository(db["event_dead_letter"])
+        set_dlq_repository(dlq_repository)
+        set_dlq_event_loop(main_loop)
+        logger.info("DLQ handler dependencies configured")
 
         # Start streaming subscriptions in daemon thread
         subscription_thread = threading.Thread(
@@ -187,6 +200,17 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
         subscription_thread.start()
         app.state.subscription_thread = subscription_thread
         logger.info("DAPR streaming subscriptions thread started")
+
+        # Start DLQ subscription in separate thread (Story 0.6.8)
+        # DLQ handler stores failed events in MongoDB for inspection and replay
+        dlq_thread = threading.Thread(
+            target=start_dlq_subscription,
+            daemon=True,
+            name="dapr-dlq-subscription",
+        )
+        dlq_thread.start()
+        app.state.dlq_thread = dlq_thread
+        logger.info("DLQ subscription thread started")
 
     except Exception as e:
         logger.warning("MongoDB connection failed at startup", error=str(e))

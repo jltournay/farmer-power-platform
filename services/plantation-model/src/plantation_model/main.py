@@ -18,6 +18,12 @@ from contextlib import asynccontextmanager
 import structlog
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fp_common.events import (
+    DLQRepository,
+    set_dlq_event_loop,
+    set_dlq_repository,
+    start_dlq_subscription,
+)
 from plantation_model.api import health
 from plantation_model.api.grpc_server import start_grpc_server, stop_grpc_server
 from plantation_model.config import settings
@@ -129,6 +135,12 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
         set_main_event_loop(main_loop)
         logger.info("Main event loop configured for streaming subscriptions")
 
+        # Initialize DLQ repository and configure DLQ handler (Story 0.6.8, ADR-006)
+        dlq_repository = DLQRepository(db["event_dead_letter"])
+        set_dlq_repository(dlq_repository)
+        set_dlq_event_loop(main_loop)
+        logger.info("DLQ handler dependencies configured")
+
         # Start DAPR streaming subscriptions in background thread (Story 0.6.5)
         # ADR-010/011 pattern: run_streaming_subscriptions keeps DaprClient alive
         # Subscriptions are outbound - no extra HTTP port needed
@@ -139,6 +151,16 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
         )
         subscription_thread.start()
         logger.info("DAPR streaming subscriptions thread started")
+
+        # Start DLQ subscription in separate thread (Story 0.6.8)
+        # DLQ handler stores failed events in MongoDB for inspection and replay
+        dlq_thread = threading.Thread(
+            target=start_dlq_subscription,
+            daemon=True,
+            name="dapr-dlq-subscription",
+        )
+        dlq_thread.start()
+        logger.info("DLQ subscription thread started")
 
     except Exception as e:
         logger.warning("MongoDB connection failed at startup", error=str(e))
