@@ -483,7 +483,7 @@
 
   <step n="9b" goal="Push to story branch and verify CI E2E passes (MANDATORY)">
     <critical>CI E2E tests MUST pass on the story branch before story can be merged</critical>
-    <critical>Story remains in "progress" status until E2E CI verification completes</critical>
+    <critical>Story remains in "progress" status until CI and E2E CI verification complete</critical>
 
     <!-- Push changes to story branch -->
     <action>Ensure all changes are committed to the story branch</action>
