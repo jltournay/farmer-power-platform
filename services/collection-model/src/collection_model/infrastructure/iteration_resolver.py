@@ -1,4 +1,4 @@
-"""Iteration Resolver for scheduled pull sources with multi-fetch (Story 2.7).
+"""Iteration Resolver for scheduled pull sources with multi-fetch (Story 2.7, 0.6.4).
 
 This module provides the IterationResolver class for calling MCP tools
 via DAPR Service Invocation to get lists of items for parallel fetching.
@@ -212,7 +212,7 @@ class IterationResolver:
         """Internal resolution with retry logic (ADR-005).
 
         This method is wrapped by resolve() which transforms the final error
-        to ServiceUnavailableError with context per AC4.
+        to ServiceUnavailableError with context (ADR-005 pattern).
         """
         # Use typed attribute access from Pydantic model
         source_mcp = iteration_config.source_mcp

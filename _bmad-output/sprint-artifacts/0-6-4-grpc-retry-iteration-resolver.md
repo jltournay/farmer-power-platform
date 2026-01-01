@@ -1,6 +1,6 @@
 # Story 0.6.4: gRPC Client Retry - IterationResolver
 
-**Status:** Review
+**Status:** Done
 **GitHub Issue:** [#47](https://github.com/jltournay/farmer-power-platform/issues/47)
 **Epic:** [Epic 0.6: Infrastructure Hardening](../epics/epic-0-6-infrastructure-hardening.md)
 **ADR:** [ADR-005: gRPC Client Retry and Reconnection Strategy](../architecture/adr/ADR-005-grpc-client-retry-strategy.md)
@@ -53,36 +53,36 @@ So that transient network issues don't require pod restarts.
 
 ## Tasks / Subtasks
 
-- [ ] **Task 1: Analyze Current Implementation** (AC: 1)
-  - [ ] Read `services/collection-model/src/collection_model/infrastructure/iteration_resolver.py`
-  - [ ] Document current anti-patterns
-  - [ ] Identify all RPC methods that need retry decorator
+- [x] **Task 1: Analyze Current Implementation** (AC: 1)
+  - [x] Read `services/collection-model/src/collection_model/infrastructure/iteration_resolver.py`
+  - [x] Document current anti-patterns
+  - [x] Identify all RPC methods that need retry decorator
 
-- [ ] **Task 2: Implement Singleton Channel** (AC: 2)
-  - [ ] Add `_channel: grpc.aio.Channel | None = None` attribute
-  - [ ] Add `_stub: IterationServiceStub | None = None` attribute
-  - [ ] Create `async def _get_stub(self)` method
-  - [ ] Configure keepalive options (same as AiModelClient)
+- [x] **Task 2: Implement Singleton Channel** (AC: 2)
+  - [x] Add `_channel: grpc.aio.Channel | None = None` attribute
+  - [x] Add `_stub: McpToolServiceStub | None = None` attribute
+  - [x] Create `async def _get_stub(self)` method
+  - [x] Configure keepalive options (same as AiModelClient)
 
-- [ ] **Task 3: Add Tenacity Retry to All Methods** (AC: 2, 3)
-  - [ ] Apply same retry decorator pattern as Story 0.6.3
-  - [ ] Add channel reset on UNAVAILABLE error
+- [x] **Task 3: Add Tenacity Retry to All Methods** (AC: 2, 3)
+  - [x] Apply same retry decorator pattern as Story 0.6.3
+  - [x] Add channel reset on UNAVAILABLE error
 
-- [ ] **Task 4: Create Unit Tests** (AC: All)
-  - [ ] Create `tests/unit/collection_model/infrastructure/test_iteration_resolver.py`
-  - [ ] Test singleton channel reuse
-  - [ ] Test retry on UNAVAILABLE
-  - [ ] Test retry exhaustion
+- [x] **Task 4: Create Unit Tests** (AC: All)
+  - [x] Create `tests/unit/collection/test_iteration_resolver.py`
+  - [x] Test singleton channel reuse
+  - [x] Test retry on UNAVAILABLE
+  - [x] Test retry exhaustion
 
-- [ ] **Task 5: Verify Integration** (AC: 3)
-  - [ ] Run unit tests
-  - [ ] Run E2E suite
+- [x] **Task 5: Verify Integration** (AC: 3)
+  - [x] Run unit tests
+  - [x] Run E2E suite
 
 ## Git Workflow (MANDATORY)
 
 ### Story Start
-- [ ] GitHub Issue created
-- [ ] Feature branch created:
+- [x] GitHub Issue created: [#47](https://github.com/jltournay/farmer-power-platform/issues/47)
+- [x] Feature branch created:
   ```bash
   git checkout main && git pull origin main
   git checkout -b story/0-6-4-grpc-retry-iteration-resolver
