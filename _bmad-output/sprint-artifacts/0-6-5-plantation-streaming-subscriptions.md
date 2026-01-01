@@ -1,7 +1,7 @@
 # Story 0.6.5: Plantation Model Streaming Subscriptions
 
-**Status:** To Do
-**GitHub Issue:** TBD
+**Status:** In Progress
+**GitHub Issue:** #49
 **Epic:** [Epic 0.6: Infrastructure Hardening](../epics/epic-0-6-infrastructure-hardening.md)
 **ADRs:** [ADR-010](../architecture/adr/ADR-010-dapr-patterns-configuration.md), [ADR-011](../architecture/adr/ADR-011-grpc-fastapi-dapr-architecture.md)
 **Story Points:** 5
