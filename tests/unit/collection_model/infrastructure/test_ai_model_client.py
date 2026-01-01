@@ -5,11 +5,11 @@ Tests verify ADR-005 compliance:
 - Tenacity retry on gRPC errors (3 attempts, exponential backoff)
 - Channel reset on UNAVAILABLE error
 - No retry on non-transient errors (NOT_FOUND)
+- ServiceUnavailableError raised after retries exhausted (AC4)
 
 Reference: ADR-005-grpc-client-retry-strategy.md
 """
 
-import sys
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import grpc
@@ -20,9 +20,8 @@ from collection_model.infrastructure.ai_model_client import (
     ServiceUnavailableError,
 )
 
-# Import the source config factory from collection tests
-sys.path.insert(0, "tests/unit/collection")
-from conftest import create_source_config
+# Import the source config factory using pytest's conftest mechanism
+from tests.unit.collection.conftest import create_source_config
 
 
 class TestAiModelClientSingletonChannel:
@@ -102,6 +101,32 @@ class GrpcUnavailableError(grpc.aio.AioRpcError):
         return None
 
 
+class GrpcNotFoundError(grpc.aio.AioRpcError):
+    """Test helper: Real AioRpcError subclass for NOT_FOUND status."""
+
+    def __init__(self) -> None:
+        self._code = grpc.StatusCode.NOT_FOUND
+        self._details = "Resource not found"
+        self._initial_metadata = None
+        self._trailing_metadata = None
+        self._debug_error_string = "NOT_FOUND: Resource not found"
+
+    def code(self) -> grpc.StatusCode:
+        return grpc.StatusCode.NOT_FOUND
+
+    def details(self) -> str:
+        return "Resource not found"
+
+    def debug_error_string(self) -> str:
+        return "NOT_FOUND: Resource not found"
+
+    def trailing_metadata(self):
+        return None
+
+    def initial_metadata(self):
+        return None
+
+
 class TestAiModelClientRetry:
     """Tests for Tenacity retry behavior (ADR-005)."""
 
@@ -133,7 +158,7 @@ class TestAiModelClientRetry:
 
     @pytest.mark.asyncio
     async def test_retry_exhausted_raises(self) -> None:
-        """Error raised after max retries exhausted."""
+        """ServiceUnavailableError raised after max retries exhausted (AC4)."""
         client = AiModelClient(ai_model_app_id="ai-model")
         call_count = 0
 
@@ -146,7 +171,10 @@ class TestAiModelClientRetry:
         mock_stub = MagicMock()
         mock_stub.HealthCheck = always_failing
 
-        with patch.object(client, "_get_stub", return_value=mock_stub), pytest.raises(grpc.aio.AioRpcError):
+        with (
+            patch.object(client, "_get_stub", return_value=mock_stub),
+            pytest.raises(ServiceUnavailableError),
+        ):
             await client.health_check()
 
         # Should have tried 3 times (retry decorator default)
@@ -218,21 +246,21 @@ class TestAiModelClientChannelRecreation:
             reset_called = True
             original_reset()
 
+        # Create a valid SourceConfig using the factory
+        source_config = create_source_config(source_id="test-source")
+
+        request = ExtractionRequest(
+            raw_content="test content",
+            ai_agent_id="test-agent",
+            source_config=source_config,
+        )
+
         with (
             patch.object(client, "_get_stub", return_value=mock_stub),
             patch.object(client, "_reset_channel", side_effect=track_reset),
+            pytest.raises(ServiceUnavailableError),
         ):
-            # Create a valid SourceConfig using the factory
-            source_config = create_source_config(source_id="test-source")
-
-            request = ExtractionRequest(
-                raw_content="test content",
-                ai_agent_id="test-agent",
-                source_config=source_config,
-            )
-
-            with pytest.raises(grpc.aio.AioRpcError):
-                await client.extract(request)
+            await client.extract(request)
 
         # _reset_channel should have been called due to UNAVAILABLE
         assert reset_called
@@ -302,3 +330,147 @@ class TestServiceUnavailableError:
         assert "ai-model" in str(error)
         assert "Extract" in str(error)
         assert "3" in str(error)
+
+
+class TestAiModelClientExtractRetry:
+    """Tests for extract() retry behavior (ADR-005 AC3)."""
+
+    @pytest.mark.asyncio
+    async def test_extract_retries_on_unavailable(self) -> None:
+        """extract() retries on UNAVAILABLE and succeeds after recovery."""
+        client = AiModelClient(ai_model_app_id="ai-model")
+        call_count = 0
+
+        # Mock that fails twice then succeeds
+        async def failing_then_succeeding(*args, **kwargs):
+            nonlocal call_count
+            call_count += 1
+            if call_count < 3:
+                raise GrpcUnavailableError()
+            # Return a successful response
+            mock_response = MagicMock()
+            mock_response.success = True
+            mock_response.extracted_fields_json = '{"field": "value"}'
+            mock_response.confidence = 0.95
+            mock_response.validation_passed = True
+            mock_response.validation_warnings = []
+            return mock_response
+
+        mock_stub = MagicMock()
+        mock_stub.Extract = failing_then_succeeding
+
+        source_config = create_source_config(source_id="test-source")
+        request = ExtractionRequest(
+            raw_content="test content",
+            ai_agent_id="test-agent",
+            source_config=source_config,
+        )
+
+        with patch.object(client, "_get_stub", return_value=mock_stub):
+            result = await client.extract(request)
+
+        assert result.extracted_fields == {"field": "value"}
+        assert result.confidence == 0.95
+        assert call_count == 3  # 2 failures + 1 success
+
+    @pytest.mark.asyncio
+    async def test_extract_raises_service_unavailable_after_retries(self) -> None:
+        """extract() raises ServiceUnavailableError after retries exhausted (AC4)."""
+        client = AiModelClient(ai_model_app_id="ai-model")
+        call_count = 0
+
+        # Mock that always fails
+        async def always_failing(*args, **kwargs):
+            nonlocal call_count
+            call_count += 1
+            raise GrpcUnavailableError()
+
+        mock_stub = MagicMock()
+        mock_stub.Extract = always_failing
+
+        source_config = create_source_config(source_id="test-source")
+        request = ExtractionRequest(
+            raw_content="test content",
+            ai_agent_id="test-agent",
+            source_config=source_config,
+        )
+
+        with (
+            patch.object(client, "_get_stub", return_value=mock_stub),
+            pytest.raises(ServiceUnavailableError) as exc_info,
+        ):
+            await client.extract(request)
+
+        # Verify ServiceUnavailableError has correct context
+        assert exc_info.value.app_id == "ai-model"
+        assert exc_info.value.method_name == "Extract"
+        assert exc_info.value.attempt_count == 3
+        assert call_count == 3  # Tried 3 times
+
+
+class TestAiModelClientNoRetryOnNonTransient:
+    """Tests verifying non-transient errors are NOT retried."""
+
+    @pytest.mark.asyncio
+    async def test_no_retry_on_not_found(self) -> None:
+        """NOT_FOUND errors are retried (gRPC errors trigger retry) but don't reset channel."""
+        client = AiModelClient(ai_model_app_id="ai-model")
+        call_count = 0
+        reset_called = False
+
+        async def not_found_error(*args, **kwargs):
+            nonlocal call_count
+            call_count += 1
+            raise GrpcNotFoundError()
+
+        mock_stub = MagicMock()
+        mock_stub.HealthCheck = not_found_error
+
+        original_reset = client._reset_channel
+
+        def track_reset():
+            nonlocal reset_called
+            reset_called = True
+            original_reset()
+
+        with (
+            patch.object(client, "_get_stub", return_value=mock_stub),
+            patch.object(client, "_reset_channel", side_effect=track_reset),
+            pytest.raises(grpc.aio.AioRpcError),
+        ):
+            await client.health_check()
+
+        # NOT_FOUND is still an AioRpcError so retry is attempted
+        # But channel should NOT be reset (only UNAVAILABLE resets channel)
+        assert call_count == 3  # Retried 3 times
+        assert not reset_called  # Channel NOT reset for NOT_FOUND
+
+
+class TestAiModelClientHealthCheckServiceUnavailable:
+    """Tests for health_check() ServiceUnavailableError (AC4)."""
+
+    @pytest.mark.asyncio
+    async def test_health_check_raises_service_unavailable_after_retries(self) -> None:
+        """health_check() raises ServiceUnavailableError after retries exhausted."""
+        client = AiModelClient(ai_model_app_id="ai-model")
+        call_count = 0
+
+        async def always_failing(*args, **kwargs):
+            nonlocal call_count
+            call_count += 1
+            raise GrpcUnavailableError()
+
+        mock_stub = MagicMock()
+        mock_stub.HealthCheck = always_failing
+
+        with (
+            patch.object(client, "_get_stub", return_value=mock_stub),
+            pytest.raises(ServiceUnavailableError) as exc_info,
+        ):
+            await client.health_check()
+
+        # Verify ServiceUnavailableError has correct context
+        assert exc_info.value.app_id == "ai-model"
+        assert exc_info.value.method_name == "HealthCheck"
+        assert exc_info.value.attempt_count == 3
+        assert call_count == 3

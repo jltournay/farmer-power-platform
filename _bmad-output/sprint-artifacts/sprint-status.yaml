@@ -112,8 +112,8 @@ development_status:
   epic-0-6: in-progress
   0-6-1-shared-pydantic-models: done  # ADR-004, 5 points, github_issue: 41, PR: #42
   0-6-2-shared-logging-module: done  # ADR-009, 3 points, github_issue: 43, PR: #44
-  0-6-3-grpc-retry-ai-model-client: review  # ADR-005, 2 points, github_issue: 45
-  0-6-4-grpc-retry-iteration-resolver: ready-for-dev  # ADR-005, 2 points
+  0-6-3-grpc-retry-ai-model-client: done  # ADR-005, 2 points, github_issue: 45
+  0-6-4-grpc-retry-iteration-resolver: in progress # ADR-005, 2 points
   0-6-5-plantation-streaming-subscriptions: ready-for-dev  # ADR-010/011, 5 points, prereq: 0.6.2
   0-6-6-collection-streaming-subscriptions: ready-for-dev  # ADR-010/011, 5 points, prereq: 0.6.2
   0-6-7-dapr-resiliency-config: ready-for-dev  # ADR-006, 2 points

@@ -195,12 +195,6 @@ class AiModelClient:
         self._channel = None
         self._stub = None
 
-    @retry(
-        retry=retry_if_exception_type(grpc.aio.AioRpcError),
-        stop=stop_after_attempt(3),
-        wait=wait_exponential(multiplier=1, min=1, max=10),
-        reraise=True,
-    )
     async def extract(self, request: ExtractionRequest) -> ExtractionResponse:
         """Call AI Model to extract structured data from raw content.
 
@@ -216,6 +210,36 @@ class AiModelClient:
         Raises:
             ExtractionError: If extraction fails after all retries.
             ServiceUnavailableError: If service is unavailable after all retries.
+        """
+        try:
+            return await self._extract_with_retry(request)
+        except grpc.aio.AioRpcError as e:
+            if e.code() == grpc.StatusCode.UNAVAILABLE:
+                logger.error(
+                    "AI Model service unavailable after all retries",
+                    app_id=self._ai_model_app_id,
+                    method="Extract",
+                    attempts=3,
+                )
+                raise ServiceUnavailableError(
+                    message="AI Model service unavailable after retries",
+                    app_id=self._ai_model_app_id,
+                    method_name="Extract",
+                    attempt_count=3,
+                ) from e
+            raise
+
+    @retry(
+        retry=retry_if_exception_type(grpc.aio.AioRpcError),
+        stop=stop_after_attempt(3),
+        wait=wait_exponential(multiplier=1, min=1, max=10),
+        reraise=True,
+    )
+    async def _extract_with_retry(self, request: ExtractionRequest) -> ExtractionResponse:
+        """Internal extraction with retry logic (ADR-005).
+
+        This method is wrapped by extract() which transforms the final error
+        to ServiceUnavailableError with context per AC4.
         """
         logger.debug(
             "Calling AI Model for extraction via gRPC",
@@ -286,12 +310,6 @@ class AiModelClient:
             )
             raise ExtractionError(f"AI Model invocation failed: {e}") from e
 
-    @retry(
-        retry=retry_if_exception_type(grpc.aio.AioRpcError),
-        stop=stop_after_attempt(3),
-        wait=wait_exponential(multiplier=1, min=1, max=10),
-        reraise=True,
-    )
     async def health_check(self) -> bool:
         """Check if AI Model service is healthy.
 
@@ -299,7 +317,36 @@ class AiModelClient:
 
         Returns:
             True if healthy, False otherwise.
+
+        Raises:
+            ServiceUnavailableError: If service is unavailable after all retries.
         """
+        try:
+            return await self._health_check_with_retry()
+        except grpc.aio.AioRpcError as e:
+            if e.code() == grpc.StatusCode.UNAVAILABLE:
+                logger.error(
+                    "AI Model service unavailable after all retries",
+                    app_id=self._ai_model_app_id,
+                    method="HealthCheck",
+                    attempts=3,
+                )
+                raise ServiceUnavailableError(
+                    message="AI Model service unavailable after retries",
+                    app_id=self._ai_model_app_id,
+                    method_name="HealthCheck",
+                    attempt_count=3,
+                ) from e
+            raise
+
+    @retry(
+        retry=retry_if_exception_type(grpc.aio.AioRpcError),
+        stop=stop_after_attempt(3),
+        wait=wait_exponential(multiplier=1, min=1, max=10),
+        reraise=True,
+    )
+    async def _health_check_with_retry(self) -> bool:
+        """Internal health check with retry logic (ADR-005)."""
         try:
             stub = await self._get_stub()
             grpc_request = ai_model_pb2.HealthCheckRequest()

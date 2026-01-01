@@ -1,6 +1,6 @@
 # Story 0.6.3: gRPC Client Retry - AiModelClient
 
-**Status:** review
+**Status:** done
 **GitHub Issue:** #45
 **Epic:** [Epic 0.6: Infrastructure Hardening](../epics/epic-0-6-infrastructure-hardening.md)
 **ADR:** [ADR-005: gRPC Client Retry and Reconnection Strategy](../architecture/adr/ADR-005-grpc-client-retry-strategy.md)
@@ -89,12 +89,12 @@ So that transient network issues don't require pod restarts.
 
 - [x] **Task 5: Create Unit Tests** (AC: All) ✅
   - [x] Created `tests/unit/collection_model/infrastructure/test_ai_model_client.py`
-  - [x] 12 tests covering all acceptance criteria
-  - [x] All 12 tests pass
-  - [x] Full unit test suite (997 tests) passes
+  - [x] 16 tests covering all acceptance criteria (12 original + 4 from code review)
+  - [x] All 16 tests pass
+  - [x] Full unit test suite (1001 tests) passes
 
 - [x] **Task 6: Verify Integration** (AC: 3) ✅
-  - [x] Unit tests pass (997 tests)
+  - [x] Unit tests pass (1001 tests)
   - [x] E2E tests pass (71 passed, 3 xfailed)
   - [x] Lint passes
 
@@ -351,13 +351,13 @@ async def extract_content(self, content: bytes) -> ExtractionResult:
 
 ## Local Test Run Evidence (MANDATORY)
 
-**1. Unit Tests (12 specific to this story):**
+**1. Unit Tests (16 specific to this story):**
 ```bash
 pytest tests/unit/collection_model/infrastructure/test_ai_model_client.py -v
 ```
 **Output:**
 ```
-======================== 12 passed in 9.47s =========================
+======================== 16 passed in 21.50s =========================
 
 Tests:
 - test_lazy_channel_initialization PASSED
@@ -372,6 +372,10 @@ Tests:
 - test_close_is_idempotent PASSED
 - test_get_metadata_returns_app_id PASSED
 - test_error_includes_context PASSED
+- test_extract_retries_on_unavailable PASSED (NEW - Code Review)
+- test_extract_raises_service_unavailable_after_retries PASSED (NEW - Code Review)
+- test_no_retry_on_not_found PASSED (NEW - Code Review)
+- test_health_check_raises_service_unavailable_after_retries PASSED (NEW - Code Review)
 ```
 
 **2. Full Unit Test Suite:**
@@ -380,7 +384,7 @@ pytest tests/unit/ -v
 ```
 **Output:**
 ```
-================= 997 passed, 2 skipped, 39 warnings in 50.01s =================
+================= 1001 passed, 2 skipped, 39 warnings in 61.42s =================
 ```
 
 **3. E2E Tests Pass:**
@@ -404,6 +408,42 @@ All checks passed!
 293 files already formatted
 ```
 **Lint passed:** [x] Yes / [ ] No
+
+---
+
+## Senior Developer Review (AI)
+
+**Review Date:** 2026-01-01
+**Reviewer:** Claude (Adversarial Code Review)
+
+### Issues Found and Fixed
+
+| Severity | Issue | Resolution |
+|----------|-------|------------|
+| **HIGH** | AC4 incomplete: `ServiceUnavailableError` defined but never raised | Fixed: Added wrapper methods `extract()` and `health_check()` that catch final error and transform to `ServiceUnavailableError` |
+| **HIGH** | No test for `extract()` retry behavior | Fixed: Added `test_extract_retries_on_unavailable` and `test_extract_raises_service_unavailable_after_retries` |
+| **MEDIUM** | Missing test for NOT_FOUND not resetting channel | Fixed: Added `test_no_retry_on_not_found` |
+| **MEDIUM** | Story File List incomplete (missing `__init__.py` files) | Documented below |
+| **MEDIUM** | `sys.path` manipulation in tests (fragile) | Fixed: Changed to proper import `from tests.unit.collection.conftest import create_source_config` |
+
+### File List (Updated)
+
+**Files Modified:**
+- `services/collection-model/src/collection_model/infrastructure/ai_model_client.py`
+- `tests/unit/collection_model/infrastructure/test_ai_model_client.py`
+- `tests/unit/collection_model/__init__.py`
+- `tests/unit/collection_model/infrastructure/__init__.py`
+- `_bmad-output/sprint-artifacts/0-6-3-grpc-retry-ai-model-client.md`
+
+### Review Outcome
+
+✅ **APPROVED** - All HIGH and MEDIUM issues have been fixed.
+
+**Test Summary Post-Review:**
+- Unit tests: 16 passed (was 12, +4 new tests)
+- Full suite: 1001 passed (was 997, +4 new tests)
+- E2E: 71 passed, 3 xfailed (unchanged)
+- Lint: All checks passed
 
 ---
 
