@@ -32,6 +32,7 @@ gh run list --branch story/0-6-2-shared-logging-module --limit 3
 - [x] **E2E tests pass** - No regressions (71 passed, 3 xfailed)
 - [x] **Lint passes** - `ruff check . && ruff format --check .`
 - [x] **CI workflow passes** (Run 20640899337)
+- [x] **E2E CI workflow passes** (Run 20640959859)
 
 ---
 
