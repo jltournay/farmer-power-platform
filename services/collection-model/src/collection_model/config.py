@@ -57,6 +57,7 @@ class Settings(BaseSettings):
     dapr_host: str = "localhost"
     dapr_http_port: int = 3500
     dapr_pubsub_name: str = "pubsub"
+    dapr_sidecar_wait_seconds: int = 5  # Wait time for DAPR sidecar readiness
 
     # Logging configuration
     log_level: str = "INFO"
