@@ -2,6 +2,7 @@
 
 **Status:** review
 **GitHub Issue:** #53
+**Pull Request:** #54
 **Epic:** [Epic 0.6: Infrastructure Hardening](../epics/epic-0-6-infrastructure-hardening.md)
 **ADR:** [ADR-006: Event Delivery and Dead Letter Queue](../architecture/adr/ADR-006-event-delivery-dead-letter-queue.md)
 **Story Points:** 2
