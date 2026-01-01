@@ -16,10 +16,13 @@ Schema:
 """
 
 from datetime import UTC, datetime
-from typing import Any
+from typing import Any, Literal
 
 from motor.motor_asyncio import AsyncIOMotorCollection
 from pydantic import BaseModel, Field
+
+# Type-safe status values
+DLQStatus = Literal["pending_review", "replayed", "discarded"]
 
 
 class DLQRecord(BaseModel):
@@ -35,7 +38,7 @@ class DLQRecord(BaseModel):
         default_factory=lambda: datetime.now(UTC),
         description="Timestamp when DLQ received the event",
     )
-    status: str = Field(
+    status: DLQStatus = Field(
         default="pending_review",
         description="Status: pending_review | replayed | discarded",
     )
@@ -176,3 +179,15 @@ class DLQRepository:
         async for doc in self._collection.aggregate(pipeline):
             counts[doc["_id"]] = doc["count"]
         return counts
+
+    async def ensure_indexes(self) -> None:
+        """Create indexes for efficient DLQ queries.
+
+        Creates indexes on:
+        - original_topic: For filtering by source topic
+        - status: For filtering pending vs replayed/discarded
+        - received_at: For sorting by newest first (descending)
+        """
+        await self._collection.create_index("original_topic")
+        await self._collection.create_index("status")
+        await self._collection.create_index([("received_at", -1)])

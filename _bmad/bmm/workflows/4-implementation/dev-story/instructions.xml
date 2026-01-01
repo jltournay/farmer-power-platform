@@ -705,7 +705,7 @@
     </action>
   </step>
 
-  <step n="9d" goal="Update GitHub issue with development completion" tag="github-update">
+  <step n="9d" goal="Update GitHub issue with development completion (MANDATORY)" tag="github-update">
     <!-- Update GitHub issue with development completion -->
     <check if="{{github_issue_number}} exists and is not null">
       <action>Add comment to GitHub issue #{{github_issue_number}} with development completion summary:

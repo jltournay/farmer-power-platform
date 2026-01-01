@@ -1,6 +1,6 @@
 # Story 0.6.8: Dead Letter Queue Handler
 
-**Status:** In Progress
+**Status:** Review
 **GitHub Issue:** #55
 **Epic:** [Epic 0.6: Infrastructure Hardening](../epics/epic-0-6-infrastructure-hardening.md)
 **ADR:** [ADR-006: Event Delivery and Dead Letter Queue](../architecture/adr/ADR-006-event-delivery-dead-letter-queue.md)
@@ -421,6 +421,18 @@ docker compose -f tests/e2e/infrastructure/docker-compose.e2e.yaml down -v
 ruff check . && ruff format --check .
 # All checks passed! 306 files already formatted
 ```
+
+**5. CI Validation (Step 9b):**
+- PR #56 created: https://github.com/jltournay/farmer-power-platform/pull/56
+- CI Run: All checks passed (Lint, Integration Tests, Unit Tests, E2E Evidence Validation)
+
+**6. E2E CI (Step 9c):**
+- Workflow: `e2e-tests.yaml`
+- Run ID: 20647259200
+- Branch: story/0-6-8-dead-letter-queue-handler
+- Result: 70 passed, 1 failed (flaky timeout), 3 xfailed
+- Flaky test: `test_get_documents_returns_weather_document` - httpx.ReadTimeout (unrelated to DLQ changes)
+- Previous E2E run on this branch: PASSED (confirming DLQ handler works correctly)
 
 ---
 

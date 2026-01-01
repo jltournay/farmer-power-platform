@@ -362,3 +362,92 @@ class TestDLQRecord:
         assert dumped["original_topic"] == "test.topic"
         assert dumped["status"] == "pending_review"
         assert dumped["received_at"] == datetime(2026, 1, 1, 12, 0, 0, tzinfo=UTC)
+
+
+class TestDLQRepositoryQueries:
+    """Tests for DLQRepository query methods."""
+
+    @pytest.fixture
+    def mock_collection(self):
+        """Create a mock MongoDB collection with proper Motor cursor behavior."""
+        collection = MagicMock()
+        collection.create_index = AsyncMock()
+        return collection
+
+    @pytest.fixture
+    def repository(self, mock_collection):
+        """Create a DLQRepository with mock collection."""
+        return DLQRepository(mock_collection)
+
+    @pytest.mark.asyncio
+    async def test_get_pending_events_returns_pending_records(self, repository, mock_collection):
+        """get_pending_events returns records with pending_review status."""
+        # Arrange - Motor find() returns cursor synchronously, to_list() is async
+        mock_cursor = MagicMock()
+        mock_cursor.to_list = AsyncMock(
+            return_value=[
+                {"_id": "id1", "status": "pending_review", "original_topic": "topic1"},
+                {"_id": "id2", "status": "pending_review", "original_topic": "topic2"},
+            ]
+        )
+        mock_collection.find.return_value.sort.return_value.limit.return_value = mock_cursor
+
+        # Act
+        result = await repository.get_pending_events(limit=10)
+
+        # Assert
+        assert len(result) == 2
+        mock_collection.find.assert_called_once_with({"status": "pending_review"})
+
+    @pytest.mark.asyncio
+    async def test_get_pending_events_with_topic_filter(self, repository, mock_collection):
+        """get_pending_events filters by topic when provided."""
+        # Arrange - Motor find() returns cursor synchronously
+        mock_cursor = MagicMock()
+        mock_cursor.to_list = AsyncMock(return_value=[])
+        mock_collection.find.return_value.sort.return_value.limit.return_value = mock_cursor
+
+        # Act
+        await repository.get_pending_events(limit=10, topic_filter="collection.quality_result.received")
+
+        # Assert
+        mock_collection.find.assert_called_once_with(
+            {
+                "status": "pending_review",
+                "original_topic": "collection.quality_result.received",
+            }
+        )
+
+    @pytest.mark.asyncio
+    async def test_count_by_status_aggregates_correctly(self, repository, mock_collection):
+        """count_by_status returns counts grouped by status."""
+
+        # Arrange - Motor aggregate() returns async iterator
+        async def mock_aiter():
+            for doc in [
+                {"_id": "pending_review", "count": 5},
+                {"_id": "replayed", "count": 3},
+                {"_id": "discarded", "count": 1},
+            ]:
+                yield doc
+
+        mock_collection.aggregate.return_value = mock_aiter()
+
+        # Act
+        result = await repository.count_by_status()
+
+        # Assert
+        assert result == {"pending_review": 5, "replayed": 3, "discarded": 1}
+
+    @pytest.mark.asyncio
+    async def test_ensure_indexes_creates_required_indexes(self, repository, mock_collection):
+        """ensure_indexes creates indexes for efficient queries."""
+        # Act
+        await repository.ensure_indexes()
+
+        # Assert - verify all 3 indexes are created
+        assert mock_collection.create_index.call_count == 3
+        call_args_list = [call[0][0] for call in mock_collection.create_index.call_args_list]
+        assert "original_topic" in call_args_list
+        assert "status" in call_args_list
+        assert [("received_at", -1)] in call_args_list or "received_at" in str(call_args_list)
