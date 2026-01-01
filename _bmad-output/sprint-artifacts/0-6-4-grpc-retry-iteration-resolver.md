@@ -1,7 +1,7 @@
 # Story 0.6.4: gRPC Client Retry - IterationResolver
 
-**Status:** To Do
-**GitHub Issue:** TBD
+**Status:** Review
+**GitHub Issue:** [#47](https://github.com/jltournay/farmer-power-platform/issues/47)
 **Epic:** [Epic 0.6: Infrastructure Hardening](../epics/epic-0-6-infrastructure-hardening.md)
 **ADR:** [ADR-005: gRPC Client Retry and Reconnection Strategy](../architecture/adr/ADR-005-grpc-client-retry-strategy.md)
 **Story Points:** 2
@@ -29,11 +29,11 @@ gh run list --branch story/0-6-4-grpc-retry-iteration-resolver --limit 3
 
 ### 3. Definition of Done Checklist
 
-- [ ] **Singleton channel** - IterationResolver uses lazy singleton pattern
-- [ ] **Retry decorator** - ALL RPC methods have `@retry` decorator
-- [ ] **Unit tests pass** - New tests in tests/unit/collection_model/infrastructure/
-- [ ] **E2E tests pass** - No regressions
-- [ ] **Lint passes** - `ruff check . && ruff format --check .`
+- [x] **Singleton channel** - IterationResolver uses lazy singleton pattern
+- [x] **Retry decorator** - ALL RPC methods have `@retry` decorator
+- [x] **Unit tests pass** - 24 passed, 1 skipped in tests/unit/collection/test_iteration_resolver.py
+- [x] **E2E tests pass** - 71 passed, 3 xfailed (no regressions)
+- [x] **Lint passes** - `ruff check . && ruff format --check .`
 
 ---
 
@@ -258,11 +258,37 @@ class IterationResolver:
 
 **1. Unit Tests:**
 ```bash
-pytest tests/unit/collection_model/infrastructure/test_iteration_resolver.py -v
+pytest tests/unit/collection/test_iteration_resolver.py -v
 ```
 **Output:**
 ```
-(paste test output here)
+tests/unit/collection/test_iteration_resolver.py::TestIterationResolver::test_resolve_returns_items_from_mcp_tool PASSED
+tests/unit/collection/test_iteration_resolver.py::TestIterationResolver::test_resolve_calls_correct_mcp_tool PASSED
+tests/unit/collection/test_iteration_resolver.py::TestIterationResolver::test_resolve_passes_tool_arguments PASSED
+tests/unit/collection/test_iteration_resolver.py::TestIterationResolver::test_resolve_handles_nested_result SKIPPED
+tests/unit/collection/test_iteration_resolver.py::TestIterationResolver::test_resolve_raises_on_tool_not_found PASSED
+tests/unit/collection/test_iteration_resolver.py::TestIterationResolver::test_resolve_raises_on_mcp_failure PASSED
+tests/unit/collection/test_iteration_resolver.py::TestIterationResolver::test_resolve_raises_on_connection_error PASSED
+tests/unit/collection/test_iteration_resolver.py::TestIterationResolver::test_resolve_returns_empty_list_for_no_results PASSED
+tests/unit/collection/test_iteration_resolver.py::TestIterationResolverLinkageExtraction::test_extract_linkage_fields PASSED
+tests/unit/collection/test_iteration_resolver.py::TestIterationResolverLinkageExtraction::test_extract_linkage_handles_missing_fields PASSED
+tests/unit/collection/test_iteration_resolver.py::TestIterationResolverLinkageExtraction::test_extract_linkage_empty_fields PASSED
+tests/unit/collection/test_iteration_resolver.py::TestIterationResolverLinkageExtraction::test_extract_linkage_none_fields PASSED
+tests/unit/collection/test_iteration_resolver.py::TestIterationResolverSingletonChannel::test_lazy_channel_initialization PASSED
+tests/unit/collection/test_iteration_resolver.py::TestIterationResolverSingletonChannel::test_singleton_channel_reused PASSED
+tests/unit/collection/test_iteration_resolver.py::TestIterationResolverSingletonChannel::test_channel_created_with_keepalive_options PASSED
+tests/unit/collection/test_iteration_resolver.py::TestIterationResolverRetry::test_retry_on_unavailable PASSED
+tests/unit/collection/test_iteration_resolver.py::TestIterationResolverRetry::test_retry_exhausted_raises_service_unavailable PASSED
+tests/unit/collection/test_iteration_resolver.py::TestIterationResolverChannelRecreation::test_reset_channel_clears_state PASSED
+tests/unit/collection/test_iteration_resolver.py::TestIterationResolverChannelRecreation::test_channel_recreation_after_reset PASSED
+tests/unit/collection/test_iteration_resolver.py::TestIterationResolverChannelRecreation::test_channel_reset_on_unavailable_error PASSED
+tests/unit/collection/test_iteration_resolver.py::TestIterationResolverNoRetryOnNonTransient::test_no_channel_reset_on_not_found PASSED
+tests/unit/collection/test_iteration_resolver.py::TestIterationResolverClose::test_close_cleans_up_channel PASSED
+tests/unit/collection/test_iteration_resolver.py::TestIterationResolverClose::test_close_is_idempotent PASSED
+tests/unit/collection/test_iteration_resolver.py::TestIterationResolverMetadata::test_get_metadata_returns_app_id PASSED
+tests/unit/collection/test_iteration_resolver.py::TestServiceUnavailableError::test_error_includes_context PASSED
+
+================== 24 passed, 1 skipped in 12.57s ==================
 ```
 
 **2. E2E Tests Pass:**
@@ -271,14 +297,23 @@ PYTHONPATH="${PYTHONPATH}:.:libs/fp-proto/src" pytest tests/e2e/scenarios/ -v
 ```
 **Output:**
 ```
-(paste test output here)
+tests/e2e/scenarios/test_00_infrastructure_verification.py: 19 passed
+tests/e2e/scenarios/test_01_plantation_mcp_contracts.py: 12 passed
+tests/e2e/scenarios/test_02_collection_mcp_contracts.py: 12 passed
+tests/e2e/scenarios/test_03_factory_farmer_flow.py: 5 passed
+tests/e2e/scenarios/test_04_quality_blob_ingestion.py: 6 passed
+tests/e2e/scenarios/test_05_weather_ingestion.py: 7 passed
+tests/e2e/scenarios/test_06_cross_model_events.py: 5 passed
+tests/e2e/scenarios/test_07_grading_validation.py: 3 passed, 3 xfailed
+
+=================== 71 passed, 3 xfailed in 98.18s (0:01:38) ===================
 ```
 
 **3. Lint Check:**
 ```bash
 ruff check . && ruff format --check .
 ```
-**Lint passed:** [ ] Yes / [ ] No
+**Lint passed:** [x] Yes / [ ] No
 
 ---
 

@@ -17,8 +17,14 @@ Pattern:
 3. Add metadata: [("dapr-app-id", target_service)]
 4. DAPR routes the call to the target service
 
-This replaces the previous DaprClient.invoke_method() approach which uses
-HTTP and doesn't support HTTP-to-gRPC transcoding for protobuf messages.
+gRPC Client Retry Pattern (ADR-005):
+------------------------------------
+All gRPC clients MUST implement retry logic with singleton channel pattern.
+This ensures auto-recovery from transient failures without pod restart.
+
+- Singleton channel: created once, reused across calls
+- Tenacity retry: 3 attempts with exponential backoff (1-10s)
+- Channel reset on UNAVAILABLE error forces reconnection
 """
 
 import json
@@ -28,6 +34,12 @@ import grpc
 import structlog
 from fp_common.models.source_config import IterationConfig
 from fp_proto.mcp.v1 import mcp_tool_pb2, mcp_tool_pb2_grpc
+from tenacity import (
+    retry,
+    retry_if_exception_type,
+    stop_after_attempt,
+    wait_exponential,
+)
 
 logger = structlog.get_logger(__name__)
 
@@ -39,12 +51,39 @@ class IterationResolverError(Exception):
     """Error during iteration resolution via MCP tool call."""
 
 
+class ServiceUnavailableError(Exception):
+    """Raised when the MCP service is unavailable after retries.
+
+    Attributes:
+        app_id: The DAPR app ID of the service.
+        method_name: The gRPC method that failed.
+        attempt_count: Number of retry attempts made.
+    """
+
+    def __init__(
+        self,
+        message: str,
+        app_id: str,
+        method_name: str,
+        attempt_count: int = 3,
+    ) -> None:
+        self.app_id = app_id
+        self.method_name = method_name
+        self.attempt_count = attempt_count
+        super().__init__(f"{message} (app_id={app_id}, method={method_name}, attempts={attempt_count})")
+
+
 class IterationResolver:
     """Resolves iteration items by calling MCP tools via DAPR.
 
     When a source config has an iteration block, this resolver calls
     the specified MCP server and tool to get a list of items. Each
     item is used for parallel fetch with parameter substitution.
+
+    Retry Pattern (ADR-005):
+    - Singleton channel pattern: channel created once and reused
+    - Tenacity retry on all RPC methods: 3 attempts, exponential backoff 1-10s
+    - Channel reset on UNAVAILABLE error forces reconnection on next attempt
 
     Example iteration config:
     ```yaml
@@ -61,6 +100,62 @@ class IterationResolver:
     ```
     """
 
+    def __init__(self, channel: grpc.aio.Channel | None = None) -> None:
+        """Initialize the IterationResolver.
+
+        Args:
+            channel: Optional pre-configured gRPC channel (for testing).
+        """
+        self._channel: grpc.aio.Channel | None = channel
+        self._stub: mcp_tool_pb2_grpc.McpToolServiceStub | None = None
+
+    async def _get_stub(self) -> mcp_tool_pb2_grpc.McpToolServiceStub:
+        """Get or create the gRPC stub (singleton pattern).
+
+        Creates the channel lazily on first use and reuses it for subsequent calls.
+        This is the recommended pattern per ADR-005.
+
+        Returns:
+            The gRPC stub for MCP tool service.
+        """
+        if self._stub is None:
+            if self._channel is None:
+                target = f"localhost:{DAPR_GRPC_PORT}"
+                logger.debug(
+                    "Creating gRPC channel to DAPR sidecar",
+                    target=target,
+                )
+                self._channel = grpc.aio.insecure_channel(
+                    target,
+                    options=[
+                        ("grpc.keepalive_time_ms", 30000),
+                        ("grpc.keepalive_timeout_ms", 10000),
+                    ],
+                )
+            self._stub = mcp_tool_pb2_grpc.McpToolServiceStub(self._channel)
+        return self._stub
+
+    def _get_metadata(self, source_mcp: str) -> list[tuple[str, str]]:
+        """Get gRPC call metadata for DAPR service invocation.
+
+        Args:
+            source_mcp: The target MCP service app ID.
+
+        Returns:
+            List of metadata tuples including dapr-app-id.
+        """
+        return [("dapr-app-id", source_mcp)]
+
+    def _reset_channel(self) -> None:
+        """Reset channel and stub on connection error.
+
+        Forces reconnection on the next call. This is called when an
+        UNAVAILABLE error is encountered to ensure fresh connection.
+        """
+        logger.warning("Resetting gRPC channel after connection error")
+        self._channel = None
+        self._stub = None
+
     async def resolve(
         self,
         iteration_config: IterationConfig,
@@ -69,6 +164,7 @@ class IterationResolver:
 
         Invokes the MCP tool specified in the config via DAPR Service
         Invocation and returns the list of items for iteration.
+        Includes retry logic per ADR-005: 3 attempts with exponential backoff.
 
         Args:
             iteration_config: Typed IterationConfig with source_mcp,
@@ -79,6 +175,44 @@ class IterationResolver:
 
         Raises:
             IterationResolverError: On MCP call failure or invalid response.
+            ServiceUnavailableError: If service is unavailable after all retries.
+        """
+        source_mcp = iteration_config.source_mcp
+        if not source_mcp:
+            raise IterationResolverError("Missing source_mcp in iteration config")
+
+        try:
+            return await self._resolve_with_retry(iteration_config)
+        except grpc.aio.AioRpcError as e:
+            if e.code() == grpc.StatusCode.UNAVAILABLE:
+                logger.error(
+                    "MCP service unavailable after all retries",
+                    app_id=source_mcp,
+                    method="CallTool",
+                    attempts=3,
+                )
+                raise ServiceUnavailableError(
+                    message="MCP service unavailable after retries",
+                    app_id=source_mcp,
+                    method_name="CallTool",
+                    attempt_count=3,
+                ) from e
+            raise
+
+    @retry(
+        retry=retry_if_exception_type(grpc.aio.AioRpcError),
+        stop=stop_after_attempt(3),
+        wait=wait_exponential(multiplier=1, min=1, max=10),
+        reraise=True,
+    )
+    async def _resolve_with_retry(
+        self,
+        iteration_config: IterationConfig,
+    ) -> list[dict[str, Any]]:
+        """Internal resolution with retry logic (ADR-005).
+
+        This method is wrapped by resolve() which transforms the final error
+        to ServiceUnavailableError with context per AC4.
         """
         # Use typed attribute access from Pydantic model
         source_mcp = iteration_config.source_mcp
@@ -96,22 +230,16 @@ class IterationResolver:
             has_arguments=bool(tool_arguments),
         )
 
-        try:
-            # Build MCP ToolCallRequest protobuf message
-            request = mcp_tool_pb2.ToolCallRequest(
-                tool_name=source_tool,
-                arguments_json=json.dumps(tool_arguments),
-            )
+        # Build MCP ToolCallRequest protobuf message
+        request = mcp_tool_pb2.ToolCallRequest(
+            tool_name=source_tool,
+            arguments_json=json.dumps(tool_arguments),
+        )
 
-            # Call MCP server via DAPR gRPC proxying
-            # Connect to DAPR sidecar's gRPC port and use dapr-app-id metadata
-            # to route the request to the target MCP service
-            target = f"localhost:{DAPR_GRPC_PORT}"
-            async with grpc.aio.insecure_channel(target) as channel:
-                stub = mcp_tool_pb2_grpc.McpToolServiceStub(channel)
-                # DAPR routes the call to the target app via dapr-app-id metadata
-                metadata = [("dapr-app-id", source_mcp)]
-                response = await stub.CallTool(request, metadata=metadata)
+        try:
+            stub = await self._get_stub()
+            metadata = self._get_metadata(source_mcp)
+            response = await stub.CallTool(request, metadata=metadata)
 
             if not response.success:
                 error_message = response.error_message or "Unknown error"
@@ -132,6 +260,17 @@ class IterationResolver:
             )
 
             return items
+
+        except grpc.aio.AioRpcError as e:
+            if e.code() == grpc.StatusCode.UNAVAILABLE:
+                # Reset channel to force reconnection on next attempt
+                self._reset_channel()
+                logger.warning(
+                    "MCP service unavailable, will retry",
+                    app_id=source_mcp,
+                    error=str(e),
+                )
+            raise
 
         except IterationResolverError:
             raise
@@ -211,3 +350,10 @@ class IterationResolver:
                 linkage[field] = item[field]
 
         return linkage
+
+    async def close(self) -> None:
+        """Clean up resources by closing the gRPC channel."""
+        if self._channel:
+            await self._channel.close()
+            self._channel = None
+            self._stub = None
