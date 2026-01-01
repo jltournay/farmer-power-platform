@@ -1,7 +1,7 @@
 # Story 0.6.4: gRPC Client Retry - IterationResolver
 
-**Status:** To Do
-**GitHub Issue:** TBD
+**Status:** Done
+**GitHub Issue:** [#47](https://github.com/jltournay/farmer-power-platform/issues/47)
 **Epic:** [Epic 0.6: Infrastructure Hardening](../epics/epic-0-6-infrastructure-hardening.md)
 **ADR:** [ADR-005: gRPC Client Retry and Reconnection Strategy](../architecture/adr/ADR-005-grpc-client-retry-strategy.md)
 **Story Points:** 2
@@ -29,11 +29,11 @@ gh run list --branch story/0-6-4-grpc-retry-iteration-resolver --limit 3
 
 ### 3. Definition of Done Checklist
 
-- [ ] **Singleton channel** - IterationResolver uses lazy singleton pattern
-- [ ] **Retry decorator** - ALL RPC methods have `@retry` decorator
-- [ ] **Unit tests pass** - New tests in tests/unit/collection_model/infrastructure/
-- [ ] **E2E tests pass** - No regressions
-- [ ] **Lint passes** - `ruff check . && ruff format --check .`
+- [x] **Singleton channel** - IterationResolver uses lazy singleton pattern
+- [x] **Retry decorator** - ALL RPC methods have `@retry` decorator
+- [x] **Unit tests pass** - 24 passed, 1 skipped in tests/unit/collection/test_iteration_resolver.py
+- [x] **E2E tests pass** - 71 passed, 3 xfailed (no regressions)
+- [x] **Lint passes** - `ruff check . && ruff format --check .`
 
 ---
 
@@ -53,36 +53,36 @@ So that transient network issues don't require pod restarts.
 
 ## Tasks / Subtasks
 
-- [ ] **Task 1: Analyze Current Implementation** (AC: 1)
-  - [ ] Read `services/collection-model/src/collection_model/infrastructure/iteration_resolver.py`
-  - [ ] Document current anti-patterns
-  - [ ] Identify all RPC methods that need retry decorator
+- [x] **Task 1: Analyze Current Implementation** (AC: 1)
+  - [x] Read `services/collection-model/src/collection_model/infrastructure/iteration_resolver.py`
+  - [x] Document current anti-patterns
+  - [x] Identify all RPC methods that need retry decorator
 
-- [ ] **Task 2: Implement Singleton Channel** (AC: 2)
-  - [ ] Add `_channel: grpc.aio.Channel | None = None` attribute
-  - [ ] Add `_stub: IterationServiceStub | None = None` attribute
-  - [ ] Create `async def _get_stub(self)` method
-  - [ ] Configure keepalive options (same as AiModelClient)
+- [x] **Task 2: Implement Singleton Channel** (AC: 2)
+  - [x] Add `_channel: grpc.aio.Channel | None = None` attribute
+  - [x] Add `_stub: McpToolServiceStub | None = None` attribute
+  - [x] Create `async def _get_stub(self)` method
+  - [x] Configure keepalive options (same as AiModelClient)
 
-- [ ] **Task 3: Add Tenacity Retry to All Methods** (AC: 2, 3)
-  - [ ] Apply same retry decorator pattern as Story 0.6.3
-  - [ ] Add channel reset on UNAVAILABLE error
+- [x] **Task 3: Add Tenacity Retry to All Methods** (AC: 2, 3)
+  - [x] Apply same retry decorator pattern as Story 0.6.3
+  - [x] Add channel reset on UNAVAILABLE error
 
-- [ ] **Task 4: Create Unit Tests** (AC: All)
-  - [ ] Create `tests/unit/collection_model/infrastructure/test_iteration_resolver.py`
-  - [ ] Test singleton channel reuse
-  - [ ] Test retry on UNAVAILABLE
-  - [ ] Test retry exhaustion
+- [x] **Task 4: Create Unit Tests** (AC: All)
+  - [x] Create `tests/unit/collection/test_iteration_resolver.py`
+  - [x] Test singleton channel reuse
+  - [x] Test retry on UNAVAILABLE
+  - [x] Test retry exhaustion
 
-- [ ] **Task 5: Verify Integration** (AC: 3)
-  - [ ] Run unit tests
-  - [ ] Run E2E suite
+- [x] **Task 5: Verify Integration** (AC: 3)
+  - [x] Run unit tests
+  - [x] Run E2E suite
 
 ## Git Workflow (MANDATORY)
 
 ### Story Start
-- [ ] GitHub Issue created
-- [ ] Feature branch created:
+- [x] GitHub Issue created: [#47](https://github.com/jltournay/farmer-power-platform/issues/47)
+- [x] Feature branch created:
   ```bash
   git checkout main && git pull origin main
   git checkout -b story/0-6-4-grpc-retry-iteration-resolver
@@ -258,11 +258,37 @@ class IterationResolver:
 
 **1. Unit Tests:**
 ```bash
-pytest tests/unit/collection_model/infrastructure/test_iteration_resolver.py -v
+pytest tests/unit/collection/test_iteration_resolver.py -v
 ```
 **Output:**
 ```
-(paste test output here)
+tests/unit/collection/test_iteration_resolver.py::TestIterationResolver::test_resolve_returns_items_from_mcp_tool PASSED
+tests/unit/collection/test_iteration_resolver.py::TestIterationResolver::test_resolve_calls_correct_mcp_tool PASSED
+tests/unit/collection/test_iteration_resolver.py::TestIterationResolver::test_resolve_passes_tool_arguments PASSED
+tests/unit/collection/test_iteration_resolver.py::TestIterationResolver::test_resolve_handles_nested_result SKIPPED
+tests/unit/collection/test_iteration_resolver.py::TestIterationResolver::test_resolve_raises_on_tool_not_found PASSED
+tests/unit/collection/test_iteration_resolver.py::TestIterationResolver::test_resolve_raises_on_mcp_failure PASSED
+tests/unit/collection/test_iteration_resolver.py::TestIterationResolver::test_resolve_raises_on_connection_error PASSED
+tests/unit/collection/test_iteration_resolver.py::TestIterationResolver::test_resolve_returns_empty_list_for_no_results PASSED
+tests/unit/collection/test_iteration_resolver.py::TestIterationResolverLinkageExtraction::test_extract_linkage_fields PASSED
+tests/unit/collection/test_iteration_resolver.py::TestIterationResolverLinkageExtraction::test_extract_linkage_handles_missing_fields PASSED
+tests/unit/collection/test_iteration_resolver.py::TestIterationResolverLinkageExtraction::test_extract_linkage_empty_fields PASSED
+tests/unit/collection/test_iteration_resolver.py::TestIterationResolverLinkageExtraction::test_extract_linkage_none_fields PASSED
+tests/unit/collection/test_iteration_resolver.py::TestIterationResolverSingletonChannel::test_lazy_channel_initialization PASSED
+tests/unit/collection/test_iteration_resolver.py::TestIterationResolverSingletonChannel::test_singleton_channel_reused PASSED
+tests/unit/collection/test_iteration_resolver.py::TestIterationResolverSingletonChannel::test_channel_created_with_keepalive_options PASSED
+tests/unit/collection/test_iteration_resolver.py::TestIterationResolverRetry::test_retry_on_unavailable PASSED
+tests/unit/collection/test_iteration_resolver.py::TestIterationResolverRetry::test_retry_exhausted_raises_service_unavailable PASSED
+tests/unit/collection/test_iteration_resolver.py::TestIterationResolverChannelRecreation::test_reset_channel_clears_state PASSED
+tests/unit/collection/test_iteration_resolver.py::TestIterationResolverChannelRecreation::test_channel_recreation_after_reset PASSED
+tests/unit/collection/test_iteration_resolver.py::TestIterationResolverChannelRecreation::test_channel_reset_on_unavailable_error PASSED
+tests/unit/collection/test_iteration_resolver.py::TestIterationResolverNoRetryOnNonTransient::test_no_channel_reset_on_not_found PASSED
+tests/unit/collection/test_iteration_resolver.py::TestIterationResolverClose::test_close_cleans_up_channel PASSED
+tests/unit/collection/test_iteration_resolver.py::TestIterationResolverClose::test_close_is_idempotent PASSED
+tests/unit/collection/test_iteration_resolver.py::TestIterationResolverMetadata::test_get_metadata_returns_app_id PASSED
+tests/unit/collection/test_iteration_resolver.py::TestServiceUnavailableError::test_error_includes_context PASSED
+
+================== 24 passed, 1 skipped in 12.57s ==================
 ```
 
 **2. E2E Tests Pass:**
@@ -271,14 +297,74 @@ PYTHONPATH="${PYTHONPATH}:.:libs/fp-proto/src" pytest tests/e2e/scenarios/ -v
 ```
 **Output:**
 ```
-(paste test output here)
+tests/e2e/scenarios/test_00_infrastructure_verification.py: 19 passed
+tests/e2e/scenarios/test_01_plantation_mcp_contracts.py: 12 passed
+tests/e2e/scenarios/test_02_collection_mcp_contracts.py: 12 passed
+tests/e2e/scenarios/test_03_factory_farmer_flow.py: 5 passed
+tests/e2e/scenarios/test_04_quality_blob_ingestion.py: 6 passed
+tests/e2e/scenarios/test_05_weather_ingestion.py: 7 passed
+tests/e2e/scenarios/test_06_cross_model_events.py: 5 passed
+tests/e2e/scenarios/test_07_grading_validation.py: 3 passed, 3 xfailed
+
+=================== 71 passed, 3 xfailed in 98.18s (0:01:38) ===================
 ```
 
 **3. Lint Check:**
 ```bash
 ruff check . && ruff format --check .
 ```
-**Lint passed:** [ ] Yes / [ ] No
+**Lint passed:** [x] Yes / [ ] No
+
+**4. E2E CI Verification:**
+```bash
+gh workflow run "E2E Tests" --ref story/0-6-4-grpc-retry-iteration-resolver
+gh run list --workflow="E2E Tests" --branch story/0-6-4-grpc-retry-iteration-resolver --limit 1
+```
+**Output:**
+```
+completed  success  E2E Tests  E2E Tests  story/0-6-4-grpc-retry-iteration-resolver  workflow_dispatch  20642591862  4m2s  2026-01-01T17:24:13Z
+```
+**E2E CI passed:** [x] Yes / [ ] No
+
+**5. Regular CI Verification:**
+```bash
+gh run list --branch story/0-6-4-grpc-retry-iteration-resolver --limit 1
+```
+**Output:**
+```
+completed  success  Story 0.6.4: gRPC Client Retry - IterationResolver  CI  story/0-6-4-grpc-retry-iteration-resolver  pull_request  20642590824  2m1s
+```
+**Regular CI passed:** [x] Yes / [ ] No
+
+---
+
+## Implementation Notes
+
+### gRPC Call Timeout (Fix for E2E CI)
+
+Initial E2E CI runs failed with `httpx.ReadTimeout` on `test_get_documents_returns_weather_document`. Root cause: the gRPC call in `_resolve_with_retry` had no timeout, causing it to hang indefinitely in Docker/CI environment when connection issues occurred.
+
+**Fix applied:** Added `timeout=15.0` to the gRPC call:
+```python
+response = await stub.CallTool(request, metadata=metadata, timeout=15.0)
+```
+
+This ensures the retry mechanism can kick in instead of blocking until the HTTP timeout (30s) is reached.
+
+### Docker Image Rebuild Verification
+
+**IMPORTANT:** When testing E2E locally, always use `--no-cache` to ensure Docker images contain latest code:
+
+```bash
+# Force rebuild (not cached)
+docker compose -f tests/e2e/infrastructure/docker-compose.e2e.yaml build --no-cache collection-model
+
+# Verify fix is in image
+docker run --rm infrastructure-collection-model grep -n "timeout=15" /app/src/collection_model/infrastructure/iteration_resolver.py
+# Output: 243:            response = await stub.CallTool(request, metadata=metadata, timeout=15.0)
+```
+
+**Verified:** [x] Docker image contains timeout fix at line 243
 
 ---
 
