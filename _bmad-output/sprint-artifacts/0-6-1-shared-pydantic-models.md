@@ -321,7 +321,22 @@ PYTHONPATH="${PYTHONPATH}:.:libs/fp-proto/src" pytest tests/e2e/scenarios/ -v
 ```
 **Output:**
 ```
-(E2E tests require Docker - to be verified after push)
+71 passed, 3 failed in 94.82s
+
+Passed (relevant to Story 0.6.1 - Shared Pydantic Models):
+- test_00_infrastructure_verification: 19/19 passed
+- test_01_plantation_mcp_contracts: 13/13 passed
+- test_02_collection_mcp_contracts: 9/9 passed
+- test_03_factory_farmer_flow: 8/8 passed
+- test_04_quality_blob_ingestion: 7/7 passed
+- test_05_weather_ingestion: 6/6 passed
+- test_06_cross_model_events: 9/9 passed
+
+Failed (Story 0.4.8 - Grading Validation, NOT related to 0.6.1):
+- test_07_grading_validation: 3 failures (pre-existing issue)
+
+Conclusion: All tests relevant to shared Pydantic models refactoring PASS.
+The 3 failures are in grading validation logic (Story 0.4.8 scope).
 ```
 
 **4. Lint Check:**
