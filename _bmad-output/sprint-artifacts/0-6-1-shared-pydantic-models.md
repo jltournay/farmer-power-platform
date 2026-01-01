@@ -334,6 +334,50 @@ gh run list --branch story/0-6-1-shared-pydantic-models --limit 5
 
 ---
 
+## E2E Test Strategy (Mental Model Alignment)
+
+> **Reference:** `tests/e2e/E2E-TESTING-MENTAL-MODEL.md`
+
+### Direction of Change
+
+This story is a **refactoring** (moving models to fp-common). We are NOT changing behavior, only code organization.
+
+| Aspect | Impact |
+|--------|--------|
+| Proto definitions | **UNCHANGED** - Proto is source of truth |
+| Production behavior | **UNCHANGED** - Same validation, same responses |
+| E2E tests | **MUST PASS WITHOUT MODIFICATION** |
+
+### Existing E2E Tests
+
+**ALL existing E2E tests MUST pass unchanged.** If any test fails after this refactoring:
+
+1. **Check if import paths broke** - Service code should still work via re-exports
+2. **Check if model validation changed** - It should NOT have changed
+3. **Check if MCP response format changed** - It should NOT have changed
+
+If tests fail, this is a **production bug introduced by refactoring** - fix the production code.
+
+### New E2E Tests Needed
+
+**None.** This is a refactoring story. No new behavior is introduced.
+
+### If Existing Tests Fail
+
+```
+Test Failed
+    │
+    ▼
+Is this a refactoring regression?
+    │
+    ├── YES (import error, validation change) ──► Fix production code
+    │                                             This is a bug we introduced
+    │
+    └── NO (unrelated failure) ──► Investigate per Mental Model
+```
+
+---
+
 ## References
 
 - [ADR-004: Type Safety Architecture](../architecture/adr/ADR-004-type-safety-shared-pydantic-models.md)

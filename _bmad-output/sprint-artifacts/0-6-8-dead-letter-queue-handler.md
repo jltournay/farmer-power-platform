@@ -410,6 +410,62 @@ groups:
 
 ---
 
+## E2E Test Strategy (Mental Model Alignment)
+
+> **Reference:** `tests/e2e/E2E-TESTING-MENTAL-MODEL.md`
+
+### Direction of Change
+
+This story **adds NEW behavior** (DLQ storage) that didn't exist before.
+
+| Aspect | Impact |
+|--------|--------|
+| Proto definitions | **UNCHANGED** |
+| Happy path behavior | **UNCHANGED** - Valid events still succeed |
+| Failure path behavior | **NEW** - Failed events now stored in MongoDB |
+| E2E tests | **EXISTING tests MUST PASS, NEW tests needed** |
+
+### Existing E2E Tests
+
+**ALL existing E2E tests MUST pass unchanged.** The DLQ handler only affects events that fail processing - valid events are unaffected.
+
+### New E2E Tests Needed
+
+**YES - New DLQ verification tests:**
+
+```python
+# tests/e2e/scenarios/test_08_dead_letter_queue.py
+class TestDeadLetterQueue:
+    async def test_invalid_event_goes_to_dlq(self):
+        """Invalid events are stored in DLQ collection."""
+        # 1. Publish event with invalid farmer_id
+        # 2. Wait for processing
+        # 3. Verify event appears in event_dead_letter collection
+        # 4. Verify original_topic is correct
+        # 5. Verify status is "pending_review"
+
+    async def test_dlq_metric_incremented(self):
+        """DLQ metric is incremented for failed events."""
+        # Check prometheus metrics endpoint
+```
+
+**When to add these tests:** After Story 0.6.8 is complete and DLQ handler is integrated.
+
+### If Existing Tests Fail
+
+```
+Test Failed
+    │
+    ▼
+Is failure related to DLQ handler?
+    │
+    ├── YES (subscription conflict, MongoDB error) ──► Fix DLQ handler
+    │
+    └── NO (unrelated failure) ──► Investigate per Mental Model
+```
+
+---
+
 ## References
 
 - [ADR-006: Event Delivery and DLQ](../architecture/adr/ADR-006-event-delivery-dead-letter-queue.md)

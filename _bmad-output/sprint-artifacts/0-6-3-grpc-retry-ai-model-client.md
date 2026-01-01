@@ -397,6 +397,54 @@ ruff check . && ruff format --check .
 
 ---
 
+## E2E Test Strategy (Mental Model Alignment)
+
+> **Reference:** `tests/e2e/E2E-TESTING-MENTAL-MODEL.md`
+
+### Direction of Change
+
+This story **improves resilience** of existing gRPC client. The API surface is **unchanged**.
+
+| Aspect | Impact |
+|--------|--------|
+| Proto definitions | **UNCHANGED** |
+| Client API | **UNCHANGED** - Same method signatures |
+| Production behavior | **IMPROVED** - Transient failures auto-recover |
+| E2E tests | **MUST PASS WITHOUT MODIFICATION** |
+
+### Existing E2E Tests
+
+**ALL existing E2E tests MUST pass unchanged.** The AiModelClient's external behavior is identical; only internal retry logic is added.
+
+If tests fail after this change:
+1. Check if retry logic is interfering with error propagation
+2. Check if timeouts are being exceeded due to retries
+3. This would be a production bug - fix the production code
+
+### New E2E Tests Needed
+
+**None for E2E.** Retry behavior is validated by:
+- Unit tests (mocked gRPC errors)
+- PoC resilience test (`tests/e2e/poc-dapr-patterns/`)
+
+The PoC test already validates the singleton + retry pattern works.
+
+### If Existing Tests Fail
+
+```
+Test Failed
+    │
+    ▼
+Is failure related to retry behavior?
+    │
+    ├── YES (timeout, error propagation) ──► Fix retry configuration
+    │                                        Check exponential backoff limits
+    │
+    └── NO (unrelated failure) ──► Investigate per Mental Model
+```
+
+---
+
 ## References
 
 - [ADR-005: gRPC Client Retry Strategy](../architecture/adr/ADR-005-grpc-client-retry-strategy.md)

@@ -180,6 +180,47 @@ pytest tests/e2e/scenarios/ -v
 
 ---
 
+## E2E Test Strategy (Mental Model Alignment)
+
+> **Reference:** `tests/e2e/E2E-TESTING-MENTAL-MODEL.md`
+
+### Direction of Change
+
+This story is **YAML configuration only** - no production code changes.
+
+| Aspect | Impact |
+|--------|--------|
+| Proto definitions | **UNCHANGED** |
+| Production code | **UNCHANGED** - This is DAPR configuration |
+| Event behavior | **IMPROVED** - Retry policy now defined |
+| E2E tests | **MUST PASS WITHOUT MODIFICATION** |
+
+### Existing E2E Tests
+
+**ALL existing E2E tests MUST pass unchanged.** The resiliency config improves reliability but doesn't change happy-path behavior.
+
+### New E2E Tests Needed
+
+**None.** Resiliency behavior is validated by PoC tests:
+- `test_pubsub_retry` - Verifies retry on transient failure
+- `test_pubsub_dlq` - Verifies DLQ after retries exhausted
+
+### If Existing Tests Fail
+
+```
+Test Failed
+    │
+    ▼
+Is failure related to resiliency config?
+    │
+    ├── YES (retry delays, DLQ routing) ──► Check YAML syntax
+    │                                        Verify DAPR loaded config
+    │
+    └── NO (unrelated failure) ──► Investigate per Mental Model
+```
+
+---
+
 ## References
 
 - [ADR-006: Event Delivery and DLQ](../architecture/adr/ADR-006-event-delivery-dead-letter-queue.md)

@@ -477,6 +477,74 @@ docker exec e2e-mongodb-1 mongosh --eval "db.event_dead_letter.find({}).pretty()
 
 ---
 
+## E2E Test Strategy (Mental Model Alignment)
+
+> **Reference:** `tests/e2e/E2E-TESTING-MENTAL-MODEL.md`
+
+### Direction of Change
+
+This story **adds NEW validation behavior** that changes how invalid events are handled.
+
+| Aspect | Impact |
+|--------|--------|
+| Proto definitions | **UNCHANGED** |
+| Valid event behavior | **UNCHANGED** - Valid events still succeed |
+| Invalid event behavior | **CHANGED** - Now raises exception → DLQ |
+| E2E tests | **EXISTING tests with valid data MUST PASS** |
+
+### Existing E2E Tests
+
+**Existing tests with VALID seed data MUST pass unchanged.**
+
+Our E2E seed data uses valid linkage fields:
+- `farmer_id` references existing farmers
+- `factory_id` references existing factories
+- `grading_model_id` references existing grading models
+
+These tests should continue to pass because the data is valid.
+
+### New E2E Tests Needed
+
+**YES - Validation failure tests:**
+
+```python
+# tests/e2e/scenarios/test_09_linkage_validation.py
+class TestLinkageValidation:
+    async def test_invalid_farmer_id_goes_to_dlq(self):
+        """Event with invalid farmer_id is dead-lettered."""
+        # 1. Publish quality event with non-existent farmer_id
+        # 2. Wait for processing (retries + DLQ)
+        # 3. Verify event in event_dead_letter collection
+        # 4. Verify metric event_linkage_validation_failures_total incremented
+
+    async def test_valid_event_not_affected(self):
+        """Event with valid linkage fields processes normally."""
+        # This is already covered by existing Story 0.4.7 tests
+```
+
+### If Existing Tests Fail
+
+```
+Test Failed
+    │
+    ▼
+Is seed data using valid linkage fields?
+    │
+    ├── NO (invalid farmer_id, etc.) ──► Fix seed data
+    │                                     Seed must match proto + database
+    │
+    └── YES but validation still fails ──► Check validation logic
+                                           Is it too strict?
+                                           Check database has expected records
+```
+
+**CRITICAL:** If existing tests fail with "farmer not found" errors:
+1. First check if seed data is correct
+2. Then check if farmer seed data was loaded correctly
+3. Only then consider if validation logic has bugs
+
+---
+
 ## References
 
 - [ADR-008: Invalid Linkage Field Handling](../architecture/adr/ADR-008-invalid-linkage-field-handling.md)

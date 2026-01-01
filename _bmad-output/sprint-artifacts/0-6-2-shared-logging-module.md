@@ -320,6 +320,51 @@ ruff check . && ruff format --check .
 
 ---
 
+## E2E Test Strategy (Mental Model Alignment)
+
+> **Reference:** `tests/e2e/E2E-TESTING-MENTAL-MODEL.md`
+
+### Direction of Change
+
+This story **adds new infrastructure** (shared logging module). It does NOT change existing behavior.
+
+| Aspect | Impact |
+|--------|--------|
+| Proto definitions | **UNCHANGED** |
+| Production behavior | **UNCHANGED** - Services log the same events |
+| E2E tests | **MUST PASS WITHOUT MODIFICATION** |
+| New capability | `/admin/logging` endpoint for debugging |
+
+### Existing E2E Tests
+
+**ALL existing E2E tests MUST pass unchanged.** The logging format (JSON) is already used by services.
+
+If tests fail after this change:
+1. Check if log output is interfering with assertions
+2. Check if the admin router conflicts with existing routes
+3. This would be a production bug - fix the production code
+
+### New E2E Tests Needed
+
+**Optional:** Add integration test for `/admin/logging` endpoint if time permits.
+
+This is primarily validated by unit tests since it's shared infrastructure.
+
+### If Existing Tests Fail
+
+```
+Test Failed
+    │
+    ▼
+Is failure related to logging changes?
+    │
+    ├── YES (output format, route conflict) ──► Fix production code
+    │
+    └── NO (unrelated failure) ──► Investigate per Mental Model
+```
+
+---
+
 ## References
 
 - [ADR-009: Logging Standards](../architecture/adr/ADR-009-logging-standards-runtime-configuration.md)

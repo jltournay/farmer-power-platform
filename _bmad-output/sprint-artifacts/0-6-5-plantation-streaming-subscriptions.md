@@ -415,6 +415,57 @@ ruff check . && ruff format --check .
 
 ---
 
+## E2E Test Strategy (Mental Model Alignment)
+
+> **Reference:** `tests/e2e/E2E-TESTING-MENTAL-MODEL.md`
+
+### Direction of Change
+
+This story **changes transport mechanism** (HTTP polling → DAPR streaming) but **behavior is unchanged**.
+
+| Aspect | Impact |
+|--------|--------|
+| Proto definitions | **UNCHANGED** |
+| Event payload format | **UNCHANGED** - Same JSON structure |
+| Business logic | **UNCHANGED** - Same `QualityEventProcessor` |
+| E2E tests | **MUST PASS WITHOUT MODIFICATION** |
+
+### Existing E2E Tests
+
+**ALL existing E2E tests MUST pass unchanged.** E2E tests verify **what happens** (farmer updated), not **how events arrive** (HTTP vs streaming).
+
+Critical test: `test_06_cross_model_events.py` (Story 0.4.7)
+- This test publishes a quality event and verifies farmer is updated
+- Transport mechanism is transparent to the test
+- If this passes, streaming subscription works correctly
+
+### New E2E Tests Needed
+
+**None for happy path.** Existing tests already cover the event flow.
+
+**Consider adding:** DLQ verification test (after Story 0.6.8)
+- Publish invalid event → verify it appears in DLQ collection
+
+### If Existing Tests Fail
+
+```
+Test Failed
+    │
+    ▼
+Is event being received by streaming subscription?
+    │
+    ├── NO ──► Check subscription startup in logs
+    │          Check DAPR sidecar is running
+    │          Check topic name matches publisher
+    │
+    └── YES but processing fails ──► Check handler logic
+                                      Check TopicEventResponse return
+```
+
+**IMPORTANT:** If tests fail, the bug is in our streaming implementation - NOT in the test or seed data.
+
+---
+
 ## References
 
 - [ADR-010: DAPR Patterns](../architecture/adr/ADR-010-dapr-patterns-configuration.md)

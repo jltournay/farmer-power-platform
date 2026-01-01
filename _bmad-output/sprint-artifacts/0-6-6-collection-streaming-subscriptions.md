@@ -210,6 +210,44 @@ pytest tests/e2e/scenarios/test_05*.py -v
 
 ---
 
+## E2E Test Strategy (Mental Model Alignment)
+
+> **Reference:** `tests/e2e/E2E-TESTING-MENTAL-MODEL.md`
+
+### Direction of Change
+
+Same pattern as Story 0.6.5. **Changes transport mechanism** but **behavior is unchanged**.
+
+| Aspect | Impact |
+|--------|--------|
+| Proto definitions | **UNCHANGED** |
+| Event payload format | **UNCHANGED** - Same blob event structure |
+| Business logic | **UNCHANGED** - Same blob processing pipeline |
+| E2E tests | **MUST PASS WITHOUT MODIFICATION** |
+
+### Existing E2E Tests
+
+**ALL existing E2E tests MUST pass unchanged.** E2E tests verify blob processing outcomes, not transport.
+
+Critical tests:
+- `test_05_quality_event_blob.py` (Story 0.4.5) - Blob ingestion flow
+- `test_05_weather_ingestion.py` (Story 0.4.6) - Weather data ingestion
+
+### New E2E Tests Needed
+
+**None for happy path.** Existing tests cover the blob processing flow.
+
+### If Existing Tests Fail
+
+Same debugging approach as Story 0.6.5:
+1. Check if streaming subscription is receiving events
+2. Check DAPR sidecar logs for errors
+3. Check handler returns correct `TopicEventResponse`
+
+**IMPORTANT:** If tests fail, the bug is in our streaming implementation - NOT in the test or seed data.
+
+---
+
 ## References
 
 - [Story 0.6.5: Plantation Streaming](./0-6-5-plantation-streaming-subscriptions.md) - Pattern reference

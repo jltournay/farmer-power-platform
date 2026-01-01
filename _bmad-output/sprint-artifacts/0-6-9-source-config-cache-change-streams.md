@@ -420,6 +420,60 @@ curl http://localhost:8002/health/cache
 
 ---
 
+## E2E Test Strategy (Mental Model Alignment)
+
+> **Reference:** `tests/e2e/E2E-TESTING-MENTAL-MODEL.md`
+
+### Direction of Change
+
+This story **improves cache behavior** but **doesn't change external API**.
+
+| Aspect | Impact |
+|--------|--------|
+| Proto definitions | **UNCHANGED** |
+| API responses | **UNCHANGED** - Same data returned |
+| Cache behavior | **IMPROVED** - Real-time invalidation |
+| E2E tests | **MUST PASS WITHOUT MODIFICATION** |
+
+### Existing E2E Tests
+
+**ALL existing E2E tests MUST pass unchanged.** Cache improvements are internal; external behavior is identical.
+
+The key improvement is: new source configs are immediately available (no 5-minute stale window).
+
+### New E2E Tests Needed
+
+**Optional - Cache health verification:**
+
+```python
+# Add to infrastructure tests
+async def test_cache_health_endpoint(self):
+    """Cache health endpoint returns valid data."""
+    response = await http_client.get("/health/cache")
+    assert response.status_code == 200
+    data = response.json()
+    assert "cache_size" in data
+    assert "change_stream_active" in data
+```
+
+### If Existing Tests Fail
+
+```
+Test Failed
+    │
+    ▼
+Is failure related to cache behavior?
+    │
+    ├── YES (stale data, MongoDB connection) ──► Check Change Stream setup
+    │                                            Verify MongoDB is replica set
+    │
+    └── NO (unrelated failure) ──► Investigate per Mental Model
+```
+
+**IMPORTANT:** This story FIXES silent event drops caused by stale cache. If tests that were previously flaky now pass consistently, that's the expected outcome.
+
+---
+
 ## References
 
 - [ADR-007: Source Config Cache](../architecture/adr/ADR-007-source-config-cache-change-streams.md)

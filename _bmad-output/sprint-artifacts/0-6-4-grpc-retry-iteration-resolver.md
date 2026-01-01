@@ -282,6 +282,35 @@ ruff check . && ruff format --check .
 
 ---
 
+## E2E Test Strategy (Mental Model Alignment)
+
+> **Reference:** `tests/e2e/E2E-TESTING-MENTAL-MODEL.md`
+
+### Direction of Change
+
+This story **improves resilience** of existing gRPC client. Same pattern as Story 0.6.3.
+
+| Aspect | Impact |
+|--------|--------|
+| Proto definitions | **UNCHANGED** |
+| Client API | **UNCHANGED** - Same method signatures |
+| Production behavior | **IMPROVED** - Transient failures auto-recover |
+| E2E tests | **MUST PASS WITHOUT MODIFICATION** |
+
+### Existing E2E Tests
+
+**ALL existing E2E tests MUST pass unchanged.** The IterationResolver's external behavior is identical.
+
+### New E2E Tests Needed
+
+**None.** Same reasoning as Story 0.6.3 - validated by unit tests and PoC.
+
+### If Existing Tests Fail
+
+Same debugging approach as Story 0.6.3. Check retry configuration if timeouts occur.
+
+---
+
 ## References
 
 - [ADR-005: gRPC Client Retry Strategy](../architecture/adr/ADR-005-grpc-client-retry-strategy.md)
