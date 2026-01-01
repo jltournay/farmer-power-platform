@@ -36,12 +36,12 @@ gh run list --branch story/0-6-3-grpc-retry-ai-model-client --limit 3
 
 ### 3. Definition of Done Checklist
 
-- [ ] **Singleton channel** - AiModelClient uses lazy singleton pattern
-- [ ] **Retry decorator** - ALL RPC methods have `@retry` decorator
-- [ ] **Unit tests pass** - New tests in tests/unit/collection_model/infrastructure/
-- [ ] **PoC test passes** - Resilience test still green
-- [ ] **E2E tests pass** - No regressions
-- [ ] **Lint passes** - `ruff check . && ruff format --check .`
+- [x] **Singleton channel** - AiModelClient uses lazy singleton pattern
+- [x] **Retry decorator** - ALL RPC methods have `@retry` decorator
+- [x] **Unit tests pass** - New tests in tests/unit/collection_model/infrastructure/
+- [x] **PoC test passes** - Resilience test still green
+- [x] **E2E tests pass** - No regressions
+- [x] **Lint passes** - `ruff check . && ruff format --check .`
 
 ---
 
