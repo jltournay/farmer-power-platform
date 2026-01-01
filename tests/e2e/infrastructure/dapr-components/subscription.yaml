@@ -1,23 +1,18 @@
-apiVersion: dapr.io/v2alpha1
-kind: Subscription
-metadata:
-  name: quality-result-subscription
-spec:
-  pubsubname: pubsub
-  topic: collection.quality_result.received
-  routes:
-    default: /api/v1/events/quality-result
-scopes:
-  - plantation-model
----
-apiVersion: dapr.io/v2alpha1
-kind: Subscription
-metadata:
-  name: weather-updated-subscription
-spec:
-  pubsubname: pubsub
-  topic: weather.observation.updated
-  routes:
-    default: /api/v1/events/weather-updated
-scopes:
-  - plantation-model
+# DAPR Pub/Sub Subscriptions Configuration
+#
+# Story 0.6.5: Plantation Model uses DAPR SDK streaming subscriptions (ADR-010/ADR-011)
+# instead of declarative HTTP callback subscriptions.
+#
+# Streaming subscriptions are established programmatically in:
+#   services/plantation-model/src/plantation_model/events/subscriber.py
+#
+# Topics subscribed via streaming:
+#   - collection.quality_result.received (DLQ: events.dlq)
+#   - weather.observation.updated (DLQ: events.dlq)
+#
+# The previous HTTP callback subscriptions (removed in Story 0.6.5):
+#   /api/v1/events/quality-result → replaced by streaming handler
+#   /api/v1/events/weather-updated → replaced by streaming handler
+#
+# Note: This file intentionally contains no declarative subscriptions.
+# DAPR will not push events via HTTP; instead, the app pulls events via gRPC streaming.

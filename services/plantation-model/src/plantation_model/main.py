@@ -1,10 +1,17 @@
-"""Plantation Model Service - FastAPI entrypoint.
+"""Plantation Model Service - FastAPI + gRPC + DAPR Streaming entrypoint.
 
 Master data registry for the Farmer Power Platform.
 Stores core entities (regions, farmers, factories), configuration,
 and pre-computed performance summaries.
+
+Architecture (ADR-011):
+- Port 8000: FastAPI health endpoints (direct, no DAPR)
+- Port 50051: gRPC server (via DAPR sidecar)
+- Pub/sub: DAPR streaming subscriptions (outbound, no extra port)
 """
 
+import asyncio
+import threading
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 
@@ -12,13 +19,15 @@ import structlog
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from plantation_model.api import health
-from plantation_model.api.event_handlers import (
-    quality_result_router,
-    weather_updated_router,
-)
 from plantation_model.api.grpc_server import start_grpc_server, stop_grpc_server
 from plantation_model.config import settings
 from plantation_model.domain.services import QualityEventProcessor
+from plantation_model.events.subscriber import (
+    run_streaming_subscriptions,
+    set_main_event_loop,
+    set_quality_event_processor,
+    set_regional_weather_repo,
+)
 from plantation_model.infrastructure.collection_client import CollectionClient
 from plantation_model.infrastructure.dapr_client import DaprPubSubClient
 from plantation_model.infrastructure.mongodb import (
@@ -32,6 +41,9 @@ from plantation_model.infrastructure.repositories.farmer_performance_repository 
 )
 from plantation_model.infrastructure.repositories.grading_model_repository import (
     GradingModelRepository,
+)
+from plantation_model.infrastructure.repositories.regional_weather_repository import (
+    RegionalWeatherRepository,
 )
 from plantation_model.infrastructure.tracing import (
     instrument_fastapi,
@@ -85,6 +97,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
         db = await get_database()
         grading_model_repo = GradingModelRepository(db)
         farmer_performance_repo = FarmerPerformanceRepository(db)
+        regional_weather_repo = RegionalWeatherRepository(db)
 
         # Initialize Collection client for fetching quality documents
         collection_client = CollectionClient()
@@ -94,13 +107,38 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
         event_publisher = DaprPubSubClient()
 
         # Initialize QualityEventProcessor (Story 1.7)
-        app.state.quality_event_processor = QualityEventProcessor(
+        quality_event_processor = QualityEventProcessor(
             collection_client=collection_client,
             grading_model_repo=grading_model_repo,
             farmer_performance_repo=farmer_performance_repo,
             event_publisher=event_publisher,
         )
+        app.state.quality_event_processor = quality_event_processor
         logger.info("QualityEventProcessor initialized")
+
+        # Set processor references for streaming subscription handlers (Story 0.6.5)
+        set_quality_event_processor(quality_event_processor)
+        set_regional_weather_repo(regional_weather_repo)
+        logger.info("Subscription handler dependencies configured")
+
+        # CRITICAL: Pass the main event loop to streaming subscription handlers
+        # The handlers run in a separate thread, but Motor (MongoDB) and other
+        # async clients are bound to this loop. Handlers use run_coroutine_threadsafe()
+        # to schedule async operations on this loop.
+        main_loop = asyncio.get_running_loop()
+        set_main_event_loop(main_loop)
+        logger.info("Main event loop configured for streaming subscriptions")
+
+        # Start DAPR streaming subscriptions in background thread (Story 0.6.5)
+        # ADR-010/011 pattern: run_streaming_subscriptions keeps DaprClient alive
+        # Subscriptions are outbound - no extra HTTP port needed
+        subscription_thread = threading.Thread(
+            target=run_streaming_subscriptions,
+            daemon=True,
+            name="dapr-subscriptions",
+        )
+        subscription_thread.start()
+        logger.info("DAPR streaming subscriptions thread started")
 
     except Exception as e:
         logger.warning("MongoDB connection failed at startup", error=str(e))
@@ -119,6 +157,11 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
 
     # Shutdown
     logger.info("Shutting down Plantation Model service")
+
+    # Note: Streaming subscriptions run in a daemon thread with its own cleanup
+    # The thread will be terminated when the main process exits
+    logger.info("Subscriptions will be closed by daemon thread")
+
     await stop_grpc_server()
 
     # Close Collection client (Story 1.7)
@@ -153,9 +196,8 @@ app.add_middleware(
 )
 
 # Include routers
+# Note: HTTP event handlers removed in Story 0.6.5 - using DAPR streaming subscriptions
 app.include_router(health.router)
-app.include_router(quality_result_router)
-app.include_router(weather_updated_router)
 
 # Instrument FastAPI with OpenTelemetry
 instrument_fastapi(app)
@@ -169,27 +211,6 @@ async def root() -> dict[str, str]:
         "version": settings.service_version,
         "status": "running",
     }
-
-
-@app.get("/dapr/subscribe", include_in_schema=False)
-async def dapr_subscribe() -> list[dict]:
-    """DAPR subscription discovery endpoint.
-
-    DAPR calls this endpoint at startup to discover Pub/Sub subscriptions.
-    See: https://docs.dapr.io/developing-applications/building-blocks/pubsub/subscription-methods/
-    """
-    return [
-        {
-            "pubsubname": "pubsub",
-            "topic": "collection.quality_result.received",
-            "route": "/api/v1/events/quality-result",
-        },
-        {
-            "pubsubname": "pubsub",
-            "topic": "weather.observation.updated",
-            "route": "/api/v1/events/weather-updated",
-        },
-    ]
 
 
 if __name__ == "__main__":
