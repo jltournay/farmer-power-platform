@@ -11,7 +11,7 @@ Architecture (ADR-011):
 """
 
 import threading
-from collections.abc import AsyncGenerator, Callable
+from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 
 import structlog
@@ -22,10 +22,9 @@ from plantation_model.api.grpc_server import start_grpc_server, stop_grpc_server
 from plantation_model.config import settings
 from plantation_model.domain.services import QualityEventProcessor
 from plantation_model.events.subscriber import (
-    run_subscriptions_forever,
+    run_streaming_subscriptions,
     set_quality_event_processor,
     set_regional_weather_repo,
-    start_subscriptions,
 )
 from plantation_model.infrastructure.collection_client import CollectionClient
 from plantation_model.infrastructure.dapr_client import DaprPubSubClient
@@ -86,10 +85,6 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     # Initialize OpenTelemetry tracing (must be early for other instrumentation)
     setup_tracing()
 
-    # Track subscription close functions for cleanup
-    subscription_closers: list[Callable[[], None]] = []
-    subscription_thread: threading.Thread | None = None
-
     # Initialize MongoDB connection
     try:
         await get_mongodb_client()
@@ -125,21 +120,15 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
         logger.info("Subscription handler dependencies configured")
 
         # Start DAPR streaming subscriptions in background thread (Story 0.6.5)
-        # Subscriptions are outbound - no extra HTTP port needed (ADR-011)
-        subscription_closers = start_subscriptions()
-
-        if subscription_closers:
-            subscription_thread = threading.Thread(
-                target=run_subscriptions_forever,
-                args=(subscription_closers,),
-                daemon=True,
-                name="dapr-subscriptions",
-            )
-            subscription_thread.start()
-            logger.info(
-                "DAPR streaming subscriptions started",
-                subscription_count=len(subscription_closers),
-            )
+        # ADR-010/011 pattern: run_streaming_subscriptions keeps DaprClient alive
+        # Subscriptions are outbound - no extra HTTP port needed
+        subscription_thread = threading.Thread(
+            target=run_streaming_subscriptions,
+            daemon=True,
+            name="dapr-subscriptions",
+        )
+        subscription_thread.start()
+        logger.info("DAPR streaming subscriptions thread started")
 
     except Exception as e:
         logger.warning("MongoDB connection failed at startup", error=str(e))
@@ -159,13 +148,9 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     # Shutdown
     logger.info("Shutting down Plantation Model service")
 
-    # Close subscriptions (Story 0.6.5)
-    for close_fn in subscription_closers:
-        try:
-            close_fn()
-        except Exception as e:
-            logger.warning("Error closing subscription", error=str(e))
-    logger.info("Subscriptions closed")
+    # Note: Streaming subscriptions run in a daemon thread with its own cleanup
+    # The thread will be terminated when the main process exits
+    logger.info("Subscriptions will be closed by daemon thread")
 
     await stop_grpc_server()
 
@@ -201,7 +186,7 @@ app.add_middleware(
 )
 
 # Include routers
-# Note: Event handlers removed in Story 0.6.5 - using DAPR streaming subscriptions
+# Note: HTTP event handlers removed in Story 0.6.5 - using DAPR streaming subscriptions
 app.include_router(health.router)
 
 # Instrument FastAPI with OpenTelemetry

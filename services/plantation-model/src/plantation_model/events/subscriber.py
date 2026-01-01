@@ -15,7 +15,6 @@ Key Pattern:
 import asyncio
 import json
 import time
-from collections.abc import Callable
 from datetime import date, datetime
 from typing import TYPE_CHECKING
 
@@ -368,27 +367,34 @@ def handle_weather_updated(message) -> TopicEventResponse:
 
 
 # =============================================================================
-# Subscription Startup
+# Subscription Startup (ADR-010 Pattern)
 # =============================================================================
 
+# Module-level event for signaling subscription readiness
+subscription_ready = False
 
-def start_subscriptions() -> list[Callable[[], None]]:
-    """Start all pub/sub subscriptions during service startup.
 
-    Uses DAPR SDK streaming subscriptions (ADR-010).
-    No extra HTTP port needed - subscriptions are outbound.
+def run_streaming_subscriptions() -> None:
+    """Run streaming subscriptions in a background thread.
 
-    Returns:
-        List of close functions for graceful shutdown.
+    This function matches the PoC pattern from ADR-010:
+    - DaprClient created and kept alive in this function
+    - Subscriptions established
+    - Infinite loop keeps client alive until shutdown
+
+    Called from a daemon thread in main.py.
     """
+    global subscription_ready
+
     logger.info("Starting DAPR streaming subscriptions...")
 
     # Wait for DAPR sidecar to be ready
-    time.sleep(3)
+    time.sleep(5)
 
-    close_fns: list[Callable[[], None]] = []
+    close_fns: list = []  # list[Callable[[], None]]
 
     try:
+        # Create client - must stay alive for subscriptions to work
         client = DaprClient()
 
         # Subscribe to quality results with DLQ
@@ -419,31 +425,22 @@ def start_subscriptions() -> list[Callable[[], None]]:
             dlq="events.dlq",
         )
 
+        subscription_ready = True
         logger.info(
-            "All subscriptions started successfully",
+            "All subscriptions started - keeping alive",
             subscription_count=len(close_fns),
         )
 
-    except Exception as e:
-        logger.exception("Failed to establish subscriptions", error=str(e))
-        # Don't raise - service can still operate, just won't receive events
-        # Kubernetes will restart if health checks fail
-
-    return close_fns
-
-
-def run_subscriptions_forever(close_fns: list[Callable[[], None]]) -> None:
-    """Run subscription loop forever (blocking).
-
-    Called from background thread in main.py.
-    """
-    logger.info("Subscription loop started - keeping subscriptions alive")
-    try:
+        # Keep subscriptions alive - client must not be garbage collected
         while True:
             time.sleep(1)
+
     except KeyboardInterrupt:
         logger.info("Subscription loop interrupted")
+    except Exception as e:
+        logger.exception("Subscription error", error=str(e))
     finally:
+        # Clean up subscriptions
         for close_fn in close_fns:
             try:
                 close_fn()

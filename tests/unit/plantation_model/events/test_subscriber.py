@@ -224,43 +224,88 @@ class TestWeatherUpdatedHandler:
 
 
 class TestSubscriptionStartup:
-    """Tests for subscription startup."""
+    """Tests for subscription startup (ADR-010 pattern)."""
 
-    def test_start_subscriptions_returns_close_functions(self):
-        """start_subscriptions returns close functions for cleanup."""
+    def test_run_streaming_subscriptions_creates_subscriptions(self):
+        """run_streaming_subscriptions creates subscriptions with correct topics."""
         from plantation_model.events import subscriber
 
         mock_client = MagicMock()
         mock_close_fn = MagicMock()
         mock_client.subscribe_with_handler.return_value = mock_close_fn
 
+        # Track sleep calls and raise exception on second call to break loop
+        sleep_call_count = [0]
+
+        def mock_sleep(seconds):
+            sleep_call_count[0] += 1
+            if sleep_call_count[0] > 1:
+                raise KeyboardInterrupt("Test interrupt")
+
         with (
             patch.object(subscriber, "DaprClient", return_value=mock_client),
-            patch.object(subscriber.time, "sleep"),  # Skip sleep
+            patch.object(subscriber.time, "sleep", side_effect=mock_sleep),
         ):
-            close_fns = subscriber.start_subscriptions()
+            subscriber.run_streaming_subscriptions()
 
         # Should have 2 subscriptions (quality_result and weather_updated)
-        assert len(close_fns) == 2
-        assert mock_close_fn in close_fns
+        assert mock_client.subscribe_with_handler.call_count == 2
 
-    def test_start_subscriptions_configures_dlq(self):
-        """start_subscriptions configures dead_letter_topic for DLQ."""
+        # Verify topics
+        calls = mock_client.subscribe_with_handler.call_args_list
+        topics = [call.kwargs.get("topic") for call in calls]
+        assert "collection.quality_result.received" in topics
+        assert "weather.observation.updated" in topics
+
+    def test_run_streaming_subscriptions_configures_dlq(self):
+        """run_streaming_subscriptions configures dead_letter_topic for DLQ."""
         from plantation_model.events import subscriber
 
         mock_client = MagicMock()
         mock_client.subscribe_with_handler.return_value = MagicMock()
 
+        # Break loop after first iteration
+        sleep_call_count = [0]
+
+        def mock_sleep(seconds):
+            sleep_call_count[0] += 1
+            if sleep_call_count[0] > 1:
+                raise KeyboardInterrupt("Test interrupt")
+
         with (
             patch.object(subscriber, "DaprClient", return_value=mock_client),
-            patch.object(subscriber.time, "sleep"),
+            patch.object(subscriber.time, "sleep", side_effect=mock_sleep),
         ):
-            subscriber.start_subscriptions()
+            subscriber.run_streaming_subscriptions()
 
-        # Check that DLQ was configured
+        # Check that DLQ was configured for all subscriptions
         calls = mock_client.subscribe_with_handler.call_args_list
         for call in calls:
             assert call.kwargs.get("dead_letter_topic") == "events.dlq"
+
+    def test_run_streaming_subscriptions_sets_ready_flag(self):
+        """run_streaming_subscriptions sets subscription_ready flag."""
+        from plantation_model.events import subscriber
+
+        mock_client = MagicMock()
+        mock_client.subscribe_with_handler.return_value = MagicMock()
+
+        # Reset flag before test
+        subscriber.subscription_ready = False
+
+        # Break loop after checking flag is set
+        def mock_sleep(seconds):
+            if subscriber.subscription_ready:
+                raise KeyboardInterrupt("Test interrupt")
+
+        with (
+            patch.object(subscriber, "DaprClient", return_value=mock_client),
+            patch.object(subscriber.time, "sleep", side_effect=mock_sleep),
+        ):
+            subscriber.run_streaming_subscriptions()
+
+        # Flag should have been set before loop was interrupted
+        assert subscriber.subscription_ready is True
 
 
 class TestTopicEventResponseTypes:
