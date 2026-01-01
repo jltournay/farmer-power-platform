@@ -351,8 +351,22 @@ gh run list --branch story/0-6-1-shared-pydantic-models --limit 5
 ```
 **CI output:**
 ```
-CI run 20637846521: success (lint, unit-tests, integration-tests all passed)
-E2E evidence validation pending - updating story file with checkmarks
+Quality CI run 20640156163: success (lint, unit-tests, integration-tests all passed)
+E2E CI run 20640201878: 71 passed, 3 failed (Story 0.4.8 grading validation failures only)
+
+Note: Dockerfile fix required (commit 458c57a) - fp-common was missing from:
+- services/plantation-model/Dockerfile
+- mcp-servers/plantation-mcp/Dockerfile
+```
+
+**6. Dockerfile Fix Applied:**
+The E2E CI initially failed because the Dockerfiles were not updated to include fp-common.
+This was a Story 0.6.1 regression that was caught by E2E CI and fixed:
+
+```dockerfile
+# Added to plantation-model and plantation-mcp Dockerfiles:
+COPY --from=builder --chown=appuser:appgroup /app/libs/fp-common/fp_common/ ./libs/fp-common/fp_common/
+ENV PYTHONPATH=/app/src:/app/libs/fp-proto/src:/app/libs/fp-common
 ```
 
 ---
