@@ -4,6 +4,7 @@
 **Date:** 2025-12-31
 **Deciders:** Winston (Architect), Murat (TEA), Amelia (Dev), Jeanlouistournay
 **Related Stories:** Epic 0-4 (Grading Validation)
+**Validated By:** PoC at `tests/e2e/poc-dapr-patterns/` (resilience test passing)
 
 ## Context
 
@@ -146,8 +147,36 @@ Re-evaluate this decision if:
 2. **Performance impact significant** - May need circuit breaker pattern
 3. **Different retry strategies needed** - May need per-client configuration
 
+## PoC Validation
+
+The retry and reconnection pattern was validated in a standalone PoC: `tests/e2e/poc-dapr-patterns/`
+
+| Test | Status | What It Validates |
+|------|--------|-------------------|
+| gRPC Client Resilience (ADR-005) | ✅ Pass | Auto-reconnection after server restart |
+
+**Test scenario:**
+1. Service A calls Service B via DAPR gRPC proxy → succeeds
+2. Service B + DAPR sidecar are restarted (simulates pod restart)
+3. Service A calls Service B again → succeeds (auto-reconnected)
+
+**Key findings from PoC:**
+- With proper gRPC keepalive settings, connections recover quickly
+- Tenacity retry decorator provides robust error handling
+- Reset channel/stub on error forces reconnection on next attempt
+- DAPR mesh recovers automatically when both service and sidecar restart together
+
+Run the resilience test:
+```bash
+cd tests/e2e/poc-dapr-patterns
+docker compose up --build -d
+sleep 20
+python run_tests.py --test resilience
+docker compose down -v
+```
+
 ## References
 
 - Epic 0-4: Grading Validation
 - Reference: PlantationClient in `plantation-mcp` (correct pattern)
-- Related: ADR-004 (Type Safety - same epic findings)
+- Related: ADR-004 (Type Safety), ADR-010 (DAPR Patterns), ADR-011 (Service Architecture)

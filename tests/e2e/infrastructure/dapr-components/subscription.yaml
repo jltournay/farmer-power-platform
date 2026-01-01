@@ -1,0 +1,23 @@
+apiVersion: dapr.io/v2alpha1
+kind: Subscription
+metadata:
+  name: quality-result-subscription
+spec:
+  pubsubname: pubsub
+  topic: collection.quality_result.received
+  routes:
+    default: /api/v1/events/quality-result
+scopes:
+  - plantation-model
+---
+apiVersion: dapr.io/v2alpha1
+kind: Subscription
+metadata:
+  name: weather-updated-subscription
+spec:
+  pubsubname: pubsub
+  topic: weather.observation.updated
+  routes:
+    default: /api/v1/events/weather-updated
+scopes:
+  - plantation-model

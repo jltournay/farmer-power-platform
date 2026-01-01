@@ -168,8 +168,8 @@ services:
     command: [
       "./daprd",
       "-app-id", "plantation-model",
-      "-app-port", "50051",
-      "-app-protocol", "grpc",
+      "-app-port", "8000",
+      "-app-protocol", "http",
       "-dapr-http-port", "3500",
       "-dapr-grpc-port", "50001",
       "-components-path", "/components"
@@ -241,7 +241,8 @@ services:
 
   # ==========================================================================
   # Plantation MCP Server + DAPR Sidecar
-  # Plantation MCP calls Plantation Model via DAPR gRPC service invocation
+  # Plantation MCP calls Plantation Model via direct gRPC (not DAPR service invocation)
+  # Note: DAPR sidecar is kept for potential future use but not used for service calls
   # ==========================================================================
 
   plantation-mcp:
@@ -254,6 +255,9 @@ services:
     environment:
       PLANTATION_MCP_GRPC_PORT: "50051"
       PLANTATION_MCP_PLANTATION_APP_ID: plantation-model
+      # Direct gRPC connection to Plantation Model (bypasses DAPR service invocation)
+      # Required because DAPR sidecar is configured for HTTP (pub/sub) not gRPC
+      PLANTATION_MCP_PLANTATION_GRPC_HOST: "plantation-model:50051"
       PLANTATION_MCP_LOG_LEVEL: DEBUG
     depends_on:
       plantation-model:

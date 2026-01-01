@@ -72,12 +72,12 @@ class CollectionClient:
         if self._client is None:
             self._client = AsyncIOMotorClient(self._mongodb_uri)
             self._db = self._client[self._database_name]
-        return self._db["documents"]
+        return self._db["quality_documents"]
 
     @retry(
-        retry=retry_if_exception_type(ConnectionError),
-        stop=stop_after_attempt(3),
-        wait=wait_exponential(multiplier=1, min=1, max=10),
+        retry=retry_if_exception_type((ConnectionError, DocumentNotFoundError)),
+        stop=stop_after_attempt(5),
+        wait=wait_exponential(multiplier=0.5, min=0.5, max=5),
         reraise=True,
     )
     async def get_document(self, document_id: str) -> dict[str, Any]:

@@ -50,29 +50,18 @@ from typing import Any
 import pytest
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# SKIP REASON - Production bugs blocking these tests
+# NOTE: Production bug fixed - extracted_fields mismatch resolved
 # ═══════════════════════════════════════════════════════════════════════════════
 #
-# These tests are skipped due to TWO production bugs discovered during Story 0.4.8:
+# BUG FIXED: Document field mismatch (attributes vs extracted_fields)
+#   - QualityEventProcessor methods now correctly read from 'extracted_fields'
+#   - Fix applied to: _get_bag_summary, _get_grading_model_id, _get_factory_id, etc.
 #
-# BUG 1: Grading rules not implemented
-#   - GradingModel has reject_conditions/conditional_reject data fields
-#   - But QualityEventProcessor doesn't apply these rules
-#   - It relies on QC Analyzer to pre-calculate grades (design question)
+# DESIGN NOTE: Grading rules (reject_conditions, conditional_reject) are NOT
+# implemented in Plantation Model. Per architecture, QC Analyzer calculates grades
+# and sends pre-calculated grade_counts. Tests send pre-calculated grades to
+# simulate QC Analyzer behavior.
 #
-# BUG 2: Document field mismatch (attributes vs extracted_fields)
-#   - QualityEventProcessor._get_bag_summary() looks for document["attributes"]["bag_summary"]
-#   - But Collection Model stores data in document["extracted_fields"]
-#   - The processor never finds bag_summary, so grade_counts stay empty
-#
-# See story file: _bmad-output/sprint-artifacts/0-4-8-tbk-ktda-grading-validation.md
-# for full retrospective documentation.
-#
-SKIP_REASON = (
-    "BLOCKED: Production bugs - (1) QualityEventProcessor._get_bag_summary() looks for "
-    "'attributes.bag_summary' but Collection Model stores in 'extracted_fields', "
-    "(2) Grading rules (reject_conditions) not applied. See RETRO-0.4.8 in story file."
-)
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # TEST CONSTANTS
@@ -178,6 +167,9 @@ def create_grading_quality_event(
         "farmer_id": farmer_id,
         "collection_point_id": collection_point_id,
         "timestamp": "2025-01-15T09:00:00Z",
+        "grading_model_id": "tbk_kenya_tea_v1",  # Required by QualityEventProcessor
+        "grading_model_version": "1.0.0",
+        "factory_id": "FAC-E2E-001",
         "leaf_analysis": {
             "leaf_type": leaf_type,
             "color_score": 80,
@@ -300,7 +292,6 @@ async def ingest_quality_event_and_wait(
 
 
 @pytest.mark.e2e
-@pytest.mark.skip(reason=SKIP_REASON)
 class TestTBKPrimaryGrade:
     """Test TBK binary grading - Primary grade for two_leaves_bud (AC1)."""
 
@@ -366,7 +357,6 @@ class TestTBKPrimaryGrade:
 
 
 @pytest.mark.e2e
-@pytest.mark.skip(reason=SKIP_REASON)
 class TestTBKSecondaryGradeRejectCondition:
     """Test TBK binary grading - Secondary grade for coarse_leaf (AC2)."""
 
@@ -429,7 +419,6 @@ class TestTBKSecondaryGradeRejectCondition:
 
 
 @pytest.mark.e2e
-@pytest.mark.skip(reason=SKIP_REASON)
 class TestTBKConditionalReject:
     """Test TBK conditional reject - hard banji → Secondary (AC3)."""
 
@@ -493,7 +482,6 @@ class TestTBKConditionalReject:
 
 
 @pytest.mark.e2e
-@pytest.mark.skip(reason=SKIP_REASON)
 class TestTBKSoftBanjiAcceptable:
     """Test TBK soft banji bypasses conditional reject → Primary (AC4)."""
 
@@ -555,7 +543,6 @@ class TestTBKSoftBanjiAcceptable:
 
 
 @pytest.mark.e2e
-@pytest.mark.skip(reason=SKIP_REASON)
 class TestKTDAGradeA:
     """Test KTDA ternary grading - Grade A for fine + optimal (AC5)."""
 
@@ -620,7 +607,6 @@ class TestKTDAGradeA:
 
 
 @pytest.mark.e2e
-@pytest.mark.skip(reason=SKIP_REASON)
 class TestKTDARejected:
     """Test KTDA ternary grading - Rejected for stalks (AC6)."""
 

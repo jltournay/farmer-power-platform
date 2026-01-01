@@ -113,12 +113,16 @@ def sample_farmer_performance() -> FarmerPerformance:
 
 @pytest.fixture
 def sample_document() -> dict:
-    """Create a sample quality document for testing."""
+    """Create a sample quality document for testing.
+
+    NOTE: Document structure matches DocumentIndex model from collection_model.
+    Fields are stored in 'extracted_fields' (not 'attributes').
+    """
     return {
         "document_id": "doc-123",
         "source_id": "qc-analyzer-result",
         "farmer_id": "WM-0001",
-        "attributes": {
+        "extracted_fields": {
             "grading_model_id": "tbk_kenya_tea_v1",
             "grading_model_version": "1.0.0",
             "factory_id": "factory-001",
@@ -133,6 +137,11 @@ def sample_document() -> dict:
                     "coarse_leaf": 3,
                 },
             },
+        },
+        "linkage_fields": {
+            "farmer_id": "WM-0001",
+            "factory_id": "factory-001",
+            "grading_model_id": "tbk_kenya_tea_v1",
         },
     }
 

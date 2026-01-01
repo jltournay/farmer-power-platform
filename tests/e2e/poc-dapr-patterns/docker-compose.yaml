@@ -1,0 +1,125 @@
+# PoC: DAPR Patterns Validation (ADR-010, ADR-011)
+#
+# This docker-compose validates:
+# 1. gRPC service invocation via DAPR proxy
+# 2. Streaming pub/sub with subscribe_with_handler()
+# 3. Dead letter queue (DLQ) handling
+# 4. Retry behavior
+#
+# Usage:
+#   docker compose up --build
+#   python run_tests.py
+
+services:
+  # ==========================================================================
+  # Infrastructure
+  # ==========================================================================
+
+  redis:
+    image: redis:7-alpine
+    container_name: poc-redis
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks:
+      - poc-network
+
+  # ==========================================================================
+  # Service A + DAPR Sidecar
+  # ==========================================================================
+
+  poc-service-a:
+    build:
+      context: .
+      dockerfile: Dockerfile.service-a
+    container_name: poc-service-a
+    ports:
+      - "8001:8000"   # FastAPI health
+      - "50061:50051" # gRPC
+    environment:
+      GRPC_PORT: "50051"
+      HTTP_PORT: "8000"
+      DAPR_GRPC_PORT: "50001"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+    networks:
+      - poc-network
+
+  poc-service-a-dapr:
+    image: daprio/daprd:1.14.0
+    container_name: poc-service-a-dapr
+    command: [
+      "./daprd",
+      "-app-id", "poc-service-a",
+      "-app-port", "50051",
+      "-app-protocol", "grpc",
+      "-dapr-http-port", "3500",
+      "-dapr-grpc-port", "50001",
+      "-components-path", "/components"
+    ]
+    volumes:
+      - ./dapr-components:/components
+    network_mode: "service:poc-service-a"
+    depends_on:
+      poc-service-a:
+        condition: service_started
+      redis:
+        condition: service_healthy
+
+  # ==========================================================================
+  # Service B + DAPR Sidecar
+  # ==========================================================================
+
+  poc-service-b:
+    build:
+      context: .
+      dockerfile: Dockerfile.service-b
+    container_name: poc-service-b
+    ports:
+      - "8002:8000"   # FastAPI health
+      - "50062:50051" # gRPC
+    environment:
+      GRPC_PORT: "50051"
+      HTTP_PORT: "8000"
+      DAPR_GRPC_PORT: "50001"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+    networks:
+      - poc-network
+
+  poc-service-b-dapr:
+    image: daprio/daprd:1.14.0
+    container_name: poc-service-b-dapr
+    command: [
+      "./daprd",
+      "-app-id", "poc-service-b",
+      "-app-port", "50051",
+      "-app-protocol", "grpc",
+      "-dapr-http-port", "3500",
+      "-dapr-grpc-port", "50001",
+      "-components-path", "/components"
+    ]
+    volumes:
+      - ./dapr-components:/components
+    network_mode: "service:poc-service-b"
+    depends_on:
+      poc-service-b:
+        condition: service_started
+      redis:
+        condition: service_healthy
+
+networks:
+  poc-network:
+    driver: bridge
