@@ -117,6 +117,93 @@ class TestBlobEventModels:
         assert event.data.etag == '"0xABC"'
 
 
+class TestHandlerSuccessPath:
+    """Tests for handler success path."""
+
+    def test_handler_returns_success_on_valid_blob_event(self):
+        """Handler returns success when blob event is processed successfully."""
+        from unittest.mock import patch
+
+        from collection_model.events import subscriber
+
+        original_source_config = subscriber._source_config_service
+        original_queue = subscriber._ingestion_queue
+        original_loop = subscriber._main_event_loop
+
+        try:
+            # Mock services
+            subscriber._source_config_service = MagicMock()
+            subscriber._ingestion_queue = MagicMock()
+            subscriber._main_event_loop = MagicMock()
+
+            # Mock run_coroutine_threadsafe to return a successful future
+            mock_future = MagicMock()
+            mock_future.result.return_value = True
+
+            message = MagicMock()
+            message.data.return_value = {
+                "id": "event-123",
+                "eventType": "Microsoft.Storage.BlobCreated",
+                "subject": "/blobServices/default/containers/quality-events/blobs/FRM-001/doc.json",
+                "eventTime": "2025-01-01T00:00:00Z",
+                "data": {
+                    "contentLength": 1024,
+                    "eTag": '"0x123"',
+                    "contentType": "application/json",
+                    "blobType": "BlockBlob",
+                },
+            }
+
+            with patch("asyncio.run_coroutine_threadsafe", return_value=mock_future):
+                result = subscriber.handle_blob_event(message)
+
+            assert isinstance(result, TopicEventResponse)
+            assert result.status == TopicEventResponseStatus.success
+
+        finally:
+            subscriber._source_config_service = original_source_config
+            subscriber._ingestion_queue = original_queue
+            subscriber._main_event_loop = original_loop
+
+    def test_handler_returns_drop_on_no_source_config(self):
+        """Handler returns drop when no source config matches container."""
+        from unittest.mock import patch
+
+        from collection_model.events import subscriber
+
+        original_source_config = subscriber._source_config_service
+        original_queue = subscriber._ingestion_queue
+        original_loop = subscriber._main_event_loop
+
+        try:
+            subscriber._source_config_service = MagicMock()
+            subscriber._ingestion_queue = MagicMock()
+            subscriber._main_event_loop = MagicMock()
+
+            # Mock run_coroutine_threadsafe to raise ValueError (no config)
+            mock_future = MagicMock()
+            mock_future.result.side_effect = ValueError("No source config for container: unknown-container")
+
+            message = MagicMock()
+            message.data.return_value = {
+                "id": "event-123",
+                "eventType": "Microsoft.Storage.BlobCreated",
+                "subject": "/blobServices/default/containers/unknown-container/blobs/test.json",
+                "data": {"contentLength": 100},
+            }
+
+            with patch("asyncio.run_coroutine_threadsafe", return_value=mock_future):
+                result = subscriber.handle_blob_event(message)
+
+            assert isinstance(result, TopicEventResponse)
+            assert result.status == TopicEventResponseStatus.drop
+
+        finally:
+            subscriber._source_config_service = original_source_config
+            subscriber._ingestion_queue = original_queue
+            subscriber._main_event_loop = original_loop
+
+
 class TestHandlerEdgeCases:
     """Tests for handler edge cases that don't require async setup."""
 
@@ -249,7 +336,6 @@ class TestSubscriptionModule:
         assert hasattr(subscriber, "handle_blob_event")
         assert hasattr(subscriber, "set_blob_processor")
         assert hasattr(subscriber, "set_main_event_loop")
-        assert hasattr(subscriber, "subscription_ready")
 
     def test_init_exports_expected_functions(self):
         """Verify __init__ exports expected functions."""

@@ -408,9 +408,6 @@ def handle_blob_event(message) -> TopicEventResponse:
 # Subscription Startup (ADR-010 Pattern)
 # =============================================================================
 
-# Module-level flag for subscription readiness
-subscription_ready = False
-
 
 def run_streaming_subscriptions() -> None:
     """Run streaming subscriptions in a background thread.
@@ -422,12 +419,12 @@ def run_streaming_subscriptions() -> None:
 
     Called from a daemon thread in main.py.
     """
-    global subscription_ready
+    from collection_model.config import settings
 
     logger.info("Starting DAPR streaming subscriptions for Collection Model...")
 
-    # Wait for DAPR sidecar to be ready
-    time.sleep(5)
+    # Wait for DAPR sidecar to be ready (configurable via COLLECTION_DAPR_SIDECAR_WAIT_SECONDS)
+    time.sleep(settings.dapr_sidecar_wait_seconds)
 
     close_fns: list = []
 
@@ -450,7 +447,6 @@ def run_streaming_subscriptions() -> None:
             dlq="events.dlq",
         )
 
-        subscription_ready = True
         logger.info(
             "All subscriptions started - keeping alive",
             subscription_count=len(close_fns),
