@@ -36,8 +36,15 @@ This validates all seed JSON files against expected schemas and reports errors. 
 
 ### 2. Start the E2E Stack
 
+> ⚠️ **CRITICAL: Always use `--build` flag!**
+>
+> You MUST rebuild Docker images before running E2E tests. Without `--build`, you test stale cached images and get false positives that pass locally but fail in CI.
+>
+> **Wrong:** `docker compose ... up -d` (uses cached images)
+> **Right:** `docker compose ... up -d --build` (rebuilds with current code)
+
 ```bash
-# From repository root
+# From repository root - ALWAYS include --build
 docker compose -f tests/e2e/infrastructure/docker-compose.e2e.yaml up -d --build
 
 # Wait for all services to be healthy

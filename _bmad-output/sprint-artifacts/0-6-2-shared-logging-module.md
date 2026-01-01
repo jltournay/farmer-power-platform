@@ -1,7 +1,7 @@
 # Story 0.6.2: Shared Logging Module with Runtime Configuration
 
-**Status:** To Do
-**GitHub Issue:** TBD
+**Status:** done
+**GitHub Issue:** #43
 **Epic:** [Epic 0.6: Infrastructure Hardening](../epics/epic-0-6-infrastructure-hardening.md)
 **ADR:** [ADR-009: Logging Standards and Runtime Configuration](../architecture/adr/ADR-009-logging-standards-runtime-configuration.md)
 **Story Points:** 3
@@ -25,13 +25,15 @@ gh run list --branch story/0-6-2-shared-logging-module --limit 3
 
 ### 3. Definition of Done Checklist
 
-- [ ] **Logging module created** - `fp_common/logging.py` exists
-- [ ] **Trace context injection** - OpenTelemetry trace_id/span_id in logs
-- [ ] **Runtime endpoint works** - POST/DELETE `/admin/logging/{logger}` tested
-- [ ] **Unit tests pass** - New tests in tests/unit/fp_common/logging/
-- [ ] **E2E tests pass** - No regressions
-- [ ] **Lint passes** - `ruff check . && ruff format --check .`
-- [ ] **CI workflow passes**
+- [x] **Logging module created** - `fp_common/logging.py` exists
+- [x] **Trace context injection** - OpenTelemetry trace_id/span_id in logs
+- [x] **Runtime endpoint works** - POST/DELETE `/admin/logging/{logger}` tested
+- [x] **Unit tests pass** - New tests in tests/unit/fp_common/logging/ (23 new tests)
+- [x] **E2E tests pass** - No regressions (71 passed, 3 xfailed)
+- [x] **Lint passes** - `ruff check . && ruff format --check .`
+- [x] **CI workflow passes** (Run 20641122957)
+- [x] **E2E CI workflow passes** (Run 20641169035)
+- [x] **Code review passes** - 6 issues found and fixed
 
 ---
 
@@ -53,41 +55,41 @@ So that I can enable DEBUG for specific packages without pod restart.
 
 ## Tasks / Subtasks
 
-- [ ] **Task 1: Create Logging Module** (AC: 1, 2)
-  - [ ] Create `libs/fp-common/fp_common/logging.py`
-  - [ ] Implement `configure_logging(service_name: str)` function
-  - [ ] Configure structlog with JSON renderer
-  - [ ] Add timestamp processor (ISO format)
-  - [ ] Add log level processor
-  - [ ] Add service name context
+- [x] **Task 1: Create Logging Module** (AC: 1, 2)
+  - [x] Create `libs/fp-common/fp_common/logging.py`
+  - [x] Implement `configure_logging(service_name: str)` function
+  - [x] Configure structlog with JSON renderer
+  - [x] Add timestamp processor (ISO format)
+  - [x] Add log level processor
+  - [x] Add service name context
 
-- [ ] **Task 2: Add OpenTelemetry Trace Context** (AC: 2)
-  - [ ] Create `add_trace_context` processor
-  - [ ] Extract trace_id from current span
-  - [ ] Extract span_id from current span
-  - [ ] Handle case when no span is active
+- [x] **Task 2: Add OpenTelemetry Trace Context** (AC: 2)
+  - [x] Create `add_trace_context` processor
+  - [x] Extract trace_id from current span
+  - [x] Extract span_id from current span
+  - [x] Handle case when no span is active
 
-- [ ] **Task 3: Create Admin Router** (AC: 3, 4)
-  - [ ] Create `libs/fp-common/fp_common/admin.py`
-  - [ ] Implement `POST /admin/logging/{logger_name}` endpoint
-  - [ ] Implement `DELETE /admin/logging/{logger_name}` endpoint
-  - [ ] Implement `GET /admin/logging` to list current levels
+- [x] **Task 3: Create Admin Router** (AC: 3, 4)
+  - [x] Create `libs/fp-common/fp_common/admin.py`
+  - [x] Implement `POST /admin/logging/{logger_name}` endpoint
+  - [x] Implement `DELETE /admin/logging/{logger_name}` endpoint
+  - [x] Implement `GET /admin/logging` to list current levels
 
-- [ ] **Task 4: Create Unit Tests** (AC: All)
-  - [ ] Create `tests/unit/fp_common/logging/test_configure_logging.py`
-  - [ ] Create `tests/unit/fp_common/logging/test_trace_context.py`
-  - [ ] Create `tests/unit/fp_common/admin/test_logging_endpoint.py`
+- [x] **Task 4: Create Unit Tests** (AC: All)
+  - [x] Create `tests/unit/fp_common/logging/test_configure_logging.py`
+  - [x] Create `tests/unit/fp_common/logging/test_trace_context.py`
+  - [x] Create `tests/unit/fp_common/admin/test_logging_endpoint.py`
 
-- [ ] **Task 5: Verify Integration** (AC: All)
-  - [ ] Run unit tests: `pytest tests/unit/fp_common/ -v`
-  - [ ] Run E2E tests: verify no regressions
-  - [ ] Run lint: `ruff check . && ruff format --check .`
+- [x] **Task 5: Verify Integration** (AC: All)
+  - [x] Run unit tests: `pytest tests/unit/fp_common/ -v` (142 tests passed)
+  - [x] Run E2E tests: verify no regressions (71 passed, 3 xfailed)
+  - [x] Run lint: `ruff check . && ruff format --check .`
 
 ## Git Workflow (MANDATORY)
 
 ### Story Start
-- [ ] GitHub Issue created
-- [ ] Feature branch created:
+- [x] GitHub Issue created (#43)
+- [x] Feature branch created:
   ```bash
   git checkout main && git pull origin main
   git checkout -b story/0-6-2-shared-logging-module
@@ -295,28 +297,34 @@ def create_admin_router() -> APIRouter:
 
 **1. Unit Tests:**
 ```bash
-pytest tests/unit/fp_common/logging/ -v
-pytest tests/unit/fp_common/admin/ -v
+pytest tests/unit/fp_common/ -v
 ```
 **Output:**
 ```
-(paste test output here)
+144 passed, 13 warnings in 0.69s
 ```
+Including 23 new tests:
+- 8 tests in test_configure_logging.py
+- 3 tests in test_trace_context.py
+- 12 tests in test_logging_endpoint.py (including 2 added in code review)
 
 **2. E2E Tests Pass:**
 ```bash
-PYTHONPATH="${PYTHONPATH}:.:libs/fp-proto/src" pytest tests/e2e/scenarios/ -v
+docker compose -f tests/e2e/infrastructure/docker-compose.e2e.yaml up -d --build
+PYTHONPATH="${PYTHONPATH}:.:libs/fp-proto/src:libs/fp-common" pytest tests/e2e/scenarios/ -v
+docker compose -f tests/e2e/infrastructure/docker-compose.e2e.yaml down -v
 ```
 **Output:**
 ```
-(paste test output here)
+71 passed, 3 xfailed in 96.14s (0:01:36)
 ```
+All E2E tests pass without modification (as expected - this story adds shared infrastructure without changing behavior).
 
 **3. Lint Check:**
 ```bash
 ruff check . && ruff format --check .
 ```
-**Lint passed:** [ ] Yes / [ ] No
+**Lint passed:** [x] Yes / [ ] No
 
 ---
 
@@ -362,6 +370,33 @@ Is failure related to logging changes?
     │
     └── NO (unrelated failure) ──► Investigate per Mental Model
 ```
+
+---
+
+## Code Review Evidence
+
+**Reviewer:** Claude Opus 4.5 (Code Review Agent)
+**Review Date:** 2026-01-01
+**Outcome:** ✅ APPROVED (after fixes)
+
+### Issues Found and Fixed
+
+| # | Severity | Issue | Resolution |
+|---|----------|-------|------------|
+| 1 | HIGH | Invalid log level returns HTTP 200 | Fixed: Now returns HTTP 400 with HTTPException |
+| 2 | MEDIUM | Missing opentelemetry-sdk dev dependency | Fixed: Added to pyproject.toml |
+| 3 | MEDIUM | No input length validation for logger_name | Fixed: Added max_length=256 Path validation |
+| 4 | MEDIUM | Missing child logger propagation test (AC3) | Fixed: Added test_child_logger_inherits_parent_level |
+| 5 | LOW | Incorrect type hint for logger parameter | Fixed: Changed to WrappedLogger type alias |
+| 6 | LOW | reset_logging() incomplete | Fixed: Now resets stdlib logging handlers |
+
+### Post-Fix Verification
+
+- **Unit Tests:** 144 passed (was 142, +2 new tests)
+- **E2E Tests:** 71 passed, 3 xfailed
+- **Lint:** All checks passed
+- **CI Run:** 20641122957 ✅
+- **E2E CI Run:** 20641169035 ✅
 
 ---
 

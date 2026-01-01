@@ -351,16 +351,19 @@
   <step n="7b" goal="Run E2E tests locally (MANDATORY)">
     <critical>E2E tests MUST pass locally before marking story ready for review - NO EXCEPTIONS</critical>
     <critical>This step CANNOT be skipped - story will be rejected without E2E evidence</critical>
+    <critical>Docker images MUST be rebuilt before running E2E tests - stale images cause false positives</critical>
 
     <action>Check if E2E test infrastructure exists: tests/e2e/infrastructure/docker-compose.e2e.yaml</action>
 
     <check if="E2E infrastructure exists">
       <output>🧪 **Starting E2E Test Suite (MANDATORY)**
         E2E tests must pass before story can move to review status.
+
+        ⚠️ **IMPORTANT:** Docker images will be rebuilt to ensure you're testing current code.
       </output>
 
-      <action>Start E2E infrastructure:
-        docker compose -f tests/e2e/infrastructure/docker-compose.e2e.yaml up -d
+      <action>Rebuild and start E2E infrastructure (--build is MANDATORY to avoid testing stale images):
+        docker compose -f tests/e2e/infrastructure/docker-compose.e2e.yaml up -d --build
       </action>
       <action>Wait for services to be healthy (use docker compose logs to verify)</action>
       <action>Run E2E test suite:

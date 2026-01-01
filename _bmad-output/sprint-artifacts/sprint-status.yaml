@@ -111,7 +111,7 @@ development_status:
   # Implements ADRs: 004-011 (35 story points total)
   epic-0-6: in-progress
   0-6-1-shared-pydantic-models: done  # ADR-004, 5 points, github_issue: 41, PR: #42
-  0-6-2-shared-logging-module: ready-for-dev  # ADR-009, 3 points
+  0-6-2-shared-logging-module: done  # ADR-009, 3 points, github_issue: 43, PR: #44
   0-6-3-grpc-retry-ai-model-client: ready-for-dev  # ADR-005, 2 points
   0-6-4-grpc-retry-iteration-resolver: ready-for-dev  # ADR-005, 2 points
   0-6-5-plantation-streaming-subscriptions: ready-for-dev  # ADR-010/011, 5 points, prereq: 0.6.2

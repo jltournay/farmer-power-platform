@@ -99,10 +99,11 @@ You create:    Own todo: Unit tests → Lint → Push → Done  ← WRONG! (skip
 
 **BEFORE marking ANY story complete or pushing final commits:**
 
-1. **Start E2E infrastructure:**
+1. **Rebuild and start E2E infrastructure (--build is MANDATORY):**
    ```bash
-   docker compose -f tests/e2e/infrastructure/docker-compose.e2e.yaml up -d
+   docker compose -f tests/e2e/infrastructure/docker-compose.e2e.yaml up -d --build
    ```
+   > ⚠️ **WARNING:** You MUST use `--build` to rebuild Docker images. Without it, you test stale code and get false positives that fail in CI.
 
 2. **Run E2E test suite:**
    ```bash
