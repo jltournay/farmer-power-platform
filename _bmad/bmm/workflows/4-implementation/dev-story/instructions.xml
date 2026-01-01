@@ -481,9 +481,9 @@
     </check>
   </step>
 
-  <step n="9b" goal="Push to story branch and verify CI E2E passes (MANDATORY)">
-    <critical>CI E2E tests MUST pass on the story branch before story can be merged</critical>
-    <critical>Story remains in "progress" status until CI and E2E CI verification complete</critical>
+  <step n="9b" goal="Push to story branch and verify Quality CI passes (MANDATORY)">
+    <critical>Quality CI (ci.yaml) MUST pass on the story branch before proceeding</critical>
+    <critical>Quality CI is AUTO-TRIGGERED on push - verify it completes successfully</critical>
 
     <!-- Push changes to story branch -->
     <action>Ensure all changes are committed to the story branch</action>
@@ -493,64 +493,167 @@
 
     <output>🚀 **Pushed to Story Branch**
       Branch: {{story_branch}}
-      Waiting for CI to complete...
+      Waiting for Quality CI (ci.yaml) to complete...
     </output>
 
-    <!-- Wait and verify CI -->
-    <action>Wait ~30 seconds for CI to start</action>
-    <action>Check CI status on story branch:
-      gh run list --branch {{story_branch}} --limit 3
+    <!-- Wait and verify Quality CI -->
+    <action>Wait ~30 seconds for Quality CI to start</action>
+    <action>Check Quality CI status on story branch:
+      gh run list --workflow=ci.yaml --branch {{story_branch}} --limit 1
     </action>
 
-    <check if="CI run is in progress">
-      <output>⏳ **CI Running on Story Branch**
-        Run: {{run_id}}
+    <check if="Quality CI run is in progress">
+      <output>⏳ **Quality CI Running on Story Branch**
+        Workflow: ci.yaml
+        Run: {{quality_ci_run_id}}
         Status: In Progress
 
         Wait for completion before proceeding...
       </output>
-      <action>Monitor CI status until complete:
-        gh run watch {{run_id}}
+      <action>Monitor Quality CI status until complete:
+        gh run watch {{quality_ci_run_id}}
       </action>
     </check>
 
-    <check if="CI E2E job passed">
-      <output>✅ **CI E2E Passed on Story Branch**
+    <check if="Quality CI passed">
+      <output>✅ **Quality CI Passed**
+        Workflow: ci.yaml
         Branch: {{story_branch}}
-        Run: {{run_id}}
-        E2E Status: PASSED
+        Run: {{quality_ci_run_id}}
+        Status: PASSED (lint, format, unit tests)
 
-        Story is ready for code review and merge.
+        Proceeding to E2E CI verification...
       </output>
-      <action>Record CI run ID in story file Dev Agent Record</action>
+      <action>Record Quality CI run ID in story file Dev Agent Record</action>
     </check>
 
-    <check if="CI E2E job failed">
+    <check if="Quality CI failed">
       <action>Get failure details:
-        gh run view {{run_id}} --log-failed
+        gh run view {{quality_ci_run_id}} --log-failed
       </action>
-      <output>❌ **CI E2E Failed on Story Branch**
+      <output>❌ **Quality CI Failed on Story Branch**
+        Workflow: ci.yaml
         Branch: {{story_branch}}
-        Run: {{run_id}}
+        Run: {{quality_ci_run_id}}
 
         **Failure Details:**
         {{failure_logs}}
 
-        HALT: Fix E2E failures before story can proceed.
+        HALT: Fix Quality CI failures before proceeding.
       </output>
-      <action>HALT: "CI E2E failed on story branch - fix before proceeding"</action>
+      <action>HALT: "Quality CI (ci.yaml) failed - fix before proceeding"</action>
     </check>
 
-    <!-- Update story file with CI evidence -->
-    <action>Add CI verification evidence to story file:
+    <!-- Update story file with Quality CI evidence -->
+    <action>Add Quality CI verification evidence to story file:
       - Branch: {{story_branch}}
-      - CI Run ID: {{run_id}}
-      - E2E Status: PASSED
+      - Workflow: ci.yaml
+      - Quality CI Run ID: {{quality_ci_run_id}}
+      - Quality CI Status: PASSED
       - Verification Date: {{date}}
     </action>
   </step>
 
-  <step n="9c" goal="Update GitHub issue with development completion" tag="github-update">
+  <step n="9c" goal="Trigger and verify E2E CI passes (MANDATORY - MANUAL TRIGGER)">
+    <critical>E2E CI (e2e.yaml) MUST be MANUALLY TRIGGERED - it does NOT auto-run on push</critical>
+    <critical>You MUST trigger, wait, and verify E2E CI passes before proceeding</critical>
+    <critical>This step CANNOT be skipped - story will be rejected without E2E CI evidence</critical>
+
+    <output>🧪 **E2E CI Verification (MANUAL TRIGGER REQUIRED)**
+      E2E workflow must be manually triggered on the story branch.
+      This is separate from Quality CI which runs automatically.
+    </output>
+
+    <!-- Step 1: Trigger E2E workflow -->
+    <action>Trigger E2E CI workflow on current branch:
+      gh workflow run e2e.yaml --ref {{story_branch}}
+    </action>
+
+    <output>🚀 **E2E CI Triggered**
+      Workflow: e2e.yaml
+      Branch: {{story_branch}}
+      Waiting for workflow to start...
+    </output>
+
+    <!-- Step 2: Wait for workflow to appear and get run ID -->
+    <action>Wait for E2E workflow run to appear (~5-10 seconds):
+      sleep 10
+      gh run list --workflow=e2e.yaml --branch {{story_branch}} --limit 1 --json databaseId,status,conclusion
+    </action>
+
+    <!-- Step 3: Monitor until completion -->
+    <check if="E2E CI run is in progress">
+      <output>⏳ **E2E CI Running**
+        Workflow: e2e.yaml
+        Run: {{e2e_run_id}}
+        Status: In Progress
+        Expected duration: 3-5 minutes
+
+        Monitoring until completion...
+      </output>
+      <action>Monitor E2E CI until complete (timeout 10 minutes):
+        gh run watch {{e2e_run_id}}
+      </action>
+    </check>
+
+    <!-- Step 4: Verify final status -->
+    <check if="E2E CI passed">
+      <action>Get E2E run details:
+        gh run view {{e2e_run_id}}
+      </action>
+      <output>✅ **E2E CI Passed**
+        Workflow: e2e.yaml
+        Branch: {{story_branch}}
+        Run: {{e2e_run_id}}
+        Status: PASSED
+
+        Both Quality CI and E2E CI have passed. Story is ready for code review.
+      </output>
+      <action>Record E2E CI run ID in story file Dev Agent Record</action>
+    </check>
+
+    <check if="E2E CI failed">
+      <action>Get failure details:
+        gh run view {{e2e_run_id}} --log-failed
+      </action>
+      <output>❌ **E2E CI Failed**
+        Workflow: e2e.yaml
+        Branch: {{story_branch}}
+        Run: {{e2e_run_id}}
+
+        **Failure Details:**
+        {{failure_logs}}
+
+        HALT: Fix E2E CI failures before story can proceed.
+      </output>
+      <action>HALT: "E2E CI (e2e.yaml) failed - fix before proceeding"</action>
+    </check>
+
+    <check if="E2E workflow trigger failed">
+      <output>❌ **E2E CI Trigger Failed**
+        Could not trigger e2e.yaml workflow.
+
+        **Possible causes:**
+        - Workflow file does not exist at .github/workflows/e2e.yaml
+        - Workflow missing `workflow_dispatch` trigger
+        - Insufficient permissions
+
+        HALT: Investigate E2E workflow configuration.
+      </output>
+      <action>HALT: "Cannot trigger E2E CI - check workflow configuration"</action>
+    </check>
+
+    <!-- Update story file with E2E CI evidence -->
+    <action>Add E2E CI verification evidence to story file:
+      - Branch: {{story_branch}}
+      - Workflow: e2e.yaml
+      - E2E CI Run ID: {{e2e_run_id}}
+      - E2E CI Status: PASSED
+      - Verification Date: {{date}}
+    </action>
+  </step>
+
+  <step n="9d" goal="Update GitHub issue with development completion" tag="github-update">
     <!-- Update GitHub issue with development completion -->
     <check if="{{github_issue_number}} exists and is not null">
       <action>Add comment to GitHub issue #{{github_issue_number}} with development completion summary:
@@ -574,7 +677,7 @@
     <action if="definition-of-done validation fails">HALT - Address DoD failures before completing</action>
   </step>
 
-  <step n="9d" goal="Trigger mandatory code review (REQUIRED)">
+  <step n="9e" goal="Trigger mandatory code review (REQUIRED)">
     <critical>Code review MUST be executed before story can be marked done - NO EXCEPTIONS</critical>
     <critical>This step CANNOT be skipped - story will be rejected without code review evidence</critical>
 
