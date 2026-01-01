@@ -1,6 +1,6 @@
 # Story 0.6.3: gRPC Client Retry - AiModelClient
 
-**Status:** in-progress
+**Status:** review
 **GitHub Issue:** #45
 **Epic:** [Epic 0.6: Infrastructure Hardening](../epics/epic-0-6-infrastructure-hardening.md)
 **ADR:** [ADR-005: gRPC Client Retry and Reconnection Strategy](../architecture/adr/ADR-005-grpc-client-retry-strategy.md)
