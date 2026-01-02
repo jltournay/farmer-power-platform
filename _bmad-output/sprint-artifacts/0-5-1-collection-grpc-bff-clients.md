@@ -18,16 +18,27 @@ So that the BFF can aggregate data from Plantation and Collection models.
 **Given** Collection Model exists with REST/MCP only
 **When** I add gRPC service layer
 **Then** `CollectionService` is defined in `proto/collection/v1/collection.proto`
-**And** Service implements: `GetQualityEvent`, `ListQualityEvents`, `GetDelivery`, `ListDeliveries`
-**And** Aggregation methods: `GetFarmerQualitySummary`, `GetFactoryDailySummary`
+**And** Service implements document queries only (mirrors MCP tools):
+  - `GetDocument` - Single document by ID
+  - `ListDocuments` - Query documents with filters (source_id, farmer_id, linkage, date_range)
+  - `GetFarmerDocuments` - All documents for a farmer across sources
 **And** gRPC server runs on port 50051 alongside existing FastAPI health endpoints
 **And** Unit tests cover all gRPC handlers
+
+> **Architecture Note:** Collection Model does NOT compute aggregations (summaries, statistics).
+> Aggregation logic belongs in BFF's `services/` layer which combines data from multiple backends.
 
 ### AC2: BFF PlantationClient Implementation
 **Given** BFF needs to call Plantation Model
 **When** I implement `PlantationClient`
 **Then** Client calls `plantation-model` via DAPR service invocation
-**And** Methods include: `get_farmer`, `list_farmers`, `get_factory`
+**And** Implements these read methods for dashboard use cases:
+  - `get_farmer(farmer_id)` - Single farmer by ID
+  - `get_farmer_by_phone(phone)` - Lookup by phone number
+  - `list_farmers(factory_id, page_size, page_token)` - Paginated farmer list
+  - `get_farmer_summary(farmer_id)` - Farmer with performance metrics
+  - `get_factory(factory_id)` - Factory details with thresholds
+  - `list_collection_points(factory_id)` - Collection points for factory
 **And** Pattern follows ADR-002 §"Service Invocation Pattern" (lines 449-502)
 **And** Retry logic implemented per ADR-005 (tenacity, exponential backoff)
 
@@ -35,7 +46,7 @@ So that the BFF can aggregate data from Plantation and Collection models.
 **Given** BFF needs to call Collection Model
 **When** I implement `CollectionClient`
 **Then** Client calls `collection-model` via DAPR service invocation
-**And** Methods include: `get_quality_event`, `list_quality_events`, `get_farmer_quality_summary`
+**And** Methods include: `get_document`, `list_documents`, `get_farmer_documents`
 **And** Pattern matches `PlantationClient` implementation
 **And** Retry logic implemented per ADR-005
 
@@ -49,13 +60,13 @@ So that the BFF can aggregate data from Plantation and Collection models.
 
 - [ ] **Task 1: Proto Definition** (AC: #1)
   - [ ] Create `proto/collection/v1/collection_service.proto` with CollectionService
-  - [ ] Define request/response messages for all 6 RPC methods
+  - [ ] Define request/response messages for 3 document query methods (mirrors MCP tools)
   - [ ] Generate Python stubs via `scripts/generate_proto.sh`
   - [ ] Update `libs/fp-proto` package
 
 - [ ] **Task 2: Collection Model gRPC Server** (AC: #1)
   - [ ] Create `services/collection-model/src/collection_model/api/grpc_service.py`
-  - [ ] Implement all 6 gRPC handler methods
+  - [ ] Implement 3 gRPC handler methods (GetDocument, ListDocuments, GetFarmerDocuments)
   - [ ] Wire gRPC server to existing service startup (port 50051)
   - [ ] Ensure FastAPI health endpoints continue on port 8000 (ADR-011)
 
@@ -66,12 +77,12 @@ So that the BFF can aggregate data from Plantation and Collection models.
 
 - [ ] **Task 4: PlantationClient** (AC: #2)
   - [ ] Create `services/bff/src/bff/infrastructure/clients/plantation_client.py`
-  - [ ] Implement `get_farmer()`, `list_farmers()`, `get_factory()` methods
+  - [ ] Implement 6 read methods: `get_farmer`, `get_farmer_by_phone`, `list_farmers`, `get_farmer_summary`, `get_factory`, `list_collection_points`
   - [ ] Unit tests with mocked DAPR channel
 
 - [ ] **Task 5: CollectionClient** (AC: #3)
   - [ ] Create `services/bff/src/bff/infrastructure/clients/collection_client.py`
-  - [ ] Implement `get_quality_event()`, `list_quality_events()`, `get_farmer_quality_summary()`
+  - [ ] Implement `get_document()`, `list_documents()`, `get_farmer_documents()`
   - [ ] Unit tests with mocked DAPR channel
 
 - [ ] **Task 6: Unit Tests** (AC: #1, #2, #3)
@@ -187,12 +198,13 @@ Use native gRPC with `dapr-app-id` metadata header, NOT `DaprClient().invoke_met
 ```python
 # CORRECT: Native gRPC stub with dapr-app-id metadata
 import grpc
-from fp_proto.collection.v1 import collection_pb2_grpc
+from fp_proto.collection.v1 import collection_service_pb2, collection_service_pb2_grpc
 
 async with grpc.aio.insecure_channel("localhost:50001") as channel:  # DAPR sidecar port
-    stub = collection_pb2_grpc.CollectionServiceStub(channel)
+    stub = collection_service_pb2_grpc.CollectionServiceStub(channel)
     metadata = [("dapr-app-id", "collection-model")]  # Target service app-id
-    response = await stub.GetQualityEvent(request, metadata=metadata)
+    request = collection_service_pb2.GetDocumentRequest(document_id="doc-123")
+    response = await stub.GetDocument(request, metadata=metadata)
 ```
 
 **Reference:**
@@ -208,22 +220,71 @@ syntax = "proto3";
 
 package farmer_power.collection.v1;
 
-import "collection/v1/collection.proto";
+import "google/protobuf/struct.proto";
+import "google/protobuf/timestamp.proto";
 
+// CollectionService provides document queries (mirrors MCP tools).
+// Does NOT compute aggregations - that's BFF's responsibility.
 service CollectionService {
-  // Quality event queries
-  rpc GetQualityEvent(GetQualityEventRequest) returns (QualityEvent);
-  rpc ListQualityEvents(ListQualityEventsRequest) returns (ListQualityEventsResponse);
+  // Single document by ID
+  rpc GetDocument(GetDocumentRequest) returns (Document);
 
-  // Delivery queries
-  rpc GetDelivery(GetDeliveryRequest) returns (Delivery);
-  rpc ListDeliveries(ListDeliveriesRequest) returns (ListDeliveriesResponse);
+  // Query documents with filters
+  rpc ListDocuments(ListDocumentsRequest) returns (ListDocumentsResponse);
 
-  // Aggregations for dashboard
-  rpc GetFarmerQualitySummary(GetFarmerQualitySummaryRequest) returns (FarmerQualitySummary);
-  rpc GetFactoryDailySummary(GetFactoryDailySummaryRequest) returns (FactoryDailySummary);
+  // All documents for a farmer across sources
+  rpc GetFarmerDocuments(GetFarmerDocumentsRequest) returns (ListDocumentsResponse);
+}
+
+message GetDocumentRequest {
+  string document_id = 1;
+  bool include_files = 2;  // Include file references
+}
+
+message ListDocumentsRequest {
+  string source_id = 1;           // Filter by source
+  string farmer_id = 2;           // Filter by farmer
+  map<string, string> linkage = 3; // Filter by linkage fields
+  google.protobuf.Timestamp start_date = 4;
+  google.protobuf.Timestamp end_date = 5;
+  int32 page_size = 6;
+  string page_token = 7;
+}
+
+message GetFarmerDocumentsRequest {
+  string farmer_id = 1;
+  repeated string source_ids = 2;  // Optional: filter to specific sources
+  google.protobuf.Timestamp start_date = 3;
+  google.protobuf.Timestamp end_date = 4;
+}
+
+message Document {
+  string document_id = 1;
+  string source_id = 2;
+  string farmer_id = 3;
+  map<string, string> linkage = 4;
+  google.protobuf.Struct attributes = 5;  // Dynamic attributes
+  repeated FileReference files = 6;
+  google.protobuf.Timestamp source_timestamp = 7;
+  google.protobuf.Timestamp ingested_at = 8;
+}
+
+message FileReference {
+  string path = 1;
+  string role = 2;      // image, metadata, primary
+  string blob_uri = 3;
+  string mime_type = 4;
+}
+
+message ListDocumentsResponse {
+  repeated Document documents = 1;
+  string next_page_token = 2;
+  int32 total_count = 3;
 }
 ```
+
+> **Note:** No `GetFarmerQualitySummary` or aggregation methods.
+> Collection Model serves documents; BFF aggregates them.
 
 ### gRPC Client Retry Requirements (ADR-005)
 
