@@ -129,8 +129,8 @@ So that API endpoints are protected locally and in production.
 - [x] Create Pull Request: `gh pr create --title "Story 0.5.3: BFF Auth Middleware" --base main`
 - [x] CI passes on PR (including E2E tests)
 - [x] Code review completed (`/code-review` or human review)
-- [ ] PR approved and merged (squash)
-- [ ] Local branch cleaned up: `git branch -d story/0-5-3-bff-auth-middleware`
+- [x] PR approved and merged (squash) - Merged 2026-01-03
+- [x] Local branch cleaned up: `git branch -d story/0-5-3-bff-auth-middleware`
 
 **PR URL:** https://github.com/jltournay/farmer-power-platform/pull/76
 
