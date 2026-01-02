@@ -198,6 +198,7 @@ services:
     container_name: e2e-collection-model
     ports:
       - "8002:8000"
+      - "50054:50051"  # gRPC service port (Story 0.5.1a)
       - "3502:3500"  # DAPR HTTP port for E2E test pub/sub (Story 0.6.6)
     environment:
       COLLECTION_MONGODB_URI: mongodb://mongodb:27017

@@ -41,6 +41,8 @@ E2E_CONFIG = {
     "plantation_model_grpc_host": "localhost",
     "plantation_model_grpc_port": 50051,
     "collection_model_url": "http://localhost:8002",
+    "collection_model_grpc_host": "localhost",  # Story 0.5.1a
+    "collection_model_grpc_port": 50054,  # Story 0.5.1a
     "plantation_mcp_host": "localhost",
     "plantation_mcp_port": 50052,
     "collection_mcp_host": "localhost",
@@ -169,6 +171,21 @@ async def plantation_service(
     async with PlantationServiceClient(
         host=e2e_config["plantation_model_grpc_host"],
         port=e2e_config["plantation_model_grpc_port"],
+    ) as client:
+        yield client
+
+
+@pytest_asyncio.fixture
+async def collection_service(
+    e2e_config: dict[str, Any],
+    wait_for_services: None,
+) -> AsyncGenerator[Any, None]:
+    """Provide Collection Model gRPC client for document queries (Story 0.5.1a)."""
+    from tests.e2e.helpers.mcp_clients import CollectionServiceClient
+
+    async with CollectionServiceClient(
+        host=e2e_config["collection_model_grpc_host"],
+        port=e2e_config["collection_model_grpc_port"],
     ) as client:
         yield client
 

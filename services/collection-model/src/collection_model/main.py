@@ -5,6 +5,7 @@ Collects, validates, transforms, links, stores, and serves documents
 related to quality events from various sources.
 
 Story 0.6.6: Added DAPR streaming subscriptions for blob events (ADR-010/ADR-011).
+Story 0.5.1a: Added gRPC server on port 50051 for BFF document queries (ADR-011).
 """
 
 import asyncio
@@ -17,6 +18,7 @@ from contextlib import asynccontextmanager
 import collection_model.processors  # noqa: F401
 import structlog
 from collection_model.api import events, health
+from collection_model.api.grpc_service import serve_grpc
 from collection_model.config import settings
 from collection_model.events.subscriber import (
     run_streaming_subscriptions,
@@ -218,6 +220,20 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
         app.state.dlq_thread = dlq_thread
         logger.info("DLQ subscription thread started")
 
+        # Story 0.5.1a: Start gRPC server on port 50051 (ADR-011)
+        # gRPC runs alongside FastAPI for BFF document queries
+        grpc_server = await serve_grpc(
+            db=db,
+            host=settings.host,
+            port=settings.grpc_port,
+        )
+        app.state.grpc_server = grpc_server
+        logger.info(
+            "gRPC server started",
+            host=settings.host,
+            port=settings.grpc_port,
+        )
+
     except Exception as e:
         logger.warning("MongoDB connection failed at startup", error=str(e))
         # Service can still start - readiness probe will report not ready
@@ -231,6 +247,11 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
 
     # Shutdown
     logger.info("Shutting down Collection Model service")
+
+    # Story 0.5.1a: Stop gRPC server (ADR-011)
+    if hasattr(app.state, "grpc_server"):
+        await app.state.grpc_server.stop(grace=5.0)
+        logger.info("gRPC server stopped")
 
     # Story 0.6.9: Stop change stream watcher (ADR-007)
     if hasattr(app.state, "source_config_service"):

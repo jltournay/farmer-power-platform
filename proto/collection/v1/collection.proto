@@ -1,15 +1,125 @@
 // Collection Model Service - Protocol Buffer Definitions
 // Quality data ingestion gateway for the Farmer Power Platform
 //
-// Note: Collection Model uses HTTP/REST (FastAPI) for external endpoints
-// and DAPR pub/sub for domain events. These proto definitions are used
-// for event serialization and MCP server interfaces.
+// Provides gRPC API for document queries via BFF (Story 0.5.1a).
+// Uses HTTP/REST (FastAPI) for external endpoints and DAPR pub/sub for domain events.
 
 syntax = "proto3";
 
 package farmer_power.collection.v1;
 
 import "google/protobuf/timestamp.proto";
+
+// Note: Health checking uses standard grpc.health.v1.Health (grpc-health-checking package)
+// No custom HealthService defined here to avoid duplication.
+
+// ============================================================================
+// Collection Service - gRPC API for document queries (Story 0.5.1a)
+// ============================================================================
+
+service CollectionService {
+  // Get a single document by ID
+  rpc GetDocument(GetDocumentRequest) returns (Document);
+
+  // List documents with pagination and optional farmer_id filter
+  rpc ListDocuments(ListDocumentsRequest) returns (ListDocumentsResponse);
+
+  // Get all documents for a specific farmer (convenience method)
+  rpc GetDocumentsByFarmer(GetDocumentsByFarmerRequest) returns (GetDocumentsByFarmerResponse);
+
+  // Search documents with filters (source_id, date range, linkage fields)
+  rpc SearchDocuments(SearchDocumentsRequest) returns (SearchDocumentsResponse);
+}
+
+// ============================================================================
+// Document Messages (Story 0.5.1a)
+// ============================================================================
+
+// Reference to raw document in blob storage
+message RawDocumentRef {
+  string blob_container = 1;
+  string blob_path = 2;
+  string content_hash = 3;
+  int64 size_bytes = 4;
+  google.protobuf.Timestamp stored_at = 5;
+}
+
+// Metadata about AI extraction
+message ExtractionMetadata {
+  string ai_agent_id = 1;
+  google.protobuf.Timestamp extraction_timestamp = 2;
+  double confidence = 3;
+  bool validation_passed = 4;
+  repeated string validation_warnings = 5;
+}
+
+// Metadata about ingestion process
+message IngestionMetadata {
+  string ingestion_id = 1;
+  string source_id = 2;
+  google.protobuf.Timestamp received_at = 3;
+  google.protobuf.Timestamp processed_at = 4;
+}
+
+// Document entity returned by gRPC methods
+message Document {
+  string document_id = 1;
+  RawDocumentRef raw_document = 2;
+  ExtractionMetadata extraction = 3;
+  IngestionMetadata ingestion = 4;
+  map<string, string> extracted_fields = 5;  // Stored as string map for proto compatibility
+  map<string, string> linkage_fields = 6;    // Dynamic fields for indexing
+  google.protobuf.Timestamp created_at = 7;
+}
+
+// ============================================================================
+// Request/Response Messages (Story 0.5.1a)
+// ============================================================================
+
+message GetDocumentRequest {
+  string document_id = 1;
+  string collection_name = 2;  // Collection to search in (from source config)
+}
+
+message ListDocumentsRequest {
+  int32 page_size = 1;         // Max 100, default 20
+  string page_token = 2;       // Pagination cursor
+  string farmer_id = 3;        // Optional filter by farmer_id
+  string collection_name = 4;  // Collection to search in
+}
+
+message ListDocumentsResponse {
+  repeated Document documents = 1;
+  string next_page_token = 2;
+  int32 total_count = 3;
+}
+
+message GetDocumentsByFarmerRequest {
+  string farmer_id = 1;
+  string collection_name = 2;
+  int32 limit = 3;  // Max results, default 100
+}
+
+message GetDocumentsByFarmerResponse {
+  repeated Document documents = 1;
+  int32 total_count = 2;
+}
+
+message SearchDocumentsRequest {
+  string collection_name = 1;
+  string source_id = 2;                      // Filter by source configuration ID
+  google.protobuf.Timestamp start_date = 3;  // Filter by created_at >= start_date
+  google.protobuf.Timestamp end_date = 4;    // Filter by created_at <= end_date
+  map<string, string> linkage_filters = 5;   // Filter by linkage_fields (e.g., farmer_id=WM-0001)
+  int32 page_size = 6;
+  string page_token = 7;
+}
+
+message SearchDocumentsResponse {
+  repeated Document documents = 1;
+  string next_page_token = 2;
+  int32 total_count = 3;
+}
 
 // ============================================================================
 // Domain Events (published via DAPR pub/sub)
