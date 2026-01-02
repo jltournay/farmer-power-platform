@@ -3,7 +3,7 @@
 Uses fixtures from root conftest.py. Do NOT override parent fixtures.
 """
 
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
@@ -11,6 +11,158 @@ from fastapi.testclient import TestClient
 from fp_proto.collection.v1 import collection_pb2
 from fp_proto.plantation.v1 import plantation_pb2
 from google.protobuf.timestamp_pb2 import Timestamp
+from jose import jwt
+
+# =============================================================================
+# JWT Mock Token Helpers (Story 0.5.3)
+# =============================================================================
+
+MOCK_JWT_SECRET = "test-secret-for-unit-tests"
+
+MOCK_USERS = {
+    "factory_manager": {
+        "sub": "mock-manager-001",
+        "email": "jane@kericho-factory.test",
+        "name": "Jane Mwangi",
+        "role": "factory_manager",
+        "factory_id": "KEN-FAC-001",
+        "factory_ids": ["KEN-FAC-001"],
+        "collection_point_id": None,
+        "region_ids": [],
+        "permissions": ["farmers:read", "quality_events:read", "diagnoses:read", "action_plans:read"],
+    },
+    "factory_owner": {
+        "sub": "mock-owner-001",
+        "email": "john@owner.test",
+        "name": "John Ochieng",
+        "role": "factory_owner",
+        "factory_id": "KEN-FAC-001",
+        "factory_ids": ["KEN-FAC-001", "KEN-FAC-002"],
+        "collection_point_id": None,
+        "region_ids": [],
+        "permissions": ["farmers:read", "quality_events:read", "payment_policies:write", "factory_settings:write"],
+    },
+    "platform_admin": {
+        "sub": "mock-admin-001",
+        "email": "admin@farmerpower.test",
+        "name": "Admin User",
+        "role": "platform_admin",
+        "factory_id": None,
+        "factory_ids": [],
+        "collection_point_id": None,
+        "region_ids": [],
+        "permissions": ["*"],
+    },
+    "regulator": {
+        "sub": "mock-regulator-001",
+        "email": "inspector@tbk.go.ke.test",
+        "name": "TBK Inspector",
+        "role": "regulator",
+        "factory_id": None,
+        "factory_ids": [],
+        "collection_point_id": None,
+        "region_ids": ["nandi", "kericho"],
+        "permissions": ["national_stats:read", "regional_stats:read"],
+    },
+    "registration_clerk": {
+        "sub": "mock-clerk-001",
+        "email": "mary@cp.test",
+        "name": "Mary Wanjiku",
+        "role": "registration_clerk",
+        "factory_id": "KEN-FAC-001",
+        "factory_ids": ["KEN-FAC-001"],
+        "collection_point_id": "KEN-CP-001",
+        "region_ids": [],
+        "permissions": ["farmers:create"],
+    },
+}
+
+
+def create_mock_jwt_token(
+    user_data: dict,
+    secret: str = MOCK_JWT_SECRET,
+    expires_delta: timedelta | None = None,
+) -> str:
+    """Create a mock JWT token for testing.
+
+    Args:
+        user_data: User claims to include in the token.
+        secret: JWT secret for HS256 signing.
+        expires_delta: Token expiration time delta. Default is 1 hour.
+
+    Returns:
+        Signed JWT token string.
+    """
+    if expires_delta is None:
+        expires_delta = timedelta(hours=1)
+
+    now = datetime.now(UTC)
+    payload = {
+        **user_data,
+        "iat": now,
+        "exp": now + expires_delta,
+    }
+    return jwt.encode(payload, secret, algorithm="HS256")
+
+
+@pytest.fixture
+def mock_manager_token() -> str:
+    """JWT token for factory_manager user."""
+    return create_mock_jwt_token(MOCK_USERS["factory_manager"])
+
+
+@pytest.fixture
+def mock_owner_token() -> str:
+    """JWT token for factory_owner user."""
+    return create_mock_jwt_token(MOCK_USERS["factory_owner"])
+
+
+@pytest.fixture
+def mock_admin_token() -> str:
+    """JWT token for platform_admin user."""
+    return create_mock_jwt_token(MOCK_USERS["platform_admin"])
+
+
+@pytest.fixture
+def mock_regulator_token() -> str:
+    """JWT token for regulator user."""
+    return create_mock_jwt_token(MOCK_USERS["regulator"])
+
+
+@pytest.fixture
+def mock_clerk_token() -> str:
+    """JWT token for registration_clerk user."""
+    return create_mock_jwt_token(MOCK_USERS["registration_clerk"])
+
+
+@pytest.fixture
+def expired_token() -> str:
+    """Expired JWT token for testing expiry handling."""
+    return create_mock_jwt_token(
+        MOCK_USERS["factory_manager"],
+        expires_delta=timedelta(hours=-1),  # Already expired
+    )
+
+
+@pytest.fixture
+def invalid_token() -> str:
+    """Invalid JWT token (wrong secret)."""
+    return create_mock_jwt_token(
+        MOCK_USERS["factory_manager"],
+        secret="wrong-secret",
+    )
+
+
+def auth_headers(token: str) -> dict[str, str]:
+    """Create Authorization headers for a token.
+
+    Args:
+        token: JWT token string.
+
+    Returns:
+        Headers dict with Authorization Bearer token.
+    """
+    return {"Authorization": f"Bearer {token}"}
 
 
 @pytest.fixture
