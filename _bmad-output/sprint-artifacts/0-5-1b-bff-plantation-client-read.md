@@ -1,7 +1,7 @@
 # Story 0.5.1b: BFF PlantationClient - Read Operations
 
-**Status:** backlog
-**GitHub Issue:** <!-- To be created -->
+**Status:** done
+**GitHub Issue:** #67
 **Story Points:** 3
 
 <!-- Note: This is part 2 of 4 from the original Story 0.5.1 split -->
@@ -64,40 +64,40 @@ So that the BFF can fetch farmer, factory, region, and collection point data for
 
 ## Tasks / Subtasks
 
-- [ ] **Task 1: BFF Base Client** (AC: #1)
-  - [ ] Create `services/bff/src/bff/infrastructure/clients/base.py`
-  - [ ] Implement DAPR gRPC invocation pattern with `dapr-app-id` metadata
-  - [ ] Add retry decorator (tenacity) per ADR-005
-  - [ ] Singleton channel with reset on error
+- [x] **Task 1: BFF Base Client** (AC: #1)
+  - [x] Create `services/bff/src/bff/infrastructure/clients/base.py`
+  - [x] Implement DAPR gRPC invocation pattern with `dapr-app-id` metadata
+  - [x] Add retry decorator (tenacity) per ADR-005
+  - [x] Singleton channel with reset on error
 
-- [ ] **Task 2: PlantationClient Read Methods** (AC: #2)
-  - [ ] Create `services/bff/src/bff/infrastructure/clients/plantation_client.py`
-  - [ ] Implement 13 read methods grouped by domain
-  - [ ] Use fp-common domain models for return types
+- [x] **Task 2: PlantationClient Read Methods** (AC: #2)
+  - [x] Create `services/bff/src/bff/infrastructure/clients/plantation_client.py`
+  - [x] Implement 13 read methods grouped by domain
+  - [x] Use fp-common domain models for return types
 
-- [ ] **Task 3: Unit Tests** (AC: #3)
-  - [ ] `tests/unit/bff/test_plantation_client_read.py`
-  - [ ] Mock DAPR channel, test all read operations
-  - [ ] Test retry logic and error handling
+- [x] **Task 3: Unit Tests** (AC: #3)
+  - [x] `tests/unit/bff/test_plantation_client.py`
+  - [x] Mock DAPR channel, test all read operations
+  - [x] Test retry logic and error handling
 
 ## Git Workflow (MANDATORY)
 
 **Branch name:** `story/0-5-1b-bff-plantation-client-read`
 
 ### Story Start
-- [ ] Feature branch created from main:
+- [x] Feature branch created from main:
   ```bash
   git checkout main && git pull origin main
   git checkout -b story/0-5-1b-bff-plantation-client-read
   ```
 
 ### Story Done
-- [ ] Create Pull Request
-- [ ] CI passes on PR
-- [ ] Code review completed
+- [x] Create Pull Request
+- [x] CI passes on PR
+- [x] Code review completed
 - [ ] PR merged
 
-**PR URL:** _______________
+**PR URL:** https://github.com/jltournay/farmer-power-platform/pull/68
 
 ---
 
@@ -105,18 +105,83 @@ So that the BFF can fetch farmer, factory, region, and collection point data for
 
 ### 1. Unit Tests
 ```bash
-pytest tests/unit/bff/test_plantation_client_read.py -v
+PYTHONPATH="${PYTHONPATH}:.:libs/fp-proto/src:libs/fp-common:services/bff/src" pytest tests/unit/bff/ -v
 ```
 **Output:**
 ```
-(paste test summary here)
+collected 28 items
+tests/unit/bff/test_plantation_client.py::TestPlantationClientInit::test_default_init PASSED
+tests/unit/bff/test_plantation_client.py::TestPlantationClientInit::test_direct_host_init PASSED
+tests/unit/bff/test_plantation_client.py::TestPlantationClientInit::test_custom_dapr_port PASSED
+tests/unit/bff/test_plantation_client.py::TestPlantationClientMetadata::test_metadata_with_dapr PASSED
+tests/unit/bff/test_plantation_client.py::TestPlantationClientMetadata::test_metadata_direct_connection PASSED
+tests/unit/bff/test_plantation_client.py::TestFarmerOperations::test_get_farmer_success PASSED
+tests/unit/bff/test_plantation_client.py::TestFarmerOperations::test_get_farmer_not_found PASSED
+tests/unit/bff/test_plantation_client.py::TestFarmerOperations::test_get_farmer_by_phone_success PASSED
+tests/unit/bff/test_plantation_client.py::TestFarmerOperations::test_list_farmers_success PASSED
+tests/unit/bff/test_plantation_client.py::TestFarmerOperations::test_list_farmers_with_pagination PASSED
+tests/unit/bff/test_plantation_client.py::TestFarmerOperations::test_get_farmer_summary_success PASSED
+tests/unit/bff/test_plantation_client.py::TestFactoryOperations::test_get_factory_success PASSED
+tests/unit/bff/test_plantation_client.py::TestFactoryOperations::test_get_factory_not_found PASSED
+tests/unit/bff/test_plantation_client.py::TestFactoryOperations::test_list_factories_success PASSED
+tests/unit/bff/test_plantation_client.py::TestCollectionPointOperations::test_get_collection_point_success PASSED
+tests/unit/bff/test_plantation_client.py::TestCollectionPointOperations::test_list_collection_points_success PASSED
+tests/unit/bff/test_plantation_client.py::TestRegionOperations::test_get_region_success PASSED
+tests/unit/bff/test_plantation_client.py::TestRegionOperations::test_list_regions_success PASSED
+tests/unit/bff/test_plantation_client.py::TestRegionOperations::test_get_region_weather_success PASSED
+tests/unit/bff/test_plantation_client.py::TestRegionOperations::test_get_current_flush_success PASSED
+tests/unit/bff/test_plantation_client.py::TestPerformanceOperations::test_get_performance_summary_success PASSED
+tests/unit/bff/test_plantation_client.py::TestErrorHandling::test_service_unavailable_error PASSED
+tests/unit/bff/test_plantation_client.py::TestErrorHandling::test_channel_reset_on_unavailable PASSED
+tests/unit/bff/test_plantation_client.py::TestErrorHandling::test_unknown_grpc_error_propagated PASSED
+tests/unit/bff/test_plantation_client.py::TestProtoConversion::test_farmer_enum_conversion PASSED
+tests/unit/bff/test_plantation_client.py::TestProtoConversion::test_factory_default_quality_thresholds PASSED
+tests/unit/bff/test_plantation_client.py::TestClientClose::test_close_cleans_up_channel PASSED
+tests/unit/bff/test_plantation_client.py::TestClientClose::test_close_without_channel PASSED
+
+======================== 28 passed in 4.26s ========================
 ```
 
 ### 2. Lint Check
 ```bash
-ruff check . && ruff format --check .
+ruff check services/bff/ tests/unit/bff/ && ruff format --check services/bff/ tests/unit/bff/
 ```
-**Lint passed:** [ ] Yes / [ ] No
+**Lint passed:** [x] Yes / [ ] No
+
+### 3. E2E Tests (Local - Step 7b)
+```bash
+docker compose -f tests/e2e/infrastructure/docker-compose.e2e.yaml up -d --build
+PYTHONPATH="${PYTHONPATH}:.:libs/fp-proto/src" pytest tests/e2e/scenarios/ -v
+docker compose -f tests/e2e/infrastructure/docker-compose.e2e.yaml down -v
+```
+**Output:**
+```
+============================= test session starts ==============================
+platform darwin -- Python 3.11.12, pytest-9.0.2, pluggy-1.6.0
+plugins: anyio-4.12.0, asyncio-1.3.0, langsmith-0.5.1
+asyncio: mode=Mode.AUTO
+
+tests/e2e/scenarios/test_00_infrastructure_verification.py 22 passed
+tests/e2e/scenarios/test_01_plantation_mcp_contracts.py 13 passed
+tests/e2e/scenarios/test_02_collection_mcp_contracts.py 12 passed
+tests/e2e/scenarios/test_03_factory_farmer_flow.py 5 passed
+tests/e2e/scenarios/test_04_quality_blob_ingestion.py 6 passed
+tests/e2e/scenarios/test_05_weather_ingestion.py 6 passed
+tests/e2e/scenarios/test_06_cross_model_events.py 5 passed
+tests/e2e/scenarios/test_07_grading_validation.py 6 passed
+tests/e2e/scenarios/test_08_zip_ingestion.py 10 passed (1 skipped)
+
+================== 85 passed, 1 skipped in 123.49s (0:02:03) ===================
+```
+**E2E passed:** [x] Yes / [ ] No
+
+### 4. E2E Tests (CI - Step 9c)
+```bash
+gh workflow run "E2E Tests" --ref story/0-5-1b-bff-plantation-client-read
+gh run watch <run-id>
+```
+**Run ID:** 20663146283
+**Result:** PASSED (85 passed, 1 skipped)
 
 ---
 
@@ -189,12 +254,55 @@ async def get_farmer(farmer_id: str) -> Farmer: ...
 ## Dev Agent Record
 
 ### Agent Model Used
-{{agent_model_name_version}}
+Claude Opus 4.5 (claude-opus-4-5-20251101)
 
 ### File List
 
 **Created:**
+- `services/bff/pyproject.toml`
+- `services/bff/src/bff/infrastructure/__init__.py`
 - `services/bff/src/bff/infrastructure/clients/__init__.py`
 - `services/bff/src/bff/infrastructure/clients/base.py`
 - `services/bff/src/bff/infrastructure/clients/plantation_client.py`
-- `tests/unit/bff/test_plantation_client_read.py`
+- `tests/unit/bff/__init__.py`
+- `tests/unit/bff/conftest.py`
+- `tests/unit/bff/test_plantation_client.py`
+
+**Modified:**
+- `.github/workflows/ci.yaml` - Added `services/bff/src` to PYTHONPATH
+- `_bmad-output/sprint-artifacts/sprint-status.yaml`
+- `_bmad-output/sprint-artifacts/0-5-1b-bff-plantation-client-read.md`
+
+---
+
+## Code Review Record
+
+### Review Outcome: ✅ APPROVED (after fixes)
+
+**Reviewer:** Claude Opus 4.5 (adversarial code review workflow)
+**Date:** 2026-01-02
+
+### Issues Found and Fixed
+
+| ID | Severity | Issue | Resolution |
+|----|----------|-------|------------|
+| H1 | HIGH | `get_performance_summary` returned `dict` instead of typed model, violating AC2 | ✅ Created `PerformanceSummary` model in fp-common, updated return type |
+| M1 | MEDIUM | CI PYTHONPATH missing `services/bff/src` in integration-tests job | ✅ Added to integration-tests PYTHONPATH |
+| M2 | MEDIUM | Story File List missing `.github/workflows/ci.yaml` | ✅ Updated File List |
+| M3 | MEDIUM | Missing test for `period_start` parameter | ✅ Added `test_get_performance_summary_with_period_start` test |
+
+### Files Changed During Review
+
+**Created:**
+- `libs/fp-common/fp_common/models/performance_summary.py` - PerformanceSummary typed model
+
+**Modified:**
+- `libs/fp-common/fp_common/models/__init__.py` - Export PerformanceSummary
+- `services/bff/src/bff/infrastructure/clients/plantation_client.py` - Use typed return
+- `tests/unit/bff/test_plantation_client.py` - Updated test + added period_start test
+- `.github/workflows/ci.yaml` - Fixed integration-tests PYTHONPATH
+
+### Test Verification After Fixes
+```
+29 passed in 4.18s
+```

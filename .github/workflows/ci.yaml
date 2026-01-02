@@ -51,7 +51,7 @@ jobs:
 
       - name: Run unit tests with coverage
         run: |
-          PYTHONPATH="${PYTHONPATH}:libs/fp-common:libs/fp-proto/src:libs/fp-testing:services/plantation-model/src:services/collection-model/src:scripts/source-config/src:mcp-servers/plantation-mcp/src:mcp-servers/collection-mcp/src" \
+          PYTHONPATH="${PYTHONPATH}:libs/fp-common:libs/fp-proto/src:libs/fp-testing:services/plantation-model/src:services/collection-model/src:services/bff/src:scripts/source-config/src:mcp-servers/plantation-mcp/src:mcp-servers/collection-mcp/src" \
             pytest tests/unit/ -v --cov=services --cov=libs --cov=mcp-servers --cov-report=term-missing --cov-report=xml
 
       - name: Extract coverage percentage
@@ -129,7 +129,7 @@ jobs:
           MONGODB_TEST_URI: "mongodb://localhost:27018"
           MONGODB_TEST_PORT: "27018"
         run: |
-          PYTHONPATH="${PYTHONPATH}:libs/fp-common:libs/fp-proto/src:libs/fp-testing:services/plantation-model/src:services/collection-model/src:mcp-servers/plantation-mcp/src:mcp-servers/collection-mcp/src" \
+          PYTHONPATH="${PYTHONPATH}:libs/fp-common:libs/fp-proto/src:libs/fp-testing:services/plantation-model/src:services/collection-model/src:services/bff/src:mcp-servers/plantation-mcp/src:mcp-servers/collection-mcp/src" \
             pytest tests/integration/ -v -m mongodb --tb=short
 
   validate-e2e-evidence:
