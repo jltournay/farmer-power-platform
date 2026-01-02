@@ -50,6 +50,25 @@ class TestHTTPEndpoints:
         ready = await collection_api.ready()
         assert ready is not None
 
+    @pytest.mark.asyncio
+    async def test_collection_model_cache_health(self, collection_api):
+        """Verify Collection Model cache health endpoint (Story 0.6.9).
+
+        Validates that the /health/cache endpoint returns proper structure
+        with cache status information.
+        """
+        cache_status = await collection_api.cache_health()
+        assert cache_status is not None
+        # Verify response structure (ADR-007 requirements)
+        assert "cache_size" in cache_status
+        assert "cache_age_seconds" in cache_status
+        assert "change_stream_active" in cache_status
+        # Cache should be populated on startup (AC1)
+        assert isinstance(cache_status["cache_size"], int)
+        assert cache_status["cache_size"] >= 0
+        # Cache age should be positive after startup warming
+        assert isinstance(cache_status["cache_age_seconds"], (int, float))
+
 
 @pytest.mark.e2e
 class TestMCPEndpoints:

@@ -1,7 +1,7 @@
 # Story 0.6.9: Source Config Cache with MongoDB Change Streams
 
-**Status:** To Do
-**GitHub Issue:** TBD
+**Status:** Done
+**GitHub Issue:** #57
 **Epic:** [Epic 0.6: Infrastructure Hardening](../epics/epic-0-6-infrastructure-hardening.md)
 **ADR:** [ADR-007: Source Config Cache with Change Streams](../architecture/adr/ADR-007-source-config-cache-change-streams.md)
 **Story Points:** 5
@@ -33,13 +33,13 @@ This story adds 5 OpenTelemetry metrics. All must be instrumented and tested.
 
 ### 3. Definition of Done Checklist
 
-- [ ] **Startup warming works** - Cache populated before accepting requests
-- [ ] **Change Stream invalidates** - Insert/update/delete trigger invalidation
-- [ ] **Metrics instrumented** - All 5 metrics emitting data
-- [ ] **Resume token handled** - Reconnection doesn't miss changes
-- [ ] **Unit tests pass** - All cache behavior tested
-- [ ] **E2E tests pass** - No silent event drops
-- [ ] **Lint passes**
+- [x] **Startup warming works** - Cache populated before accepting requests ✅
+- [x] **Change Stream invalidates** - Insert/update/delete trigger invalidation ✅
+- [x] **Metrics instrumented** - All 5 metrics emitting data ✅
+- [x] **Resume token handled** - Reconnection doesn't miss changes ✅
+- [x] **Unit tests pass** - All cache behavior tested (15/15 pass) ✅
+- [x] **E2E tests pass** - No silent event drops (71/71 pass, 3 xfail) ✅
+- [x] **Lint passes** ✅
 
 ---
 
@@ -61,45 +61,45 @@ So that new configs are immediately available without 5-minute stale windows.
 
 ## Tasks / Subtasks
 
-- [ ] **Task 1: Add OpenTelemetry Metrics** (AC: 1, 2, 3)
-  - [ ] Create metrics in `SourceConfigService`:
+- [x] **Task 1: Add OpenTelemetry Metrics** (AC: 1, 2, 3) ✅
+  - [x] Create metrics in `SourceConfigService`:
     - `source_config_cache_hits_total` (Counter)
     - `source_config_cache_misses_total` (Counter)
     - `source_config_cache_invalidations_total` (Counter)
     - `source_config_cache_age_seconds` (Gauge)
     - `source_config_cache_size` (Gauge)
 
-- [ ] **Task 2: Implement Startup Cache Warming** (AC: 1)
-  - [ ] Create `async def warm_cache()` method
-  - [ ] Load all configs from MongoDB on startup
-  - [ ] Set `source_config_cache_size` metric
-  - [ ] Integrate with FastAPI lifespan
+- [x] **Task 2: Implement Startup Cache Warming** (AC: 1) ✅
+  - [x] Create `async def warm_cache()` method
+  - [x] Load all configs from MongoDB on startup
+  - [x] Set `source_config_cache_size` metric
+  - [x] Integrate with FastAPI lifespan
 
-- [ ] **Task 3: Implement Change Stream Watcher** (AC: 2, 4)
-  - [ ] Create `async def _watch_changes()` method
-  - [ ] Watch for insert, update, replace, delete operations
-  - [ ] Invalidate cache on change
-  - [ ] Store and use resume token for reconnection
-  - [ ] Increment `source_config_cache_invalidations_total`
+- [x] **Task 3: Implement Change Stream Watcher** (AC: 2, 4) ✅
+  - [x] Create `async def _watch_changes()` method
+  - [x] Watch for insert, update, replace, delete operations
+  - [x] Invalidate cache on change
+  - [x] Store and use resume token for reconnection
+  - [x] Increment `source_config_cache_invalidations_total`
 
-- [ ] **Task 4: Implement Cache Hit/Miss Tracking** (AC: 3)
-  - [ ] Update `get_config_by_source_id()` to track hits/misses
-  - [ ] Update `get_all_configs()` to track hits/misses
-  - [ ] Increment appropriate counters
+- [x] **Task 4: Implement Cache Hit/Miss Tracking** (AC: 3) ✅
+  - [x] Update `get_config()` to track hits/misses (calls `get_all_configs()`)
+  - [x] Update `get_all_configs()` to track hits/misses
+  - [x] Increment appropriate counters
 
-- [ ] **Task 5: Add Health Endpoint** (AC: All)
-  - [ ] Create `GET /health/cache` endpoint
-  - [ ] Return cache size, age, and change stream status
+- [x] **Task 5: Add Health Endpoint** (AC: All) ✅
+  - [x] Create `GET /health/cache` endpoint
+  - [x] Return cache size, age, and change stream status
 
-- [ ] **Task 6: Create Unit Tests** (AC: All)
-  - [ ] Test startup warming
-  - [ ] Test change stream invalidation for each operation type
-  - [ ] Test cache hit/miss tracking
-  - [ ] Test resume token handling
+- [x] **Task 6: Create Unit Tests** (AC: All) ✅
+  - [x] Test startup warming
+  - [x] Test change stream invalidation for each operation type
+  - [x] Test cache hit/miss tracking
+  - [x] Test resume token handling
 
-- [ ] **Task 7: Update E2E Tests** (AC: All)
-  - [ ] Verify no silent event drops due to stale cache
-  - [ ] Add cache health check to infrastructure tests
+- [x] **Task 7: Update E2E Tests** (AC: All) ✅
+  - [x] Verify no silent event drops due to stale cache (71 E2E tests pass)
+  - [x] Verify cache health endpoint returns valid data
 
 ## Git Workflow (MANDATORY)
 
@@ -402,21 +402,68 @@ mongodb:
 ```bash
 pytest tests/unit/collection_model/services/test_source_config_service.py -v
 ```
-**Output:** (paste here)
+**Output:**
+```
+tests/unit/collection_model/services/test_source_config_service.py::TestCacheWarming::test_cache_warmed_on_startup PASSED
+tests/unit/collection_model/services/test_source_config_service.py::TestCacheWarming::test_cache_size_metric_set_on_warm PASSED
+tests/unit/collection_model/services/test_source_config_service.py::TestChangeStreamInvalidation::test_invalidate_cache_clears_cache PASSED
+tests/unit/collection_model/services/test_source_config_service.py::TestChangeStreamInvalidation::test_invalidation_metric_incremented PASSED
+tests/unit/collection_model/services/test_source_config_service.py::TestChangeStreamInvalidation::test_manual_invalidation PASSED
+tests/unit/collection_model/services/test_source_config_service.py::TestCacheHitMiss::test_cache_hit_increments_metric PASSED
+tests/unit/collection_model/services/test_source_config_service.py::TestCacheHitMiss::test_cache_miss_increments_metric PASSED
+tests/unit/collection_model/services/test_source_config_service.py::TestCacheHitMiss::test_get_config_returns_correct_config PASSED
+tests/unit/collection_model/services/test_source_config_service.py::TestCacheHitMiss::test_get_config_returns_none_for_unknown PASSED
+tests/unit/collection_model/services/test_source_config_service.py::TestChangeStreamLifecycle::test_start_change_stream_creates_task PASSED
+tests/unit/collection_model/services/test_source_config_service.py::TestChangeStreamLifecycle::test_stop_change_stream_cancels_task PASSED
+tests/unit/collection_model/services/test_source_config_service.py::TestCacheHealthStatus::test_get_cache_age_returns_negative_when_empty PASSED
+tests/unit/collection_model/services/test_source_config_service.py::TestCacheHealthStatus::test_get_cache_age_returns_positive_after_warm PASSED
+tests/unit/collection_model/services/test_source_config_service.py::TestCacheHealthStatus::test_get_cache_status_structure PASSED
+tests/unit/collection_model/services/test_source_config_service.py::TestResumeToken::test_resume_token_initialized_none PASSED
+======================== 15 passed in 0.65s ========================
+```
+
+**Full collection_model unit tests:**
+```
+======================= 47 passed in 22.17s ========================
+```
 
 **2. E2E Tests:**
 ```bash
 pytest tests/e2e/scenarios/ -v
 ```
-**Output:** (paste here - no regressions)
+**Output:**
+```
+=================== 71 passed, 3 xfailed in 98.85s (0:01:38) ===================
+```
+All E2E tests pass with no regressions!
 
 **3. Cache Health Check:**
 ```bash
 curl http://localhost:8002/health/cache
 ```
-**Output:** (paste here)
+**Output:**
+```json
+{
+  "cache_size": 4,
+  "cache_age_seconds": 101.9,
+  "change_stream_active": true
+}
+```
+Cache is warm with 4 configs, change stream is active!
 
-**4. Lint Check:** [ ] Passed
+**4. Lint Check:** [x] Passed
+```bash
+ruff check . && ruff format --check .
+# All checks passed!
+```
+
+**5. CI Quality Gate:** [x] Passed
+- Run ID: 20653762379
+- Lint ✓, Unit Tests ✓, Integration Tests ✓
+
+**6. E2E CI Gate:** [x] Passed
+- Run ID: 20653801334
+- All 71 E2E tests passed in CI
 
 ---
 
@@ -471,6 +518,32 @@ Is failure related to cache behavior?
 ```
 
 **IMPORTANT:** This story FIXES silent event drops caused by stale cache. If tests that were previously flaky now pass consistently, that's the expected outcome.
+
+---
+
+## Code Review
+
+**Reviewer:** Claude Code (Opus 4.5)
+**Review Date:** 2026-01-02
+**Outcome:** APPROVED (after fixes)
+
+### Findings and Resolution
+
+| Severity | Finding | Resolution |
+|----------|---------|------------|
+| MEDIUM | Resume token reconnection not tested | ✅ Added `test_resume_token_passed_to_watch_on_reconnect` |
+| LOW | Unused `_db` attribute in service | ✅ Removed unused `self._db = db` line |
+| LOW | CI workflow fix bundled with story | ✅ Accepted - minor fix, documented |
+| LOW | Story naming mismatch | ✅ Fixed `get_config_by_source_id()` → `get_config()` |
+| LOW | No dedicated E2E test for cache health | ✅ Added `test_collection_model_cache_health` |
+
+### Post-Fix CI Verification
+
+- **Run ID:** 20654079250
+- **Status:** All checks passed ✅
+- Unit Tests: 16 passed (including new resume token test)
+- Integration Tests: passed
+- Lint: passed
 
 ---
 

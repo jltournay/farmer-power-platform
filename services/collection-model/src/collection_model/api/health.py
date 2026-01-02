@@ -95,6 +95,29 @@ async def ready() -> JSONResponse:
     )
 
 
+@router.get(
+    "/health/cache",
+    status_code=status.HTTP_200_OK,
+    summary="Cache health status",
+    description="Returns source config cache status including size, age, and change stream status (Story 0.6.9).",
+)
+async def cache_health(request: Request) -> dict[str, Any]:
+    """Cache health endpoint for observability (Story 0.6.9, ADR-007).
+
+    Returns:
+        Dict with cache_size, cache_age_seconds, change_stream_active.
+    """
+    source_config_service: SourceConfigService | None = getattr(request.app.state, "source_config_service", None)
+    if source_config_service is not None:
+        return source_config_service.get_cache_status()
+    return {
+        "cache_size": 0,
+        "cache_age_seconds": -1,
+        "change_stream_active": False,
+        "error": "source_config_service not initialized",
+    }
+
+
 @router.post(
     "/admin/invalidate-cache",
     status_code=status.HTTP_200_OK,
