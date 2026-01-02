@@ -3,17 +3,7 @@
 Tests application startup and lifespan per AC5 requirements.
 """
 
-import pytest
 from fastapi.testclient import TestClient
-
-
-@pytest.fixture
-def bff_client():
-    """Create a test client for the BFF application."""
-    from bff.main import create_app
-
-    app = create_app()
-    return TestClient(app)
 
 
 def test_app_creation() -> None:

@@ -5,7 +5,7 @@ Environment-based configuration loading per ADR-002.
 
 from functools import lru_cache
 
-from pydantic_settings import BaseSettings
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
@@ -32,10 +32,10 @@ class Settings(BaseSettings):
     otel_endpoint: str = "http://localhost:4317"
     otel_service_name: str = "bff"
 
-    model_config = {
-        "env_prefix": "",
-        "case_sensitive": False,
-    }
+    model_config = SettingsConfigDict(
+        env_prefix="",
+        case_sensitive=False,
+    )
 
 
 @lru_cache

@@ -3,7 +3,13 @@
 Configures distributed tracing per ADR-002 and project-context.md.
 """
 
+from typing import TYPE_CHECKING
+
 import structlog
+
+if TYPE_CHECKING:
+    from fastapi import FastAPI
+
 from bff.config import get_settings
 from opentelemetry import trace
 from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter
@@ -63,7 +69,7 @@ def setup_tracing() -> None:
     logger.info("OpenTelemetry tracing configured")
 
 
-def instrument_fastapi(app) -> None:
+def instrument_fastapi(app: "FastAPI") -> None:
     """Instrument FastAPI application for automatic tracing.
 
     Args:
