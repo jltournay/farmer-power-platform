@@ -33,13 +33,44 @@ So that the BFF can aggregate data from Plantation and Collection models.
 **Given** BFF needs to call Plantation Model
 **When** I implement `PlantationClient`
 **Then** Client calls `plantation-model` via DAPR service invocation
-**And** Implements these read methods for dashboard use cases:
+**And** Implements full CRUD operations for dashboard and admin:
+
+  **Farmer operations (6 methods):**
   - `get_farmer(farmer_id)` - Single farmer by ID
   - `get_farmer_by_phone(phone)` - Lookup by phone number
-  - `list_farmers(factory_id, page_size, page_token)` - Paginated farmer list
+  - `list_farmers(region_id, collection_point_id, page)` - Paginated list
+  - `create_farmer(...)` - Register new farmer
+  - `update_farmer(farmer_id, ...)` - Update farmer details
   - `get_farmer_summary(farmer_id)` - Farmer with performance metrics
+
+  **Factory operations (5 methods):**
   - `get_factory(factory_id)` - Factory details with thresholds
-  - `list_collection_points(factory_id)` - Collection points for factory
+  - `list_factories(region_id, page)` - Factory list
+  - `create_factory(...)` - Create new factory
+  - `update_factory(factory_id, ...)` - Update factory config
+  - `delete_factory(factory_id)` - Deactivate factory
+
+  **Collection Point operations (5 methods):**
+  - `get_collection_point(id)` - Collection point details
+  - `list_collection_points(factory_id, region_id)` - For filters
+  - `create_collection_point(...)` - Create new collection point
+  - `update_collection_point(id, ...)` - Update collection point
+  - `delete_collection_point(id)` - Deactivate collection point
+
+  **Region operations (6 methods):**
+  - `get_region(region_id)` - Region with geography/agronomic data
+  - `list_regions(county, altitude_band)` - For filters
+  - `create_region(...)` - Create new region
+  - `update_region(region_id, ...)` - Update region config
+  - `get_region_weather(region_id, days)` - Weather history
+  - `get_current_flush(region_id)` - Current tea flush period
+
+  **Performance operations (1 method):**
+  - `get_performance_summary(entity_type, entity_id, period)` - Metrics
+
+  **Communication preferences (1 method):**
+  - `update_communication_preferences(farmer_id, ...)` - Update farmer prefs
+
 **And** Pattern follows ADR-002 §"Service Invocation Pattern" (lines 449-502)
 **And** Retry logic implemented per ADR-005 (tenacity, exponential backoff)
 
@@ -82,7 +113,13 @@ So that the BFF can aggregate data from Plantation and Collection models.
 
 - [ ] **Task 4: PlantationClient** (AC: #2)
   - [ ] Create `services/bff/src/bff/infrastructure/clients/plantation_client.py`
-  - [ ] Implement 6 read methods: `get_farmer`, `get_farmer_by_phone`, `list_farmers`, `get_farmer_summary`, `get_factory`, `list_collection_points`
+  - [ ] Implement 24 CRUD methods across 6 domains:
+    - Farmer (6): get, get_by_phone, list, create, update, get_summary
+    - Factory (5): get, list, create, update, delete
+    - Collection Point (5): get, list, create, update, delete
+    - Region (6): get, list, create, update, get_weather, get_current_flush
+    - Performance (1): get_summary
+    - Communication (1): update_preferences
   - [ ] Unit tests with mocked DAPR channel
 
 - [ ] **Task 5: CollectionClient** (AC: #3)
