@@ -183,7 +183,7 @@ So that secondary leaf images requiring manual review are correctly extracted, s
 - [ ] PR approved and merged (squash)
 - [ ] Local branch cleaned up: `git branch -d story/0-4-9-zip-processor-ingestion`
 
-**PR URL:** _______________ (fill in when created)
+**PR URL:** https://github.com/jltournay/farmer-power-platform/pull/64
 
 ---
 
