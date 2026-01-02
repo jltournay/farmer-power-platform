@@ -92,12 +92,12 @@ So that the BFF can fetch farmer, factory, region, and collection point data for
   ```
 
 ### Story Done
-- [ ] Create Pull Request
+- [x] Create Pull Request
 - [ ] CI passes on PR
 - [ ] Code review completed
 - [ ] PR merged
 
-**PR URL:** _______________
+**PR URL:** https://github.com/jltournay/farmer-power-platform/pull/68
 
 ---
 
@@ -147,6 +147,33 @@ tests/unit/bff/test_plantation_client.py::TestClientClose::test_close_without_ch
 ruff check services/bff/ tests/unit/bff/ && ruff format --check services/bff/ tests/unit/bff/
 ```
 **Lint passed:** [x] Yes / [ ] No
+
+### 3. E2E Tests (Local - Step 7b)
+```bash
+docker compose -f tests/e2e/infrastructure/docker-compose.e2e.yaml up -d --build
+PYTHONPATH="${PYTHONPATH}:.:libs/fp-proto/src" pytest tests/e2e/scenarios/ -v
+docker compose -f tests/e2e/infrastructure/docker-compose.e2e.yaml down -v
+```
+**Output:**
+```
+============================= test session starts ==============================
+platform darwin -- Python 3.11.12, pytest-9.0.2, pluggy-1.6.0
+plugins: anyio-4.12.0, asyncio-1.3.0, langsmith-0.5.1
+asyncio: mode=Mode.AUTO
+
+tests/e2e/scenarios/test_00_infrastructure_verification.py 22 passed
+tests/e2e/scenarios/test_01_plantation_mcp_contracts.py 13 passed
+tests/e2e/scenarios/test_02_collection_mcp_contracts.py 12 passed
+tests/e2e/scenarios/test_03_factory_farmer_flow.py 5 passed
+tests/e2e/scenarios/test_04_quality_blob_ingestion.py 6 passed
+tests/e2e/scenarios/test_05_weather_ingestion.py 6 passed
+tests/e2e/scenarios/test_06_cross_model_events.py 5 passed
+tests/e2e/scenarios/test_07_grading_validation.py 6 passed
+tests/e2e/scenarios/test_08_zip_ingestion.py 10 passed (1 skipped)
+
+================== 85 passed, 1 skipped in 123.49s (0:02:03) ===================
+```
+**E2E passed:** [x] Yes / [ ] No
 
 ---
 
