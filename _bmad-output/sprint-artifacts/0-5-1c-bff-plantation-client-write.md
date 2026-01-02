@@ -1,6 +1,6 @@
 # Story 0.5.1c: BFF PlantationClient - Write Operations
 
-**Status:** in-progress
+**Status:** review
 **GitHub Issue:** #69
 **Story Points:** 2
 
@@ -89,12 +89,12 @@ So that the BFF can create, update, and delete entities in Plantation Model for 
   ```
 
 ### Story Done
-- [ ] Create Pull Request
-- [ ] CI passes on PR
+- [x] Create Pull Request
+- [x] CI passes on PR
 - [ ] Code review completed
 - [ ] PR merged
 
-**PR URL:** _______________
+**PR URL:** https://github.com/jltournay/farmer-power-platform/pull/70
 
 ---
 
@@ -178,6 +178,14 @@ docker compose -f tests/e2e/infrastructure/docker-compose.e2e.yaml down -v
 ```
 ================== 85 passed, 1 skipped in 126.05s (0:02:06) ===================
 ```
+
+### 4. CI Run (Step 9b)
+**CI Run ID:** 20665516999
+**Result:** ✅ All jobs passed (Lint, Unit Tests, Integration Tests)
+
+### 5. E2E CI (Step 9c)
+**E2E Run ID:** 20665555139
+**Result:** ✅ 85 passed, 1 skipped
 
 ---
 
