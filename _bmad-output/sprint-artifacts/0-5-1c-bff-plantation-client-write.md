@@ -73,9 +73,9 @@ So that the BFF can create, update, and delete entities in Plantation Model for 
   - [x] Implement `update_communication_preferences()` accepts individual params
 
 - [x] **Task 5: Unit Tests** (AC: #2)
-  - [x] Added 17 write operation tests to `tests/unit/bff/test_plantation_client.py`
+  - [x] Added 21 write operation tests to `tests/unit/bff/test_plantation_client.py` (17 + 4 code review fixes)
   - [x] Test all 11 write operations
-  - [x] Test validation error handling (NotFoundError for updates/deletes)
+  - [x] Test validation error handling (NotFoundError for updates/deletes, INVALID_ARGUMENT for creates)
 
 ## Git Workflow (MANDATORY)
 
@@ -91,7 +91,7 @@ So that the BFF can create, update, and delete entities in Plantation Model for 
 ### Story Done
 - [x] Create Pull Request
 - [x] CI passes on PR
-- [ ] Code review completed
+- [x] Code review completed
 - [ ] PR merged
 
 **PR URL:** https://github.com/jltournay/farmer-power-platform/pull/70
@@ -243,4 +243,36 @@ Claude Opus 4.5 (claude-opus-4-5-20251101)
 
 **Modified:**
 - `services/bff/src/bff/infrastructure/clients/plantation_client.py` (added 11 write methods + 5 converter methods)
-- `tests/unit/bff/test_plantation_client.py` (added 17 write operation tests)
+- `tests/unit/bff/test_plantation_client.py` (added 17 write operation tests + 4 code review fixes)
+
+---
+
+## Code Review Record
+
+### Review Outcome: APPROVE (after fixes)
+
+### Findings Summary
+
+| Severity | Category | Finding | Resolution |
+|----------|----------|---------|------------|
+| HIGH | Test Gap | Missing test for `is_active` field in update_farmer | Added `test_update_farmer_deactivate` |
+| MEDIUM | Test Gap | No error test for create_farmer validation | Added `test_create_farmer_validation_error` |
+| MEDIUM | Test Gap | No error test for create_collection_point | Added `test_create_collection_point_factory_not_found` |
+| MEDIUM | Test Gap | No error test for create_region validation | Added `test_create_region_validation_error` |
+| LOW | Documentation | Docstrings could mention exception types | Noted for future improvement |
+| LOW | Style | Converters could be @staticmethod | Noted, current approach works |
+
+### Tests Added (Code Review Fixes)
+
+1. **test_update_farmer_deactivate** - Tests setting `is_active=False` in update_farmer
+2. **test_create_farmer_validation_error** - Tests INVALID_ARGUMENT error handling for create_farmer
+3. **test_create_collection_point_factory_not_found** - Tests NOT_FOUND error when factory doesn't exist
+4. **test_create_region_validation_error** - Tests INVALID_ARGUMENT error for duplicate region name
+
+### Post-Review Test Results
+```
+======================== 50 passed in 10.66s ========================
+```
+
+### Review Commit
+`fdbf4f4` - test: Add code review fixes for PlantationClient write tests
