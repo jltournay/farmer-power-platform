@@ -1,6 +1,6 @@
 # Story 0.6.10: Linkage Field Validation with Metrics
 
-**Status:** review
+**Status:** done
 **GitHub Issue:** #59
 **Epic:** [Epic 0.6: Infrastructure Hardening](../epics/epic-0-6-infrastructure-hardening.md)
 **ADR:** [ADR-008: Invalid Linkage Field Handling](../architecture/adr/ADR-008-invalid-linkage-field-handling.md)
@@ -587,6 +587,45 @@ Is seed data using valid linkage fields?
 1. First check if seed data is correct
 2. Then check if farmer seed data was loaded correctly
 3. Only then consider if validation logic has bugs
+
+---
+
+---
+
+## Code Review Evidence (Step 9e)
+
+**Review Date:** 2026-01-02
+**Reviewer:** Claude Opus 4.5 (code-review workflow)
+**Outcome:** ✅ **APPROVED with Minor Comments**
+
+### Review Summary
+
+| Category | Status |
+|----------|--------|
+| E2E Evidence | ✅ VERIFIED (72 passed, 3 xfailed - Run #20654615870) |
+| CI Status | ✅ PASSED (Run #20654573699) |
+| Unit Tests | ✅ 32 tests pass |
+| AC Implementation | ✅ All 5 ACs implemented |
+
+### Findings
+
+| # | Severity | Issue | Action |
+|---|----------|-------|--------|
+| 1 | Medium | Missing metric verification in unit tests | Document for future improvement |
+| 2 | Low | factory_id "unknown" bypass not documented | Design choice - acceptable |
+| 3 | Low | region_id conditional on farmer having region_id | Design choice - acceptable |
+| 4 | Low | Validation order reports first failure only | Design choice - documented |
+| 5 | Trivial | Missing docstring for `cause` parameter | Nice-to-have |
+
+### Verification Checklist
+
+- [x] All tasks completed as claimed
+- [x] E2E tests pass (Local + CI)
+- [x] CI quality checks pass
+- [x] Exception has correct attributes (field_name, field_value)
+- [x] Metric counter instrumented
+- [x] Handler returns retry for validation errors
+- [x] Backward compatible (optional repos)
 
 ---
 
