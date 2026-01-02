@@ -74,7 +74,7 @@ So that the BFF can fetch quality events and delivery records for the dashboard.
 - [x] CI passes on PR (Run ID: 20666247810)
 - [x] E2E CI passes on PR (Run ID: 20666288719)
 - [x] Code review completed
-- [ ] PR merged
+- [x] PR merged
 
 **PR URL:** https://github.com/jltournay/farmer-power-platform/pull/72
 
