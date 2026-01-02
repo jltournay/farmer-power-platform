@@ -1,6 +1,6 @@
 # Story 0.5.1c: BFF PlantationClient - Write Operations
 
-**Status:** review
+**Status:** done
 **GitHub Issue:** #69
 **Story Points:** 2
 
@@ -92,7 +92,7 @@ So that the BFF can create, update, and delete entities in Plantation Model for 
 - [x] Create Pull Request
 - [x] CI passes on PR
 - [x] Code review completed
-- [ ] PR merged
+- [x] PR merged
 
 **PR URL:** https://github.com/jltournay/farmer-power-platform/pull/70
 
