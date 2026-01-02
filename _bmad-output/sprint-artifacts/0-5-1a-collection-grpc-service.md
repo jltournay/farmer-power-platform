@@ -72,7 +72,7 @@ So that the BFF can query documents via DAPR service invocation.
 - [x] Create Pull Request: `gh pr create --title "Story 0.5.1a: Collection gRPC Service" --base main`
 - [x] CI passes on PR
 - [x] Code review completed
-- [ ] PR merged
+- [x] PR merged
 
 **PR URL:** https://github.com/jltournay/farmer-power-platform/pull/66
 
