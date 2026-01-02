@@ -21,6 +21,7 @@ So that the BFF can aggregate data from Plantation and Collection models.
 **And** Service implements document queries only (mirrors MCP tools):
   - `GetDocument` - Single document by ID
   - `ListDocuments` - Query documents with filters (source_id, farmer_id, linkage, date_range)
+  - `SearchDocuments` - Full-text search across document content/attributes
   - `GetFarmerDocuments` - All documents for a farmer across sources
 **And** gRPC server runs on port 50051 alongside existing FastAPI health endpoints
 **And** Unit tests cover all gRPC handlers
@@ -46,7 +47,11 @@ So that the BFF can aggregate data from Plantation and Collection models.
 **Given** BFF needs to call Collection Model
 **When** I implement `CollectionClient`
 **Then** Client calls `collection-model` via DAPR service invocation
-**And** Methods include: `get_document`, `list_documents`, `get_farmer_documents`
+**And** Implements these document query methods:
+  - `get_document(document_id)` - Single document by ID
+  - `list_documents(source_id, farmer_id, linkage, date_range)` - Query with filters
+  - `search_documents(query, source_ids, farmer_id)` - Full-text search
+  - `get_farmer_documents(farmer_id, source_ids)` - All documents for a farmer
 **And** Pattern matches `PlantationClient` implementation
 **And** Retry logic implemented per ADR-005
 
@@ -60,13 +65,13 @@ So that the BFF can aggregate data from Plantation and Collection models.
 
 - [ ] **Task 1: Proto Definition** (AC: #1)
   - [ ] Create `proto/collection/v1/collection_service.proto` with CollectionService
-  - [ ] Define request/response messages for 3 document query methods (mirrors MCP tools)
+  - [ ] Define request/response messages for 4 document query methods (mirrors MCP tools)
   - [ ] Generate Python stubs via `scripts/generate_proto.sh`
   - [ ] Update `libs/fp-proto` package
 
 - [ ] **Task 2: Collection Model gRPC Server** (AC: #1)
   - [ ] Create `services/collection-model/src/collection_model/api/grpc_service.py`
-  - [ ] Implement 3 gRPC handler methods (GetDocument, ListDocuments, GetFarmerDocuments)
+  - [ ] Implement 4 gRPC handler methods: GetDocument, ListDocuments, SearchDocuments, GetFarmerDocuments
   - [ ] Wire gRPC server to existing service startup (port 50051)
   - [ ] Ensure FastAPI health endpoints continue on port 8000 (ADR-011)
 
@@ -82,7 +87,7 @@ So that the BFF can aggregate data from Plantation and Collection models.
 
 - [ ] **Task 5: CollectionClient** (AC: #3)
   - [ ] Create `services/bff/src/bff/infrastructure/clients/collection_client.py`
-  - [ ] Implement `get_document()`, `list_documents()`, `get_farmer_documents()`
+  - [ ] Implement 4 document query methods: `get_document`, `list_documents`, `search_documents`, `get_farmer_documents`
   - [ ] Unit tests with mocked DAPR channel
 
 - [ ] **Task 6: Unit Tests** (AC: #1, #2, #3)
@@ -232,6 +237,9 @@ service CollectionService {
   // Query documents with filters
   rpc ListDocuments(ListDocumentsRequest) returns (ListDocumentsResponse);
 
+  // Full-text search across document content/attributes
+  rpc SearchDocuments(SearchDocumentsRequest) returns (ListDocumentsResponse);
+
   // All documents for a farmer across sources
   rpc GetFarmerDocuments(GetFarmerDocumentsRequest) returns (ListDocumentsResponse);
 }
@@ -256,6 +264,14 @@ message GetFarmerDocumentsRequest {
   repeated string source_ids = 2;  // Optional: filter to specific sources
   google.protobuf.Timestamp start_date = 3;
   google.protobuf.Timestamp end_date = 4;
+}
+
+message SearchDocumentsRequest {
+  string query = 1;                       // Full-text search query
+  repeated string source_ids = 2;         // Optional: filter to specific sources
+  string farmer_id = 3;                   // Optional: filter to farmer
+  int32 page_size = 4;
+  string page_token = 5;
 }
 
 message Document {
