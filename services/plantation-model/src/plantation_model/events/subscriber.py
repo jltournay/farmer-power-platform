@@ -221,18 +221,27 @@ def handle_quality_result(message) -> TopicEventResponse:
             return TopicEventResponse("retry")
 
         except Exception as e:
-            # Check if it's a validation/data error (permanent) vs transient
-            error_str = str(e).lower()
-            if any(term in error_str for term in ["validation", "invalid", "not found", "missing"]):
-                # Permanent error - drop to DLQ
-                logger.error(
-                    "Permanent error processing quality event - sending to DLQ",
-                    error=str(e),
-                    document_id=event_data.document_id,
+            # Story 0.6.10: Check for QualityEventProcessingError (linkage validation failures)
+            # These errors should RETRY so they go to DLQ after max retries (ADR-006)
+            from plantation_model.domain.services.quality_event_processor import (
+                QualityEventProcessingError,
+            )
+
+            if isinstance(e, QualityEventProcessingError):
+                # Linkage validation failure - return retry to trigger DLQ flow
+                logger.warning(
+                    "Linkage validation failed - will retry then DLQ",
+                    error_type=e.error_type,
+                    field=e.field_name,
+                    value=e.field_value,
+                    document_id=e.document_id,
                 )
                 span.set_attribute("error", str(e))
-                event_processing_counter.add(1, {"topic": "quality_result", "status": "drop"})
-                return TopicEventResponse("drop")
+                span.set_attribute("error_type", e.error_type)
+                if e.field_name:
+                    span.set_attribute("error_field", e.field_name)
+                event_processing_counter.add(1, {"topic": "quality_result", "status": "retry"})
+                return TopicEventResponse("retry")
 
             # Unknown error - retry (might be transient)
             logger.exception(

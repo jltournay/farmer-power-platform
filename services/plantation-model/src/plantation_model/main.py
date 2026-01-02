@@ -42,11 +42,20 @@ from plantation_model.infrastructure.mongodb import (
     get_database,
     get_mongodb_client,
 )
+from plantation_model.infrastructure.repositories.factory_repository import (
+    FactoryRepository,
+)
 from plantation_model.infrastructure.repositories.farmer_performance_repository import (
     FarmerPerformanceRepository,
 )
+from plantation_model.infrastructure.repositories.farmer_repository import (
+    FarmerRepository,
+)
 from plantation_model.infrastructure.repositories.grading_model_repository import (
     GradingModelRepository,
+)
+from plantation_model.infrastructure.repositories.region_repository import (
+    RegionRepository,
 )
 from plantation_model.infrastructure.repositories.regional_weather_repository import (
     RegionalWeatherRepository,
@@ -99,11 +108,16 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
         health.set_mongodb_check(check_mongodb_connection)
         logger.info("MongoDB connection initialized")
 
-        # Initialize repositories and services (Story 1.7)
+        # Initialize repositories and services (Story 1.7 + Story 0.6.10)
         db = await get_database()
         grading_model_repo = GradingModelRepository(db)
         farmer_performance_repo = FarmerPerformanceRepository(db)
         regional_weather_repo = RegionalWeatherRepository(db)
+
+        # Story 0.6.10: Additional repositories for linkage field validation
+        farmer_repo = FarmerRepository(db)
+        factory_repo = FactoryRepository(db)
+        region_repo = RegionRepository(db)
 
         # Initialize Collection client for fetching quality documents
         collection_client = CollectionClient()
@@ -112,11 +126,14 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
         # Initialize DAPR pub/sub client for event emission
         event_publisher = DaprPubSubClient()
 
-        # Initialize QualityEventProcessor (Story 1.7)
+        # Initialize QualityEventProcessor (Story 1.7 + Story 0.6.10)
         quality_event_processor = QualityEventProcessor(
             collection_client=collection_client,
             grading_model_repo=grading_model_repo,
             farmer_performance_repo=farmer_performance_repo,
+            farmer_repo=farmer_repo,
+            factory_repo=factory_repo,
+            region_repo=region_repo,
             event_publisher=event_publisher,
         )
         app.state.quality_event_processor = quality_event_processor
