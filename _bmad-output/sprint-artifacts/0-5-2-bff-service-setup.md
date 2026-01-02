@@ -155,9 +155,9 @@ git push origin story/0-5-2-bff-service-setup
 # Wait ~30s, then check CI status
 gh run list --branch story/0-5-2-bff-service-setup --limit 3
 ```
-**CI Run ID:** _______________
-**CI E2E Status:** [ ] Passed / [ ] Failed
-**Verification Date:** _______________
+**CI Run ID:** 20667175547 (quality), 20667306938 (E2E)
+**CI E2E Status:** [x] Passed / [ ] Failed
+**Verification Date:** 2026-01-02
 
 ---
 
