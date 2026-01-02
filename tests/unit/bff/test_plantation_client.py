@@ -735,6 +735,59 @@ class TestFarmerWriteOperations:
         with pytest.raises(NotFoundError, match="Update farmer WM-9999 not found"):
             await client.update_farmer("WM-9999", farmer_data)
 
+    @pytest.mark.asyncio
+    async def test_update_farmer_deactivate(
+        self,
+        plantation_client_with_mock_stub: tuple[PlantationClient, MagicMock],
+    ) -> None:
+        """Test deactivating a farmer via is_active=False."""
+        client, stub = plantation_client_with_mock_stub
+        proto_farmer = create_farmer_proto(farmer_id="WM-0001")
+        proto_farmer.is_active = False
+        stub.UpdateFarmer.return_value = proto_farmer
+
+        farmer_data = FarmerUpdate(is_active=False)
+
+        farmer = await client.update_farmer("WM-0001", farmer_data)
+
+        assert isinstance(farmer, Farmer)
+        stub.UpdateFarmer.assert_called_once()
+        call_args = stub.UpdateFarmer.call_args
+        request = call_args[0][0]
+        assert request.id == "WM-0001"
+        assert request.is_active is False
+
+    @pytest.mark.asyncio
+    async def test_create_farmer_validation_error(
+        self,
+        plantation_client_with_mock_stub: tuple[PlantationClient, MagicMock],
+    ) -> None:
+        """Test create farmer validation error (e.g., duplicate phone)."""
+        client, stub = plantation_client_with_mock_stub
+        error = grpc.aio.AioRpcError(
+            code=grpc.StatusCode.INVALID_ARGUMENT,
+            initial_metadata=None,
+            trailing_metadata=None,
+            details="Phone number already exists",
+            debug_error_string="",
+        )
+        stub.CreateFarmer.side_effect = error
+
+        farmer_data = FarmerCreate(
+            first_name="Test",
+            last_name="Farmer",
+            phone="+254712345678",
+            national_id="12345678",
+            farm_size_hectares=0.5,
+            latitude=-0.4200,
+            longitude=36.9560,
+            collection_point_id="nyeri-highland-cp-001",
+        )
+
+        # INVALID_ARGUMENT errors are re-raised (not converted to specific exception)
+        with pytest.raises(grpc.aio.AioRpcError):
+            await client.create_farmer(farmer_data)
+
 
 class TestFactoryWriteOperations:
     """Tests for Factory write operations (3 methods)."""
@@ -905,6 +958,32 @@ class TestCollectionPointWriteOperations:
         assert result is True
         stub.DeleteCollectionPoint.assert_called_once()
 
+    @pytest.mark.asyncio
+    async def test_create_collection_point_factory_not_found(
+        self,
+        plantation_client_with_mock_stub: tuple[PlantationClient, MagicMock],
+    ) -> None:
+        """Test create collection point with invalid factory ID."""
+        client, stub = plantation_client_with_mock_stub
+        error = grpc.aio.AioRpcError(
+            code=grpc.StatusCode.NOT_FOUND,
+            initial_metadata=None,
+            trailing_metadata=None,
+            details="Factory not found",
+            debug_error_string="",
+        )
+        stub.CreateCollectionPoint.side_effect = error
+
+        cp_data = CollectionPointCreate(
+            name="New CP",
+            factory_id="INVALID-FACTORY",
+            location=GeoLocation(latitude=-0.4200, longitude=36.9550, altitude_meters=1900),
+            region_id="nyeri-highland",
+        )
+
+        with pytest.raises(NotFoundError, match="Create collection point not found"):
+            await client.create_collection_point(cp_data)
+
 
 class TestRegionWriteOperations:
     """Tests for Region write operations (2 methods)."""
@@ -990,6 +1069,57 @@ class TestRegionWriteOperations:
 
         with pytest.raises(NotFoundError, match="Update region invalid-region not found"):
             await client.update_region("invalid-region", region_data)
+
+    @pytest.mark.asyncio
+    async def test_create_region_validation_error(
+        self,
+        plantation_client_with_mock_stub: tuple[PlantationClient, MagicMock],
+    ) -> None:
+        """Test create region validation error (e.g., duplicate name)."""
+        client, stub = plantation_client_with_mock_stub
+        error = grpc.aio.AioRpcError(
+            code=grpc.StatusCode.INVALID_ARGUMENT,
+            initial_metadata=None,
+            trailing_metadata=None,
+            details="Region name already exists",
+            debug_error_string="",
+        )
+        stub.CreateRegion.side_effect = error
+
+        region_data = RegionCreate(
+            name="Duplicate Region",  # Server returns error for duplicate name
+            county="TestCounty",
+            geography=Geography(
+                center_gps=GPS(lat=0.5, lng=37.0),  # Valid coordinates
+                radius_km=25,
+                altitude_band=AltitudeBand(
+                    min_meters=1800,
+                    max_meters=2200,
+                    label=AltitudeBandLabel.HIGHLAND,
+                ),
+            ),
+            flush_calendar=FlushCalendar(
+                first_flush=FlushPeriod(start="03-15", end="05-15"),
+                monsoon_flush=FlushPeriod(start="06-15", end="09-30"),
+                autumn_flush=FlushPeriod(start="10-15", end="12-15"),
+                dormant=FlushPeriod(start="12-16", end="03-14"),
+            ),
+            agronomic=Agronomic(
+                soil_type="volcanic_red",
+                typical_diseases=["blister_blight"],
+                harvest_peak_hours="06:00-10:00",
+                frost_risk=True,
+            ),
+            weather_config=WeatherConfig(
+                api_location=GPS(lat=0.5, lng=37.0),  # Valid coordinates
+                altitude_for_api=1900,
+                collection_time="06:00",
+            ),
+        )
+
+        # INVALID_ARGUMENT errors are re-raised
+        with pytest.raises(grpc.aio.AioRpcError):
+            await client.create_region(region_data)
 
 
 class TestCommunicationPreferencesWriteOperations:
