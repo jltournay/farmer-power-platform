@@ -335,47 +335,29 @@ class SeedValidator:
             print("ERRORS")
 
     def _validate_source_configs(self) -> None:
-        """Validate source_configs.json (MongoDB seed structure)."""
+        """Validate source_configs.json against SourceConfig Pydantic model."""
         print("Validating source_configs.json...", end=" ")
         data = self._load_json("source_configs.json")
         if data is None:
             print("SKIP")
             return
 
-        # MongoDB seed structure: { source_id, enabled, description, config: {...} }
-        required_fields = ["source_id", "enabled", "config"]
-        config_sections = ["ingestion", "storage"]
+        try:
+            from fp_common.models.source_config import SourceConfig
 
-        for i, record in enumerate(data):
-            record_id = record.get("source_id", f"index-{i}")
-            missing = [f for f in required_fields if f not in record]
-            if missing:
-                self.errors.append(
-                    ValidationError(
-                        "source_configs.json",
-                        i,
-                        record_id,
-                        f"Missing required fields: {missing}",
-                    )
-                )
-            # Validate config structure
-            config = record.get("config", {})
-            if config:
-                config_missing = [s for s in config_sections if s not in config]
-                if config_missing:
-                    self.errors.append(
-                        ValidationError(
-                            "source_configs.json",
-                            i,
-                            record_id,
-                            f"Config missing sections: {config_missing}",
-                        )
-                    )
+            for i, record in enumerate(data):
+                record_id = record.get("source_id", f"index-{i}")
+                try:
+                    SourceConfig.model_validate(record)
+                except Exception as e:
+                    self.errors.append(ValidationError("source_configs.json", i, record_id, str(e)))
 
-        if not any(e.file == "source_configs.json" for e in self.errors):
-            print(f"OK ({len(data)} records)")
-        else:
-            print("ERRORS")
+            if not any(e.file == "source_configs.json" for e in self.errors):
+                print(f"OK ({len(data)} records)")
+            else:
+                print("ERRORS")
+        except ImportError as e:
+            print(f"SKIP (model not available: {e})")
 
 
 def main() -> int:

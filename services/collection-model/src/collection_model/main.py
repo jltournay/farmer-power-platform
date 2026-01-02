@@ -112,6 +112,12 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
         app.state.source_config_service = SourceConfigService(db)
         app.state.ingestion_queue = IngestionQueue(db)
 
+        # Story 0.6.9: Warm cache before accepting requests (ADR-007)
+        await app.state.source_config_service.warm_cache()
+
+        # Story 0.6.9: Start change stream watcher for real-time invalidation (ADR-007)
+        await app.state.source_config_service.start_change_stream()
+
         # Ensure indexes for ingestion queue
         await app.state.ingestion_queue.ensure_indexes()
 
@@ -225,6 +231,10 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
 
     # Shutdown
     logger.info("Shutting down Collection Model service")
+
+    # Story 0.6.9: Stop change stream watcher (ADR-007)
+    if hasattr(app.state, "source_config_service"):
+        await app.state.source_config_service.stop_change_stream()
 
     # Stop the worker
     if hasattr(app.state, "content_processor_worker"):
