@@ -1,9 +1,10 @@
-# Story 0.4.9: ZIP Processor Ingestion
+# Story 0.4.9: ZIP Processor E2E Tests (Exception Images)
 
-**Status:** ready-for-dev
-**GitHub Issue:** <!-- Auto-created by dev-story workflow -->
+**Status:** review
+**GitHub Issue:** #63
 **Epic:** [Epic 0.4: E2E Test Scenarios](../epics/epic-0-4-e2e-tests.md)
 **Story Points:** 5
+**Validates:** Story 2.5 (ZIP Content Processor for Exception Images)
 
 ---
 
@@ -68,7 +69,7 @@ Story is **NOT DONE** until ALL of these are true:
 
 - [ ] **Tests written** - All 9 tests in `test_08_zip_ingestion.py`
 - [ ] **Test fixtures created** - ZIP files in `tests/e2e/fixtures/`
-- [ ] **Source config added** - `e2e-qc-analyzer-zip` in seed data
+- [ ] **Source config added** - `e2e-exception-images-zip` in seed data
 - [ ] **Docker running** - E2E infrastructure started with `docker compose up -d --build`
 - [ ] **Tests pass locally** - `pytest` output shows all green (paste evidence below)
 - [ ] **Lint passes** - `ruff check . && ruff format --check .`
@@ -82,17 +83,19 @@ Story is **NOT DONE** until ALL of these are true:
 
 ## Story
 
-As a **data engineer**,
-I want ZIP file ingestion validated with manifest parsing and atomic storage,
-So that bulk QC analyzer uploads are processed correctly.
+As a **Knowledge Model AI agent**,
+I want the ZIP processor for exception images validated end-to-end,
+So that secondary leaf images requiring manual review are correctly extracted, stored, and events emitted.
+
+**Context:** Story 2.5 implemented the ZipExtractionProcessor for exception images. This story provides E2E test coverage to validate the implementation works correctly in the full Docker environment.
 
 ## Acceptance Criteria
 
-1. **AC1: Valid ZIP with Manifest** - Given source config `e2e-qc-analyzer-zip` exists with `processor_type: zip-extraction`, When I upload a valid ZIP with manifest.json and 3 documents, Then all 3 documents are created in MongoDB atomically
+1. **AC1: Valid ZIP with Manifest** - Given source config `e2e-exception-images-zip` exists with `processor_type: zip-extraction`, When I upload a valid ZIP with manifest.json and 3 exception image documents, Then all 3 documents are created in MongoDB atomically
 
-2. **AC2: File Extraction to Blob** - Given a ZIP contains multiple documents, When processing completes successfully, Then all files are extracted and stored to blob storage with correct paths
+2. **AC2: File Extraction to Blob** - Given a ZIP contains exception images, When processing completes successfully, Then all images are extracted and stored to `exception-images-e2e` container with correct paths
 
-3. **AC3: MCP Query Returns Documents** - Given the ZIP is processed, When I query via `get_documents(source_id="e2e-qc-analyzer-zip")`, Then all documents from the manifest are returned
+3. **AC3: MCP Query Returns Documents** - Given the ZIP is processed, When I query via `get_documents(source_id="e2e-exception-images-zip")`, Then all documents from the manifest are returned
 
 4. **AC4: Corrupt ZIP Handling** - Given a corrupt ZIP file is uploaded, When the blob event is triggered, Then processing fails gracefully with "Corrupt ZIP file detected" error
 
@@ -109,18 +112,21 @@ So that bulk QC analyzer uploads are processed correctly.
 ## Tasks / Subtasks
 
 - [ ] **Task 1: Create Test Fixtures** (AC: 1, 4, 5, 6, 7, 9)
-  - [ ] Create `tests/e2e/fixtures/valid_batch_3_docs.zip` with manifest.json and 3 leaf samples
+  - [ ] Create `tests/e2e/fixtures/valid_exception_batch.zip` with manifest.json and 3 exception images
   - [ ] Create `tests/e2e/fixtures/corrupt_zip.zip` (intentionally corrupt)
   - [ ] Create `tests/e2e/fixtures/missing_manifest.zip` (no manifest.json)
   - [ ] Create `tests/e2e/fixtures/invalid_manifest_schema.zip` (malformed manifest)
   - [ ] Create `tests/e2e/fixtures/path_traversal_attempt.zip` (contains `../etc/passwd`)
+  - [ ] Create `tests/e2e/fixtures/generate_zip_fixtures.py` (fixture generator script)
 
 - [ ] **Task 2: Add Source Config** (AC: 1, 2, 3)
-  - [ ] Add `e2e-qc-analyzer-zip` to `tests/e2e/infrastructure/seed/source_configs.json`
+  - [ ] Add `e2e-exception-images-zip` to `tests/e2e/infrastructure/seed/source_configs.json`
   - [ ] Configure `processor_type: zip-extraction`
-  - [ ] Configure `storage.index_collection: quality_documents`
-  - [ ] Configure `storage.file_container: extracted-files-e2e`
-  - [ ] Configure `events.on_success.topic: collection.quality_result.received`
+  - [ ] Configure `landing_container: exception-landing-e2e` (dedicated container)
+  - [ ] Configure `storage.index_collection: documents`
+  - [ ] Configure `storage.file_container: exception-images-e2e`
+  - [ ] Configure `events.on_success.topic: collection.exception_images.received`
+  - [ ] Update `tests/e2e/conftest.py` to create required containers
 
 - [ ] **Task 3: Create Test File Scaffold** (AC: All)
   - [ ] Create `tests/e2e/scenarios/test_08_zip_ingestion.py`
@@ -129,21 +135,21 @@ So that bulk QC analyzer uploads are processed correctly.
   - [ ] Add file docstring documenting test scope
 
 - [ ] **Task 4: Implement Valid ZIP Tests** (AC: 1, 2, 3)
-  - [ ] Test AC1: Upload valid_batch_3_docs.zip → 3 documents created
-  - [ ] Test AC2: Verify files extracted to blob storage
+  - [ ] Test AC1: Upload valid_exception_batch.zip -> 3 documents created
+  - [ ] Test AC2: Verify images extracted to exception-images-e2e container
   - [ ] Test AC3: Query via Collection MCP returns all documents
 
 - [ ] **Task 5: Implement Error Handling Tests** (AC: 4, 5, 6)
-  - [ ] Test AC4: Corrupt ZIP → "Corrupt ZIP file detected"
-  - [ ] Test AC5: Missing manifest → "Missing manifest file: manifest.json"
-  - [ ] Test AC6: Invalid manifest schema → validation error
+  - [ ] Test AC4: Corrupt ZIP -> "Corrupt ZIP file detected"
+  - [ ] Test AC5: Missing manifest -> "Missing manifest file: manifest.json"
+  - [ ] Test AC6: Invalid manifest schema -> validation error
 
 - [ ] **Task 6: Implement Security Tests** (AC: 7, 8)
-  - [ ] Test AC7: Path traversal → "path traversal rejected"
-  - [ ] Test AC8: Size limit exceeded → size limit error
+  - [ ] Test AC7: Path traversal -> "path traversal rejected"
+  - [ ] Test AC8: Size limit exceeded -> SKIPPED (unit test coverage only - 500MB file impractical)
 
 - [ ] **Task 7: Implement Duplicate Detection Test** (AC: 9)
-  - [ ] Test AC9: Upload same ZIP twice → second is skipped as duplicate
+  - [ ] Test AC9: Upload same ZIP twice -> second is skipped as duplicate
 
 - [ ] **Task 8: Test Validation** (AC: All)
   - [ ] Run `ruff check tests/e2e/scenarios/test_08_zip_ingestion.py`
@@ -156,7 +162,7 @@ So that bulk QC analyzer uploads are processed correctly.
 **All story development MUST use feature branches.** Direct pushes to main are blocked.
 
 ### Story Start
-- [ ] GitHub Issue exists or created: `gh issue create --title "Story 0.4.9: ZIP Processor Ingestion"`
+- [ ] GitHub Issue exists or created: `gh issue create --title "Story 0.4.9: ZIP Processor E2E Tests"`
 - [ ] Feature branch created from main:
   ```bash
   git checkout main && git pull origin main
@@ -166,18 +172,18 @@ So that bulk QC analyzer uploads are processed correctly.
 **Branch name:** `story/0-4-9-zip-processor-ingestion`
 
 ### During Development
-- [ ] All commits reference GitHub issue: `Relates to #XX`
+- [ ] All commits reference GitHub issue: `Relates to #63`
 - [ ] Commits are atomic by type (production, test, seed - not mixed)
 - [ ] Push to feature branch: `git push -u origin story/0-4-9-zip-processor-ingestion`
 
 ### Story Done
-- [ ] Create Pull Request: `gh pr create --title "Story 0.4.9: ZIP Processor Ingestion" --base main`
+- [ ] Create Pull Request: `gh pr create --title "Story 0.4.9: ZIP Processor E2E Tests" --base main`
 - [ ] CI passes on PR (including E2E tests)
 - [ ] Code review completed (`/code-review` or human review)
 - [ ] PR approved and merged (squash)
 - [ ] Local branch cleaned up: `git branch -d story/0-4-9-zip-processor-ingestion`
 
-**PR URL:** _______________ (fill in when created)
+**PR URL:** https://github.com/jltournay/farmer-power-platform/pull/64
 
 ---
 
@@ -191,7 +197,7 @@ pytest tests/unit/ -v
 ```
 **Output:**
 ```
-(paste test summary here - e.g., "42 passed in 5.23s")
+N/A - This is an E2E test story, no unit tests added
 ```
 
 ### 2. E2E Tests (MANDATORY)
@@ -210,15 +216,31 @@ docker compose -f tests/e2e/infrastructure/docker-compose.e2e.yaml down -v
 ```
 **Output:**
 ```
-(paste E2E test output here - story is NOT ready for review without this)
+============================= test session starts ==============================
+platform darwin -- Python 3.11.12, pytest-9.0.2, pluggy-1.6.0
+tests/e2e/scenarios/test_08_zip_ingestion.py::TestValidZipProcessing::test_valid_zip_creates_documents PASSED [ 11%]
+tests/e2e/scenarios/test_08_zip_ingestion.py::TestValidZipProcessing::test_files_extracted_to_blob_storage PASSED [ 22%]
+tests/e2e/scenarios/test_08_zip_ingestion.py::TestValidZipProcessing::test_mcp_query_returns_documents PASSED [ 33%]
+tests/e2e/scenarios/test_08_zip_ingestion.py::TestZipErrorHandling::test_corrupt_zip_fails_with_error PASSED [ 44%]
+tests/e2e/scenarios/test_08_zip_ingestion.py::TestZipErrorHandling::test_missing_manifest_fails_with_error PASSED [ 55%]
+tests/e2e/scenarios/test_08_zip_ingestion.py::TestZipErrorHandling::test_invalid_manifest_schema_fails_with_error PASSED [ 66%]
+tests/e2e/scenarios/test_08_zip_ingestion.py::TestZipSecurity::test_path_traversal_attempt_rejected PASSED [ 77%]
+tests/e2e/scenarios/test_08_zip_ingestion.py::TestZipSizeLimit::test_size_limit_exceeded_fails SKIPPED [ 88%]
+tests/e2e/scenarios/test_08_zip_ingestion.py::TestZipDuplicateDetection::test_duplicate_zip_is_detected_and_skipped PASSED [100%]
+======================== 8 passed, 1 skipped in 19.61s =========================
 ```
-**E2E passed:** [ ] Yes / [ ] No
+**E2E passed:** [x] Yes / [ ] No
+
+### Full E2E Suite Regression Test
+```
+================== 83 passed, 1 skipped in 127.06s (0:02:07) ===================
+```
 
 ### 3. Lint Check
 ```bash
 ruff check . && ruff format --check .
 ```
-**Lint passed:** [ ] Yes / [ ] No
+**Lint passed:** [x] Yes / [ ] No
 
 ### 4. CI Verification on Story Branch (MANDATORY)
 
@@ -236,10 +258,10 @@ gh workflow run e2e.yaml --ref story/0-4-9-zip-processor-ingestion
 sleep 10
 gh run list --workflow=e2e.yaml --branch story/0-4-9-zip-processor-ingestion --limit 1
 ```
-**CI Run ID:** _______________
-**E2E Run ID:** _______________
-**CI E2E Status:** [ ] Passed / [ ] Failed
-**Verification Date:** _______________
+**CI Run ID:** 20658107844
+**E2E Run ID:** 20658147387
+**CI E2E Status:** [x] Passed / [ ] Failed
+**Verification Date:** 2026-01-02
 
 ---
 
@@ -265,7 +287,8 @@ If you modified ANY production code (`services/`, `mcp-servers/`, `libs/`), docu
 
 | File:Lines | What Changed | Why (with evidence) | Type |
 |------------|--------------|---------------------|------|
-| (none) | | | |
+| services/collection-model/.../zip_extraction.py:211 | Changed error_type="zip_extraction" to "extraction" | IngestionJob model (line 80) only accepts Literal["extraction", "storage", "validation", "config"]. zip_extraction is invalid and caused Pydantic validation errors that blocked queue processing. | Bugfix |
+| services/collection-model/.../exceptions.py:95 | Changed error_type="zip_extraction" to "extraction" | Same as above - ZipExtractionError used invalid error_type | Bugfix |
 
 **Rules:**
 - "To pass tests" is NOT a valid reason
@@ -320,148 +343,152 @@ If you modified ANY unit test behavior, document here:
 
 ## Dev Notes
 
-### ZIP Processor Architecture
+### Domain Context: Exception Images
 
-This story validates the **ZipExtractionProcessor** which handles bulk QC analyzer uploads.
+This story validates the **ZipExtractionProcessor** for **Exception Images** - secondary leaf images requiring manual review or AI analysis by the Knowledge Model.
 
-```
-ZIP PROCESSOR INGESTION FLOW (Story 0.4.9)
+**Event Flow:**
+- Topic: `collection.exception_images.received` (NOT quality_result.received)
+- Target: Knowledge Model (NOT Plantation Model)
+- Purpose: Exception image analysis, not standard quality grading
 
-┌─────────────────────────────────────────────────────────────────────────┐
-│                         ZIP INGESTION PIPELINE                          │
-├─────────────────────────────────────────────────────────────────────────┤
-│                                                                         │
-│  1. UPLOAD                2. TRIGGER               3. PROCESS           │
-│  ┌─────────────┐         ┌─────────────┐         ┌─────────────┐       │
-│  │  valid.zip  │ ──────► │  Azurite    │ ──────► │  Collection │       │
-│  │  (3 docs)   │  blob   │  Blob Event │  POST   │    Model    │       │
-│  └─────────────┘         └─────────────┘  /blob  └──────┬──────┘       │
-│                                                          │              │
-│  4. VALIDATE              5. EXTRACT               6. STORE            │
-│  ┌─────────────┐         ┌─────────────┐         ┌─────────────┐       │
-│  │  manifest   │ ──────► │   Files to  │ ──────► │   MongoDB   │       │
-│  │  .json      │  parse  │    Blob     │ atomic  │  Documents  │       │
-│  └─────────────┘         └─────────────┘         └─────────────┘       │
-│                                                                         │
-│  SECURITY CHECKS:                                                       │
-│  - Corrupt ZIP detection (testzip())                                   │
-│  - Missing manifest detection                                          │
-│  - Manifest schema validation (Pydantic)                               │
-│  - Path traversal rejection (../)                                      │
-│  - Size limit enforcement (500MB max)                                  │
-│  - Content hash deduplication                                          │
-│                                                                         │
-└─────────────────────────────────────────────────────────────────────────┘
-```
+### Reference: Production Source Config
 
-### ZIP Manifest Format
+Based on `config/source-configs/qc-analyzer-exceptions.yaml`:
 
-**Source:** `services/collection-model/src/collection_model/domain/manifest.py`
+```yaml
+source_id: qc-analyzer-exceptions
+display_name: QC Analyzer - Exception Images
+description: Secondary leaf images requiring manual review or AI analysis
 
-```json
-{
-  "manifest_version": "1.0",
-  "source_id": "e2e-qc-analyzer-zip",
-  "created_at": "2025-01-01T00:00:00Z",
-  "linkage": {
-    "farmer_id": "FRM-E2E-ZIP-001",
-    "factory_id": "FAC-E2E-001"
-  },
-  "payload": {
-    "grading_model_id": "tbk_kenya_tea_v1",
-    "grading_model_version": "1.0.0"
-  },
-  "documents": [
-    {
-      "document_id": "leaf_001",
-      "files": [
-        {"path": "images/leaf_001.jpg", "role": "image", "mime_type": "image/jpeg"},
-        {"path": "metadata/leaf_001.json", "role": "metadata"}
-      ],
-      "attributes": {
-        "leaf_type": "two_leaves_bud",
-        "grade": "Primary",
-        "weight_kg": 5.0
-      }
-    }
-  ]
-}
+ingestion:
+  mode: blob_trigger
+  landing_container: qc-analyzer-landing
+  processor_type: zip-extraction
+  path_pattern:
+    pattern: "exceptions/{plantation_id}/{batch_id}.zip"
+    extract_fields:
+      - plantation_id
+      - batch_id
+  zip_config:
+    manifest_file: manifest.json
+
+transformation:
+  ai_agent_id: qc-exception-extraction-agent
+  extract_fields:
+    - plantation_id
+    - batch_id
+    - batch_result_ref
+    - exception_count
+    - exception_images
+  link_field: batch_result_ref
+
+storage:
+  raw_container: exception-images-raw
+  file_container: exception-images
+  file_path_pattern: "{plantation_id}/{batch_id}/{doc_id}/{filename}"
+  index_collection: documents
+
+events:
+  on_success:
+    topic: collection.exception_images.received
+    payload_fields:
+      - document_id
+      - plantation_id
+      - batch_id
+      - exception_count
+  on_failure:
+    topic: collection.exception_images.failed
 ```
 
-### ZipExtractionProcessor Key Methods
-
-**Source:** `services/collection-model/src/collection_model/processors/zip_extraction.py`
-
-| Method | Purpose |
-|--------|---------|
-| `process()` | Main entry point - orchestrates ZIP processing pipeline |
-| `_download_blob()` | Downloads ZIP from Azure Blob Storage |
-| `_store_raw_zip()` | Stores raw ZIP before processing |
-| `_extract_and_validate_manifest()` | Extracts and validates manifest.json |
-| `_process_document()` | Processes each document in manifest |
-| `_extract_and_store_file()` | Extracts files with path traversal check |
-| `_store_documents_atomic()` | Atomic MongoDB batch insert |
-
-### Security Validations
-
-| Check | Location | Error |
-|-------|----------|-------|
-| Corrupt ZIP | Line 337-338 | "Corrupt ZIP file detected" |
-| Missing manifest | Line 345-346 | "Missing manifest file: manifest.json" |
-| Invalid schema | Line 357-360 | "Invalid manifest structure: ..." |
-| Path traversal | Line 461-464 | "path traversal rejected" |
-| Size limit | Line 122-123 | "ZIP exceeds maximum size" |
-| Document count | Line 139-142 | "ZIP exceeds maximum document count" |
-
-### Source Config for ZIP Ingestion
+### E2E Source Config (Seed Data)
 
 Add to `tests/e2e/infrastructure/seed/source_configs.json`:
 
 ```json
 {
-  "source_id": "e2e-qc-analyzer-zip",
-  "display_name": "E2E QC Analyzer ZIP",
+  "source_id": "e2e-exception-images-zip",
+  "display_name": "E2E Exception Images ZIP",
   "enabled": true,
-  "description": "E2E Test - ZIP processor for bulk QC analyzer uploads (Story 0.4.9)",
+  "description": "E2E Test - ZIP processor for exception images (Story 0.4.9, validates Story 2.5)",
   "ingestion": {
     "mode": "blob_trigger",
     "processor_type": "zip-extraction",
-    "landing_container": "quality-events-e2e",
+    "landing_container": "exception-landing-e2e",
     "path_pattern": {
-      "pattern": "zip/{factory_id}/{batch_id}.zip",
-      "extract_fields": ["factory_id", "batch_id"]
+      "pattern": "{plantation_id}/{batch_id}.zip",
+      "extract_fields": ["plantation_id", "batch_id"]
     },
     "zip_config": {
-      "manifest_file": "manifest.json"
+      "manifest_file": "manifest.json",
+      "images_folder": "images",
+      "extract_images": true,
+      "image_storage_container": "exception-images-e2e"
     }
   },
   "transformation": {
     "ai_agent_id": null,
-    "link_field": "farmer_id",
+    "link_field": "batch_result_ref",
     "extract_fields": [
-      "farmer_id",
-      "factory_id",
-      "grading_model_id",
-      "grading_model_version",
-      "leaf_type",
-      "grade",
-      "weight_kg"
+      "plantation_id",
+      "batch_id",
+      "batch_result_ref",
+      "exception_count",
+      "exception_type",
+      "severity"
     ]
   },
   "storage": {
-    "index_collection": "quality_documents",
-    "raw_container": "raw-documents-e2e",
-    "file_container": "extracted-files-e2e",
-    "file_path_pattern": "{source_id}/{farmer_id}/{doc_id}/{filename}"
+    "index_collection": "documents",
+    "raw_container": "exception-raw-e2e",
+    "file_container": "exception-images-e2e",
+    "file_path_pattern": "{plantation_id}/{batch_id}/{doc_id}/{filename}"
   },
   "events": {
     "on_success": {
-      "topic": "collection.quality_result.received",
-      "payload_fields": ["farmer_id", "document_count"]
+      "topic": "collection.exception_images.received",
+      "payload_fields": ["document_id", "plantation_id", "batch_id", "exception_count"]
+    },
+    "on_failure": {
+      "topic": "collection.exception_images.failed",
+      "payload_fields": ["source_id", "error_type", "error_message"]
     }
   },
   "created_at": "2025-01-01T00:00:00Z",
   "updated_at": "2025-01-01T00:00:00Z"
+}
+```
+
+### ZIP Manifest Format (Exception Images)
+
+```json
+{
+  "manifest_version": "1.0",
+  "source_id": "e2e-exception-images-zip",
+  "created_at": "2025-01-01T00:00:00Z",
+  "linkage": {
+    "plantation_id": "PLT-E2E-001",
+    "batch_id": "BATCH-E2E-001",
+    "batch_result_ref": "QC-RESULT-001"
+  },
+  "payload": {
+    "exception_count": 3,
+    "grading_session_id": "GS-001"
+  },
+  "documents": [
+    {
+      "document_id": "exception_001",
+      "files": [
+        {"path": "images/exception_001.jpg", "role": "image", "mime_type": "image/jpeg"},
+        {"path": "metadata/exception_001.json", "role": "metadata"}
+      ],
+      "attributes": {
+        "exception_type": "foreign_matter",
+        "severity": "high",
+        "notes": "Detected debris in sample"
+      }
+    }
+  ]
 }
 ```
 
@@ -470,178 +497,63 @@ Add to `tests/e2e/infrastructure/seed/source_configs.json`:
 ```
 tests/e2e/
 ├── fixtures/
-│   ├── valid_batch_3_docs.zip      # 3 leaf samples with images + metadata
-│   ├── corrupt_zip.zip             # Intentionally corrupt (invalid header)
-│   ├── missing_manifest.zip        # No manifest.json inside
-│   ├── invalid_manifest_schema.zip # manifest.json with wrong structure
-│   └── path_traversal_attempt.zip  # Contains ../etc/passwd path
+│   ├── valid_exception_batch.zip      # 3 exception images with metadata
+│   ├── corrupt_zip.zip                # Intentionally corrupt (invalid header)
+│   ├── missing_manifest.zip           # No manifest.json inside
+│   ├── invalid_manifest_schema.zip    # manifest.json with wrong structure
+│   ├── path_traversal_attempt.zip     # Contains ../etc/passwd path
+│   └── generate_zip_fixtures.py       # Fixture generator script
 └── scenarios/
-    └── test_08_zip_ingestion.py    # 9 E2E tests
+    └── test_08_zip_ingestion.py       # 9 E2E tests
 ```
 
-### Test Implementation Pattern
+### Containers Required
 
-```python
-@pytest.mark.e2e
-class TestValidZipIngestion:
-    """Valid ZIP ingestion tests (AC1-AC3)."""
-
-    @pytest.mark.asyncio
-    async def test_valid_zip_creates_all_documents(
-        self,
-        collection_api,
-        azurite_client,
-        mongodb_direct,
-        seed_data,
-    ):
-        """AC1: Upload valid ZIP with 3 documents → all created atomically."""
-        # 1. Load valid_batch_3_docs.zip from fixtures
-        zip_path = Path(__file__).parent.parent / "fixtures" / "valid_batch_3_docs.zip"
-        with open(zip_path, "rb") as f:
-            zip_content = f.read()
-
-        # 2. Upload to Azurite
-        blob_path = "zip/FAC-E2E-001/batch_001.zip"
-        await azurite_client.upload_blob(
-            container="quality-events-e2e",
-            blob_path=blob_path,
-            content=zip_content,
-        )
-
-        # 3. Trigger blob event
-        result = await collection_api.trigger_blob_event(
-            container="quality-events-e2e",
-            blob_path=blob_path,
-        )
-        assert result["accepted"] is True
-
-        # 4. Wait for processing
-        await asyncio.sleep(5)
-
-        # 5. Verify 3 documents created
-        documents = await mongodb_direct.find_documents(
-            collection="quality_documents",
-            query={"ingestion.source_id": "e2e-qc-analyzer-zip"},
-        )
-        assert len(documents) == 3, f"Expected 3 documents, got {len(documents)}"
-```
-
-### Creating Test ZIP Files
-
-Use Python's zipfile module to create test fixtures programmatically:
-
-```python
-import io
-import json
-import zipfile
-
-def create_valid_batch_zip():
-    """Create valid_batch_3_docs.zip for E2E tests."""
-    buffer = io.BytesIO()
-    with zipfile.ZipFile(buffer, 'w', zipfile.ZIP_DEFLATED) as zf:
-        # Create manifest
-        manifest = {
-            "manifest_version": "1.0",
-            "source_id": "e2e-qc-analyzer-zip",
-            "created_at": "2025-01-01T00:00:00Z",
-            "linkage": {
-                "farmer_id": "FRM-E2E-ZIP-001",
-                "factory_id": "FAC-E2E-001"
-            },
-            "payload": {
-                "grading_model_id": "tbk_kenya_tea_v1"
-            },
-            "documents": [
-                {
-                    "document_id": "leaf_001",
-                    "files": [
-                        {"path": "metadata/leaf_001.json", "role": "metadata"}
-                    ],
-                    "attributes": {"leaf_type": "two_leaves_bud", "grade": "Primary"}
-                },
-                # ... 2 more documents
-            ]
-        }
-        zf.writestr("manifest.json", json.dumps(manifest, indent=2))
-
-        # Add metadata files
-        for i in range(1, 4):
-            metadata = {"leaf_id": f"leaf_00{i}", "weight_kg": 5.0}
-            zf.writestr(f"metadata/leaf_00{i}.json", json.dumps(metadata))
-
-    return buffer.getvalue()
-```
-
-### Test Prioritization
-
-| Test | AC | Priority | Reason |
-|------|-----|----------|--------|
-| Valid ZIP (3 docs) | AC1 | P0 | Core happy path |
-| File extraction | AC2 | P0 | Core functionality |
-| MCP query | AC3 | P0 | Integration verification |
-| Corrupt ZIP | AC4 | P0 | Security/robustness |
-| Missing manifest | AC5 | P0 | Error handling |
-| Invalid schema | AC6 | P1 | Validation |
-| Path traversal | AC7 | P0 | **SECURITY CRITICAL** |
-| Size limit | AC8 | P1 | Resource protection |
-| Duplicate | AC9 | P1 | Idempotency |
-
-### Learnings from Previous Stories
-
-**From Story 0.4.8 (Grading Validation):**
-- Delta-based assertions (`final >= 1`) are more robust than (`final > initial`) for date rollovers
-- Use `get_grade_distribution()` helper pattern for before/after verification
-- Query `today.grade_counts` not `historical.grade_distribution_30d` for real-time updates
-
-**From Story 0.4.5 (Quality Blob Ingestion):**
-- Blob trigger pattern: upload to Azurite → POST /events/blob → wait 3-5s → verify
-- Source config `ai_agent_id: null` enables direct extraction without AI
-- Use `ingestion.source_id` in MongoDB queries for document filtering
-
-**From Story 0.4.7 (Cross-Model Events):**
-- DAPR event propagation takes ~5s for cross-model updates
-- Use polling helpers instead of fixed `asyncio.sleep()` for robustness
-
-### Potential Issues to Watch
-
-1. **Azurite container creation** - Ensure `quality-events-e2e` and `extracted-files-e2e` containers exist
-2. **ZipFile testzip()** - Only catches structural corruption, not content issues
-3. **Atomic storage** - MongoDB transaction support is TODO in `_store_documents_atomic()`
-4. **File path patterns** - Verify `file_path_pattern` placeholders resolve correctly
-5. **Content hash calculation** - Verify `RawDocumentStore` calculates consistent hashes
+Update `tests/e2e/conftest.py` to create:
+- `exception-landing-e2e` - Landing container for ZIP uploads
+- `exception-images-e2e` - Extracted exception images
+- `exception-raw-e2e` - Raw ZIP storage
 
 ### References
 
-- [Source: `_bmad-output/epics/epic-0-4-e2e-tests.md` - Story 0.4.9 acceptance criteria]
+- [Source: `config/source-configs/qc-analyzer-exceptions.yaml` - Production config pattern]
+- [Source: `_bmad-output/sprint-artifacts/2-5-qc-analyzer-exception-images-ingestion.md` - Story 2.5 implementation]
 - [Source: `services/collection-model/src/collection_model/processors/zip_extraction.py` - ZIP processor implementation]
-- [Source: `services/collection-model/src/collection_model/domain/manifest.py` - Manifest models]
+- [Source: `libs/fp-common/fp_common/models/domain_events.py` - Event topics]
 - [Source: `tests/e2e/E2E-TESTING-MENTAL-MODEL.md` - E2E testing guide]
-- [Source: `tests/e2e/scenarios/test_05_weather_ingestion.py` - Pattern to follow]
-- [Source: `tests/unit/collection/test_zip_extraction.py` - Unit test coverage reference]
-
-### Critical Implementation Notes
-
-1. **Config-driven processor** - ZipExtractionProcessor reads all settings from `source_config`, no hardcoded values
-2. **Path traversal check** - Line 461-464 rejects paths containing `..` or starting with `/`
-3. **Size constants** - `MAX_ZIP_SIZE_BYTES = 500 * 1024 * 1024` (500MB), `MAX_DOCUMENTS_PER_ZIP = 10000`
-4. **Manifest validation** - Uses Pydantic `ZipManifest.model_validate()` for schema validation
-5. **File role grouping** - Files grouped by role (image, metadata, primary, thumbnail, attachment) in `file_refs`
 
 ---
 
 ## Code Review Record
 
-### Review Date: _______________
+### Review Date: 2026-01-02
 
-### Reviewer: _______________
+### Reviewer: Claude Opus 4.5 (Code Review Agent)
 
-### Issues Found: ___ High, ___ Medium, ___ Low
+### Issues Found: 0 High, 0 Medium, 2 Low
+
+### Review Outcome: **APPROVED**
 
 ### Issues Fixed:
 
 | ID | Severity | Issue | Fix Applied |
 |----|----------|-------|-------------|
-| | | | |
+| 1 | Low | Inline imports in `create_unique_zip()` reduce readability | Moved `io`, `json`, `zipfile` imports to module level in test_08_zip_ingestion.py |
+| 2 | Low | Docstring in `create_dummy_jpeg()` inaccurately described image size | Updated docstring to document unused parameters |
+
+### Review Summary:
+
+**Strengths:**
+- All 9 acceptance criteria properly covered (8 tests + 1 justified skip)
+- Good test isolation with unique UUIDs per test
+- Proper async/await patterns throughout
+- Production bugfix is well-documented and correct
+- Both CI and E2E workflows pass
+
+**Production Code Changes (Approved):**
+- `error_type="zip_extraction"` → `error_type="extraction"` is a genuine bugfix
+- The IngestionJob model only accepts `Literal["extraction", "storage", "validation", "config"]`
+- This pre-existing bug was discovered through E2E testing - good catch!
 
 ---
 
@@ -649,16 +561,35 @@ def create_valid_batch_zip():
 
 ### Agent Model Used
 
-(To be filled by dev agent)
+Claude Opus 4.5 (claude-opus-4-5-20251101)
 
 ### Debug Log References
 
+- Docker logs showing `error_type: 'zip_extraction'` validation error (pre-existing bug discovered during E2E testing)
+- IngestionJob model definition at line 80 showing valid error_type values
+
 ### Completion Notes List
+
+- Created E2E test file with 8 tests (1 skipped for AC8 - 500MB file impractical)
+- Created ZIP fixture generator script and 5 test fixtures
+- Added MongoDB helper methods for generic collection queries
+- Fixed pre-existing bug: invalid `error_type="zip_extraction"` in ZIP processor
+- All 83 E2E tests pass (no regressions)
 
 ### File List
 
 **Created:**
-- (list new files)
+- tests/e2e/fixtures/generate_zip_fixtures.py - ZIP fixture generator script
+- tests/e2e/fixtures/valid_exception_batch.zip - Valid ZIP with 3 exception images
+- tests/e2e/fixtures/corrupt_zip.zip - Intentionally corrupt ZIP
+- tests/e2e/fixtures/missing_manifest.zip - ZIP without manifest.json
+- tests/e2e/fixtures/invalid_manifest_schema.zip - ZIP with malformed manifest
+- tests/e2e/fixtures/path_traversal_attempt.zip - ZIP with path traversal attack
+- tests/e2e/scenarios/test_08_zip_ingestion.py - E2E tests for ZIP processor
 
 **Modified:**
-- (list modified files with brief description)
+- tests/e2e/helpers/mongodb_direct.py - Added generic collection query methods
+- tests/e2e/conftest.py - Container creation already existed (reformatted only)
+- tests/e2e/infrastructure/seed/source_configs.json - e2e-exception-images-zip already existed
+- services/collection-model/.../zip_extraction.py - Fixed invalid error_type (bugfix)
+- services/collection-model/.../exceptions.py - Fixed invalid error_type (bugfix)

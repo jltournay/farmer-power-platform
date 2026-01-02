@@ -272,7 +272,14 @@ async def seed_data_session(
         # Step 1: Drop all E2E databases for test isolation
         await mongodb.drop_all_e2e_databases()
         # Create required blob containers
-        for container_name in ["quality-events-e2e", "raw-documents-e2e", "manual-uploads-e2e"]:
+        for container_name in [
+            "quality-events-e2e",
+            "raw-documents-e2e",
+            "manual-uploads-e2e",
+            "exception-landing-e2e",
+            "exception-images-e2e",
+            "exception-raw-e2e",
+        ]:
             await azurite.create_container(container_name)
 
         # Load and seed all data files

@@ -92,7 +92,7 @@ class ZipExtractionError(CollectionModelError):
     - File not found in ZIP
     """
 
-    error_type: str = "zip_extraction"
+    error_type: str = "extraction"  # Fixed: was 'zip_extraction' which is invalid for IngestionJob
 
 
 class ManifestValidationError(ValidationError):

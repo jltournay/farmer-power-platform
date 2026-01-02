@@ -307,7 +307,7 @@ class TestZipExtractionProcessor:
         result = await processor.process(sample_job, sample_source_config)
 
         assert result.success is False
-        assert result.error_type == "zip_extraction"
+        assert result.error_type == "extraction"
         assert "Invalid ZIP" in result.error_message or "ZIP" in result.error_message
 
     @pytest.mark.asyncio
@@ -340,7 +340,7 @@ class TestZipExtractionProcessor:
         result = await processor.process(sample_job, sample_source_config)
 
         assert result.success is False
-        assert result.error_type == "zip_extraction"
+        assert result.error_type == "extraction"
         assert "manifest" in result.error_message.lower()
 
     @pytest.mark.asyncio
@@ -372,7 +372,7 @@ class TestZipExtractionProcessor:
         result = await processor.process(sample_job, sample_source_config)
 
         assert result.success is False
-        assert result.error_type == "zip_extraction"
+        assert result.error_type == "extraction"
         assert "JSON" in result.error_message or "manifest" in result.error_message.lower()
 
     @pytest.mark.asyncio
@@ -517,7 +517,7 @@ class TestZipExtractionProcessor:
         result = await processor.process(sample_job, sample_source_config)
 
         assert result.success is False
-        assert result.error_type == "zip_extraction"
+        assert result.error_type == "extraction"
         assert "not found" in result.error_message.lower()
 
     def test_supports_content_type(self) -> None:
