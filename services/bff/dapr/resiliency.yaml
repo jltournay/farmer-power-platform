@@ -1,0 +1,30 @@
+apiVersion: dapr.io/v1alpha1
+kind: Resiliency
+metadata:
+  name: bff-resiliency
+spec:
+  policies:
+    timeouts:
+      general: 5s
+      slow-service: 10s
+    retries:
+      standard:
+        policy: exponential
+        maxInterval: 10s
+        maxRetries: 3
+    circuitBreakers:
+      simpleCB:
+        maxRequests: 1
+        interval: 30s
+        timeout: 60s
+        trip: consecutiveFailures >= 5
+  targets:
+    apps:
+      plantation-model:
+        timeout: general
+        retry: standard
+        circuitBreaker: simpleCB
+      collection-model:
+        timeout: general
+        retry: standard
+        circuitBreaker: simpleCB
