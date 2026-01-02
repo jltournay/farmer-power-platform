@@ -102,7 +102,7 @@ development_status:
   0-4-5-quality-event-blob-ingestion: done  # 6 tests pass after code review fixes, github_issue: 30
   0-4-6-weather-data-ingestion-mock-ai: done  # 6 tests - Real weather API, mock AI, github_issue: 31
   0-4-7-cross-model-dapr-event-flow: done  # 5 tests passed, github_issue: 37
-  0-4-8-tbk-ktda-grading-validation: in-progress  # 6 tests, github_issue: 39, PR: #40 - CODE REVIEW FOUND PRODUCTION BUG
+  0-4-8-tbk-ktda-grading-validation: done  # 6 tests, github_issue: 39, PR: #40, xfail fix: PR #62
   0-4-9-zip-processor-ingestion: blocked  # 9 tests, blocked by Epic 0.6 (needs DAPR streaming patterns)
   epic-0-4-retrospective: optional
 

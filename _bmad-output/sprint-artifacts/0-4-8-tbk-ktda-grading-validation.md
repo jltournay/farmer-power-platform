@@ -1,6 +1,6 @@
 # Story 0.4.8: TBK/KTDA Grading Model Validation
 
-**Status:** review
+**Status:** done
 **GitHub Issue:** #39
 **Epic:** [Epic 0.4: E2E Test Scenarios](../epics/epic-0-4-e2e-tests.md)
 **Story Points:** 2
