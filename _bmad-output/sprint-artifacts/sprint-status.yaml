@@ -126,17 +126,19 @@ development_status:
   # P1: HORIZONTAL INFRASTRUCTURE
   # ═══════════════════════════════════════════════════════════════════════════
 
-  # Epic 0.5: Frontend & Identity Infrastructure (ADR-002, ADR-003)
-  # Dependencies: Epic 0
-  # Strategy: Mock-first authentication for local Docker Desktop dev (see ADR-003)
-  # Revised Order: 0.5.1 → 0.5.3 → 0.5.6 → 0.5.5 → 0.5.4 → 0.5.2 (deferred)
-  epic-0-5: backlog
-  0-5-1-shared-component-library-setup: backlog  # No auth dependency
-  0-5-3-shared-auth-library: backlog  # Mock provider first, no B2C dependency
-  0-5-6-bff-service-setup: backlog  # Basic service scaffold
-  0-5-5-bff-authentication-middleware: backlog  # Dual-mode: mock + B2C
-  0-5-4-factory-portal-scaffold: backlog  # Uses mock auth
-  0-5-2-azure-ad-b2c-configuration: deferred  # Implement for production deployment
+  # Epic 0.5: Frontend & BFF Infrastructure (ADR-002, ADR-003)
+  # Dependencies: Epic 0, Epic 0.4
+  # Strategy: Backend-first approach - BFF complete before React frontend
+  # Order: 0.5.1 → 0.5.2 → 0.5.3 → 0.5.4 → (0.5.5, 0.5.6) → 0.5.7 → 0.5.8 (deferred)
+  epic-0-5: in-progress
+  0-5-1-collection-grpc-bff-clients: ready-for-dev  # 5 points - Collection gRPC + BFF DAPR clients
+  0-5-2-bff-service-setup: backlog  # 3 points - FastAPI BFF scaffold with DAPR sidecar
+  0-5-3-bff-auth-middleware: backlog  # 3 points - Dual-mode JWT validation (mock + B2C)
+  0-5-4-bff-api-routes: backlog  # 5 points - REST endpoints for farmers, dashboard
+  0-5-5-shared-component-library: backlog  # 3 points - @fp/ui-components with MUI v6
+  0-5-6-shared-auth-library: backlog  # 3 points - @fp/auth with mock provider
+  0-5-7-factory-portal-scaffold: backlog  # 3 points - React app with routing and layout
+  0-5-8-azure-ad-b2c-configuration: deferred  # 5 points - Production deployment only
   epic-0-5-retrospective: optional
 
   # Epic 0.75: AI Model Foundation (NEW - 2025-12-28)
