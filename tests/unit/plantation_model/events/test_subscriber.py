@@ -398,3 +398,150 @@ class TestTopicEventResponseTypes:
         """TopicEventResponse('drop') has correct status enum."""
         response = TopicEventResponse("drop")
         assert response.status == TopicEventResponseStatus.drop
+
+
+class TestQualityEventProcessingErrorHandling:
+    """Story 0.6.10: Tests for linkage validation error handling in subscriber."""
+
+    def test_handler_returns_retry_on_linkage_validation_error(self, mock_event_loop):
+        """Handler returns retry when QualityEventProcessingError is raised.
+
+        Story 0.6.10 AC1-4: Validation errors should return RETRY so they
+        go to DLQ after max retries per ADR-006.
+        """
+        from plantation_model.domain.services.quality_event_processor import (
+            QualityEventProcessingError,
+        )
+        from plantation_model.events import subscriber
+
+        message = MagicMock()
+        message.data.return_value = {
+            "document_id": "doc-123",
+            "farmer_id": "nonexistent-farmer",
+        }
+
+        # Mock run_coroutine_threadsafe to raise QualityEventProcessingError
+        mock_future = MagicMock()
+        mock_future.result.side_effect = QualityEventProcessingError(
+            "Farmer not found: nonexistent-farmer",
+            document_id="doc-123",
+            farmer_id="nonexistent-farmer",
+            error_type="farmer_not_found",
+            field_name="farmer_id",
+            field_value="nonexistent-farmer",
+        )
+
+        mock_processor = MagicMock()
+
+        with (
+            patch.object(subscriber, "_quality_event_processor", mock_processor),
+            patch.object(subscriber, "_main_event_loop", mock_event_loop),
+            patch("asyncio.run_coroutine_threadsafe", return_value=mock_future),
+        ):
+            result = subscriber.handle_quality_result(message)
+
+        # Should return RETRY (not drop) so it goes to DLQ after 3 retries
+        assert isinstance(result, TopicEventResponse)
+        assert result.status == TopicEventResponseStatus.retry
+
+    def test_handler_returns_retry_on_factory_validation_error(self, mock_event_loop):
+        """Handler returns retry when factory validation fails."""
+        from plantation_model.domain.services.quality_event_processor import (
+            QualityEventProcessingError,
+        )
+        from plantation_model.events import subscriber
+
+        message = MagicMock()
+        message.data.return_value = {
+            "document_id": "doc-123",
+            "farmer_id": "farmer-001",
+        }
+
+        mock_future = MagicMock()
+        mock_future.result.side_effect = QualityEventProcessingError(
+            "Factory not found: factory-999",
+            document_id="doc-123",
+            farmer_id="farmer-001",
+            error_type="factory_not_found",
+            field_name="factory_id",
+            field_value="factory-999",
+        )
+
+        mock_processor = MagicMock()
+
+        with (
+            patch.object(subscriber, "_quality_event_processor", mock_processor),
+            patch.object(subscriber, "_main_event_loop", mock_event_loop),
+            patch("asyncio.run_coroutine_threadsafe", return_value=mock_future),
+        ):
+            result = subscriber.handle_quality_result(message)
+
+        assert result.status == TopicEventResponseStatus.retry
+
+    def test_handler_returns_retry_on_grading_model_validation_error(self, mock_event_loop):
+        """Handler returns retry when grading model validation fails."""
+        from plantation_model.domain.services.quality_event_processor import (
+            QualityEventProcessingError,
+        )
+        from plantation_model.events import subscriber
+
+        message = MagicMock()
+        message.data.return_value = {
+            "document_id": "doc-123",
+            "farmer_id": "farmer-001",
+        }
+
+        mock_future = MagicMock()
+        mock_future.result.side_effect = QualityEventProcessingError(
+            "Grading model not found: gm-999@1.0",
+            document_id="doc-123",
+            farmer_id="farmer-001",
+            error_type="grading_model_not_found",
+            field_name="grading_model_id",
+            field_value="gm-999",
+        )
+
+        mock_processor = MagicMock()
+
+        with (
+            patch.object(subscriber, "_quality_event_processor", mock_processor),
+            patch.object(subscriber, "_main_event_loop", mock_event_loop),
+            patch("asyncio.run_coroutine_threadsafe", return_value=mock_future),
+        ):
+            result = subscriber.handle_quality_result(message)
+
+        assert result.status == TopicEventResponseStatus.retry
+
+    def test_handler_returns_retry_on_region_validation_error(self, mock_event_loop):
+        """Handler returns retry when region validation fails."""
+        from plantation_model.domain.services.quality_event_processor import (
+            QualityEventProcessingError,
+        )
+        from plantation_model.events import subscriber
+
+        message = MagicMock()
+        message.data.return_value = {
+            "document_id": "doc-123",
+            "farmer_id": "farmer-001",
+        }
+
+        mock_future = MagicMock()
+        mock_future.result.side_effect = QualityEventProcessingError(
+            "Region not found: region-999",
+            document_id="doc-123",
+            farmer_id="farmer-001",
+            error_type="region_not_found",
+            field_name="region_id",
+            field_value="region-999",
+        )
+
+        mock_processor = MagicMock()
+
+        with (
+            patch.object(subscriber, "_quality_event_processor", mock_processor),
+            patch.object(subscriber, "_main_event_loop", mock_event_loop),
+            patch("asyncio.run_coroutine_threadsafe", return_value=mock_future),
+        ):
+            result = subscriber.handle_quality_result(message)
+
+        assert result.status == TopicEventResponseStatus.retry

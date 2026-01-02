@@ -17,7 +17,7 @@ from datetime import datetime
 from typing import Any
 
 import structlog
-from opentelemetry import trace
+from opentelemetry import metrics, trace
 from plantation_model.config import settings
 from plantation_model.domain.models import TrendDirection
 from plantation_model.infrastructure.collection_client import (
@@ -26,19 +26,49 @@ from plantation_model.infrastructure.collection_client import (
     DocumentNotFoundError,
 )
 from plantation_model.infrastructure.dapr_client import DaprPubSubClient
+from plantation_model.infrastructure.repositories.factory_repository import (
+    FactoryRepository,
+)
 from plantation_model.infrastructure.repositories.farmer_performance_repository import (
     FarmerPerformanceRepository,
+)
+from plantation_model.infrastructure.repositories.farmer_repository import (
+    FarmerRepository,
 )
 from plantation_model.infrastructure.repositories.grading_model_repository import (
     GradingModelRepository,
 )
+from plantation_model.infrastructure.repositories.region_repository import (
+    RegionRepository,
+)
 
 logger = structlog.get_logger(__name__)
 tracer = trace.get_tracer(__name__)
+meter = metrics.get_meter("plantation-model")
+
+# Story 0.6.10: Counter for linkage field validation failures (ADR-008)
+# Labels: field (farmer_id, factory_id, grading_model_id, region_id), error (not_found, missing)
+linkage_validation_failures = meter.create_counter(
+    name="event_linkage_validation_failures_total",
+    description="Total events with invalid linkage fields that require DLQ handling",
+    unit="1",
+)
 
 
 class QualityEventProcessingError(Exception):
-    """Raised when quality event processing fails."""
+    """Raised when quality event processing fails.
+
+    Story 0.6.10: Enhanced with field_name and field_value for linkage validation errors.
+    This enables precise error reporting and metric labeling per ADR-008.
+
+    Attributes:
+        document_id: The Collection Model document ID being processed.
+        farmer_id: The farmer ID from the event (if known).
+        error_type: Classification of the error (e.g., "farmer_not_found", "missing_grading_model").
+        field_name: The specific linkage field that failed validation (e.g., "farmer_id").
+        field_value: The invalid value that caused the error.
+        cause: The underlying exception that caused this error.
+    """
 
     def __init__(
         self,
@@ -46,13 +76,28 @@ class QualityEventProcessingError(Exception):
         document_id: str | None = None,
         farmer_id: str | None = None,
         error_type: str = "processing_error",
+        field_name: str | None = None,
+        field_value: str | None = None,
         cause: Exception | None = None,
     ) -> None:
         self.document_id = document_id
         self.farmer_id = farmer_id
         self.error_type = error_type
+        self.field_name = field_name
+        self.field_value = field_value
         self.cause = cause
         super().__init__(message)
+
+    def __str__(self) -> str:
+        """Return a descriptive string representation."""
+        parts = [f"{self.error_type}: {self.args[0]}"]
+        if self.document_id:
+            parts.append(f"document_id={self.document_id}")
+        if self.field_name:
+            parts.append(f"field={self.field_name}")
+        if self.field_value:
+            parts.append(f"value={self.field_value}")
+        return " | ".join(parts)
 
 
 class QualityEventProcessor:
@@ -73,6 +118,9 @@ class QualityEventProcessor:
         collection_client: CollectionClient,
         grading_model_repo: GradingModelRepository,
         farmer_performance_repo: FarmerPerformanceRepository,
+        farmer_repo: FarmerRepository | None = None,
+        factory_repo: FactoryRepository | None = None,
+        region_repo: RegionRepository | None = None,
         event_publisher: DaprPubSubClient | None = None,
     ) -> None:
         """Initialize the processor with required dependencies.
@@ -81,11 +129,17 @@ class QualityEventProcessor:
             collection_client: Client for fetching documents from Collection Model.
             grading_model_repo: Repository for loading grading models.
             farmer_performance_repo: Repository for updating farmer performance.
+            farmer_repo: Repository for farmer validation (Story 0.6.10).
+            factory_repo: Repository for factory validation (Story 0.6.10).
+            region_repo: Repository for region validation (Story 0.6.10).
             event_publisher: Optional DAPR pub/sub client for event emission.
         """
         self._collection_client = collection_client
         self._grading_model_repo = grading_model_repo
         self._farmer_performance_repo = farmer_performance_repo
+        self._farmer_repo = farmer_repo
+        self._factory_repo = factory_repo
+        self._region_repo = region_repo
         self._event_publisher = event_publisher
 
     async def process(
@@ -123,30 +177,52 @@ class QualityEventProcessor:
                 # Step 1: Fetch document from Collection Model
                 document = await self._fetch_document(document_id)
 
-                # Step 2: Extract grading model reference from document
+                # =====================================================================
+                # Story 0.6.10: Linkage Field Validation (ADR-008)
+                # ALL 4 linkage fields must be validated with exceptions, not warnings.
+                # =====================================================================
+
+                # Step 2: Validate farmer_id (AC1)
+                farmer = await self._validate_farmer_id(document_id, farmer_id)
+
+                # Step 3: Validate factory_id (AC2)
+                factory_id = self._get_factory_id(document)
+                if factory_id and factory_id != "unknown":
+                    await self._validate_factory_id(document_id, farmer_id, factory_id)
+
+                # Step 4: Validate grading_model_id (AC3)
                 grading_model_id = self._get_grading_model_id(document)
                 grading_model_version = self._get_grading_model_version(document)
 
                 if not grading_model_id:
+                    linkage_validation_failures.add(1, {"field": "grading_model_id", "error": "missing"})
                     raise QualityEventProcessingError(
                         "Document missing grading_model_id",
                         document_id=document_id,
                         farmer_id=farmer_id,
                         error_type="missing_grading_model",
+                        field_name="grading_model_id",
                     )
 
-                # Step 3: Load grading model
+                # Step 5: Load grading model and validate it exists
                 grading_model = await self._load_grading_model(grading_model_id, grading_model_version)
 
                 if grading_model is None:
+                    linkage_validation_failures.add(1, {"field": "grading_model_id", "error": "not_found"})
                     raise QualityEventProcessingError(
                         f"Grading model not found: {grading_model_id}@{grading_model_version}",
                         document_id=document_id,
                         farmer_id=farmer_id,
                         error_type="grading_model_not_found",
+                        field_name="grading_model_id",
+                        field_value=grading_model_id,
                     )
 
-                # Step 4: Extract quality metrics from document
+                # Step 6: Validate region_id (AC4) - via farmer's region reference
+                if farmer and farmer.region_id:
+                    await self._validate_region_id(document_id, farmer_id, farmer.region_id)
+
+                # Step 7: Extract quality metrics from document
                 bag_summary = self._get_bag_summary(document)
                 grade_counts = self._extract_grade_counts(bag_summary, grading_model)
                 attribute_distribution = self._extract_attribute_distribution(bag_summary, grading_model)
@@ -155,7 +231,7 @@ class QualityEventProcessor:
                 span.set_attribute("grade_counts", str(grade_counts))
                 span.set_attribute("total_weight_kg", total_weight_kg)
 
-                # Step 5: Check for date rollover and update farmer performance
+                # Step 8: Check for date rollover and update farmer performance
                 performance = await self._update_farmer_performance(
                     farmer_id=farmer_id,
                     grade_counts=grade_counts,
@@ -163,22 +239,22 @@ class QualityEventProcessor:
                     weight_kg=total_weight_kg,
                 )
 
+                # Note: performance can be None if FarmerPerformance record doesn't exist yet
+                # (farmer exists but no deliveries recorded). This is allowed - we skip the update.
                 if performance is None:
                     logger.warning(
-                        "Farmer performance not found - skipping update",
+                        "FarmerPerformance record not found - farmer exists but has no delivery history",
                         farmer_id=farmer_id,
                         document_id=document_id,
                     )
-                    # Don't raise - farmer might not exist yet
-                    # Return early with partial result
                     return {
                         "status": "skipped",
-                        "reason": "farmer_not_found",
+                        "reason": "no_performance_record",
                         "document_id": document_id,
                         "farmer_id": farmer_id,
                     }
 
-                # Step 6: Emit plantation.quality.graded event
+                # Step 9: Emit plantation.quality.graded event
                 await self._emit_quality_graded_event(
                     farmer_id=farmer_id,
                     document_id=document_id,
@@ -188,8 +264,7 @@ class QualityEventProcessor:
                     attribute_distribution=attribute_distribution,
                 )
 
-                # Step 7: Compute performance summary and emit update event
-                factory_id = self._get_factory_id(document)
+                # Step 10: Compute performance summary and emit update event
                 primary_percentage = self._compute_primary_percentage(performance.today.grade_counts)
                 improvement_trend = self._compute_improvement_trend(performance)
 
@@ -260,6 +335,121 @@ class QualityEventProcessor:
                 source_id=document.get("source_id"),
             )
             return document
+
+    # =========================================================================
+    # Story 0.6.10: Linkage Field Validation Methods (ADR-008)
+    # =========================================================================
+
+    async def _validate_farmer_id(self, document_id: str, farmer_id: str):
+        """Validate that farmer_id references an existing farmer.
+
+        AC1: Invalid farmer_id must raise exception and increment metric.
+
+        Args:
+            document_id: The document being processed.
+            farmer_id: The farmer ID to validate.
+
+        Returns:
+            The Farmer entity if found.
+
+        Raises:
+            QualityEventProcessingError: If farmer not found.
+        """
+        if self._farmer_repo is None:
+            logger.warning(
+                "Farmer repository not configured - skipping farmer validation",
+                farmer_id=farmer_id,
+            )
+            return None
+
+        with tracer.start_as_current_span("validate_farmer_id"):
+            farmer = await self._farmer_repo.get_by_id(farmer_id)
+
+            if farmer is None:
+                linkage_validation_failures.add(1, {"field": "farmer_id", "error": "not_found"})
+                raise QualityEventProcessingError(
+                    f"Farmer not found: {farmer_id}",
+                    document_id=document_id,
+                    farmer_id=farmer_id,
+                    error_type="farmer_not_found",
+                    field_name="farmer_id",
+                    field_value=farmer_id,
+                )
+
+            logger.debug("Farmer validated", farmer_id=farmer_id)
+            return farmer
+
+    async def _validate_factory_id(self, document_id: str, farmer_id: str, factory_id: str) -> None:
+        """Validate that factory_id references an existing factory.
+
+        AC2: Invalid factory_id must raise exception and increment metric.
+
+        Args:
+            document_id: The document being processed.
+            farmer_id: The farmer ID (for error context).
+            factory_id: The factory ID to validate.
+
+        Raises:
+            QualityEventProcessingError: If factory not found.
+        """
+        if self._factory_repo is None:
+            logger.warning(
+                "Factory repository not configured - skipping factory validation",
+                factory_id=factory_id,
+            )
+            return
+
+        with tracer.start_as_current_span("validate_factory_id"):
+            factory = await self._factory_repo.get_by_id(factory_id)
+
+            if factory is None:
+                linkage_validation_failures.add(1, {"field": "factory_id", "error": "not_found"})
+                raise QualityEventProcessingError(
+                    f"Factory not found: {factory_id}",
+                    document_id=document_id,
+                    farmer_id=farmer_id,
+                    error_type="factory_not_found",
+                    field_name="factory_id",
+                    field_value=factory_id,
+                )
+
+            logger.debug("Factory validated", factory_id=factory_id)
+
+    async def _validate_region_id(self, document_id: str, farmer_id: str, region_id: str) -> None:
+        """Validate that region_id references an existing region.
+
+        AC4: Invalid region_id (via farmer) must raise exception and increment metric.
+
+        Args:
+            document_id: The document being processed.
+            farmer_id: The farmer ID (for error context).
+            region_id: The region ID to validate.
+
+        Raises:
+            QualityEventProcessingError: If region not found.
+        """
+        if self._region_repo is None:
+            logger.warning(
+                "Region repository not configured - skipping region validation",
+                region_id=region_id,
+            )
+            return
+
+        with tracer.start_as_current_span("validate_region_id"):
+            region = await self._region_repo.get_by_id(region_id)
+
+            if region is None:
+                linkage_validation_failures.add(1, {"field": "region_id", "error": "not_found"})
+                raise QualityEventProcessingError(
+                    f"Region not found: {region_id}",
+                    document_id=document_id,
+                    farmer_id=farmer_id,
+                    error_type="region_not_found",
+                    field_name="region_id",
+                    field_value=region_id,
+                )
+
+            logger.debug("Region validated", region_id=region_id)
 
     async def _load_grading_model(self, model_id: str, model_version: str | None):
         """Load grading model by ID and version."""
