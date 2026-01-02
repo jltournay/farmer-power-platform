@@ -828,6 +828,12 @@ tests/e2e/scenarios/test_07_grading_validation.py::TestKTDARejected::test_stalks
 ====== 6 passed in 59.69s ======
 ```
 
+**E2E CI Run (2026-01-02):**
+- Run ID: 20655651708
+- Status: **PASSED**
+- Branch: `fix/story-0-4-8-grading-tests`
+- PR: #62
+
 ### File List
 
 **Created:**
