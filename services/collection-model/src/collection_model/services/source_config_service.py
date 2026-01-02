@@ -82,7 +82,6 @@ class SourceConfigService:
             db: MongoDB database instance.
 
         """
-        self._db = db
         self._repository = SourceConfigRepository(db)
         self._collection: AsyncIOMotorCollection = db["source_configs"]
 

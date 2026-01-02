@@ -120,6 +120,18 @@ class CollectionClient:
         response.raise_for_status()
         return response.json()
 
+    async def cache_health(self) -> dict[str, Any]:
+        """Check source config cache health (Story 0.6.9).
+
+        Returns cache status including:
+        - cache_size: Number of configs in cache
+        - cache_age_seconds: How old the cache is
+        - change_stream_active: Whether change stream is running
+        """
+        response = await self.client.get("/health/cache")
+        response.raise_for_status()
+        return response.json()
+
     # =========================================================================
     # Blob Event Trigger via DAPR Pub/Sub (Story 0.6.6)
     # =========================================================================

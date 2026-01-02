@@ -83,7 +83,7 @@ So that new configs are immediately available without 5-minute stale windows.
   - [x] Increment `source_config_cache_invalidations_total`
 
 - [x] **Task 4: Implement Cache Hit/Miss Tracking** (AC: 3) ✅
-  - [x] Update `get_config_by_source_id()` to track hits/misses
+  - [x] Update `get_config()` to track hits/misses (calls `get_all_configs()`)
   - [x] Update `get_all_configs()` to track hits/misses
   - [x] Increment appropriate counters
 

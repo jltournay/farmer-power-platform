@@ -377,3 +377,50 @@ class TestResumeToken:
 
         # Assert
         assert service._resume_token is None
+
+    @pytest.mark.asyncio
+    async def test_resume_token_passed_to_watch_on_reconnect(self, mock_mongodb_client: Any) -> None:
+        """Resume token is passed to watch() for resilient reconnection (AC4).
+
+        Verifies that when the service has a stored resume token from a previous
+        connection, it passes that token to watch() to resume from where it left off.
+        """
+        from collection_model.services.source_config_service import SourceConfigService
+
+        db = mock_mongodb_client["collection_model"]
+        service = SourceConfigService(db)
+
+        # Simulate a stored resume token from a previous connection
+        fake_resume_token = {"_data": "test_resume_token_12345"}
+        service._resume_token = fake_resume_token
+
+        # Create a mock async context manager for the change stream
+        mock_stream = MagicMock()
+        mock_stream.__aenter__ = AsyncMock(return_value=mock_stream)
+        mock_stream.__aexit__ = AsyncMock(return_value=None)
+
+        # Make the stream immediately raise CancelledError on iteration
+        async def raise_cancelled():
+            raise asyncio.CancelledError
+
+        mock_stream.__aiter__ = MagicMock(return_value=mock_stream)
+        mock_stream.__anext__ = raise_cancelled
+
+        # Mock the collection watch method
+        mock_collection = MagicMock()
+        mock_collection.watch = MagicMock(return_value=mock_stream)
+        service._collection = mock_collection
+
+        # Start change stream - this creates the background task
+        await service.start_change_stream()
+
+        # Give the task a moment to start and call watch()
+        await asyncio.sleep(0.05)
+
+        # Stop change stream
+        await service.stop_change_stream()
+
+        # Verify watch was called with the resume token
+        mock_collection.watch.assert_called_once()
+        call_kwargs = mock_collection.watch.call_args[1]
+        assert call_kwargs.get("resume_after") == fake_resume_token
