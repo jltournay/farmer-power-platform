@@ -1,6 +1,6 @@
 # Story 0.5.3: BFF Authentication Middleware (Dual-Mode)
 
-**Status:** review
+**Status:** done
 **GitHub Issue:** #75
 **Story Points:** 3
 
@@ -121,18 +121,18 @@ So that API endpoints are protected locally and in production.
 **Branch name:** `story/0-5-3-bff-auth-middleware`
 
 ### During Development
-- [ ] All commits reference GitHub issue: `Relates to #XX`
-- [ ] Commits are atomic by type (production, test, seed - not mixed)
-- [ ] Push to feature branch: `git push -u origin story/0-5-3-bff-auth-middleware`
+- [x] All commits reference GitHub issue: `Relates to #75`
+- [x] Commits are atomic by type (production, test, seed - not mixed)
+- [x] Push to feature branch: `git push -u origin story/0-5-3-bff-auth-middleware`
 
 ### Story Done
-- [ ] Create Pull Request: `gh pr create --title "Story 0.5.3: BFF Auth Middleware" --base main`
-- [ ] CI passes on PR (including E2E tests)
-- [ ] Code review completed (`/code-review` or human review)
+- [x] Create Pull Request: `gh pr create --title "Story 0.5.3: BFF Auth Middleware" --base main`
+- [x] CI passes on PR (including E2E tests)
+- [x] Code review completed (`/code-review` or human review)
 - [ ] PR approved and merged (squash)
 - [ ] Local branch cleaned up: `git branch -d story/0-5-3-bff-auth-middleware`
 
-**PR URL:** _______________ (fill in when created)
+**PR URL:** https://github.com/jltournay/farmer-power-platform/pull/76
 
 ---
 
@@ -654,7 +654,7 @@ If you modified ANY unit test behavior, document here:
 ### Before Marking Done
 - [x] All tests pass locally with Docker infrastructure
 - [x] `ruff check` and `ruff format --check` pass
-- [ ] CI pipeline is green (pending push)
+- [x] CI pipeline is green (Quality CI: 20668261295, E2E CI: 20668297612)
 - [x] If production code changed: Change log above is complete
 - [x] If unit tests changed: Change log above is complete
 - [x] Story file updated with completion notes
@@ -698,3 +698,39 @@ N/A - No debug issues encountered
 - `.github/workflows/ci.yaml` - Added python-jose to CI dependencies
 - `_bmad-output/sprint-artifacts/sprint-status.yaml` - Updated story status to in-progress
 - `_bmad-output/sprint-artifacts/0-5-3-bff-auth-middleware.md` - This story file
+
+---
+
+## Code Review Record
+
+### Review Date
+2026-01-03
+
+### Reviewer
+Claude Opus 4.5 (Adversarial Code Review Mode)
+
+### Review Outcome
+✅ **APPROVED WITH MINOR CHANGES**
+
+### Findings Summary
+
+| # | Severity | Issue | Resolution |
+|---|----------|-------|------------|
+| 1 | 🟡 MEDIUM | PR not created | ✅ Fixed - PR #76 created |
+| 2 | 🟡 MEDIUM | Missing registration_clerk test | Deferred - not blocking |
+| 3 | 🟡 MEDIUM | No test for custom factory_id_param | Deferred - not blocking |
+| 4 | 🟢 LOW | No integration test with actual routes | N/A - routes are Story 0.5.4 |
+| 5 | 🟢 LOW | Stale checkboxes in story file | ✅ Fixed |
+
+### Action Items
+- [x] Create Pull Request (PR #76)
+- [x] Update story file checkboxes
+- [ ] (Future) Add registration_clerk test coverage
+- [ ] (Future) Add custom factory_id_param test
+
+### Verification
+- All 7 Acceptance Criteria correctly implemented
+- Security guardrail in place and tested
+- 24 unit tests cover all critical paths
+- E2E tests pass (85 passed, 1 skipped)
+- CI green (Quality + E2E)

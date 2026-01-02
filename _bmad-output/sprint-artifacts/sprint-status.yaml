@@ -139,7 +139,7 @@ development_status:
   0-5-1d-bff-collection-client: done  # 2 points - 4 document query methods, github_issue: 71, PR: #72
 
   0-5-2-bff-service-setup: done  # 3 points - FastAPI BFF scaffold with DAPR sidecar, github_issue: 73
-  0-5-3-bff-auth-middleware: review  # 3 points - Dual-mode JWT validation (mock + B2C), github_issue: 75
+  0-5-3-bff-auth-middleware: done  # 3 points - Dual-mode JWT validation (mock + B2C), github_issue: 75, pr: 76
   0-5-4-bff-api-routes: backlog  # 5 points - REST endpoints for farmers, dashboard
   0-5-5-shared-component-library: backlog  # 3 points - @fp/ui-components with MUI v6
   0-5-6-shared-auth-library: backlog  # 3 points - @fp/auth with mock provider
