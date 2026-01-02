@@ -3,6 +3,7 @@
 import grpc
 import warnings
 
+from fp_proto.collection.v1 import collection_pb2 as collection_dot_v1_dot_collection__pb2
 
 GRPC_GENERATED_VERSION = '1.76.0'
 GRPC_VERSION = grpc.__version__
@@ -22,3 +23,229 @@ if _version_not_supported:
         + f' Please upgrade your grpc module to grpcio>={GRPC_GENERATED_VERSION}'
         + f' or downgrade your generated code using grpcio-tools<={GRPC_VERSION}.'
     )
+
+
+class CollectionServiceStub(object):
+    """Note: Health checking uses standard grpc.health.v1.Health (grpc-health-checking package)
+    No custom HealthService defined here to avoid duplication.
+
+    ============================================================================
+    Collection Service - gRPC API for document queries (Story 0.5.1a)
+    ============================================================================
+
+    """
+
+    def __init__(self, channel):
+        """Constructor.
+
+        Args:
+            channel: A grpc.Channel.
+        """
+        self.GetDocument = channel.unary_unary(
+                '/farmer_power.collection.v1.CollectionService/GetDocument',
+                request_serializer=collection_dot_v1_dot_collection__pb2.GetDocumentRequest.SerializeToString,
+                response_deserializer=collection_dot_v1_dot_collection__pb2.Document.FromString,
+                _registered_method=True)
+        self.ListDocuments = channel.unary_unary(
+                '/farmer_power.collection.v1.CollectionService/ListDocuments',
+                request_serializer=collection_dot_v1_dot_collection__pb2.ListDocumentsRequest.SerializeToString,
+                response_deserializer=collection_dot_v1_dot_collection__pb2.ListDocumentsResponse.FromString,
+                _registered_method=True)
+        self.GetDocumentsByFarmer = channel.unary_unary(
+                '/farmer_power.collection.v1.CollectionService/GetDocumentsByFarmer',
+                request_serializer=collection_dot_v1_dot_collection__pb2.GetDocumentsByFarmerRequest.SerializeToString,
+                response_deserializer=collection_dot_v1_dot_collection__pb2.GetDocumentsByFarmerResponse.FromString,
+                _registered_method=True)
+        self.SearchDocuments = channel.unary_unary(
+                '/farmer_power.collection.v1.CollectionService/SearchDocuments',
+                request_serializer=collection_dot_v1_dot_collection__pb2.SearchDocumentsRequest.SerializeToString,
+                response_deserializer=collection_dot_v1_dot_collection__pb2.SearchDocumentsResponse.FromString,
+                _registered_method=True)
+
+
+class CollectionServiceServicer(object):
+    """Note: Health checking uses standard grpc.health.v1.Health (grpc-health-checking package)
+    No custom HealthService defined here to avoid duplication.
+
+    ============================================================================
+    Collection Service - gRPC API for document queries (Story 0.5.1a)
+    ============================================================================
+
+    """
+
+    def GetDocument(self, request, context):
+        """Get a single document by ID
+        """
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def ListDocuments(self, request, context):
+        """List documents with pagination and optional farmer_id filter
+        """
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def GetDocumentsByFarmer(self, request, context):
+        """Get all documents for a specific farmer (convenience method)
+        """
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def SearchDocuments(self, request, context):
+        """Search documents with filters (source_id, date range, linkage fields)
+        """
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+
+def add_CollectionServiceServicer_to_server(servicer, server):
+    rpc_method_handlers = {
+            'GetDocument': grpc.unary_unary_rpc_method_handler(
+                    servicer.GetDocument,
+                    request_deserializer=collection_dot_v1_dot_collection__pb2.GetDocumentRequest.FromString,
+                    response_serializer=collection_dot_v1_dot_collection__pb2.Document.SerializeToString,
+            ),
+            'ListDocuments': grpc.unary_unary_rpc_method_handler(
+                    servicer.ListDocuments,
+                    request_deserializer=collection_dot_v1_dot_collection__pb2.ListDocumentsRequest.FromString,
+                    response_serializer=collection_dot_v1_dot_collection__pb2.ListDocumentsResponse.SerializeToString,
+            ),
+            'GetDocumentsByFarmer': grpc.unary_unary_rpc_method_handler(
+                    servicer.GetDocumentsByFarmer,
+                    request_deserializer=collection_dot_v1_dot_collection__pb2.GetDocumentsByFarmerRequest.FromString,
+                    response_serializer=collection_dot_v1_dot_collection__pb2.GetDocumentsByFarmerResponse.SerializeToString,
+            ),
+            'SearchDocuments': grpc.unary_unary_rpc_method_handler(
+                    servicer.SearchDocuments,
+                    request_deserializer=collection_dot_v1_dot_collection__pb2.SearchDocumentsRequest.FromString,
+                    response_serializer=collection_dot_v1_dot_collection__pb2.SearchDocumentsResponse.SerializeToString,
+            ),
+    }
+    generic_handler = grpc.method_handlers_generic_handler(
+            'farmer_power.collection.v1.CollectionService', rpc_method_handlers)
+    server.add_generic_rpc_handlers((generic_handler,))
+    server.add_registered_method_handlers('farmer_power.collection.v1.CollectionService', rpc_method_handlers)
+
+
+ # This class is part of an EXPERIMENTAL API.
+class CollectionService(object):
+    """Note: Health checking uses standard grpc.health.v1.Health (grpc-health-checking package)
+    No custom HealthService defined here to avoid duplication.
+
+    ============================================================================
+    Collection Service - gRPC API for document queries (Story 0.5.1a)
+    ============================================================================
+
+    """
+
+    @staticmethod
+    def GetDocument(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/farmer_power.collection.v1.CollectionService/GetDocument',
+            collection_dot_v1_dot_collection__pb2.GetDocumentRequest.SerializeToString,
+            collection_dot_v1_dot_collection__pb2.Document.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def ListDocuments(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/farmer_power.collection.v1.CollectionService/ListDocuments',
+            collection_dot_v1_dot_collection__pb2.ListDocumentsRequest.SerializeToString,
+            collection_dot_v1_dot_collection__pb2.ListDocumentsResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def GetDocumentsByFarmer(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/farmer_power.collection.v1.CollectionService/GetDocumentsByFarmer',
+            collection_dot_v1_dot_collection__pb2.GetDocumentsByFarmerRequest.SerializeToString,
+            collection_dot_v1_dot_collection__pb2.GetDocumentsByFarmerResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def SearchDocuments(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/farmer_power.collection.v1.CollectionService/SearchDocuments',
+            collection_dot_v1_dot_collection__pb2.SearchDocumentsRequest.SerializeToString,
+            collection_dot_v1_dot_collection__pb2.SearchDocumentsResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)

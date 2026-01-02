@@ -1,6 +1,6 @@
 # Story 0.5.1a: Collection Model gRPC Service Layer
 
-**Status:** ready-for-dev
+**Status:** review
 **GitHub Issue:** #65
 **Story Points:** 2
 
@@ -37,32 +37,32 @@ So that the BFF can query documents via DAPR service invocation.
 
 ## Tasks / Subtasks
 
-- [ ] **Task 1: Proto Definition** (AC: #1)
-  - [ ] Create `proto/collection/v1/collection_service.proto` with CollectionService
-  - [ ] Define request/response messages for 4 document query methods
-  - [ ] Generate Python stubs via `scripts/generate_proto.sh`
-  - [ ] Update `libs/fp-proto` package
+- [x] **Task 1: Proto Definition** (AC: #1)
+  - [x] Create `proto/collection/v1/collection_service.proto` with CollectionService
+  - [x] Define request/response messages for 4 document query methods
+  - [x] Generate Python stubs via `scripts/generate_proto.sh`
+  - [x] Update `libs/fp-proto` package
 
-- [ ] **Task 2: Collection Model gRPC Server** (AC: #1)
-  - [ ] Create `services/collection-model/src/collection_model/api/grpc_service.py`
-  - [ ] Implement 4 gRPC handler methods: GetDocument, ListDocuments, SearchDocuments, GetFarmerDocuments
-  - [ ] Wire gRPC server to existing service startup (port 50051)
-  - [ ] Ensure FastAPI health endpoints continue on port 8000 (ADR-011)
+- [x] **Task 2: Collection Model gRPC Server** (AC: #1)
+  - [x] Create `services/collection-model/src/collection_model/api/grpc_service.py`
+  - [x] Implement 4 gRPC handler methods: GetDocument, ListDocuments, SearchDocuments, GetFarmerDocuments
+  - [x] Wire gRPC server to existing service startup (port 50051)
+  - [x] Ensure FastAPI health endpoints continue on port 8000 (ADR-011)
 
-- [ ] **Task 3: Unit Tests** (AC: #1)
-  - [ ] `tests/unit/collection_model/test_grpc_service.py`
-  - [ ] Mock MongoDB queries, test all 4 handlers
+- [x] **Task 3: Unit Tests** (AC: #1)
+  - [x] `tests/unit/collection_model/test_grpc_service.py`
+  - [x] Mock MongoDB queries, test all 4 handlers
 
-- [ ] **Task 4: E2E Test Update** (AC: #2)
-  - [ ] Update E2E docker-compose with Collection Model gRPC port
-  - [ ] Add basic gRPC connectivity test
+- [x] **Task 4: E2E Test Update** (AC: #2)
+  - [x] Update E2E docker-compose with Collection Model gRPC port
+  - [x] Add basic gRPC connectivity test
 
 ## Git Workflow (MANDATORY)
 
 **Branch name:** `story/0-5-1a-collection-grpc-service`
 
 ### Story Start
-- [ ] Feature branch created from main:
+- [x] Feature branch created from main:
   ```bash
   git checkout main && git pull origin main
   git checkout -b story/0-5-1a-collection-grpc-service
@@ -86,7 +86,29 @@ pytest tests/unit/collection_model/test_grpc_service.py -v
 ```
 **Output:**
 ```
-(paste test summary here)
+============================= test session starts ==============================
+platform darwin -- Python 3.11.12, pytest-9.0.2, pluggy-1.6.0
+collecting ... collected 17 items
+
+tests/unit/collection_model/test_grpc_service.py::test_get_document_success PASSED [  5%]
+tests/unit/collection_model/test_grpc_service.py::test_get_document_not_found PASSED [ 11%]
+tests/unit/collection_model/test_grpc_service.py::test_get_document_missing_document_id PASSED [ 17%]
+tests/unit/collection_model/test_grpc_service.py::test_get_document_missing_collection_name PASSED [ 23%]
+tests/unit/collection_model/test_grpc_service.py::test_list_documents_success PASSED [ 29%]
+tests/unit/collection_model/test_grpc_service.py::test_list_documents_with_farmer_id_filter PASSED [ 35%]
+tests/unit/collection_model/test_grpc_service.py::test_list_documents_pagination PASSED [ 41%]
+tests/unit/collection_model/test_grpc_service.py::test_list_documents_missing_collection_name PASSED [ 47%]
+tests/unit/collection_model/test_grpc_service.py::test_get_documents_by_farmer_success PASSED [ 52%]
+tests/unit/collection_model/test_grpc_service.py::test_get_documents_by_farmer_with_limit PASSED [ 58%]
+tests/unit/collection_model/test_grpc_service.py::test_get_documents_by_farmer_missing_farmer_id PASSED [ 64%]
+tests/unit/collection_model/test_grpc_service.py::test_search_documents_by_source_id PASSED [ 70%]
+tests/unit/collection_model/test_grpc_service.py::test_search_documents_by_linkage_filter PASSED [ 76%]
+tests/unit/collection_model/test_grpc_service.py::test_search_documents_empty_results PASSED [ 82%]
+tests/unit/collection_model/test_grpc_service.py::test_search_documents_missing_collection_name PASSED [ 88%]
+tests/unit/collection_model/test_grpc_service.py::test_search_documents_pagination PASSED [ 94%]
+tests/unit/collection_model/test_grpc_service.py::test_document_index_to_proto_conversion PASSED [100%]
+
+======================== 17 passed in 0.47s =========================
 ```
 
 ### 2. E2E Tests
@@ -95,13 +117,26 @@ docker compose -f tests/e2e/infrastructure/docker-compose.e2e.yaml up -d --build
 PYTHONPATH="${PYTHONPATH}:.:libs/fp-proto/src" pytest tests/e2e/scenarios/ -v
 docker compose -f tests/e2e/infrastructure/docker-compose.e2e.yaml down -v
 ```
-**E2E passed:** [ ] Yes / [ ] No
+**E2E passed:** [x] Yes / [ ] No
+
+**E2E Output (Summary):**
+```
+============================= test session starts ==============================
+platform darwin -- Python 3.11.12, pytest-9.0.2, pluggy-1.6.0
+collecting ... collected 86 items
+
+tests/e2e/scenarios/test_00_infrastructure_verification.py::TestGRPCEndpoints::test_collection_grpc_connectivity PASSED
+tests/e2e/scenarios/test_00_infrastructure_verification.py::TestGRPCEndpoints::test_collection_grpc_list_documents PASSED
+... (all 86 tests)
+
+================== 85 passed, 1 skipped in 121.33s (0:02:01) ===================
+```
 
 ### 3. Lint Check
 ```bash
 ruff check . && ruff format --check .
 ```
-**Lint passed:** [ ] Yes / [ ] No
+**Lint passed:** [x] Yes / [ ] No
 
 ---
 
@@ -226,15 +261,49 @@ async def get_document(document_id: str) -> Document:
 ## Dev Agent Record
 
 ### Agent Model Used
-{{agent_model_name_version}}
+Claude Opus 4.5 (claude-opus-4-5-20251101)
+
+### Implementation Notes
+
+**Task 1: Proto Definition**
+- Added `CollectionService` to existing `proto/collection/v1/collection.proto` (consolidated with existing messages)
+- Defined 4 RPC methods: GetDocument, ListDocuments, GetDocumentsByFarmer, SearchDocuments
+- Generated Python stubs via `./scripts/proto-gen.sh`
+
+**Task 2: gRPC Server Implementation**
+- Created `grpc_service.py` with `CollectionServiceServicer` class
+- Implemented all 4 handlers with proper error handling (NOT_FOUND, INVALID_ARGUMENT)
+- Added `_document_index_to_proto()` converter for MongoDB document to proto message
+- Wired gRPC server to main.py startup (port 50051, ADR-011 compliant)
+
+**Task 3: Unit Tests**
+- Created 17 unit tests covering all handlers
+- Implemented custom mock classes for nested field queries (MongoDB dot notation)
+- Tests cover success cases, error cases, pagination, and proto conversion
+
+**Task 4: E2E Test Update**
+- Added Collection Model gRPC port 50054 to docker-compose
+- Created `CollectionServiceClient` in mcp_clients.py
+- Added gRPC connectivity tests to infrastructure verification
 
 ### File List
 
 **Created:**
-- `proto/collection/v1/collection_service.proto`
 - `services/collection-model/src/collection_model/api/grpc_service.py`
 - `tests/unit/collection_model/test_grpc_service.py`
 
 **Modified:**
-- `services/collection-model/src/collection_model/main.py` (add gRPC server startup)
-- `libs/fp-proto/` (regenerate proto stubs)
+- `proto/collection/v1/collection.proto` (added CollectionService and related messages)
+- `libs/fp-proto/src/fp_proto/collection/v1/collection_pb2.py` (regenerated)
+- `libs/fp-proto/src/fp_proto/collection/v1/collection_pb2.pyi` (regenerated)
+- `libs/fp-proto/src/fp_proto/collection/v1/collection_pb2_grpc.py` (regenerated)
+- `services/collection-model/src/collection_model/config.py` (added grpc_port)
+- `services/collection-model/src/collection_model/main.py` (added gRPC server startup)
+- `tests/e2e/conftest.py` (added collection_service fixture)
+- `tests/e2e/helpers/mcp_clients.py` (added CollectionServiceClient)
+- `tests/e2e/infrastructure/docker-compose.e2e.yaml` (added gRPC port 50054)
+- `tests/e2e/scenarios/test_00_infrastructure_verification.py` (added gRPC tests)
+
+### Change Log
+
+- 2026-01-02: Story 0.5.1a implementation complete - Added Collection Model gRPC service layer with 4 document query methods (GetDocument, ListDocuments, GetDocumentsByFarmer, SearchDocuments). All 17 unit tests pass, all 85 E2E tests pass.

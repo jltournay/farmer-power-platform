@@ -25,6 +25,7 @@ class Settings(BaseSettings):
     # Server configuration
     host: str = "0.0.0.0"
     port: int = 8000
+    grpc_port: int = 50051  # gRPC server port (ADR-011)
 
     # MongoDB configuration
     mongodb_uri: str = "mongodb://localhost:27017"

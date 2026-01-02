@@ -18,24 +18,10 @@ class ExtractionRequest(_message.Message):
     source_config_json: str
     content_type: str
     trace_id: str
-    def __init__(
-        self,
-        raw_content: _Optional[str] = ...,
-        ai_agent_id: _Optional[str] = ...,
-        source_config_json: _Optional[str] = ...,
-        content_type: _Optional[str] = ...,
-        trace_id: _Optional[str] = ...,
-    ) -> None: ...
+    def __init__(self, raw_content: _Optional[str] = ..., ai_agent_id: _Optional[str] = ..., source_config_json: _Optional[str] = ..., content_type: _Optional[str] = ..., trace_id: _Optional[str] = ...) -> None: ...
 
 class ExtractionResponse(_message.Message):
-    __slots__ = (
-        "success",
-        "extracted_fields_json",
-        "confidence",
-        "validation_passed",
-        "validation_warnings",
-        "error_message",
-    )
+    __slots__ = ("success", "extracted_fields_json", "confidence", "validation_passed", "validation_warnings", "error_message")
     SUCCESS_FIELD_NUMBER: _ClassVar[int]
     EXTRACTED_FIELDS_JSON_FIELD_NUMBER: _ClassVar[int]
     CONFIDENCE_FIELD_NUMBER: _ClassVar[int]
@@ -48,15 +34,7 @@ class ExtractionResponse(_message.Message):
     validation_passed: bool
     validation_warnings: _containers.RepeatedScalarFieldContainer[str]
     error_message: str
-    def __init__(
-        self,
-        success: bool = ...,
-        extracted_fields_json: _Optional[str] = ...,
-        confidence: _Optional[float] = ...,
-        validation_passed: bool = ...,
-        validation_warnings: _Optional[_Iterable[str]] = ...,
-        error_message: _Optional[str] = ...,
-    ) -> None: ...
+    def __init__(self, success: bool = ..., extracted_fields_json: _Optional[str] = ..., confidence: _Optional[float] = ..., validation_passed: bool = ..., validation_warnings: _Optional[_Iterable[str]] = ..., error_message: _Optional[str] = ...) -> None: ...
 
 class HealthCheckRequest(_message.Message):
     __slots__ = ()

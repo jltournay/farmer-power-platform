@@ -71,6 +71,30 @@ class TestHTTPEndpoints:
 
 
 @pytest.mark.e2e
+class TestGRPCEndpoints:
+    """Verify gRPC service endpoints are accessible (Story 0.5.1a)."""
+
+    @pytest.mark.asyncio
+    async def test_collection_grpc_connectivity(self, collection_service):
+        """Verify Collection Model gRPC service is accessible (Story 0.5.1a)."""
+        is_connected = await collection_service.check_connectivity()
+        assert is_connected, "Collection Model gRPC service not reachable"
+        print("Collection Model gRPC service: OK")
+
+    @pytest.mark.asyncio
+    async def test_collection_grpc_list_documents(self, collection_service):
+        """Verify Collection Model gRPC ListDocuments works (Story 0.5.1a)."""
+        result = await collection_service.list_documents(
+            collection_name="qc_analyzer_results",
+            page_size=5,
+        )
+        # Should return a response with documents (may be empty)
+        assert isinstance(result, dict)
+        # total_count may be 0 if no seed data for this collection
+        print(f"Collection Model gRPC ListDocuments: total_count={result.get('total_count', 0)}")
+
+
+@pytest.mark.e2e
 class TestMCPEndpoints:
     """Verify MCP gRPC endpoints are accessible."""
 
@@ -266,6 +290,7 @@ class TestInfrastructureSummary:
         collection_api,
         plantation_mcp,
         collection_mcp,
+        collection_service,
         mongodb_direct,
         azurite_client,
         seed_data,
@@ -303,21 +328,28 @@ class TestInfrastructureSummary:
         except Exception as e:
             results["collection_mcp"] = f"FAILED: {e}"
 
-        # 3. MongoDB
+        # 3. gRPC Services (Story 0.5.1a)
+        try:
+            is_connected = await collection_service.check_connectivity()
+            results["collection_grpc"] = "OK" if is_connected else "FAILED: Not reachable"
+        except Exception as e:
+            results["collection_grpc"] = f"FAILED: {e}"
+
+        # 4. MongoDB
         try:
             dbs = await mongodb_direct.list_databases()
             results["mongodb"] = f"OK ({len(dbs)} databases)"
         except Exception as e:
             results["mongodb"] = f"FAILED: {e}"
 
-        # 4. Azurite
+        # 5. Azurite
         try:
             containers = await azurite_client.list_containers()
             results["azurite"] = f"OK ({len(containers)} containers)"
         except Exception as e:
             results["azurite"] = f"FAILED: {e}"
 
-        # 5. Seed Data
+        # 6. Seed Data
         results["seed_grading_models"] = len(seed_data.get("grading_models", []))
         results["seed_regions"] = len(seed_data.get("regions", []))
         results["seed_source_configs"] = len(seed_data.get("source_configs", []))

@@ -376,3 +376,162 @@ class PlantationServiceClient:
                 code=e.code(),
                 details=e.details() or str(e),
             ) from e
+
+
+class CollectionServiceError(Exception):
+    """Exception raised when Collection gRPC service returns an error."""
+
+    def __init__(self, operation: str, code: grpc.StatusCode, details: str):
+        self.operation = operation
+        self.code = code
+        self.details = details
+        super().__init__(f"{operation} failed: [{code.name}] {details}")
+
+
+class CollectionServiceClient:
+    """gRPC client for Collection Model Service (Story 0.5.1a).
+
+    This client connects directly to the Collection Model gRPC service
+    for document queries via BFF.
+    """
+
+    def __init__(self, host: str = "localhost", port: int = 50054):
+        self.address = f"{host}:{port}"
+        self._channel: grpc.aio.Channel | None = None
+        self._stub: Any | None = None
+
+    async def __aenter__(self) -> "CollectionServiceClient":
+        # Import here to avoid import errors when proto not generated
+        from fp_proto.collection.v1 import collection_pb2_grpc
+
+        self._channel = grpc.aio.insecure_channel(self.address)
+        self._stub = collection_pb2_grpc.CollectionServiceStub(self._channel)
+        return self
+
+    async def __aexit__(self, *args: Any) -> None:
+        if self._channel:
+            await self._channel.close()
+
+    @property
+    def stub(self) -> Any:
+        if self._stub is None:
+            raise RuntimeError("Client not initialized. Use async context manager.")
+        return self._stub
+
+    async def get_document(
+        self,
+        document_id: str,
+        collection_name: str,
+    ) -> dict[str, Any]:
+        """Get document by ID via gRPC."""
+        from fp_proto.collection.v1 import collection_pb2
+
+        request = collection_pb2.GetDocumentRequest(
+            document_id=document_id,
+            collection_name=collection_name,
+        )
+        try:
+            response = await self.stub.GetDocument(request)
+            return MessageToDict(response, preserving_proto_field_name=True)
+        except grpc.RpcError as e:
+            raise CollectionServiceError(
+                operation="GetDocument",
+                code=e.code(),
+                details=e.details() or str(e),
+            ) from e
+
+    async def list_documents(
+        self,
+        collection_name: str,
+        farmer_id: str | None = None,
+        page_size: int = 20,
+        page_token: str | None = None,
+    ) -> dict[str, Any]:
+        """List documents with pagination via gRPC."""
+        from fp_proto.collection.v1 import collection_pb2
+
+        request = collection_pb2.ListDocumentsRequest(
+            collection_name=collection_name,
+            farmer_id=farmer_id or "",
+            page_size=page_size,
+            page_token=page_token or "",
+        )
+        try:
+            response = await self.stub.ListDocuments(request)
+            return MessageToDict(response, preserving_proto_field_name=True)
+        except grpc.RpcError as e:
+            raise CollectionServiceError(
+                operation="ListDocuments",
+                code=e.code(),
+                details=e.details() or str(e),
+            ) from e
+
+    async def get_documents_by_farmer(
+        self,
+        farmer_id: str,
+        collection_name: str,
+        limit: int = 100,
+    ) -> dict[str, Any]:
+        """Get all documents for a farmer via gRPC."""
+        from fp_proto.collection.v1 import collection_pb2
+
+        request = collection_pb2.GetDocumentsByFarmerRequest(
+            farmer_id=farmer_id,
+            collection_name=collection_name,
+            limit=limit,
+        )
+        try:
+            response = await self.stub.GetDocumentsByFarmer(request)
+            return MessageToDict(response, preserving_proto_field_name=True)
+        except grpc.RpcError as e:
+            raise CollectionServiceError(
+                operation="GetDocumentsByFarmer",
+                code=e.code(),
+                details=e.details() or str(e),
+            ) from e
+
+    async def search_documents(
+        self,
+        collection_name: str,
+        source_id: str | None = None,
+        linkage_filters: dict[str, str] | None = None,
+        page_size: int = 20,
+        page_token: str | None = None,
+    ) -> dict[str, Any]:
+        """Search documents with filters via gRPC."""
+        from fp_proto.collection.v1 import collection_pb2
+
+        request = collection_pb2.SearchDocumentsRequest(
+            collection_name=collection_name,
+            source_id=source_id or "",
+            linkage_filters=linkage_filters or {},
+            page_size=page_size,
+            page_token=page_token or "",
+        )
+        try:
+            response = await self.stub.SearchDocuments(request)
+            return MessageToDict(response, preserving_proto_field_name=True)
+        except grpc.RpcError as e:
+            raise CollectionServiceError(
+                operation="SearchDocuments",
+                code=e.code(),
+                details=e.details() or str(e),
+            ) from e
+
+    async def check_connectivity(self) -> bool:
+        """Check if gRPC service is reachable."""
+        from fp_proto.collection.v1 import collection_pb2
+
+        try:
+            # Try to list documents with no filter - should return empty or results
+            request = collection_pb2.ListDocumentsRequest(
+                collection_name="test_connectivity",
+                page_size=1,
+            )
+            await self.stub.ListDocuments(request)
+            return True
+        except grpc.RpcError:
+            # Any response (even error) means the service is reachable
+            return True
+        except Exception:
+            return False

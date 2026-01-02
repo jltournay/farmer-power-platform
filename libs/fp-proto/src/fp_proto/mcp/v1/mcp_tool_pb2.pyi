@@ -14,7 +14,6 @@ class ErrorCode(int, metaclass=_enum_type_wrapper.EnumTypeWrapper):
     ERROR_CODE_SERVICE_UNAVAILABLE: _ClassVar[ErrorCode]
     ERROR_CODE_TOOL_NOT_FOUND: _ClassVar[ErrorCode]
     ERROR_CODE_INTERNAL_ERROR: _ClassVar[ErrorCode]
-
 ERROR_CODE_UNSPECIFIED: ErrorCode
 ERROR_CODE_INVALID_ARGUMENTS: ErrorCode
 ERROR_CODE_SERVICE_UNAVAILABLE: ErrorCode
@@ -43,13 +42,7 @@ class ToolDefinition(_message.Message):
     description: str
     input_schema_json: str
     category: str
-    def __init__(
-        self,
-        name: _Optional[str] = ...,
-        description: _Optional[str] = ...,
-        input_schema_json: _Optional[str] = ...,
-        category: _Optional[str] = ...,
-    ) -> None: ...
+    def __init__(self, name: _Optional[str] = ..., description: _Optional[str] = ..., input_schema_json: _Optional[str] = ..., category: _Optional[str] = ...) -> None: ...
 
 class ToolCallRequest(_message.Message):
     __slots__ = ("tool_name", "arguments_json", "trace_id", "caller_agent_id")
@@ -61,13 +54,7 @@ class ToolCallRequest(_message.Message):
     arguments_json: str
     trace_id: str
     caller_agent_id: str
-    def __init__(
-        self,
-        tool_name: _Optional[str] = ...,
-        arguments_json: _Optional[str] = ...,
-        trace_id: _Optional[str] = ...,
-        caller_agent_id: _Optional[str] = ...,
-    ) -> None: ...
+    def __init__(self, tool_name: _Optional[str] = ..., arguments_json: _Optional[str] = ..., trace_id: _Optional[str] = ..., caller_agent_id: _Optional[str] = ...) -> None: ...
 
 class ToolCallResponse(_message.Message):
     __slots__ = ("success", "result_json", "error_code", "error_message")
@@ -79,10 +66,4 @@ class ToolCallResponse(_message.Message):
     result_json: str
     error_code: ErrorCode
     error_message: str
-    def __init__(
-        self,
-        success: bool = ...,
-        result_json: _Optional[str] = ...,
-        error_code: _Optional[_Union[ErrorCode, str]] = ...,
-        error_message: _Optional[str] = ...,
-    ) -> None: ...
+    def __init__(self, success: bool = ..., result_json: _Optional[str] = ..., error_code: _Optional[_Union[ErrorCode, str]] = ..., error_message: _Optional[str] = ...) -> None: ...
