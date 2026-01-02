@@ -103,7 +103,7 @@ development_status:
   0-4-6-weather-data-ingestion-mock-ai: done  # 6 tests - Real weather API, mock AI, github_issue: 31
   0-4-7-cross-model-dapr-event-flow: done  # 5 tests passed, github_issue: 37
   0-4-8-tbk-ktda-grading-validation: done  # 6 tests, github_issue: 39, PR: #40, xfail fix: PR #62
-  0-4-9-zip-processor-ingestion: backlog  # 9 tests, unblocked 2026-01-02 (Epic 0.6 complete)
+  0-4-9-zip-processor-ingestion: ready-for-dev  # 9 tests, story file created 2026-01-02
   epic-0-4-retrospective: optional
 
   # Epic 0.6: Infrastructure Hardening (ADR Implementation)
