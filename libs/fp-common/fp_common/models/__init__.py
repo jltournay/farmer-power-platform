@@ -62,6 +62,9 @@ from fp_common.models.grading_model import (
     GradingType,
 )
 
+# Performance summary model
+from fp_common.models.performance_summary import PerformanceSummary
+
 # Region models
 from fp_common.models.region import Region, RegionCreate, RegionUpdate
 
@@ -162,6 +165,8 @@ __all__ = [
     "PathPatternConfig",
     "PaymentPolicy",
     "PaymentPolicyType",
+    # Performance Summary
+    "PerformanceSummary",
     "PlantationEventTopic",
     "PreferredChannel",
     "PreferredLanguage",

@@ -17,6 +17,7 @@ from fp_common.models import (
     Flush,
     InteractionPreference,
     NotificationChannel,
+    PerformanceSummary,
     PreferredLanguage,
     Region,
     RegionalWeather,
@@ -438,10 +439,46 @@ class TestPerformanceOperations:
             period="monthly",
         )
 
-        assert isinstance(summary, dict)
-        assert summary["entity_type"] == "farmer"
-        assert summary["entity_id"] == "WM-0001"
-        assert summary["total_green_leaf_kg"] == 1500.0
+        assert isinstance(summary, PerformanceSummary)
+        assert summary.entity_type == "farmer"
+        assert summary.entity_id == "WM-0001"
+        assert summary.total_green_leaf_kg == 1500.0
+
+    @pytest.mark.asyncio
+    async def test_get_performance_summary_with_period_start(
+        self,
+        plantation_client_with_mock_stub: tuple[PlantationClient, MagicMock],
+    ) -> None:
+        """Test performance summary retrieval with period_start parameter."""
+        from datetime import datetime
+
+        client, stub = plantation_client_with_mock_stub
+        response = plantation_pb2.PerformanceSummary(
+            id="perf-002",
+            entity_type="factory",
+            entity_id="KEN-FAC-001",
+            period="weekly",
+            total_green_leaf_kg=5000.0,
+            total_made_tea_kg=1000.0,
+            collection_count=150,
+            average_quality_score=78.0,
+        )
+        stub.GetPerformanceSummary.return_value = response
+
+        period_start = datetime(2025, 12, 1, 0, 0, 0)
+        summary = await client.get_performance_summary(
+            entity_type="factory",
+            entity_id="KEN-FAC-001",
+            period="weekly",
+            period_start=period_start,
+        )
+
+        assert isinstance(summary, PerformanceSummary)
+        assert summary.entity_type == "factory"
+        # Verify the request was made with period_start
+        call_args = stub.GetPerformanceSummary.call_args
+        request = call_args[0][0]
+        assert request.period_start.seconds > 0  # Timestamp was set
 
 
 class TestErrorHandling:

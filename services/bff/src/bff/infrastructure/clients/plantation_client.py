@@ -34,6 +34,7 @@ from fp_common.models import (
     OperatingHours,
     PaymentPolicy,
     PaymentPolicyType,
+    PerformanceSummary,
     PreferredLanguage,
     QualityThresholds,
     Region,
@@ -524,7 +525,7 @@ class PlantationClient(BaseGrpcClient):
         entity_id: str,
         period: str,
         period_start: datetime | None = None,
-    ) -> dict:
+    ) -> PerformanceSummary:
         """Get aggregated performance metrics for an entity.
 
         Args:
@@ -534,7 +535,7 @@ class PlantationClient(BaseGrpcClient):
             period_start: Optional start of period (for specific date ranges).
 
         Returns:
-            Dict with performance summary metrics.
+            PerformanceSummary domain model with aggregated metrics.
 
         Raises:
             NotFoundError: If entity not found.
@@ -856,24 +857,19 @@ class PlantationClient(BaseGrpcClient):
             today=today,
         )
 
-    def _proto_to_performance_summary(self, proto: plantation_pb2.PerformanceSummary) -> dict:
-        """Convert PerformanceSummary proto to dict.
-
-        Note: This returns a dict because PerformanceSummary is a generic aggregation
-        model that varies by entity_type (farmer/factory/region). For specific entity
-        types, use get_farmer_summary which returns typed FarmerPerformance.
-        """
-        return {
-            "id": proto.id,
-            "entity_type": proto.entity_type,
-            "entity_id": proto.entity_id,
-            "period": proto.period,
-            "period_start": _timestamp_to_datetime(proto.period_start),
-            "period_end": _timestamp_to_datetime(proto.period_end),
-            "total_green_leaf_kg": proto.total_green_leaf_kg,
-            "total_made_tea_kg": proto.total_made_tea_kg,
-            "collection_count": proto.collection_count,
-            "average_quality_score": proto.average_quality_score,
-            "created_at": _timestamp_to_datetime(proto.created_at),
-            "updated_at": _timestamp_to_datetime(proto.updated_at),
-        }
+    def _proto_to_performance_summary(self, proto: plantation_pb2.PerformanceSummary) -> PerformanceSummary:
+        """Convert PerformanceSummary proto to domain model."""
+        return PerformanceSummary(
+            id=proto.id,
+            entity_type=proto.entity_type,
+            entity_id=proto.entity_id,
+            period=proto.period,
+            period_start=_timestamp_to_datetime(proto.period_start),
+            period_end=_timestamp_to_datetime(proto.period_end),
+            total_green_leaf_kg=proto.total_green_leaf_kg,
+            total_made_tea_kg=proto.total_made_tea_kg,
+            collection_count=proto.collection_count,
+            average_quality_score=proto.average_quality_score,
+            created_at=_timestamp_to_datetime(proto.created_at),
+            updated_at=_timestamp_to_datetime(proto.updated_at),
+        )

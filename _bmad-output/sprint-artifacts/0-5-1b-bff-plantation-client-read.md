@@ -1,6 +1,6 @@
 # Story 0.5.1b: BFF PlantationClient - Read Operations
 
-**Status:** review
+**Status:** done
 **GitHub Issue:** #67
 **Story Points:** 3
 
@@ -94,7 +94,7 @@ So that the BFF can fetch farmer, factory, region, and collection point data for
 ### Story Done
 - [x] Create Pull Request
 - [x] CI passes on PR
-- [ ] Code review completed
+- [x] Code review completed
 - [ ] PR merged
 
 **PR URL:** https://github.com/jltournay/farmer-power-platform/pull/68
@@ -269,5 +269,40 @@ Claude Opus 4.5 (claude-opus-4-5-20251101)
 - `tests/unit/bff/test_plantation_client.py`
 
 **Modified:**
+- `.github/workflows/ci.yaml` - Added `services/bff/src` to PYTHONPATH
 - `_bmad-output/sprint-artifacts/sprint-status.yaml`
 - `_bmad-output/sprint-artifacts/0-5-1b-bff-plantation-client-read.md`
+
+---
+
+## Code Review Record
+
+### Review Outcome: ✅ APPROVED (after fixes)
+
+**Reviewer:** Claude Opus 4.5 (adversarial code review workflow)
+**Date:** 2026-01-02
+
+### Issues Found and Fixed
+
+| ID | Severity | Issue | Resolution |
+|----|----------|-------|------------|
+| H1 | HIGH | `get_performance_summary` returned `dict` instead of typed model, violating AC2 | ✅ Created `PerformanceSummary` model in fp-common, updated return type |
+| M1 | MEDIUM | CI PYTHONPATH missing `services/bff/src` in integration-tests job | ✅ Added to integration-tests PYTHONPATH |
+| M2 | MEDIUM | Story File List missing `.github/workflows/ci.yaml` | ✅ Updated File List |
+| M3 | MEDIUM | Missing test for `period_start` parameter | ✅ Added `test_get_performance_summary_with_period_start` test |
+
+### Files Changed During Review
+
+**Created:**
+- `libs/fp-common/fp_common/models/performance_summary.py` - PerformanceSummary typed model
+
+**Modified:**
+- `libs/fp-common/fp_common/models/__init__.py` - Export PerformanceSummary
+- `services/bff/src/bff/infrastructure/clients/plantation_client.py` - Use typed return
+- `tests/unit/bff/test_plantation_client.py` - Updated test + added period_start test
+- `.github/workflows/ci.yaml` - Fixed integration-tests PYTHONPATH
+
+### Test Verification After Fixes
+```
+29 passed in 4.18s
+```
