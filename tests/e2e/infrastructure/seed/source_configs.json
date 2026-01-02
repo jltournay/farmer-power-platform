@@ -166,5 +166,56 @@
     },
     "created_at": "2025-01-01T00:00:00Z",
     "updated_at": "2025-01-01T00:00:00Z"
+  },
+  {
+    "source_id": "e2e-exception-images-zip",
+    "display_name": "E2E Exception Images ZIP",
+    "enabled": true,
+    "description": "E2E Test - ZIP processor for exception images (Story 0.4.9, validates Story 2.5)",
+    "ingestion": {
+      "mode": "blob_trigger",
+      "processor_type": "zip-extraction",
+      "landing_container": "exception-landing-e2e",
+      "path_pattern": {
+        "pattern": "{plantation_id}/{batch_id}.zip",
+        "extract_fields": ["plantation_id", "batch_id"]
+      },
+      "zip_config": {
+        "manifest_file": "manifest.json",
+        "images_folder": "images",
+        "extract_images": true,
+        "image_storage_container": "exception-images-e2e"
+      }
+    },
+    "transformation": {
+      "ai_agent_id": null,
+      "link_field": "batch_result_ref",
+      "extract_fields": [
+        "plantation_id",
+        "batch_id",
+        "batch_result_ref",
+        "exception_count",
+        "exception_type",
+        "severity"
+      ]
+    },
+    "storage": {
+      "index_collection": "documents",
+      "raw_container": "exception-raw-e2e",
+      "file_container": "exception-images-e2e",
+      "file_path_pattern": "{plantation_id}/{batch_id}/{doc_id}/{filename}"
+    },
+    "events": {
+      "on_success": {
+        "topic": "collection.exception_images.received",
+        "payload_fields": ["document_id", "plantation_id", "batch_id", "exception_count"]
+      },
+      "on_failure": {
+        "topic": "collection.exception_images.failed",
+        "payload_fields": ["source_id", "error_type", "error_message"]
+      }
+    },
+    "created_at": "2025-01-01T00:00:00Z",
+    "updated_at": "2025-01-01T00:00:00Z"
   }
 ]

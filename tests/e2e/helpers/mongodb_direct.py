@@ -256,3 +256,89 @@ class MongoDBDirectClient:
         db = self.collection_db
         cursor = db[collection].find(query).limit(limit)
         return await cursor.to_list(length=limit)
+
+    async def count_documents_by_source(self, source_id: str) -> int:
+        """Count documents by source_id.
+
+        Args:
+            source_id: The source configuration ID to filter by.
+
+        Returns:
+            Count of documents matching the source_id.
+        """
+        query = {"ingestion.source_id": source_id}
+        return await self.collection_db.quality_documents.count_documents(query)
+
+    # =========================================================================
+    # Generic Documents Collection (for ZIP processor, Story 0.4.9)
+    # =========================================================================
+
+    async def count_documents_in_collection(
+        self,
+        collection_name: str,
+        source_id: str | None = None,
+        link_field: str | None = None,
+        link_value: str | None = None,
+    ) -> int:
+        """Count documents in a specified collection.
+
+        Args:
+            collection_name: The MongoDB collection name (e.g., "documents")
+            source_id: Optional source_id filter
+            link_field: Optional linkage field name to filter by
+            link_value: Optional linkage field value to filter by
+
+        Returns:
+            Count of documents matching the filters.
+        """
+        query: dict[str, Any] = {}
+        if source_id:
+            query["ingestion.source_id"] = source_id
+        if link_field and link_value:
+            query[f"linkage_fields.{link_field}"] = link_value
+        return await self.collection_db[collection_name].count_documents(query)
+
+    async def get_documents_from_collection(
+        self,
+        collection_name: str,
+        source_id: str | None = None,
+        link_field: str | None = None,
+        link_value: str | None = None,
+        limit: int = 100,
+    ) -> list[dict[str, Any]]:
+        """Get documents from a specified collection.
+
+        Args:
+            collection_name: The MongoDB collection name (e.g., "documents")
+            source_id: Optional source_id filter
+            link_field: Optional linkage field name to filter by
+            link_value: Optional linkage field value to filter by
+            limit: Maximum number of documents to return
+
+        Returns:
+            List of documents matching the filters.
+        """
+        query: dict[str, Any] = {}
+        if source_id:
+            query["ingestion.source_id"] = source_id
+        if link_field and link_value:
+            query[f"linkage_fields.{link_field}"] = link_value
+
+        cursor = self.collection_db[collection_name].find(query).limit(limit)
+        return await cursor.to_list(length=limit)
+
+    async def get_document_by_id(
+        self,
+        collection_name: str,
+        document_id: str,
+    ) -> dict[str, Any] | None:
+        """Get a document by its document_id from a specified collection.
+
+        Args:
+            collection_name: The MongoDB collection name
+            document_id: The document_id to look up
+
+        Returns:
+            The document if found, None otherwise.
+        """
+        return await self.collection_db[collection_name].find_one({"document_id": document_id})
