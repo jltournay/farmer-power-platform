@@ -1,6 +1,6 @@
 # Story 0.6.9: Source Config Cache with MongoDB Change Streams
 
-**Status:** In Progress
+**Status:** Done
 **GitHub Issue:** #57
 **Epic:** [Epic 0.6: Infrastructure Hardening](../epics/epic-0-6-infrastructure-hardening.md)
 **ADR:** [ADR-007: Source Config Cache with Change Streams](../architecture/adr/ADR-007-source-config-cache-change-streams.md)
@@ -518,6 +518,32 @@ Is failure related to cache behavior?
 ```
 
 **IMPORTANT:** This story FIXES silent event drops caused by stale cache. If tests that were previously flaky now pass consistently, that's the expected outcome.
+
+---
+
+## Code Review
+
+**Reviewer:** Claude Code (Opus 4.5)
+**Review Date:** 2026-01-02
+**Outcome:** APPROVED (after fixes)
+
+### Findings and Resolution
+
+| Severity | Finding | Resolution |
+|----------|---------|------------|
+| MEDIUM | Resume token reconnection not tested | ✅ Added `test_resume_token_passed_to_watch_on_reconnect` |
+| LOW | Unused `_db` attribute in service | ✅ Removed unused `self._db = db` line |
+| LOW | CI workflow fix bundled with story | ✅ Accepted - minor fix, documented |
+| LOW | Story naming mismatch | ✅ Fixed `get_config_by_source_id()` → `get_config()` |
+| LOW | No dedicated E2E test for cache health | ✅ Added `test_collection_model_cache_health` |
+
+### Post-Fix CI Verification
+
+- **Run ID:** 20654079250
+- **Status:** All checks passed ✅
+- Unit Tests: 16 passed (including new resume token test)
+- Integration Tests: passed
+- Lint: passed
 
 ---
 
