@@ -3,10 +3,13 @@
 Uses fixtures from root conftest.py. Do NOT override parent fixtures.
 """
 
+from datetime import UTC, datetime
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
+from fp_proto.collection.v1 import collection_pb2
 from fp_proto.plantation.v1 import plantation_pb2
+from google.protobuf.timestamp_pb2 import Timestamp
 
 
 def create_mock_channel() -> MagicMock:
@@ -298,3 +301,90 @@ def sample_collection_point_proto() -> plantation_pb2.CollectionPoint:
 def sample_region_proto() -> plantation_pb2.Region:
     """Sample Region proto for testing."""
     return create_region_proto()
+
+
+# =============================================================================
+# Collection Model Proto Helpers
+# =============================================================================
+
+
+def _datetime_to_timestamp(dt: datetime) -> Timestamp:
+    """Convert datetime to proto Timestamp."""
+    ts = Timestamp()
+    ts.FromDatetime(dt)
+    return ts
+
+
+def create_document_proto(
+    document_id: str = "doc-12345",
+    blob_container: str = "quality-data",
+    blob_path: str = "factory-001/2025-12-28/batch-001.json",
+    content_hash: str = "sha256:abc123def456",
+    size_bytes: int = 1024,
+    ai_agent_id: str = "qc-extractor-v1",
+    confidence: float = 0.95,
+    validation_passed: bool = True,
+    ingestion_id: str = "ing-001",
+    source_id: str = "qc-analyzer-result",
+    farmer_id: str = "WM-0001",
+) -> collection_pb2.Document:
+    """Create a Document proto message for testing.
+
+    Args:
+        document_id: Unique document identifier.
+        blob_container: Azure Blob Storage container name.
+        blob_path: Path to the blob within container.
+        content_hash: SHA-256 hash of the content.
+        size_bytes: Size of the content in bytes.
+        ai_agent_id: AI Model agent ID used for extraction.
+        confidence: Confidence score of the extraction.
+        validation_passed: Whether extraction passed validation.
+        ingestion_id: ID of the ingestion job.
+        source_id: ID of the source configuration.
+        farmer_id: Farmer ID for linkage fields.
+
+    Returns:
+        A Document proto message.
+    """
+    now = datetime.now(UTC)
+
+    doc = collection_pb2.Document(
+        document_id=document_id,
+        raw_document=collection_pb2.RawDocumentRef(
+            blob_container=blob_container,
+            blob_path=blob_path,
+            content_hash=content_hash,
+            size_bytes=size_bytes,
+            stored_at=_datetime_to_timestamp(now),
+        ),
+        extraction=collection_pb2.ExtractionMetadata(
+            ai_agent_id=ai_agent_id,
+            extraction_timestamp=_datetime_to_timestamp(now),
+            confidence=confidence,
+            validation_passed=validation_passed,
+            validation_warnings=[],
+        ),
+        ingestion=collection_pb2.IngestionMetadata(
+            ingestion_id=ingestion_id,
+            source_id=source_id,
+            received_at=_datetime_to_timestamp(now),
+            processed_at=_datetime_to_timestamp(now),
+        ),
+        created_at=_datetime_to_timestamp(now),
+    )
+
+    # Add extracted fields
+    doc.extracted_fields["farmer_id"] = farmer_id
+    doc.extracted_fields["grade"] = "Primary"
+    doc.extracted_fields["weight_kg"] = "25.5"
+
+    # Add linkage fields
+    doc.linkage_fields["farmer_id"] = farmer_id
+
+    return doc
+
+
+@pytest.fixture
+def sample_document_proto() -> collection_pb2.Document:
+    """Sample Document proto for testing."""
+    return create_document_proto()

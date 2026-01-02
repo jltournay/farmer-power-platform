@@ -5,10 +5,12 @@ from bff.infrastructure.clients.base import (
     NotFoundError,
     ServiceUnavailableError,
 )
+from bff.infrastructure.clients.collection_client import CollectionClient
 from bff.infrastructure.clients.plantation_client import PlantationClient
 
 __all__ = [
     "BaseGrpcClient",
+    "CollectionClient",
     "NotFoundError",
     "PlantationClient",
     "ServiceUnavailableError",
