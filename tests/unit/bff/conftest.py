@@ -7,9 +7,25 @@ from datetime import UTC, datetime
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
+from fastapi.testclient import TestClient
 from fp_proto.collection.v1 import collection_pb2
 from fp_proto.plantation.v1 import plantation_pb2
 from google.protobuf.timestamp_pb2 import Timestamp
+
+
+@pytest.fixture
+def bff_client() -> TestClient:
+    """Create a test client for the BFF application.
+
+    This fixture is shared across all BFF test files.
+
+    Returns:
+        TestClient instance for the BFF FastAPI application.
+    """
+    from bff.main import create_app
+
+    app = create_app()
+    return TestClient(app)
 
 
 def create_mock_channel() -> MagicMock:

@@ -8,13 +8,12 @@ packages = [{include = "bff", from = "src"}]
 
 [tool.poetry.dependencies]
 python = "^3.12"
-fastapi = "^0.109.0"
-uvicorn = {extras = ["standard"], version = "^0.27.0"}
+fastapi = "^0.115.0"
+uvicorn = {extras = ["standard"], version = "^0.32.0"}
 pydantic = "^2.5.0"
 pydantic-settings = "^2.1.0"
 structlog = "^24.1.0"
 tenacity = "^8.2.0"
-httpx = "^0.26.0"
 grpcio = "^1.60.0"
 # OpenTelemetry - use compatible versions
 opentelemetry-api = "^1.29.0"
