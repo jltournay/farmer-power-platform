@@ -382,9 +382,3 @@ def create_document_proto(
     doc.linkage_fields["farmer_id"] = farmer_id
 
     return doc
-
-
-@pytest.fixture
-def sample_document_proto() -> collection_pb2.Document:
-    """Sample Document proto for testing."""
-    return create_document_proto()

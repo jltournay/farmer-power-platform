@@ -1,6 +1,6 @@
 # Story 0.5.1d: BFF CollectionClient
 
-**Status:** review
+**Status:** done
 **GitHub Issue:** #71
 **Story Points:** 2
 
@@ -73,7 +73,7 @@ So that the BFF can fetch quality events and delivery records for the dashboard.
 - [x] Create Pull Request
 - [x] CI passes on PR (Run ID: 20666247810)
 - [x] E2E CI passes on PR (Run ID: 20666288719)
-- [ ] Code review completed
+- [x] Code review completed
 - [ ] PR merged
 
 **PR URL:** https://github.com/jltournay/farmer-power-platform/pull/72
@@ -107,6 +107,42 @@ docker compose -f tests/e2e/infrastructure/docker-compose.e2e.yaml down -v
 ruff check . && ruff format --check .
 ```
 **Lint passed:** [x] Yes / [ ] No
+
+---
+
+## Senior Developer Review (AI)
+
+**Reviewer:** Claude Opus 4.5 (code-review workflow)
+**Date:** 2026-01-02
+**Outcome:** ✅ APPROVED (after fixes)
+
+### Issues Found & Fixed
+
+| Severity | Issue | File:Line | Fix Applied |
+|----------|-------|-----------|-------------|
+| MEDIUM | Missing `page_size` cap in `search_documents` | collection_client.py:277 | Added `min(page_size, 100)` |
+| MEDIUM | Logger imported but never used | collection_client.py:27 | Removed unused import |
+| MEDIUM | Timezone-naive `datetime.now()` in fallbacks | collection_client.py:78-91 | Changed to `datetime.now(UTC)` |
+| MEDIUM | Unused `sample_document_proto` fixture | conftest.py:387-390 | Removed unused fixture |
+| LOW | Docstring type hint clarity | collection_client.py:152 | No fix (acceptable) |
+| LOW | Redundant close() tests | test_collection_client.py:540 | No fix (acceptable) |
+
+### Test Verification After Fixes
+
+```
+======================== 27 passed, 1 warning in 3.98s =========================
+```
+
+### Acceptance Criteria Validation
+
+| AC | Status |
+|----|--------|
+| AC1: 4 document query methods | ✅ VERIFIED |
+| AC1: Typed domain models | ✅ VERIFIED |
+| AC1: DAPR service invocation | ✅ VERIFIED |
+| AC1: Retry logic per ADR-005 | ✅ VERIFIED |
+| AC2: E2E Verification | ✅ VERIFIED |
+| AC3: Unit Tests | ✅ VERIFIED |
 
 ---
 

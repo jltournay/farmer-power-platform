@@ -427,6 +427,26 @@ class TestSearchDocuments:
         assert request.page_size == 50
         assert request.page_token == "prev_token"
 
+    @pytest.mark.asyncio
+    async def test_search_documents_page_size_capped(
+        self,
+        collection_client_with_mock_stub: tuple[CollectionClient, MagicMock],
+    ) -> None:
+        """Test page_size is capped at 100 for search."""
+        client, stub = collection_client_with_mock_stub
+        response = collection_pb2.SearchDocumentsResponse(
+            documents=[],
+            next_page_token="",
+            total_count=0,
+        )
+        stub.SearchDocuments.return_value = response
+
+        await client.search_documents("qc_analyzer_results", page_size=200)
+
+        call_args = stub.SearchDocuments.call_args
+        request = call_args[0][0]
+        assert request.page_size == 100  # Should be capped at 100
+
 
 class TestErrorHandling:
     """Tests for error handling and retry logic."""

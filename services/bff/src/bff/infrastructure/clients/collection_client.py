@@ -6,11 +6,10 @@ Implements 4 document query methods following the pattern from PlantationClient.
 Per ADR-002 §"Service Invocation Pattern" and ADR-005 for retry logic.
 """
 
-from datetime import datetime
+from datetime import UTC, datetime
 
 import grpc
 import grpc.aio
-import structlog
 from bff.infrastructure.clients.base import (
     BaseGrpcClient,
     grpc_retry,
@@ -23,8 +22,6 @@ from fp_common.models import (
 )
 from fp_proto.collection.v1 import collection_pb2, collection_pb2_grpc
 from google.protobuf.timestamp_pb2 import Timestamp
-
-logger = structlog.get_logger(__name__)
 
 
 class CollectionClient(BaseGrpcClient):
@@ -76,22 +73,22 @@ class CollectionClient(BaseGrpcClient):
         Returns:
             A Pydantic Document model.
         """
-        # Convert proto Timestamp to datetime
+        # Convert proto Timestamp to datetime (fallback to UTC now if not set)
         raw_stored_at = (
-            proto.raw_document.stored_at.ToDatetime() if proto.raw_document.HasField("stored_at") else datetime.now()
+            proto.raw_document.stored_at.ToDatetime() if proto.raw_document.HasField("stored_at") else datetime.now(UTC)
         )
         extraction_timestamp = (
             proto.extraction.extraction_timestamp.ToDatetime()
             if proto.extraction.HasField("extraction_timestamp")
-            else datetime.now()
+            else datetime.now(UTC)
         )
         received_at = (
-            proto.ingestion.received_at.ToDatetime() if proto.ingestion.HasField("received_at") else datetime.now()
+            proto.ingestion.received_at.ToDatetime() if proto.ingestion.HasField("received_at") else datetime.now(UTC)
         )
         processed_at = (
-            proto.ingestion.processed_at.ToDatetime() if proto.ingestion.HasField("processed_at") else datetime.now()
+            proto.ingestion.processed_at.ToDatetime() if proto.ingestion.HasField("processed_at") else datetime.now(UTC)
         )
-        created_at = proto.created_at.ToDatetime() if proto.HasField("created_at") else datetime.now()
+        created_at = proto.created_at.ToDatetime() if proto.HasField("created_at") else datetime.now(UTC)
 
         return Document(
             document_id=proto.document_id,
@@ -273,7 +270,7 @@ class CollectionClient(BaseGrpcClient):
         request = collection_pb2.SearchDocumentsRequest(
             collection_name=collection_name,
             source_id=source_id or "",
-            page_size=page_size,
+            page_size=min(page_size, 100),
             page_token=page_token or "",
         )
 

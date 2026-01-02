@@ -136,7 +136,7 @@ development_status:
   0-5-1a-collection-grpc-service: done  # 2 points - Proto + gRPC server (4 methods), github_issue: 65
   0-5-1b-bff-plantation-client-read: done  # 3 points - Base client + 13 read methods, github_issue: 67, PR: #68
   0-5-1c-bff-plantation-client-write: done  # 2 points - 11 write methods (create/update/delete), github_issue: 69, PR: #70
-  0-5-1d-bff-collection-client: review  # 2 points - 4 document query methods, github_issue: 71, PR: #72
+  0-5-1d-bff-collection-client: done  # 2 points - 4 document query methods, github_issue: 71, PR: #72
 
   0-5-2-bff-service-setup: backlog  # 3 points - FastAPI BFF scaffold with DAPR sidecar
   0-5-3-bff-auth-middleware: backlog  # 3 points - Dual-mode JWT validation (mock + B2C)
