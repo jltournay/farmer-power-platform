@@ -1,6 +1,6 @@
 # Story 0.5.3: BFF Authentication Middleware (Dual-Mode)
 
-**Status:** in-progress
+**Status:** review
 **GitHub Issue:** #75
 **Story Points:** 3
 
@@ -206,9 +206,9 @@ git push origin story/0-5-3-bff-auth-middleware
 # Wait ~30s, then check CI status
 gh run list --branch story/0-5-3-bff-auth-middleware --limit 3
 ```
-**CI Run ID:** _______________
-**CI E2E Status:** [ ] Passed / [ ] Failed
-**Verification Date:** _______________
+**CI Run ID:** 20668261295 (Quality CI), 20668297612 (E2E CI)
+**CI E2E Status:** [x] Passed / [ ] Failed (85 passed, 1 skipped)
+**Verification Date:** 2026-01-02
 
 ---
 
