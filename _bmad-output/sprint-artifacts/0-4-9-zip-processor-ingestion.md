@@ -258,10 +258,10 @@ gh workflow run e2e.yaml --ref story/0-4-9-zip-processor-ingestion
 sleep 10
 gh run list --workflow=e2e.yaml --branch story/0-4-9-zip-processor-ingestion --limit 1
 ```
-**CI Run ID:** _______________
-**E2E Run ID:** _______________
-**CI E2E Status:** [ ] Passed / [ ] Failed
-**Verification Date:** _______________
+**CI Run ID:** 20658107844
+**E2E Run ID:** 20658147387
+**CI E2E Status:** [x] Passed / [ ] Failed
+**Verification Date:** 2026-01-02
 
 ---
 
