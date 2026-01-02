@@ -64,39 +64,39 @@ doc = {
 
 ## Tasks / Subtasks
 
-- [ ] **Task 1: Analyze current MongoDB data** (AC: 2)
-  - [ ] Check if any production/dev configs exist with nested schema
-  - [ ] Document migration needs if any
+- [x] **Task 1: Analyze current MongoDB data** (AC: 2)
+  - [x] Check if any production/dev configs exist with nested schema
+  - [x] Document migration needs if any
 
-- [ ] **Task 2: Refactor deployer.py** (AC: 1, 3)
-  - [ ] Remove `config` wrapper in `deploy()` method (lines 161-177)
-  - [ ] Store fields directly: `ingestion`, `transformation`, `storage`, `events`
-  - [ ] Update `list_configs()` and `get_config()` to read flat schema
-  - [ ] Update history tracking to use flat schema
+- [x] **Task 2: Refactor deployer.py** (AC: 1, 3)
+  - [x] Remove `config` wrapper in `deploy()` method (lines 161-177)
+  - [x] Store fields directly: `ingestion`, `transformation`, `storage`, `events`
+  - [x] Update `list_configs()` and `get_config()` to read flat schema
+  - [x] Update history tracking to use flat schema
 
-- [ ] **Task 3: Update DeployedConfig model** (AC: 1)
-  - [ ] Change `config: dict` field to individual typed fields
-  - [ ] Or remove wrapper entirely and use `SourceConfig` directly
+- [x] **Task 3: Update DeployedConfig model** (AC: 1)
+  - [x] Change `config: dict` field to individual typed fields
+  - [x] Or remove wrapper entirely and use `SourceConfig` directly
 
-- [ ] **Task 4: Add migration handling** (AC: 2)
-  - [ ] Option A: Migration script to flatten existing nested configs
-  - [ ] Option B: `SourceConfigRepository` handles both schemas (temporary)
-  - [ ] Choose based on Task 1 findings
+- [x] **Task 4: Add migration handling** (AC: 2)
+  - [x] Option A: Migration script to flatten existing nested configs
+  - [x] Option B: `SourceConfigRepository` handles both schemas (temporary)
+  - [x] Choose based on Task 1 findings
 
-- [ ] **Task 5: Enhance unit tests for schema verification** (AC: 1, 3, 6)
-  - [ ] `tests/unit/source_config/test_deployer.py` - add assertions for deployed doc schema
-  - [ ] Add test: deployed doc has NO `config` wrapper key
-  - [ ] Add test: deployed doc has `ingestion`, `transformation`, `storage` at root level
-  - [ ] Add test: `SourceConfig.model_validate(deployed_doc)` succeeds
-  - [ ] Add test: verify round-trip: validate → deploy → read → validate again
+- [x] **Task 5: Enhance unit tests for schema verification** (AC: 1, 3, 6)
+  - [x] `tests/unit/source_config/test_deployer.py` - add assertions for deployed doc schema
+  - [x] Add test: deployed doc has NO `config` wrapper key
+  - [x] Add test: deployed doc has `ingestion`, `transformation`, `storage` at root level
+  - [x] Add test: `SourceConfig.model_validate(deployed_doc)` succeeds
+  - [x] Add test: verify round-trip: validate → deploy → read → validate again
 
-- [ ] **Task 6: Integration test** (AC: 4)
-  - [ ] Add test: CLI deploy → Collection Model read → typed access works
-  - [ ] Verify round-trip: YAML → CLI → MongoDB → Collection Model → typed access
+- [x] **Task 6: Integration test** (AC: 4)
+  - [x] Add test: CLI deploy → Collection Model read → typed access works
+  - [x] Verify round-trip: YAML → CLI → MongoDB → Collection Model → typed access
 
-- [ ] **Task 7: Verify E2E seed data** (AC: 5)
-  - [ ] Check `tests/e2e/seed_data/` for source config format
-  - [ ] Ensure seed data uses flat schema
+- [x] **Task 7: Verify E2E seed data** (AC: 5)
+  - [x] Check `tests/e2e/seed_data/` for source config format
+  - [x] Ensure seed data uses flat schema
 
 ## Files to Modify
 
