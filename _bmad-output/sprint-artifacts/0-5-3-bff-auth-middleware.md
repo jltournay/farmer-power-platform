@@ -19,11 +19,11 @@ So that API endpoints are protected locally and in production.
 **And** Token claims are extracted and available in request context
 **And** Invalid tokens return 401 Unauthorized
 
-### AC2: Azure B2C Mode Token Validation
+### AC2: Azure B2C Mode Token Validation (Stub for Story 0.5.8)
 **Given** `AUTH_PROVIDER=azure-b2c` is configured
 **When** the middleware validates a token
-**Then** JWT is validated against B2C JWKS endpoint
-**And** JWKS is cached for 24 hours
+**Then** JWT is validated against B2C JWKS endpoint (stub implementation)
+**And** JWKS is cached for 24 hours (deferred to Story 0.5.8)
 **And** Token claims are extracted identically to mock mode
 
 ### AC3: Token Claims Extraction
@@ -62,43 +62,46 @@ So that API endpoints are protected locally and in production.
 
 ## Tasks / Subtasks
 
-- [ ] **Task 1: TokenClaims Model** (AC: #3)
+- [ ] **Task 1: Directory Setup**
+  - [ ] Create `services/bff/src/bff/api/middleware/__init__.py`
+  - [ ] Create `services/bff/src/bff/api/schemas/__init__.py`
+
+- [ ] **Task 2: TokenClaims Model** (AC: #3)
   - [ ] Create `services/bff/src/bff/api/schemas/auth.py` - TokenClaims Pydantic model
   - [ ] Define all claim fields with proper types and defaults
   - [ ] Add `from_jwt_payload()` class method for claim extraction
+  - [ ] Add `AuthErrorCode` enum for consistent error codes
 
-- [ ] **Task 2: JWT Validation Core** (AC: #1, #2, #6)
+- [ ] **Task 3: JWT Validation Core** (AC: #1, #2, #6)
+  - [ ] Add `python-jose[cryptography]>=3.3.0` to `pyproject.toml` dependencies
   - [ ] Create `services/bff/src/bff/api/middleware/auth.py` - Core auth module
   - [ ] Implement `validate_mock_token()` - HS256 validation with local secret
   - [ ] Implement `validate_azure_token()` - RS256 validation with JWKS (stub for now)
   - [ ] Implement `validate_token()` - Router that selects validator based on AUTH_PROVIDER
   - [ ] Handle expired tokens with specific error code
 
-- [ ] **Task 3: Auth Dependencies** (AC: #3, #4, #5)
+- [ ] **Task 4: Auth Dependencies** (AC: #3, #4, #5)
   - [ ] Implement `get_current_user()` FastAPI dependency
   - [ ] Implement `require_permission(permission: str)` decorator
   - [ ] Implement `require_factory_access` dependency
   - [ ] Add OTel trace context for user claims (exclude PII)
 
-- [ ] **Task 4: Security Guardrail** (AC: #7)
-  - [ ] Update `services/bff/src/bff/config.py` - Add validation for mock+production
+- [ ] **Task 5: Security Guardrail** (AC: #7)
+  - [ ] Update `services/bff/src/bff/config.py` - Add `model_validator` for mock+production check
+  - [ ] Use `model_validator(mode='after')` pattern (NOT field_validator)
   - [ ] Fail startup if mock mode in production environment
 
-- [ ] **Task 5: Update Config** (AC: #1, #2)
-  - [ ] Add `auth_provider` setting (mock | azure-b2c)
-  - [ ] Add `mock_jwt_secret` setting for mock mode
-  - [ ] Add B2C settings (stub, completed in Story 0.5.8)
-
 - [ ] **Task 6: Unit Tests** (AC: #1-7)
+  - [ ] Add `create_mock_jwt_token()` helper to `tests/unit/bff/conftest.py`
+  - [ ] Add `mock_auth_headers` fixture for authenticated requests
   - [ ] Create `tests/unit/bff/test_auth_middleware.py`
   - [ ] Test mock token validation (valid, invalid, expired)
   - [ ] Test permission decorator (allowed, denied, platform_admin bypass)
   - [ ] Test factory access decorator (own factory, other factory, multi-factory owner, regulator, platform_admin)
   - [ ] Test security guardrail (mock + production = fail)
 
-- [ ] **Task 7: E2E Infrastructure Update**
-  - [ ] Update `docker-compose.e2e.yaml` to add `MOCK_JWT_SECRET` environment variable
-  - [ ] Ensure BFF service uses mock mode for E2E tests
+- [ ] **Task 7: Verify E2E Infrastructure**
+  - [ ] Verify BFF service uses mock mode for E2E tests (already configured)
 
 ## Git Workflow (MANDATORY)
 
@@ -188,6 +191,17 @@ gh run list --branch story/0-5-3-bff-auth-middleware --limit 3
 
 ## Dev Notes
 
+### What's Already Done (DO NOT DUPLICATE)
+
+The following items already exist from Story 0.5.2 - do NOT recreate:
+
+| Item | Location | Status |
+|------|----------|--------|
+| `auth_provider` config setting | `services/bff/src/bff/config.py:23` | ✅ Exists |
+| `mock_jwt_secret` config setting | `services/bff/src/bff/config.py:24` | ✅ Exists |
+| `MOCK_JWT_SECRET` E2E env var | `docker-compose.e2e.yaml:372` | ✅ Exists |
+| `AUTH_PROVIDER=mock` E2E env var | `docker-compose.e2e.yaml:371` | ✅ Exists |
+
 ### Previous Story Intelligence (CRITICAL)
 
 **From Story 0.5.2, the BFF service is now running with:**
@@ -273,25 +287,126 @@ platform_admin (bypasses all checks)
 regulator (completely separate, no factory access)
 ```
 
-### Mock Token Generation (Frontend Side)
+### Mock User Personas (from ADR-003 §664-719)
 
-When frontend creates mock tokens, they use this structure (from ADR-003 §664-719):
+**Use these for testing - copy directly into test fixtures:**
+
+| ID | Name | Role | Factory | Key Permissions |
+|----|------|------|---------|-----------------|
+| `mock-manager-001` | Jane Mwangi | `factory_manager` | KEN-FAC-001 | farmers:read, quality_events:read, diagnoses:read, action_plans:read |
+| `mock-owner-001` | John Ochieng | `factory_owner` | KEN-FAC-001, KEN-FAC-002 | + payment_policies:write, factory_settings:write |
+| `mock-admin-001` | Admin User | `platform_admin` | (all) | `*` (wildcard) |
+| `mock-clerk-001` | Mary Wanjiku | `registration_clerk` | KEN-FAC-001 + KEN-CP-001 | farmers:create |
+| `mock-regulator-001` | TBK Inspector | `regulator` | regions: nandi, kericho | national_stats:read, regional_stats:read |
+
+### Test Fixture Pattern (ADD to conftest.py)
 
 ```python
-# Mock token payload structure
-{
-    "sub": "mock-manager-001",
-    "email": "jane@kericho-factory.test",
-    "name": "Jane Mwangi",
-    "role": "factory_manager",
-    "factory_id": "KEN-FAC-001",
-    "factory_ids": ["KEN-FAC-001"],
-    "collection_point_id": None,
-    "region_ids": [],
-    "permissions": ["farmers:read", "quality_events:read", "diagnoses:read", "action_plans:read"],
-    "iat": <timestamp>,
-    "exp": <timestamp + 1 hour>
+# tests/unit/bff/conftest.py - ADD these fixtures
+
+from datetime import UTC, datetime, timedelta
+from jose import jwt
+
+MOCK_JWT_SECRET = "test-secret-for-unit-tests"
+
+MOCK_USERS = {
+    "factory_manager": {
+        "sub": "mock-manager-001",
+        "email": "jane@kericho-factory.test",
+        "name": "Jane Mwangi",
+        "role": "factory_manager",
+        "factory_id": "KEN-FAC-001",
+        "factory_ids": ["KEN-FAC-001"],
+        "collection_point_id": None,
+        "region_ids": [],
+        "permissions": ["farmers:read", "quality_events:read", "diagnoses:read", "action_plans:read"],
+    },
+    "factory_owner": {
+        "sub": "mock-owner-001",
+        "email": "john@owner.test",
+        "name": "John Ochieng",
+        "role": "factory_owner",
+        "factory_id": "KEN-FAC-001",
+        "factory_ids": ["KEN-FAC-001", "KEN-FAC-002"],
+        "collection_point_id": None,
+        "region_ids": [],
+        "permissions": ["farmers:read", "quality_events:read", "payment_policies:write", "factory_settings:write"],
+    },
+    "platform_admin": {
+        "sub": "mock-admin-001",
+        "email": "admin@farmerpower.test",
+        "name": "Admin User",
+        "role": "platform_admin",
+        "factory_id": None,
+        "factory_ids": [],
+        "collection_point_id": None,
+        "region_ids": [],
+        "permissions": ["*"],
+    },
+    "regulator": {
+        "sub": "mock-regulator-001",
+        "email": "inspector@tbk.go.ke.test",
+        "name": "TBK Inspector",
+        "role": "regulator",
+        "factory_id": None,
+        "factory_ids": [],
+        "collection_point_id": None,
+        "region_ids": ["nandi", "kericho"],
+        "permissions": ["national_stats:read", "regional_stats:read"],
+    },
 }
+
+def create_mock_jwt_token(
+    user_data: dict,
+    secret: str = MOCK_JWT_SECRET,
+    expires_delta: timedelta = timedelta(hours=1),
+) -> str:
+    """Create a mock JWT token for testing."""
+    now = datetime.now(UTC)
+    payload = {
+        **user_data,
+        "iat": now,
+        "exp": now + expires_delta,
+    }
+    return jwt.encode(payload, secret, algorithm="HS256")
+
+@pytest.fixture
+def mock_manager_token() -> str:
+    """JWT token for factory_manager user."""
+    return create_mock_jwt_token(MOCK_USERS["factory_manager"])
+
+@pytest.fixture
+def mock_admin_token() -> str:
+    """JWT token for platform_admin user."""
+    return create_mock_jwt_token(MOCK_USERS["platform_admin"])
+
+@pytest.fixture
+def mock_regulator_token() -> str:
+    """JWT token for regulator user."""
+    return create_mock_jwt_token(MOCK_USERS["regulator"])
+
+@pytest.fixture
+def expired_token() -> str:
+    """Expired JWT token for testing expiry handling."""
+    return create_mock_jwt_token(
+        MOCK_USERS["factory_manager"],
+        expires_delta=timedelta(hours=-1),  # Already expired
+    )
+```
+
+### AuthErrorCode Enum (ADD to schemas/auth.py)
+
+```python
+from enum import Enum
+
+class AuthErrorCode(str, Enum):
+    """Standardized auth error codes for consistent API responses."""
+    TOKEN_EXPIRED = "token_expired"
+    TOKEN_INVALID = "invalid_token"
+    TOKEN_MISSING = "missing_token"
+    INSUFFICIENT_PERMISSIONS = "insufficient_permissions"
+    FACTORY_ACCESS_DENIED = "factory_access_denied"
+    REGULATOR_RESTRICTED = "regulator_restricted"
 ```
 
 ### Implementation Patterns
@@ -405,33 +520,33 @@ dependencies = [
 ]
 ```
 
-### Config Updates
+### Config Updates (Security Guardrail)
+
+Add `model_validator` to existing config.py - **use `mode='after'` NOT `field_validator`**:
 
 ```python
-# services/bff/src/bff/config.py
-from pydantic import field_validator
-from pydantic_settings import BaseSettings, SettingsConfigDict
+# services/bff/src/bff/config.py - ADD this import and validator
+from pydantic import model_validator
 
 class Settings(BaseSettings):
-    model_config = SettingsConfigDict(env_prefix="")
+    # ... existing settings already present ...
 
-    app_env: str = "development"
-    auth_provider: str = "mock"
-    mock_jwt_secret: str = "dev-secret"
-
-    # Azure B2C settings (Story 0.5.8)
+    # Azure B2C settings (Story 0.5.8) - ADD these
     b2c_tenant: str = ""
     b2c_client_id: str = ""
 
-    # ... other settings
-
-    @field_validator("auth_provider")
-    @classmethod
-    def validate_auth_provider(cls, v: str, info) -> str:
-        if v == "mock" and info.data.get("app_env") == "production":
-            raise ValueError("Mock auth provider cannot be used in production")
-        return v
+    @model_validator(mode='after')
+    def validate_no_mock_in_production(self) -> 'Settings':
+        """Security guardrail: prevent mock auth in production."""
+        if self.auth_provider == "mock" and self.app_env == "production":
+            raise ValueError(
+                "SECURITY ERROR: Mock auth provider cannot be used in production. "
+                "Set AUTH_PROVIDER=azure-b2c for production deployments."
+            )
+        return self
 ```
+
+**⚠️ WARNING:** Do NOT use `@field_validator` for this check - it doesn't work in Pydantic v2 because `info.data` only contains fields validated alphabetically before the current field.
 
 ### OpenTelemetry Context
 
@@ -504,7 +619,7 @@ If you modified mock servers, docker-compose, env vars, or seed data that affect
 
 | File | What Changed | Why | Impact |
 |------|--------------|-----|--------|
-| docker-compose.e2e.yaml | Add MOCK_JWT_SECRET | BFF needs secret for mock auth | Auth works in E2E |
+| (none expected - E2E already configured) | | | |
 
 ### Unit Test Changes (if any)
 If you modified ANY unit test behavior, document here:
