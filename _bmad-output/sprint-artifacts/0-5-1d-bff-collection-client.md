@@ -1,6 +1,6 @@
 # Story 0.5.1d: BFF CollectionClient
 
-**Status:** in-progress
+**Status:** review
 **GitHub Issue:** #71
 **Story Points:** 2
 
@@ -70,12 +70,13 @@ So that the BFF can fetch quality events and delivery records for the dashboard.
   ```
 
 ### Story Done
-- [ ] Create Pull Request
-- [ ] CI passes on PR
+- [x] Create Pull Request
+- [x] CI passes on PR (Run ID: 20666247810)
+- [x] E2E CI passes on PR (Run ID: 20666288719)
 - [ ] Code review completed
 - [ ] PR merged
 
-**PR URL:** _______________
+**PR URL:** https://github.com/jltournay/farmer-power-platform/pull/72
 
 ---
 
