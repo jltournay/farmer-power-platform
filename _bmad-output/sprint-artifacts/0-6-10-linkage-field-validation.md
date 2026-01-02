@@ -1,6 +1,6 @@
 # Story 0.6.10: Linkage Field Validation with Metrics
 
-**Status:** in-progress
+**Status:** review
 **GitHub Issue:** #59
 **Epic:** [Epic 0.6: Infrastructure Hardening](../epics/epic-0-6-infrastructure-hardening.md)
 **ADR:** [ADR-008: Invalid Linkage Field Handling](../architecture/adr/ADR-008-invalid-linkage-field-handling.md)
@@ -39,7 +39,7 @@ Invalid events should:
 - [x] **Exceptions raised** - No silent failures ✅
 - [x] **Metrics instrumented** - `event_linkage_validation_failures_total` ✅
 - [x] **Unit tests pass** - Each validation case tested (32 tests, all pass) ✅
-- [x] **E2E tests pass** - Step 7b ✅ (72 passed, 3 xfailed) | Step 9c: Pending CI
+- [x] **E2E tests pass** - Step 7b ✅ (72 passed, 3 xfailed) | Step 9c ✅ (E2E CI Run #20654615870)
 - [x] **Lint passes** ✅
 
 ---
