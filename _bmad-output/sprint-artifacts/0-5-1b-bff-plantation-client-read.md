@@ -1,6 +1,6 @@
 # Story 0.5.1b: BFF PlantationClient - Read Operations
 
-**Status:** in-progress
+**Status:** review
 **GitHub Issue:** #67
 **Story Points:** 3
 
@@ -93,7 +93,7 @@ So that the BFF can fetch farmer, factory, region, and collection point data for
 
 ### Story Done
 - [x] Create Pull Request
-- [ ] CI passes on PR
+- [x] CI passes on PR
 - [ ] Code review completed
 - [ ] PR merged
 
@@ -174,6 +174,14 @@ tests/e2e/scenarios/test_08_zip_ingestion.py 10 passed (1 skipped)
 ================== 85 passed, 1 skipped in 123.49s (0:02:03) ===================
 ```
 **E2E passed:** [x] Yes / [ ] No
+
+### 4. E2E Tests (CI - Step 9c)
+```bash
+gh workflow run "E2E Tests" --ref story/0-5-1b-bff-plantation-client-read
+gh run watch <run-id>
+```
+**Run ID:** 20663146283
+**Result:** PASSED (85 passed, 1 skipped)
 
 ---
 
