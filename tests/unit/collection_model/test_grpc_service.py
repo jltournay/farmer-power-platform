@@ -394,7 +394,7 @@ async def test_list_documents_pagination(
     """Test ListDocuments pagination works correctly."""
     # Insert 5 documents
     for i in range(5):
-        doc = sample_document_data.copy()
+        doc = copy.deepcopy(sample_document_data)
         doc["document_id"] = f"doc-{i:03d}"
         await mock_db["qc_documents"].insert_one(doc)
 
@@ -455,7 +455,7 @@ async def test_get_documents_by_farmer_success(
     """Test GetDocumentsByFarmer returns all documents for a farmer."""
     # Insert 3 documents for WM-0001
     for i in range(3):
-        doc = sample_document_data.copy()
+        doc = copy.deepcopy(sample_document_data)
         doc["document_id"] = f"doc-{i:03d}"
         await mock_db["qc_documents"].insert_one(doc)
 
@@ -480,7 +480,7 @@ async def test_get_documents_by_farmer_with_limit(
     """Test GetDocumentsByFarmer respects limit parameter."""
     # Insert 5 documents
     for i in range(5):
-        doc = sample_document_data.copy()
+        doc = copy.deepcopy(sample_document_data)
         doc["document_id"] = f"doc-{i:03d}"
         await mock_db["qc_documents"].insert_one(doc)
 
@@ -618,7 +618,7 @@ async def test_search_documents_pagination(
     """Test SearchDocuments pagination works correctly."""
     # Insert 5 documents
     for i in range(5):
-        doc = sample_document_data.copy()
+        doc = copy.deepcopy(sample_document_data)
         doc["document_id"] = f"doc-{i:03d}"
         await mock_db["qc_documents"].insert_one(doc)
 

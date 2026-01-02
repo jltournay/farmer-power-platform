@@ -398,7 +398,9 @@ class CollectionServiceClient:
     def __init__(self, host: str = "localhost", port: int = 50054):
         self.address = f"{host}:{port}"
         self._channel: grpc.aio.Channel | None = None
-        self._stub: Any | None = None
+        # Note: Using Any for stub type because proto imports are deferred to __aenter__
+        # to avoid import failures when protos are not yet generated
+        self._stub: Any | None = None  # CollectionServiceStub at runtime
 
     async def __aenter__(self) -> "CollectionServiceClient":
         # Import here to avoid import errors when proto not generated

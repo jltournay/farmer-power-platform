@@ -19,6 +19,8 @@ from fp_proto.collection.v1 import collection_pb2, collection_pb2_grpc
 from google.protobuf import timestamp_pb2
 from motor.motor_asyncio import AsyncIOMotorDatabase
 
+__all__ = ["CollectionServiceServicer", "serve_grpc"]
+
 logger = structlog.get_logger(__name__)
 
 
@@ -179,7 +181,11 @@ class CollectionServiceServicer(collection_pb2_grpc.CollectionServiceServicer):
         if request.page_token:
             try:
                 skip = int(request.page_token)
+                if skip < 0:
+                    logger.warning("Negative page_token received, resetting to 0", page_token=request.page_token)
+                    skip = 0
             except ValueError:
+                logger.warning("Invalid page_token format, resetting to 0", page_token=request.page_token)
                 skip = 0
 
         # Execute query
@@ -316,7 +322,11 @@ class CollectionServiceServicer(collection_pb2_grpc.CollectionServiceServicer):
         if request.page_token:
             try:
                 skip = int(request.page_token)
+                if skip < 0:
+                    logger.warning("Negative page_token received, resetting to 0", page_token=request.page_token)
+                    skip = 0
             except ValueError:
+                logger.warning("Invalid page_token format, resetting to 0", page_token=request.page_token)
                 skip = 0
 
         # Execute query
