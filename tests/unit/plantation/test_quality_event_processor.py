@@ -232,7 +232,15 @@ class TestQualityEventProcessor:
         sample_document: dict,
         sample_grading_model: GradingModel,
     ) -> None:
-        """Test that processing continues (but skips update) when farmer not found."""
+        """Test that processing skips update when farmer performance not found.
+
+        Story 0.6.10: Updated to reflect new semantics:
+        - "farmer_not_found" = farmer doesn't exist in Farmer repo (raises exception)
+        - "no_performance_record" = farmer exists but has no FarmerPerformance record
+
+        When farmer_repo is not configured (None), farmer validation is skipped,
+        but if farmer_performance_repo returns None, we skip with "no_performance_record".
+        """
         # Arrange
         mock_collection_client.get_document.return_value = sample_document
         mock_grading_model_repo.get_by_id_and_version.return_value = sample_grading_model
@@ -246,7 +254,9 @@ class TestQualityEventProcessor:
 
         # Assert
         assert result["status"] == "skipped"
-        assert result["reason"] == "farmer_not_found"
+        # Story 0.6.10: Changed from "farmer_not_found" to "no_performance_record"
+        # because the farmer may exist but not have a FarmerPerformance record yet
+        assert result["reason"] == "no_performance_record"
 
     @pytest.mark.asyncio
     async def test_process_missing_grading_model_id(
