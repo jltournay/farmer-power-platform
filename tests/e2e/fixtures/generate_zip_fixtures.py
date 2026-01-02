@@ -103,9 +103,14 @@ VALID_MANIFEST = {
 
 
 def create_dummy_jpeg(width: int = 10, height: int = 10) -> bytes:
-    """Create a minimal valid JPEG image (1x1 pixel).
+    """Create a minimal valid JPEG image.
 
-    Returns a valid JPEG file that can be extracted and stored.
+    Args:
+        width: Unused (kept for API compatibility)
+        height: Unused (kept for API compatibility)
+
+    Returns:
+        A valid minimal JPEG file that can be extracted and stored.
     """
     # Minimal JPEG: Start of Image, JFIF header, minimal DQT, SOF0, DHT, SOS, EOI
     # This is a valid minimal JPEG that will pass MIME type detection

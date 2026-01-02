@@ -25,8 +25,11 @@ Source Config Required:
 """
 
 import asyncio
+import io
+import json
 import time
 import uuid
+import zipfile
 from pathlib import Path
 
 import pytest
@@ -104,10 +107,6 @@ def create_unique_zip(unique_id: str) -> bytes:
     Returns:
         ZIP file content as bytes
     """
-    import io
-    import json
-    import zipfile
-
     manifest = {
         "manifest_version": "1.0",
         "source_id": "e2e-exception-images-zip",
