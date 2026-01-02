@@ -1,6 +1,6 @@
 # Story 0.5.2: BFF Service Setup
 
-**Status:** ready-for-dev
+**Status:** in-progress
 **GitHub Issue:** #73
 **Story Points:** 3
 
@@ -50,38 +50,38 @@ So that frontend applications have an optimized API layer.
 
 ## Tasks / Subtasks
 
-- [ ] **Task 1: FastAPI Application Core** (AC: #1, #2)
-  - [ ] Create `services/bff/src/bff/main.py` - FastAPI app with lifespan handler
-  - [ ] Create `services/bff/src/bff/config.py` - Environment configuration
-  - [ ] Create `services/bff/src/bff/api/__init__.py`
-  - [ ] Create `services/bff/src/bff/api/routes/__init__.py`
-  - [ ] Create `services/bff/src/bff/api/routes/health.py` - `/health`, `/ready` endpoints
-  - [ ] Create `services/bff/src/bff/infrastructure/tracing.py` - OpenTelemetry setup
-  - [ ] Update `services/bff/pyproject.toml` - Add FastAPI dependencies
+- [x] **Task 1: FastAPI Application Core** (AC: #1, #2)
+  - [x] Create `services/bff/src/bff/main.py` - FastAPI app with lifespan handler
+  - [x] Create `services/bff/src/bff/config.py` - Environment configuration
+  - [x] Create `services/bff/src/bff/api/__init__.py`
+  - [x] Create `services/bff/src/bff/api/routes/__init__.py`
+  - [x] Create `services/bff/src/bff/api/routes/health.py` - `/health`, `/ready` endpoints
+  - [x] Create `services/bff/src/bff/infrastructure/tracing.py` - OpenTelemetry setup
+  - [x] Update `services/bff/pyproject.toml` - Add FastAPI dependencies
 
-- [ ] **Task 2: DAPR Configuration** (AC: #3)
-  - [ ] Create `services/bff/dapr/config.yaml` - Tracing to OTel
-  - [ ] Create `services/bff/dapr/resiliency.yaml` - Circuit breaker, retry
+- [x] **Task 2: DAPR Configuration** (AC: #3)
+  - [x] Create `services/bff/dapr/config.yaml` - Tracing to OTel
+  - [x] Create `services/bff/dapr/resiliency.yaml` - Circuit breaker, retry
 
-- [ ] **Task 3: Dockerfile** (AC: #4)
-  - [ ] Create `services/bff/Dockerfile` - Python 3.12, uvicorn
+- [x] **Task 3: Dockerfile** (AC: #4)
+  - [x] Create `services/bff/Dockerfile` - Python 3.12, uvicorn
 
-- [ ] **Task 4: E2E Infrastructure Update** (AC: #4)
-  - [ ] Update `tests/e2e/infrastructure/docker-compose.e2e.yaml` - Add BFF + DAPR sidecar
-  - [ ] Verify BFF can reach plantation-model and collection-model via DAPR
+- [x] **Task 4: E2E Infrastructure Update** (AC: #4)
+  - [x] Update `tests/e2e/infrastructure/docker-compose.e2e.yaml` - Add BFF + DAPR sidecar
+  - [x] Verify BFF can reach plantation-model and collection-model via DAPR
 
-- [ ] **Task 5: Unit Tests** (AC: #5)
-  - [ ] Create `tests/unit/bff/test_health.py` - Health endpoint tests
-  - [ ] Create `tests/unit/bff/test_config.py` - Configuration loading tests
-  - [ ] Create `tests/unit/bff/test_main.py` - App startup tests
+- [x] **Task 5: Unit Tests** (AC: #5)
+  - [x] Create `tests/unit/bff/test_health.py` - Health endpoint tests
+  - [x] Create `tests/unit/bff/test_config.py` - Configuration loading tests
+  - [x] Create `tests/unit/bff/test_main.py` - App startup tests
 
 ## Git Workflow (MANDATORY)
 
 **All story development MUST use feature branches.** Direct pushes to main are blocked.
 
 ### Story Start
-- [ ] GitHub Issue exists or created: `gh issue create --title "Story 0.5.2: BFF Service Setup"`
-- [ ] Feature branch created from main:
+- [x] GitHub Issue exists or created: `gh issue create --title "Story 0.5.2: BFF Service Setup"`
+- [x] Feature branch created from main:
   ```bash
   git checkout main && git pull origin main
   git checkout -b story/0-5-2-bff-service-setup
@@ -90,9 +90,9 @@ So that frontend applications have an optimized API layer.
 **Branch name:** `story/0-5-2-bff-service-setup`
 
 ### During Development
-- [ ] All commits reference GitHub issue: `Relates to #XX`
-- [ ] Commits are atomic by type (production, test, seed - not mixed)
-- [ ] Push to feature branch: `git push -u origin story/0-5-2-bff-service-setup`
+- [x] All commits reference GitHub issue: `Relates to #73`
+- [x] Commits are atomic by type (production, test, seed - not mixed)
+- [x] Push to feature branch: `git push -u origin story/0-5-2-bff-service-setup`
 
 ### Story Done
 - [ ] Create Pull Request: `gh pr create --title "Story 0.5.2: BFF Service Setup" --base main`
@@ -115,7 +115,7 @@ PYTHONPATH="${PYTHONPATH}:.:libs/fp-proto/src:libs/fp-common:services/bff/src" p
 ```
 **Output:**
 ```
-(paste test summary here - e.g., "55 passed in 5.23s")
+92 passed, 9 warnings in 14.21s
 ```
 
 ### 2. E2E Tests (MANDATORY)
@@ -134,15 +134,15 @@ docker compose -f tests/e2e/infrastructure/docker-compose.e2e.yaml down -v
 ```
 **Output:**
 ```
-(paste E2E test output here - story is NOT ready for review without this)
+85 passed, 1 skipped in 119.90s (0:01:59)
 ```
-**E2E passed:** [ ] Yes / [ ] No
+**E2E passed:** [x] Yes / [ ] No
 
 ### 3. Lint Check
 ```bash
 ruff check . && ruff format --check .
 ```
-**Lint passed:** [ ] Yes / [ ] No
+**Lint passed:** [x] Yes / [ ] No
 
 ### 4. CI Verification on Story Branch (MANDATORY)
 
@@ -441,17 +441,17 @@ CMD ["uvicorn", "bff.main:app", "--host", "0.0.0.0", "--port", "8080"]
 **Read First:** `tests/e2e/E2E-TESTING-MENTAL-MODEL.md`
 
 ### Pre-Implementation
-- [ ] Read and understood `E2E-TESTING-MENTAL-MODEL.md`
-- [ ] Understand: Proto = source of truth, tests verify (not define) behavior
+- [x] Read and understood `E2E-TESTING-MENTAL-MODEL.md`
+- [x] Understand: Proto = source of truth, tests verify (not define) behavior
 
 ### Before Starting Docker
-- [ ] Validate seed data: `python tests/e2e/infrastructure/validate_seed_data.py`
-- [ ] All seed files pass validation
+- [x] Validate seed data: `python tests/e2e/infrastructure/validate_seed_data.py`
+- [x] All seed files pass validation
 
 ### During Implementation
-- [ ] If tests fail, investigate using the debugging checklist (not blindly modify code)
-- [ ] If seed data needs changes, fix seed data (not production code)
-- [ ] If production code has bugs, document each fix (see below)
+- [x] If tests fail, investigate using the debugging checklist (not blindly modify code)
+- [x] If seed data needs changes, fix seed data (not production code)
+- [x] If production code has bugs, document each fix (see below)
 
 ### Production Code Changes (if any)
 If you modified ANY production code (`services/`, `mcp-servers/`, `libs/`), document each change here:
@@ -473,11 +473,11 @@ If you modified mock servers, docker-compose, env vars, or seed data that affect
 | docker-compose.e2e.yaml | Added BFF + sidecar | BFF service needed for E2E | New service in stack |
 
 ### Before Marking Done
-- [ ] All tests pass locally with Docker infrastructure
-- [ ] `ruff check` and `ruff format --check` pass
-- [ ] CI pipeline is green
-- [ ] If production code changed: Change log above is complete
-- [ ] Story file updated with completion notes
+- [x] All tests pass locally with Docker infrastructure
+- [x] `ruff check` and `ruff format --check` pass
+- [ ] CI pipeline is green (pending push and CI run)
+- [x] If production code changed: Change log above is complete (N/A - new service)
+- [x] Story file updated with completion notes
 
 ---
 
@@ -485,16 +485,38 @@ If you modified mock servers, docker-compose, env vars, or seed data that affect
 
 ### Agent Model Used
 
-{{agent_model_name_version}}
+Claude Opus 4.5 (claude-opus-4-5-20251101)
 
 ### Debug Log References
 
+- Fixed dependency conflict: BFF pyproject.toml had fastapi ^0.109.0 but fp-common requires ^0.115.0
+- Created README.md to satisfy poetry metadata requirement
+
 ### Completion Notes List
+
+1. Implemented FastAPI application with lifespan handler and OpenTelemetry tracing
+2. Created health (`/health`) and readiness (`/ready`) endpoints
+3. Configured DAPR sidecar with tracing and resiliency policies
+4. Added BFF service to E2E docker-compose infrastructure
+5. All 92 unit tests pass, all 85 E2E tests pass
 
 ### File List
 
 **Created:**
-- (list new files)
+- `services/bff/src/bff/main.py` - FastAPI application entrypoint
+- `services/bff/src/bff/config.py` - Environment-based settings
+- `services/bff/src/bff/api/__init__.py` - API module init
+- `services/bff/src/bff/api/routes/__init__.py` - Routes module init
+- `services/bff/src/bff/api/routes/health.py` - Health/ready endpoints
+- `services/bff/src/bff/infrastructure/tracing.py` - OpenTelemetry setup
+- `services/bff/dapr/config.yaml` - DAPR tracing config
+- `services/bff/dapr/resiliency.yaml` - DAPR retry/circuit breaker
+- `services/bff/Dockerfile` - Container build file
+- `services/bff/README.md` - Service documentation
+- `tests/unit/bff/test_health.py` - Health endpoint tests
+- `tests/unit/bff/test_config.py` - Configuration tests
+- `tests/unit/bff/test_main.py` - Application tests
 
 **Modified:**
-- (list modified files with brief description)
+- `services/bff/pyproject.toml` - Updated fastapi to ^0.115.0, uvicorn to ^0.32.0
+- `tests/e2e/infrastructure/docker-compose.e2e.yaml` - Added BFF service + DAPR sidecar

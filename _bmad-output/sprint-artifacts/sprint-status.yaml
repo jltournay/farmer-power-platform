@@ -138,7 +138,7 @@ development_status:
   0-5-1c-bff-plantation-client-write: done  # 2 points - 11 write methods (create/update/delete), github_issue: 69, PR: #70
   0-5-1d-bff-collection-client: done  # 2 points - 4 document query methods, github_issue: 71, PR: #72
 
-  0-5-2-bff-service-setup: ready-for-dev  # 3 points - FastAPI BFF scaffold with DAPR sidecar, github_issue: 73
+  0-5-2-bff-service-setup: in-progress  # 3 points - FastAPI BFF scaffold with DAPR sidecar, github_issue: 73
   0-5-3-bff-auth-middleware: backlog  # 3 points - Dual-mode JWT validation (mock + B2C)
   0-5-4-bff-api-routes: backlog  # 5 points - REST endpoints for farmers, dashboard
   0-5-5-shared-component-library: backlog  # 3 points - @fp/ui-components with MUI v6
