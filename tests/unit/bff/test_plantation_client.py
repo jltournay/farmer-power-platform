@@ -11,18 +11,39 @@ from bff.infrastructure.clients.base import NotFoundError, ServiceUnavailableErr
 from bff.infrastructure.clients.plantation_client import PlantationClient
 from fp_common.models import (
     CollectionPoint,
+    CollectionPointCapacity,
+    CollectionPointCreate,
+    CollectionPointUpdate,
     Factory,
+    FactoryCreate,
+    FactoryUpdate,
     Farmer,
+    FarmerCreate,
+    FarmerUpdate,
     FarmScale,
     Flush,
+    GeoLocation,
     InteractionPreference,
     NotificationChannel,
+    OperatingHours,
     PerformanceSummary,
     PreferredLanguage,
     Region,
     RegionalWeather,
+    RegionCreate,
+    RegionUpdate,
 )
 from fp_common.models.farmer_performance import FarmerPerformance
+from fp_common.models.value_objects import (
+    GPS,
+    Agronomic,
+    AltitudeBand,
+    AltitudeBandLabel,
+    FlushCalendar,
+    FlushPeriod,
+    Geography,
+    WeatherConfig,
+)
 from fp_proto.plantation.v1 import plantation_pb2, plantation_pb2_grpc
 
 from tests.unit.bff.conftest import (
@@ -40,7 +61,7 @@ from tests.unit.bff.conftest import (
 def mock_plantation_stub() -> MagicMock:
     """Create a mock Plantation service stub."""
     stub = MagicMock()
-    # Configure async methods
+    # Configure async methods - Read operations
     stub.GetFarmer = AsyncMock()
     stub.GetFarmerByPhone = AsyncMock()
     stub.ListFarmers = AsyncMock()
@@ -54,6 +75,18 @@ def mock_plantation_stub() -> MagicMock:
     stub.GetRegionWeather = AsyncMock()
     stub.GetCurrentFlush = AsyncMock()
     stub.GetPerformanceSummary = AsyncMock()
+    # Configure async methods - Write operations
+    stub.CreateFarmer = AsyncMock()
+    stub.UpdateFarmer = AsyncMock()
+    stub.CreateFactory = AsyncMock()
+    stub.UpdateFactory = AsyncMock()
+    stub.DeleteFactory = AsyncMock()
+    stub.CreateCollectionPoint = AsyncMock()
+    stub.UpdateCollectionPoint = AsyncMock()
+    stub.DeleteCollectionPoint = AsyncMock()
+    stub.CreateRegion = AsyncMock()
+    stub.UpdateRegion = AsyncMock()
+    stub.UpdateCommunicationPreferences = AsyncMock()
     return stub
 
 
@@ -620,3 +653,414 @@ class TestClientClose:
         # Should not raise
         await client.close()
         assert client._channel is None
+
+
+# =============================================================================
+# Write Operations Tests
+# =============================================================================
+
+
+class TestFarmerWriteOperations:
+    """Tests for Farmer write operations (2 methods)."""
+
+    @pytest.mark.asyncio
+    async def test_create_farmer_success(
+        self,
+        plantation_client_with_mock_stub: tuple[PlantationClient, MagicMock],
+    ) -> None:
+        """Test successful farmer creation."""
+        client, stub = plantation_client_with_mock_stub
+        stub.CreateFarmer.return_value = create_farmer_proto(farmer_id="WM-0002")
+
+        farmer_data = FarmerCreate(
+            first_name="Wambui",
+            last_name="Ndungu",
+            phone="+254712345679",
+            national_id="87654321",
+            farm_size_hectares=0.8,
+            latitude=-0.4200,
+            longitude=36.9560,
+            collection_point_id="nyeri-highland-cp-001",
+        )
+
+        farmer = await client.create_farmer(farmer_data)
+
+        assert isinstance(farmer, Farmer)
+        stub.CreateFarmer.assert_called_once()
+        call_args = stub.CreateFarmer.call_args
+        request = call_args[0][0]
+        assert request.first_name == "Wambui"
+        assert request.last_name == "Ndungu"
+        assert request.collection_point_id == "nyeri-highland-cp-001"
+
+    @pytest.mark.asyncio
+    async def test_update_farmer_success(
+        self,
+        plantation_client_with_mock_stub: tuple[PlantationClient, MagicMock],
+    ) -> None:
+        """Test successful farmer update."""
+        client, stub = plantation_client_with_mock_stub
+        updated_proto = create_farmer_proto(farmer_id="WM-0001", first_name="Wanjiku Updated")
+        stub.UpdateFarmer.return_value = updated_proto
+
+        farmer_data = FarmerUpdate(first_name="Wanjiku Updated")
+
+        farmer = await client.update_farmer("WM-0001", farmer_data)
+
+        assert isinstance(farmer, Farmer)
+        stub.UpdateFarmer.assert_called_once()
+        call_args = stub.UpdateFarmer.call_args
+        request = call_args[0][0]
+        assert request.id == "WM-0001"
+        assert request.first_name == "Wanjiku Updated"
+
+    @pytest.mark.asyncio
+    async def test_update_farmer_not_found(
+        self,
+        plantation_client_with_mock_stub: tuple[PlantationClient, MagicMock],
+    ) -> None:
+        """Test update farmer not found error."""
+        client, stub = plantation_client_with_mock_stub
+        error = grpc.aio.AioRpcError(
+            code=grpc.StatusCode.NOT_FOUND,
+            initial_metadata=None,
+            trailing_metadata=None,
+            details="Farmer not found",
+            debug_error_string="",
+        )
+        stub.UpdateFarmer.side_effect = error
+
+        farmer_data = FarmerUpdate(first_name="New Name")
+
+        with pytest.raises(NotFoundError, match="Update farmer WM-9999 not found"):
+            await client.update_farmer("WM-9999", farmer_data)
+
+
+class TestFactoryWriteOperations:
+    """Tests for Factory write operations (3 methods)."""
+
+    @pytest.mark.asyncio
+    async def test_create_factory_success(
+        self,
+        plantation_client_with_mock_stub: tuple[PlantationClient, MagicMock],
+    ) -> None:
+        """Test successful factory creation."""
+        client, stub = plantation_client_with_mock_stub
+        stub.CreateFactory.return_value = create_factory_proto(factory_id="KEN-FAC-002")
+
+        factory_data = FactoryCreate(
+            name="Murang'a Tea Factory",
+            code="MTF",
+            region_id="muranga-highland",
+            location=GeoLocation(latitude=-0.7170, longitude=37.1500, altitude_meters=1850),
+            processing_capacity_kg=40000,
+        )
+
+        factory = await client.create_factory(factory_data)
+
+        assert isinstance(factory, Factory)
+        stub.CreateFactory.assert_called_once()
+        call_args = stub.CreateFactory.call_args
+        request = call_args[0][0]
+        assert request.name == "Murang'a Tea Factory"
+        assert request.code == "MTF"
+
+    @pytest.mark.asyncio
+    async def test_update_factory_success(
+        self,
+        plantation_client_with_mock_stub: tuple[PlantationClient, MagicMock],
+    ) -> None:
+        """Test successful factory update."""
+        client, stub = plantation_client_with_mock_stub
+        updated_proto = create_factory_proto(factory_id="KEN-FAC-001", name="Updated Factory")
+        stub.UpdateFactory.return_value = updated_proto
+
+        factory_data = FactoryUpdate(name="Updated Factory", processing_capacity_kg=60000)
+
+        factory = await client.update_factory("KEN-FAC-001", factory_data)
+
+        assert isinstance(factory, Factory)
+        stub.UpdateFactory.assert_called_once()
+
+    @pytest.mark.asyncio
+    async def test_delete_factory_success(
+        self,
+        plantation_client_with_mock_stub: tuple[PlantationClient, MagicMock],
+    ) -> None:
+        """Test successful factory deletion."""
+        client, stub = plantation_client_with_mock_stub
+        stub.DeleteFactory.return_value = plantation_pb2.DeleteFactoryResponse(success=True)
+
+        result = await client.delete_factory("KEN-FAC-001")
+
+        assert result is True
+        stub.DeleteFactory.assert_called_once()
+        call_args = stub.DeleteFactory.call_args
+        request = call_args[0][0]
+        assert request.id == "KEN-FAC-001"
+
+    @pytest.mark.asyncio
+    async def test_delete_factory_not_found(
+        self,
+        plantation_client_with_mock_stub: tuple[PlantationClient, MagicMock],
+    ) -> None:
+        """Test delete factory not found error."""
+        client, stub = plantation_client_with_mock_stub
+        error = grpc.aio.AioRpcError(
+            code=grpc.StatusCode.NOT_FOUND,
+            initial_metadata=None,
+            trailing_metadata=None,
+            details="Factory not found",
+            debug_error_string="",
+        )
+        stub.DeleteFactory.side_effect = error
+
+        with pytest.raises(NotFoundError, match="Delete factory KEN-FAC-999 not found"):
+            await client.delete_factory("KEN-FAC-999")
+
+
+class TestCollectionPointWriteOperations:
+    """Tests for CollectionPoint write operations (3 methods)."""
+
+    @pytest.mark.asyncio
+    async def test_create_collection_point_success(
+        self,
+        plantation_client_with_mock_stub: tuple[PlantationClient, MagicMock],
+    ) -> None:
+        """Test successful collection point creation."""
+        client, stub = plantation_client_with_mock_stub
+        stub.CreateCollectionPoint.return_value = create_collection_point_proto(cp_id="nyeri-highland-cp-002")
+
+        cp_data = CollectionPointCreate(
+            name="New Collection Point",
+            factory_id="KEN-FAC-001",
+            location=GeoLocation(latitude=-0.4200, longitude=36.9550, altitude_meters=1900),
+            region_id="nyeri-highland",
+        )
+
+        cp = await client.create_collection_point(cp_data)
+
+        assert isinstance(cp, CollectionPoint)
+        stub.CreateCollectionPoint.assert_called_once()
+
+    @pytest.mark.asyncio
+    async def test_create_collection_point_with_capacity(
+        self,
+        plantation_client_with_mock_stub: tuple[PlantationClient, MagicMock],
+    ) -> None:
+        """Test collection point creation with capacity details."""
+        client, stub = plantation_client_with_mock_stub
+        stub.CreateCollectionPoint.return_value = create_collection_point_proto()
+
+        cp_data = CollectionPointCreate(
+            name="Full CP",
+            factory_id="KEN-FAC-001",
+            location=GeoLocation(latitude=-0.4200, longitude=36.9550, altitude_meters=1900),
+            region_id="nyeri-highland",
+            operating_hours=OperatingHours(weekdays="06:00-11:00", weekends="07:00-10:00"),
+            collection_days=["mon", "tue", "wed", "thu", "fri"],
+            capacity=CollectionPointCapacity(
+                max_daily_kg=10000,
+                storage_type="refrigerated",
+                has_weighing_scale=True,
+                has_qc_device=True,
+            ),
+        )
+
+        cp = await client.create_collection_point(cp_data)
+
+        assert isinstance(cp, CollectionPoint)
+        call_args = stub.CreateCollectionPoint.call_args
+        request = call_args[0][0]
+        assert request.capacity.max_daily_kg == 10000
+        assert request.capacity.has_qc_device is True
+
+    @pytest.mark.asyncio
+    async def test_update_collection_point_success(
+        self,
+        plantation_client_with_mock_stub: tuple[PlantationClient, MagicMock],
+    ) -> None:
+        """Test successful collection point update."""
+        client, stub = plantation_client_with_mock_stub
+        stub.UpdateCollectionPoint.return_value = create_collection_point_proto()
+
+        cp_data = CollectionPointUpdate(name="Updated CP", status="seasonal")
+
+        cp = await client.update_collection_point("nyeri-highland-cp-001", cp_data)
+
+        assert isinstance(cp, CollectionPoint)
+        stub.UpdateCollectionPoint.assert_called_once()
+
+    @pytest.mark.asyncio
+    async def test_delete_collection_point_success(
+        self,
+        plantation_client_with_mock_stub: tuple[PlantationClient, MagicMock],
+    ) -> None:
+        """Test successful collection point deletion."""
+        client, stub = plantation_client_with_mock_stub
+        stub.DeleteCollectionPoint.return_value = plantation_pb2.DeleteCollectionPointResponse(success=True)
+
+        result = await client.delete_collection_point("nyeri-highland-cp-001")
+
+        assert result is True
+        stub.DeleteCollectionPoint.assert_called_once()
+
+
+class TestRegionWriteOperations:
+    """Tests for Region write operations (2 methods)."""
+
+    @pytest.mark.asyncio
+    async def test_create_region_success(
+        self,
+        plantation_client_with_mock_stub: tuple[PlantationClient, MagicMock],
+    ) -> None:
+        """Test successful region creation."""
+        client, stub = plantation_client_with_mock_stub
+        stub.CreateRegion.return_value = create_region_proto(region_id="muranga-highland")
+
+        region_data = RegionCreate(
+            name="Murang'a Highland",
+            county="Murang'a",
+            geography=Geography(
+                center_gps=GPS(lat=-0.7170, lng=37.1500),
+                radius_km=25,
+                altitude_band=AltitudeBand(
+                    min_meters=1800,
+                    max_meters=2200,
+                    label=AltitudeBandLabel.HIGHLAND,
+                ),
+            ),
+            flush_calendar=FlushCalendar(
+                first_flush=FlushPeriod(start="03-15", end="05-15", characteristics="High quality"),
+                monsoon_flush=FlushPeriod(start="06-15", end="09-30", characteristics="High volume"),
+                autumn_flush=FlushPeriod(start="10-15", end="12-15", characteristics="Balanced"),
+                dormant=FlushPeriod(start="12-16", end="03-14", characteristics="Minimal"),
+            ),
+            agronomic=Agronomic(
+                soil_type="volcanic_red",
+                typical_diseases=["blister_blight"],
+                harvest_peak_hours="06:00-10:00",
+                frost_risk=True,
+            ),
+            weather_config=WeatherConfig(
+                api_location=GPS(lat=-0.7170, lng=37.1500),
+                altitude_for_api=1900,
+                collection_time="06:00",
+            ),
+        )
+
+        region = await client.create_region(region_data)
+
+        assert isinstance(region, Region)
+        stub.CreateRegion.assert_called_once()
+
+    @pytest.mark.asyncio
+    async def test_update_region_success(
+        self,
+        plantation_client_with_mock_stub: tuple[PlantationClient, MagicMock],
+    ) -> None:
+        """Test successful region update."""
+        client, stub = plantation_client_with_mock_stub
+        stub.UpdateRegion.return_value = create_region_proto()
+
+        region_data = RegionUpdate(name="Nyeri Highland Updated")
+
+        region = await client.update_region("nyeri-highland", region_data)
+
+        assert isinstance(region, Region)
+        stub.UpdateRegion.assert_called_once()
+
+    @pytest.mark.asyncio
+    async def test_update_region_not_found(
+        self,
+        plantation_client_with_mock_stub: tuple[PlantationClient, MagicMock],
+    ) -> None:
+        """Test update region not found error."""
+        client, stub = plantation_client_with_mock_stub
+        error = grpc.aio.AioRpcError(
+            code=grpc.StatusCode.NOT_FOUND,
+            initial_metadata=None,
+            trailing_metadata=None,
+            details="Region not found",
+            debug_error_string="",
+        )
+        stub.UpdateRegion.side_effect = error
+
+        region_data = RegionUpdate(name="New Name")
+
+        with pytest.raises(NotFoundError, match="Update region invalid-region not found"):
+            await client.update_region("invalid-region", region_data)
+
+
+class TestCommunicationPreferencesWriteOperations:
+    """Tests for Communication Preferences write operations (1 method)."""
+
+    @pytest.mark.asyncio
+    async def test_update_communication_preferences_success(
+        self,
+        plantation_client_with_mock_stub: tuple[PlantationClient, MagicMock],
+    ) -> None:
+        """Test successful communication preferences update."""
+        client, stub = plantation_client_with_mock_stub
+        # Create a mock response with a farmer
+        proto_farmer = create_farmer_proto()
+        proto_farmer.notification_channel = plantation_pb2.NotificationChannel.NOTIFICATION_CHANNEL_WHATSAPP
+        proto_farmer.interaction_pref = plantation_pb2.InteractionPreference.INTERACTION_PREFERENCE_VOICE
+        proto_farmer.pref_lang = plantation_pb2.PreferredLanguage.PREFERRED_LANGUAGE_KI
+
+        response = plantation_pb2.UpdateCommunicationPreferencesResponse(farmer=proto_farmer)
+        stub.UpdateCommunicationPreferences.return_value = response
+
+        farmer = await client.update_communication_preferences(
+            farmer_id="WM-0001",
+            notification_channel=NotificationChannel.WHATSAPP,
+            interaction_pref=InteractionPreference.VOICE,
+            pref_lang=PreferredLanguage.KIKUYU,
+        )
+
+        assert isinstance(farmer, Farmer)
+        stub.UpdateCommunicationPreferences.assert_called_once()
+        call_args = stub.UpdateCommunicationPreferences.call_args
+        request = call_args[0][0]
+        assert request.farmer_id == "WM-0001"
+
+    @pytest.mark.asyncio
+    async def test_update_communication_preferences_partial(
+        self,
+        plantation_client_with_mock_stub: tuple[PlantationClient, MagicMock],
+    ) -> None:
+        """Test partial communication preferences update."""
+        client, stub = plantation_client_with_mock_stub
+        proto_farmer = create_farmer_proto()
+        response = plantation_pb2.UpdateCommunicationPreferencesResponse(farmer=proto_farmer)
+        stub.UpdateCommunicationPreferences.return_value = response
+
+        # Only update language
+        farmer = await client.update_communication_preferences(
+            farmer_id="WM-0001",
+            pref_lang=PreferredLanguage.ENGLISH,
+        )
+
+        assert isinstance(farmer, Farmer)
+
+    @pytest.mark.asyncio
+    async def test_update_communication_preferences_not_found(
+        self,
+        plantation_client_with_mock_stub: tuple[PlantationClient, MagicMock],
+    ) -> None:
+        """Test communication preferences update for non-existent farmer."""
+        client, stub = plantation_client_with_mock_stub
+        error = grpc.aio.AioRpcError(
+            code=grpc.StatusCode.NOT_FOUND,
+            initial_metadata=None,
+            trailing_metadata=None,
+            details="Farmer not found",
+            debug_error_string="",
+        )
+        stub.UpdateCommunicationPreferences.side_effect = error
+
+        with pytest.raises(NotFoundError):
+            await client.update_communication_preferences(
+                farmer_id="WM-9999",
+                notification_channel=NotificationChannel.SMS,
+            )

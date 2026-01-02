@@ -22,9 +22,15 @@ from bff.infrastructure.clients.base import (
 from fp_common.models import (
     CollectionPoint,
     CollectionPointCapacity,
+    CollectionPointCreate,
+    CollectionPointUpdate,
     ContactInfo,
     Factory,
+    FactoryCreate,
+    FactoryUpdate,
     Farmer,
+    FarmerCreate,
+    FarmerUpdate,
     FarmScale,
     Flush,
     FlushPeriod,
@@ -39,6 +45,8 @@ from fp_common.models import (
     QualityThresholds,
     Region,
     RegionalWeather,
+    RegionCreate,
+    RegionUpdate,
 )
 from fp_common.models.farmer_performance import (
     FarmerPerformance,
@@ -102,12 +110,21 @@ def _proto_enum_to_str(proto_enum_value: int, proto_enum_class: type) -> str:
 class PlantationClient(BaseGrpcClient):
     """Client for Plantation Model gRPC service via DAPR.
 
-    Provides 13 read methods across 5 domains:
+    Provides 13 read methods and 11 write methods across 5 domains:
+
+    Read Operations:
     - Farmer: get_farmer, get_farmer_by_phone, list_farmers, get_farmer_summary
     - Factory: get_factory, list_factories
     - Collection Point: get_collection_point, list_collection_points
     - Region: get_region, list_regions, get_region_weather, get_current_flush
     - Performance: get_performance_summary
+
+    Write Operations:
+    - Farmer: create_farmer, update_farmer
+    - Factory: create_factory, update_factory, delete_factory
+    - Collection Point: create_collection_point, update_collection_point, delete_collection_point
+    - Region: create_region, update_region
+    - Communication: update_communication_preferences
 
     All methods return typed Pydantic models from fp-common.
 
@@ -555,6 +572,654 @@ class PlantationClient(BaseGrpcClient):
         except grpc.aio.AioRpcError as e:
             self._handle_grpc_error(e, f"Performance summary for {entity_type} {entity_id}")
             raise
+
+    # =========================================================================
+    # Farmer Write Operations (2 methods)
+    # =========================================================================
+
+    @grpc_retry
+    async def create_farmer(self, farmer_data: FarmerCreate) -> Farmer:
+        """Create a new farmer.
+
+        Args:
+            farmer_data: FarmerCreate model with required farmer information.
+
+        Returns:
+            Created Farmer domain model.
+
+        Raises:
+            ValidationError: If data is invalid.
+            ServiceUnavailableError: If service is unavailable.
+        """
+        try:
+            stub = await self._get_plantation_stub()
+            request = plantation_pb2.CreateFarmerRequest(
+                first_name=farmer_data.first_name,
+                last_name=farmer_data.last_name,
+                collection_point_id=farmer_data.collection_point_id,
+                farm_location=plantation_pb2.GeoLocation(
+                    latitude=farmer_data.latitude,
+                    longitude=farmer_data.longitude,
+                    altitude_meters=0,  # Will be fetched by service
+                ),
+                contact=plantation_pb2.ContactInfo(
+                    phone=farmer_data.phone,
+                ),
+                farm_size_hectares=farmer_data.farm_size_hectares,
+                national_id=farmer_data.national_id,
+                grower_number=farmer_data.grower_number or "",
+            )
+            response = await stub.CreateFarmer(request, metadata=self._get_metadata())
+            return self._proto_to_farmer(response)
+        except grpc.aio.AioRpcError as e:
+            self._handle_grpc_error(e, "Create farmer")
+            raise
+
+    @grpc_retry
+    async def update_farmer(self, farmer_id: str, farmer_data: FarmerUpdate) -> Farmer:
+        """Update an existing farmer.
+
+        Args:
+            farmer_id: The farmer ID (e.g., "WM-0001").
+            farmer_data: FarmerUpdate model with fields to update.
+
+        Returns:
+            Updated Farmer domain model.
+
+        Raises:
+            NotFoundError: If farmer not found.
+            ValidationError: If data is invalid.
+            ServiceUnavailableError: If service is unavailable.
+        """
+        try:
+            stub = await self._get_plantation_stub()
+            request = plantation_pb2.UpdateFarmerRequest(id=farmer_id)
+
+            if farmer_data.first_name is not None:
+                request.first_name = farmer_data.first_name
+            if farmer_data.last_name is not None:
+                request.last_name = farmer_data.last_name
+            if farmer_data.phone is not None:
+                request.contact.phone = farmer_data.phone
+            if farmer_data.farm_size_hectares is not None:
+                request.farm_size_hectares = farmer_data.farm_size_hectares
+            if farmer_data.is_active is not None:
+                request.is_active = farmer_data.is_active
+
+            response = await stub.UpdateFarmer(request, metadata=self._get_metadata())
+            return self._proto_to_farmer(response)
+        except grpc.aio.AioRpcError as e:
+            self._handle_grpc_error(e, f"Update farmer {farmer_id}")
+            raise
+
+    # =========================================================================
+    # Factory Write Operations (3 methods)
+    # =========================================================================
+
+    @grpc_retry
+    async def create_factory(self, factory_data: FactoryCreate) -> Factory:
+        """Create a new factory.
+
+        Args:
+            factory_data: FactoryCreate model with required factory information.
+
+        Returns:
+            Created Factory domain model.
+
+        Raises:
+            ValidationError: If data is invalid.
+            ServiceUnavailableError: If service is unavailable.
+        """
+        try:
+            stub = await self._get_plantation_stub()
+            request = plantation_pb2.CreateFactoryRequest(
+                name=factory_data.name,
+                code=factory_data.code,
+                region_id=factory_data.region_id,
+                location=plantation_pb2.GeoLocation(
+                    latitude=factory_data.location.latitude,
+                    longitude=factory_data.location.longitude,
+                    altitude_meters=factory_data.location.altitude_meters,
+                ),
+                processing_capacity_kg=factory_data.processing_capacity_kg,
+            )
+            if factory_data.contact:
+                request.contact.CopyFrom(
+                    plantation_pb2.ContactInfo(
+                        phone=factory_data.contact.phone,
+                        email=factory_data.contact.email or "",
+                        address=factory_data.contact.address or "",
+                    )
+                )
+            if factory_data.quality_thresholds:
+                request.quality_thresholds.CopyFrom(
+                    plantation_pb2.QualityThresholds(
+                        tier_1=factory_data.quality_thresholds.tier_1,
+                        tier_2=factory_data.quality_thresholds.tier_2,
+                        tier_3=factory_data.quality_thresholds.tier_3,
+                    )
+                )
+            if factory_data.payment_policy:
+                policy_type = self._payment_policy_type_to_proto(factory_data.payment_policy.policy_type)
+                request.payment_policy.CopyFrom(
+                    plantation_pb2.PaymentPolicy(
+                        policy_type=policy_type,
+                        tier_1_adjustment=factory_data.payment_policy.tier_1_adjustment,
+                        tier_2_adjustment=factory_data.payment_policy.tier_2_adjustment,
+                        tier_3_adjustment=factory_data.payment_policy.tier_3_adjustment,
+                        below_tier_3_adjustment=factory_data.payment_policy.below_tier_3_adjustment,
+                    )
+                )
+            response = await stub.CreateFactory(request, metadata=self._get_metadata())
+            return self._proto_to_factory(response)
+        except grpc.aio.AioRpcError as e:
+            self._handle_grpc_error(e, "Create factory")
+            raise
+
+    @grpc_retry
+    async def update_factory(self, factory_id: str, factory_data: FactoryUpdate) -> Factory:
+        """Update an existing factory.
+
+        Args:
+            factory_id: The factory ID (e.g., "KEN-FAC-001").
+            factory_data: FactoryUpdate model with fields to update.
+
+        Returns:
+            Updated Factory domain model.
+
+        Raises:
+            NotFoundError: If factory not found.
+            ValidationError: If data is invalid.
+            ServiceUnavailableError: If service is unavailable.
+        """
+        try:
+            stub = await self._get_plantation_stub()
+            request = plantation_pb2.UpdateFactoryRequest(id=factory_id)
+
+            if factory_data.name is not None:
+                request.name = factory_data.name
+            if factory_data.code is not None:
+                request.code = factory_data.code
+            if factory_data.location is not None:
+                request.location.CopyFrom(
+                    plantation_pb2.GeoLocation(
+                        latitude=factory_data.location.latitude,
+                        longitude=factory_data.location.longitude,
+                        altitude_meters=factory_data.location.altitude_meters,
+                    )
+                )
+            if factory_data.contact is not None:
+                request.contact.CopyFrom(
+                    plantation_pb2.ContactInfo(
+                        phone=factory_data.contact.phone,
+                        email=factory_data.contact.email or "",
+                        address=factory_data.contact.address or "",
+                    )
+                )
+            if factory_data.processing_capacity_kg is not None:
+                request.processing_capacity_kg = factory_data.processing_capacity_kg
+            if factory_data.quality_thresholds is not None:
+                request.quality_thresholds.CopyFrom(
+                    plantation_pb2.QualityThresholds(
+                        tier_1=factory_data.quality_thresholds.tier_1,
+                        tier_2=factory_data.quality_thresholds.tier_2,
+                        tier_3=factory_data.quality_thresholds.tier_3,
+                    )
+                )
+            if factory_data.payment_policy is not None:
+                policy_type = self._payment_policy_type_to_proto(factory_data.payment_policy.policy_type)
+                request.payment_policy.CopyFrom(
+                    plantation_pb2.PaymentPolicy(
+                        policy_type=policy_type,
+                        tier_1_adjustment=factory_data.payment_policy.tier_1_adjustment,
+                        tier_2_adjustment=factory_data.payment_policy.tier_2_adjustment,
+                        tier_3_adjustment=factory_data.payment_policy.tier_3_adjustment,
+                        below_tier_3_adjustment=factory_data.payment_policy.below_tier_3_adjustment,
+                    )
+                )
+            if factory_data.is_active is not None:
+                request.is_active = factory_data.is_active
+
+            response = await stub.UpdateFactory(request, metadata=self._get_metadata())
+            return self._proto_to_factory(response)
+        except grpc.aio.AioRpcError as e:
+            self._handle_grpc_error(e, f"Update factory {factory_id}")
+            raise
+
+    @grpc_retry
+    async def delete_factory(self, factory_id: str) -> bool:
+        """Delete a factory (soft delete).
+
+        Args:
+            factory_id: The factory ID (e.g., "KEN-FAC-001").
+
+        Returns:
+            True if deletion was successful.
+
+        Raises:
+            NotFoundError: If factory not found.
+            ServiceUnavailableError: If service is unavailable.
+        """
+        try:
+            stub = await self._get_plantation_stub()
+            request = plantation_pb2.DeleteFactoryRequest(id=factory_id)
+            response = await stub.DeleteFactory(request, metadata=self._get_metadata())
+            return response.success
+        except grpc.aio.AioRpcError as e:
+            self._handle_grpc_error(e, f"Delete factory {factory_id}")
+            raise
+
+    # =========================================================================
+    # Collection Point Write Operations (3 methods)
+    # =========================================================================
+
+    @grpc_retry
+    async def create_collection_point(self, cp_data: CollectionPointCreate) -> CollectionPoint:
+        """Create a new collection point.
+
+        Args:
+            cp_data: CollectionPointCreate model with required CP information.
+
+        Returns:
+            Created CollectionPoint domain model.
+
+        Raises:
+            ValidationError: If data is invalid.
+            ServiceUnavailableError: If service is unavailable.
+        """
+        try:
+            stub = await self._get_plantation_stub()
+            request = plantation_pb2.CreateCollectionPointRequest(
+                name=cp_data.name,
+                factory_id=cp_data.factory_id,
+                location=plantation_pb2.GeoLocation(
+                    latitude=cp_data.location.latitude,
+                    longitude=cp_data.location.longitude,
+                    altitude_meters=cp_data.location.altitude_meters,
+                ),
+                region_id=cp_data.region_id,
+                clerk_id=cp_data.clerk_id or "",
+                clerk_phone=cp_data.clerk_phone or "",
+                status=cp_data.status,
+            )
+            if cp_data.operating_hours:
+                request.operating_hours.CopyFrom(
+                    plantation_pb2.OperatingHours(
+                        weekdays=cp_data.operating_hours.weekdays,
+                        weekends=cp_data.operating_hours.weekends,
+                    )
+                )
+            if cp_data.collection_days:
+                request.collection_days.extend(cp_data.collection_days)
+            if cp_data.capacity:
+                request.capacity.CopyFrom(
+                    plantation_pb2.CollectionPointCapacity(
+                        max_daily_kg=cp_data.capacity.max_daily_kg,
+                        storage_type=cp_data.capacity.storage_type,
+                        has_weighing_scale=cp_data.capacity.has_weighing_scale,
+                        has_qc_device=cp_data.capacity.has_qc_device,
+                    )
+                )
+            response = await stub.CreateCollectionPoint(request, metadata=self._get_metadata())
+            return self._proto_to_collection_point(response)
+        except grpc.aio.AioRpcError as e:
+            self._handle_grpc_error(e, "Create collection point")
+            raise
+
+    @grpc_retry
+    async def update_collection_point(
+        self, collection_point_id: str, cp_data: CollectionPointUpdate
+    ) -> CollectionPoint:
+        """Update an existing collection point.
+
+        Args:
+            collection_point_id: The collection point ID (e.g., "nyeri-highland-cp-001").
+            cp_data: CollectionPointUpdate model with fields to update.
+
+        Returns:
+            Updated CollectionPoint domain model.
+
+        Raises:
+            NotFoundError: If collection point not found.
+            ValidationError: If data is invalid.
+            ServiceUnavailableError: If service is unavailable.
+        """
+        try:
+            stub = await self._get_plantation_stub()
+            request = plantation_pb2.UpdateCollectionPointRequest(id=collection_point_id)
+
+            if cp_data.name is not None:
+                request.name = cp_data.name
+            if cp_data.clerk_id is not None:
+                request.clerk_id = cp_data.clerk_id
+            if cp_data.clerk_phone is not None:
+                request.clerk_phone = cp_data.clerk_phone
+            if cp_data.operating_hours is not None:
+                request.operating_hours.CopyFrom(
+                    plantation_pb2.OperatingHours(
+                        weekdays=cp_data.operating_hours.weekdays,
+                        weekends=cp_data.operating_hours.weekends,
+                    )
+                )
+            if cp_data.collection_days is not None:
+                request.collection_days.extend(cp_data.collection_days)
+            if cp_data.capacity is not None:
+                request.capacity.CopyFrom(
+                    plantation_pb2.CollectionPointCapacity(
+                        max_daily_kg=cp_data.capacity.max_daily_kg,
+                        storage_type=cp_data.capacity.storage_type,
+                        has_weighing_scale=cp_data.capacity.has_weighing_scale,
+                        has_qc_device=cp_data.capacity.has_qc_device,
+                    )
+                )
+            if cp_data.status is not None:
+                request.status = cp_data.status
+
+            response = await stub.UpdateCollectionPoint(request, metadata=self._get_metadata())
+            return self._proto_to_collection_point(response)
+        except grpc.aio.AioRpcError as e:
+            self._handle_grpc_error(e, f"Update collection point {collection_point_id}")
+            raise
+
+    @grpc_retry
+    async def delete_collection_point(self, collection_point_id: str) -> bool:
+        """Delete a collection point (soft delete).
+
+        Args:
+            collection_point_id: The collection point ID (e.g., "nyeri-highland-cp-001").
+
+        Returns:
+            True if deletion was successful.
+
+        Raises:
+            NotFoundError: If collection point not found.
+            ServiceUnavailableError: If service is unavailable.
+        """
+        try:
+            stub = await self._get_plantation_stub()
+            request = plantation_pb2.DeleteCollectionPointRequest(id=collection_point_id)
+            response = await stub.DeleteCollectionPoint(request, metadata=self._get_metadata())
+            return response.success
+        except grpc.aio.AioRpcError as e:
+            self._handle_grpc_error(e, f"Delete collection point {collection_point_id}")
+            raise
+
+    # =========================================================================
+    # Region Write Operations (2 methods)
+    # =========================================================================
+
+    @grpc_retry
+    async def create_region(self, region_data: RegionCreate) -> Region:
+        """Create a new region.
+
+        Args:
+            region_data: RegionCreate model with required region information.
+
+        Returns:
+            Created Region domain model.
+
+        Raises:
+            ValidationError: If data is invalid.
+            ServiceUnavailableError: If service is unavailable.
+        """
+        try:
+            stub = await self._get_plantation_stub()
+            request = plantation_pb2.CreateRegionRequest(
+                name=region_data.name,
+                county=region_data.county,
+                country=region_data.country,
+            )
+            # Build geography
+            request.geography.CopyFrom(
+                plantation_pb2.Geography(
+                    center_gps=plantation_pb2.GPS(
+                        lat=region_data.geography.center_gps.lat,
+                        lng=region_data.geography.center_gps.lng,
+                    ),
+                    radius_km=region_data.geography.radius_km,
+                    altitude_band=plantation_pb2.AltitudeBand(
+                        min_meters=region_data.geography.altitude_band.min_meters,
+                        max_meters=region_data.geography.altitude_band.max_meters,
+                        label=self._altitude_band_to_proto(region_data.geography.altitude_band.label),
+                    ),
+                )
+            )
+            # Build flush calendar
+            request.flush_calendar.CopyFrom(
+                plantation_pb2.FlushCalendar(
+                    first_flush=plantation_pb2.FlushPeriod(
+                        start=region_data.flush_calendar.first_flush.start,
+                        end=region_data.flush_calendar.first_flush.end,
+                        characteristics=region_data.flush_calendar.first_flush.characteristics or "",
+                    ),
+                    monsoon_flush=plantation_pb2.FlushPeriod(
+                        start=region_data.flush_calendar.monsoon_flush.start,
+                        end=region_data.flush_calendar.monsoon_flush.end,
+                        characteristics=region_data.flush_calendar.monsoon_flush.characteristics or "",
+                    ),
+                    autumn_flush=plantation_pb2.FlushPeriod(
+                        start=region_data.flush_calendar.autumn_flush.start,
+                        end=region_data.flush_calendar.autumn_flush.end,
+                        characteristics=region_data.flush_calendar.autumn_flush.characteristics or "",
+                    ),
+                    dormant=plantation_pb2.FlushPeriod(
+                        start=region_data.flush_calendar.dormant.start,
+                        end=region_data.flush_calendar.dormant.end,
+                        characteristics=region_data.flush_calendar.dormant.characteristics or "",
+                    ),
+                )
+            )
+            # Build agronomic
+            request.agronomic.CopyFrom(
+                plantation_pb2.Agronomic(
+                    soil_type=region_data.agronomic.soil_type,
+                    typical_diseases=region_data.agronomic.typical_diseases,
+                    harvest_peak_hours=region_data.agronomic.harvest_peak_hours,
+                    frost_risk=region_data.agronomic.frost_risk,
+                )
+            )
+            # Build weather config
+            request.weather_config.CopyFrom(
+                plantation_pb2.WeatherConfig(
+                    api_location=plantation_pb2.GPS(
+                        lat=region_data.weather_config.api_location.lat,
+                        lng=region_data.weather_config.api_location.lng,
+                    ),
+                    altitude_for_api=region_data.weather_config.altitude_for_api,
+                    collection_time=region_data.weather_config.collection_time,
+                )
+            )
+            response = await stub.CreateRegion(request, metadata=self._get_metadata())
+            return self._proto_to_region(response)
+        except grpc.aio.AioRpcError as e:
+            self._handle_grpc_error(e, "Create region")
+            raise
+
+    @grpc_retry
+    async def update_region(self, region_id: str, region_data: RegionUpdate) -> Region:
+        """Update an existing region.
+
+        Args:
+            region_id: The region ID (e.g., "nyeri-highland").
+            region_data: RegionUpdate model with fields to update.
+
+        Returns:
+            Updated Region domain model.
+
+        Raises:
+            NotFoundError: If region not found.
+            ValidationError: If data is invalid.
+            ServiceUnavailableError: If service is unavailable.
+        """
+        try:
+            stub = await self._get_plantation_stub()
+            request = plantation_pb2.UpdateRegionRequest(region_id=region_id)
+
+            if region_data.name is not None:
+                request.name = region_data.name
+            if region_data.geography is not None:
+                request.geography.CopyFrom(
+                    plantation_pb2.Geography(
+                        center_gps=plantation_pb2.GPS(
+                            lat=region_data.geography.center_gps.lat,
+                            lng=region_data.geography.center_gps.lng,
+                        ),
+                        radius_km=region_data.geography.radius_km,
+                        altitude_band=plantation_pb2.AltitudeBand(
+                            min_meters=region_data.geography.altitude_band.min_meters,
+                            max_meters=region_data.geography.altitude_band.max_meters,
+                            label=self._altitude_band_to_proto(region_data.geography.altitude_band.label),
+                        ),
+                    )
+                )
+            if region_data.flush_calendar is not None:
+                request.flush_calendar.CopyFrom(
+                    plantation_pb2.FlushCalendar(
+                        first_flush=plantation_pb2.FlushPeriod(
+                            start=region_data.flush_calendar.first_flush.start,
+                            end=region_data.flush_calendar.first_flush.end,
+                            characteristics=region_data.flush_calendar.first_flush.characteristics or "",
+                        ),
+                        monsoon_flush=plantation_pb2.FlushPeriod(
+                            start=region_data.flush_calendar.monsoon_flush.start,
+                            end=region_data.flush_calendar.monsoon_flush.end,
+                            characteristics=region_data.flush_calendar.monsoon_flush.characteristics or "",
+                        ),
+                        autumn_flush=plantation_pb2.FlushPeriod(
+                            start=region_data.flush_calendar.autumn_flush.start,
+                            end=region_data.flush_calendar.autumn_flush.end,
+                            characteristics=region_data.flush_calendar.autumn_flush.characteristics or "",
+                        ),
+                        dormant=plantation_pb2.FlushPeriod(
+                            start=region_data.flush_calendar.dormant.start,
+                            end=region_data.flush_calendar.dormant.end,
+                            characteristics=region_data.flush_calendar.dormant.characteristics or "",
+                        ),
+                    )
+                )
+            if region_data.agronomic is not None:
+                request.agronomic.CopyFrom(
+                    plantation_pb2.Agronomic(
+                        soil_type=region_data.agronomic.soil_type,
+                        typical_diseases=region_data.agronomic.typical_diseases,
+                        harvest_peak_hours=region_data.agronomic.harvest_peak_hours,
+                        frost_risk=region_data.agronomic.frost_risk,
+                    )
+                )
+            if region_data.weather_config is not None:
+                request.weather_config.CopyFrom(
+                    plantation_pb2.WeatherConfig(
+                        api_location=plantation_pb2.GPS(
+                            lat=region_data.weather_config.api_location.lat,
+                            lng=region_data.weather_config.api_location.lng,
+                        ),
+                        altitude_for_api=region_data.weather_config.altitude_for_api,
+                        collection_time=region_data.weather_config.collection_time,
+                    )
+                )
+            if region_data.is_active is not None:
+                request.is_active = region_data.is_active
+
+            response = await stub.UpdateRegion(request, metadata=self._get_metadata())
+            return self._proto_to_region(response)
+        except grpc.aio.AioRpcError as e:
+            self._handle_grpc_error(e, f"Update region {region_id}")
+            raise
+
+    # =========================================================================
+    # Communication Preferences Write Operations (1 method)
+    # =========================================================================
+
+    @grpc_retry
+    async def update_communication_preferences(
+        self,
+        farmer_id: str,
+        notification_channel: NotificationChannel | None = None,
+        interaction_pref: InteractionPreference | None = None,
+        pref_lang: PreferredLanguage | None = None,
+    ) -> Farmer:
+        """Update farmer communication preferences.
+
+        Args:
+            farmer_id: The farmer ID (e.g., "WM-0001").
+            notification_channel: Optional new notification channel.
+            interaction_pref: Optional new interaction preference.
+            pref_lang: Optional new preferred language.
+
+        Returns:
+            Updated Farmer domain model.
+
+        Raises:
+            NotFoundError: If farmer not found.
+            ValidationError: If data is invalid.
+            ServiceUnavailableError: If service is unavailable.
+        """
+        try:
+            stub = await self._get_plantation_stub()
+            request = plantation_pb2.UpdateCommunicationPreferencesRequest(
+                farmer_id=farmer_id,
+            )
+            if notification_channel is not None:
+                request.notification_channel = self._notification_channel_to_proto(notification_channel)
+            if interaction_pref is not None:
+                request.interaction_pref = self._interaction_pref_to_proto(interaction_pref)
+            if pref_lang is not None:
+                request.pref_lang = self._preferred_language_to_proto(pref_lang)
+
+            response = await stub.UpdateCommunicationPreferences(request, metadata=self._get_metadata())
+            return self._proto_to_farmer(response.farmer)
+        except grpc.aio.AioRpcError as e:
+            self._handle_grpc_error(e, f"Update communication preferences for farmer {farmer_id}")
+            raise
+
+    # =========================================================================
+    # Domain Model to Proto Converters (for write operations)
+    # =========================================================================
+
+    def _payment_policy_type_to_proto(self, policy_type: PaymentPolicyType) -> int:
+        """Convert PaymentPolicyType to proto enum value."""
+        mapping = {
+            PaymentPolicyType.SPLIT_PAYMENT: plantation_pb2.PaymentPolicyType.PAYMENT_POLICY_TYPE_SPLIT_PAYMENT,
+            PaymentPolicyType.WEEKLY_BONUS: plantation_pb2.PaymentPolicyType.PAYMENT_POLICY_TYPE_WEEKLY_BONUS,
+            PaymentPolicyType.DELAYED_PAYMENT: plantation_pb2.PaymentPolicyType.PAYMENT_POLICY_TYPE_DELAYED_PAYMENT,
+            PaymentPolicyType.FEEDBACK_ONLY: plantation_pb2.PaymentPolicyType.PAYMENT_POLICY_TYPE_FEEDBACK_ONLY,
+        }
+        return mapping.get(policy_type, plantation_pb2.PaymentPolicyType.PAYMENT_POLICY_TYPE_FEEDBACK_ONLY)
+
+    def _altitude_band_to_proto(self, label: AltitudeBandLabel) -> int:
+        """Convert AltitudeBandLabel to proto enum value."""
+        mapping = {
+            AltitudeBandLabel.HIGHLAND: plantation_pb2.AltitudeBandLabel.ALTITUDE_BAND_HIGHLAND,
+            AltitudeBandLabel.MIDLAND: plantation_pb2.AltitudeBandLabel.ALTITUDE_BAND_MIDLAND,
+            AltitudeBandLabel.LOWLAND: plantation_pb2.AltitudeBandLabel.ALTITUDE_BAND_LOWLAND,
+        }
+        return mapping.get(label, plantation_pb2.AltitudeBandLabel.ALTITUDE_BAND_HIGHLAND)
+
+    def _notification_channel_to_proto(self, channel: NotificationChannel) -> int:
+        """Convert NotificationChannel to proto enum value."""
+        mapping = {
+            NotificationChannel.SMS: plantation_pb2.NotificationChannel.NOTIFICATION_CHANNEL_SMS,
+            NotificationChannel.WHATSAPP: plantation_pb2.NotificationChannel.NOTIFICATION_CHANNEL_WHATSAPP,
+        }
+        return mapping.get(channel, plantation_pb2.NotificationChannel.NOTIFICATION_CHANNEL_SMS)
+
+    def _interaction_pref_to_proto(self, pref: InteractionPreference) -> int:
+        """Convert InteractionPreference to proto enum value."""
+        mapping = {
+            InteractionPreference.TEXT: plantation_pb2.InteractionPreference.INTERACTION_PREFERENCE_TEXT,
+            InteractionPreference.VOICE: plantation_pb2.InteractionPreference.INTERACTION_PREFERENCE_VOICE,
+        }
+        return mapping.get(pref, plantation_pb2.InteractionPreference.INTERACTION_PREFERENCE_TEXT)
+
+    def _preferred_language_to_proto(self, lang: PreferredLanguage) -> int:
+        """Convert PreferredLanguage to proto enum value."""
+        mapping = {
+            PreferredLanguage.SWAHILI: plantation_pb2.PreferredLanguage.PREFERRED_LANGUAGE_SW,
+            PreferredLanguage.KIKUYU: plantation_pb2.PreferredLanguage.PREFERRED_LANGUAGE_KI,
+            PreferredLanguage.LUO: plantation_pb2.PreferredLanguage.PREFERRED_LANGUAGE_LUO,
+            PreferredLanguage.ENGLISH: plantation_pb2.PreferredLanguage.PREFERRED_LANGUAGE_EN,
+        }
+        return mapping.get(lang, plantation_pb2.PreferredLanguage.PREFERRED_LANGUAGE_SW)
 
     # =========================================================================
     # Proto to Domain Model Converters
