@@ -3,7 +3,7 @@
 #
 # This stack deploys:
 # - Infrastructure: MongoDB, Redis, Azurite
-# - Services: Plantation Model, Collection Model (with DAPR sidecars)
+# - Services: Plantation Model, Collection Model, BFF (with DAPR sidecars)
 # - MCP Servers: Plantation MCP, Collection MCP (both with DAPR sidecars)
 # - Mock servers: Google Elevation API, Mock AI Model
 #
@@ -350,6 +350,65 @@ services:
     network_mode: "service:collection-mcp"
     depends_on:
       collection-mcp:
+        condition: service_started
+      redis:
+        condition: service_healthy
+
+  # ==========================================================================
+  # BFF Service + DAPR Sidecar (Story 0.5.2)
+  # Backend for Frontend - REST API gateway for React frontends
+  # ==========================================================================
+
+  bff:
+    build:
+      context: ../../..
+      dockerfile: services/bff/Dockerfile
+    container_name: e2e-bff
+    ports:
+      - "8083:8080"  # BFF REST API
+    environment:
+      APP_ENV: test
+      AUTH_PROVIDER: mock
+      MOCK_JWT_SECRET: test-secret-for-e2e
+      DAPR_HTTP_PORT: "3500"
+      DAPR_GRPC_PORT: "50001"
+      OTEL_ENABLED: "false"
+      LOG_LEVEL: DEBUG
+    depends_on:
+      plantation-model:
+        condition: service_healthy
+      collection-model:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8080/health')"]
+      interval: 10s
+      timeout: 10s
+      retries: 10
+      start_period: 15s
+    networks:
+      - e2e-network
+
+  bff-dapr:
+    image: daprio/daprd:1.14.0
+    container_name: e2e-bff-dapr
+    # ADR-002: BFF uses HTTP protocol for REST API
+    # - app-port 8080: FastAPI REST endpoints
+    # - DAPR proxies gRPC calls to plantation-model and collection-model
+    command: [
+      "./daprd",
+      "-app-id", "bff",
+      "-app-port", "8080",
+      "-dapr-http-port", "3500",
+      "-dapr-grpc-port", "50001",
+      "-components-path", "/components",
+      "-config", "/config/config.yaml"
+    ]
+    volumes:
+      - ./dapr-components:/components
+      - ../../../services/bff/dapr:/config
+    network_mode: "service:bff"
+    depends_on:
+      bff:
         condition: service_started
       redis:
         condition: service_healthy
