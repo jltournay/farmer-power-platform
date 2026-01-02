@@ -208,7 +208,7 @@ class ZipExtractionProcessor(ContentProcessor):
             return ProcessorResult(
                 success=False,
                 error_message=str(e),
-                error_type="zip_extraction",
+                error_type="extraction",  # Fixed: was 'zip_extraction' which is invalid
             )
 
         except ConfigurationError as e:
