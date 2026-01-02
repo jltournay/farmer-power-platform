@@ -134,9 +134,9 @@ development_status:
 
   # Story 0.5.1 split into 4 sub-stories (was 5 points, now 9 total)
   0-5-1a-collection-grpc-service: ready-for-dev  # 2 points - Proto + gRPC server (4 methods), github_issue: 65
-  0-5-1b-bff-plantation-client-read: backlog  # 3 points - Base client + 13 read methods
-  0-5-1c-bff-plantation-client-write: backlog  # 2 points - 11 write methods (create/update/delete)
-  0-5-1d-bff-collection-client: backlog  # 2 points - 4 document query methods
+  0-5-1b-bff-plantation-client-read: ready-for-dev  # 3 points - Base client + 13 read methods
+  0-5-1c-bff-plantation-client-write: ready-for-dev  # 2 points - 11 write methods (create/update/delete)
+  0-5-1d-bff-collection-client: ready-for-dev  # 2 points - 4 document query methods
 
   0-5-2-bff-service-setup: backlog  # 3 points - FastAPI BFF scaffold with DAPR sidecar
   0-5-3-bff-auth-middleware: backlog  # 3 points - Dual-mode JWT validation (mock + B2C)
