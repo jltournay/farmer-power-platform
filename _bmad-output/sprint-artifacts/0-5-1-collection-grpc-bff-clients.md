@@ -1,7 +1,7 @@
 # Story 0.5.1: Collection Model gRPC Layer & BFF Clients
 
 **Status:** ready-for-dev
-**GitHub Issue:** <!-- Auto-created by dev-story workflow -->
+**GitHub Issue:** #65
 **Story Points:** 5
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
