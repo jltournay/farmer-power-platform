@@ -304,6 +304,20 @@ Claude Opus 4.5 (claude-opus-4-5-20251101)
 - `tests/e2e/infrastructure/docker-compose.e2e.yaml` (added gRPC port 50054)
 - `tests/e2e/scenarios/test_00_infrastructure_verification.py` (added gRPC tests)
 
+### CI Verification
+
+**Quality CI (ci.yaml):**
+- Branch: `story/0-5-1a-collection-grpc-service`
+- Run ID: 20660623682
+- Status: PASSED
+- Verification Date: 2026-01-02
+
+**E2E CI (E2E Tests):**
+- Branch: `story/0-5-1a-collection-grpc-service`
+- Run ID: 20660670451
+- Status: PASSED (85 tests, 1 skipped)
+- Verification Date: 2026-01-02
+
 ### Change Log
 
 - 2026-01-02: Story 0.5.1a implementation complete - Added Collection Model gRPC service layer with 4 document query methods (GetDocument, ListDocuments, GetDocumentsByFarmer, SearchDocuments). All 17 unit tests pass, all 85 E2E tests pass.
