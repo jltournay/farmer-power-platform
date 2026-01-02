@@ -1,6 +1,6 @@
 # Story 0.5.2: BFF Service Setup
 
-**Status:** in-progress
+**Status:** done
 **GitHub Issue:** #73
 **Story Points:** 3
 
@@ -520,3 +520,48 @@ Claude Opus 4.5 (claude-opus-4-5-20251101)
 **Modified:**
 - `services/bff/pyproject.toml` - Updated fastapi to ^0.115.0, uvicorn to ^0.32.0
 - `tests/e2e/infrastructure/docker-compose.e2e.yaml` - Added BFF service + DAPR sidecar
+
+---
+
+## Senior Developer Review (AI)
+
+**Review Date:** 2026-01-02
+**Reviewer:** Claude Opus 4.5 (code-review workflow)
+**Outcome:** ✅ APPROVED
+
+### Acceptance Criteria Validation
+
+| AC | Description | Status |
+|----|-------------|--------|
+| AC1 | FastAPI Application Scaffold | ✅ IMPLEMENTED |
+| AC2 | Health Endpoints | ✅ IMPLEMENTED |
+| AC3 | DAPR Configuration | ✅ IMPLEMENTED |
+| AC4 | E2E Infrastructure | ✅ IMPLEMENTED |
+| AC5 | Unit Tests | ✅ IMPLEMENTED |
+
+### Issues Found and Fixed
+
+| # | Severity | Issue | Resolution |
+|---|----------|-------|------------|
+| M2 | MEDIUM | `instrument_fastapi(app)` missing type hint | Added `app: "FastAPI"` type hint with TYPE_CHECKING |
+| M3 | MEDIUM | Duplicate `bff_client` fixture in test files | Moved to conftest.py, removed duplicates |
+| M4 | MEDIUM | httpx duplicated in main and dev deps | Removed from main deps (kept in dev) |
+| L1 | LOW | build-essential not needed in Dockerfile | Removed to reduce image size |
+| L2 | LOW | model_config uses deprecated dict format | Changed to SettingsConfigDict |
+
+### Known Limitations (Deferred to Future Stories)
+
+| Item | Story | Notes |
+|------|-------|-------|
+| `/ready` returns hardcoded DAPR status | 0.5.3/0.5.4 | Documented as placeholder in code |
+
+### Test Verification
+
+- **Unit Tests:** 92 passed in 13.80s
+- **E2E Tests (Local):** 85 passed, 1 skipped
+- **E2E Tests (CI):** 85 passed, 1 skipped
+- **Lint:** All checks passed
+
+### Commits
+
+- `dec92c1` - refactor: Apply code review fixes
