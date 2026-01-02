@@ -79,8 +79,8 @@ class TestMockModeTokenValidation:
         data = response.json()
         assert data["detail"]["code"] == AuthErrorCode.TOKEN_INVALID.value
 
-    def test_missing_token_returns_403(self) -> None:
-        """Given no token, 403 is returned (HTTPBearer auto_error)."""
+    def test_missing_token_returns_401_or_403(self) -> None:
+        """Given no token, 401 or 403 is returned (HTTPBearer auto_error)."""
         app = FastAPI()
 
         def get_test_settings() -> Settings:
@@ -98,8 +98,9 @@ class TestMockModeTokenValidation:
         client = TestClient(app)
         response = client.get("/test")
 
-        # HTTPBearer with auto_error=True returns 403 for missing token
-        assert response.status_code == 403
+        # HTTPBearer with auto_error=True returns 401 or 403 for missing token
+        # depending on FastAPI version (older returns 403, newer returns 401)
+        assert response.status_code in (401, 403)
 
 
 # =============================================================================
