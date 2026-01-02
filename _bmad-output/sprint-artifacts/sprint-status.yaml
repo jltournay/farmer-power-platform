@@ -109,7 +109,7 @@ development_status:
   # Epic 0.6: Infrastructure Hardening (ADR Implementation)
   # Dependencies: Epic 0.4 (E2E Tests). Blocks: All future epics
   # Implements ADRs: 004-011 (35 story points total)
-  epic-0-6: in-progress
+  epic-0-6: done
   0-6-1-shared-pydantic-models: done  # ADR-004, 5 points, github_issue: 41, PR: #42
   0-6-2-shared-logging-module: done  # ADR-009, 3 points, github_issue: 43, PR: #44
   0-6-3-grpc-retry-ai-model-client: done  # ADR-005, 2 points, github_issue: 45
@@ -120,7 +120,7 @@ development_status:
   0-6-8-dead-letter-queue-handler: done  # ADR-006, 3 points, github_issue: 55, prereq: 0.6.5/0.6.6
   0-6-9-source-config-cache-change-streams: done  # ADR-007, 5 points, github_issue: 57, prereq: 0.6.8
   0-6-10-linkage-field-validation: done  # ADR-008, 3 points, github_issue: 59, prereq: 0.6.5, 0.6.8, code-review: APPROVED
-  epic-0-6-retrospective: optional
+  epic-0-6-retrospective: done  # 2026-01-02: epic-0-6-retro-2026-01-02.md
 
   # ═══════════════════════════════════════════════════════════════════════════
   # P1: HORIZONTAL INFRASTRUCTURE

@@ -636,6 +636,18 @@ All stories must pass CI before merge:
 
 ---
 
+## Retrospective
+
+**[📄 Epic 0.6 Retrospective (2026-01-02)](../sprint-artifacts/epic-0-6-retro-2026-01-02.md)**
+
+**Key Outcomes:**
+- All 10 stories completed (35/35 story points)
+- 8 ADRs implemented (ADR-004 through ADR-011)
+- ~180 unit tests added
+- Key learning: DAPR streaming handlers run in separate threads - use `asyncio.run_coroutine_threadsafe()` for async operations
+
+---
+
 **Total Story Points:** 35 (Wave 1: 12 + Wave 2: 15 + Wave 3: 8)
 
 **Estimated Duration:** 3 sprints (1 sprint per wave)
