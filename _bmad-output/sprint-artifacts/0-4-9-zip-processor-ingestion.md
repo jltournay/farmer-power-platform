@@ -1,6 +1,6 @@
 # Story 0.4.9: ZIP Processor E2E Tests (Exception Images)
 
-**Status:** review
+**Status:** done
 **GitHub Issue:** #63
 **Epic:** [Epic 0.4: E2E Test Scenarios](../epics/epic-0-4-e2e-tests.md)
 **Story Points:** 5
