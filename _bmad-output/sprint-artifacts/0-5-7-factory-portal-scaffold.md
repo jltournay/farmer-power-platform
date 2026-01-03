@@ -1,7 +1,8 @@
 # Story 0.5.7: Factory Portal Scaffold
 
-**Status:** review
+**Status:** done
 **GitHub Issue:** #86
+**Pull Request:** #87
 
 ## Story
 
@@ -332,6 +333,44 @@ cd web/factory-portal && npm run dev
 **Signature:** Jean-Louis Tournay  **Date:** 2026-01-03
 
 > After approval, proceed to mark story status as "review" and run `/code-review`
+
+---
+
+## Code Review
+
+**Review Date:** 2026-01-03
+**Reviewer:** Claude Opus 4.5 (Adversarial Code Review)
+**Outcome:** ✅ APPROVED (with fixes applied)
+
+### Findings Summary
+
+| Severity | Finding | Status |
+|----------|---------|--------|
+| LOW | Missing `aria-label` on Sidebar collapse button | ✅ Fixed |
+| DOC | Task 6 documentation inaccurate (claimed wrapper files that weren't created) | ✅ Fixed |
+| DOC | Missing files in File List section | ✅ Fixed |
+| DOC | Auth library fix not documented | ✅ Fixed |
+
+### Fixes Applied
+
+1. **Accessibility Fix**: Added dynamic `aria-label` to Sidebar collapse button
+   - File: `web/factory-portal/src/components/Sidebar/Sidebar.tsx`
+   - Change: `aria-label={open ? 'Collapse sidebar' : 'Expand sidebar'}`
+
+2. **Test Update**: Updated test to match new aria-label
+   - File: `tests/unit/web/factory-portal/test_layout.test.tsx`
+   - Change: Query by `{ name: /collapse sidebar/i }` instead of empty name
+
+3. **Documentation Fixes**: Updated story file
+   - Task 6 description updated to reflect actual implementation
+   - Added missing files to File List
+   - Documented auth library fix
+
+### CI Verification After Fixes
+
+**CI Run ID:** 20680683334
+**CI Status:** ✅ Passed
+**All 32 frontend tests passing**
 
 ---
 
