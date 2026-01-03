@@ -1,7 +1,7 @@
 # Story 0.5.4a: BFF Client Response Wrappers
 
-**Status:** ready-for-dev
-**GitHub Issue:** (to be created)
+**Status:** in-progress
+**GitHub Issue:** #77
 **Story Points:** 3
 
 ## Story
@@ -78,51 +78,51 @@ So that all API endpoints return consistent, typed responses following ADR-012 p
 
 ## Tasks / Subtasks
 
-- [ ] **Task 1: Create Response Wrapper Schemas**
-  - [ ] Create `services/bff/src/bff/api/schemas/responses.py`
-  - [ ] Implement `ApiResponse[T]` generic model per ADR-012
-  - [ ] Implement `PaginatedResponse[T]` with cursor and offset pagination
-  - [ ] Implement `BoundedResponse[T]` for bounded lists (no pagination cursor)
-  - [ ] Implement `ApiError` structured error response
-  - [ ] Implement `ErrorDetail` for field-level validation errors
-  - [ ] Implement `PaginationMeta` for pagination metadata
-  - [ ] Implement `ResponseMeta` for response metadata
+- [x] **Task 1: Create Response Wrapper Schemas**
+  - [x] Create `services/bff/src/bff/api/schemas/responses.py`
+  - [x] Implement `ApiResponse[T]` generic model per ADR-012
+  - [x] Implement `PaginatedResponse[T]` with cursor and offset pagination
+  - [x] Implement `BoundedResponse[T]` for bounded lists (no pagination cursor)
+  - [x] Implement `ApiError` structured error response
+  - [x] Implement `ErrorDetail` for field-level validation errors
+  - [x] Implement `PaginationMeta` for pagination metadata
+  - [x] Implement `ResponseMeta` for response metadata
 
-- [ ] **Task 2: Error Code Enumeration**
-  - [ ] Create `ApiErrorCode` enum in responses.py (distinct from AuthErrorCode)
-  - [ ] Include: validation_error, not_found, unauthorized, forbidden, internal_error, service_unavailable
-  - [ ] Ensure compatibility with existing AuthErrorCode
+- [x] **Task 2: Error Code Enumeration**
+  - [x] Create `ApiErrorCode` enum in responses.py (distinct from AuthErrorCode)
+  - [x] Include: validation_error, not_found, unauthorized, forbidden, internal_error, service_unavailable
+  - [x] Ensure compatibility with existing AuthErrorCode
 
-- [ ] **Task 3: Update Schema Exports**
-  - [ ] Update `services/bff/src/bff/api/schemas/__init__.py`
-  - [ ] Export all new response types
-  - [ ] Maintain existing auth schema exports
+- [x] **Task 3: Update Schema Exports**
+  - [x] Update `services/bff/src/bff/api/schemas/__init__.py`
+  - [x] Export all new response types
+  - [x] Maintain existing auth schema exports
 
-- [ ] **Task 4: Migrate PlantationClient** (AC: #7)
-  - [ ] Update `list_farmers` to return `PaginatedResponse[Farmer]`
-  - [ ] Update `list_factories` to return `PaginatedResponse[Factory]`
-  - [ ] Update `list_collection_points` to return `PaginatedResponse[CollectionPoint]`
-  - [ ] Update `list_regions` to return `PaginatedResponse[Region]`
-  - [ ] Update existing unit tests in `tests/unit/bff/test_plantation_client.py`
+- [x] **Task 4: Migrate PlantationClient** (AC: #7)
+  - [x] Update `list_farmers` to return `PaginatedResponse[Farmer]`
+  - [x] Update `list_factories` to return `PaginatedResponse[Factory]`
+  - [x] Update `list_collection_points` to return `PaginatedResponse[CollectionPoint]`
+  - [x] Update `list_regions` to return `PaginatedResponse[Region]`
+  - [x] Update existing unit tests in `tests/unit/bff/test_plantation_client.py`
 
-- [ ] **Task 5: Migrate CollectionClient** (AC: #8)
-  - [ ] Update `list_documents` to return `PaginatedResponse[Document]`
-  - [ ] Update `search_documents` to return `PaginatedResponse[Document]`
-  - [ ] Update `get_documents_by_farmer` to return `BoundedResponse[Document]`
-  - [ ] Update existing unit tests in `tests/unit/bff/test_collection_client.py`
+- [x] **Task 5: Migrate CollectionClient** (AC: #8)
+  - [x] Update `list_documents` to return `PaginatedResponse[Document]`
+  - [x] Update `search_documents` to return `PaginatedResponse[Document]`
+  - [x] Update `get_documents_by_farmer` to return `BoundedResponse[Document]`
+  - [x] Update existing unit tests in `tests/unit/bff/test_collection_client.py`
 
-- [ ] **Task 6: Unit Tests for Response Schemas**
-  - [ ] Create `tests/unit/bff/test_response_schemas.py`
-  - [ ] Test ApiResponse serialization with various domain models
-  - [ ] Test PaginatedResponse with pagination metadata
-  - [ ] Test BoundedResponse with items and total_count
-  - [ ] Test ApiError with different error codes and details
-  - [ ] Test ErrorDetail field-level error formatting
-  - [ ] Test generic type inference with Pydantic
+- [x] **Task 6: Unit Tests for Response Schemas**
+  - [x] Create `tests/unit/bff/test_response_schemas.py`
+  - [x] Test ApiResponse serialization with various domain models
+  - [x] Test PaginatedResponse with pagination metadata
+  - [x] Test BoundedResponse with items and total_count
+  - [x] Test ApiError with different error codes and details
+  - [x] Test ErrorDetail field-level error formatting
+  - [x] Test generic type inference with Pydantic
 
-- [ ] **Task 7: Documentation**
-  - [ ] Add docstrings with usage examples
-  - [ ] Reference ADR-012 in module docstring
+- [x] **Task 7: Documentation**
+  - [x] Add docstrings with usage examples
+  - [x] Reference ADR-012 in module docstring
 
 ## Git Workflow (MANDATORY)
 
@@ -161,20 +161,53 @@ So that all API endpoints return consistent, typed responses following ADR-012 p
 
 ### 1. Unit Tests
 ```bash
-PYTHONPATH="${PYTHONPATH}:.:libs/fp-proto/src:libs/fp-common:services/bff/src" pytest tests/unit/bff/test_response_schemas.py -v
+PYTHONPATH=".:services/bff/src:libs/fp-proto/src:libs/fp-common:libs/fp-testing/src" pytest tests/unit/bff/test_response_schemas.py -v
 ```
 **Output:**
 ```
-(to be filled after implementation)
+tests/unit/bff/test_response_schemas.py::TestResponseMeta::test_default_values PASSED
+tests/unit/bff/test_response_schemas.py::TestResponseMeta::test_custom_values PASSED
+tests/unit/bff/test_response_schemas.py::TestPaginationMeta::test_default_values PASSED
+tests/unit/bff/test_response_schemas.py::TestPaginationMeta::test_from_client_response_with_next_page PASSED
+tests/unit/bff/test_response_schemas.py::TestPaginationMeta::test_from_client_response_no_next_page PASSED
+tests/unit/bff/test_response_schemas.py::TestPaginationMeta::test_from_client_response_middle_page PASSED
+tests/unit/bff/test_response_schemas.py::TestPaginationMeta::test_from_client_response_zero_total PASSED
+tests/unit/bff/test_response_schemas.py::TestApiResponse::test_simple_entity PASSED
+tests/unit/bff/test_response_schemas.py::TestApiResponse::test_dict_serialization PASSED
+tests/unit/bff/test_response_schemas.py::TestApiResponse::test_custom_meta PASSED
+tests/unit/bff/test_response_schemas.py::TestPaginatedResponse::test_from_client_response PASSED
+tests/unit/bff/test_response_schemas.py::TestPaginatedResponse::test_empty_list PASSED
+tests/unit/bff/test_response_schemas.py::TestPaginatedResponse::test_last_page PASSED
+tests/unit/bff/test_response_schemas.py::TestBoundedResponse::test_from_client_response PASSED
+tests/unit/bff/test_response_schemas.py::TestBoundedResponse::test_len_method PASSED
+tests/unit/bff/test_response_schemas.py::TestBoundedResponse::test_empty_response PASSED
+tests/unit/bff/test_response_schemas.py::TestErrorDetail::test_basic_error PASSED
+tests/unit/bff/test_response_schemas.py::TestErrorDetail::test_error_with_code PASSED
+tests/unit/bff/test_response_schemas.py::TestApiError::test_direct_creation PASSED
+tests/unit/bff/test_response_schemas.py::TestApiError::test_validation_error_factory PASSED
+tests/unit/bff/test_response_schemas.py::TestApiError::test_not_found_factory PASSED
+tests/unit/bff/test_response_schemas.py::TestApiError::test_unauthorized_factory PASSED
+tests/unit/bff/test_response_schemas.py::TestApiError::test_unauthorized_custom_message PASSED
+tests/unit/bff/test_response_schemas.py::TestApiError::test_forbidden_factory PASSED
+tests/unit/bff/test_response_schemas.py::TestApiError::test_forbidden_custom_message PASSED
+tests/unit/bff/test_response_schemas.py::TestApiError::test_service_unavailable_factory PASSED
+tests/unit/bff/test_response_schemas.py::TestApiError::test_internal_error_factory PASSED
+tests/unit/bff/test_response_schemas.py::TestApiError::test_internal_error_custom_message PASSED
+tests/unit/bff/test_response_schemas.py::TestApiError::test_bad_request_factory PASSED
+tests/unit/bff/test_response_schemas.py::TestApiErrorCode::test_all_error_codes_defined PASSED
+tests/unit/bff/test_response_schemas.py::TestApiErrorCode::test_enum_string_values PASSED
+tests/unit/bff/test_response_schemas.py::TestSchemaExports::test_all_exports_importable PASSED
+
+======================== 32 passed, 1 warning in 0.17s =========================
 ```
 
 ### 2. Full BFF Unit Tests
 ```bash
-PYTHONPATH="${PYTHONPATH}:.:libs/fp-proto/src:libs/fp-common:services/bff/src" pytest tests/unit/bff/ -v
+PYTHONPATH=".:services/bff/src:libs/fp-proto/src:libs/fp-common:libs/fp-testing/src" pytest tests/unit/bff/ -v
 ```
 **Output:**
 ```
-(to be filled after implementation)
+====================== 148 passed, 22 warnings in 13.97s =======================
 ```
 
 ### 3. E2E Tests (MANDATORY)
@@ -182,26 +215,35 @@ PYTHONPATH="${PYTHONPATH}:.:libs/fp-proto/src:libs/fp-common:services/bff/src" p
 > **Before running E2E tests:** Read `tests/e2e/E2E-TESTING-MENTAL-MODEL.md`
 
 ```bash
+# Validate seed data first
+python tests/e2e/infrastructure/validate_seed_data.py
+# Output: VALIDATION PASSED: All seed data is valid
+
 # Start infrastructure (MUST use --build to rebuild images)
 docker compose -f tests/e2e/infrastructure/docker-compose.e2e.yaml up -d --build
 
 # Wait for services, then run tests
-PYTHONPATH="${PYTHONPATH}:.:libs/fp-proto/src" pytest tests/e2e/scenarios/ -v
+PYTHONPATH=".:libs/fp-proto/src" pytest tests/e2e/scenarios/ -v
 
 # Tear down
 docker compose -f tests/e2e/infrastructure/docker-compose.e2e.yaml down -v
 ```
 **Output:**
 ```
-(to be filled after implementation)
+================== 85 passed, 1 skipped in 126.16s (0:02:06) ===================
 ```
-**E2E passed:** [ ] Yes / [ ] No
+**E2E passed:** [x] Yes / [ ] No
 
 ### 4. Lint Check
 ```bash
 ruff check . && ruff format --check .
 ```
-**Lint passed:** [ ] Yes / [ ] No
+**Output:**
+```
+All checks passed!
+341 files already formatted
+```
+**Lint passed:** [x] Yes / [ ] No
 
 ### 5. CI Verification on Story Branch (MANDATORY)
 
@@ -506,7 +548,7 @@ If you modified ANY production code (`services/`, `mcp-servers/`, `libs/`), docu
 
 ### Agent Model Used
 
-(to be filled)
+Claude Opus 4.5 (claude-opus-4-5-20251101)
 
 ### Debug Log References
 

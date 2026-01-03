@@ -6,6 +6,7 @@ service invocation. All methods return fp-common Pydantic domain models (NOT dic
 Pattern follows:
 - ADR-002 §"Service Invocation Pattern" (native gRPC with dapr-app-id metadata)
 - ADR-005 for retry logic (3 attempts, exponential backoff 1-10s)
+- ADR-012 for response wrappers (list methods return PaginatedResponse)
 
 CRITICAL: Uses fp-common domain models for type safety. Never returns dict[str, Any].
 """
@@ -15,6 +16,7 @@ from datetime import datetime
 import grpc
 import grpc.aio
 import structlog
+from bff.api.schemas import PaginatedResponse
 from bff.infrastructure.clients.base import (
     BaseGrpcClient,
     grpc_retry,
@@ -217,7 +219,7 @@ class PlantationClient(BaseGrpcClient):
         page_size: int = 50,
         page_token: str | None = None,
         active_only: bool = True,
-    ) -> tuple[list[Farmer], str | None, int]:
+    ) -> PaginatedResponse[Farmer]:
         """List farmers with optional filtering.
 
         Args:
@@ -228,7 +230,7 @@ class PlantationClient(BaseGrpcClient):
             active_only: Only return active farmers (default: True).
 
         Returns:
-            Tuple of (farmers list, next_page_token or None, total_count).
+            PaginatedResponse containing farmers list with pagination metadata.
 
         Raises:
             ServiceUnavailableError: If service is unavailable.
@@ -245,7 +247,12 @@ class PlantationClient(BaseGrpcClient):
             response = await stub.ListFarmers(request, metadata=self._get_metadata())
             farmers = [self._proto_to_farmer(f) for f in response.farmers]
             next_token = response.next_page_token if response.next_page_token else None
-            return farmers, next_token, response.total_count
+            return PaginatedResponse.from_client_response(
+                items=farmers,
+                total_count=response.total_count,
+                page_size=page_size,
+                next_page_token=next_token,
+            )
         except grpc.aio.AioRpcError as e:
             self._handle_grpc_error(e, "Farmers list")
             raise
@@ -310,7 +317,7 @@ class PlantationClient(BaseGrpcClient):
         page_size: int = 50,
         page_token: str | None = None,
         active_only: bool = True,
-    ) -> tuple[list[Factory], str | None, int]:
+    ) -> PaginatedResponse[Factory]:
         """List factories with optional filtering.
 
         Args:
@@ -320,7 +327,7 @@ class PlantationClient(BaseGrpcClient):
             active_only: Only return active factories (default: True).
 
         Returns:
-            Tuple of (factories list, next_page_token or None, total_count).
+            PaginatedResponse containing factories list with pagination metadata.
 
         Raises:
             ServiceUnavailableError: If service is unavailable.
@@ -336,7 +343,12 @@ class PlantationClient(BaseGrpcClient):
             response = await stub.ListFactories(request, metadata=self._get_metadata())
             factories = [self._proto_to_factory(f) for f in response.factories]
             next_token = response.next_page_token if response.next_page_token else None
-            return factories, next_token, response.total_count
+            return PaginatedResponse.from_client_response(
+                items=factories,
+                total_count=response.total_count,
+                page_size=page_size,
+                next_page_token=next_token,
+            )
         except grpc.aio.AioRpcError as e:
             self._handle_grpc_error(e, "Factories list")
             raise
@@ -376,7 +388,7 @@ class PlantationClient(BaseGrpcClient):
         page_size: int = 50,
         page_token: str | None = None,
         active_only: bool = True,
-    ) -> tuple[list[CollectionPoint], str | None, int]:
+    ) -> PaginatedResponse[CollectionPoint]:
         """List collection points with optional filtering.
 
         Args:
@@ -387,7 +399,7 @@ class PlantationClient(BaseGrpcClient):
             active_only: Only return active collection points (default: True).
 
         Returns:
-            Tuple of (collection_points list, next_page_token or None, total_count).
+            PaginatedResponse containing collection points with pagination metadata.
 
         Raises:
             ServiceUnavailableError: If service is unavailable.
@@ -404,7 +416,12 @@ class PlantationClient(BaseGrpcClient):
             response = await stub.ListCollectionPoints(request, metadata=self._get_metadata())
             collection_points = [self._proto_to_collection_point(cp) for cp in response.collection_points]
             next_token = response.next_page_token if response.next_page_token else None
-            return collection_points, next_token, response.total_count
+            return PaginatedResponse.from_client_response(
+                items=collection_points,
+                total_count=response.total_count,
+                page_size=page_size,
+                next_page_token=next_token,
+            )
         except grpc.aio.AioRpcError as e:
             self._handle_grpc_error(e, "Collection points list")
             raise
@@ -444,7 +461,7 @@ class PlantationClient(BaseGrpcClient):
         page_size: int = 50,
         page_token: str | None = None,
         active_only: bool = True,
-    ) -> tuple[list[Region], str | None, int]:
+    ) -> PaginatedResponse[Region]:
         """List regions with optional filtering.
 
         Args:
@@ -455,7 +472,7 @@ class PlantationClient(BaseGrpcClient):
             active_only: Only return active regions (default: True).
 
         Returns:
-            Tuple of (regions list, next_page_token or None, total_count).
+            PaginatedResponse containing regions with pagination metadata.
 
         Raises:
             ServiceUnavailableError: If service is unavailable.
@@ -472,7 +489,12 @@ class PlantationClient(BaseGrpcClient):
             response = await stub.ListRegions(request, metadata=self._get_metadata())
             regions = [self._proto_to_region(r) for r in response.regions]
             next_token = response.next_page_token if response.next_page_token else None
-            return regions, next_token, response.total_count
+            return PaginatedResponse.from_client_response(
+                items=regions,
+                total_count=response.total_count,
+                page_size=page_size,
+                next_page_token=next_token,
+            )
         except grpc.aio.AioRpcError as e:
             self._handle_grpc_error(e, "Regions list")
             raise

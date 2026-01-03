@@ -141,7 +141,7 @@ development_status:
   0-5-2-bff-service-setup: done  # 3 points - FastAPI BFF scaffold with DAPR sidecar, github_issue: 73
   0-5-3-bff-auth-middleware: done  # 3 points - Dual-mode JWT validation (mock + B2C), github_issue: 75, pr: 76
   # Story 0.5.4 split into 0.5.4a + 0.5.4b per ADR-012 (Party Mode 2026-01-03)
-  0-5-4a-bff-client-response-wrappers: ready-for-dev  # 3 points - Response wrappers + migrate 7 client methods
+  0-5-4a-bff-client-response-wrappers: in-progress  # 3 points - Response wrappers + migrate 7 client methods, github_issue: 77
   0-5-4b-bff-api-routes: backlog  # 5 points - GET /api/farmers, GET /api/farmers/{id} (reduced scope)
   0-5-5-shared-component-library: backlog  # 3 points - @fp/ui-components with MUI v6
   0-5-6-shared-auth-library: backlog  # 3 points - @fp/auth with mock provider

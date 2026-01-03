@@ -143,7 +143,7 @@ class TestListDocuments:
         self,
         collection_client_with_mock_stub: tuple[CollectionClient, MagicMock],
     ) -> None:
-        """Test successful document listing."""
+        """Test successful document listing returns PaginatedResponse."""
         client, stub = collection_client_with_mock_stub
         response = collection_pb2.ListDocumentsResponse(
             documents=[
@@ -155,14 +155,16 @@ class TestListDocuments:
         )
         stub.ListDocuments.return_value = response
 
-        documents, next_token, total = await client.list_documents("qc_analyzer_results")
+        result = await client.list_documents("qc_analyzer_results")
 
-        assert len(documents) == 2
-        assert all(isinstance(doc, Document) for doc in documents)
-        assert documents[0].document_id == "doc-001"
-        assert documents[1].document_id == "doc-002"
-        assert next_token == "token123"
-        assert total == 100
+        assert len(result.data) == 2
+        assert all(isinstance(doc, Document) for doc in result.data)
+        assert result.data[0].document_id == "doc-001"
+        assert result.data[1].document_id == "doc-002"
+        assert result.pagination.next_page_token == "token123"
+        assert result.pagination.total_count == 100
+        assert result.pagination.has_next is True
+        assert result.meta is not None
 
     @pytest.mark.asyncio
     async def test_list_documents_with_pagination(
@@ -178,7 +180,7 @@ class TestListDocuments:
         )
         stub.ListDocuments.return_value = response
 
-        documents, next_token, total = await client.list_documents(
+        result = await client.list_documents(
             collection_name="qc_analyzer_results",
             page_size=10,
             page_token="prev_token",
@@ -188,7 +190,8 @@ class TestListDocuments:
         request = call_args[0][0]
         assert request.page_size == 10
         assert request.page_token == "prev_token"
-        assert next_token is None  # Empty string should become None
+        assert result.pagination.next_page_token is None  # Empty string should become None
+        assert result.pagination.has_next is False
 
     @pytest.mark.asyncio
     async def test_list_documents_with_farmer_filter(
@@ -204,7 +207,7 @@ class TestListDocuments:
         )
         stub.ListDocuments.return_value = response
 
-        documents, next_token, total = await client.list_documents(
+        result = await client.list_documents(
             collection_name="qc_analyzer_results",
             farmer_id="WM-0002",
         )
@@ -212,13 +215,14 @@ class TestListDocuments:
         call_args = stub.ListDocuments.call_args
         request = call_args[0][0]
         assert request.farmer_id == "WM-0002"
+        assert len(result.data) == 1
 
     @pytest.mark.asyncio
     async def test_list_documents_page_size_capped(
         self,
         collection_client_with_mock_stub: tuple[CollectionClient, MagicMock],
     ) -> None:
-        """Test page_size is capped at 100."""
+        """Test page_size is capped at 100 in request and response."""
         client, stub = collection_client_with_mock_stub
         response = collection_pb2.ListDocumentsResponse(
             documents=[],
@@ -227,11 +231,12 @@ class TestListDocuments:
         )
         stub.ListDocuments.return_value = response
 
-        await client.list_documents("qc_analyzer_results", page_size=200)
+        result = await client.list_documents("qc_analyzer_results", page_size=200)
 
         call_args = stub.ListDocuments.call_args
         request = call_args[0][0]
-        assert request.page_size == 100  # Should be capped at 100
+        assert request.page_size == 100  # Request should be capped at 100
+        assert result.pagination.page_size == 100  # Response should also show capped value
 
 
 class TestGetDocumentsByFarmer:
@@ -242,7 +247,7 @@ class TestGetDocumentsByFarmer:
         self,
         collection_client_with_mock_stub: tuple[CollectionClient, MagicMock],
     ) -> None:
-        """Test successful retrieval of documents by farmer."""
+        """Test successful retrieval of documents by farmer returns BoundedResponse."""
         client, stub = collection_client_with_mock_stub
         response = collection_pb2.GetDocumentsByFarmerResponse(
             documents=[
@@ -254,11 +259,13 @@ class TestGetDocumentsByFarmer:
         )
         stub.GetDocumentsByFarmer.return_value = response
 
-        documents, total = await client.get_documents_by_farmer("WM-0001", "qc_analyzer_results")
+        result = await client.get_documents_by_farmer("WM-0001", "qc_analyzer_results")
 
-        assert len(documents) == 3
-        assert all(isinstance(doc, Document) for doc in documents)
-        assert total == 3
+        assert len(result.data) == 3
+        assert all(isinstance(doc, Document) for doc in result.data)
+        assert result.total_count == 3
+        assert len(result) == 3  # Test __len__ method
+        assert result.meta is not None
 
     @pytest.mark.asyncio
     async def test_get_documents_by_farmer_with_limit(
@@ -286,7 +293,7 @@ class TestGetDocumentsByFarmer:
         self,
         collection_client_with_mock_stub: tuple[CollectionClient, MagicMock],
     ) -> None:
-        """Test get_documents_by_farmer with no results."""
+        """Test get_documents_by_farmer with no results returns empty BoundedResponse."""
         client, stub = collection_client_with_mock_stub
         response = collection_pb2.GetDocumentsByFarmerResponse(
             documents=[],
@@ -294,10 +301,11 @@ class TestGetDocumentsByFarmer:
         )
         stub.GetDocumentsByFarmer.return_value = response
 
-        documents, total = await client.get_documents_by_farmer("WM-9999", "qc_analyzer_results")
+        result = await client.get_documents_by_farmer("WM-9999", "qc_analyzer_results")
 
-        assert len(documents) == 0
-        assert total == 0
+        assert len(result.data) == 0
+        assert result.total_count == 0
+        assert len(result) == 0
 
 
 class TestSearchDocuments:
@@ -308,7 +316,7 @@ class TestSearchDocuments:
         self,
         collection_client_with_mock_stub: tuple[CollectionClient, MagicMock],
     ) -> None:
-        """Test successful document search."""
+        """Test successful document search returns PaginatedResponse."""
         client, stub = collection_client_with_mock_stub
         response = collection_pb2.SearchDocumentsResponse(
             documents=[
@@ -320,12 +328,14 @@ class TestSearchDocuments:
         )
         stub.SearchDocuments.return_value = response
 
-        documents, next_token, total = await client.search_documents("qc_analyzer_results")
+        result = await client.search_documents("qc_analyzer_results")
 
-        assert len(documents) == 2
-        assert all(isinstance(doc, Document) for doc in documents)
-        assert next_token == "token456"
-        assert total == 50
+        assert len(result.data) == 2
+        assert all(isinstance(doc, Document) for doc in result.data)
+        assert result.pagination.next_page_token == "token456"
+        assert result.pagination.total_count == 50
+        assert result.pagination.has_next is True
+        assert result.meta is not None
 
     @pytest.mark.asyncio
     async def test_search_documents_with_source_filter(
@@ -432,7 +442,7 @@ class TestSearchDocuments:
         self,
         collection_client_with_mock_stub: tuple[CollectionClient, MagicMock],
     ) -> None:
-        """Test page_size is capped at 100 for search."""
+        """Test page_size is capped at 100 for search in request and response."""
         client, stub = collection_client_with_mock_stub
         response = collection_pb2.SearchDocumentsResponse(
             documents=[],
@@ -441,11 +451,12 @@ class TestSearchDocuments:
         )
         stub.SearchDocuments.return_value = response
 
-        await client.search_documents("qc_analyzer_results", page_size=200)
+        result = await client.search_documents("qc_analyzer_results", page_size=200)
 
         call_args = stub.SearchDocuments.call_args
         request = call_args[0][0]
-        assert request.page_size == 100  # Should be capped at 100
+        assert request.page_size == 100  # Request should be capped at 100
+        assert result.pagination.page_size == 100  # Response should also show capped value
 
 
 class TestErrorHandling:

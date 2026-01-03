@@ -3,13 +3,15 @@
 Provides typed access to Collection Model service via DAPR service invocation.
 Implements 4 document query methods following the pattern from PlantationClient.
 
-Per ADR-002 §"Service Invocation Pattern" and ADR-005 for retry logic.
+Per ADR-002 §"Service Invocation Pattern", ADR-005 for retry logic,
+and ADR-012 for response wrappers (list methods return PaginatedResponse/BoundedResponse).
 """
 
 from datetime import UTC, datetime
 
 import grpc
 import grpc.aio
+from bff.api.schemas import BoundedResponse, PaginatedResponse
 from bff.infrastructure.clients.base import (
     BaseGrpcClient,
     grpc_retry,
@@ -168,7 +170,7 @@ class CollectionClient(BaseGrpcClient):
         page_size: int = 20,
         page_token: str | None = None,
         farmer_id: str | None = None,
-    ) -> tuple[list[Document], str | None, int]:
+    ) -> PaginatedResponse[Document]:
         """List documents with pagination and optional farmer_id filter.
 
         Args:
@@ -178,16 +180,16 @@ class CollectionClient(BaseGrpcClient):
             farmer_id: Optional filter by farmer_id in linkage_fields.
 
         Returns:
-            Tuple of (documents, next_page_token, total_count).
-            next_page_token is None if no more pages.
+            PaginatedResponse containing documents with pagination metadata.
 
         Raises:
             ServiceUnavailableError: If the service is unavailable.
         """
         stub = await self._get_stub(collection_pb2_grpc.CollectionServiceStub)
+        effective_page_size = min(page_size, 100)
         request = collection_pb2.ListDocumentsRequest(
             collection_name=collection_name,
-            page_size=min(page_size, 100),
+            page_size=effective_page_size,
             page_token=page_token or "",
             farmer_id=farmer_id or "",
         )
@@ -196,7 +198,12 @@ class CollectionClient(BaseGrpcClient):
             response = await stub.ListDocuments(request, metadata=self._get_metadata())
             documents = [self._proto_to_document(doc) for doc in response.documents]
             next_token = response.next_page_token if response.next_page_token else None
-            return documents, next_token, response.total_count
+            return PaginatedResponse.from_client_response(
+                items=documents,
+                total_count=response.total_count,
+                page_size=effective_page_size,
+                next_page_token=next_token,
+            )
         except grpc.aio.AioRpcError as e:
             self._handle_grpc_error(e, "List documents")
 
@@ -206,10 +213,12 @@ class CollectionClient(BaseGrpcClient):
         farmer_id: str,
         collection_name: str,
         limit: int = 100,
-    ) -> tuple[list[Document], int]:
+    ) -> BoundedResponse[Document]:
         """Get all documents for a specific farmer.
 
-        Convenience method that returns all documents linked to a farmer.
+        Convenience method that returns all documents linked to a farmer
+        up to a specified limit. Returns BoundedResponse since this is
+        not a paginated endpoint (no next_page_token).
 
         Args:
             farmer_id: The farmer ID to filter by.
@@ -217,7 +226,7 @@ class CollectionClient(BaseGrpcClient):
             limit: Maximum number of documents to return (default 100).
 
         Returns:
-            Tuple of (documents, total_count).
+            BoundedResponse containing documents and total_count.
 
         Raises:
             ServiceUnavailableError: If the service is unavailable.
@@ -232,7 +241,10 @@ class CollectionClient(BaseGrpcClient):
         try:
             response = await stub.GetDocumentsByFarmer(request, metadata=self._get_metadata())
             documents = [self._proto_to_document(doc) for doc in response.documents]
-            return documents, response.total_count
+            return BoundedResponse.from_client_response(
+                items=documents,
+                total_count=response.total_count,
+            )
         except grpc.aio.AioRpcError as e:
             self._handle_grpc_error(e, f"Documents for farmer {farmer_id}")
 
@@ -246,7 +258,7 @@ class CollectionClient(BaseGrpcClient):
         linkage_filters: dict[str, str] | None = None,
         page_size: int = 20,
         page_token: str | None = None,
-    ) -> tuple[list[Document], str | None, int]:
+    ) -> PaginatedResponse[Document]:
         """Search documents with filters.
 
         Args:
@@ -259,18 +271,18 @@ class CollectionClient(BaseGrpcClient):
             page_token: Pagination cursor from previous response.
 
         Returns:
-            Tuple of (documents, next_page_token, total_count).
-            next_page_token is None if no more pages.
+            PaginatedResponse containing documents with pagination metadata.
 
         Raises:
             ServiceUnavailableError: If the service is unavailable.
         """
         stub = await self._get_stub(collection_pb2_grpc.CollectionServiceStub)
+        effective_page_size = min(page_size, 100)
 
         request = collection_pb2.SearchDocumentsRequest(
             collection_name=collection_name,
             source_id=source_id or "",
-            page_size=min(page_size, 100),
+            page_size=effective_page_size,
             page_token=page_token or "",
         )
 
@@ -289,6 +301,11 @@ class CollectionClient(BaseGrpcClient):
             response = await stub.SearchDocuments(request, metadata=self._get_metadata())
             documents = [self._proto_to_document(doc) for doc in response.documents]
             next_token = response.next_page_token if response.next_page_token else None
-            return documents, next_token, response.total_count
+            return PaginatedResponse.from_client_response(
+                items=documents,
+                total_count=response.total_count,
+                page_size=effective_page_size,
+                next_page_token=next_token,
+            )
         except grpc.aio.AioRpcError as e:
             self._handle_grpc_error(e, "Search documents")
