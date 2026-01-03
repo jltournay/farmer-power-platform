@@ -1,7 +1,7 @@
 # Story 0.5.7: Factory Portal Scaffold
 
-**Status:** ready-for-dev
-**GitHub Issue:** <!-- Auto-created by dev-story workflow -->
+**Status:** in-progress
+**GitHub Issue:** #86
 
 ## Story
 
@@ -66,81 +66,81 @@ So that **Factory Manager, Owner, and Admin screens can be built**.
 
 ## Tasks / Subtasks
 
-- [ ] **Task 1: Initialize Project Structure** (AC: #1)
-  - [ ] 1.1 Create `web/factory-portal/` directory
-  - [ ] 1.2 Initialize with `npm create vite@latest` (React + TypeScript)
-  - [ ] 1.3 Create `package.json` with workspace dependencies
-  - [ ] 1.4 Configure `tsconfig.json` with strict mode
-  - [ ] 1.5 Configure `vite.config.ts` with React plugin and path aliases
-  - [ ] 1.6 Add to root `package.json` workspaces array
-  - [ ] 1.7 Configure `eslint.config.js` matching project pattern
+- [x] **Task 1: Initialize Project Structure** (AC: #1)
+  - [x] 1.1 Create `web/factory-portal/` directory
+  - [x] 1.2 Initialize with `npm create vite@latest` (React + TypeScript)
+  - [x] 1.3 Create `package.json` with workspace dependencies
+  - [x] 1.4 Configure `tsconfig.json` with strict mode
+  - [x] 1.5 Configure `vite.config.ts` with React plugin and path aliases
+  - [x] 1.6 Add to root `package.json` workspaces array
+  - [x] 1.7 Configure `eslint.config.js` matching project pattern
 
-- [ ] **Task 2: Configure Dependencies** (AC: #1)
-  - [ ] 2.1 Add `@fp/ui-components` as workspace dependency
-  - [ ] 2.2 Add `@fp/auth` as workspace dependency
-  - [ ] 2.3 Add React Router v6: `react-router-dom`
-  - [ ] 2.4 Add Material UI v6: `@mui/material`, `@emotion/react`, `@emotion/styled`
-  - [ ] 2.5 Run `npm install` from root to link workspaces
+- [x] **Task 2: Configure Dependencies** (AC: #1)
+  - [x] 2.1 Add `@fp/ui-components` as workspace dependency
+  - [x] 2.2 Add `@fp/auth` as workspace dependency
+  - [x] 2.3 Add React Router v6: `react-router-dom`
+  - [x] 2.4 Add Material UI v6: `@mui/material`, `@emotion/react`, `@emotion/styled`
+  - [x] 2.5 Run `npm install` from root to link workspaces
 
-- [ ] **Task 3: Create App Shell Layout** (AC: #3)
-  - [ ] 3.1 Create `src/components/Layout/Layout.tsx` - main app shell
-  - [ ] 3.2 Create `src/components/Sidebar/Sidebar.tsx` - navigation sidebar
-  - [ ] 3.3 Create `src/components/Header/Header.tsx` - app header with user info
-  - [ ] 3.4 Implement responsive layout using MUI Box/Grid
-  - [ ] 3.5 Style with @fp/ui-components theme
+- [x] **Task 3: Create App Shell Layout** (AC: #3)
+  - [x] 3.1 Create `src/components/Layout/Layout.tsx` - main app shell
+  - [x] 3.2 Create `src/components/Sidebar/Sidebar.tsx` - navigation sidebar
+  - [x] 3.3 Create `src/components/Header/Header.tsx` - app header with user info
+  - [x] 3.4 Implement responsive layout using MUI Box/Grid
+  - [x] 3.5 Style with @fp/ui-components theme
 
-- [ ] **Task 4: Implement Routing** (AC: #2)
-  - [ ] 4.1 Create `src/app/routes.tsx` with route definitions
-  - [ ] 4.2 Configure React Router BrowserRouter in `src/app/App.tsx`
-  - [ ] 4.3 Implement role-based route protection using `ProtectedRoute` from @fp/auth
-  - [ ] 4.4 Create `src/pages/NotFound.tsx` for 404 handling
-  - [ ] 4.5 Configure redirect from `/` to `/command-center`
+- [x] **Task 4: Implement Routing** (AC: #2)
+  - [x] 4.1 Create `src/app/routes.tsx` with route definitions
+  - [x] 4.2 Configure React Router BrowserRouter in `src/app/App.tsx`
+  - [x] 4.3 Implement role-based route protection using `ProtectedRoute` from @fp/auth
+  - [x] 4.4 Create `src/pages/NotFound.tsx` for 404 handling
+  - [x] 4.5 Configure redirect from `/` to `/command-center`
 
-- [ ] **Task 5: Create Placeholder Pages** (AC: #4)
-  - [ ] 5.1 Create `src/pages/manager/CommandCenter/CommandCenter.tsx`
-  - [ ] 5.2 Create `src/pages/manager/FarmerDetail/FarmerDetail.tsx`
-  - [ ] 5.3 Create `src/pages/owner/ROISummary/ROISummary.tsx`
-  - [ ] 5.4 Create `src/pages/admin/Settings/Settings.tsx`
-  - [ ] 5.5 Each placeholder shows title and "Coming soon" message
+- [x] **Task 5: Create Placeholder Pages** (AC: #4)
+  - [x] 5.1 Create `src/pages/manager/CommandCenter/CommandCenter.tsx`
+  - [x] 5.2 Create `src/pages/manager/FarmerDetail/FarmerDetail.tsx`
+  - [x] 5.3 Create `src/pages/owner/ROISummary/ROISummary.tsx`
+  - [x] 5.4 Create `src/pages/admin/Settings/Settings.tsx`
+  - [x] 5.5 Each placeholder shows title and "Coming soon" message
 
-- [ ] **Task 6: Configure Providers** (AC: #1, #3)
-  - [ ] 6.1 Create `src/app/providers/ThemeProvider.tsx` wrapping MUI ThemeProvider
-  - [ ] 6.2 Import and use theme from `@fp/ui-components`
-  - [ ] 6.3 Create `src/app/providers/AuthProviderWrapper.tsx` using `@fp/auth`
-  - [ ] 6.4 Compose providers in `src/main.tsx`
+- [x] **Task 6: Configure Providers** (AC: #1, #3)
+  - [x] 6.1 Create `src/app/providers/ThemeProvider.tsx` wrapping MUI ThemeProvider
+  - [x] 6.2 Import and use theme from `@fp/ui-components`
+  - [x] 6.3 Create `src/app/providers/AuthProviderWrapper.tsx` using `@fp/auth`
+  - [x] 6.4 Compose providers in `src/main.tsx`
 
-- [ ] **Task 7: Configure Dev Server** (AC: #5)
-  - [ ] 7.1 Configure Vite proxy for `/api` -> BFF service
-  - [ ] 7.2 Create `.env.local.example` with required environment variables
-  - [ ] 7.3 Configure HMR and fast refresh
-  - [ ] 7.4 Test development server with `npm run dev`
+- [x] **Task 7: Configure Dev Server** (AC: #5)
+  - [x] 7.1 Configure Vite proxy for `/api` -> BFF service
+  - [x] 7.2 Create `.env.local.example` with required environment variables
+  - [x] 7.3 Configure HMR and fast refresh
+  - [x] 7.4 Test development server with `npm run dev`
 
-- [ ] **Task 8: Configure Build** (AC: #6)
-  - [ ] 8.1 Configure Vite build output
-  - [ ] 8.2 Verify bundle size < 500KB gzipped
-  - [ ] 8.3 Configure source map generation
-  - [ ] 8.4 Test production build with `npm run build && npm run preview`
+- [x] **Task 8: Configure Build** (AC: #6)
+  - [x] 8.1 Configure Vite build output
+  - [x] 8.2 Verify bundle size < 500KB gzipped
+  - [x] 8.3 Configure source map generation
+  - [x] 8.4 Test production build with `npm run build && npm run preview`
 
-- [ ] **Task 9: Create Dockerfile** (AC: #8)
-  - [ ] 9.1 Create `web/factory-portal/Dockerfile`
-  - [ ] 9.2 Multi-stage build: node for build, nginx for serving
-  - [ ] 9.3 Configure nginx for SPA routing (fallback to index.html)
-  - [ ] 9.4 Test Docker build locally
+- [x] **Task 9: Create Dockerfile** (AC: #8)
+  - [x] 9.1 Create `web/factory-portal/Dockerfile`
+  - [x] 9.2 Multi-stage build: node for build, nginx for serving
+  - [x] 9.3 Configure nginx for SPA routing (fallback to index.html)
+  - [ ] 9.4 Test Docker build locally (deferred - visual validation first)
 
-- [ ] **Task 10: Create Unit Tests** (AC: #7)
-  - [ ] 10.1 Configure `vitest.config.ts`
-  - [ ] 10.2 Create `tests/unit/web/factory-portal/test_app.test.tsx`
-  - [ ] 10.3 Create `tests/unit/web/factory-portal/test_routing.test.tsx`
-  - [ ] 10.4 Create `tests/unit/web/factory-portal/test_layout.test.tsx`
-  - [ ] 10.5 All tests pass with `npm run test`
+- [x] **Task 10: Create Unit Tests** (AC: #7)
+  - [x] 10.1 Configure `vitest.config.ts`
+  - [x] 10.2 Create `tests/unit/web/factory-portal/test_app.test.tsx`
+  - [x] 10.3 Create `tests/unit/web/factory-portal/test_routing.test.tsx`
+  - [x] 10.4 Create `tests/unit/web/factory-portal/test_layout.test.tsx`
+  - [x] 10.5 All tests pass with `npm run test`
 
 ## Git Workflow (MANDATORY)
 
 **All story development MUST use feature branches.** Direct pushes to main are blocked.
 
 ### Story Start
-- [ ] GitHub Issue exists or created: `gh issue create --title "Story 0.5.7: Factory Portal Scaffold"`
-- [ ] Feature branch created from main:
+- [x] GitHub Issue exists or created: `gh issue create --title "Story 0.5.7: Factory Portal Scaffold"`
+- [x] Feature branch created from main:
   ```bash
   git checkout main && git pull origin main
   git checkout -b story/0-5-7-factory-portal-scaffold
@@ -149,8 +149,8 @@ So that **Factory Manager, Owner, and Admin screens can be built**.
 **Branch name:** `story/0-5-7-factory-portal-scaffold`
 
 ### During Development
-- [ ] All commits reference GitHub issue: `Relates to #XX`
-- [ ] Commits are atomic by type (production, test, seed - not mixed)
+- [x] All commits reference GitHub issue: `Relates to #86`
+- [x] Commits are atomic by type (production, test, seed - not mixed)
 - [ ] Push to feature branch: `git push -u origin story/0-5-7-factory-portal-scaffold`
 
 ### Story Done
@@ -174,7 +174,16 @@ cd web/factory-portal && npm run test
 ```
 **Output:**
 ```
-(paste test summary here - e.g., "15 passed in 2.23s")
+ RUN  v2.1.9 /Users/jeanlouistournay/wks-farmerpower/farmer-power-platform/web/factory-portal
+
+ ✓ ../../tests/unit/web/factory-portal/test_app.test.tsx (5 tests) 240ms
+ ✓ ../../tests/unit/web/factory-portal/test_routing.test.tsx (12 tests) 277ms
+ ✓ ../../tests/unit/web/factory-portal/test_layout.test.tsx (15 tests) 363ms
+
+ Test Files  3 passed (3)
+      Tests  32 passed (32)
+   Start at  17:53:36
+   Duration  4.09s
 ```
 
 ### 2. Build Verification
@@ -183,15 +192,26 @@ cd web/factory-portal && npm run build
 ```
 **Output:**
 ```
-(paste build output here with bundle sizes)
+vite v6.4.1 building for production...
+transforming...
+✓ 954 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                   0.64 kB │ gzip:  0.35 kB
+dist/assets/index-CrfbgZKF.js   132.69 kB │ gzip: 43.99 kB │ map: 509.63 kB
+dist/assets/vendor-RVwsST1e.js  176.67 kB │ gzip: 58.18 kB │ map: 763.14 kB
+dist/assets/mui-D7C8sUMF.js     177.89 kB │ gzip: 54.95 kB │ map: 874.85 kB
+✓ built in 10.12s
+
+Total gzipped: ~157 KB (index: 43.99 + vendor: 58.18 + mui: 54.95)
 ```
-**Bundle size < 500KB gzipped:** [ ] Yes / [ ] No
+**Bundle size < 500KB gzipped:** [x] Yes / [ ] No
 
 ### 3. Lint Check
 ```bash
 cd web/factory-portal && npm run lint
 ```
-**Lint passed:** [ ] Yes / [ ] No
+**Lint passed:** [x] Yes / [ ] No
 
 ### 4. CI Verification on Story Branch (MANDATORY)
 
