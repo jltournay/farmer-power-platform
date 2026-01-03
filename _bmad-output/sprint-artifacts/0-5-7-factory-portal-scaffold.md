@@ -154,13 +154,13 @@ So that **Factory Manager, Owner, and Admin screens can be built**.
 - [x] Push to feature branch: `git push -u origin story/0-5-7-factory-portal-scaffold`
 
 ### Story Done
-- [ ] Create Pull Request: `gh pr create --title "Story 0.5.7: Factory Portal Scaffold" --base main`
+- [x] Create Pull Request: `gh pr create --title "Story 0.5.7: Factory Portal Scaffold" --base main`
 - [ ] CI passes on PR (including E2E tests)
 - [ ] Code review completed (`/code-review` or human review)
 - [ ] PR approved and merged (squash)
 - [ ] Local branch cleaned up: `git branch -d story/0-5-7-factory-portal-scaffold`
 
-**PR URL:** _______________ (fill in when created)
+**PR URL:** https://github.com/jltournay/farmer-power-platform/pull/87
 
 ---
 
