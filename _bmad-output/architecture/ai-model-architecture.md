@@ -29,8 +29,15 @@ The AI Model is the **6th Domain Model** - the centralized intelligence layer fo
 │  ├── Owns: Translation/simplification requirements                      │
 │  └── References: AI Model for generator implementation details          │
 │                                                                         │
+│  CONVERSATIONAL AI MODEL ARCHITECTURE                                   │
+│  ├── Owns: Channel adapters (voice, WhatsApp, web chat)                │
+│  ├── Owns: Persona configurations (tone, language, constraints)        │
+│  ├── Owns: Session management, turn coordination                        │
+│  ├── Owns: Intent handlers (plugin registry)                           │
+│  └── References: AI Model for conversational agent implementation       │
+│                                                                         │
 │  AI MODEL ARCHITECTURE (this document)                                  │
-│  ├── Owns: Agent types (Extractor, Explorer, Generator)                │
+│  ├── Owns: Agent types (Extractor, Explorer, Generator, Conversational)│
 │  ├── Owns: Agent instance configurations (YAML specs)                  │
 │  ├── Owns: LLM gateway configuration (OpenRouter, model routing)       │
 │  ├── Owns: RAG engine (Pinecone, knowledge domains, versioning)        │
@@ -42,8 +49,10 @@ The AI Model is the **6th Domain Model** - the centralized intelligence layer fo
 │  CROSS-REFERENCES:                                                      │
 │  • Knowledge Model → AI Model: "Analyzer implementation in AI Model"   │
 │  • Action Plan → AI Model: "Generator implementation in AI Model"      │
+│  • Conversational → AI Model: "Conversational agent implementation"    │
 │  • AI Model → Knowledge Model: "Business context for diagnosis agents" │
 │  • AI Model → Action Plan: "Business context for generator agents"     │
+│  • AI Model → Conversational: "Channel/persona context for dialogue"   │
 │                                                                         │
 └─────────────────────────────────────────────────────────────────────────┘
 ```
@@ -73,8 +82,14 @@ The AI Model is the **6th Domain Model** - the centralized intelligence layer fo
 │  │  │ • Validate  │  │ • Diagnose  │  │ • Translate │              │   │
 │  │  │ • Normalize │  │ • Pattern   │  │ • Format    │              │   │
 │  │  └─────────────┘  └─────────────┘  └─────────────┘              │   │
+│  │  ┌───────────────────────────────────────────────┐              │   │
+│  │  │  CONVERSATIONAL                               │              │   │
+│  │  │                                               │              │   │
+│  │  │ • Intent classify  • Dialogue respond        │              │   │
+│  │  │ • Context manage   • Persona adapt           │              │   │
+│  │  └───────────────────────────────────────────────┘              │   │
 │  │                                                                  │   │
-│  │  Agent Instances (YAML config):                                  │   │
+│  │  Agent Instances (YAML → MongoDB → Pydantic):                                  │   │
 │  │  • qc-event-extractor                                            │   │
 │  │  • quality-triage (fast cause classification)                    │   │
 │  │  • disease-diagnosis                                             │   │
@@ -83,6 +98,8 @@ The AI Model is the **6th Domain Model** - the centralized intelligence layer fo
 │  │  • trend-analyzer                                                │   │
 │  │  • weekly-action-plan                                            │   │
 │  │  • market-analyzer                                               │   │
+│  │  • dialogue-responder (multi-turn conversation)                  │   │
+│  │  • intent-classifier (fast intent detection)                     │   │
 │  └─────────────────────────────────────────────────────────────────┘   │
 │                          │                                              │
 │            ┌─────────────┴─────────────┐                                │
@@ -170,7 +187,9 @@ Domain Models                          AI Model
 
 ## Agent Types
 
-Three agent types are implemented in code, each with a specific workflow pattern:
+Four agent types are implemented in code, each with a specific workflow pattern.
+
+> **Implementation details:** See `ai-model-developer-guide.md` § *Step-by-Step Agent Creation Guide* for creating new agents and § *LangChain vs LangGraph Usage Patterns* for workflow implementation.
 
 ### Extractor Type
 
@@ -240,9 +259,111 @@ defaults:
     enabled: true              # For best practices
 ```
 
+### Conversational Type
+
+**Purpose:** Handle multi-turn dialogue with intent classification, context management, and persona-adapted responses
+
+```yaml
+agent_type: conversational
+workflow:
+  1_classify: "Classify user intent (fast model)"
+  2_context: "Build/update conversation context"
+  3_fetch: "Fetch relevant data via MCP if needed"
+  4_rag: "Retrieve knowledge for response grounding"
+  5_generate: "Generate persona-adapted response"
+  6_state: "Update conversation state"
+  7_output: "Return response to channel adapter"
+
+defaults:
+  llm:
+    intent_model: "anthropic/claude-3-haiku"     # Fast classification
+    response_model: "anthropic/claude-3-5-sonnet" # Quality responses
+    temperature: 0.4
+    output_format: "text"
+  rag:
+    enabled: true
+    top_k: 3
+  state:
+    max_turns: 5
+    session_ttl_minutes: 30
+    checkpoint_backend: "mongodb"
+```
+
+**Key Differences from Other Types:**
+
+| Aspect | Extractor/Explorer/Generator | Conversational |
+|--------|------------------------------|----------------|
+| **Trigger** | Event (single invocation) | Session (multi-turn) |
+| **State** | Stateless | Stateful (LangGraph checkpoints) |
+| **LLM Calls** | 1 per invocation | 2+ per turn (intent + response) |
+| **Persona** | N/A | Required (tone, language, constraints) |
+| **Output** | Event with result | Response to channel adapter |
+
+**Integration with Conversational AI Model:**
+
+The Conversational AI Model (8th domain) delegates agent logic here:
+
+```
+Conversational AI Model                    AI Model
++---------------------------+             +---------------------------+
+| • Channel adapters        |             | • Conversational agent    |
+| • Session management      |  ──gRPC──>  | • Intent classification   |
+| • Persona selection       |             | • Response generation     |
+| • Turn coordination       |             | • RAG retrieval           |
++---------------------------+             | • State checkpointing     |
+                                          +---------------------------+
+```
+
 ## Agent Configuration Schema
 
-Agent instances are defined in YAML files in Git:
+Agent configurations follow the same pattern as `SourceConfig` in Collection Model:
+
+```
+┌─────────────────────────────────────────────────────────────────────────┐
+│                    AGENT CONFIGURATION FLOW                              │
+├─────────────────────────────────────────────────────────────────────────┤
+│                                                                         │
+│  GIT (Source of Truth)                                                  │
+│  ┌─────────────────────────────────────────────────────────────────┐   │
+│  │  config/agents/                                                  │   │
+│  │  ├── disease-diagnosis.yaml                                      │   │
+│  │  ├── weekly-action-plan.yaml                                     │   │
+│  │  └── dialogue-responder.yaml                                     │   │
+│  │                                                                  │   │
+│  │  Benefits: Version controlled, PR reviewable, IDE support        │   │
+│  └─────────────────────────────────────────────────────────────────┘   │
+│                              │                                          │
+│                              │ CI/CD: farmer-cli agent publish          │
+│                              ▼                                          │
+│  MONGODB (Runtime Storage)                                              │
+│  ┌─────────────────────────────────────────────────────────────────┐   │
+│  │  Collection: agent_configs                                       │   │
+│  │  { agent_id: "disease-diagnosis", type: "explorer", ... }        │   │
+│  │                                                                  │   │
+│  │  Benefits: Hot-reloadable, no redeploy for config changes        │   │
+│  └─────────────────────────────────────────────────────────────────┘   │
+│                              │                                          │
+│                              │ Load at startup + TTL cache              │
+│                              ▼                                          │
+│  PYDANTIC MODELS (Application Code)                                     │
+│  ┌─────────────────────────────────────────────────────────────────┐   │
+│  │  class AgentConfig(BaseModel):                                   │   │
+│  │      agent_id: str                                               │   │
+│  │      type: Literal["extractor", "explorer", "generator",         │   │
+│  │                    "conversational"]                             │   │
+│  │      version: str                                                │   │
+│  │      input: InputConfig                                          │   │
+│  │      output: OutputConfig                                        │   │
+│  │      llm: LLMConfig                                              │   │
+│  │      ...                                                         │   │
+│  │                                                                  │   │
+│  │  Benefits: Type-safe, validated, IDE autocomplete                │   │
+│  └─────────────────────────────────────────────────────────────────┘   │
+│                                                                         │
+└─────────────────────────────────────────────────────────────────────────┘
+```
+
+**YAML Schema (source file in Git):**
 
 ```yaml
 agent:
@@ -326,15 +447,165 @@ agent:
     dead_letter_topic: "ai.errors.dead_letter"
 ```
 
+**Pydantic Models (application code):**
+
+Uses base class + type-specific models with Pydantic discriminated unions:
+
+```python
+from typing import Annotated, Literal
+from pydantic import BaseModel, Field
+
+# ═══════════════════════════════════════════════════════════════════════════
+# SHARED COMPONENTS
+# ═══════════════════════════════════════════════════════════════════════════
+
+class LLMConfig(BaseModel):
+    """LLM configuration for agent execution."""
+    task_type: str
+    model_override: str | None = None
+    temperature: float = 0.3
+    max_tokens: int = 2000
+
+class RAGConfig(BaseModel):
+    """RAG retrieval configuration."""
+    enabled: bool = True
+    query_template: str | None = None
+    knowledge_domains: list[str] = []
+    top_k: int = 5
+    min_similarity: float = 0.7
+
+class InputConfig(BaseModel):
+    """Agent input contract."""
+    event: str
+    schema: dict
+
+class OutputConfig(BaseModel):
+    """Agent output contract."""
+    event: str
+    schema: dict
+
+class MCPSourceConfig(BaseModel):
+    """MCP server data source."""
+    server: str
+    tools: list[str]
+
+class ErrorHandlingConfig(BaseModel):
+    """Error handling and retry configuration."""
+    max_attempts: int = 3
+    backoff_ms: list[int] = [100, 500, 2000]
+    on_failure: Literal["publish_error_event", "dead_letter"] = "publish_error_event"
+    dead_letter_topic: str | None = None
+
+class StateConfig(BaseModel):
+    """Conversation state management (Conversational only)."""
+    max_turns: int = 5
+    session_ttl_minutes: int = 30
+    checkpoint_backend: Literal["mongodb"] = "mongodb"
+
+# ═══════════════════════════════════════════════════════════════════════════
+# BASE CLASS (common fields)
+# ═══════════════════════════════════════════════════════════════════════════
+
+class AgentConfigBase(BaseModel):
+    """Base configuration shared by all agent types."""
+    agent_id: str
+    version: str
+    description: str
+    input: InputConfig
+    output: OutputConfig
+    llm: LLMConfig
+    mcp_sources: list[MCPSourceConfig] = []
+    error_handling: ErrorHandlingConfig = Field(default_factory=ErrorHandlingConfig)
+
+# ═══════════════════════════════════════════════════════════════════════════
+# TYPE-SPECIFIC MODELS
+# ═══════════════════════════════════════════════════════════════════════════
+
+class ExtractorConfig(AgentConfigBase):
+    """Extractor agent: structured data from unstructured input."""
+    type: Literal["extractor"] = "extractor"
+    extraction_schema: dict
+    normalization_rules: list[str] | None = None
+
+class ExplorerConfig(AgentConfigBase):
+    """Explorer agent: analyze, diagnose, find patterns."""
+    type: Literal["explorer"] = "explorer"
+    rag: RAGConfig
+
+class GeneratorConfig(AgentConfigBase):
+    """Generator agent: create content (plans, reports, messages)."""
+    type: Literal["generator"] = "generator"
+    rag: RAGConfig
+    output_format: Literal["json", "markdown", "text"] = "markdown"
+
+class ConversationalConfig(AgentConfigBase):
+    """Conversational agent: multi-turn dialogue with persona."""
+    type: Literal["conversational"] = "conversational"
+    rag: RAGConfig
+    state: StateConfig = Field(default_factory=StateConfig)
+    intent_model: str = "anthropic/claude-3-haiku"
+    response_model: str = "anthropic/claude-3-5-sonnet"
+
+# ═══════════════════════════════════════════════════════════════════════════
+# DISCRIMINATED UNION (automatic type detection)
+# ═══════════════════════════════════════════════════════════════════════════
+
+AgentConfig = Annotated[
+    ExtractorConfig | ExplorerConfig | GeneratorConfig | ConversationalConfig,
+    Field(discriminator="type")
+]
+
+# Usage: Pydantic automatically selects correct type based on "type" field
+# config_dict = {"agent_id": "disease-diagnosis", "type": "explorer", ...}
+# agent = AgentConfig.model_validate(config_dict)  # Returns ExplorerConfig
+```
+
+**Why this pattern:**
+
+| Benefit | Description |
+|---------|-------------|
+| **Strong typing** | IDE knows exact fields for each agent type |
+| **Clean validation** | Each type validates its required fields, no conditionals |
+| **Automatic loading** | Pydantic discriminator selects correct class from `type` field |
+| **Extensible** | New agent type = add class + update union |
+| **Consistent** | Matches `SourceConfig` pattern in Collection Model |
+
 ## Agent Type Design Decisions
 
 | Decision | Choice | Rationale |
 |----------|--------|-----------|
-| **Number of types** | 3 (Extractor, Explorer, Generator) | Covers fundamental AI patterns; add more when needed |
+| **Number of types** | 4 (Extractor, Explorer, Generator, Conversational) | Covers fundamental AI patterns including dialogue |
 | **Type location** | In code | Workflow logic requires conditionals, loops, error handling |
-| **Instance location** | YAML in Git | Declarative, version controlled, PR reviewable |
+| **Instance location** | YAML → MongoDB → Pydantic | Git source, MongoDB runtime, type-safe loading |
 | **Inheritance** | Flat (Type → Instance only) | Avoids complexity; use parameters for variations |
 | **Prompts** | Separate .md files | Better diffs, easier review, can be long |
+
+## LangGraph Workflow Orchestration
+
+The AI Model uses **LangGraph** for complex multi-step workflows that require:
+
+- **Parallel execution** — Run multiple analyzers concurrently (e.g., disease + weather + technique)
+- **Saga pattern** — Coordinate parallel branches with compensation on failure
+- **Checkpointing** — Save state to MongoDB for long-running or resumable workflows
+- **Conditional routing** — Triage results determine which analyzers to invoke
+
+**Primary use case:** When triage confidence is low, the saga pattern orchestrates parallel analyzers and aggregates their findings into a unified diagnosis.
+
+```
+Triage (Haiku)
+     │
+     ├── confidence ≥ 0.8 → Single analyzer
+     │
+     └── confidence < 0.8 → Saga: parallel analyzers
+                                  ├── Disease Analyzer
+                                  ├── Weather Analyzer
+                                  └── Technique Analyzer
+                                           │
+                                           ▼
+                                    Aggregator (combine findings)
+```
+
+> **Implementation details:** See `ai-model-developer-guide.md` § *LangGraph Saga Patterns* for workflow code, checkpointing configuration, and error compensation strategies.
 
 ## Triggering
 
@@ -438,7 +709,9 @@ openrouter:
 
 ## Tiered Vision Processing (Cost Optimization)
 
-To optimize vision model costs at scale, the Disease Diagnosis agent uses a two-tier approach:
+To optimize vision model costs at scale, the Disease Diagnosis agent uses a two-tier approach.
+
+> **Implementation details:** See `ai-model-developer-guide.md` § *Performance Optimization* for image preprocessing, batching strategies, and token efficiency.
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────┐
@@ -527,7 +800,9 @@ agent:
 
 ## RAG Engine
 
-The RAG (Retrieval-Augmented Generation) engine is internal to the AI Model:
+The RAG (Retrieval-Augmented Generation) engine is internal to the AI Model.
+
+> **Implementation details:** See `ai-model-developer-guide.md` § *RAG Configuration* for knowledge domain setup and query optimization.
 
 | Aspect | Decision |
 |--------|----------|
@@ -557,6 +832,8 @@ The RAG (Retrieval-Augmented Generation) engine is internal to the AI Model:
 - Cannot rollback prompts independently of code
 
 **Solution:** Externalized prompt management with the same versioning pattern as RAG knowledge.
+
+> **Implementation details:** See `ai-model-developer-guide.md` § *Prompt Engineering Standards* for writing effective prompts and § *Testing Strategies* for prompt validation with golden samples.
 
 ### Prompt Storage Architecture
 
@@ -924,7 +1201,9 @@ Agronomist Updates Document
 
 ## Observability
 
-**DAPR provides OpenTelemetry instrumentation out of the box:**
+**DAPR provides OpenTelemetry instrumentation out of the box.**
+
+> **Implementation details:** See `ai-model-developer-guide.md` § *Observability Standards* for logging conventions, custom metrics, and trace correlation.
 
 | Aspect | Approach |
 |--------|----------|
@@ -966,13 +1245,15 @@ Collection ──▶ DAPR ──▶ AI Model ──▶ MCP calls ──▶ DAPR 
 | **Scheduler** | DAPR Jobs | Scheduler-backend agnostic |
 | **RAG Access** | Internal only | Domain models don't need to know about RAG |
 | **RAG Curation** | Admin UI (manual) | Agronomists manage knowledge |
-| **Agent Types** | 3 (Extractor, Explorer, Generator) | Covers patterns, extensible when needed |
+| **Agent Types** | 4 (Extractor, Explorer, Generator, Conversational) | Covers patterns including multi-turn dialogue |
 | **Type Implementation** | In code | Workflow logic is code |
-| **Instance Config** | YAML in Git | Declarative, version controlled |
+| **Instance Config** | YAML → MongoDB → Pydantic | Git source, MongoDB runtime, type-safe |
 | **Prompts** | Separate .md files | Better review, can be long |
 | **Observability** | DAPR OpenTelemetry | Backend-agnostic |
 
 ## Testing Strategy
+
+> **Implementation details:** See `ai-model-developer-guide.md` § *Testing Strategies* for golden sample creation, LLM mocking, and test fixtures.
 
 | Test Type | Focus |
 |-----------|-------|
