@@ -211,13 +211,19 @@ jobs:
         run: npm ci
 
       - name: Run lint
-        run: npm run lint -w @fp/ui-components
+        run: |
+          npm run lint -w @fp/ui-components
+          npm run lint -w @fp/auth
 
       - name: Run tests
-        run: npm run test -w @fp/ui-components
+        run: |
+          npm run test -w @fp/auth
+          npm run test -w @fp/ui-components
 
       - name: Build library
-        run: npm run build -w @fp/ui-components
+        run: |
+          npm run build -w @fp/auth
+          npm run build -w @fp/ui-components
 
       - name: Build Storybook
         run: npm run build-storybook -w @fp/ui-components
