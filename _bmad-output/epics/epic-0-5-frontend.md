@@ -113,6 +113,8 @@ Story 0.5.4 was split based on Party Mode architectural discussion (2026-01-03):
 
 ### Story 0.5.1: Collection Model gRPC Layer & BFF Clients (BLOCKING)
 
+**Status:** ✅ Done | **GitHub:** #65, #67, #69, #71 | **PRs:** #68, #70, #72
+
 As a **BFF developer**,
 I want Collection Model to expose gRPC services and BFF to have DAPR clients for all domain models,
 So that the BFF can aggregate data from Plantation and Collection models.
@@ -181,6 +183,8 @@ service CollectionService {
 ---
 
 ### Story 0.5.2: BFF Service Setup
+
+**Status:** ✅ Done | **GitHub:** #73
 
 As a **platform operator**,
 I want a BFF (Backend for Frontend) service deployed with DAPR sidecar,
@@ -257,6 +261,8 @@ services/bff/
 ---
 
 ### Story 0.5.3: BFF Authentication Middleware (Dual-Mode)
+
+**Status:** ✅ Done | **GitHub:** #75 | **PR:** #76
 
 As a **backend developer**,
 I want the BFF service to validate JWT tokens in both mock and B2C modes,
@@ -346,6 +352,8 @@ class TokenClaims(BaseModel):
 
 ### Story 0.5.4a: BFF Client Response Wrappers (Infrastructure)
 
+**Status:** ✅ Done | **GitHub:** #77 | **PR:** #78
+
 As a **BFF developer**,
 I want typed response wrappers for gRPC client methods,
 So that pagination metadata is preserved and service composition is type-safe.
@@ -409,6 +417,8 @@ class BoundedResponse(Generic[T]):
 ---
 
 ### Story 0.5.4b: BFF API Routes
+
+**Status:** ✅ Done | **GitHub:** #79 | **PR:** #80
 
 As a **frontend developer**,
 I want REST API endpoints for listing and viewing farmers,
@@ -479,6 +489,8 @@ So that the Factory Portal can display farmer information.
 ---
 
 ### Story 0.5.5: Shared Component Library Setup
+
+**Status:** ✅ Done | **GitHub:** #82 | **PR:** #83
 
 As a **frontend developer**,
 I want a shared React component library with the design system foundation,
@@ -573,6 +585,8 @@ libs/ui-components/
 ---
 
 ### Story 0.5.6: Shared Auth Library (Mock-First)
+
+**Status:** ✅ Done | **GitHub:** #84 | **PR:** #85
 
 As a **frontend developer**,
 I want a shared authentication library with swappable providers,
@@ -683,6 +697,8 @@ libs/auth/
 
 ### Story 0.5.7: Factory Portal Scaffold
 
+**Status:** ✅ Done | **GitHub:** #86 | **PR:** #87
+
 As a **frontend developer**,
 I want the Factory Portal React application scaffolded with routing and layout,
 So that Factory Manager, Owner, and Admin screens can be built.
@@ -773,7 +789,7 @@ web/factory-portal/
 
 ### Story 0.5.8: Azure AD B2C Configuration
 
-**Status:** DEFERRED (implement for production deployment)
+**Status:** ⏸️ Deferred (implement for production deployment)
 
 As a **platform administrator**,
 I want Azure AD B2C configured for the Farmer Power Platform,
