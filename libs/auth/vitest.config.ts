@@ -6,30 +6,26 @@ export default defineConfig({
   plugins: [react()],
   resolve: {
     alias: {
-      '@fp/ui-components': resolve(__dirname, './src/index.ts'),
+      '@fp/auth': resolve(__dirname, './src/index.ts'),
     },
   },
   test: {
     globals: true,
-    environment: 'jsdom',
+    environment: 'happy-dom',
     setupFiles: ['./src/test-setup.ts'],
     css: true,
     include: [
       '**/*.test.{ts,tsx}',
-      '../../tests/unit/web/**/*.test.{ts,tsx}',
-    ],
-    exclude: [
-      '**/node_modules/**',
-      '../../tests/unit/web/*auth*.test.{ts,tsx}',
-      '../../tests/unit/web/*permission*.test.{ts,tsx}',
-      '../../tests/unit/web/*protected*.test.{ts,tsx}',
-      '../../tests/unit/web/*jwt*.test.{ts,tsx}',
+      '../../tests/unit/web/**/*auth*.test.{ts,tsx}',
+      '../../tests/unit/web/**/*permission*.test.{ts,tsx}',
+      '../../tests/unit/web/**/*protected*.test.{ts,tsx}',
+      '../../tests/unit/web/**/*jwt*.test.{ts,tsx}',
     ],
     coverage: {
       provider: 'v8',
       reporter: ['text', 'json', 'html'],
       include: ['src/**/*.{ts,tsx}'],
-      exclude: ['src/**/*.stories.tsx', 'src/test-setup.ts'],
+      exclude: ['src/test-setup.ts'],
     },
   },
 });
