@@ -62,8 +62,11 @@ Cross-cutting frontend and BFF infrastructure that enables all web applications.
 │  └── Story 0.5.3: BFF Auth Middleware                           │
 │           │                                                     │
 │           ▼                                                     │
-│  └── Story 0.5.4: BFF API Routes                                │
-│           │                                                     │
+│  └── Story 0.5.4a: BFF Client Response Wrappers (ADR-012)       │
+│           │         PaginatedResponse[T], BoundedResponse[T]    │
+│           ▼                                                     │
+│  └── Story 0.5.4b: BFF API Routes                               │
+│           │         GET /api/farmers, GET /api/farmers/{id}     │
 │           ▼                                                     │
 │  PHASE 3: Frontend Foundation                                   │
 │  ├── Story 0.5.5: Shared Component Library ──┐                  │
@@ -84,14 +87,24 @@ Cross-cutting frontend and BFF infrastructure that enables all web applications.
 |-------|------|--------|--------|
 | 0.5.1 | Collection gRPC + BFF Clients | 0.5.2 | 5 |
 | 0.5.2 | BFF Service Setup | 0.5.3 | 3 |
-| 0.5.3 | BFF Auth Middleware | 0.5.4 | 3 |
-| 0.5.4 | BFF API Routes | 0.5.5, 0.5.6, 0.5.7 | 5 |
+| 0.5.3 | BFF Auth Middleware | 0.5.4a | 3 |
+| 0.5.4a | BFF Client Response Wrappers | 0.5.4b | 3 |
+| 0.5.4b | BFF API Routes | 0.5.5, 0.5.6, 0.5.7 | 5 |
 | 0.5.5 | Shared Component Library | 0.5.7 | 3 |
 | 0.5.6 | Shared Auth Library | 0.5.7 | 3 |
 | 0.5.7 | Factory Portal Scaffold | - | 3 |
 | 0.5.8 | Azure AD B2C Configuration | DEFERRED | 5 |
 
-**Total Points:** 30 (25 active + 5 deferred)
+**Total Points:** 33 (28 active + 5 deferred)
+
+### Story 0.5.4 Split Rationale (ADR-012)
+
+Story 0.5.4 was split based on Party Mode architectural discussion (2026-01-03):
+
+- **0.5.4a (Infrastructure)**: Migrate existing gRPC clients to typed response wrappers
+- **0.5.4b (API Layer)**: Implement service layer, transformers, and REST endpoints
+
+**Reference:** `_bmad-output/architecture/adr/ADR-012-bff-service-composition-api-design.md`
 
 ---
 
@@ -328,67 +341,130 @@ class TokenClaims(BaseModel):
 
 ---
 
-### Story 0.5.4: BFF API Routes
+### Story 0.5.4a: BFF Client Response Wrappers (Infrastructure)
 
-As a **frontend developer**,
-I want REST API endpoints for farmers, quality data, and dashboard aggregations,
-So that the Factory Portal can display farmer information and quality metrics.
+As a **BFF developer**,
+I want typed response wrappers for gRPC client methods,
+So that pagination metadata is preserved and service composition is type-safe.
+
+**Reference:** ADR-012 (BFF Service Composition and API Design Patterns)
 
 **Acceptance Criteria:**
 
-**Given** authenticated users need farmer data
-**When** I call `GET /api/farmers?factory_id={id}&page_size={n}`
-**Then** Paginated farmer list is returned with quality summaries
-**And** Response includes: `farmers[]`, `next_page_token`, `total_count`
-**And** Only farmers from user's factory are returned (factory authorization)
+**Given** the BFF clients use tuple returns for list operations
+**When** I create typed response wrappers
+**Then** `PaginatedResponse[T]` is created with: `items`, `next_page_token`, `total_count`
+**And** `BoundedResponse[T]` is created with: `items`, `total_count` (no pagination)
+**And** Both wrappers are iterable and have `__len__` method
 
-**Given** I need a specific farmer's details
-**When** I call `GET /api/farmers/{farmer_id}`
-**Then** Farmer profile with quality history is returned
-**And** Response includes: profile, quality_summary, recent_deliveries, trend
+**Given** PlantationClient has 4 list methods returning tuples
+**When** I migrate to typed wrappers
+**Then** `list_farmers` returns `PaginatedResponse[Farmer]`
+**And** `list_factories` returns `PaginatedResponse[Factory]`
+**And** `list_collection_points` returns `PaginatedResponse[CollectionPoint]`
+**And** `list_regions` returns `PaginatedResponse[Region]`
+
+**Given** CollectionClient has 3 list methods returning tuples
+**When** I migrate to typed wrappers
+**Then** `list_documents` returns `PaginatedResponse[Document]`
+**And** `get_documents_by_farmer` returns `BoundedResponse[Document]`
+**And** `search_documents` returns `PaginatedResponse[Document]`
+
+**Given** the clients are migrated
+**When** I run unit tests
+**Then** All existing unit tests pass with updated assertions
+**And** Tests use `response.items`, `response.next_page_token`, `response.total_count`
+
+**Technical Notes:**
+- Location: `services/bff/src/bff/infrastructure/clients/responses.py`
+- Migration: 7 methods across 2 clients
+- Tests: `tests/unit/bff/test_plantation_client.py`, `tests/unit/bff/test_collection_client.py`
+- Reference: ADR-012 §"Decision 1b: Typed Response Wrappers"
+
+**Response Wrapper Types:**
+```python
+@dataclass(frozen=True)
+class PaginatedResponse(Generic[T]):
+    items: list[T]
+    next_page_token: str | None
+    total_count: int
+
+@dataclass(frozen=True)
+class BoundedResponse(Generic[T]):
+    items: list[T]
+    total_count: int
+```
+
+**Dependencies:**
+- Story 0.5.3: BFF Auth Middleware
+
+**Blocks:**
+- Story 0.5.4b: BFF API Routes
+
+**Story Points:** 3
+
+---
+
+### Story 0.5.4b: BFF API Routes
+
+As a **frontend developer**,
+I want REST API endpoints for listing and viewing farmers,
+So that the Factory Portal can display farmer information.
+
+**Reference:** ADR-012 (BFF Service Composition and API Design Patterns)
+
+**Scope Reduction:** This story implements only 2 endpoints to validate the BFF pattern. Dashboard and quality-events endpoints are out of scope (see Out of Scope table below).
+
+**Acceptance Criteria:**
+
+**AC1: Farmer List Endpoint**
+**Given** authenticated users need farmer data
+**When** I call `GET /api/farmers?factory_id={id}&page_size={n}&page_token={token}`
+**Then** Paginated farmer list is returned with quality summaries
+**And** Response uses `FarmerListResponse` API schema
+**And** Each farmer includes: `id`, `name`, `primary_percentage_30d`, `tier`, `trend`
+**And** `tier` uses Plantation vocabulary (`tier_1`, `tier_2`, `tier_3`, `below_tier_3`)
 **And** Factory authorization is enforced
 
-**Given** I need quality events for a farmer
-**When** I call `GET /api/farmers/{farmer_id}/quality-events`
-**Then** Quality events are returned with pagination
-**And** Response includes: events[], next_page_token
-**And** Events are sorted by date descending
+**AC2: Farmer Detail Endpoint**
+**Given** I need a specific farmer's details
+**When** I call `GET /api/farmers/{farmer_id}`
+**Then** Farmer profile with performance summary is returned
+**And** Response uses `FarmerDetailResponse` API schema
+**And** Factory authorization is enforced
 
-**Given** I need dashboard summary data
-**When** I call `GET /api/dashboard/summary?factory_id={id}`
-**Then** Aggregated dashboard data is returned
-**And** Response includes: action_needed_count, watch_count, win_count
-**And** Response includes: today_deliveries, quality_trend
-
-**Given** I need farmers grouped by status
-**When** I call `GET /api/dashboard/farmers-by-status?factory_id={id}`
-**Then** Farmers are returned grouped by WIN/WATCH/ACTION_NEEDED
-**And** Each group includes farmer cards with summary data
-
+**AC3: Error Handling**
 **Given** any API error occurs
 **When** the error is returned to the client
 **Then** Error response follows RFC 7807 Problem Details format
 **And** Internal details are NOT exposed to client
 
 **Technical Notes:**
-- Location: `services/bff/src/bff/api/routes/`
-- Routes: `farmers.py`, `dashboard.py`, `quality.py`
-- Schemas: `services/bff/src/bff/api/schemas/`
-- Services: `services/bff/src/bff/services/`
-- Transformers: `services/bff/src/bff/transformers/`
-- Reference: ADR-002 §"Data Flow" (lines 870-900)
+- Location: `services/bff/src/bff/api/routes/farmers.py`
+- Schemas: `services/bff/src/bff/api/schemas/farmer_schemas.py`
+- Service: `services/bff/src/bff/services/farmer_service.py`
+- Transformer: `services/bff/src/bff/transformers/farmer_transformer.py`
+- Base service: `services/bff/src/bff/services/base_service.py`
+- Reference: ADR-012 (all decisions)
+
+**Domain Vocabulary (ADR-012 Decision 2b):**
+- BFF uses Plantation vocabulary: `tier_1`, `tier_2`, `tier_3`, `below_tier_3`
+- NOT Engagement vocabulary: `WIN`, `WATCH`, `ACTION_NEEDED`
+- Tier computed from `Factory.quality_thresholds` (factory-configurable)
+
+**Service Composition Pattern (ADR-012 Decision 1):*
+- Sequential: Get factory (for thresholds), then get farmers
+- Parallel (bounded): Get performance for each farmer
+- Use `BaseService._parallel_map()` with `Semaphore(5)`
 
 **API Endpoints:**
 | Method | Path | Purpose |
 |--------|------|---------|
 | GET | `/api/farmers` | List farmers (paginated) |
 | GET | `/api/farmers/{id}` | Get farmer detail |
-| GET | `/api/farmers/{id}/quality-events` | Get farmer's quality events |
-| GET | `/api/dashboard/summary` | Dashboard aggregations |
-| GET | `/api/dashboard/farmers-by-status` | Farmers grouped by status |
 
 **Dependencies:**
-- Story 0.5.3: BFF Auth Middleware
+- Story 0.5.4a: BFF Client Response Wrappers
 
 **Blocks:**
 - Story 0.5.5: Shared Component Library
