@@ -67,7 +67,7 @@ jobs:
           print(f'{line_rate * 100:.1f}')
           ")
           echo "percentage=$COVERAGE" >> $GITHUB_OUTPUT
-          echo "Coverage: $COVERAGE%"
+          echo "Backend Coverage: $COVERAGE%"
 
       - name: Update coverage badge
         if: github.ref == 'refs/heads/main' && github.event_name == 'push'
