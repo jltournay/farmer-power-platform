@@ -45,7 +45,7 @@ function DefaultAccessDenied() {
     >
       <div style={{ fontSize: '24px' }}>Access Denied</div>
       <div style={{ fontSize: '14px', color: '#6b7280' }}>
-        You don&apos;t have permission to access this page.
+        {"You don't have permission to access this page."}
       </div>
     </div>
   );

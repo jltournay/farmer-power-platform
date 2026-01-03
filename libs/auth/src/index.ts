@@ -33,4 +33,4 @@ export { MockLoginSelector, ProtectedRoute } from './components';
 
 // Mock utilities (for testing and development)
 export { MOCK_USERS, getMockUserById, getMockUserByRole } from './mock/users';
-export { generateMockToken, decodeToken } from './mock/jwt';
+export { generateMockToken, decodeToken, isTokenExpired } from './mock/jwt';

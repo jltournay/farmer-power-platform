@@ -1,5 +1,12 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { generateMockToken, decodeToken } from '@fp/auth';
+import {
+  generateMockToken,
+  decodeToken,
+  isTokenExpired,
+  getMockUserById,
+  getMockUserByRole,
+  MOCK_USERS,
+} from '@fp/auth';
 import type { MockUser } from '@fp/auth';
 
 describe('Mock JWT', () => {
@@ -98,6 +105,43 @@ describe('Mock JWT', () => {
     });
   });
 
+  describe('isTokenExpired', () => {
+    it('returns false for valid non-expired token', async () => {
+      const token = await generateMockToken(mockUser);
+
+      const expired = await isTokenExpired(token);
+
+      expect(expired).toBe(false);
+    });
+
+    it('returns true for expired token', async () => {
+      // Generate token with 0 second expiry
+      const token = await generateMockToken(mockUser, 0);
+
+      // Wait for expiry
+      await new Promise((resolve) => setTimeout(resolve, 100));
+
+      const expired = await isTokenExpired(token);
+
+      expect(expired).toBe(true);
+    });
+
+    it('returns true for invalid token', async () => {
+      const expired = await isTokenExpired('invalid-token');
+
+      expect(expired).toBe(true);
+    });
+
+    it('returns true for tampered token', async () => {
+      const token = await generateMockToken(mockUser);
+      const tampered = token.slice(0, -5) + 'XXXXX';
+
+      const expired = await isTokenExpired(tampered);
+
+      expect(expired).toBe(true);
+    });
+  });
+
   describe('token structure', () => {
     it('matches BFF TokenClaims structure', async () => {
       const token = await generateMockToken(mockUser);
@@ -144,6 +188,90 @@ describe('Mock JWT', () => {
       const decoded = await decodeToken(token);
 
       expect(decoded?.region_ids).toEqual(['nandi', 'kericho']);
+    });
+  });
+});
+
+describe('Mock User Utilities', () => {
+  describe('getMockUserById', () => {
+    it('returns mock user by ID', () => {
+      const user = getMockUserById('mock-manager-001');
+
+      expect(user).not.toBeUndefined();
+      expect(user?.id).toBe('mock-manager-001');
+      expect(user?.name).toBe('Jane Mwangi');
+      expect(user?.role).toBe('factory_manager');
+    });
+
+    it('returns undefined for non-existent ID', () => {
+      const user = getMockUserById('non-existent-id');
+
+      expect(user).toBeUndefined();
+    });
+
+    it('finds all 5 mock users by ID', () => {
+      const ids = [
+        'mock-manager-001',
+        'mock-owner-001',
+        'mock-admin-001',
+        'mock-clerk-001',
+        'mock-regulator-001',
+      ];
+
+      ids.forEach((id) => {
+        const user = getMockUserById(id);
+        expect(user).not.toBeUndefined();
+        expect(user?.id).toBe(id);
+      });
+    });
+  });
+
+  describe('getMockUserByRole', () => {
+    it('returns mock user by role', () => {
+      const user = getMockUserByRole('factory_manager');
+
+      expect(user).not.toBeUndefined();
+      expect(user?.role).toBe('factory_manager');
+    });
+
+    it('returns undefined for non-existent role', () => {
+      const user = getMockUserByRole('non_existent_role');
+
+      expect(user).toBeUndefined();
+    });
+
+    it('finds users for all 5 roles', () => {
+      const roles = [
+        'factory_manager',
+        'factory_owner',
+        'platform_admin',
+        'registration_clerk',
+        'regulator',
+      ];
+
+      roles.forEach((role) => {
+        const user = getMockUserByRole(role);
+        expect(user).not.toBeUndefined();
+        expect(user?.role).toBe(role);
+      });
+    });
+  });
+
+  describe('MOCK_USERS constant', () => {
+    it('contains exactly 5 mock users', () => {
+      expect(MOCK_USERS.length).toBe(5);
+    });
+
+    it('each mock user has required fields', () => {
+      MOCK_USERS.forEach((user) => {
+        expect(user.id).toBeDefined();
+        expect(user.sub).toBeDefined();
+        expect(user.email).toBeDefined();
+        expect(user.name).toBeDefined();
+        expect(user.role).toBeDefined();
+        expect(user.permissions).toBeDefined();
+        expect(Array.isArray(user.permissions)).toBe(true);
+      });
     });
   });
 });

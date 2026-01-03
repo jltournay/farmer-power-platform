@@ -10,7 +10,11 @@ import { AuthContext } from '../context/AuthContext';
 import { generateMockToken, decodeToken } from '../mock/jwt';
 import type { AuthProviderProps, User, MockUser, AuthContextValue } from '../types';
 
-/** localStorage key for auth token */
+/**
+ * localStorage key for storing the authentication token.
+ * This key is used to persist and restore user sessions across page reloads.
+ * @constant {string}
+ */
 const TOKEN_STORAGE_KEY = 'fp_auth_token';
 
 /**

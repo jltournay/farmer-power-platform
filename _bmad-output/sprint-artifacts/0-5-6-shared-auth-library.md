@@ -686,4 +686,7 @@ Claude Opus 4.5 (claude-opus-4-5-20251101)
 
 **Modified:**
 - package.json (root) - Added libs/auth to workspaces array
+- package-lock.json - Updated dependency lock file
 - _bmad-output/sprint-artifacts/sprint-status.yaml - Updated story status
+- .github/workflows/ci.yaml - Added @fp/auth to frontend tests job
+- libs/ui-components/vitest.config.ts - Excluded auth tests (run by @fp/auth config)
