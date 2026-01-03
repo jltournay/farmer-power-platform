@@ -1,7 +1,8 @@
 # The Farmer Power Cloud Platform
 
 [![CI](https://github.com/jltournay/farmer-power-platform/actions/workflows/ci.yaml/badge.svg)](https://github.com/jltournay/farmer-power-platform/actions/workflows/ci.yaml)
-![Coverage](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/jltournay/9b8394c5dcef6340897ac07f62df408d/raw/coverage.json)
+![Backend Coverage](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/jltournay/9b8394c5dcef6340897ac07f62df408d/raw/coverage.json)
+![Frontend Coverage](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/jltournay/9b8394c5dcef6340897ac07f62df408d/raw/frontend-coverage.json)
 
 <!-- TOC -->
 * [The Farmer Power Cloud Platform](#the-farmer-power-cloud-platform-)

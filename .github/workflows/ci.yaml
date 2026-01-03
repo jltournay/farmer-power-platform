@@ -221,11 +221,47 @@ jobs:
           npm run build -w @fp/auth
           npm run build -w @fp/ui-components
 
-      - name: Run tests
+      - name: Run tests with coverage
         run: |
-          npm run test -w @fp/auth
-          npm run test -w @fp/ui-components
-          npm run test -w @fp/factory-portal
+          npm run test -w @fp/auth -- --coverage
+          npm run test -w @fp/ui-components -- --coverage
+          npm run test -w @fp/factory-portal -- --coverage
+
+      - name: Calculate combined frontend coverage
+        id: coverage
+        run: |
+          # Extract coverage from each package's json-summary
+          AUTH_COV=$(node -e "const c=require('./libs/auth/coverage/coverage-summary.json'); console.log(c.total.lines.pct)")
+          UI_COV=$(node -e "const c=require('./libs/ui-components/coverage/coverage-summary.json'); console.log(c.total.lines.pct)")
+          PORTAL_COV=$(node -e "const c=require('./web/factory-portal/coverage/coverage-summary.json'); console.log(c.total.lines.pct)")
+
+          # Calculate weighted average based on total lines
+          AUTH_LINES=$(node -e "const c=require('./libs/auth/coverage/coverage-summary.json'); console.log(c.total.lines.total)")
+          UI_LINES=$(node -e "const c=require('./libs/ui-components/coverage/coverage-summary.json'); console.log(c.total.lines.total)")
+          PORTAL_LINES=$(node -e "const c=require('./web/factory-portal/coverage/coverage-summary.json'); console.log(c.total.lines.total)")
+
+          COMBINED=$(node -e "
+            const authCov = $AUTH_COV, uiCov = $UI_COV, portalCov = $PORTAL_COV;
+            const authLines = $AUTH_LINES, uiLines = $UI_LINES, portalLines = $PORTAL_LINES;
+            const totalLines = authLines + uiLines + portalLines;
+            const weighted = (authCov * authLines + uiCov * uiLines + portalCov * portalLines) / totalLines;
+            console.log(weighted.toFixed(1));
+          ")
+          echo "percentage=$COMBINED" >> $GITHUB_OUTPUT
+          echo "Frontend Coverage: $COMBINED% (auth: $AUTH_COV%, ui: $UI_COV%, portal: $PORTAL_COV%)"
+
+      - name: Update frontend coverage badge
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        uses: schneegans/dynamic-badges-action@v1.7.0
+        with:
+          auth: ${{ secrets.GIST_TOKEN }}
+          gistID: ${{ vars.COVERAGE_GIST_ID }}
+          filename: frontend-coverage.json
+          label: frontend coverage
+          message: ${{ steps.coverage.outputs.percentage }}%
+          valColorRange: ${{ steps.coverage.outputs.percentage }}
+          minColorRange: 0
+          maxColorRange: 100
 
       - name: Build factory-portal
         run: npm run build -w @fp/factory-portal
