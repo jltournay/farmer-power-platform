@@ -3,13 +3,16 @@
   "version": "0.1.0",
   "private": true,
   "workspaces": [
-    "libs/ui-components"
+    "libs/ui-components",
+    "libs/auth"
   ],
   "scripts": {
     "build:ui": "npm run build -w @fp/ui-components",
     "test:ui": "npm run test -w @fp/ui-components",
     "storybook": "npm run storybook -w @fp/ui-components",
-    "build-storybook": "npm run build-storybook -w @fp/ui-components"
+    "build-storybook": "npm run build-storybook -w @fp/ui-components",
+    "build:auth": "npm run build -w @fp/auth",
+    "test:auth": "npm run test -w @fp/auth"
   },
   "devDependencies": {}
 }
