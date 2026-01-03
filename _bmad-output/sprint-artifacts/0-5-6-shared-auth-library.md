@@ -1,6 +1,6 @@
 # Story 0.5.6: Shared Auth Library (Mock-First)
 
-**Status:** in-progress
+**Status:** review
 **GitHub Issue:** #84
 
 ## Story
@@ -242,9 +242,9 @@ git push origin feature/0-5-6-shared-auth-library
 # Wait ~30s, then check CI status
 gh run list --branch feature/0-5-6-shared-auth-library --limit 3
 ```
-**CI Run ID:** _______________
-**CI Status:** [ ] Passed / [ ] Failed
-**Verification Date:** _______________
+**CI Run ID:** 20679638479
+**CI Status:** [x] Passed / [ ] Failed
+**Verification Date:** 2026-01-03
 
 ---
 
