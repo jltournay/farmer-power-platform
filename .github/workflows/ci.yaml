@@ -216,16 +216,16 @@ jobs:
           npm run lint -w @fp/auth
           npm run lint -w @fp/factory-portal
 
+      - name: Build libraries (required for factory-portal tests)
+        run: |
+          npm run build -w @fp/auth
+          npm run build -w @fp/ui-components
+
       - name: Run tests
         run: |
           npm run test -w @fp/auth
           npm run test -w @fp/ui-components
           npm run test -w @fp/factory-portal
-
-      - name: Build libraries
-        run: |
-          npm run build -w @fp/auth
-          npm run build -w @fp/ui-components
 
       - name: Build factory-portal
         run: npm run build -w @fp/factory-portal
