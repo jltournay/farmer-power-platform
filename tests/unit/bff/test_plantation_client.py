@@ -198,7 +198,7 @@ class TestFarmerOperations:
         self,
         plantation_client_with_mock_stub: tuple[PlantationClient, MagicMock],
     ) -> None:
-        """Test successful farmer listing."""
+        """Test successful farmer listing returns PaginatedResponse."""
         client, stub = plantation_client_with_mock_stub
         response = plantation_pb2.ListFarmersResponse(
             farmers=[
@@ -210,12 +210,15 @@ class TestFarmerOperations:
         )
         stub.ListFarmers.return_value = response
 
-        farmers, next_token, total = await client.list_farmers(region_id="nyeri-highland")
+        result = await client.list_farmers(region_id="nyeri-highland")
 
-        assert len(farmers) == 2
-        assert all(isinstance(f, Farmer) for f in farmers)
-        assert next_token == "token123"
-        assert total == 100
+        # Verify PaginatedResponse structure
+        assert len(result.data) == 2
+        assert all(isinstance(f, Farmer) for f in result.data)
+        assert result.pagination.next_page_token == "token123"
+        assert result.pagination.total_count == 100
+        assert result.pagination.has_next is True
+        assert result.meta is not None
 
     @pytest.mark.asyncio
     async def test_list_farmers_with_pagination(
@@ -231,7 +234,7 @@ class TestFarmerOperations:
         )
         stub.ListFarmers.return_value = response
 
-        farmers, next_token, total = await client.list_farmers(
+        result = await client.list_farmers(
             page_size=10,
             page_token="prev_token",
             active_only=False,
@@ -242,6 +245,9 @@ class TestFarmerOperations:
         assert request.page_size == 10
         assert request.page_token == "prev_token"
         assert request.active_only is False
+        # Verify response structure
+        assert result.pagination.page_size == 10
+        assert result.pagination.has_next is False
 
     @pytest.mark.asyncio
     async def test_get_farmer_summary_success(
@@ -305,7 +311,7 @@ class TestFactoryOperations:
         self,
         plantation_client_with_mock_stub: tuple[PlantationClient, MagicMock],
     ) -> None:
-        """Test successful factory listing."""
+        """Test successful factory listing returns PaginatedResponse."""
         client, stub = plantation_client_with_mock_stub
         response = plantation_pb2.ListFactoriesResponse(
             factories=[
@@ -316,11 +322,13 @@ class TestFactoryOperations:
         )
         stub.ListFactories.return_value = response
 
-        factories, next_token, total = await client.list_factories()
+        result = await client.list_factories()
 
-        assert len(factories) == 2
-        assert all(isinstance(f, Factory) for f in factories)
-        assert total == 2
+        assert len(result.data) == 2
+        assert all(isinstance(f, Factory) for f in result.data)
+        assert result.pagination.total_count == 2
+        assert result.pagination.has_next is False
+        assert result.meta is not None
 
 
 class TestCollectionPointOperations:
@@ -347,7 +355,7 @@ class TestCollectionPointOperations:
         self,
         plantation_client_with_mock_stub: tuple[PlantationClient, MagicMock],
     ) -> None:
-        """Test successful collection point listing."""
+        """Test successful collection point listing returns PaginatedResponse."""
         client, stub = plantation_client_with_mock_stub
         response = plantation_pb2.ListCollectionPointsResponse(
             collection_points=[
@@ -358,10 +366,12 @@ class TestCollectionPointOperations:
         )
         stub.ListCollectionPoints.return_value = response
 
-        cps, next_token, total = await client.list_collection_points(factory_id="KEN-FAC-001")
+        result = await client.list_collection_points(factory_id="KEN-FAC-001")
 
-        assert len(cps) == 2
-        assert all(isinstance(cp, CollectionPoint) for cp in cps)
+        assert len(result.data) == 2
+        assert all(isinstance(cp, CollectionPoint) for cp in result.data)
+        assert result.pagination.total_count == 2
+        assert result.meta is not None
 
 
 class TestRegionOperations:
@@ -389,7 +399,7 @@ class TestRegionOperations:
         self,
         plantation_client_with_mock_stub: tuple[PlantationClient, MagicMock],
     ) -> None:
-        """Test successful region listing."""
+        """Test successful region listing returns PaginatedResponse."""
         client, stub = plantation_client_with_mock_stub
         response = plantation_pb2.ListRegionsResponse(
             regions=[
@@ -400,10 +410,12 @@ class TestRegionOperations:
         )
         stub.ListRegions.return_value = response
 
-        regions, next_token, total = await client.list_regions(county="Nyeri")
+        result = await client.list_regions(county="Nyeri")
 
-        assert len(regions) == 2
-        assert all(isinstance(r, Region) for r in regions)
+        assert len(result.data) == 2
+        assert all(isinstance(r, Region) for r in result.data)
+        assert result.pagination.total_count == 2
+        assert result.meta is not None
 
     @pytest.mark.asyncio
     async def test_get_region_weather_success(
