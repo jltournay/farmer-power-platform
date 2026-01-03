@@ -197,9 +197,9 @@ git push origin story/0-5-5-shared-component-library
 # Wait ~30s, then check CI status
 gh run list --branch story/0-5-5-shared-component-library --limit 3
 ```
-**CI Run ID:** _______________
-**CI Status:** [ ] Passed / [ ] Failed
-**Verification Date:** _______________
+**CI Run ID:** 20679045430
+**CI Status:** [x] Passed / [ ] Failed
+**Verification Date:** 2026-01-03
 
 ---
 
