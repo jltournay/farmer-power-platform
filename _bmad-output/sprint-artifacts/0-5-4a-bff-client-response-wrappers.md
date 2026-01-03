@@ -1,6 +1,6 @@
 # Story 0.5.4a: BFF Client Response Wrappers
 
-**Status:** review
+**Status:** done
 **GitHub Issue:** #77
 **Story Points:** 3
 
@@ -144,14 +144,14 @@ So that all API endpoints return consistent, typed responses following ADR-012 p
 - [x] Push to feature branch: `git push -u origin story/0-5-4a-bff-response-wrappers`
 
 ### Story Done
-- [ ] Create Pull Request: `gh pr create --title "Story 0.5.4a: BFF Client Response Wrappers" --base main`
-- [x] CI passes on PR (Quality CI) → Run #20676202986
+- [x] Create Pull Request: `gh pr create --title "Story 0.5.4a: BFF Client Response Wrappers" --base main`
+- [x] CI passes on PR (Quality CI) → Run #20676355408
 - [x] E2E tests pass (E2E CI) → Run #20676229961
 - [x] Code review completed (`/code-review`)
 - [ ] PR approved and merged (squash)
 - [ ] Local branch cleaned up: `git branch -d story/0-5-4a-bff-response-wrappers`
 
-**PR URL:** (to be added after PR creation)
+**PR URL:** https://github.com/jltournay/farmer-power-platform/pull/78
 
 ---
 
