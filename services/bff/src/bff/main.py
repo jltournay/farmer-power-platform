@@ -7,7 +7,7 @@ Per ADR-002, this is the only external-facing API.
 from contextlib import asynccontextmanager
 
 import structlog
-from bff.api.routes import health
+from bff.api.routes import farmers, health
 from bff.config import get_settings
 from bff.infrastructure.tracing import instrument_fastapi, setup_tracing
 from fastapi import FastAPI
@@ -63,6 +63,7 @@ def create_app() -> FastAPI:
 
     # Include routers
     app.include_router(health.router)
+    app.include_router(farmers.router)
 
     return app
 

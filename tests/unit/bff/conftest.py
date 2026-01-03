@@ -166,14 +166,23 @@ def auth_headers(token: str) -> dict[str, str]:
 
 
 @pytest.fixture
-def bff_client() -> TestClient:
+def bff_client(monkeypatch) -> TestClient:
     """Create a test client for the BFF application.
 
     This fixture is shared across all BFF test files.
+    Configures the mock JWT secret for authentication.
 
     Returns:
         TestClient instance for the BFF FastAPI application.
     """
+    # Set the environment variable for mock JWT secret
+    monkeypatch.setenv("MOCK_JWT_SECRET", MOCK_JWT_SECRET)
+
+    # Clear cached settings so new env var is picked up
+    from bff.config import get_settings
+
+    get_settings.cache_clear()
+
     from bff.main import create_app
 
     app = create_app()
