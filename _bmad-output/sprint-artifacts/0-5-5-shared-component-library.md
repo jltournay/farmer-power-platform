@@ -1,6 +1,6 @@
 # Story 0.5.5: Shared Component Library Setup
 
-**Status:** in-progress
+**Status:** review
 **GitHub Issue:** #82
 
 ## Story
@@ -143,7 +143,7 @@ So that **all frontend applications have consistent UI components and styling**.
 - [ ] PR approved and merged (squash)
 - [ ] Local branch cleaned up: `git branch -d story/0-5-5-shared-component-library`
 
-**PR URL:** _______________ (fill in when created)
+**PR URL:** https://github.com/jltournay/farmer-power-platform/pull/83
 
 ---
 
