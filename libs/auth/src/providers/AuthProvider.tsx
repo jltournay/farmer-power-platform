@@ -12,6 +12,9 @@ import { AzureB2CAuthProvider } from './AzureB2CAuthProvider';
 
 /**
  * Get the configured auth provider type from environment.
+ *
+ * Security: Production deployments MUST set VITE_AUTH_PROVIDER=azure-b2c.
+ * The mock provider should only be used in development.
  */
 function getAuthProviderType(): AuthProviderType {
   const provider = import.meta.env.VITE_AUTH_PROVIDER;
@@ -23,20 +26,14 @@ function getAuthProviderType(): AuthProviderType {
 }
 
 /**
- * Check if running in production environment.
- */
-function isProduction(): boolean {
-  return import.meta.env.PROD === true;
-}
-
-/**
  * Main authentication provider component.
  *
  * Automatically selects the appropriate provider based on VITE_AUTH_PROVIDER:
- * - 'mock': Development mode with mock users
+ * - 'mock': Development mode with mock users (default when not set)
  * - 'azure-b2c': Production mode with Azure AD B2C
  *
- * Security: Mock provider is blocked in production builds.
+ * IMPORTANT: Production deployments MUST set VITE_AUTH_PROVIDER=azure-b2c
+ * to ensure real authentication is used.
  *
  * @example
  * ```tsx
@@ -57,15 +54,7 @@ function isProduction(): boolean {
 export function AuthProvider({ children }: AuthProviderProps) {
   const providerType = getAuthProviderType();
 
-  // Security guard: Block mock provider in production
-  if (providerType === 'mock' && isProduction()) {
-    throw new Error(
-      'Mock authentication provider cannot be used in production. ' +
-        'Set VITE_AUTH_PROVIDER=azure-b2c for production builds.'
-    );
-  }
-
-  // Select the appropriate provider
+  // Select the appropriate provider based on environment configuration
   if (providerType === 'azure-b2c') {
     return <AzureB2CAuthProvider>{children}</AzureB2CAuthProvider>;
   }

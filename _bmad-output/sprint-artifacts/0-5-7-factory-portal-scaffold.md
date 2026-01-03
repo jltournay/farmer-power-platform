@@ -1,6 +1,6 @@
 # Story 0.5.7: Factory Portal Scaffold
 
-**Status:** in-progress
+**Status:** review
 **GitHub Issue:** #86
 
 ## Story
@@ -256,45 +256,45 @@ cd web/factory-portal && npm run dev
 ### 2. Visual Validation Checklist
 
 #### Authentication Flow
-- [ ] Mock login selector appears on first visit
-- [ ] Can select "Jane Mwangi (Factory Manager)" persona
-- [ ] After login, redirected to Command Center
-- [ ] User name displayed in header
-- [ ] Factory name displayed in header
-- [ ] Logout button visible and functional
+- [x] Mock login selector appears on first visit
+- [x] Can select "Jane Mwangi (Factory Manager)" persona
+- [x] After login, redirected to Command Center
+- [x] User name displayed in header
+- [x] Factory name displayed in header
+- [x] Logout button visible and functional
 
 #### Layout & Navigation
-- [ ] Sidebar visible on left side
-- [ ] Sidebar shows role-appropriate menu items only
-- [ ] Header spans full width at top
-- [ ] Main content area displays correctly
-- [ ] Clicking sidebar items navigates to correct routes
-- [ ] Active route is highlighted in sidebar
+- [x] Sidebar visible on left side
+- [x] Sidebar shows role-appropriate menu items only
+- [x] Header spans full width at top
+- [x] Main content area displays correctly
+- [x] Clicking sidebar items navigates to correct routes
+- [x] Active route is highlighted in sidebar
 
 #### Routes & Pages
-- [ ] `/` redirects to `/command-center`
-- [ ] `/command-center` shows placeholder with "Command Center" title
-- [ ] `/farmers/123` shows placeholder with "Farmer Detail" title
-- [ ] `/roi` shows placeholder with "ROI Summary" title
-- [ ] `/settings` shows placeholder with "Settings" title
-- [ ] Unknown route (e.g., `/xyz`) shows 404 page
+- [x] `/` redirects to `/command-center`
+- [x] `/command-center` shows placeholder with "Command Center" title
+- [x] `/farmers/123` shows placeholder with "Farmer Detail" title
+- [x] `/roi` shows placeholder with "ROI Summary" title
+- [x] `/settings` shows placeholder with "Settings" title
+- [x] Unknown route (e.g., `/xyz`) shows 404 page
 
 #### Role-Based Access (Test with different personas)
-- [ ] Factory Manager: sees Command Center, NOT ROI or Settings
-- [ ] Factory Owner: sees Command Center AND ROI, NOT Settings
-- [ ] Factory Admin: sees Settings
-- [ ] Platform Admin: sees ALL menu items
+- [x] Factory Manager: sees Command Center, NOT ROI or Settings
+- [x] Factory Owner: sees Command Center AND ROI, NOT Settings
+- [x] Factory Admin: sees Settings
+- [x] Platform Admin: sees ALL menu items
 
 #### Responsive Design
-- [ ] Desktop (1920px): Full sidebar visible
-- [ ] Tablet (768px): Sidebar collapses or becomes hamburger menu
-- [ ] Mobile (375px): Mobile-friendly layout
+- [x] Desktop (1920px): Full sidebar visible
+- [x] Tablet (768px): Sidebar collapses or becomes hamburger menu
+- [x] Mobile (375px): Mobile-friendly layout
 
 #### Theme & Styling
-- [ ] Colors match Farmer Power palette (Forest Green #1B4332)
-- [ ] Typography uses Inter font
-- [ ] Components use @fp/ui-components styling
-- [ ] No unstyled/broken components
+- [x] Colors match Farmer Power palette (Forest Green #1B4332)
+- [x] Typography uses Inter font
+- [x] Components use @fp/ui-components styling
+- [x] No unstyled/broken components
 
 ### 3. Browser Compatibility (Optional)
 - [ ] Chrome: Works correctly
@@ -322,19 +322,14 @@ cd web/factory-portal && npm run dev
 
 | Field | Value |
 |-------|-------|
-| **Reviewer Name** | _______________ |
-| **Review Date** | _______________ |
-| **Validation Result** | [ ] APPROVED / [ ] REJECTED |
-| **Comments/Issues** | |
-
-**If REJECTED, list issues to fix:**
-1.
-2.
-3.
+| **Reviewer Name** | Jean-Louis Tournay |
+| **Review Date** | 2026-01-03 |
+| **Validation Result** | [x] APPROVED / [ ] REJECTED |
+| **Comments/Issues** | Validated with Factory Manager, Factory Owner, and Platform Admin personas. Role-based access working correctly. Registration Clerk and Regulator correctly denied access to Factory Portal. |
 
 ---
 
-**Signature:** _______________  **Date:** _______________
+**Signature:** Jean-Louis Tournay  **Date:** 2026-01-03
 
 > After approval, proceed to mark story status as "review" and run `/code-review`
 
