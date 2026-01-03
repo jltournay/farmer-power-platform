@@ -22,6 +22,7 @@ date: '2025-12-16'](#stepscompleted-1-inputdocuments-bmad-outputanalysisproduct-
     - [ADR-009: Logging Standards and Runtime Configuration](./adr/ADR-009-logging-standards-runtime-configuration.md)
     - [ADR-010: DAPR Patterns and Configuration](./adr/ADR-010-dapr-patterns-configuration.md)
     - [ADR-011: gRPC/FastAPI/DAPR Service Architecture](./adr/ADR-011-grpc-fastapi-dapr-architecture.md)
+    - [ADR-012: BFF Service Composition and API Design](./adr/ADR-012-bff-service-composition-api-design.md)
   - [Source of Truth Declaration](./source-of-truth-declaration.md)
     - [Platform Model Overview (9 Models)](./source-of-truth-declaration.md#platform-model-overview-9-models)
   - [Collection Model Architecture](./collection-model-architecture.md)

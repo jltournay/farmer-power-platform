@@ -17,6 +17,7 @@ This folder contains Architecture Decision Records (ADRs) documenting significan
 | [ADR-009](./ADR-009-logging-standards-runtime-configuration.md) | Logging Standards and Runtime Configuration | Accepted | 2025-12-31 |
 | [ADR-010](./ADR-010-dapr-patterns-configuration.md) | DAPR Patterns and Configuration Standards | Accepted | 2025-12-31 |
 | [ADR-011](./ADR-011-grpc-fastapi-dapr-architecture.md) | gRPC/FastAPI/DAPR Service Architecture | Accepted | 2025-12-31 |
+| [ADR-012](./ADR-012-bff-service-composition-api-design.md) | BFF Service Composition and API Design Patterns | Accepted | 2026-01-03 |
 
 ## ADR Template
 

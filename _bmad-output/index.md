@@ -128,7 +128,7 @@ _Single entry point for all platform documentation. This index ensures coherence
        ▼              ▼                            ▼
 ┌─────────────────────┐  ┌─────────────────────┐  ┌─────────────────────┐
 │ architecture/adr/   │  │ ai-model-developer- │  │ sprint-artifacts/   │
-│ ADR-001 to ADR-011  │  │ guide/ (12 files)   │  │ Story files + YAML  │
+│ ADR-001 to ADR-012  │  │ guide/ (12 files)   │  │ Story files + YAML  │
 │ (Tech Decisions)    │  │                     │  │                     │
 └──────────┬──────────┘  └─────────────────────┘  └─────────────────────┘
            │
@@ -161,6 +161,7 @@ Product Brief → Architecture → ADRs → Epics → Stories → Test Design �
 | ADR-009 | Logging Standards and Runtime Configuration | Story 0.6.2 |
 | ADR-010 | DAPR Patterns and Configuration | Stories 0.6.5, 0.6.6 |
 | ADR-011 | gRPC/FastAPI/DAPR Service Architecture | Stories 0.6.5, 0.6.6 |
+| ADR-012 | BFF Service Composition and API Design | Stories 0.5.4a, 0.5.4b |
 
 ---
 
