@@ -1,0 +1,15 @@
+{
+  "name": "farmer-power-platform",
+  "version": "0.1.0",
+  "private": true,
+  "workspaces": [
+    "libs/ui-components"
+  ],
+  "scripts": {
+    "build:ui": "npm run build -w @fp/ui-components",
+    "test:ui": "npm run test -w @fp/ui-components",
+    "storybook": "npm run storybook -w @fp/ui-components",
+    "build-storybook": "npm run build-storybook -w @fp/ui-components"
+  },
+  "devDependencies": {}
+}

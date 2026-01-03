@@ -11,6 +11,7 @@ on:
 
 env:
   PYTHON_VERSION: "3.12"
+  NODE_VERSION: "20"
 
 jobs:
   lint:
@@ -194,9 +195,36 @@ jobs:
 
           echo "✅ E2E evidence validated in all story files"
 
+  frontend-tests:
+    name: Frontend Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run lint
+        run: npm run lint -w @fp/ui-components
+
+      - name: Run tests
+        run: npm run test -w @fp/ui-components
+
+      - name: Build library
+        run: npm run build -w @fp/ui-components
+
+      - name: Build Storybook
+        run: npm run build-storybook -w @fp/ui-components
+
   all-tests-pass:
     name: All Tests Pass
-    needs: [lint, unit-tests, integration-tests, validate-e2e-evidence]
+    needs: [lint, unit-tests, integration-tests, frontend-tests, validate-e2e-evidence]
     runs-on: ubuntu-latest
     if: always()
     steps:
@@ -204,7 +232,8 @@ jobs:
         run: |
           if [ "${{ needs.lint.result }}" != "success" ] || \
              [ "${{ needs.unit-tests.result }}" != "success" ] || \
-             [ "${{ needs.integration-tests.result }}" != "success" ]; then
+             [ "${{ needs.integration-tests.result }}" != "success" ] || \
+             [ "${{ needs.frontend-tests.result }}" != "success" ]; then
             echo "❌ Some required jobs failed"
             exit 1
           fi
