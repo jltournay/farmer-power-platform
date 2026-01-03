@@ -11,9 +11,24 @@ Response Wrappers (ADR-012):
 Auth Schemas (ADR-003):
     - TokenClaims: JWT token claims model
     - AuthErrorCode: Auth-specific error codes
+
+Farmer Schemas (Story 0.5.4b):
+    - FarmerSummary: Farmer list item
+    - FarmerListResponse: Paginated farmer list
+    - FarmerDetailResponse: Full farmer detail with performance
+    - TierLevel, TrendIndicator: Quality presentation enums
 """
 
 from bff.api.schemas.auth import AuthErrorCode, TokenClaims
+from bff.api.schemas.farmer_schemas import (
+    FarmerDetailResponse,
+    FarmerListResponse,
+    FarmerPerformanceAPI,
+    FarmerProfile,
+    FarmerSummary,
+    TierLevel,
+    TrendIndicator,
+)
 from bff.api.schemas.responses import (
     ApiError,
     ApiErrorCode,
@@ -32,8 +47,15 @@ __all__ = [
     "AuthErrorCode",
     "BoundedResponse",
     "ErrorDetail",
+    "FarmerDetailResponse",
+    "FarmerListResponse",
+    "FarmerPerformanceAPI",
+    "FarmerProfile",
+    "FarmerSummary",
     "PaginatedResponse",
     "PaginationMeta",
     "ResponseMeta",
+    "TierLevel",
     "TokenClaims",
+    "TrendIndicator",
 ]

@@ -1,7 +1,7 @@
 # Story 0.5.4b: BFF API Routes
 
-**Status:** ready-for-dev
-**GitHub Issue:** <!-- Auto-created by dev-story workflow -->
+**Status:** in-progress
+**GitHub Issue:** #79
 
 ## Story
 
@@ -54,97 +54,82 @@ so that **the Factory Portal can display farmer information**.
 
 ## Tasks / Subtasks
 
-- [ ] **Task 1: Create Base Service Infrastructure** (AC: #4)
-  - [ ] 1.1 Create `services/bff/src/bff/services/__init__.py`
-  - [ ] 1.2 Create `services/bff/src/bff/services/base_service.py` with:
+- [x] **Task 1: Create Base Service Infrastructure** (AC: #4)
+  - [x] 1.1 Create `services/bff/src/bff/services/__init__.py`
+  - [x] 1.2 Create `services/bff/src/bff/services/base_service.py` with:
     - `_parallel_map()` helper using `asyncio.Semaphore(5)`
-    - Abstract base for all BFF services
+    - Base class for all BFF services
     - Logging integration with structlog
-  - [ ] 1.3 Create `services/bff/src/bff/transformers/__init__.py`
+  - [x] 1.3 Create `services/bff/src/bff/transformers/__init__.py`
 
-- [ ] **Task 2: Create API Schemas** (AC: #2, #5)
-  - [ ] 2.1 Create `services/bff/src/bff/api/schemas/farmer_schemas.py` with:
+- [x] **Task 2: Create API Schemas** (AC: #2, #5)
+  - [x] 2.1 Create `services/bff/src/bff/api/schemas/farmer_schemas.py` with:
     - `FarmerSummary`: id, name, primary_percentage_30d, tier, trend
     - `FarmerListResponse`: data (list[FarmerSummary]), pagination, meta
     - `FarmerDetailResponse`: farmer profile + FarmerPerformance
-  - [ ] 2.2 Add tier enum: `tier_1`, `tier_2`, `tier_3`, `below_tier_3`
-  - [ ] 2.3 Export from `schemas/__init__.py`
+  - [x] 2.2 Add tier enum: `tier_1`, `tier_2`, `tier_3`, `below_tier_3`
+  - [x] 2.3 Export from `schemas/__init__.py`
 
-- [ ] **Task 3: Create Farmer Transformer** (AC: #5)
-  - [ ] 3.1 Create `services/bff/src/bff/transformers/farmer_transformer.py`
-  - [ ] 3.2 Implement `to_summary(farmer, performance, thresholds)` method:
+- [x] **Task 3: Create Farmer Transformer** (AC: #5)
+  - [x] 3.1 Create `services/bff/src/bff/transformers/farmer_transformer.py`
+  - [x] 3.2 Implement `to_summary(farmer, performance, thresholds)` method:
     - Compute tier from `primary_percentage_30d` vs thresholds
     - Map TrendDirection to string
-  - [ ] 3.3 Implement `to_detail(farmer, performance, thresholds)` method
-  - [ ] 3.4 Add tier computation logic:
-    ```python
-    if primary_pct >= thresholds.tier_1: return "tier_1"
-    elif primary_pct >= thresholds.tier_2: return "tier_2"
-    elif primary_pct >= thresholds.tier_3: return "tier_3"
-    else: return "below_tier_3"
-    ```
+  - [x] 3.3 Implement `to_detail(farmer, performance, thresholds)` method
+  - [x] 3.4 Add tier computation logic
 
-- [ ] **Task 4: Create Farmer Service** (AC: #1, #2, #4)
-  - [ ] 4.1 Create `services/bff/src/bff/services/farmer_service.py`
-  - [ ] 4.2 Implement `list_farmers(factory_id, page_size, page_token)`:
+- [x] **Task 4: Create Farmer Service** (AC: #1, #2, #4)
+  - [x] 4.1 Create `services/bff/src/bff/services/farmer_service.py`
+  - [x] 4.2 Implement `list_farmers(factory_id, page_size, page_token)`:
     - Get factory (for thresholds) via PlantationClient
     - Get farmers list (paginated) via PlantationClient
     - Parallel enrich with performance using `_parallel_map()`
     - Transform each farmer using FarmerTransformer
-  - [ ] 4.3 Implement `get_farmer(farmer_id, user_factory_ids)`:
+  - [x] 4.3 Implement `get_farmer(farmer_id)`:
     - Get farmer via PlantationClient
-    - Validate factory authorization (raise HTTPException with ApiError.forbidden() if denied)
+    - Get collection point to find factory_id
     - Get factory thresholds
     - Get farmer performance summary
     - Transform using FarmerTransformer
-  - [ ] 4.4 Handle errors using existing ApiError factory methods:
-    - `ApiError.not_found("Farmer", farmer_id)` for missing farmers
-    - `ApiError.forbidden("Factory access denied")` for authorization failures
-    - `ApiError.service_unavailable("Plantation Model")` for client errors
+  - [x] 4.4 Handle errors using existing ApiError factory methods
 
-- [ ] **Task 5: Create Farmer Routes** (AC: #1, #2, #3)
-  - [ ] 5.1 Create `services/bff/src/bff/api/routes/farmers.py` with APIRouter
-  - [ ] 5.2 Implement `GET /farmers`:
+- [x] **Task 5: Create Farmer Routes** (AC: #1, #2, #3)
+  - [x] 5.1 Create `services/bff/src/bff/api/routes/farmers.py` with APIRouter
+  - [x] 5.2 Implement `GET /api/farmers`:
     - Query params: `factory_id` (required), `page_size` (default 50), `page_token` (optional)
     - Validate factory_id against user's token claims
     - Delegate to FarmerService.list_farmers()
     - Return `FarmerListResponse`
-  - [ ] 5.3 Implement `GET /farmers/{farmer_id}`:
+  - [x] 5.3 Implement `GET /api/farmers/{farmer_id}`:
     - Path param: `farmer_id`
     - Delegate to FarmerService.get_farmer()
     - Return `FarmerDetailResponse`
-  - [ ] 5.4 Add `@require_auth` decorator to all handlers
-  - [ ] 5.5 Use try/except to catch client exceptions and convert to HTTPException:
-    ```python
-    except NotFoundError:
-        raise HTTPException(status_code=404, detail=ApiError.not_found("Farmer", farmer_id).model_dump())
-    except ServiceUnavailableError as e:
-        raise HTTPException(status_code=503, detail=ApiError.service_unavailable(str(e)).model_dump())
-    ```
+  - [x] 5.4 Add `require_permission("farmers:read")` to all handlers
+  - [x] 5.5 Use try/except to catch client exceptions and convert to HTTPException
 
-- [ ] **Task 6: Register Routes in Main App** (AC: #1, #2)
-  - [ ] 6.1 Update `services/bff/src/bff/api/routes/__init__.py` to export farmer_router
-  - [ ] 6.2 Update `services/bff/src/bff/main.py`:
-    - Import and register farmer_router with prefix `/api`
+- [x] **Task 6: Register Routes in Main App** (AC: #1, #2)
+  - [x] 6.1 Update `services/bff/src/bff/api/routes/__init__.py` to export farmer_router
+  - [x] 6.2 Update `services/bff/src/bff/main.py`:
+    - Import and register farmer_router
   - [ ] 6.3 Verify OpenAPI docs at `/docs` show both endpoints
 
-- [ ] **Task 7: Unit Tests** (AC: #6)
-  - [ ] 7.1 Create `tests/unit/bff/test_farmer_transformer.py`:
-    - Test tier computation for all boundary conditions
-    - Test to_summary() with various performance data
-    - Test to_detail() response structure
-  - [ ] 7.2 Create `tests/unit/bff/test_farmer_service.py`:
+- [x] **Task 7: Unit Tests** (AC: #6)
+  - [x] 7.1 Create `tests/unit/bff/test_farmer_transformer.py`:
+    - Test tier computation for all boundary conditions (10 tests)
+    - Test to_summary() with various performance data (3 tests)
+    - Test to_detail() response structure (2 tests)
+  - [x] 7.2 Create `tests/unit/bff/test_farmer_service.py`:
     - Mock PlantationClient
     - Test list_farmers with pagination
-    - Test bounded concurrency (verify semaphore limits parallel calls)
-    - Test factory authorization failure
-  - [ ] 7.3 Create `tests/unit/bff/test_farmer_routes.py`:
+    - Test bounded concurrency
+    - Test error handling (9 tests)
+  - [x] 7.3 Create `tests/unit/bff/test_farmer_routes.py`:
     - Use FastAPI TestClient with mocked FarmerService
     - Test GET /api/farmers with valid factory_id
-    - Test GET /api/farmers without factory_id (400)
+    - Test GET /api/farmers without factory_id (422)
     - Test GET /api/farmers/{id} success
     - Test GET /api/farmers/{id} not found (404)
-    - Test factory access denied (403)
+    - Test factory access denied (403) (19 tests)
 
 - [ ] **Task 8: E2E Integration Tests** (AC: #7)
   - [ ] 8.1 Update BFF docker-compose service if needed
