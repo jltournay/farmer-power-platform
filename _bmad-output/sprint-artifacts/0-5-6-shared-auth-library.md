@@ -1,6 +1,6 @@
 # Story 0.5.6: Shared Auth Library (Mock-First)
 
-**Status:** review
+**Status:** done
 **GitHub Issue:** #84
 
 ## Story
