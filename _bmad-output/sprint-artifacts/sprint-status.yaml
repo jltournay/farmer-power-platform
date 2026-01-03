@@ -145,7 +145,7 @@ development_status:
   0-5-4b-bff-api-routes: done  # 5 points - 13 read + 11 write endpoints, github_issue: 79, pr: 80
   0-5-5-shared-component-library: done  # 3 points - @fp/ui-components with MUI v6, github_issue: 82, pr: 83
   0-5-6-shared-auth-library: done  # 3 points - @fp/auth with mock provider, github_issue: 84
-  0-5-7-factory-portal-scaffold: backlog  # 3 points - React app with routing and layout
+  0-5-7-factory-portal-scaffold: ready-for-dev  # 3 points - React app with routing and layout, github_issue: TBD
   0-5-8-azure-ad-b2c-configuration: deferred  # 5 points - Production deployment only
   epic-0-5-retrospective: optional
 
