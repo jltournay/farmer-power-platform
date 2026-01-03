@@ -104,10 +104,10 @@ So that **Factory Manager, Owner, and Admin screens can be built**.
   - [x] 5.5 Each placeholder shows title and "Coming soon" message
 
 - [x] **Task 6: Configure Providers** (AC: #1, #3)
-  - [x] 6.1 Create `src/app/providers/ThemeProvider.tsx` wrapping MUI ThemeProvider
+  - [x] 6.1 Import ThemeProvider from `@fp/ui-components` in main.tsx
   - [x] 6.2 Import and use theme from `@fp/ui-components`
-  - [x] 6.3 Create `src/app/providers/AuthProviderWrapper.tsx` using `@fp/auth`
-  - [x] 6.4 Compose providers in `src/main.tsx`
+  - [x] 6.3 Import AuthProvider from `@fp/auth` in main.tsx
+  - [x] 6.4 Compose providers in `src/main.tsx` (providers used directly, no wrapper files needed)
 
 - [x] **Task 7: Configure Dev Server** (AC: #5)
   - [x] 7.1 Configure Vite proxy for `/api` -> BFF service
@@ -743,13 +743,18 @@ Claude Opus 4.5 (claude-opus-4-5-20251101)
 **Created:**
 - `web/factory-portal/package.json` - Package manifest with workspace dependencies
 - `web/factory-portal/tsconfig.json` - TypeScript strict mode config
+- `web/factory-portal/tsconfig.node.json` - TypeScript node config for Vite
 - `web/factory-portal/vite.config.ts` - Vite build configuration with proxy
 - `web/factory-portal/vitest.config.ts` - Vitest test runner config
 - `web/factory-portal/eslint.config.js` - ESLint flat config
 - `web/factory-portal/.env.local.example` - Environment template
+- `web/factory-portal/index.html` - HTML entry point
 - `web/factory-portal/Dockerfile` - Multi-stage Docker build
 - `web/factory-portal/nginx.conf` - Nginx SPA routing config
+- `web/factory-portal/public/favicon.svg` - App favicon
 - `web/factory-portal/src/main.tsx` - App entry point
+- `web/factory-portal/src/vite-env.d.ts` - Vite type declarations
+- `web/factory-portal/src/test-setup.ts` - Vitest setup file
 - `web/factory-portal/src/app/App.tsx` - Root component with auth flow
 - `web/factory-portal/src/app/routes.tsx` - Route definitions with ProtectedRoute
 - `web/factory-portal/src/components/Layout/Layout.tsx` - App shell layout
@@ -775,3 +780,4 @@ Claude Opus 4.5 (claude-opus-4-5-20251101)
 - `package.json` (root) - Added `web/factory-portal` to workspaces
 - `.github/workflows/ci.yaml` - Added factory-portal to frontend tests job, reordered to build libraries first
 - `libs/ui-components/vitest.config.ts` - Added exclusion for factory-portal tests
+- `libs/auth/src/providers/AuthProvider.tsx` - Removed `import.meta.env.PROD` check that was baked in at library build time, preventing mock auth in consuming apps

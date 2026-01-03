@@ -137,7 +137,7 @@ export function Sidebar({ open, width, collapsedWidth, onToggle }: SidebarProps)
             Farmer Power
           </Typography>
         )}
-        <IconButton onClick={onToggle} size="small">
+        <IconButton onClick={onToggle} size="small" aria-label={open ? 'Collapse sidebar' : 'Expand sidebar'}>
           {open ? <ChevronLeftIcon /> : <ChevronRightIcon />}
         </IconButton>
       </Box>
