@@ -161,8 +161,8 @@ describe('Sidebar Component', () => {
     const onToggle = vi.fn();
     renderWithProviders(<Sidebar {...defaultProps} onToggle={onToggle} />);
 
-    // Find the collapse button (it has ChevronLeft icon when open)
-    const collapseButton = screen.getByRole('button', { name: '' });
+    // Find the collapse button by its aria-label
+    const collapseButton = screen.getByRole('button', { name: /collapse sidebar/i });
     fireEvent.click(collapseButton);
 
     expect(onToggle).toHaveBeenCalledTimes(1);
