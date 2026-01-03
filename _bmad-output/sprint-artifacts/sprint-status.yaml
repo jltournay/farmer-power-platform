@@ -143,7 +143,7 @@ development_status:
   # Story 0.5.4 split into 0.5.4a + 0.5.4b per ADR-012 (Party Mode 2026-01-03)
   0-5-4a-bff-client-response-wrappers: done  # 3 points - Response wrappers + migrate 7 client methods, github_issue: 77, pr: 78
   0-5-4b-bff-api-routes: done  # 5 points - 13 read + 11 write endpoints, github_issue: 79, pr: 80
-  0-5-5-shared-component-library: ready-for-dev  # 3 points - @fp/ui-components with MUI v6, github_issue: 82
+  0-5-5-shared-component-library: in-progress  # 3 points - @fp/ui-components with MUI v6, github_issue: 82
   0-5-6-shared-auth-library: backlog  # 3 points - @fp/auth with mock provider
   0-5-7-factory-portal-scaffold: backlog  # 3 points - React app with routing and layout
   0-5-8-azure-ad-b2c-configuration: deferred  # 5 points - Production deployment only

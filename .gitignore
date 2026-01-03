@@ -38,3 +38,9 @@ desktop.ini
 /prompt/
 .claude/settings.local.json
 settings.local.json
+
+# Node.js / Frontend
+node_modules/
+storybook-static/
+dist/
+*.tsbuildinfo
