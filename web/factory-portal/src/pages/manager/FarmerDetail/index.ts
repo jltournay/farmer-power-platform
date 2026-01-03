@@ -1,0 +1,1 @@
+export { FarmerDetail } from './FarmerDetail';

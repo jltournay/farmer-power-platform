@@ -4,7 +4,8 @@
   "private": true,
   "workspaces": [
     "libs/ui-components",
-    "libs/auth"
+    "libs/auth",
+    "web/factory-portal"
   ],
   "scripts": {
     "build:ui": "npm run build -w @fp/ui-components",
@@ -12,7 +13,10 @@
     "storybook": "npm run storybook -w @fp/ui-components",
     "build-storybook": "npm run build-storybook -w @fp/ui-components",
     "build:auth": "npm run build -w @fp/auth",
-    "test:auth": "npm run test -w @fp/auth"
+    "test:auth": "npm run test -w @fp/auth",
+    "dev:factory-portal": "npm run dev -w @fp/factory-portal",
+    "build:factory-portal": "npm run build -w @fp/factory-portal",
+    "test:factory-portal": "npm run test -w @fp/factory-portal"
   },
   "devDependencies": {}
 }

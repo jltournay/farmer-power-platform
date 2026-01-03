@@ -1,7 +1,8 @@
 # Story 0.5.7: Factory Portal Scaffold
 
-**Status:** ready-for-dev
-**GitHub Issue:** <!-- Auto-created by dev-story workflow -->
+**Status:** done
+**GitHub Issue:** #86
+**Pull Request:** #87
 
 ## Story
 
@@ -66,81 +67,81 @@ So that **Factory Manager, Owner, and Admin screens can be built**.
 
 ## Tasks / Subtasks
 
-- [ ] **Task 1: Initialize Project Structure** (AC: #1)
-  - [ ] 1.1 Create `web/factory-portal/` directory
-  - [ ] 1.2 Initialize with `npm create vite@latest` (React + TypeScript)
-  - [ ] 1.3 Create `package.json` with workspace dependencies
-  - [ ] 1.4 Configure `tsconfig.json` with strict mode
-  - [ ] 1.5 Configure `vite.config.ts` with React plugin and path aliases
-  - [ ] 1.6 Add to root `package.json` workspaces array
-  - [ ] 1.7 Configure `eslint.config.js` matching project pattern
+- [x] **Task 1: Initialize Project Structure** (AC: #1)
+  - [x] 1.1 Create `web/factory-portal/` directory
+  - [x] 1.2 Initialize with `npm create vite@latest` (React + TypeScript)
+  - [x] 1.3 Create `package.json` with workspace dependencies
+  - [x] 1.4 Configure `tsconfig.json` with strict mode
+  - [x] 1.5 Configure `vite.config.ts` with React plugin and path aliases
+  - [x] 1.6 Add to root `package.json` workspaces array
+  - [x] 1.7 Configure `eslint.config.js` matching project pattern
 
-- [ ] **Task 2: Configure Dependencies** (AC: #1)
-  - [ ] 2.1 Add `@fp/ui-components` as workspace dependency
-  - [ ] 2.2 Add `@fp/auth` as workspace dependency
-  - [ ] 2.3 Add React Router v6: `react-router-dom`
-  - [ ] 2.4 Add Material UI v6: `@mui/material`, `@emotion/react`, `@emotion/styled`
-  - [ ] 2.5 Run `npm install` from root to link workspaces
+- [x] **Task 2: Configure Dependencies** (AC: #1)
+  - [x] 2.1 Add `@fp/ui-components` as workspace dependency
+  - [x] 2.2 Add `@fp/auth` as workspace dependency
+  - [x] 2.3 Add React Router v6: `react-router-dom`
+  - [x] 2.4 Add Material UI v6: `@mui/material`, `@emotion/react`, `@emotion/styled`
+  - [x] 2.5 Run `npm install` from root to link workspaces
 
-- [ ] **Task 3: Create App Shell Layout** (AC: #3)
-  - [ ] 3.1 Create `src/components/Layout/Layout.tsx` - main app shell
-  - [ ] 3.2 Create `src/components/Sidebar/Sidebar.tsx` - navigation sidebar
-  - [ ] 3.3 Create `src/components/Header/Header.tsx` - app header with user info
-  - [ ] 3.4 Implement responsive layout using MUI Box/Grid
-  - [ ] 3.5 Style with @fp/ui-components theme
+- [x] **Task 3: Create App Shell Layout** (AC: #3)
+  - [x] 3.1 Create `src/components/Layout/Layout.tsx` - main app shell
+  - [x] 3.2 Create `src/components/Sidebar/Sidebar.tsx` - navigation sidebar
+  - [x] 3.3 Create `src/components/Header/Header.tsx` - app header with user info
+  - [x] 3.4 Implement responsive layout using MUI Box/Grid
+  - [x] 3.5 Style with @fp/ui-components theme
 
-- [ ] **Task 4: Implement Routing** (AC: #2)
-  - [ ] 4.1 Create `src/app/routes.tsx` with route definitions
-  - [ ] 4.2 Configure React Router BrowserRouter in `src/app/App.tsx`
-  - [ ] 4.3 Implement role-based route protection using `ProtectedRoute` from @fp/auth
-  - [ ] 4.4 Create `src/pages/NotFound.tsx` for 404 handling
-  - [ ] 4.5 Configure redirect from `/` to `/command-center`
+- [x] **Task 4: Implement Routing** (AC: #2)
+  - [x] 4.1 Create `src/app/routes.tsx` with route definitions
+  - [x] 4.2 Configure React Router BrowserRouter in `src/app/App.tsx`
+  - [x] 4.3 Implement role-based route protection using `ProtectedRoute` from @fp/auth
+  - [x] 4.4 Create `src/pages/NotFound.tsx` for 404 handling
+  - [x] 4.5 Configure redirect from `/` to `/command-center`
 
-- [ ] **Task 5: Create Placeholder Pages** (AC: #4)
-  - [ ] 5.1 Create `src/pages/manager/CommandCenter/CommandCenter.tsx`
-  - [ ] 5.2 Create `src/pages/manager/FarmerDetail/FarmerDetail.tsx`
-  - [ ] 5.3 Create `src/pages/owner/ROISummary/ROISummary.tsx`
-  - [ ] 5.4 Create `src/pages/admin/Settings/Settings.tsx`
-  - [ ] 5.5 Each placeholder shows title and "Coming soon" message
+- [x] **Task 5: Create Placeholder Pages** (AC: #4)
+  - [x] 5.1 Create `src/pages/manager/CommandCenter/CommandCenter.tsx`
+  - [x] 5.2 Create `src/pages/manager/FarmerDetail/FarmerDetail.tsx`
+  - [x] 5.3 Create `src/pages/owner/ROISummary/ROISummary.tsx`
+  - [x] 5.4 Create `src/pages/admin/Settings/Settings.tsx`
+  - [x] 5.5 Each placeholder shows title and "Coming soon" message
 
-- [ ] **Task 6: Configure Providers** (AC: #1, #3)
-  - [ ] 6.1 Create `src/app/providers/ThemeProvider.tsx` wrapping MUI ThemeProvider
-  - [ ] 6.2 Import and use theme from `@fp/ui-components`
-  - [ ] 6.3 Create `src/app/providers/AuthProviderWrapper.tsx` using `@fp/auth`
-  - [ ] 6.4 Compose providers in `src/main.tsx`
+- [x] **Task 6: Configure Providers** (AC: #1, #3)
+  - [x] 6.1 Import ThemeProvider from `@fp/ui-components` in main.tsx
+  - [x] 6.2 Import and use theme from `@fp/ui-components`
+  - [x] 6.3 Import AuthProvider from `@fp/auth` in main.tsx
+  - [x] 6.4 Compose providers in `src/main.tsx` (providers used directly, no wrapper files needed)
 
-- [ ] **Task 7: Configure Dev Server** (AC: #5)
-  - [ ] 7.1 Configure Vite proxy for `/api` -> BFF service
-  - [ ] 7.2 Create `.env.local.example` with required environment variables
-  - [ ] 7.3 Configure HMR and fast refresh
-  - [ ] 7.4 Test development server with `npm run dev`
+- [x] **Task 7: Configure Dev Server** (AC: #5)
+  - [x] 7.1 Configure Vite proxy for `/api` -> BFF service
+  - [x] 7.2 Create `.env.local.example` with required environment variables
+  - [x] 7.3 Configure HMR and fast refresh
+  - [x] 7.4 Test development server with `npm run dev`
 
-- [ ] **Task 8: Configure Build** (AC: #6)
-  - [ ] 8.1 Configure Vite build output
-  - [ ] 8.2 Verify bundle size < 500KB gzipped
-  - [ ] 8.3 Configure source map generation
-  - [ ] 8.4 Test production build with `npm run build && npm run preview`
+- [x] **Task 8: Configure Build** (AC: #6)
+  - [x] 8.1 Configure Vite build output
+  - [x] 8.2 Verify bundle size < 500KB gzipped
+  - [x] 8.3 Configure source map generation
+  - [x] 8.4 Test production build with `npm run build && npm run preview`
 
-- [ ] **Task 9: Create Dockerfile** (AC: #8)
-  - [ ] 9.1 Create `web/factory-portal/Dockerfile`
-  - [ ] 9.2 Multi-stage build: node for build, nginx for serving
-  - [ ] 9.3 Configure nginx for SPA routing (fallback to index.html)
-  - [ ] 9.4 Test Docker build locally
+- [x] **Task 9: Create Dockerfile** (AC: #8)
+  - [x] 9.1 Create `web/factory-portal/Dockerfile`
+  - [x] 9.2 Multi-stage build: node for build, nginx for serving
+  - [x] 9.3 Configure nginx for SPA routing (fallback to index.html)
+  - [ ] 9.4 Test Docker build locally (deferred - visual validation first)
 
-- [ ] **Task 10: Create Unit Tests** (AC: #7)
-  - [ ] 10.1 Configure `vitest.config.ts`
-  - [ ] 10.2 Create `tests/unit/web/factory-portal/test_app.test.tsx`
-  - [ ] 10.3 Create `tests/unit/web/factory-portal/test_routing.test.tsx`
-  - [ ] 10.4 Create `tests/unit/web/factory-portal/test_layout.test.tsx`
-  - [ ] 10.5 All tests pass with `npm run test`
+- [x] **Task 10: Create Unit Tests** (AC: #7)
+  - [x] 10.1 Configure `vitest.config.ts`
+  - [x] 10.2 Create `tests/unit/web/factory-portal/test_app.test.tsx`
+  - [x] 10.3 Create `tests/unit/web/factory-portal/test_routing.test.tsx`
+  - [x] 10.4 Create `tests/unit/web/factory-portal/test_layout.test.tsx`
+  - [x] 10.5 All tests pass with `npm run test`
 
 ## Git Workflow (MANDATORY)
 
 **All story development MUST use feature branches.** Direct pushes to main are blocked.
 
 ### Story Start
-- [ ] GitHub Issue exists or created: `gh issue create --title "Story 0.5.7: Factory Portal Scaffold"`
-- [ ] Feature branch created from main:
+- [x] GitHub Issue exists or created: `gh issue create --title "Story 0.5.7: Factory Portal Scaffold"`
+- [x] Feature branch created from main:
   ```bash
   git checkout main && git pull origin main
   git checkout -b story/0-5-7-factory-portal-scaffold
@@ -149,18 +150,18 @@ So that **Factory Manager, Owner, and Admin screens can be built**.
 **Branch name:** `story/0-5-7-factory-portal-scaffold`
 
 ### During Development
-- [ ] All commits reference GitHub issue: `Relates to #XX`
-- [ ] Commits are atomic by type (production, test, seed - not mixed)
-- [ ] Push to feature branch: `git push -u origin story/0-5-7-factory-portal-scaffold`
+- [x] All commits reference GitHub issue: `Relates to #86`
+- [x] Commits are atomic by type (production, test, seed - not mixed)
+- [x] Push to feature branch: `git push -u origin story/0-5-7-factory-portal-scaffold`
 
 ### Story Done
-- [ ] Create Pull Request: `gh pr create --title "Story 0.5.7: Factory Portal Scaffold" --base main`
+- [x] Create Pull Request: `gh pr create --title "Story 0.5.7: Factory Portal Scaffold" --base main`
 - [ ] CI passes on PR (including E2E tests)
 - [ ] Code review completed (`/code-review` or human review)
 - [ ] PR approved and merged (squash)
 - [ ] Local branch cleaned up: `git branch -d story/0-5-7-factory-portal-scaffold`
 
-**PR URL:** _______________ (fill in when created)
+**PR URL:** https://github.com/jltournay/farmer-power-platform/pull/87
 
 ---
 
@@ -174,7 +175,16 @@ cd web/factory-portal && npm run test
 ```
 **Output:**
 ```
-(paste test summary here - e.g., "15 passed in 2.23s")
+ RUN  v2.1.9 /Users/jeanlouistournay/wks-farmerpower/farmer-power-platform/web/factory-portal
+
+ ✓ ../../tests/unit/web/factory-portal/test_app.test.tsx (5 tests) 240ms
+ ✓ ../../tests/unit/web/factory-portal/test_routing.test.tsx (12 tests) 277ms
+ ✓ ../../tests/unit/web/factory-portal/test_layout.test.tsx (15 tests) 363ms
+
+ Test Files  3 passed (3)
+      Tests  32 passed (32)
+   Start at  17:53:36
+   Duration  4.09s
 ```
 
 ### 2. Build Verification
@@ -183,15 +193,26 @@ cd web/factory-portal && npm run build
 ```
 **Output:**
 ```
-(paste build output here with bundle sizes)
+vite v6.4.1 building for production...
+transforming...
+✓ 954 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                   0.64 kB │ gzip:  0.35 kB
+dist/assets/index-CrfbgZKF.js   132.69 kB │ gzip: 43.99 kB │ map: 509.63 kB
+dist/assets/vendor-RVwsST1e.js  176.67 kB │ gzip: 58.18 kB │ map: 763.14 kB
+dist/assets/mui-D7C8sUMF.js     177.89 kB │ gzip: 54.95 kB │ map: 874.85 kB
+✓ built in 10.12s
+
+Total gzipped: ~157 KB (index: 43.99 + vendor: 58.18 + mui: 54.95)
 ```
-**Bundle size < 500KB gzipped:** [ ] Yes / [ ] No
+**Bundle size < 500KB gzipped:** [x] Yes / [ ] No
 
 ### 3. Lint Check
 ```bash
 cd web/factory-portal && npm run lint
 ```
-**Lint passed:** [ ] Yes / [ ] No
+**Lint passed:** [x] Yes / [ ] No
 
 ### 4. CI Verification on Story Branch (MANDATORY)
 
@@ -204,9 +225,9 @@ git push origin story/0-5-7-factory-portal-scaffold
 # Wait ~30s, then check CI status
 gh run list --branch story/0-5-7-factory-portal-scaffold --limit 3
 ```
-**CI Run ID:** _______________
-**CI Status:** [ ] Passed / [ ] Failed
-**Verification Date:** _______________
+**CI Run ID:** 20680254785
+**CI Status:** [x] Passed / [ ] Failed
+**Verification Date:** 2026-01-03
 
 ### 5. E2E Tests
 
@@ -236,45 +257,45 @@ cd web/factory-portal && npm run dev
 ### 2. Visual Validation Checklist
 
 #### Authentication Flow
-- [ ] Mock login selector appears on first visit
-- [ ] Can select "Jane Mwangi (Factory Manager)" persona
-- [ ] After login, redirected to Command Center
-- [ ] User name displayed in header
-- [ ] Factory name displayed in header
-- [ ] Logout button visible and functional
+- [x] Mock login selector appears on first visit
+- [x] Can select "Jane Mwangi (Factory Manager)" persona
+- [x] After login, redirected to Command Center
+- [x] User name displayed in header
+- [x] Factory name displayed in header
+- [x] Logout button visible and functional
 
 #### Layout & Navigation
-- [ ] Sidebar visible on left side
-- [ ] Sidebar shows role-appropriate menu items only
-- [ ] Header spans full width at top
-- [ ] Main content area displays correctly
-- [ ] Clicking sidebar items navigates to correct routes
-- [ ] Active route is highlighted in sidebar
+- [x] Sidebar visible on left side
+- [x] Sidebar shows role-appropriate menu items only
+- [x] Header spans full width at top
+- [x] Main content area displays correctly
+- [x] Clicking sidebar items navigates to correct routes
+- [x] Active route is highlighted in sidebar
 
 #### Routes & Pages
-- [ ] `/` redirects to `/command-center`
-- [ ] `/command-center` shows placeholder with "Command Center" title
-- [ ] `/farmers/123` shows placeholder with "Farmer Detail" title
-- [ ] `/roi` shows placeholder with "ROI Summary" title
-- [ ] `/settings` shows placeholder with "Settings" title
-- [ ] Unknown route (e.g., `/xyz`) shows 404 page
+- [x] `/` redirects to `/command-center`
+- [x] `/command-center` shows placeholder with "Command Center" title
+- [x] `/farmers/123` shows placeholder with "Farmer Detail" title
+- [x] `/roi` shows placeholder with "ROI Summary" title
+- [x] `/settings` shows placeholder with "Settings" title
+- [x] Unknown route (e.g., `/xyz`) shows 404 page
 
 #### Role-Based Access (Test with different personas)
-- [ ] Factory Manager: sees Command Center, NOT ROI or Settings
-- [ ] Factory Owner: sees Command Center AND ROI, NOT Settings
-- [ ] Factory Admin: sees Settings
-- [ ] Platform Admin: sees ALL menu items
+- [x] Factory Manager: sees Command Center, NOT ROI or Settings
+- [x] Factory Owner: sees Command Center AND ROI, NOT Settings
+- [x] Factory Admin: sees Settings
+- [x] Platform Admin: sees ALL menu items
 
 #### Responsive Design
-- [ ] Desktop (1920px): Full sidebar visible
-- [ ] Tablet (768px): Sidebar collapses or becomes hamburger menu
-- [ ] Mobile (375px): Mobile-friendly layout
+- [x] Desktop (1920px): Full sidebar visible
+- [x] Tablet (768px): Sidebar collapses or becomes hamburger menu
+- [x] Mobile (375px): Mobile-friendly layout
 
 #### Theme & Styling
-- [ ] Colors match Farmer Power palette (Forest Green #1B4332)
-- [ ] Typography uses Inter font
-- [ ] Components use @fp/ui-components styling
-- [ ] No unstyled/broken components
+- [x] Colors match Farmer Power palette (Forest Green #1B4332)
+- [x] Typography uses Inter font
+- [x] Components use @fp/ui-components styling
+- [x] No unstyled/broken components
 
 ### 3. Browser Compatibility (Optional)
 - [ ] Chrome: Works correctly
@@ -302,21 +323,54 @@ cd web/factory-portal && npm run dev
 
 | Field | Value |
 |-------|-------|
-| **Reviewer Name** | _______________ |
-| **Review Date** | _______________ |
-| **Validation Result** | [ ] APPROVED / [ ] REJECTED |
-| **Comments/Issues** | |
-
-**If REJECTED, list issues to fix:**
-1.
-2.
-3.
+| **Reviewer Name** | Jean-Louis Tournay |
+| **Review Date** | 2026-01-03 |
+| **Validation Result** | [x] APPROVED / [ ] REJECTED |
+| **Comments/Issues** | Validated with Factory Manager, Factory Owner, and Platform Admin personas. Role-based access working correctly. Registration Clerk and Regulator correctly denied access to Factory Portal. |
 
 ---
 
-**Signature:** _______________  **Date:** _______________
+**Signature:** Jean-Louis Tournay  **Date:** 2026-01-03
 
 > After approval, proceed to mark story status as "review" and run `/code-review`
+
+---
+
+## Code Review
+
+**Review Date:** 2026-01-03
+**Reviewer:** Claude Opus 4.5 (Adversarial Code Review)
+**Outcome:** ✅ APPROVED (with fixes applied)
+
+### Findings Summary
+
+| Severity | Finding | Status |
+|----------|---------|--------|
+| LOW | Missing `aria-label` on Sidebar collapse button | ✅ Fixed |
+| DOC | Task 6 documentation inaccurate (claimed wrapper files that weren't created) | ✅ Fixed |
+| DOC | Missing files in File List section | ✅ Fixed |
+| DOC | Auth library fix not documented | ✅ Fixed |
+
+### Fixes Applied
+
+1. **Accessibility Fix**: Added dynamic `aria-label` to Sidebar collapse button
+   - File: `web/factory-portal/src/components/Sidebar/Sidebar.tsx`
+   - Change: `aria-label={open ? 'Collapse sidebar' : 'Expand sidebar'}`
+
+2. **Test Update**: Updated test to match new aria-label
+   - File: `tests/unit/web/factory-portal/test_layout.test.tsx`
+   - Change: Query by `{ name: /collapse sidebar/i }` instead of empty name
+
+3. **Documentation Fixes**: Updated story file
+   - Task 6 description updated to reflect actual implementation
+   - Added missing files to File List
+   - Documented auth library fix
+
+### CI Verification After Fixes
+
+**CI Run ID:** 20680683334
+**CI Status:** ✅ Passed
+**All 32 frontend tests passing**
 
 ---
 
@@ -710,16 +764,59 @@ Recent commits show:
 
 ### Agent Model Used
 
-{{agent_model_name_version}}
+Claude Opus 4.5 (claude-opus-4-5-20251101)
 
 ### Debug Log References
 
+- CI Run 20680254785: All jobs passed (Lint, Unit Tests, Integration Tests, Frontend Tests)
+
 ### Completion Notes List
+
+- Factory Portal scaffold complete with all acceptance criteria met
+- 32 unit tests passing
+- Bundle size ~157KB gzipped (well under 500KB limit)
+- Visual browser validation requires human approval
 
 ### File List
 
 **Created:**
-- (list new files)
+- `web/factory-portal/package.json` - Package manifest with workspace dependencies
+- `web/factory-portal/tsconfig.json` - TypeScript strict mode config
+- `web/factory-portal/tsconfig.node.json` - TypeScript node config for Vite
+- `web/factory-portal/vite.config.ts` - Vite build configuration with proxy
+- `web/factory-portal/vitest.config.ts` - Vitest test runner config
+- `web/factory-portal/eslint.config.js` - ESLint flat config
+- `web/factory-portal/.env.local.example` - Environment template
+- `web/factory-portal/index.html` - HTML entry point
+- `web/factory-portal/Dockerfile` - Multi-stage Docker build
+- `web/factory-portal/nginx.conf` - Nginx SPA routing config
+- `web/factory-portal/public/favicon.svg` - App favicon
+- `web/factory-portal/src/main.tsx` - App entry point
+- `web/factory-portal/src/vite-env.d.ts` - Vite type declarations
+- `web/factory-portal/src/test-setup.ts` - Vitest setup file
+- `web/factory-portal/src/app/App.tsx` - Root component with auth flow
+- `web/factory-portal/src/app/routes.tsx` - Route definitions with ProtectedRoute
+- `web/factory-portal/src/components/Layout/Layout.tsx` - App shell layout
+- `web/factory-portal/src/components/Layout/index.ts` - Layout export
+- `web/factory-portal/src/components/Sidebar/Sidebar.tsx` - Navigation sidebar
+- `web/factory-portal/src/components/Sidebar/index.ts` - Sidebar export
+- `web/factory-portal/src/components/Header/Header.tsx` - App header
+- `web/factory-portal/src/components/Header/index.ts` - Header export
+- `web/factory-portal/src/pages/manager/CommandCenter/CommandCenter.tsx` - Placeholder
+- `web/factory-portal/src/pages/manager/CommandCenter/index.ts` - Export
+- `web/factory-portal/src/pages/manager/FarmerDetail/FarmerDetail.tsx` - Placeholder
+- `web/factory-portal/src/pages/manager/FarmerDetail/index.ts` - Export
+- `web/factory-portal/src/pages/owner/ROISummary/ROISummary.tsx` - Placeholder
+- `web/factory-portal/src/pages/owner/ROISummary/index.ts` - Export
+- `web/factory-portal/src/pages/admin/Settings/Settings.tsx` - Placeholder
+- `web/factory-portal/src/pages/admin/Settings/index.ts` - Export
+- `web/factory-portal/src/pages/NotFound.tsx` - 404 page
+- `tests/unit/web/factory-portal/test_app.test.tsx` - App tests (5 tests)
+- `tests/unit/web/factory-portal/test_routing.test.tsx` - Routing tests (12 tests)
+- `tests/unit/web/factory-portal/test_layout.test.tsx` - Layout tests (15 tests)
 
 **Modified:**
-- (list modified files with brief description)
+- `package.json` (root) - Added `web/factory-portal` to workspaces
+- `.github/workflows/ci.yaml` - Added factory-portal to frontend tests job, reordered to build libraries first
+- `libs/ui-components/vitest.config.ts` - Added exclusion for factory-portal tests
+- `libs/auth/src/providers/AuthProvider.tsx` - Removed `import.meta.env.PROD` check that was baked in at library build time, preventing mock auth in consuming apps
