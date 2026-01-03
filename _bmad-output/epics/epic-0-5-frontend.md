@@ -83,19 +83,22 @@ Cross-cutting frontend and BFF infrastructure that enables all web applications.
 
 ## Story Sequence
 
-| Story | Name | Blocks | Points |
-|-------|------|--------|--------|
-| 0.5.1 | Collection gRPC + BFF Clients | 0.5.2 | 5 |
-| 0.5.2 | BFF Service Setup | 0.5.3 | 3 |
-| 0.5.3 | BFF Auth Middleware | 0.5.4a | 3 |
-| 0.5.4a | BFF Client Response Wrappers | 0.5.4b | 3 |
-| 0.5.4b | BFF API Routes | 0.5.5, 0.5.6, 0.5.7 | 5 |
-| 0.5.5 | Shared Component Library | 0.5.7 | 3 |
-| 0.5.6 | Shared Auth Library | 0.5.7 | 3 |
-| 0.5.7 | Factory Portal Scaffold | - | 3 |
-| 0.5.8 | Azure AD B2C Configuration | DEFERRED | 5 |
+| Story | Name | Status | GitHub | PR | Points |
+|-------|------|--------|--------|-----|--------|
+| 0.5.1a | Collection gRPC Service | ✅ done | #65 | - | 2 |
+| 0.5.1b | BFF Plantation Client Read | ✅ done | #67 | #68 | 3 |
+| 0.5.1c | BFF Plantation Client Write | ✅ done | #69 | #70 | 2 |
+| 0.5.1d | BFF Collection Client | ✅ done | #71 | #72 | 2 |
+| 0.5.2 | BFF Service Setup | ✅ done | #73 | - | 3 |
+| 0.5.3 | BFF Auth Middleware | ✅ done | #75 | #76 | 3 |
+| 0.5.4a | BFF Client Response Wrappers | ✅ done | #77 | #78 | 3 |
+| 0.5.4b | BFF API Routes | ✅ done | #79 | #80 | 5 |
+| 0.5.5 | Shared Component Library | ✅ done | #82 | #83 | 3 |
+| 0.5.6 | Shared Auth Library | ✅ done | #84 | #85 | 3 |
+| 0.5.7 | Factory Portal Scaffold | ✅ done | #86 | #87 | 3 |
+| 0.5.8 | Azure AD B2C Configuration | ⏸️ deferred | - | - | 5 |
 
-**Total Points:** 33 (28 active + 5 deferred)
+**Total Points:** 37 (32 completed + 5 deferred)
 
 ### Story 0.5.4 Split Rationale (ADR-012)
 
