@@ -381,6 +381,13 @@ class TestApiError:
         assert error.code == "bad_request"
         assert error.message == "Invalid JSON in request body"
 
+    def test_conflict_factory(self) -> None:
+        """Test conflict factory method."""
+        error = ApiError.conflict("Farmer with this phone already exists")
+
+        assert error.code == "conflict"
+        assert error.message == "Farmer with this phone already exists"
+
 
 class TestApiErrorCode:
     """Tests for ApiErrorCode enum."""

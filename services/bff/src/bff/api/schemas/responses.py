@@ -478,3 +478,25 @@ class ApiError(BaseModel):
             code=ApiErrorCode.BAD_REQUEST.value,
             message=message,
         )
+
+    @classmethod
+    def conflict(cls, message: str) -> "ApiError":
+        """Create conflict error.
+
+        Factory method for creating a standardized conflict error
+        when a resource state conflict occurs (e.g., duplicate entry,
+        optimistic locking failure).
+
+        Args:
+            message: Description of the conflict.
+
+        Returns:
+            ApiError with code="conflict".
+
+        Example:
+            >>> error = ApiError.conflict("Farmer with this phone already exists")
+        """
+        return cls(
+            code=ApiErrorCode.CONFLICT.value,
+            message=message,
+        )
