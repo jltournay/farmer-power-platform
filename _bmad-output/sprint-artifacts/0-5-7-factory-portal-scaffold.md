@@ -151,7 +151,7 @@ So that **Factory Manager, Owner, and Admin screens can be built**.
 ### During Development
 - [x] All commits reference GitHub issue: `Relates to #86`
 - [x] Commits are atomic by type (production, test, seed - not mixed)
-- [ ] Push to feature branch: `git push -u origin story/0-5-7-factory-portal-scaffold`
+- [x] Push to feature branch: `git push -u origin story/0-5-7-factory-portal-scaffold`
 
 ### Story Done
 - [ ] Create Pull Request: `gh pr create --title "Story 0.5.7: Factory Portal Scaffold" --base main`
@@ -224,9 +224,9 @@ git push origin story/0-5-7-factory-portal-scaffold
 # Wait ~30s, then check CI status
 gh run list --branch story/0-5-7-factory-portal-scaffold --limit 3
 ```
-**CI Run ID:** _______________
-**CI Status:** [ ] Passed / [ ] Failed
-**Verification Date:** _______________
+**CI Run ID:** 20680254785
+**CI Status:** [x] Passed / [ ] Failed
+**Verification Date:** 2026-01-03
 
 ### 5. E2E Tests
 
@@ -730,16 +730,53 @@ Recent commits show:
 
 ### Agent Model Used
 
-{{agent_model_name_version}}
+Claude Opus 4.5 (claude-opus-4-5-20251101)
 
 ### Debug Log References
 
+- CI Run 20680254785: All jobs passed (Lint, Unit Tests, Integration Tests, Frontend Tests)
+
 ### Completion Notes List
+
+- Factory Portal scaffold complete with all acceptance criteria met
+- 32 unit tests passing
+- Bundle size ~157KB gzipped (well under 500KB limit)
+- Visual browser validation requires human approval
 
 ### File List
 
 **Created:**
-- (list new files)
+- `web/factory-portal/package.json` - Package manifest with workspace dependencies
+- `web/factory-portal/tsconfig.json` - TypeScript strict mode config
+- `web/factory-portal/vite.config.ts` - Vite build configuration with proxy
+- `web/factory-portal/vitest.config.ts` - Vitest test runner config
+- `web/factory-portal/eslint.config.js` - ESLint flat config
+- `web/factory-portal/.env.local.example` - Environment template
+- `web/factory-portal/Dockerfile` - Multi-stage Docker build
+- `web/factory-portal/nginx.conf` - Nginx SPA routing config
+- `web/factory-portal/src/main.tsx` - App entry point
+- `web/factory-portal/src/app/App.tsx` - Root component with auth flow
+- `web/factory-portal/src/app/routes.tsx` - Route definitions with ProtectedRoute
+- `web/factory-portal/src/components/Layout/Layout.tsx` - App shell layout
+- `web/factory-portal/src/components/Layout/index.ts` - Layout export
+- `web/factory-portal/src/components/Sidebar/Sidebar.tsx` - Navigation sidebar
+- `web/factory-portal/src/components/Sidebar/index.ts` - Sidebar export
+- `web/factory-portal/src/components/Header/Header.tsx` - App header
+- `web/factory-portal/src/components/Header/index.ts` - Header export
+- `web/factory-portal/src/pages/manager/CommandCenter/CommandCenter.tsx` - Placeholder
+- `web/factory-portal/src/pages/manager/CommandCenter/index.ts` - Export
+- `web/factory-portal/src/pages/manager/FarmerDetail/FarmerDetail.tsx` - Placeholder
+- `web/factory-portal/src/pages/manager/FarmerDetail/index.ts` - Export
+- `web/factory-portal/src/pages/owner/ROISummary/ROISummary.tsx` - Placeholder
+- `web/factory-portal/src/pages/owner/ROISummary/index.ts` - Export
+- `web/factory-portal/src/pages/admin/Settings/Settings.tsx` - Placeholder
+- `web/factory-portal/src/pages/admin/Settings/index.ts` - Export
+- `web/factory-portal/src/pages/NotFound.tsx` - 404 page
+- `tests/unit/web/factory-portal/test_app.test.tsx` - App tests (5 tests)
+- `tests/unit/web/factory-portal/test_routing.test.tsx` - Routing tests (12 tests)
+- `tests/unit/web/factory-portal/test_layout.test.tsx` - Layout tests (15 tests)
 
 **Modified:**
-- (list modified files with brief description)
+- `package.json` (root) - Added `web/factory-portal` to workspaces
+- `.github/workflows/ci.yaml` - Added factory-portal to frontend tests job, reordered to build libraries first
+- `libs/ui-components/vitest.config.ts` - Added exclusion for factory-portal tests
