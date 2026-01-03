@@ -27,7 +27,7 @@ import pytest_asyncio
 if TYPE_CHECKING:
     from tests.e2e.helpers.mcp_clients import CollectionMCPClient, PlantationMCPClient
 
-from tests.e2e.helpers.api_clients import CollectionClient, PlantationClient
+from tests.e2e.helpers.api_clients import BFFClient, CollectionClient, PlantationClient
 from tests.e2e.helpers.azure_blob import AZURITE_CONNECTION_STRING, AzuriteClient
 from tests.e2e.helpers.mcp_clients import PlantationServiceClient
 from tests.e2e.helpers.mongodb_direct import MongoDBDirectClient
@@ -43,6 +43,7 @@ E2E_CONFIG = {
     "collection_model_url": "http://localhost:8002",
     "collection_model_grpc_host": "localhost",  # Story 0.5.1a
     "collection_model_grpc_port": 50054,  # Story 0.5.1a
+    "bff_url": "http://localhost:8083",  # Story 0.5.4b
     "plantation_mcp_host": "localhost",
     "plantation_mcp_port": 50052,
     "collection_mcp_host": "localhost",
@@ -92,6 +93,7 @@ async def wait_for_services(e2e_config: dict[str, Any]) -> None:
     services = [
         ("Plantation Model", f"{e2e_config['plantation_model_url']}/health"),
         ("Collection Model", f"{e2e_config['collection_model_url']}/health"),
+        ("BFF", f"{e2e_config['bff_url']}/health"),  # Story 0.5.4b
     ]
 
     timeout = e2e_config["health_check_timeout"]
@@ -159,6 +161,16 @@ async def collection_api(
 ) -> AsyncGenerator[CollectionClient, None]:
     """Provide Collection Model API client."""
     async with CollectionClient(e2e_config["collection_model_url"]) as client:
+        yield client
+
+
+@pytest_asyncio.fixture
+async def bff_api(
+    e2e_config: dict[str, Any],
+    wait_for_services: None,
+) -> AsyncGenerator[BFFClient, None]:
+    """Provide BFF API client (Story 0.5.4b)."""
+    async with BFFClient(e2e_config["bff_url"]) as client:
         yield client
 
 

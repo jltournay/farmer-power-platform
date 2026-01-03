@@ -25,11 +25,17 @@ def get_farmer_service() -> FarmerService:
     Creates a FarmerService with default clients and transformers.
     Can be overridden in tests.
 
+    When PLANTATION_GRPC_HOST environment variable is set (e.g., in E2E tests),
+    uses direct gRPC connection instead of DAPR service invocation.
+
     Returns:
         FarmerService instance.
     """
+    import os
+
+    direct_host = os.environ.get("PLANTATION_GRPC_HOST")
     return FarmerService(
-        plantation_client=PlantationClient(),
+        plantation_client=PlantationClient(direct_host=direct_host),
         transformer=FarmerTransformer(),
     )
 
@@ -63,8 +69,8 @@ async def list_farmers(
         description="Factory ID to filter farmers by",
         min_length=1,
         max_length=50,
-        pattern=r"^[A-Z]{3}-FAC-\d{3}$",
-        examples=["KEN-FAC-001"],
+        pattern=r"^[A-Z]{3}-(?:FAC|E2E)-\d{3}$|^FAC-E2E-\d{3}$",
+        examples=["KEN-FAC-001", "FAC-E2E-001"],
     ),
     page_size: int = Query(
         default=50,
@@ -149,8 +155,8 @@ async def get_farmer(
         description="Farmer ID",
         min_length=1,
         max_length=20,
-        pattern=r"^WM-\d{4}$",
-        examples=["WM-0001"],
+        pattern=r"^(?:WM|FRM-E2E)-\d{3,4}$",
+        examples=["WM-0001", "FRM-E2E-001"],
     ),
     user: TokenClaims = require_permission("farmers:read"),
     service: FarmerService = Depends(get_farmer_service),

@@ -372,6 +372,9 @@ services:
       MOCK_JWT_SECRET: test-secret-for-e2e
       DAPR_HTTP_PORT: "3500"
       DAPR_GRPC_PORT: "50001"
+      # Direct gRPC connection to Plantation Model (bypasses DAPR service invocation)
+      # Required because DAPR mDNS discovery doesn't work across Docker network namespaces
+      PLANTATION_GRPC_HOST: "plantation-model:50051"
       OTEL_ENABLED: "false"
       LOG_LEVEL: DEBUG
     depends_on:
