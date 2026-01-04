@@ -388,9 +388,8 @@ class MockMongoCollection:
                     elif op == "$lte":
                         if not doc.get(key, "") <= op_value:
                             return False
-                    elif op == "$in":
-                        if doc.get(key) not in op_value:
-                            return False
+                    elif op == "$in" and doc.get(key) not in op_value:
+                        return False
             else:
                 if doc.get(key) != value:
                     return False
@@ -415,7 +414,7 @@ class MockMongoCollection:
         return_document: bool = False,
     ) -> dict[str, Any] | None:
         """Mock find_one_and_update operation."""
-        for doc_id, doc in self._documents.items():
+        for _doc_id, doc in self._documents.items():
             if self._match_filter(doc, filter):
                 if "$set" in update:
                     # Handle nested key updates like "metadata.updated_at"
