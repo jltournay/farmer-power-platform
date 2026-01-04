@@ -17,7 +17,7 @@ Tests cover:
 - Discriminated union auto-selection (5 tests - one per type)
 - Invalid type rejection (2 tests)
 
-Total: 38+ tests
+Total: 38 tests
 """
 
 import pytest

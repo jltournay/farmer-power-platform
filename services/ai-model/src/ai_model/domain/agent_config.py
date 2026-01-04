@@ -165,6 +165,9 @@ class ErrorHandlingConfig(BaseModel):
         default_factory=lambda: [100, 500, 2000],
         description="Backoff delays in milliseconds between retries",
     )
+    # NOTE: "graceful_fallback" added beyond original architecture spec to support
+    # scenarios where agent failure should return a safe default response rather
+    # than publishing an error event or dead-lettering the message.
     on_failure: Literal["publish_error_event", "dead_letter", "graceful_fallback"] = Field(
         default="publish_error_event",
         description="Action on final failure",

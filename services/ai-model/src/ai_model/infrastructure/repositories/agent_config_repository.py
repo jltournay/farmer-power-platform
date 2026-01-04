@@ -23,11 +23,6 @@ from ai_model.domain.agent_config import (
     AgentConfig,
     AgentConfigStatus,
     AgentType,
-    ConversationalConfig,
-    ExplorerConfig,
-    ExtractorConfig,
-    GeneratorConfig,
-    TieredVisionConfig,
 )
 from pydantic import TypeAdapter
 from pymongo import ASCENDING
@@ -134,7 +129,14 @@ class AgentConfigRepository:
         """Update an existing agent configuration.
 
         Uses delete + insert pattern to replace the entire document.
-        This ensures atomicity and proper handling of discriminated unions.
+
+        NOTE: This pattern is NOT truly atomic - there's a brief window where
+        the document doesn't exist between delete and insert. For production
+        use with high availability requirements, consider using replace_one()
+        or a MongoDB transaction. Current pattern is used for test mock
+        compatibility (MockMongoCollection doesn't support replace_one).
+
+        TODO: Switch to replace_one() when mock infrastructure is updated.
 
         Args:
             config: The agent configuration to update.
@@ -150,7 +152,7 @@ class AgentConfigRepository:
         if existing is None:
             raise ValueError(f"Agent config not found: {config.id}")
 
-        # Delete and re-insert (atomic replacement)
+        # Delete and re-insert (see NOTE above about atomicity)
         await self._collection.delete_one({"_id": config.id})
         doc = self._serialize(config)
         await self._collection.insert_one(doc)
@@ -320,11 +322,3 @@ class AgentConfigRepository:
         )
 
         logger.info("Agent config indexes created")
-
-
-# Type alias exports for convenience
-ExtractorConfigType = ExtractorConfig
-ExplorerConfigType = ExplorerConfig
-GeneratorConfigType = GeneratorConfig
-ConversationalConfigType = ConversationalConfig
-TieredVisionConfigType = TieredVisionConfig

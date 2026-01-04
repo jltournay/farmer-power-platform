@@ -17,7 +17,7 @@ Tests cover:
 - list_versions() - lists all versions of an agent
 - ensure_indexes() - creates proper indexes
 
-Total: 16 tests
+Total: 22 tests
 """
 
 from typing import Any
