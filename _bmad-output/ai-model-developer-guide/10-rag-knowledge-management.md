@@ -97,6 +97,22 @@ class RAGDocumentMetadata(BaseModel):
     tags: list[str] = []                     # Searchable tags
 
 
+class SourceFile(BaseModel):
+    """Original uploaded file reference (for PDF/DOCX uploads)."""
+    filename: str                            # "blister-blight-guide.pdf"
+    file_type: Literal["pdf", "docx", "md", "txt"]
+    blob_path: str                           # Azure Blob path to original
+    file_size_bytes: int
+    extraction_method: Literal[
+        "manual",           # User typed content directly
+        "text_extraction",  # PyMuPDF for digital PDFs
+        "azure_doc_intel",  # Azure Document Intelligence
+        "vision_llm"        # Vision LLM for diagrams
+    ] | None = None
+    extraction_confidence: float | None = None
+    page_count: int | None = None
+
+
 class RAGDocument(BaseModel):
     """RAG knowledge document."""
     document_id: str                         # Stable ID across versions
@@ -111,7 +127,10 @@ class RAGDocument(BaseModel):
         "quality_standards",
         "regional_context"
     ]
-    content: str                             # Full text (markdown supported)
+    content: str                             # Extracted/authored markdown
+
+    # Source file (if uploaded as PDF/DOCX)
+    source_file: SourceFile | None = None
 
     # Lifecycle
     status: Literal["draft", "staged", "active", "archived"] = "draft"
@@ -130,6 +149,23 @@ class RAGDocument(BaseModel):
     content_hash: str | None = None
 ```
 
+## PDF Ingestion
+
+Agronomists can upload PDFs directly. The system auto-extracts text using the appropriate method:
+
+| Method | Use Case | Speed | Cost |
+|--------|----------|-------|------|
+| **PyMuPDF** | Digital PDFs with text | ~100ms/page | Free |
+| **Azure Document Intelligence** | Scanned PDFs, tables | ~2-5s/page | $0.01/page |
+| **Vision LLM** | Complex diagrams | ~5-10s/page | $0.02-0.05/page |
+
+The extraction method is auto-detected:
+1. Try PyMuPDF text extraction first (fast, free)
+2. If confidence < 0.9, fall back to Azure Document Intelligence
+3. Vision LLM used only for documents with complex diagrams
+
+> **Architecture Reference:** See `architecture/ai-model-architecture.md` → "PDF Ingestion Pipeline" for implementation details.
+
 ## Knowledge Domains
 
 | Domain | Content | Used By Agents |
@@ -145,16 +181,27 @@ class RAGDocument(BaseModel):
 ### Document CRUD
 
 ```bash
-# Create document from file
+# Create document from PDF (auto-extraction)
 farmer-cli rag create --title "Blister Blight Treatment" \
   --domain plant_diseases \
-  --file treatment-guide.md \
+  --pdf ./documents/blister-blight-guide.pdf \
   --author "Dr. Wanjiku" \
   --region Kenya
 
-# Create document inline
+# Output:
+# ✓ Uploaded PDF (2.3 MB, 15 pages)
+# ✓ Extracted using azure_doc_intel (confidence: 0.96)
+# ✓ Document created: doc-789 (status: draft)
+
+# Create document from markdown file
 farmer-cli rag create --title "Frost Protection" \
   --domain weather_patterns \
+  --file frost-protection.md \
+  --author "Operations"
+
+# Create document with inline content
+farmer-cli rag create --title "Quick Tip" \
+  --domain tea_cultivation \
   --content "When temperatures drop below 4°C..." \
   --author "Operations"
 
