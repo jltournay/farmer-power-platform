@@ -21,7 +21,7 @@ import asyncio
 import contextlib
 from abc import ABC, abstractmethod
 from datetime import UTC, datetime, timedelta
-from typing import TYPE_CHECKING, Generic, TypeVar
+from typing import TYPE_CHECKING, Any, Generic, TypeVar
 
 import structlog
 from opentelemetry import metrics
@@ -208,7 +208,7 @@ class MongoChangeStreamCache(ABC, Generic[T]):
         """Watch MongoDB collection for changes.
 
         Uses resume token for resilient reconnection (AC5).
-        Auto-reconnects on disconnect with exponential backoff.
+        Auto-reconnects on disconnect after brief pause.
         """
         pipeline = [{"$match": {"operationType": {"$in": ["insert", "update", "replace", "delete"]}}}]
 
@@ -391,7 +391,7 @@ class MongoChangeStreamCache(ABC, Generic[T]):
     # Health Status (AC9)
     # -------------------------------------------------------------------------
 
-    def get_health_status(self) -> dict:
+    def get_health_status(self) -> dict[str, Any]:
         """Get cache health status for health endpoint.
 
         Returns:

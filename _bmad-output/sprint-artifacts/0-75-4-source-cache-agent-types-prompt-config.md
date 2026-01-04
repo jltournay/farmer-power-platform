@@ -1,6 +1,6 @@
 # Story 0.75.4: Source Cache for Agent Types and Prompt Config
 
-**Status:** in-progress
+**Status:** review
 **GitHub Issue:** #95
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
@@ -199,7 +199,10 @@ PYTHONPATH="${PYTHONPATH}:.:services/ai-model/src:libs/fp-common:libs/fp-proto/s
 ```
 **Output:**
 ```
-(paste test summary here - e.g., "XX passed in X.XXs")
+52 passed in 1.64s
+- tests/unit/fp_common/test_mongo_change_stream_cache.py: 17 passed
+- tests/unit/ai_model/test_agent_config_cache.py: 17 passed
+- tests/unit/ai_model/test_prompt_cache.py: 18 passed
 ```
 
 ### 2. E2E Tests (MANDATORY)
@@ -218,15 +221,16 @@ docker compose -f tests/e2e/infrastructure/docker-compose.e2e.yaml down -v
 ```
 **Output:**
 ```
-(paste E2E test output here - story is NOT ready for review without this)
+============================= 102 passed, 1 skipped in 34.72s ==============================
+All E2E scenarios passed successfully.
 ```
-**E2E passed:** [ ] Yes / [ ] No
+**E2E passed:** [x] Yes / [ ] No
 
 ### 3. Lint Check
 ```bash
 ruff check . && ruff format --check .
 ```
-**Lint passed:** [ ] Yes / [ ] No
+**Lint passed:** [x] Yes / [ ] No
 
 ### 4. CI Verification on Story Branch (MANDATORY)
 
@@ -239,11 +243,11 @@ git push origin story/0-75-4-source-cache-agent-types-prompt-config
 # Wait ~30s, then check CI status
 gh run list --branch story/0-75-4-source-cache-agent-types-prompt-config --limit 3
 ```
-**Quality CI Run ID:** _______________
-**Quality CI Status:** [ ] Passed / [ ] Failed
-**E2E CI Run ID:** _______________
-**E2E CI Status:** [ ] Passed / [ ] Failed
-**Verification Date:** _______________
+**Quality CI Run ID:** 20697917790
+**Quality CI Status:** [x] Passed / [ ] Failed
+**E2E CI Run ID:** 20697953951
+**E2E CI Status:** [x] Passed / [ ] Failed
+**Verification Date:** 2026-01-04
 
 ---
 
@@ -471,16 +475,41 @@ tests/unit/
 
 ### Agent Model Used
 
-{{agent_model_name_version}}
+Claude Opus 4.5 (claude-opus-4-5-20251101)
 
 ### Debug Log References
 
+- Quality CI Run: https://github.com/jltournay/farmer-power-platform/actions/runs/20697917790
+- E2E CI Run: https://github.com/jltournay/farmer-power-platform/actions/runs/20697953951
+
 ### Completion Notes List
+
+1. Created MongoChangeStreamCache generic base class in fp-common per ADR-013
+2. Refactored SourceConfigService to extend the new base class (reduced ~200 lines of duplicated code)
+3. Implemented AgentConfigCache with TypeAdapter for discriminated union handling
+4. Implemented PromptCache with A/B test support for staged prompts
+5. Added lifespan hooks in AI Model main.py for cache warming and change stream management
+6. Added /health/cache endpoint for cache status monitoring
+7. Created 52 unit tests exceeding the minimum requirement of 40
+8. All 102 E2E tests pass (no regressions)
+9. Both Quality CI and E2E CI workflows pass
 
 ### File List
 
 **Created:**
-- (list new files)
+- `libs/fp-common/fp_common/cache/__init__.py` - Export MongoChangeStreamCache
+- `libs/fp-common/fp_common/cache/mongo_change_stream_cache.py` - Base class implementation
+- `services/ai-model/src/ai_model/services/agent_config_cache.py` - AgentConfigCache
+- `services/ai-model/src/ai_model/services/prompt_cache.py` - PromptCache
+- `services/ai-model/src/ai_model/api/health.py` - Cache health endpoint
+- `tests/unit/fp_common/test_mongo_change_stream_cache.py` - 17 tests
+- `tests/unit/ai_model/test_agent_config_cache.py` - 17 tests
+- `tests/unit/ai_model/test_prompt_cache.py` - 18 tests
 
 **Modified:**
-- (list modified files with brief description)
+- `libs/fp-common/fp_common/__init__.py` - Add cache module exports
+- `services/collection-model/src/collection_model/services/source_config_service.py` - Refactored to extend MongoChangeStreamCache
+- `services/ai-model/src/ai_model/main.py` - Added lifespan hooks for cache management
+- `services/ai-model/src/ai_model/services/__init__.py` - Export new cache classes
+- `tests/unit/collection_model/services/test_source_config_service.py` - Updated for base class changes
+- `tests/unit/collection/test_source_config_service.py` - Updated for base class changes

@@ -199,6 +199,33 @@ class TestCacheAccess:
 
         assert result is None
 
+    @pytest.mark.asyncio
+    async def test_get_all_skips_invalid_documents(self, sample_cache, mock_collection):
+        """Test get_all skips documents that fail to parse."""
+        # Mix of valid and invalid documents
+        docs = [
+            {"_id": "mongo1", "id": "1", "name": "Valid Item", "status": "active"},
+            {"_id": "mongo2", "invalid_field": "missing_required_id"},  # Will fail parsing
+            {"_id": "mongo3", "id": "3", "name": "Another Valid", "status": "active"},
+        ]
+
+        async def async_iter():
+            for doc in docs:
+                yield doc
+
+        mock_cursor = MagicMock()
+        mock_cursor.__aiter__ = lambda self: async_iter()
+        mock_collection.find = MagicMock(return_value=mock_cursor)
+
+        # Should not raise, just skip invalid document
+        result = await sample_cache.get_all()
+
+        # Only valid documents should be in cache
+        assert len(result) == 2
+        assert "1" in result
+        assert "3" in result
+        assert "2" not in result  # Invalid doc was skipped
+
 
 # =============================================================================
 # CACHE INVALIDATION TESTS
