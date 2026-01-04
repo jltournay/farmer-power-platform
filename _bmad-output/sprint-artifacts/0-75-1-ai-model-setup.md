@@ -115,7 +115,7 @@ so that AI workflows can be built on a solid foundation.
 - [ ] PR approved and merged (squash)
 - [ ] Local branch cleaned up: `git branch -d story/0-75-1-ai-model-setup`
 
-**PR URL:** _______________ (fill in when created)
+**PR URL:** https://github.com/jltournay/farmer-power-platform/pull/90
 
 ---
 
