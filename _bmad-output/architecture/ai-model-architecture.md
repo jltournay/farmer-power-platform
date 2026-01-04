@@ -1409,6 +1409,352 @@ The RAG (Retrieval-Augmented Generation) engine is internal to the AI Model.
 | Quality Standards | Grading criteria, buyer expectations | extract-and-validate, analyze-market |
 | Regional Context | Local practices, cultural factors | generate-action-plan |
 
+## RAG Document API
+
+RAG documents are managed through a gRPC API exposed by the AI Model service. This enables:
+- **Admin UI** for agronomists (non-technical experts) to manage knowledge
+- **CLI** for Ops team automation and bulk operations
+
+### RAG Document Pydantic Model
+
+```python
+from datetime import datetime
+from typing import Literal
+from pydantic import BaseModel, Field
+
+
+class RAGDocumentMetadata(BaseModel):
+    """Metadata for RAG document."""
+    author: str                              # Agronomist who created/updated
+    source: str | None = None                # Original source (book, research paper, etc.)
+    region: str | None = None                # Geographic relevance (e.g., "Kenya", "Rwanda")
+    season: str | None = None                # Seasonal relevance (e.g., "dry_season", "monsoon")
+    tags: list[str] = []                     # Searchable tags
+
+
+class RAGDocument(BaseModel):
+    """RAG knowledge document for expert knowledge storage."""
+    document_id: str                         # Stable ID across versions
+    version: int = 1                         # Incrementing version number
+
+    # Content
+    title: str
+    domain: Literal[
+        "plant_diseases",
+        "tea_cultivation",
+        "weather_patterns",
+        "quality_standards",
+        "regional_context"
+    ]
+    content: str                             # Full document text (markdown supported)
+
+    # Lifecycle
+    status: Literal["draft", "staged", "active", "archived"] = "draft"
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    updated_at: datetime = Field(default_factory=datetime.utcnow)
+
+    # Metadata
+    metadata: RAGDocumentMetadata
+
+    # Change tracking
+    change_summary: str | None = None        # What changed from previous version
+
+    # Embedding reference (populated after vectorization)
+    pinecone_namespace: str | None = None    # e.g., "knowledge-v12"
+    pinecone_ids: list[str] = []             # Vector IDs in Pinecone
+    content_hash: str | None = None          # SHA256 for change detection
+```
+
+### gRPC API (Proto Definition)
+
+```protobuf
+// proto/ai_model/v1/rag_document.proto
+syntax = "proto3";
+
+package farmer_power.ai_model.v1;
+
+import "google/protobuf/timestamp.proto";
+
+service RAGDocumentService {
+  // CRUD Operations
+  rpc CreateDocument(CreateDocumentRequest) returns (RAGDocument);
+  rpc GetDocument(GetDocumentRequest) returns (RAGDocument);
+  rpc UpdateDocument(UpdateDocumentRequest) returns (RAGDocument);
+  rpc DeleteDocument(DeleteDocumentRequest) returns (DeleteDocumentResponse);
+
+  // List & Search
+  rpc ListDocuments(ListDocumentsRequest) returns (ListDocumentsResponse);
+  rpc SearchDocuments(SearchDocumentsRequest) returns (SearchDocumentsResponse);
+
+  // Lifecycle Management
+  rpc StageDocument(StageDocumentRequest) returns (RAGDocument);
+  rpc ActivateDocument(ActivateDocumentRequest) returns (RAGDocument);
+  rpc ArchiveDocument(ArchiveDocumentRequest) returns (RAGDocument);
+  rpc RollbackDocument(RollbackDocumentRequest) returns (RAGDocument);
+
+  // A/B Testing
+  rpc StartABTest(StartABTestRequest) returns (ABTestStatus);
+  rpc GetABTestStatus(GetABTestStatusRequest) returns (ABTestStatus);
+  rpc EndABTest(EndABTestRequest) returns (ABTestResult);
+}
+
+message RAGDocument {
+  string document_id = 1;
+  int32 version = 2;
+  string title = 3;
+  string domain = 4;
+  string content = 5;
+  string status = 6;
+  RAGDocumentMetadata metadata = 7;
+  string change_summary = 8;
+  google.protobuf.Timestamp created_at = 9;
+  google.protobuf.Timestamp updated_at = 10;
+}
+
+message RAGDocumentMetadata {
+  string author = 1;
+  optional string source = 2;
+  optional string region = 3;
+  optional string season = 4;
+  repeated string tags = 5;
+}
+
+message CreateDocumentRequest {
+  string title = 1;
+  string domain = 2;
+  string content = 3;
+  RAGDocumentMetadata metadata = 4;
+}
+
+message GetDocumentRequest {
+  string document_id = 1;
+  optional int32 version = 2;            // If omitted, returns latest
+}
+
+message UpdateDocumentRequest {
+  string document_id = 1;
+  string title = 2;
+  string content = 3;
+  RAGDocumentMetadata metadata = 4;
+  string change_summary = 5;             // Required: what changed
+}
+
+message DeleteDocumentRequest {
+  string document_id = 1;
+}
+
+message DeleteDocumentResponse {
+  bool success = 1;
+}
+
+message ListDocumentsRequest {
+  optional string domain = 1;            // Filter by domain
+  optional string status = 2;            // Filter by status
+  optional string author = 3;            // Filter by author
+  int32 page = 4;
+  int32 page_size = 5;
+}
+
+message ListDocumentsResponse {
+  repeated RAGDocument documents = 1;
+  int32 total_count = 2;
+  int32 page = 3;
+  int32 page_size = 4;
+}
+
+message SearchDocumentsRequest {
+  string query = 1;                      // Full-text search
+  optional string domain = 2;
+  optional string status = 3;
+  int32 limit = 4;
+}
+
+message SearchDocumentsResponse {
+  repeated RAGDocument documents = 1;
+}
+
+message StageDocumentRequest {
+  string document_id = 1;
+}
+
+message ActivateDocumentRequest {
+  string document_id = 1;
+}
+
+message ArchiveDocumentRequest {
+  string document_id = 1;
+}
+
+message RollbackDocumentRequest {
+  string document_id = 1;
+  int32 to_version = 2;
+}
+
+message StartABTestRequest {
+  string document_id = 1;
+  int32 traffic_percentage = 2;          // % of queries using staged version
+  int32 duration_days = 3;
+}
+
+message ABTestStatus {
+  string test_id = 1;
+  string document_id = 2;
+  string status = 3;                     // "running", "completed", "cancelled"
+  int32 staged_queries = 4;
+  int32 active_queries = 5;
+  google.protobuf.Timestamp started_at = 6;
+  google.protobuf.Timestamp ends_at = 7;
+}
+
+message GetABTestStatusRequest {
+  string test_id = 1;
+}
+
+message EndABTestRequest {
+  string test_id = 1;
+  bool promote = 2;                      // true = activate staged, false = rollback
+}
+
+message ABTestResult {
+  string test_id = 1;
+  bool promoted = 2;
+  string outcome = 3;                    // Summary of results
+}
+```
+
+### Communication Flow
+
+```
+┌─────────────────────────────────────────────────────────────────────────┐
+│                    RAG DOCUMENT MANAGEMENT FLOW                          │
+├─────────────────────────────────────────────────────────────────────────┤
+│                                                                         │
+│  ADMIN UI (Web)                     BFF                    AI MODEL     │
+│  ┌─────────────────┐           ┌──────────┐           ┌──────────────┐ │
+│  │  Agronomist     │  GraphQL  │          │   gRPC    │              │ │
+│  │  uploads doc    │──────────▶│  BFF     │──────────▶│  RAGDocument │ │
+│  │                 │           │  Service │           │  Service     │ │
+│  │  • Title        │           │          │           │              │ │
+│  │  • Domain       │           │          │           │  • Validate  │ │
+│  │  • Content      │           │          │           │  • Store     │ │
+│  │  • Metadata     │           │          │           │  • Vectorize │ │
+│  └─────────────────┘           └──────────┘           └──────────────┘ │
+│                                                              │          │
+│                                                              ▼          │
+│  CLI (Ops)                                            ┌──────────────┐ │
+│  ┌─────────────────┐                                  │   MongoDB    │ │
+│  │ farmer-cli rag  │                                  │  (documents) │ │
+│  │   create        │─────────────────────────────────▶│              │ │
+│  │   list          │          Direct gRPC             └──────────────┘ │
+│  │   stage         │                                         │          │
+│  │   activate      │                                         ▼          │
+│  └─────────────────┘                                  ┌──────────────┐ │
+│                                                       │   Pinecone   │ │
+│                                                       │  (vectors)   │ │
+│                                                       └──────────────┘ │
+│                                                                         │
+└─────────────────────────────────────────────────────────────────────────┘
+```
+
+### CLI Commands (for Ops)
+
+```bash
+# Create document from file
+farmer-cli rag create --title "Blister Blight Treatment" \
+  --domain plant_diseases \
+  --file treatment-guide.md \
+  --author "Dr. Wanjiku" \
+  --region Kenya
+
+# Create document inline
+farmer-cli rag create --title "Frost Protection" \
+  --domain weather_patterns \
+  --content "When temperatures drop below 4°C..." \
+  --author "Operations"
+
+# List documents with filters
+farmer-cli rag list --domain plant_diseases --status active
+farmer-cli rag list --author "Dr. Wanjiku"
+
+# Get specific document
+farmer-cli rag get --id doc-123
+farmer-cli rag get --id doc-123 --version 2
+
+# Update document
+farmer-cli rag update --id doc-123 \
+  --file updated-guide.md \
+  --change-summary "Added new treatment protocol for resistant strains"
+
+# Stage for A/B testing
+farmer-cli rag stage --id doc-123
+
+# Start A/B test
+farmer-cli rag ab-test start --id doc-123 --traffic 20 --duration 7
+
+# Check A/B test status
+farmer-cli rag ab-test status --test-id test-456
+
+# Activate (promote to production)
+farmer-cli rag activate --id doc-123
+
+# Rollback to previous version
+farmer-cli rag rollback --id doc-123 --to-version 2
+
+# Archive document
+farmer-cli rag archive --id doc-123
+
+# Bulk import from directory
+farmer-cli rag import --dir ./knowledge-base/ --domain tea_cultivation --author "Import"
+```
+
+### Vectorization Process
+
+When a document is staged or activated, the AI Model automatically:
+
+1. **Chunk content** - Split into semantic chunks (by heading or paragraph)
+2. **Generate embeddings** - Using configured embedding model
+3. **Store in Pinecone** - With namespace based on version
+4. **Update document record** - Store `pinecone_namespace` and `pinecone_ids`
+
+```python
+async def vectorize_document(document: RAGDocument) -> RAGDocument:
+    """Vectorize document content and store in Pinecone."""
+    # 1. Chunk content
+    chunks = chunk_by_heading(document.content)
+
+    # 2. Generate embeddings
+    embeddings = await embedding_client.embed(
+        texts=[chunk.text for chunk in chunks],
+        model="text-embedding-3-small"
+    )
+
+    # 3. Store in Pinecone
+    namespace = f"knowledge-v{document.version}"
+    vectors = [
+        {
+            "id": f"{document.document_id}-{i}",
+            "values": embedding,
+            "metadata": {
+                "document_id": document.document_id,
+                "domain": document.domain,
+                "chunk_index": i,
+                "title": document.title,
+                "region": document.metadata.region,
+                "tags": document.metadata.tags,
+            }
+        }
+        for i, embedding in enumerate(embeddings)
+    ]
+    await pinecone_client.upsert(vectors, namespace=namespace)
+
+    # 4. Update document record
+    document.pinecone_namespace = namespace
+    document.pinecone_ids = [v["id"] for v in vectors]
+    document.content_hash = hashlib.sha256(document.content.encode()).hexdigest()
+
+    return document
+```
+
 ## Prompt Management
 
 **Decision:** Prompts are externalized to MongoDB, enabling hot-reload and A/B testing without redeployment.
@@ -1524,7 +1870,7 @@ prompt_document:
 │          │                                                              │
 │          ├──► Option A: Direct promote                                  │
 │          │    farmer-cli prompt promote --id disease-diagnosis          │
-│          │                                                              │
+│          │                                                                 │
 │          └──► Option B: A/B test first                                  │
 │               farmer-cli prompt ab-test start --id disease-diagnosis    │
 │               --traffic 20 --duration 7d                                │
