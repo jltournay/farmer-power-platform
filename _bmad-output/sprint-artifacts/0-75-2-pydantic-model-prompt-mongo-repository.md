@@ -1,6 +1,6 @@
 # Story 0.75.2: Pydantic Model for Prompt + Mongo Repository
 
-**Status:** review
+**Status:** done
 **GitHub Issue:** #91
 
 ## Story
@@ -102,8 +102,8 @@ So that prompts are type-safe and properly managed in MongoDB.
 - [x] Create Pull Request: `gh pr create --title "Story 0.75.2: Pydantic Model for Prompt + Mongo Repository" --base main`
 - [x] CI passes on PR (including E2E tests)
 - [x] Code review completed (`/code-review` or human review)
-- [ ] PR approved and merged (squash)
-- [ ] Local branch cleaned up: `git branch -d story/0-75-2-pydantic-model-prompt-mongo-repository`
+- [x] PR approved and merged (squash)
+- [x] Local branch cleaned up: `git branch -d story/0-75-2-pydantic-model-prompt-mongo-repository`
 
 **PR URL:** https://github.com/jltournay/farmer-power-platform/pull/92
 
