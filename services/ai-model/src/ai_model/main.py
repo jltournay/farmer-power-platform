@@ -24,11 +24,14 @@ from ai_model.infrastructure.mongodb import (
     get_database,
     get_mongodb_client,
 )
+from ai_model.infrastructure.repositories import LlmCostEventRepository
 from ai_model.infrastructure.tracing import (
     instrument_fastapi,
     setup_tracing,
     shutdown_tracing,
 )
+from ai_model.llm import LLMGateway, RateLimiter
+from ai_model.llm.budget_monitor import BudgetMonitor
 from ai_model.services import AgentConfigCache, PromptCache
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -60,6 +63,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     """Application lifespan handler for startup and shutdown events.
 
     Story 0.75.4: Added cache warming and change stream management (ADR-013).
+    Story 0.75.5: Added LLM Gateway initialization with validate_models().
     """
     # Startup
     logger.info(
@@ -75,6 +79,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     # Initialize MongoDB connection
     agent_config_cache: AgentConfigCache | None = None
     prompt_cache: PromptCache | None = None
+    llm_gateway: LLMGateway | None = None
 
     try:
         await get_mongodb_client()
@@ -108,6 +113,53 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
         # Register cache services with health module
         health.set_cache_services(agent_config_cache, prompt_cache)
 
+        # Story 0.75.5: Initialize LLM Gateway (AC15)
+        if settings.openrouter_api_key:
+            cost_repository = LlmCostEventRepository(db)
+            await cost_repository.ensure_indexes()
+
+            budget_monitor = BudgetMonitor(
+                daily_threshold_usd=settings.llm_cost_alert_daily_usd,
+                monthly_threshold_usd=settings.llm_cost_alert_monthly_usd,
+            )
+
+            rate_limiter = RateLimiter(
+                requests_per_minute=settings.llm_rate_limit_rpm,
+                tokens_per_minute=settings.llm_rate_limit_tpm,
+            )
+
+            llm_gateway = LLMGateway(
+                api_key=settings.openrouter_api_key,
+                fallback_models=settings.llm_fallback_models,
+                rate_limiter=rate_limiter,
+                retry_max_attempts=settings.llm_retry_max_attempts,
+                retry_backoff_ms=settings.llm_retry_backoff_ms,
+                site_url=settings.openrouter_site_url,
+                site_name=settings.openrouter_site_name,
+                cost_tracking_enabled=settings.llm_cost_tracking_enabled,
+                cost_repository=cost_repository,
+                budget_monitor=budget_monitor,
+            )
+
+            # Validate models at startup (AC5, AC15)
+            try:
+                available_models = await llm_gateway.validate_models()
+                logger.info(
+                    "LLM Gateway initialized and models validated",
+                    model_count=len(available_models),
+                )
+            except Exception as e:
+                logger.warning(
+                    "Failed to validate OpenRouter models at startup",
+                    error=str(e),
+                )
+
+            # Store in app.state for dependency injection
+            app.state.llm_gateway = llm_gateway
+            app.state.budget_monitor = budget_monitor
+        else:
+            logger.warning("OpenRouter API key not configured, LLM Gateway not initialized")
+
     except Exception as e:
         logger.warning("MongoDB/cache initialization failed at startup", error=str(e))
         # Service can still start - readiness probe will report not ready
@@ -132,6 +184,11 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     if prompt_cache:
         await prompt_cache.stop_change_stream()
     logger.info("Change stream watchers stopped")
+
+    # Story 0.75.5: Close LLM Gateway
+    if llm_gateway:
+        await llm_gateway.close()
+        logger.info("LLM Gateway closed")
 
     await stop_grpc_server()
     await close_mongodb_connection()

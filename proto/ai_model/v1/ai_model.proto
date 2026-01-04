@@ -1,9 +1,13 @@
 // AI Model Service - gRPC API Definition
 // LLM extraction gateway for all domain models
+// Story 0.75.5: Added CostService for LLM cost observability
 
 syntax = "proto3";
 
 package farmer_power.ai_model.v1;
+
+import "google/protobuf/timestamp.proto";
+import "google/protobuf/empty.proto";
 
 // AiModelService provides LLM-based extraction capabilities
 service AiModelService {
@@ -13,6 +17,32 @@ service AiModelService {
   // Health check for service readiness
   rpc HealthCheck(HealthCheckRequest) returns (HealthCheckResponse);
 }
+
+// CostService provides LLM cost observability (Story 0.75.5)
+// Consumed by Epic 9 (Platform Admin Dashboard) for cost monitoring
+service CostService {
+  // Get daily cost summaries for a date range
+  rpc GetDailyCostSummary(DateRangeRequest) returns (DailyCostSummaryResponse);
+
+  // Get current day's running cost total
+  rpc GetCurrentDayCost(google.protobuf.Empty) returns (CostSummaryResponse);
+
+  // Get cost breakdown by agent type
+  rpc GetCostByAgentType(DateRangeRequest) returns (CostByAgentTypeResponse);
+
+  // Get cost breakdown by model
+  rpc GetCostByModel(DateRangeRequest) returns (CostByModelResponse);
+
+  // Get active cost alerts
+  rpc GetCostAlerts(google.protobuf.Empty) returns (CostAlertsResponse);
+
+  // Configure cost thresholds at runtime
+  rpc ConfigureCostThreshold(ThresholdConfigRequest) returns (google.protobuf.Empty);
+}
+
+// ============================================
+// Extraction Service Messages
+// ============================================
 
 message ExtractionRequest {
   // Raw content to extract from (JSON, text, etc.)
@@ -56,4 +86,88 @@ message HealthCheckRequest {}
 message HealthCheckResponse {
   bool healthy = 1;
   string version = 2;
+}
+
+// ============================================
+// Cost Service Messages (Story 0.75.5)
+// ============================================
+
+message DateRangeRequest {
+  google.protobuf.Timestamp start_date = 1;
+  google.protobuf.Timestamp end_date = 2;
+}
+
+message CostSummaryResponse {
+  // Total cost in USD (string for Decimal precision)
+  string total_cost_usd = 1;
+  int64 total_requests = 2;
+  int64 total_tokens_in = 3;
+  int64 total_tokens_out = 4;
+}
+
+message DailyCost {
+  google.protobuf.Timestamp date = 1;
+  string total_cost_usd = 2;
+  int64 total_requests = 3;
+  int64 total_tokens_in = 4;
+  int64 total_tokens_out = 5;
+  int64 success_count = 6;
+  int64 failure_count = 7;
+}
+
+message DailyCostSummaryResponse {
+  repeated DailyCost daily_costs = 1;
+}
+
+message AgentTypeCostEntry {
+  string agent_type = 1;
+  string total_cost_usd = 2;
+  int64 total_requests = 3;
+  int64 total_tokens = 4;
+}
+
+message CostByAgentTypeResponse {
+  repeated AgentTypeCostEntry agent_type_costs = 1;
+}
+
+message ModelCostEntry {
+  string model = 1;
+  string total_cost_usd = 2;
+  int64 total_requests = 3;
+  int64 total_tokens = 4;
+}
+
+message CostByModelResponse {
+  repeated ModelCostEntry model_costs = 1;
+}
+
+message CostAlert {
+  // Type of threshold: "daily" or "monthly"
+  string threshold_type = 1;
+  // Configured threshold in USD
+  string threshold_usd = 2;
+  // Current cost when alert was triggered
+  string current_cost_usd = 3;
+  // When the alert was triggered
+  google.protobuf.Timestamp triggered_at = 4;
+  // ID of the cost event that triggered the alert
+  string event_id = 5;
+}
+
+message CostAlertsResponse {
+  repeated CostAlert alerts = 1;
+  // Current budget status
+  string daily_threshold_usd = 2;
+  string daily_total_usd = 3;
+  bool daily_alert_triggered = 4;
+  string monthly_threshold_usd = 5;
+  string monthly_total_usd = 6;
+  bool monthly_alert_triggered = 7;
+}
+
+message ThresholdConfigRequest {
+  // New daily threshold in USD (0 = disabled, -1 = no change)
+  double daily_threshold_usd = 1;
+  // New monthly threshold in USD (0 = disabled, -1 = no change)
+  double monthly_threshold_usd = 2;
 }

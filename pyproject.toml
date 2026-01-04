@@ -22,6 +22,7 @@ dependencies = [
 
     # AI/LLM
     "langchain>=0.1.0",
+    "langchain-openai>=0.0.5",  # ChatOpenAI for OpenRouter integration
     "langgraph>=0.0.20",
     "openai>=1.10.0",  # OpenRouter uses OpenAI-compatible API
 

@@ -491,6 +491,24 @@ class MockMongoCollection:
         # Just return a mock index name - we don't actually create indexes in tests
         return name or f"mock_index_{len(self._documents)}"
 
+    async def create_indexes(
+        self,
+        indexes: list[Any],
+    ) -> list[str]:
+        """Mock create_indexes operation."""
+        return [f"mock_index_{i}" for i in range(len(indexes))]
+
+    def aggregate(
+        self,
+        pipeline: list[dict[str, Any]],
+    ) -> MockAggregationCursor:
+        """Mock aggregate operation.
+
+        Returns a MockAggregationCursor that processes the pipeline.
+        """
+        # Note: Forward reference to MockAggregationCursor defined below
+        return MockAggregationCursor(list(self._documents.values()), pipeline)
+
     def reset(self) -> None:
         """Clear all documents."""
         self._documents.clear()
@@ -531,6 +549,160 @@ class MockMongoCursor:
     def sort(self, key_or_list: Any, direction: int = 1) -> MockMongoCursor:
         """Mock sort - returns self for chaining."""
         return self
+
+
+class MockAggregationCursor:
+    """Mock MongoDB aggregation cursor.
+
+    Provides a simplified aggregation implementation for testing.
+    Supports basic $match, $group, $sort, and $project stages.
+    """
+
+    def __init__(self, documents: list[dict[str, Any]], pipeline: list[dict[str, Any]]) -> None:
+        self._documents = documents
+        self._pipeline = pipeline
+        self._result: list[dict[str, Any]] = []
+        self._execute_pipeline()
+
+    def _execute_pipeline(self) -> None:
+        """Execute the aggregation pipeline on documents."""
+        result = list(self._documents)
+
+        for stage in self._pipeline:
+            if "$match" in stage:
+                result = self._apply_match(result, stage["$match"])
+            elif "$group" in stage:
+                result = self._apply_group(result, stage["$group"])
+            elif "$sort" in stage:
+                result = self._apply_sort(result, stage["$sort"])
+            # Other stages are passed through for now
+
+        self._result = result
+
+    def _apply_match(self, docs: list[dict[str, Any]], match: dict[str, Any]) -> list[dict[str, Any]]:
+        """Apply $match stage."""
+        matched = []
+        for doc in docs:
+            if self._doc_matches(doc, match):
+                matched.append(doc)
+        return matched
+
+    def _doc_matches(self, doc: dict[str, Any], match: dict[str, Any]) -> bool:
+        """Check if document matches filter."""
+        for key, value in match.items():
+            doc_value = doc.get(key)
+            if isinstance(value, dict):
+                # Handle operators
+                for op, op_value in value.items():
+                    if (
+                        (op == "$gte" and not (doc_value is not None and doc_value >= op_value))
+                        or (op == "$gt" and not (doc_value is not None and doc_value > op_value))
+                        or (op == "$lte" and not (doc_value is not None and doc_value <= op_value))
+                        or (op == "$lt" and not (doc_value is not None and doc_value < op_value))
+                        or (op == "$eq" and doc_value != op_value)
+                        or (op == "$ne" and doc_value == op_value)
+                    ):
+                        return False
+            elif doc_value != value:
+                return False
+        return True
+
+    def _apply_group(self, docs: list[dict[str, Any]], group: dict[str, Any]) -> list[dict[str, Any]]:
+        """Apply $group stage (simplified)."""
+        group_key = group.get("_id")
+        accumulators = {k: v for k, v in group.items() if k != "_id"}
+
+        # Group documents by _id
+        groups: dict[Any, list[dict[str, Any]]] = {}
+        for doc in docs:
+            if group_key is None:
+                key = None
+            elif isinstance(group_key, str) and group_key.startswith("$"):
+                key = doc.get(group_key[1:])
+            elif isinstance(group_key, dict):
+                # Handle complex group keys like $dateToString
+                key = str(doc)  # Simplified
+            else:
+                key = group_key
+
+            if key not in groups:
+                groups[key] = []
+            groups[key].append(doc)
+
+        # Apply accumulators
+        result = []
+        for key, group_docs in groups.items():
+            row: dict[str, Any] = {"_id": key}
+            for field, accumulator in accumulators.items():
+                if isinstance(accumulator, dict):
+                    if "$sum" in accumulator:
+                        sum_expr = accumulator["$sum"]
+                        if sum_expr == 1:
+                            row[field] = len(group_docs)
+                        elif isinstance(sum_expr, str) and sum_expr.startswith("$"):
+                            row[field] = sum(doc.get(sum_expr[1:], 0) for doc in group_docs)
+                        elif isinstance(sum_expr, dict):
+                            # Handle nested expressions like $toDecimal, $cond
+                            row[field] = self._eval_sum_expr(group_docs, sum_expr)
+                        else:
+                            row[field] = 0
+                    elif "$count" in accumulator:
+                        row[field] = len(group_docs)
+            result.append(row)
+
+        return result
+
+    def _eval_sum_expr(self, docs: list[dict[str, Any]], expr: dict[str, Any]) -> Any:
+        """Evaluate complex sum expressions."""
+        if "$toDecimal" in expr:
+            field = expr["$toDecimal"]
+            if isinstance(field, str) and field.startswith("$"):
+                return sum(float(doc.get(field[1:], 0) or 0) for doc in docs)
+        elif "$cond" in expr:
+            # Handle conditional sum
+            cond = expr["$cond"]
+            if isinstance(cond, list) and len(cond) == 3:
+                count = 0
+                for doc in docs:
+                    if self._eval_cond(doc, cond[0]):
+                        count += cond[1] if isinstance(cond[1], int) else 1
+                    else:
+                        count += cond[2] if isinstance(cond[2], int) else 0
+                return count
+        elif "$add" in expr:
+            # Handle $add for summing multiple fields
+            fields = expr["$add"]
+            total = 0
+            for doc in docs:
+                for field in fields:
+                    if isinstance(field, str) and field.startswith("$"):
+                        total += doc.get(field[1:], 0) or 0
+            return total
+        return 0
+
+    def _eval_cond(self, doc: dict[str, Any], cond: dict[str, Any]) -> bool:
+        """Evaluate conditional expression."""
+        if "$eq" in cond:
+            eq_parts = cond["$eq"]
+            if isinstance(eq_parts, list) and len(eq_parts) == 2:
+                left = eq_parts[0]
+                right = eq_parts[1]
+                if isinstance(left, str) and left.startswith("$"):
+                    left = doc.get(left[1:])
+                return left == right
+        return False
+
+    def _apply_sort(self, docs: list[dict[str, Any]], sort: dict[str, Any]) -> list[dict[str, Any]]:
+        """Apply $sort stage."""
+        for field, direction in reversed(list(sort.items())):
+            docs = sorted(docs, key=lambda d: d.get(field, ""), reverse=(direction == -1))
+        return docs
+
+    async def to_list(self, length: int | None = None) -> list[dict[str, Any]]:
+        """Convert cursor to list."""
+        if length:
+            return self._result[:length]
+        return self._result
 
 
 class MockMongoDatabase:

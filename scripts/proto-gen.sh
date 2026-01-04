@@ -92,12 +92,22 @@ done
 echo ""
 echo "Fixing imports in generated files..."
 # Fix imports like "from plantation.v1 import" to "from fp_proto.plantation.v1 import"
+# BUT exclude "from google." imports which should remain as standard library imports
 for grpc_file in $(find "${OUTPUT_DIR}" -name "*_pb2_grpc.py"); do
     # Use a temp file approach for portability across macOS/Linux
     if [[ "$OSTYPE" == "darwin"* ]]; then
-        sed -i '' 's/from \([a-z_]*\)\.\([a-z0-9]*\) import/from fp_proto.\1.\2 import/g' "${grpc_file}"
+        # Fix domain imports but NOT google.protobuf imports
+        sed -i '' 's/from \(ai_model\)\.\([a-z0-9]*\) import/from fp_proto.\1.\2 import/g' "${grpc_file}"
+        sed -i '' 's/from \(collection\)\.\([a-z0-9]*\) import/from fp_proto.\1.\2 import/g' "${grpc_file}"
+        sed -i '' 's/from \(plantation\)\.\([a-z0-9]*\) import/from fp_proto.\1.\2 import/g' "${grpc_file}"
+        sed -i '' 's/from \(common\)\.\([a-z0-9]*\) import/from fp_proto.\1.\2 import/g' "${grpc_file}"
+        sed -i '' 's/from \(mcp\)\.\([a-z0-9]*\) import/from fp_proto.\1.\2 import/g' "${grpc_file}"
     else
-        sed -i 's/from \([a-z_]*\)\.\([a-z0-9]*\) import/from fp_proto.\1.\2 import/g' "${grpc_file}"
+        sed -i 's/from \(ai_model\)\.\([a-z0-9]*\) import/from fp_proto.\1.\2 import/g' "${grpc_file}"
+        sed -i 's/from \(collection\)\.\([a-z0-9]*\) import/from fp_proto.\1.\2 import/g' "${grpc_file}"
+        sed -i 's/from \(plantation\)\.\([a-z0-9]*\) import/from fp_proto.\1.\2 import/g' "${grpc_file}"
+        sed -i 's/from \(common\)\.\([a-z0-9]*\) import/from fp_proto.\1.\2 import/g' "${grpc_file}"
+        sed -i 's/from \(mcp\)\.\([a-z0-9]*\) import/from fp_proto.\1.\2 import/g' "${grpc_file}"
     fi
 done
 

@@ -22,23 +22,49 @@ _runtime_version.ValidateProtobufRuntimeVersion(
 _sym_db = _symbol_database.Default()
 
 
+from google.protobuf import timestamp_pb2 as google_dot_protobuf_dot_timestamp__pb2
+from google.protobuf import empty_pb2 as google_dot_protobuf_dot_empty__pb2
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x1a\x61i_model/v1/ai_model.proto\x12\x18\x66\x61rmer_power.ai_model.v1\"\x81\x01\n\x11\x45xtractionRequest\x12\x13\n\x0braw_content\x18\x01 \x01(\t\x12\x13\n\x0b\x61i_agent_id\x18\x02 \x01(\t\x12\x1a\n\x12source_config_json\x18\x03 \x01(\t\x12\x14\n\x0c\x63ontent_type\x18\x04 \x01(\t\x12\x10\n\x08trace_id\x18\x05 \x01(\t\"\xa7\x01\n\x12\x45xtractionResponse\x12\x0f\n\x07success\x18\x01 \x01(\x08\x12\x1d\n\x15\x65xtracted_fields_json\x18\x02 \x01(\t\x12\x12\n\nconfidence\x18\x03 \x01(\x02\x12\x19\n\x11validation_passed\x18\x04 \x01(\x08\x12\x1b\n\x13validation_warnings\x18\x05 \x03(\t\x12\x15\n\rerror_message\x18\x06 \x01(\t\"\x14\n\x12HealthCheckRequest\"7\n\x13HealthCheckResponse\x12\x0f\n\x07healthy\x18\x01 \x01(\x08\x12\x0f\n\x07version\x18\x02 \x01(\t2\xe2\x01\n\x0e\x41iModelService\x12\x64\n\x07\x45xtract\x12+.farmer_power.ai_model.v1.ExtractionRequest\x1a,.farmer_power.ai_model.v1.ExtractionResponse\x12j\n\x0bHealthCheck\x12,.farmer_power.ai_model.v1.HealthCheckRequest\x1a-.farmer_power.ai_model.v1.HealthCheckResponseb\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x1a\x61i_model/v1/ai_model.proto\x12\x18\x66\x61rmer_power.ai_model.v1\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x1bgoogle/protobuf/empty.proto\"\x81\x01\n\x11\x45xtractionRequest\x12\x13\n\x0braw_content\x18\x01 \x01(\t\x12\x13\n\x0b\x61i_agent_id\x18\x02 \x01(\t\x12\x1a\n\x12source_config_json\x18\x03 \x01(\t\x12\x14\n\x0c\x63ontent_type\x18\x04 \x01(\t\x12\x10\n\x08trace_id\x18\x05 \x01(\t\"\xa7\x01\n\x12\x45xtractionResponse\x12\x0f\n\x07success\x18\x01 \x01(\x08\x12\x1d\n\x15\x65xtracted_fields_json\x18\x02 \x01(\t\x12\x12\n\nconfidence\x18\x03 \x01(\x02\x12\x19\n\x11validation_passed\x18\x04 \x01(\x08\x12\x1b\n\x13validation_warnings\x18\x05 \x03(\t\x12\x15\n\rerror_message\x18\x06 \x01(\t\"\x14\n\x12HealthCheckRequest\"7\n\x13HealthCheckResponse\x12\x0f\n\x07healthy\x18\x01 \x01(\x08\x12\x0f\n\x07version\x18\x02 \x01(\t\"p\n\x10\x44\x61teRangeRequest\x12.\n\nstart_date\x18\x01 \x01(\x0b\x32\x1a.google.protobuf.Timestamp\x12,\n\x08\x65nd_date\x18\x02 \x01(\x0b\x32\x1a.google.protobuf.Timestamp\"x\n\x13\x43ostSummaryResponse\x12\x16\n\x0etotal_cost_usd\x18\x01 \x01(\t\x12\x16\n\x0etotal_requests\x18\x02 \x01(\x03\x12\x17\n\x0ftotal_tokens_in\x18\x03 \x01(\x03\x12\x18\n\x10total_tokens_out\x18\x04 \x01(\x03\"\xc6\x01\n\tDailyCost\x12(\n\x04\x64\x61te\x18\x01 \x01(\x0b\x32\x1a.google.protobuf.Timestamp\x12\x16\n\x0etotal_cost_usd\x18\x02 \x01(\t\x12\x16\n\x0etotal_requests\x18\x03 \x01(\x03\x12\x17\n\x0ftotal_tokens_in\x18\x04 \x01(\x03\x12\x18\n\x10total_tokens_out\x18\x05 \x01(\x03\x12\x15\n\rsuccess_count\x18\x06 \x01(\x03\x12\x15\n\rfailure_count\x18\x07 \x01(\x03\"T\n\x18\x44\x61ilyCostSummaryResponse\x12\x38\n\x0b\x64\x61ily_costs\x18\x01 \x03(\x0b\x32#.farmer_power.ai_model.v1.DailyCost\"n\n\x12\x41gentTypeCostEntry\x12\x12\n\nagent_type\x18\x01 \x01(\t\x12\x16\n\x0etotal_cost_usd\x18\x02 \x01(\t\x12\x16\n\x0etotal_requests\x18\x03 \x01(\x03\x12\x14\n\x0ctotal_tokens\x18\x04 \x01(\x03\"a\n\x17\x43ostByAgentTypeResponse\x12\x46\n\x10\x61gent_type_costs\x18\x01 \x03(\x0b\x32,.farmer_power.ai_model.v1.AgentTypeCostEntry\"e\n\x0eModelCostEntry\x12\r\n\x05model\x18\x01 \x01(\t\x12\x16\n\x0etotal_cost_usd\x18\x02 \x01(\t\x12\x16\n\x0etotal_requests\x18\x03 \x01(\x03\x12\x14\n\x0ctotal_tokens\x18\x04 \x01(\x03\"T\n\x13\x43ostByModelResponse\x12=\n\x0bmodel_costs\x18\x01 \x03(\x0b\x32(.farmer_power.ai_model.v1.ModelCostEntry\"\x98\x01\n\tCostAlert\x12\x16\n\x0ethreshold_type\x18\x01 \x01(\t\x12\x15\n\rthreshold_usd\x18\x02 \x01(\t\x12\x18\n\x10\x63urrent_cost_usd\x18\x03 \x01(\t\x12\x30\n\x0ctriggered_at\x18\x04 \x01(\x0b\x32\x1a.google.protobuf.Timestamp\x12\x10\n\x08\x65vent_id\x18\x05 \x01(\t\"\xf9\x01\n\x12\x43ostAlertsResponse\x12\x33\n\x06\x61lerts\x18\x01 \x03(\x0b\x32#.farmer_power.ai_model.v1.CostAlert\x12\x1b\n\x13\x64\x61ily_threshold_usd\x18\x02 \x01(\t\x12\x17\n\x0f\x64\x61ily_total_usd\x18\x03 \x01(\t\x12\x1d\n\x15\x64\x61ily_alert_triggered\x18\x04 \x01(\x08\x12\x1d\n\x15monthly_threshold_usd\x18\x05 \x01(\t\x12\x19\n\x11monthly_total_usd\x18\x06 \x01(\t\x12\x1f\n\x17monthly_alert_triggered\x18\x07 \x01(\x08\"T\n\x16ThresholdConfigRequest\x12\x1b\n\x13\x64\x61ily_threshold_usd\x18\x01 \x01(\x01\x12\x1d\n\x15monthly_threshold_usd\x18\x02 \x01(\x01\x32\xe2\x01\n\x0e\x41iModelService\x12\x64\n\x07\x45xtract\x12+.farmer_power.ai_model.v1.ExtractionRequest\x1a,.farmer_power.ai_model.v1.ExtractionResponse\x12j\n\x0bHealthCheck\x12,.farmer_power.ai_model.v1.HealthCheckRequest\x1a-.farmer_power.ai_model.v1.HealthCheckResponse2\xfd\x04\n\x0b\x43ostService\x12u\n\x13GetDailyCostSummary\x12*.farmer_power.ai_model.v1.DateRangeRequest\x1a\x32.farmer_power.ai_model.v1.DailyCostSummaryResponse\x12Z\n\x11GetCurrentDayCost\x12\x16.google.protobuf.Empty\x1a-.farmer_power.ai_model.v1.CostSummaryResponse\x12s\n\x12GetCostByAgentType\x12*.farmer_power.ai_model.v1.DateRangeRequest\x1a\x31.farmer_power.ai_model.v1.CostByAgentTypeResponse\x12k\n\x0eGetCostByModel\x12*.farmer_power.ai_model.v1.DateRangeRequest\x1a-.farmer_power.ai_model.v1.CostByModelResponse\x12U\n\rGetCostAlerts\x12\x16.google.protobuf.Empty\x1a,.farmer_power.ai_model.v1.CostAlertsResponse\x12\x62\n\x16\x43onfigureCostThreshold\x12\x30.farmer_power.ai_model.v1.ThresholdConfigRequest\x1a\x16.google.protobuf.Emptyb\x06proto3')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
 _builder.BuildTopDescriptorsAndMessages(DESCRIPTOR, 'ai_model.v1.ai_model_pb2', _globals)
 if not _descriptor._USE_C_DESCRIPTORS:
   DESCRIPTOR._loaded_options = None
-  _globals['_EXTRACTIONREQUEST']._serialized_start=57
-  _globals['_EXTRACTIONREQUEST']._serialized_end=186
-  _globals['_EXTRACTIONRESPONSE']._serialized_start=189
-  _globals['_EXTRACTIONRESPONSE']._serialized_end=356
-  _globals['_HEALTHCHECKREQUEST']._serialized_start=358
-  _globals['_HEALTHCHECKREQUEST']._serialized_end=378
-  _globals['_HEALTHCHECKRESPONSE']._serialized_start=380
-  _globals['_HEALTHCHECKRESPONSE']._serialized_end=435
-  _globals['_AIMODELSERVICE']._serialized_start=438
-  _globals['_AIMODELSERVICE']._serialized_end=664
+  _globals['_EXTRACTIONREQUEST']._serialized_start=119
+  _globals['_EXTRACTIONREQUEST']._serialized_end=248
+  _globals['_EXTRACTIONRESPONSE']._serialized_start=251
+  _globals['_EXTRACTIONRESPONSE']._serialized_end=418
+  _globals['_HEALTHCHECKREQUEST']._serialized_start=420
+  _globals['_HEALTHCHECKREQUEST']._serialized_end=440
+  _globals['_HEALTHCHECKRESPONSE']._serialized_start=442
+  _globals['_HEALTHCHECKRESPONSE']._serialized_end=497
+  _globals['_DATERANGEREQUEST']._serialized_start=499
+  _globals['_DATERANGEREQUEST']._serialized_end=611
+  _globals['_COSTSUMMARYRESPONSE']._serialized_start=613
+  _globals['_COSTSUMMARYRESPONSE']._serialized_end=733
+  _globals['_DAILYCOST']._serialized_start=736
+  _globals['_DAILYCOST']._serialized_end=934
+  _globals['_DAILYCOSTSUMMARYRESPONSE']._serialized_start=936
+  _globals['_DAILYCOSTSUMMARYRESPONSE']._serialized_end=1020
+  _globals['_AGENTTYPECOSTENTRY']._serialized_start=1022
+  _globals['_AGENTTYPECOSTENTRY']._serialized_end=1132
+  _globals['_COSTBYAGENTTYPERESPONSE']._serialized_start=1134
+  _globals['_COSTBYAGENTTYPERESPONSE']._serialized_end=1231
+  _globals['_MODELCOSTENTRY']._serialized_start=1233
+  _globals['_MODELCOSTENTRY']._serialized_end=1334
+  _globals['_COSTBYMODELRESPONSE']._serialized_start=1336
+  _globals['_COSTBYMODELRESPONSE']._serialized_end=1420
+  _globals['_COSTALERT']._serialized_start=1423
+  _globals['_COSTALERT']._serialized_end=1575
+  _globals['_COSTALERTSRESPONSE']._serialized_start=1578
+  _globals['_COSTALERTSRESPONSE']._serialized_end=1827
+  _globals['_THRESHOLDCONFIGREQUEST']._serialized_start=1829
+  _globals['_THRESHOLDCONFIGREQUEST']._serialized_end=1913
+  _globals['_AIMODELSERVICE']._serialized_start=1916
+  _globals['_AIMODELSERVICE']._serialized_end=2142
+  _globals['_COSTSERVICE']._serialized_start=2145
+  _globals['_COSTSERVICE']._serialized_end=2782
 # @@protoc_insertion_point(module_scope)
