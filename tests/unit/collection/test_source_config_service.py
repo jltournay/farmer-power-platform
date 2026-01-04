@@ -95,7 +95,11 @@ class TestSourceConfigServiceCaching:
 
     @pytest.mark.asyncio
     async def test_cache_expires_after_ttl(self, mock_mongodb_client) -> None:
-        """Test that cache expires after TTL."""
+        """Test that cache expires after TTL.
+
+        Updated for Story 0.75.4: SourceConfigService now extends MongoChangeStreamCache
+        which uses _cache_loaded_at with CACHE_TTL_MINUTES (5 min) instead of _cache_expires.
+        """
         db = mock_mongodb_client["collection_model"]
 
         await db["source_configs"].insert_one(create_source_config_doc(source_id="qc-analyzer"))
@@ -105,8 +109,8 @@ class TestSourceConfigServiceCaching:
         # First call
         await service.get_all_configs()
 
-        # Manually expire the cache
-        service._cache_expires = datetime.now(UTC) - timedelta(minutes=1)
+        # Manually expire the cache by setting _cache_loaded_at to beyond the TTL (5 minutes)
+        service._cache_loaded_at = datetime.now(UTC) - timedelta(minutes=10)
 
         # Insert another config
         await db["source_configs"].insert_one(create_source_config_doc(source_id="qc-analyzer-2"))

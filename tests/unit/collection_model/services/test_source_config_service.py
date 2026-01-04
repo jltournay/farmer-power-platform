@@ -1,5 +1,8 @@
 """Unit tests for SourceConfigService (Story 0.6.9, ADR-007).
 
+Updated for Story 0.75.4: SourceConfigService now extends MongoChangeStreamCache
+from fp-common. Tests updated to work with the new base class structure.
+
 Tests cover:
 - Startup cache warming (AC1)
 - Change stream invalidation (AC2)
@@ -9,7 +12,7 @@ Tests cover:
 """
 
 import asyncio
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, datetime
 from typing import Any
 from unittest.mock import AsyncMock, MagicMock, patch
 
@@ -83,11 +86,8 @@ class TestCacheWarming:
 
     @pytest.mark.asyncio
     async def test_cache_size_metric_set_on_warm(self, mock_mongodb_client: Any) -> None:
-        """Cache size metric is set after warming."""
-        from collection_model.services.source_config_service import (
-            SourceConfigService,
-            cache_size_gauge,
-        )
+        """Cache size metric is set after warming (via base class)."""
+        from collection_model.services.source_config_service import SourceConfigService
 
         db = mock_mongodb_client["collection_model"]
 
@@ -106,7 +106,8 @@ class TestCacheWarming:
 
         service = SourceConfigService(db)
 
-        with patch.object(cache_size_gauge, "set") as mock_set:
+        # Patch the instance's cache_size metric
+        with patch.object(service._cache_size, "set") as mock_set:
             await service.warm_cache()
             mock_set.assert_called_with(1)
 
@@ -123,47 +124,48 @@ class TestChangeStreamInvalidation:
         service = SourceConfigService(db)
 
         # Manually set cache
-        service._cache = [MagicMock()]
+        service._cache = {"test": MagicMock()}
         service._cache_loaded_at = datetime.now(UTC)
-        service._cache_expires = datetime.now(UTC) + timedelta(minutes=5)
 
         # Act
         service._invalidate_cache(reason="change_stream:insert")
 
-        # Assert
+        # Assert - base class uses _cache and _cache_loaded_at
         assert service._cache is None
         assert service._cache_loaded_at is None
-        assert service._cache_expires is None
 
     @pytest.mark.asyncio
     async def test_invalidation_metric_incremented(self, mock_mongodb_client: Any) -> None:
-        """Invalidation metric is incremented on cache clear."""
-        from collection_model.services.source_config_service import (
-            SourceConfigService,
-            cache_invalidations_counter,
-        )
+        """Invalidation metric is incremented on cache clear (via base class)."""
+        from collection_model.services.source_config_service import SourceConfigService
 
         db = mock_mongodb_client["collection_model"]
         service = SourceConfigService(db)
 
-        with patch.object(cache_invalidations_counter, "add") as mock_add:
+        # Patch the instance's cache_invalidations metric
+        with patch.object(service._cache_invalidations, "add") as mock_add:
             service._invalidate_cache(reason="change_stream:update")
-            mock_add.assert_called_once_with(1, {"reason": "change_stream:update"})
+            mock_add.assert_called_once()
+            # Base class passes reason and item_id
+            call_args = mock_add.call_args
+            assert call_args[0][0] == 1
+            assert call_args[0][1]["reason"] == "change_stream:update"
 
     @pytest.mark.asyncio
     async def test_manual_invalidation(self, mock_mongodb_client: Any) -> None:
-        """Manual invalidation uses 'manual' reason."""
-        from collection_model.services.source_config_service import (
-            SourceConfigService,
-            cache_invalidations_counter,
-        )
+        """Manual invalidation uses 'manual' reason (via base class)."""
+        from collection_model.services.source_config_service import SourceConfigService
 
         db = mock_mongodb_client["collection_model"]
         service = SourceConfigService(db)
 
-        with patch.object(cache_invalidations_counter, "add") as mock_add:
+        # Patch the instance's cache_invalidations metric
+        with patch.object(service._cache_invalidations, "add") as mock_add:
             service.invalidate_cache()
-            mock_add.assert_called_once_with(1, {"reason": "manual"})
+            mock_add.assert_called_once()
+            call_args = mock_add.call_args
+            assert call_args[0][0] == 1
+            assert call_args[0][1]["reason"] == "manual"
 
 
 class TestCacheHitMiss:
@@ -171,11 +173,8 @@ class TestCacheHitMiss:
 
     @pytest.mark.asyncio
     async def test_cache_hit_increments_metric(self, mock_mongodb_client: Any) -> None:
-        """Cache hit increments hit counter."""
-        from collection_model.services.source_config_service import (
-            SourceConfigService,
-            cache_hits_counter,
-        )
+        """Cache hit increments hit counter (via base class)."""
+        from collection_model.services.source_config_service import SourceConfigService
 
         db = mock_mongodb_client["collection_model"]
         service = SourceConfigService(db)
@@ -195,17 +194,14 @@ class TestCacheHitMiss:
         await service.warm_cache()
 
         # Act - second call should be cache hit
-        with patch.object(cache_hits_counter, "add") as mock_add:
+        with patch.object(service._cache_hits, "add") as mock_add:
             await service.get_all_configs()
             mock_add.assert_called_once_with(1)
 
     @pytest.mark.asyncio
     async def test_cache_miss_increments_metric(self, mock_mongodb_client: Any) -> None:
-        """Cache miss increments miss counter."""
-        from collection_model.services.source_config_service import (
-            SourceConfigService,
-            cache_misses_counter,
-        )
+        """Cache miss increments miss counter (via base class)."""
+        from collection_model.services.source_config_service import SourceConfigService
 
         db = mock_mongodb_client["collection_model"]
         service = SourceConfigService(db)
@@ -214,7 +210,7 @@ class TestCacheHitMiss:
         assert service._cache is None
 
         # Act - first call should be cache miss
-        with patch.object(cache_misses_counter, "add") as mock_add:
+        with patch.object(service._cache_misses, "add") as mock_add:
             await service.get_all_configs()
             mock_add.assert_called_once_with(1)
 
@@ -274,7 +270,7 @@ class TestChangeStreamLifecycle:
         db = mock_mongodb_client["collection_model"]
         service = SourceConfigService(db)
 
-        # Mock the _collection with a watch method
+        # Mock the _db's collection access to return a mock with watch
         mock_stream = AsyncMock()
         mock_stream.__aenter__ = AsyncMock(return_value=mock_stream)
         mock_stream.__aexit__ = AsyncMock()
@@ -283,16 +279,19 @@ class TestChangeStreamLifecycle:
 
         mock_collection = MagicMock()
         mock_collection.watch = MagicMock(return_value=mock_stream)
-        service._collection = mock_collection
 
-        await service.start_change_stream()
+        # Patch the _collection property to return our mock
+        with patch.object(
+            SourceConfigService, "_collection", new_callable=lambda: property(lambda self: mock_collection)
+        ):
+            await service.start_change_stream()
 
-        # Assert
-        assert service._change_stream_task is not None
-        assert service._change_stream_active is True
+            # Assert
+            assert service._change_stream_task is not None
+            assert service._change_stream_active is True
 
-        # Cleanup
-        await service.stop_change_stream()
+            # Cleanup
+            await service.stop_change_stream()
 
     @pytest.mark.asyncio
     async def test_stop_change_stream_cancels_task(self, mock_mongodb_client: Any) -> None:
@@ -318,15 +317,15 @@ class TestCacheHealthStatus:
     """Tests for cache health status (Task 5)."""
 
     @pytest.mark.asyncio
-    async def test_get_cache_age_returns_negative_when_empty(self, mock_mongodb_client: Any) -> None:
-        """get_cache_age returns -1 when cache is not loaded."""
+    async def test_get_cache_age_returns_zero_when_empty(self, mock_mongodb_client: Any) -> None:
+        """get_cache_age returns 0 when cache is not loaded (base class behavior)."""
         from collection_model.services.source_config_service import SourceConfigService
 
         db = mock_mongodb_client["collection_model"]
         service = SourceConfigService(db)
 
-        # Assert
-        assert service.get_cache_age() == -1.0
+        # Assert - base class returns 0.0 when cache not loaded
+        assert service.get_cache_age() == 0.0
 
     @pytest.mark.asyncio
     async def test_get_cache_age_returns_positive_after_warm(self, mock_mongodb_client: Any) -> None:
@@ -409,18 +408,21 @@ class TestResumeToken:
         # Mock the collection watch method
         mock_collection = MagicMock()
         mock_collection.watch = MagicMock(return_value=mock_stream)
-        service._collection = mock_collection
 
-        # Start change stream - this creates the background task
-        await service.start_change_stream()
+        # Patch the _collection property to return our mock
+        with patch.object(
+            SourceConfigService, "_collection", new_callable=lambda: property(lambda self: mock_collection)
+        ):
+            # Start change stream - this creates the background task
+            await service.start_change_stream()
 
-        # Give the task a moment to start and call watch()
-        await asyncio.sleep(0.05)
+            # Give the task a moment to start and call watch()
+            await asyncio.sleep(0.05)
 
-        # Stop change stream
-        await service.stop_change_stream()
+            # Stop change stream
+            await service.stop_change_stream()
 
-        # Verify watch was called with the resume token
-        mock_collection.watch.assert_called_once()
-        call_kwargs = mock_collection.watch.call_args[1]
-        assert call_kwargs.get("resume_after") == fake_resume_token
+            # Verify watch was called with the resume token
+            mock_collection.watch.assert_called_once()
+            call_kwargs = mock_collection.watch.call_args[1]
+            assert call_kwargs.get("resume_after") == fake_resume_token
