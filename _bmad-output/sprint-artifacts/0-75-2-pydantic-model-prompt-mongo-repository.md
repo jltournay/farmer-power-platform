@@ -1,7 +1,7 @@
 # Story 0.75.2: Pydantic Model for Prompt + Mongo Repository
 
-**Status:** ready-for-dev
-**GitHub Issue:** <!-- Auto-created by dev-story workflow -->
+**Status:** in-progress
+**GitHub Issue:** #91
 
 ## Story
 
@@ -26,57 +26,57 @@ So that prompts are type-safe and properly managed in MongoDB.
 
 ## Tasks / Subtasks
 
-- [ ] **Task 1: Prompt Domain Models** (AC: #1, #2, #3, #4, #5)
-  - [ ] Create `services/ai-model/src/ai_model/domain/` directory if not exists
-  - [ ] Create `services/ai-model/src/ai_model/domain/__init__.py`
-  - [ ] Create `services/ai-model/src/ai_model/domain/prompt.py` with:
-    - [ ] `PromptStatus` enum (draft, staged, active, archived)
-    - [ ] `PromptContent` Pydantic model (system_prompt, template, output_schema, few_shot_examples)
-    - [ ] `PromptMetadata` Pydantic model (author, created_at, updated_at, changelog, git_commit)
-    - [ ] `PromptABTest` Pydantic model (enabled, traffic_percentage, test_id)
-    - [ ] `Prompt` Pydantic model with all fields per architecture spec
+- [x] **Task 1: Prompt Domain Models** (AC: #1, #2, #3, #4, #5)
+  - [x] Create `services/ai-model/src/ai_model/domain/` directory if not exists
+  - [x] Create `services/ai-model/src/ai_model/domain/__init__.py`
+  - [x] Create `services/ai-model/src/ai_model/domain/prompt.py` with:
+    - [x] `PromptStatus` enum (draft, staged, active, archived)
+    - [x] `PromptContent` Pydantic model (system_prompt, template, output_schema, few_shot_examples)
+    - [x] `PromptMetadata` Pydantic model (author, created_at, updated_at, changelog, git_commit)
+    - [x] `PromptABTest` Pydantic model (enabled, traffic_percentage, test_id)
+    - [x] `Prompt` Pydantic model with all fields per architecture spec
 
-- [ ] **Task 2: Prompt Repository** (AC: #6, #7, #8, #9, #10)
-  - [ ] Create `services/ai-model/src/ai_model/infrastructure/repositories/` directory
-  - [ ] Create `services/ai-model/src/ai_model/infrastructure/repositories/__init__.py`
-  - [ ] Create `services/ai-model/src/ai_model/infrastructure/repositories/base.py` (copy pattern from plantation-model)
-  - [ ] Create `services/ai-model/src/ai_model/infrastructure/repositories/prompt_repository.py` with:
-    - [ ] Inherit from `BaseRepository[Prompt]`
-    - [ ] `COLLECTION_NAME = "prompts"`
-    - [ ] `get_active(prompt_id: str) -> Prompt | None` - get currently active prompt
-    - [ ] `get_by_version(prompt_id: str, version: str) -> Prompt | None`
-    - [ ] `list_versions(prompt_id: str) -> list[Prompt]`
-    - [ ] `list_by_agent(agent_id: str) -> list[Prompt]`
-    - [ ] `ensure_indexes()` - create compound indexes
+- [x] **Task 2: Prompt Repository** (AC: #6, #7, #8, #9, #10)
+  - [x] Create `services/ai-model/src/ai_model/infrastructure/repositories/` directory
+  - [x] Create `services/ai-model/src/ai_model/infrastructure/repositories/__init__.py`
+  - [x] Create `services/ai-model/src/ai_model/infrastructure/repositories/base.py` (copy pattern from plantation-model)
+  - [x] Create `services/ai-model/src/ai_model/infrastructure/repositories/prompt_repository.py` with:
+    - [x] Inherit from `BaseRepository[Prompt]`
+    - [x] `COLLECTION_NAME = "prompts"`
+    - [x] `get_active(prompt_id: str) -> Prompt | None` - get currently active prompt
+    - [x] `get_by_version(prompt_id: str, version: str) -> Prompt | None`
+    - [x] `list_versions(prompt_id: str) -> list[Prompt]`
+    - [x] `list_by_agent(agent_id: str) -> list[Prompt]`
+    - [x] `ensure_indexes()` - create compound indexes
 
-- [ ] **Task 3: Unit Tests - Models** (AC: #11)
-  - [ ] Create `tests/unit/ai_model/test_prompt_model.py` with tests for:
-    - [ ] PromptStatus enum values
-    - [ ] PromptContent model validation
-    - [ ] PromptMetadata model validation
-    - [ ] PromptABTest model validation
-    - [ ] Prompt model validation (complete model)
-    - [ ] Prompt model serialization (model_dump)
-    - [ ] Prompt model deserialization (model_validate)
-    - [ ] Invalid field rejection tests
+- [x] **Task 3: Unit Tests - Models** (AC: #11)
+  - [x] Create `tests/unit/ai_model/test_prompt_model.py` with tests for:
+    - [x] PromptStatus enum values
+    - [x] PromptContent model validation
+    - [x] PromptMetadata model validation
+    - [x] PromptABTest model validation
+    - [x] Prompt model validation (complete model)
+    - [x] Prompt model serialization (model_dump)
+    - [x] Prompt model deserialization (model_validate)
+    - [x] Invalid field rejection tests
 
-- [ ] **Task 4: Unit Tests - Repository** (AC: #11)
-  - [ ] Create `tests/unit/ai_model/test_prompt_repository.py` with tests for:
-    - [ ] create() - creates new prompt
-    - [ ] get_by_id() - retrieves prompt by ID
-    - [ ] update() - updates prompt fields
-    - [ ] delete() - deletes prompt
-    - [ ] list() - lists prompts with pagination
-    - [ ] get_active() - gets active prompt for prompt_id
-    - [ ] get_by_version() - gets specific version
-    - [ ] list_versions() - lists all versions of a prompt
-    - [ ] list_by_agent() - lists prompts for an agent
-    - [ ] ensure_indexes() - creates proper indexes
+- [x] **Task 4: Unit Tests - Repository** (AC: #11)
+  - [x] Create `tests/unit/ai_model/test_prompt_repository.py` with tests for:
+    - [x] create() - creates new prompt
+    - [x] get_by_id() - retrieves prompt by ID
+    - [x] update() - updates prompt fields
+    - [x] delete() - deletes prompt
+    - [x] list() - lists prompts with pagination
+    - [x] get_active() - gets active prompt for prompt_id
+    - [x] get_by_version() - gets specific version
+    - [x] list_versions() - lists all versions of a prompt
+    - [x] list_by_agent() - lists prompts for an agent
+    - [x] ensure_indexes() - creates proper indexes
 
 - [ ] **Task 5: CI Verification** (AC: #12)
-  - [ ] Run `ruff check services/ai-model/` - lint passes
-  - [ ] Run `ruff format --check services/ai-model/` - format passes
-  - [ ] Run unit tests locally with ≥20 tests passing
+  - [x] Run `ruff check services/ai-model/` - lint passes
+  - [x] Run `ruff format --check services/ai-model/` - format passes
+  - [x] Run unit tests locally with ≥20 tests passing (46 tests total)
   - [ ] Push and verify CI passes
 
 ## Git Workflow (MANDATORY)
@@ -84,8 +84,8 @@ So that prompts are type-safe and properly managed in MongoDB.
 **All story development MUST use feature branches.** Direct pushes to main are blocked.
 
 ### Story Start
-- [ ] GitHub Issue exists or created: `gh issue create --title "Story 0.75.2: Pydantic Model for Prompt + Mongo Repository"`
-- [ ] Feature branch created from main:
+- [x] GitHub Issue exists or created: #91
+- [x] Feature branch created from main:
   ```bash
   git checkout main && git pull origin main
   git checkout -b story/0-75-2-pydantic-model-prompt-mongo-repository
@@ -94,8 +94,8 @@ So that prompts are type-safe and properly managed in MongoDB.
 **Branch name:** `story/0-75-2-pydantic-model-prompt-mongo-repository`
 
 ### During Development
-- [ ] All commits reference GitHub issue: `Relates to #XX`
-- [ ] Commits are atomic by type (production, test, seed - not mixed)
+- [x] All commits reference GitHub issue: `Relates to #91`
+- [x] Commits are atomic by type (production, test, seed - not mixed)
 - [ ] Push to feature branch: `git push -u origin story/0-75-2-pydantic-model-prompt-mongo-repository`
 
 ### Story Done
