@@ -149,33 +149,38 @@ development_status:
   0-5-8-azure-ad-b2c-configuration: deferred  # 5 points - Production deployment only
   epic-0-5-retrospective: optional
 
-  # Epic 0.75: AI Model Foundation (REVISED - 2026-01-04)
+  # Epic 0.75: AI Model Foundation (REVISED - 2026-01-04, Party Mode Validated)
   # Dependencies: Epic 0, Epic 1, Epic 2. Blocks: Epic 5, 6, 8, 12
-  # Restructured: 22 stories in sequential development order, optimized for solo dev
+  # Restructured: 26 stories in sequential development order, optimized for solo dev
   # Architecture: LLM Gateway, 5 Agent Types, RAG Pipeline, LangGraph Orchestration
   epic-0-75: backlog
-  0-75-1-ai-model-setup: backlog  # Service scaffold, DAPR, MongoDB, health endpoints
+  0-75-1-ai-model-setup: backlog  # Service scaffold, DAPR, MongoDB, health endpoints, proto scaffold
   0-75-2-pydantic-model-prompt-mongo-repository: backlog  # Prompt storage with versioning
   0-75-3-pydantic-model-agent-config-mongo-repository: backlog  # Agent configuration storage
-  0-75-4-source-cache-agent-types-prompt-config: backlog  # ADR-013 cache pattern
-  0-75-5-openrouter-llm-gateway-cost-management: backlog  # Model routing, cost tracking
+  0-75-4-source-cache-agent-types-prompt-config: backlog  # ADR-013 cache pattern, extract to fp-common
+  0-75-5-openrouter-llm-gateway-cost-management: backlog  # Model routing, cost tracking, resilience
   0-75-6-cli-manage-prompt-type-configuration: backlog  # fp-prompt-config CLI
   0-75-7-cli-manage-agent-configuration: backlog  # fp-agent-config CLI
   0-75-8-event-flow-subscriber-publisher: backlog  # DAPR pub/sub integration
+  0-75-8b-mcp-client-integration-agent-workflows: backlog  # MCP client from fp-common for agents
   0-75-9-pydantic-model-rag-document-storage: backlog  # RagDocument, RagChunk models
-  0-75-10-grpc-model-rag-document: backlog  # Proto + gRPC service
-  0-75-11-cli-rag-document: backlog  # fp-knowledge CLI
-  0-75-12-rag-embedding-service: backlog  # text-embedding-3-small integration
-  0-75-13-rag-vector-storage: backlog  # MongoDB Atlas Vector Search / Pinecone
-  0-75-14-rag-retrieval-service: backlog  # Similarity search, top-k
-  0-75-15-rag-ranking-logic: backlog  # Re-ranking, domain boosting
-  0-75-16-langgraph-sdk-integration-base-workflows: backlog  # Saga, checkpointing, base classes
-  0-75-17-extractor-agent-implementation: backlog  # LangChain linear workflow
-  0-75-18-e2e-weather-observation-extraction-flow: backlog  # github_issue: 81, 82 - Validation gate
-  0-75-19-explorer-agent-implementation: backlog  # LangGraph + RAG
-  0-75-20-generator-agent-implementation: backlog  # LangGraph + RAG, multi-format
-  0-75-21-conversational-agent-implementation: backlog  # Two LLM calls, state management
-  0-75-22-tiered-vision-agent-implementation: backlog  # Cost-optimized image analysis
+  0-75-10-grpc-model-rag-document: backlog  # Proto + gRPC service (metadata only)
+  0-75-10b-basic-pdf-markdown-extraction: backlog  # PyMuPDF, Markdown parsing, async jobs
+  0-75-10c-azure-document-intelligence-integration: backlog  # Scanned PDF OCR
+  0-75-10d-semantic-chunking: backlog  # Chunk by semantic boundaries
+  0-75-11-cli-rag-document: backlog  # fp-knowledge CLI with job-status
+  0-75-12-rag-embedding-configuration: backlog  # Pinecone Inference (not separate OpenAI)
+  0-75-13-rag-vector-storage: backlog  # Pinecone client/repository
+  0-75-13b-rag-vectorization-pipeline: backlog  # Orchestrate embed + store, progress tracking
+  0-75-14-rag-retrieval-service: backlog  # Similarity search, synthetic sample generator
+  0-75-15-rag-ranking-logic: backlog  # Re-ranking, domain boosting, golden samples
+  0-75-16-langgraph-sdk-integration-base-workflows: backlog  # Saga, checkpointing, async risk
+  0-75-17-extractor-agent-implementation: backlog  # LangChain linear workflow, golden samples
+  0-75-18-e2e-weather-observation-extraction-flow: backlog  # github_issue: 81, 88 - Validation gate
+  0-75-19-explorer-agent-implementation: backlog  # LangGraph + RAG, golden samples
+  0-75-20-generator-agent-implementation: backlog  # LangGraph + RAG, multi-format, golden samples
+  0-75-21-conversational-agent-implementation: backlog  # Two LLM calls, state management, golden samples
+  0-75-22-tiered-vision-agent-implementation: backlog  # Cost-optimized image analysis, golden samples
   epic-0-75-retrospective: optional
 
   # ═══════════════════════════════════════════════════════════════════════════
