@@ -22,6 +22,12 @@ The AI Model is the most complex and strategic module of the Farmer Power Platfo
 - **Prompt Management** — MongoDB storage with versioning and CLI tooling
 - **Event-Driven Architecture** — DAPR pub/sub for agent triggering and result publishing
 
+### Testing Strategy
+
+All AI agents require **golden sample testing** to validate accuracy. During development, LLM-generated **synthetic samples** bootstrap testing without agronomist dependency. Expert-validated samples are collected post-platform-completion for production readiness.
+
+**Reference:** `_bmad-output/test-design-system-level.md` § *Synthetic Golden Sample Generation*
+
 ---
 
 ## Stories
@@ -40,7 +46,7 @@ So that AI workflows can be built on a solid foundation.
 - MongoDB connection
 - Health endpoints (`/health`, `/ready`)
 - OpenTelemetry tracing setup
-- Proto definitions (`farmer_power.ai_model.v1`)
+- Proto package scaffold (`farmer_power.ai_model.v1`) — package declaration, base service stub, and `HealthService` RPCs
 
 ---
 
@@ -73,6 +79,7 @@ So that agent configs are type-safe and properly managed in MongoDB.
 - `AgentConfigRepository` with CRUD operations
 - MongoDB collection: `ai_model.agent_configs`
 - Support for all 5 agent types: extractor, explorer, generator, conversational, tiered-vision
+- LLM configuration fields per agent (model, temperature, max_tokens, fallback chain)
 
 ---
 
@@ -99,26 +106,17 @@ So that configuration lookups are fast without stale data.
 **Story File:** Not yet created | Status: Backlog
 
 As a **developer implementing AI agents**,
-I want a unified LLM gateway with intelligent model routing and cost tracking,
-So that I can select the appropriate model for each task type.
+I want a unified LLM gateway with cost tracking and resilience,
+So that agents can reliably call LLMs with automatic retry and fallback.
 
 **Scope:**
 - OpenRouter API integration
-- Model routing by task type (triage, extraction, diagnosis, vision, generation)
-- Fallback chain configuration
+- Execute LLM requests per agent configuration (model + fallback chain)
+- Validate model availability via OpenRouter API
 - Cost tracking per request (input/output tokens, USD)
 - OpenTelemetry metrics: `llm_request_cost_usd`, `llm_tokens_total`
 - Retry with exponential backoff
-
-**Model Routing:**
-
-| Task Type | Primary Model | Fallback |
-|-----------|---------------|----------|
-| triage | claude-3-haiku | gpt-4o-mini |
-| extraction | claude-3-haiku | gpt-4o-mini |
-| diagnosis | claude-3-5-sonnet | gpt-4o |
-| vision | claude-3-5-sonnet | gpt-4o |
-| generation | claude-3-5-sonnet | gpt-4o |
+- Fallback execution when primary model fails
 
 ---
 
@@ -182,6 +180,7 @@ So that knowledge documents are type-safe and properly structured.
 **Scope:**
 - `RagDocument` Pydantic model
 - `RagChunk` model for document chunks
+- `SourceFile` model for PDF extraction metadata (method, confidence, page count)
 - MongoDB collection: `ai_model.rag_documents`
 - Support for versioning and status (staged, active, archived)
 
@@ -199,6 +198,10 @@ So that documents can be managed via API.
 - Proto definitions for RAG document CRUD
 - gRPC service implementation
 - DAPR service invocation integration
+- PDF text extraction and parsing (PyMuPDF for digital, Azure Document Intelligence for scanned)
+- Document format detection (Markdown, PDF)
+- Azure Blob Storage integration for original file storage
+- Content chunking by semantic boundaries (headings, paragraphs)
 
 ---
 
@@ -213,8 +216,8 @@ So that agronomists can upload and version knowledge content.
 **Scope:**
 - `fp-knowledge` CLI using Typer
 - Commands: `validate`, `stage`, `promote`, `rollback`, `versions`, `list`
-- Markdown/PDF document ingestion
-- Chunking configuration
+- Thin CLI wrapper calling gRPC document API
+- Chunking configuration passthrough
 
 ---
 
@@ -228,9 +231,9 @@ So that documents can be converted to vectors for similarity search.
 
 **Scope:**
 - OpenAI `text-embedding-3-small` integration
-- Document chunking (500 tokens, 100 token overlap)
-- Batch embedding generation
+- Batch embedding generation for pre-chunked content
 - Embedding storage in vector database
+- Chunk-to-embedding mapping for retrieval
 
 ---
 
@@ -243,7 +246,7 @@ I want vector storage for RAG embeddings,
 So that similarity search can be performed efficiently.
 
 **Scope:**
-- MongoDB Atlas Vector Search OR Pinecone integration
+- Pinecone vector database integration
 - Index configuration per knowledge domain
 - Namespace management (staged, active)
 - Metadata storage with vectors
@@ -314,9 +317,14 @@ So that structured data can be extracted from unstructured input.
 - LangChain linear workflow: fetch -> extract -> validate -> normalize -> output
 - Temperature: 0.1 (deterministic)
 - JSON output format
-- Golden sample test infrastructure
+- Synthetic sample generator utility (`tests/golden/generator.py`)
+- Golden sample test suite (LLM-generated synthetic samples, minimum 10)
 
-**Reference:** `_bmad-output/architecture/ai-model-architecture/agent-types.md`
+**Note:** Synthetic samples are generated by LLM based on input/output schemas and domain context. Expert-validated samples replace synthetic samples post-platform-completion.
+
+**References:**
+- Agent types: `_bmad-output/architecture/ai-model-architecture/agent-types.md`
+- Synthetic sample generation: `_bmad-output/test-design-system-level.md` § *Synthetic Golden Sample Generation*
 
 ---
 
@@ -354,6 +362,7 @@ So that data can be analyzed and patterns diagnosed.
 - Temperature: 0.3
 - RAG enabled by default
 - Support for iterative analysis
+- Golden sample test suite (LLM-generated synthetic samples, minimum 10)
 
 **Reference:** `_bmad-output/architecture/ai-model-architecture/agent-types.md`
 
@@ -372,6 +381,7 @@ So that content (plans, reports, messages) can be created.
 - Temperature: 0.5 (creative)
 - RAG enabled for best practices
 - Multi-format output (markdown, SMS, TTS script)
+- Golden sample test suite (LLM-generated synthetic samples, minimum 10)
 
 **Reference:** `_bmad-output/architecture/ai-model-architecture/agent-types.md`
 
@@ -387,9 +397,10 @@ So that multi-turn dialogue can be handled.
 
 **Scope:**
 - LangGraph workflow: classify -> context -> fetch -> rag -> generate -> state -> output
-- Two LLM calls: intent classification (Haiku) + response generation (Sonnet)
+- Two LLM calls: intent classification + response generation (models per agent config)
 - Conversation state management with MongoDB checkpointing
 - Session TTL and max turns configuration
+- Golden sample test suite (LLM-generated synthetic samples, minimum 10)
 
 **Reference:** `_bmad-output/architecture/ai-model-architecture/agent-types.md`
 
@@ -405,9 +416,10 @@ So that images can be analyzed with cost optimization.
 
 **Scope:**
 - LangGraph workflow: fetch_thumbnail -> screen -> route -> fetch_original -> diagnose -> output
-- Two-tier processing: Tier 1 (Haiku, cheap) -> Tier 2 (Sonnet, capable)
+- Two-tier processing: Tier 1 (fast/cheap model) -> Tier 2 (capable model) — models per agent config
 - Conditional routing based on screen confidence
 - 40% skip rate target, 57% cost savings at scale
+- Golden sample test suite (LLM-generated synthetic samples, minimum 10)
 
 **Routing Logic:**
 

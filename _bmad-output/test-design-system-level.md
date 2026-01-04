@@ -440,7 +440,201 @@ def validate_against_golden(actual: dict, expected: dict, variance: dict) -> boo
     pass
 ```
 
-### 3. Directory Structure
+### 3. Synthetic Golden Sample Generation
+
+During development, expert-validated samples are not available. The platform uses **LLM-generated synthetic samples** to bootstrap testing without agronomist dependency.
+
+#### Why Synthetic Samples?
+
+| Challenge | Solution |
+|-----------|----------|
+| Agronomists not available during development | LLM generates realistic samples |
+| Chicken-and-egg: can't test without samples, can't get samples without agent | Synthetic samples bootstrap the cycle |
+| Need 50-100 samples per agent | LLM can generate unlimited samples quickly |
+| Expert time is expensive | Reserve expert validation for production readiness |
+
+#### Two-Tier Sample Strategy
+
+| Tier | Source | Priority | Pass Rate Gate | When Used |
+|------|--------|----------|----------------|-----------|
+| **Synthetic** | LLM-generated | P2 | 70% | Development, CI during build |
+| **Expert-validated** | Agronomist-approved | P0 | 90% | Production release gate |
+
+#### Synthetic Sample Generator
+
+```python
+# tests/golden/generator.py
+
+from pydantic import BaseModel
+from tests.golden.framework import GoldenSampleSchema, GoldenSampleMetadata, AgentType
+
+async def generate_synthetic_samples(
+    agent_name: str,
+    agent_type: AgentType,
+    input_schema: type[BaseModel],
+    output_schema: type[BaseModel],
+    domain_context: str,
+    count: int = 10,
+) -> list[GoldenSampleSchema]:
+    """
+    Generate synthetic golden samples using LLM.
+
+    Args:
+        agent_name: Name of the agent (e.g., "disease_diagnosis")
+        agent_type: Type of agent (extractor, explorer, generator, etc.)
+        input_schema: Pydantic model defining input structure
+        output_schema: Pydantic model defining expected output structure
+        domain_context: Domain description for realistic generation
+        count: Number of samples to generate
+
+    Returns:
+        List of GoldenSampleSchema ready to save
+    """
+    prompt = f"""
+    Generate {count} realistic test cases for a {agent_type.value} AI agent.
+
+    Domain Context: {domain_context}
+
+    Input Schema:
+    {input_schema.model_json_schema()}
+
+    Expected Output Schema:
+    {output_schema.model_json_schema()}
+
+    Requirements:
+    - Vary conditions realistically (different diseases, weather, severity levels)
+    - Include edge cases (low confidence, multiple issues, ambiguous symptoms)
+    - Make inputs realistic for Kenyan tea farmers
+    - Ensure outputs are plausible expert responses
+
+    Return as JSON array of objects with "input" and "expected_output" keys.
+    """
+
+    response = await llm_client.complete(
+        model="anthropic/claude-3-5-sonnet",
+        messages=[{"role": "user", "content": prompt}],
+        temperature=0.7,  # Higher creativity for diverse samples
+    )
+
+    raw_samples = json.loads(response.content)
+
+    # Validate and convert to GoldenSampleSchema
+    samples = []
+    for raw in raw_samples:
+        # Validate against schemas
+        input_schema.model_validate(raw["input"])
+        output_schema.model_validate(raw["expected_output"])
+
+        samples.append(GoldenSampleSchema(
+            input=raw["input"],
+            expected_output=raw["expected_output"],
+            acceptable_variance={"confidence": 0.15},  # Wider variance for synthetic
+            metadata=GoldenSampleMetadata(
+                sample_id=generate_sample_id(raw["input"]),
+                agent_name=agent_name,
+                agent_type=agent_type,
+                source="llm_generated",
+                validated_by="synthetic",
+                priority="P2",
+                tags=["synthetic", "bootstrap"],
+            )
+        ))
+
+    return samples
+```
+
+#### CLI for Sample Generation
+
+```bash
+# Generate 20 synthetic samples for disease diagnosis agent
+python -m tests.golden.generator generate \
+    --agent disease_diagnosis \
+    --type explorer \
+    --count 20 \
+    --domain "Kenyan tea farming: diseases, pests, weather impact, nutrient deficiency"
+
+# Output:
+# ✓ Generated 20 synthetic samples
+# ✓ Validated against schemas
+# ✓ Saved to tests/golden/disease_diagnosis/samples.json
+# ⚠ Samples marked as P2 (synthetic) - expert validation required for P0
+```
+
+#### Sample Lifecycle
+
+```
+┌─────────────────────────────────────────────────────────────────────────┐
+│                    GOLDEN SAMPLE LIFECYCLE                               │
+├─────────────────────────────────────────────────────────────────────────┤
+│                                                                          │
+│  PHASE 1: DEVELOPMENT (No agronomist needed)                            │
+│  ┌────────────────────────────────────────────────────────────────────┐ │
+│  │  1. Developer defines input/output Pydantic schemas                 │ │
+│  │  2. LLM generates 10-20 synthetic samples per agent                 │ │
+│  │  3. Samples marked: source="llm_generated", priority="P2"           │ │
+│  │  4. CI gate: 70% pass rate on synthetic samples                     │ │
+│  └────────────────────────────────────────────────────────────────────┘ │
+│                              ↓                                           │
+│  PHASE 2: INTEGRATION (Still no agronomist)                             │
+│  ┌────────────────────────────────────────────────────────────────────┐ │
+│  │  1. Run agent on real production-like inputs                        │ │
+│  │  2. Capture actual LLM outputs (record mode)                        │ │
+│  │  3. Add to sample collection for consistency testing                │ │
+│  │  4. Synthetic samples ensure no regressions                         │ │
+│  └────────────────────────────────────────────────────────────────────┘ │
+│                              ↓                                           │
+│  PHASE 3: PRODUCTION READINESS (Agronomist validates)                   │
+│  ┌────────────────────────────────────────────────────────────────────┐ │
+│  │  1. Export recorded samples to review spreadsheet                   │ │
+│  │  2. Agronomist reviews: ✅ Correct | ✏️ Corrects | ❌ Wrong          │ │
+│  │  3. Approved samples promoted: priority="P0", validated_by="Name"   │ │
+│  │  4. CI gate increases: 90% pass rate on expert-validated samples    │ │
+│  └────────────────────────────────────────────────────────────────────┘ │
+│                              ↓                                           │
+│  PHASE 4: CONTINUOUS IMPROVEMENT                                         │
+│  ┌────────────────────────────────────────────────────────────────────┐ │
+│  │  1. Production errors become new test cases                         │ │
+│  │  2. Edge cases discovered → added to samples                        │ │
+│  │  3. Model updates validated against full sample library             │ │
+│  │  4. Accuracy tracked over time via metrics dashboard                │ │
+│  └────────────────────────────────────────────────────────────────────┘ │
+│                                                                          │
+└─────────────────────────────────────────────────────────────────────────┘
+```
+
+#### CI Configuration for Two-Tier Testing
+
+```yaml
+# .github/workflows/ci.yaml (golden sample section)
+
+golden-sample-tests:
+  runs-on: ubuntu-latest
+  steps:
+    - name: Run synthetic sample tests (P2)
+      run: |
+        pytest tests/golden/ -m "golden and synthetic" -v
+      env:
+        GOLDEN_MIN_PASS_RATE: 0.70  # 70% for synthetic
+
+    - name: Run expert-validated sample tests (P0)
+      run: |
+        pytest tests/golden/ -m "golden and not synthetic" -v
+      env:
+        GOLDEN_MIN_PASS_RATE: 0.90  # 90% for expert
+      continue-on-error: true  # Warning only until expert samples exist
+```
+
+#### Minimum Sample Requirements
+
+| Agent Type | Development (Synthetic) | Production (Expert) |
+|------------|------------------------|---------------------|
+| Extractor agents | 10 samples | 100+ samples |
+| Explorer agents | 10 samples | 50+ samples |
+| Generator agents | 10 samples | 20+ samples |
+| Conversational | 10 samples | 30+ samples |
+| Tiered-Vision | 10 samples | 50+ samples |
+
+### 4. Directory Structure
 
 ```
 tests/
