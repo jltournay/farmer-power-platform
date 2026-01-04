@@ -1,5 +1,5 @@
 # Sprint Status - farmer-power-platform
-# generated: 2026-01-01
+# generated: 2026-01-04
 # project: farmer-power-platform
 # tracking_system: file-system
 # story_location: _bmad-output/sprint-artifacts
@@ -44,7 +44,7 @@
 # P5: Epic 7, Epic 8, Epic 12 (NEW - Engagement)
 # P6: Epic 3 (Dashboard - LAST UI, needs Epic 4,5,6)
 
-generated: 2026-01-01
+generated: 2026-01-04
 project: farmer-power-platform
 tracking_system: file-system
 story_location: _bmad-output/sprint-artifacts
@@ -149,21 +149,33 @@ development_status:
   0-5-8-azure-ad-b2c-configuration: deferred  # 5 points - Production deployment only
   epic-0-5-retrospective: optional
 
-  # Epic 0.75: AI Model Foundation (NEW - 2025-12-28)
-  # Dependencies: Epic 0. Blocks: Epic 5, 6, 8, 12
-  # Updated 2025-12-28: Added conversational agent type, Action Plan & Voice agent configs
+  # Epic 0.75: AI Model Foundation (REVISED - 2026-01-04)
+  # Dependencies: Epic 0, Epic 1, Epic 2. Blocks: Epic 5, 6, 8, 12
+  # Restructured: 22 stories in sequential development order, optimized for solo dev
+  # Architecture: LLM Gateway, 5 Agent Types, RAG Pipeline, LangGraph Orchestration
   epic-0-75: backlog
-  0-75-1-ai-model-service-setup: backlog
-  0-75-2-llm-gateway-model-routing: backlog  # Includes cost attribution metrics
-  0-75-3-agent-framework: backlog  # extractor, explorer, generator, router, conversational types
-  0-75-4-prompt-management: backlog
-  0-75-5-rag-infrastructure: backlog  # Includes embedding model, farmer-cli commands
-  0-75-6-ai-model-mcp-clients: backlog
-  0-75-7-ai-security-patterns: backlog  # Prompt injection, PII handling
-  0-75-8-knowledge-model-agent-configs: backlog  # triage, disease, weather, technique, trend agents
-  0-75-9-triage-feedback-loop: backlog
-  0-75-10-action-plan-agent-config: backlog  # action-plan-generator-v1
-  0-75-11-voice-advisor-agent-config: backlog  # voice-advisor-v1 (conversational type)
+  0-75-1-ai-model-setup: backlog  # Service scaffold, DAPR, MongoDB, health endpoints
+  0-75-2-pydantic-model-prompt-mongo-repository: backlog  # Prompt storage with versioning
+  0-75-3-pydantic-model-agent-config-mongo-repository: backlog  # Agent configuration storage
+  0-75-4-source-cache-agent-types-prompt-config: backlog  # ADR-013 cache pattern
+  0-75-5-openrouter-llm-gateway-cost-management: backlog  # Model routing, cost tracking
+  0-75-6-cli-manage-prompt-type-configuration: backlog  # fp-prompt-config CLI
+  0-75-7-cli-manage-agent-configuration: backlog  # fp-agent-config CLI
+  0-75-8-event-flow-subscriber-publisher: backlog  # DAPR pub/sub integration
+  0-75-9-pydantic-model-rag-document-storage: backlog  # RagDocument, RagChunk models
+  0-75-10-grpc-model-rag-document: backlog  # Proto + gRPC service
+  0-75-11-cli-rag-document: backlog  # fp-knowledge CLI
+  0-75-12-rag-embedding-service: backlog  # text-embedding-3-small integration
+  0-75-13-rag-vector-storage: backlog  # MongoDB Atlas Vector Search / Pinecone
+  0-75-14-rag-retrieval-service: backlog  # Similarity search, top-k
+  0-75-15-rag-ranking-logic: backlog  # Re-ranking, domain boosting
+  0-75-16-langgraph-sdk-integration-base-workflows: backlog  # Saga, checkpointing, base classes
+  0-75-17-extractor-agent-implementation: backlog  # LangChain linear workflow
+  0-75-18-e2e-weather-observation-extraction-flow: backlog  # github_issue: 81, 82 - Validation gate
+  0-75-19-explorer-agent-implementation: backlog  # LangGraph + RAG
+  0-75-20-generator-agent-implementation: backlog  # LangGraph + RAG, multi-format
+  0-75-21-conversational-agent-implementation: backlog  # Two LLM calls, state management
+  0-75-22-tiered-vision-agent-implementation: backlog  # Cost-optimized image analysis
   epic-0-75-retrospective: optional
 
   # ═══════════════════════════════════════════════════════════════════════════
