@@ -16,6 +16,9 @@ from typing import Any
 
 import httpx
 import structlog
+from ai_model.domain.cost_event import LlmCostEvent
+from ai_model.infrastructure.repositories import LlmCostEventRepository
+from ai_model.llm.budget_monitor import BudgetMonitor
 from ai_model.llm.chat_openrouter import (
     DEFAULT_MODEL,
     DEFAULT_SITE_NAME,
@@ -145,6 +148,8 @@ class LLMGateway:
         site_url: str = DEFAULT_SITE_URL,
         site_name: str = DEFAULT_SITE_NAME,
         cost_tracking_enabled: bool = True,
+        cost_repository: LlmCostEventRepository | None = None,
+        budget_monitor: BudgetMonitor | None = None,
     ) -> None:
         """Initialize the LLM Gateway.
 
@@ -157,6 +162,8 @@ class LLMGateway:
             site_url: Site URL for OpenRouter identification.
             site_name: Site name for OpenRouter identification.
             cost_tracking_enabled: Whether to track costs via Generation Stats API.
+            cost_repository: Repository for persisting cost events (AC8).
+            budget_monitor: Budget monitor for threshold alerting (AC12).
         """
         self._api_key = api_key if isinstance(api_key, SecretStr) else SecretStr(api_key)
         self._fallback_models = fallback_models or []
@@ -166,6 +173,8 @@ class LLMGateway:
         self._site_url = site_url
         self._site_name = site_name
         self._cost_tracking_enabled = cost_tracking_enabled
+        self._cost_repository = cost_repository
+        self._budget_monitor = budget_monitor
         self._http_client: httpx.AsyncClient | None = None
         self._available_models: set[str] = set()
 
@@ -529,6 +538,43 @@ class LLMGateway:
                     request_id=request_id,
                     agent_id=agent_id,
                 )
+
+                # AC10: Create and publish cost event via DAPR
+                cost_event = LlmCostEvent(
+                    id=str(uuid.uuid4()),
+                    request_id=request_id,
+                    agent_type=agent_type,
+                    agent_id=agent_id,
+                    model=actual_model,
+                    tokens_in=tokens_in,
+                    tokens_out=tokens_out,
+                    cost_usd=cost_usd,
+                    factory_id=factory_id,
+                    success=True,
+                    retry_count=retry_count,
+                )
+
+                # Persist cost event to MongoDB (AC8)
+                if self._cost_repository:
+                    try:
+                        await self._cost_repository.insert(cost_event)
+                    except Exception as e:
+                        logger.warning(
+                            "Failed to persist cost event",
+                            event_id=cost_event.id,
+                            error=str(e),
+                        )
+
+                # Check budget thresholds (AC12)
+                if self._budget_monitor:
+                    alert = await self._budget_monitor.record_cost(cost_event)
+                    if alert:
+                        logger.warning(
+                            "Cost threshold alert triggered",
+                            threshold_type=alert.threshold_type.value,
+                            threshold_usd=str(alert.threshold_usd),
+                            current_cost_usd=str(alert.current_cost_usd),
+                        )
 
                 return {
                     "content": content,
