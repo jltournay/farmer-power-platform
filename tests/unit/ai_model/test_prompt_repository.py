@@ -200,9 +200,7 @@ class TestPromptRepository:
         await repository.create(sample_prompt)
         await repository.create(sample_prompt_v2)
 
-        prompts, _, total = await repository.list(
-            filters={"status": PromptStatus.ACTIVE.value}
-        )
+        prompts, _, total = await repository.list(filters={"status": PromptStatus.ACTIVE.value})
 
         assert len(prompts) == 1
         assert prompts[0].status == PromptStatus.ACTIVE
