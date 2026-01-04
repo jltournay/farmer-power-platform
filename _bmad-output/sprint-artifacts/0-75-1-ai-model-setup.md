@@ -1,6 +1,6 @@
 # Story 0.75.1: AI Model Setup
 
-**Status:** in-progress
+**Status:** review
 **GitHub Issue:** #89
 
 ## Story
@@ -185,14 +185,18 @@ All checks passed!
 
 ```bash
 # Push to story branch
-git push origin story/0-75-1-ai-model-setup
+git push origin feature/0-75-1-ai-model-setup
 
-# Wait ~30s, then check CI status
-gh run list --branch story/0-75-1-ai-model-setup --limit 3
+# Check CI status
+gh run list --branch feature/0-75-1-ai-model-setup --limit 3
 ```
-**CI Run ID:** _______________
-**CI E2E Status:** [ ] Passed / [ ] Failed
-**Verification Date:** _______________
+**CI Run ID:** 20694589584
+**CI Status:** ✅ Passed (Lint, Unit Tests, Integration Tests, Frontend Tests, All Tests Pass)
+
+**E2E Run ID:** 20694598743
+**E2E Status:** ✅ Passed (69 tests in 4m33s)
+
+**Verification Date:** 2026-01-04
 
 ---
 

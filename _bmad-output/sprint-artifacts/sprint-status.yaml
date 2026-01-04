@@ -154,7 +154,7 @@ development_status:
   # Restructured: 26 stories in sequential development order, optimized for solo dev
   # Architecture: LLM Gateway, 5 Agent Types, RAG Pipeline, LangGraph Orchestration
   epic-0-75: in-progress
-  0-75-1-ai-model-setup: in-progress  # github_issue: 89, Service scaffold, DAPR, MongoDB, health endpoints, proto scaffold
+  0-75-1-ai-model-setup: review  # github_issue: 89, Service scaffold, DAPR, MongoDB, health endpoints, proto scaffold
   0-75-2-pydantic-model-prompt-mongo-repository: backlog  # Prompt storage with versioning
   0-75-3-pydantic-model-agent-config-mongo-repository: backlog  # Agent configuration storage
   0-75-4-source-cache-agent-types-prompt-config: backlog  # ADR-013 cache pattern, extract to fp-common
