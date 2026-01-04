@@ -4,6 +4,7 @@ Provides shared infrastructure components for all services.
 """
 
 from fp_common.admin import create_admin_router
+from fp_common.cache import MongoChangeStreamCache
 from fp_common.events import (
     DLQHandler,
     DLQRecord,
@@ -35,6 +36,7 @@ __all__ = [
     "DLQRepository",
     "IngestionConfig",
     "IterationConfig",
+    "MongoChangeStreamCache",
     "PathPatternConfig",
     "ProcessedFileConfig",
     "RequestConfig",

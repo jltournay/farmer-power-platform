@@ -1,287 +1,100 @@
 """Runtime service for looking up source configurations.
 
 This module provides SourceConfigService which loads source configurations
-from MongoDB via SourceConfigRepository and caches them with a TTL for
-efficient runtime lookups when processing Event Grid blob-created events.
+from MongoDB and caches them with MongoDB Change Streams for real-time
+invalidation.
 
 Story 0.6.9: Added MongoDB Change Streams for real-time cache invalidation
 and OpenTelemetry metrics for observability (ADR-007).
+
+Story 0.75.4: Refactored to extend MongoChangeStreamCache base class (ADR-013).
 """
 
-import asyncio
-import contextlib
+from __future__ import annotations
+
 import re
-from datetime import UTC, datetime, timedelta
+from typing import TYPE_CHECKING
 
 import structlog
-from collection_model.infrastructure.repositories import SourceConfigRepository
+from fp_common.cache import MongoChangeStreamCache
 from fp_common.models.source_config import SourceConfig
-from motor.motor_asyncio import AsyncIOMotorCollection, AsyncIOMotorDatabase
-from opentelemetry import metrics
+
+if TYPE_CHECKING:
+    from motor.motor_asyncio import AsyncIOMotorDatabase
 
 logger = structlog.get_logger(__name__)
 
-# Get the meter for collection_model
-meter = metrics.get_meter("collection_model")
 
-# Story 0.6.9: Cache metrics (ADR-007)
-cache_hits_counter = meter.create_counter(
-    name="source_config_cache_hits_total",
-    description="Total number of source config cache hits",
-    unit="1",
-)
-
-cache_misses_counter = meter.create_counter(
-    name="source_config_cache_misses_total",
-    description="Total number of source config cache misses",
-    unit="1",
-)
-
-cache_invalidations_counter = meter.create_counter(
-    name="source_config_cache_invalidations_total",
-    description="Total number of cache invalidations",
-    unit="1",
-)
-
-cache_size_gauge = meter.create_gauge(
-    name="source_config_cache_size",
-    description="Current number of items in the cache",
-    unit="1",
-)
-
-cache_age_gauge = meter.create_gauge(
-    name="source_config_cache_age_seconds",
-    description="Age of the cache in seconds",
-    unit="s",
-)
-
-
-class SourceConfigService:
+class SourceConfigService(MongoChangeStreamCache[SourceConfig]):
     """Runtime service for looking up source configurations.
 
     Uses in-memory caching with MongoDB Change Streams for real-time
-    invalidation (Story 0.6.9, ADR-007).
+    invalidation (Story 0.6.9, ADR-007). Refactored to extend shared
+    base class (Story 0.75.4, ADR-013).
 
-    Features:
+    Features (inherited from MongoChangeStreamCache):
     - Startup cache warming before accepting requests
     - Change Stream watcher for real-time invalidation
     - Resume token persistence for resilient reconnection
     - OpenTelemetry metrics for observability
 
-    Attributes:
-        CACHE_TTL_MINUTES: Fallback cache time-to-live in minutes.
-
+    Domain-specific features:
+    - get_config(): Lookup by source_id
+    - get_config_by_container(): Find config matching blob container
+    - extract_path_metadata(): Parse blob paths using config patterns
     """
-
-    CACHE_TTL_MINUTES = 5
 
     def __init__(self, db: AsyncIOMotorDatabase) -> None:
         """Initialize the source config service.
 
         Args:
             db: MongoDB database instance.
-
         """
-        self._repository = SourceConfigRepository(db)
-        self._collection: AsyncIOMotorCollection = db["source_configs"]
-
-        # In-memory cache of typed SourceConfig objects
-        self._cache: list[SourceConfig] | None = None
-        self._cache_loaded_at: datetime | None = None
-        self._cache_expires: datetime | None = None
-
-        # Story 0.6.9: Change Stream support (ADR-007)
-        self._change_stream_task: asyncio.Task | None = None
-        self._resume_token: dict | None = None
-        self._change_stream_active: bool = False
+        super().__init__(
+            db=db,
+            collection_name="source_configs",
+            cache_name="source_config",
+        )
 
     # -------------------------------------------------------------------------
-    # Story 0.6.9: Startup Cache Warming (Task 2, AC1)
+    # Abstract Method Implementations (required by MongoChangeStreamCache)
     # -------------------------------------------------------------------------
 
-    async def warm_cache(self) -> int:
-        """Warm the cache on service startup.
-
-        Loads all enabled configs from MongoDB before accepting requests.
-        Sets the cache size metric.
-
-        Returns:
-            Number of configs loaded into cache.
-        """
-        logger.info("Warming source config cache...")
-        self._cache = await self._repository.get_all_enabled()
-        self._cache_loaded_at = datetime.now(UTC)
-        self._cache_expires = self._cache_loaded_at + timedelta(minutes=self.CACHE_TTL_MINUTES)
-
-        config_count = len(self._cache)
-        cache_size_gauge.set(config_count)
-
-        logger.info("Cache warmed", config_count=config_count)
-        return config_count
-
-    # -------------------------------------------------------------------------
-    # Story 0.6.9: Change Stream Watcher (Task 3, AC2, AC4)
-    # -------------------------------------------------------------------------
-
-    async def start_change_stream(self) -> None:
-        """Start watching for collection changes.
-
-        Spawns a background task that watches the source_configs collection
-        for insert, update, replace, and delete operations. On any change,
-        the cache is invalidated.
-        """
-        if self._change_stream_task is not None and not self._change_stream_task.done():
-            logger.warning("Change stream already running")
-            return
-
-        self._change_stream_task = asyncio.create_task(self._watch_changes())
-        self._change_stream_active = True
-        logger.info("Change stream watcher started")
-
-    async def stop_change_stream(self) -> None:
-        """Stop the change stream watcher."""
-        self._change_stream_active = False
-        if self._change_stream_task:
-            self._change_stream_task.cancel()
-            with contextlib.suppress(asyncio.CancelledError):
-                await self._change_stream_task
-            self._change_stream_task = None
-        logger.info("Change stream watcher stopped")
-
-    async def _watch_changes(self) -> None:
-        """Watch MongoDB collection for changes.
-
-        Uses resume token for resilient reconnection (AC4).
-        """
-        pipeline = [{"$match": {"operationType": {"$in": ["insert", "update", "replace", "delete"]}}}]
-
-        while self._change_stream_active:
-            try:
-                async with self._collection.watch(
-                    pipeline,
-                    full_document="updateLookup",
-                    resume_after=self._resume_token,
-                ) as stream:
-                    logger.debug("Change stream connected", resume_token=self._resume_token is not None)
-                    async for change in stream:
-                        if not self._change_stream_active:
-                            break
-                        # Store resume token for reconnection (AC4)
-                        self._resume_token = change.get("_id")
-                        operation = change.get("operationType", "unknown")
-                        source_id = change.get("documentKey", {}).get("_id", "unknown")
-
-                        self._invalidate_cache(reason=f"change_stream:{operation}")
-                        logger.info(
-                            "Cache invalidated by change stream",
-                            operation=operation,
-                            source_id=source_id,
-                        )
-
-            except asyncio.CancelledError:
-                logger.debug("Change stream watcher cancelled")
-                break
-            except Exception as e:
-                if not self._change_stream_active:
-                    break
-                logger.warning(
-                    "Change stream disconnected, reconnecting...",
-                    error=str(e),
-                    resume_token=self._resume_token is not None,
-                )
-                await asyncio.sleep(1)  # Brief pause before reconnect
-
-    # -------------------------------------------------------------------------
-    # Story 0.6.9: Cache Invalidation with Metrics (Task 1)
-    # -------------------------------------------------------------------------
-
-    def _invalidate_cache(self, reason: str) -> None:
-        """Invalidate the cache and record metrics.
+    def _get_cache_key(self, item: SourceConfig) -> str:
+        """Extract cache key from SourceConfig.
 
         Args:
-            reason: Reason for invalidation (for metrics label).
-        """
-        self._cache = None
-        self._cache_loaded_at = None
-        self._cache_expires = None
-        cache_invalidations_counter.add(1, {"reason": reason})
-        cache_size_gauge.set(0)
-        logger.debug("Source config cache invalidated", reason=reason)
-
-    def invalidate_cache(self) -> None:
-        """Force cache refresh on next call (public API)."""
-        self._invalidate_cache(reason="manual")
-
-    # -------------------------------------------------------------------------
-    # Story 0.6.9: Cache Hit/Miss Tracking (Task 4, AC3)
-    # -------------------------------------------------------------------------
-
-    async def get_all_configs(self) -> list[SourceConfig]:
-        """Get all enabled source configs (cached with change stream invalidation).
-
-        Tracks cache hits and misses via metrics.
+            item: SourceConfig instance.
 
         Returns:
-            List of enabled source configurations as typed SourceConfig models.
+            The source_id as cache key.
         """
-        now = datetime.now(UTC)
+        return item.source_id
 
-        # Cache hit
-        if self._cache is not None and self._cache_expires is not None and now < self._cache_expires:
-            cache_hits_counter.add(1)
-            self._update_cache_age_metric()
-            logger.debug("Cache hit", count=len(self._cache))
-            return self._cache
+    def _parse_document(self, doc: dict) -> SourceConfig:
+        """Parse MongoDB document to SourceConfig model.
 
-        # Cache miss
-        cache_misses_counter.add(1)
-        logger.debug("Cache miss, reloading from database")
-
-        self._cache = await self._repository.get_all_enabled()
-        self._cache_loaded_at = datetime.now(UTC)
-        self._cache_expires = self._cache_loaded_at + timedelta(minutes=self.CACHE_TTL_MINUTES)
-
-        cache_size_gauge.set(len(self._cache))
-        self._update_cache_age_metric()
-
-        logger.info(
-            "Refreshed source configs cache",
-            count=len(self._cache),
-            expires_at=self._cache_expires.isoformat(),
-        )
-        return self._cache
-
-    def _update_cache_age_metric(self) -> None:
-        """Update the cache age gauge metric."""
-        age = self.get_cache_age()
-        if age >= 0:
-            cache_age_gauge.set(age)
-
-    # -------------------------------------------------------------------------
-    # Story 0.6.9: Health Endpoint Support (Task 5)
-    # -------------------------------------------------------------------------
-
-    def get_cache_age(self) -> float:
-        """Get cache age in seconds.
+        Args:
+            doc: MongoDB document dict.
 
         Returns:
-            Age in seconds, or -1 if cache is not loaded.
+            Parsed SourceConfig instance.
         """
-        if self._cache_loaded_at is None:
-            return -1.0
-        return (datetime.now(UTC) - self._cache_loaded_at).total_seconds()
+        # Remove MongoDB _id if present (not in our Pydantic model)
+        doc.pop("_id", None)
+        return SourceConfig.model_validate(doc)
 
-    def get_cache_status(self) -> dict:
-        """Get cache status for health endpoint.
+    def _get_filter(self) -> dict:
+        """Get MongoDB filter for loading enabled configs.
 
         Returns:
-            Dict with cache_size, cache_age_seconds, change_stream_active.
+            Filter for enabled configs only.
         """
-        return {
-            "cache_size": len(self._cache) if self._cache else 0,
-            "cache_age_seconds": round(self.get_cache_age(), 2),
-            "change_stream_active": (self._change_stream_task is not None and not self._change_stream_task.done()),
-        }
+        return {"enabled": True}
+
+    # -------------------------------------------------------------------------
+    # Domain-Specific Methods
+    # -------------------------------------------------------------------------
 
     async def get_config(self, source_id: str) -> SourceConfig | None:
         """Get a single source config by source_id.
@@ -292,11 +105,7 @@ class SourceConfigService:
         Returns:
             Source config or None if not found.
         """
-        configs = await self.get_all_configs()
-        for config in configs:
-            if config.source_id == source_id:
-                return config
-        return None
+        return await self.get(source_id)
 
     async def get_config_by_container(self, container: str) -> SourceConfig | None:
         """Find source config matching the given container.
@@ -309,10 +118,9 @@ class SourceConfigService:
 
         Returns:
             Matching source config or None if not found.
-
         """
-        configs = await self.get_all_configs()
-        for config in configs:
+        configs = await self.get_all()
+        for config in configs.values():
             if config.ingestion.mode == "blob_trigger" and config.ingestion.landing_container == container:
                 logger.debug(
                     "Found source config for container",
@@ -321,6 +129,47 @@ class SourceConfigService:
                 )
                 return config
         return None
+
+    async def get_all_configs(self) -> list[SourceConfig]:
+        """Get all enabled source configs as a list.
+
+        Returns:
+            List of enabled source configurations.
+
+        Note:
+            This method exists for backwards compatibility.
+            Internally it calls get_all() and returns values as a list.
+        """
+        configs = await self.get_all()
+        return list(configs.values())
+
+    def get_cache_status(self) -> dict:
+        """Get cache status for health endpoint.
+
+        Returns:
+            Dict with cache_size, cache_age_seconds, change_stream_active.
+
+        Note:
+            This method exists for backwards compatibility.
+            Same as get_health_status() from base class.
+        """
+        return self.get_health_status()
+
+    async def warm_cache(self) -> int:
+        """Warm the cache on service startup.
+
+        Loads all enabled configs from MongoDB before accepting requests.
+
+        Returns:
+            Number of configs loaded into cache.
+
+        Note:
+            This method exists for backwards compatibility.
+            Calls get_all() which handles cache warming.
+        """
+        configs = await self.get_all()
+        logger.info("Source config cache warmed", config_count=len(configs))
+        return len(configs)
 
     @staticmethod
     def extract_path_metadata(
@@ -342,7 +191,6 @@ class SourceConfigService:
 
         Returns:
             Dict of extracted field values, empty if pattern doesn't match.
-
         """
         path_pattern = config.ingestion.path_pattern
         if not path_pattern:

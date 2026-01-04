@@ -7,6 +7,8 @@ and provides centralized access to language models via OpenRouter.
 Architecture (ADR-011):
 - Port 8000: FastAPI health endpoints (direct, no DAPR)
 - Port 50051: gRPC server (via DAPR sidecar)
+
+Story 0.75.4: Added cache warming and change streams for AgentConfig and Prompt.
 """
 
 from collections.abc import AsyncGenerator
@@ -19,6 +21,7 @@ from ai_model.config import settings
 from ai_model.infrastructure.mongodb import (
     check_mongodb_connection,
     close_mongodb_connection,
+    get_database,
     get_mongodb_client,
 )
 from ai_model.infrastructure.tracing import (
@@ -26,6 +29,7 @@ from ai_model.infrastructure.tracing import (
     setup_tracing,
     shutdown_tracing,
 )
+from ai_model.services import AgentConfigCache, PromptCache
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -53,7 +57,10 @@ logger = structlog.get_logger(__name__)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
-    """Application lifespan handler for startup and shutdown events."""
+    """Application lifespan handler for startup and shutdown events.
+
+    Story 0.75.4: Added cache warming and change stream management (ADR-013).
+    """
     # Startup
     logger.info(
         "Starting AI Model service",
@@ -66,12 +73,43 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     setup_tracing()
 
     # Initialize MongoDB connection
+    agent_config_cache: AgentConfigCache | None = None
+    prompt_cache: PromptCache | None = None
+
     try:
         await get_mongodb_client()
         health.set_mongodb_check(check_mongodb_connection)
         logger.info("MongoDB connection initialized")
+
+        # Story 0.75.4: Initialize and warm caches (ADR-013)
+        db = await get_database()
+        agent_config_cache = AgentConfigCache(db)
+        prompt_cache = PromptCache(db)
+
+        # Warm caches before accepting requests
+        logger.info("Warming caches...")
+        agent_configs = await agent_config_cache.get_all()
+        prompts = await prompt_cache.get_all()
+        logger.info(
+            "Caches warmed",
+            agent_config_count=len(agent_configs),
+            prompt_count=len(prompts),
+        )
+
+        # Start change stream watchers for real-time invalidation
+        await agent_config_cache.start_change_stream()
+        await prompt_cache.start_change_stream()
+        logger.info("Change stream watchers started")
+
+        # Store caches in app.state for dependency injection
+        app.state.agent_config_cache = agent_config_cache
+        app.state.prompt_cache = prompt_cache
+
+        # Register cache services with health module
+        health.set_cache_services(agent_config_cache, prompt_cache)
+
     except Exception as e:
-        logger.warning("MongoDB connection failed at startup", error=str(e))
+        logger.warning("MongoDB/cache initialization failed at startup", error=str(e))
         # Service can still start - readiness probe will report not ready
 
     # Start gRPC server
@@ -87,6 +125,13 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
 
     # Shutdown
     logger.info("Shutting down AI Model service")
+
+    # Story 0.75.4: Stop change streams
+    if agent_config_cache:
+        await agent_config_cache.stop_change_stream()
+    if prompt_cache:
+        await prompt_cache.stop_change_stream()
+    logger.info("Change stream watchers stopped")
 
     await stop_grpc_server()
     await close_mongodb_connection()
