@@ -484,17 +484,8 @@ agent:
     temperature: 0.1                      # Very deterministic
     max_tokens: 500
 
-  prompt:
-    system_file: "prompts/extractors/qc-event/system.md"
-    template_file: "prompts/extractors/qc-event/template.md"
-    output_format: "json"
-    output_schema:
-      type: object
-      properties:
-        farmer_id: { type: string, pattern: "^WM-\\d+$" }
-        grade: { type: string, enum: [A, B, C, D, Reject] }
-        quality_score: { type: number, min: 0, max: 100 }
-        validation_warnings: { type: array, items: { type: string } }
+  # NOTE: Prompts are stored separately in MongoDB (see Prompt Management section)
+  # Loaded at runtime by agent_id lookup
 
   # EXTRACTOR-SPECIFIC: Schema for extraction validation
   extraction_schema:
@@ -513,9 +504,8 @@ agent:
       prefix: "WM-"
 
   error_handling:
-    retry:
-      max_attempts: 3
-      backoff_ms: [100, 500, 2000]
+    max_attempts: 3
+    backoff_ms: [100, 500, 2000]
     on_failure: "publish_error_event"
 ```
 
@@ -556,21 +546,8 @@ agent:
     temperature: 0.3
     max_tokens: 2000
 
-  prompt:
-    system_file: "prompts/explorers/disease-diagnosis/system.md"
-    template_file: "prompts/explorers/disease-diagnosis/template.md"
-    output_format: "json"
-    output_schema:
-      type: object
-      properties:
-        diagnosis:
-          type: object
-          properties:
-            condition: { type: string }
-            confidence: { type: number, min: 0, max: 1 }
-            severity: { enum: [low, moderate, high, critical] }
-            details: { type: string }
-        recommendations: { type: array, items: { type: string } }
+  # NOTE: Prompts are stored separately in MongoDB (see Prompt Management section)
+  # Loaded at runtime by agent_id lookup
 
   # EXPLORER-SPECIFIC: RAG for expert knowledge
   rag:
@@ -581,9 +558,8 @@ agent:
     min_similarity: 0.7
 
   error_handling:
-    retry:
-      max_attempts: 3
-      backoff_ms: [100, 500, 2000]
+    max_attempts: 3
+    backoff_ms: [100, 500, 2000]
     on_failure: "publish_error_event"
     dead_letter_topic: "ai.errors.dead_letter"
 ```
@@ -627,10 +603,8 @@ agent:
     temperature: 0.5                        # More creative
     max_tokens: 3000
 
-  prompt:
-    system_file: "prompts/generators/action-plan/system.md"
-    template_file: "prompts/generators/action-plan/template.md"
-    output_format: "markdown"
+  # NOTE: Prompts are stored separately in MongoDB (see Prompt Management section)
+  # Loaded at runtime by agent_id lookup
 
   # GENERATOR-SPECIFIC: RAG for best practices
   rag:
@@ -643,9 +617,8 @@ agent:
   output_format: markdown
 
   error_handling:
-    retry:
-      max_attempts: 3
-      backoff_ms: [100, 500, 2000]
+    max_attempts: 3
+    backoff_ms: [100, 500, 2000]
     on_failure: "publish_error_event"
 ```
 
@@ -690,11 +663,8 @@ agent:
     temperature: 0.4
     max_tokens: 500
 
-  prompt:
-    intent_system_file: "prompts/conversational/intent/system.md"
-    response_system_file: "prompts/conversational/response/system.md"
-    template_file: "prompts/conversational/dialogue/template.md"
-    output_format: "text"
+  # NOTE: Prompts are stored separately in MongoDB (see Prompt Management section)
+  # Loaded at runtime by agent_id lookup
 
   # CONVERSATIONAL-SPECIFIC: RAG for knowledge grounding
   rag:
@@ -711,9 +681,8 @@ agent:
     context_window: 3                  # Keep last N turns in context
 
   error_handling:
-    retry:
-      max_attempts: 2
-      backoff_ms: [100, 300]
+    max_attempts: 2
+    backoff_ms: [100, 300]
     on_failure: "graceful_fallback"    # Return helpful error message
 ```
 
@@ -759,12 +728,8 @@ agent:
       temperature: 0.3
       max_tokens: 2000
 
-  prompt:
-    screen_system_file: "prompts/tiered-vision/screen/system.md"
-    screen_template_file: "prompts/tiered-vision/screen/template.md"
-    diagnose_system_file: "prompts/tiered-vision/diagnose/system.md"
-    diagnose_template_file: "prompts/tiered-vision/diagnose/template.md"
-    output_format: "json"
+  # NOTE: Prompts are stored separately in MongoDB (see Prompt Management section)
+  # Loaded at runtime by agent_id lookup
 
   # TIERED-VISION-SPECIFIC: Routing thresholds
   routing:
@@ -780,9 +745,8 @@ agent:
     top_k: 5
 
   error_handling:
-    retry:
-      max_attempts: 3
-      backoff_ms: [100, 500, 2000]
+    max_attempts: 3
+    backoff_ms: [100, 500, 2000]
     on_failure: "publish_error_event"
 ```
 
@@ -856,6 +820,7 @@ class StateConfig(BaseModel):
     max_turns: int = 5
     session_ttl_minutes: int = 30
     checkpoint_backend: Literal["mongodb"] = "mongodb"
+    context_window: int = 3                 # Number of previous turns to include in prompt
 
 # ═══════════════════════════════════════════════════════════════════════════
 # BASE CLASS (common fields)
@@ -915,8 +880,9 @@ class TieredVisionRoutingConfig(BaseModel):
 class TieredVisionConfig(AgentConfigBase):
     """Tiered-Vision agent: cost-optimized image analysis with two-tier processing."""
     type: Literal["tiered-vision"] = "tiered-vision"
+    llm: LLMConfig | None = None            # Override base: not used, tiered_llm replaces it
     rag: RAGConfig                          # Used in Tier 2 only
-    tiered_llm: TieredVisionLLMConfig       # Replaces base llm config
+    tiered_llm: TieredVisionLLMConfig       # Two-tier LLM config (screen + diagnose)
     routing: TieredVisionRoutingConfig = Field(default_factory=TieredVisionRoutingConfig)
 
 # ═══════════════════════════════════════════════════════════════════════════
