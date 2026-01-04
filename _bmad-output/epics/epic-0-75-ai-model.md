@@ -112,7 +112,7 @@ So that AI workflows can be built on a solid foundation.
 
 ### Story 0.75.2: Pydantic Model for Prompt + Mongo Repository
 
-**Story File:** Not yet created | Status: Backlog
+**Story File:** `_bmad-output/sprint-artifacts/0-75-2-pydantic-model-prompt-mongo-repository.md` | Status: Ready for Dev
 
 As a **developer**,
 I want Pydantic models and repository pattern for prompt storage,
