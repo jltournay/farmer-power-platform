@@ -1,5 +1,12 @@
 # Farmer Power Platform - AI Agent Instructions
 
+## ⚠️ Common Mistakes to Avoid
+
+| Wrong | Correct | Note |
+|-------|---------|------|
+| `.bmad/` | `_bmad/` | BMAD folder uses **underscore**, not dot |
+| `.bmad-output/` | `_bmad-output/` | Same - underscore prefix |
+
 ## Before You Code
 
 **READ THIS FIRST:** `_bmad-output/project-context.md`
