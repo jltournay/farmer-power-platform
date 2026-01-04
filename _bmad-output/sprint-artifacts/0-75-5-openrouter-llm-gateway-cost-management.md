@@ -1,6 +1,6 @@
 # Story 0.75.5: OpenRouter LLM Gateway with Cost Observability
 
-**Status:** in-progress
+**Status:** review
 **GitHub Issue:** #97
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
@@ -335,11 +335,11 @@ git push origin story/0-75-5-openrouter-llm-gateway-cost-management
 # Wait ~30s, then check CI status
 gh run list --branch story/0-75-5-openrouter-llm-gateway-cost-management --limit 3
 ```
-**Quality CI Run ID:** _______________
-**Quality CI Status:** [ ] Passed / [ ] Failed
-**E2E CI Run ID:** _______________
-**E2E CI Status:** [ ] Passed / [ ] Failed
-**Verification Date:** _______________
+**Quality CI Run ID:** 20699502592
+**Quality CI Status:** [x] Passed / [ ] Failed
+**E2E CI Run ID:** 20699540419
+**E2E CI Status:** [x] Passed / [ ] Failed
+**Verification Date:** 2026-01-04
 
 ---
 
