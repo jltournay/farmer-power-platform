@@ -183,3 +183,60 @@ So that I can monitor operations and identify issues.
 - Story 0.5.6: BFF Service Setup (for health endpoints)
 
 **Story Points:** 5
+
+---
+
+## Story 9.5: Knowledge Management Interface
+
+As a **Platform Administrator or Agronomist**,
+I want to upload and manage expert knowledge documents through a web interface,
+So that AI recommendations are powered by verified expert content.
+
+**Acceptance Criteria:**
+
+**Given** I navigate to Knowledge Management
+**When** the page loads
+**Then** I see a library of all knowledge documents
+**And** I can filter by domain (Plant Diseases, Tea Cultivation, Weather, etc.)
+**And** I can filter by status (Draft, Staged, Active, Archived)
+**And** Search is available across document titles and content
+
+**Given** I want to upload a new document
+**When** I click "Upload Document"
+**Then** I can drag & drop or browse for PDF, DOCX, MD, or TXT files
+**And** I enter metadata: title, domain, author, source, region
+**And** System auto-detects extraction method (text vs OCR vs Vision)
+**And** I see extraction progress with confidence score
+**And** I can preview and edit extracted content before saving
+
+**Given** extraction confidence is low (<80%)
+**When** the extraction completes
+**Then** System shows quality warning with specific issues
+**And** Offers options: try Vision AI, edit manually, upload clearer scan
+**And** I can continue anyway if content is acceptable
+
+**Given** I want to review a staged document
+**When** I open the document review screen
+**Then** I can preview the full content
+**And** I can test with AI (ask questions, verify retrieval)
+**And** I must check approval boxes before activating
+**And** Activation moves document to production namespace
+
+**Given** I need to update an active document
+**When** I edit and save
+**Then** New version is created (old version archived)
+**And** Change summary is required
+**And** Version history shows all versions with rollback option
+
+**Technical Notes:**
+- Location: `web/platform-admin/src/pages/knowledge/`
+- API: gRPC RAGDocumentService via BFF
+- PDF extraction: PyMuPDF (digital), Azure Document Intelligence (scanned), Vision LLM (diagrams)
+- Vector storage: Pinecone with namespace versioning (test vs production)
+- Document storage: MongoDB + Azure Blob Storage for original files
+
+**Dependencies:**
+- Story 9.1: Platform Admin Application Scaffold
+- AI Model RAG Document API (from architecture)
+
+**Story Points:** 8

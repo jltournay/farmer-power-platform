@@ -92,6 +92,27 @@ Complete inventory of all user interfaces and their screens for the Farmer Power
 
 ---
 
+## 5b. Knowledge Management UI
+
+**User:** Agronomists, TBK specialists, Platform administrators
+**Purpose:** Upload and manage expert knowledge documents that power AI recommendations
+
+| # | Screen | Purpose |
+|---|--------|---------|
+| 1 | **Knowledge Document Library** | Browse, search, filter documents by domain/status |
+| 2 | **Document Upload (Step 1)** | Drag & drop file, enter title/domain/author metadata |
+| 3 | **Document Processing (Step 2)** | Automatic extraction progress, confidence score display |
+| 4 | **Content Preview (Step 2b)** | Review extracted content, edit if needed |
+| 5 | **Extraction Quality Warning** | Low confidence handling, re-extraction options |
+| 6 | **Save Document (Step 3)** | Summary, save as Draft/Staged/Active |
+| 7 | **Document Review & Activation** | Preview, test with AI, approve for production |
+| 8 | **Version History** | View all versions, compare, rollback |
+
+**Related Docs:**
+- [Admin Interface: Knowledge Management UI](./admin-interface-core-experience.md#knowledge-management-ui)
+
+---
+
 ## 6. Farmer Registration UI (Collection Point)
 
 **User:** Registration Clerk (at collection point or factory)
@@ -138,8 +159,9 @@ Complete inventory of all user interfaces and their screens for the Farmer Power
 | Regulator Dashboard | 4 |
 | Factory Admin | 5 |
 | Platform Admin | 4 |
+| Knowledge Management | 8 |
 | Farmer Registration | 4 |
-| **Total Web Screens** | **24** |
+| **Total Web Screens** | **32** |
 
 ### Non-Web Channels
 
@@ -158,6 +180,8 @@ Complete inventory of all user interfaces and their screens for the Farmer Power
 | **P1 - MVP** | Regulator Dashboard | Regulatory endorsement accelerator |
 | **P2 - Launch** | Factory Owner ROI, Temporal Patterns | Subscription value proof |
 | **P2 - Launch** | Farmer Registration, Voice IVR | Full feedback loop |
+| **P2 - Launch** | Knowledge Management (Upload, Review) | AI quality depends on expert knowledge |
 | **P3 - Scale** | Factory Admin, Platform Admin | Self-service operations |
+| **P3 - Scale** | Knowledge Management (Version History) | Advanced document management |
 
 ---
