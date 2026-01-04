@@ -156,7 +156,7 @@ development_status:
   epic-0-75: in-progress
   0-75-1-ai-model-setup: done  # github_issue: 89, Service scaffold, DAPR, MongoDB, health endpoints, proto scaffold
   0-75-2-pydantic-model-prompt-mongo-repository: done  # github_issue: 91, PR: 92, Prompt storage with versioning
-  0-75-3-pydantic-model-agent-config-mongo-repository: backlog  # Agent configuration storage
+  0-75-3-pydantic-model-agent-config-mongo-repository: in-progress  # github_issue: 93, Agent configuration storage
   0-75-4-source-cache-agent-types-prompt-config: backlog  # ADR-013 cache pattern, extract to fp-common
   0-75-5-openrouter-llm-gateway-cost-management: backlog  # Model routing, cost tracking, resilience
   0-75-6-cli-manage-prompt-type-configuration: backlog  # fp-prompt-config CLI
