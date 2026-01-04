@@ -1,6 +1,6 @@
 # Story 0.75.2: Pydantic Model for Prompt + Mongo Repository
 
-**Status:** in-progress
+**Status:** review
 **GitHub Issue:** #91
 
 ## Story
@@ -73,11 +73,11 @@ So that prompts are type-safe and properly managed in MongoDB.
     - [x] list_by_agent() - lists prompts for an agent
     - [x] ensure_indexes() - creates proper indexes
 
-- [ ] **Task 5: CI Verification** (AC: #12)
+- [x] **Task 5: CI Verification** (AC: #12)
   - [x] Run `ruff check services/ai-model/` - lint passes
   - [x] Run `ruff format --check services/ai-model/` - format passes
   - [x] Run unit tests locally with ≥20 tests passing (46 tests total)
-  - [ ] Push and verify CI passes
+  - [x] Push and verify CI passes
 
 ## Git Workflow (MANDATORY)
 
@@ -96,7 +96,7 @@ So that prompts are type-safe and properly managed in MongoDB.
 ### During Development
 - [x] All commits reference GitHub issue: `Relates to #91`
 - [x] Commits are atomic by type (production, test, seed - not mixed)
-- [ ] Push to feature branch: `git push -u origin story/0-75-2-pydantic-model-prompt-mongo-repository`
+- [x] Push to feature branch: `git push -u origin story/0-75-2-pydantic-model-prompt-mongo-repository`
 
 ### Story Done
 - [ ] Create Pull Request: `gh pr create --title "Story 0.75.2: Pydantic Model for Prompt + Mongo Repository" --base main`
