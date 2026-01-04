@@ -1,6 +1,8 @@
 """Domain models for the AI Model service.
 
-This module exports all domain models for prompt and agent configuration.
+This module exports all domain models for prompt, agent configuration, and cost tracking.
+
+Story 0.75.5: Added LlmCostEvent and related cost models.
 """
 
 from ai_model.domain.agent_config import (
@@ -24,6 +26,13 @@ from ai_model.domain.agent_config import (
     TieredVisionLLMConfig,
     TieredVisionRoutingConfig,
 )
+from ai_model.domain.cost_event import (
+    AgentTypeCost,
+    CostSummary,
+    DailyCostSummary,
+    LlmCostEvent,
+    ModelCost,
+)
 from ai_model.domain.prompt import (
     Prompt,
     PromptABTest,
@@ -38,14 +47,19 @@ __all__ = [
     "AgentConfigMetadata",
     "AgentConfigStatus",
     "AgentType",
+    "AgentTypeCost",
     "ConversationalConfig",
+    "CostSummary",
+    "DailyCostSummary",
     "ErrorHandlingConfig",
     "ExplorerConfig",
     "ExtractorConfig",
     "GeneratorConfig",
     "InputConfig",
     "LLMConfig",
+    "LlmCostEvent",
     "MCPSourceConfig",
+    "ModelCost",
     "OutputConfig",
     "Prompt",
     "PromptABTest",

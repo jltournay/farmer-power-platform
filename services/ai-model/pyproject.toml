@@ -29,6 +29,7 @@ opentelemetry-instrumentation-pymongo = ">=0.50b0"
 fp-proto = { path = "../../libs/fp-proto" }
 httpx = ">=0.26.0,<0.28.0"  # Required for DAPR client
 dapr = "^1.14.0"  # DAPR SDK for streaming subscriptions
+langchain-openai = "^0.3"  # Story 0.75.5: OpenRouter via OpenAI-compatible API
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.0.0"

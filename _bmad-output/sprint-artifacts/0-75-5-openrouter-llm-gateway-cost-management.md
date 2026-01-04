@@ -1,7 +1,7 @@
 # Story 0.75.5: OpenRouter LLM Gateway with Cost Observability
 
-**Status:** ready-for-dev
-**GitHub Issue:** <!-- Auto-created by dev-story workflow -->
+**Status:** in-progress
+**GitHub Issue:** #97
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -269,8 +269,17 @@ PYTHONPATH="${PYTHONPATH}:.:services/ai-model/src:libs/fp-common:libs/fp-proto/s
 ```
 **Output:**
 ```
-(paste test summary here - e.g., "48 passed in 3.12s")
+======================== 82 passed, 8 warnings in 3.38s ========================
+
+Test breakdown:
+- test_exceptions.py: 15 tests
+- test_rate_limiter.py: 18 tests
+- test_budget_monitor.py: 12 tests
+- test_cost_event.py: 13 tests
+- test_cost_event_repository.py: 12 tests
+- test_gateway.py: 12 tests
 ```
+**Unit tests passed:** [x] Yes / [ ] No
 
 ### 2. E2E Tests (MANDATORY)
 
@@ -288,15 +297,32 @@ docker compose -f tests/e2e/infrastructure/docker-compose.e2e.yaml down -v
 ```
 **Output:**
 ```
-(paste E2E test output here - story is NOT ready for review without this)
+================== 102 passed, 1 skipped in 125.05s (0:02:05) ==================
+
+All E2E tests passed:
+- test_00_infrastructure_verification.py: 22 tests
+- test_01_plantation_mcp_contracts.py: 14 tests
+- test_02_collection_mcp_contracts.py: 12 tests
+- test_03_factory_farmer_flow.py: 5 tests
+- test_04_quality_blob_ingestion.py: 6 tests
+- test_05_weather_ingestion.py: 7 tests
+- test_06_cross_model_events.py: 5 tests
+- test_07_grading_validation.py: 6 tests
+- test_08_zip_ingestion.py: 9 tests (1 skipped)
+- test_30_bff_farmer_api.py: 17 tests
 ```
-**E2E passed:** [ ] Yes / [ ] No
+**E2E passed:** [x] Yes / [ ] No
 
 ### 3. Lint Check
 ```bash
 ruff check . && ruff format --check .
 ```
-**Lint passed:** [ ] Yes / [ ] No
+**Output:**
+```
+All checks passed!
+404 files already formatted
+```
+**Lint passed:** [x] Yes / [ ] No
 
 ### 4. CI Verification on Story Branch (MANDATORY)
 

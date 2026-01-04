@@ -1,8 +1,15 @@
-"""gRPC server implementation for AI Model service."""
+"""gRPC server implementation for AI Model service.
+
+Story 0.75.5: Added CostService registration.
+"""
 
 import grpc
 import structlog
+from ai_model.api.cost_service import CostServiceServicer
 from ai_model.config import settings
+from ai_model.infrastructure.mongodb import get_database
+from ai_model.infrastructure.repositories import LlmCostEventRepository
+from ai_model.llm.budget_monitor import BudgetMonitor
 from fp_proto.ai_model.v1 import ai_model_pb2, ai_model_pb2_grpc
 from grpc_health.v1 import health, health_pb2, health_pb2_grpc
 from grpc_reflection.v1alpha import reflection
@@ -78,12 +85,14 @@ class GrpcServer:
         """Initialize gRPC server configuration."""
         self._server: grpc.aio.Server | None = None
         self._health_servicer: health.HealthServicer | None = None
+        self._budget_monitor: BudgetMonitor | None = None
 
     async def start(self) -> None:
         """Start the gRPC server.
 
         Configures:
         - AiModelService (Extract, HealthCheck)
+        - CostService (Story 0.75.5)
         - Health checking service (grpc.health.v1.Health)
         - Server reflection for debugging
         - Concurrent request handling
@@ -97,9 +106,28 @@ class GrpcServer:
             ],
         )
 
+        # Story 0.75.5: Initialize dependencies (following plantation-model pattern)
+        db = await get_database()
+        cost_repository = LlmCostEventRepository(db)
+        budget_monitor = BudgetMonitor(
+            daily_threshold_usd=settings.llm_cost_alert_daily_usd,
+            monthly_threshold_usd=settings.llm_cost_alert_monthly_usd,
+        )
+
+        # Ensure indexes
+        await cost_repository.ensure_indexes()
+
+        # Store budget_monitor for access by other components
+        self._budget_monitor = budget_monitor
+
         # Add AiModelService
         ai_model_servicer = AiModelServiceServicer()
         ai_model_pb2_grpc.add_AiModelServiceServicer_to_server(ai_model_servicer, self._server)
+
+        # Story 0.75.5: Add CostService
+        cost_servicer = CostServiceServicer(cost_repository, budget_monitor)
+        ai_model_pb2_grpc.add_CostServiceServicer_to_server(cost_servicer, self._server)
+        logger.info("CostService registered")
 
         # Add health checking service
         self._health_servicer = health.HealthServicer()
@@ -118,6 +146,7 @@ class GrpcServer:
         # Enable server reflection for debugging with grpcurl/grpcui
         service_names = (
             ai_model_pb2.DESCRIPTOR.services_by_name["AiModelService"].full_name,
+            ai_model_pb2.DESCRIPTOR.services_by_name["CostService"].full_name,
             health_pb2.DESCRIPTOR.services_by_name["Health"].full_name,
             reflection.SERVICE_NAME,
         )
