@@ -367,17 +367,74 @@ class MockMongoCollection:
         result.inserted_ids = inserted_ids
         return result
 
+    def _match_filter(self, doc: dict[str, Any], filter: dict[str, Any]) -> bool:
+        """Check if document matches filter including operators."""
+        for key, value in filter.items():
+            if isinstance(value, dict):
+                # Handle MongoDB operators
+                for op, op_value in value.items():
+                    if op == "$ne":
+                        if doc.get(key) == op_value:
+                            return False
+                    elif op == "$gt":
+                        if not doc.get(key, "") > op_value:
+                            return False
+                    elif op == "$gte":
+                        if not doc.get(key, "") >= op_value:
+                            return False
+                    elif op == "$lt":
+                        if not doc.get(key, "") < op_value:
+                            return False
+                    elif op == "$lte":
+                        if not doc.get(key, "") <= op_value:
+                            return False
+                    elif op == "$in":
+                        if doc.get(key) not in op_value:
+                            return False
+            else:
+                if doc.get(key) != value:
+                    return False
+        return True
+
     async def find_one(self, filter: dict[str, Any]) -> dict[str, Any] | None:
         """Mock find_one operation."""
         for doc in self._documents.values():
-            if all(doc.get(k) == v for k, v in filter.items()):
+            if self._match_filter(doc, filter):
                 return doc.copy()
         return None
 
     def find(self, filter: dict[str, Any]) -> MockMongoCursor:
         """Mock find operation returning cursor (sync, like Motor's find)."""
-        matching = [doc.copy() for doc in self._documents.values() if all(doc.get(k) == v for k, v in filter.items())]
+        matching = [doc.copy() for doc in self._documents.values() if self._match_filter(doc, filter)]
         return MockMongoCursor(matching)
+
+    async def find_one_and_update(
+        self,
+        filter: dict[str, Any],
+        update: dict[str, Any],
+        return_document: bool = False,
+    ) -> dict[str, Any] | None:
+        """Mock find_one_and_update operation."""
+        for doc_id, doc in self._documents.items():
+            if self._match_filter(doc, filter):
+                if "$set" in update:
+                    # Handle nested key updates like "metadata.updated_at"
+                    for key, value in update["$set"].items():
+                        if "." in key:
+                            # Handle dotted notation
+                            parts = key.split(".")
+                            current = doc
+                            for part in parts[:-1]:
+                                if part not in current:
+                                    current[part] = {}
+                                current = current[part]
+                            current[parts[-1]] = value
+                        else:
+                            doc[key] = value
+                if return_document:
+                    return doc.copy()
+                return doc.copy()
+        return None
 
     async def update_one(
         self,
@@ -423,7 +480,17 @@ class MockMongoCollection:
 
     async def count_documents(self, filter: dict[str, Any]) -> int:
         """Mock count_documents operation."""
-        return sum(1 for doc in self._documents.values() if all(doc.get(k) == v for k, v in filter.items()))
+        return sum(1 for doc in self._documents.values() if self._match_filter(doc, filter))
+
+    async def create_index(
+        self,
+        keys: Any,
+        unique: bool = False,
+        name: str | None = None,
+    ) -> str:
+        """Mock create_index operation."""
+        # Just return a mock index name - we don't actually create indexes in tests
+        return name or f"mock_index_{len(self._documents)}"
 
     def reset(self) -> None:
         """Clear all documents."""
