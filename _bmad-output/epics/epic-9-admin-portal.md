@@ -240,3 +240,98 @@ So that AI recommendations are powered by verified expert content.
 - AI Model RAG Document API (from architecture)
 
 **Story Points:** 8
+
+---
+
+## Story 9.6: LLM Cost Dashboard
+
+As a **Platform Administrator**,
+I want a cost dashboard to monitor LLM spending,
+So that I can track AI costs, identify cost drivers, and configure budget alerts.
+
+**Acceptance Criteria:**
+
+**Given** I'm on the Platform Dashboard
+**When** I view the System Health section
+**Then** I see a cost summary widget showing:
+- Today's spend (real-time)
+- 7-day trend sparkline
+- "View Details" link to full cost dashboard
+
+**Given** I navigate to the Cost Dashboard
+**When** the page loads
+**Then** I see:
+- Daily cost trend chart (last 30 days)
+- Cost by agent type breakdown (pie chart)
+- Cost by model breakdown (pie chart)
+- Top 5 most expensive agents (table)
+
+**Given** I want to drill down
+**When** I select a date range
+**Then** All charts and tables update to the selected range
+**And** Export to CSV is available
+
+**Given** I want to configure alerts
+**When** I set daily/monthly thresholds
+**Then** Alerts are triggered when thresholds are exceeded
+**And** Notifications are sent to configured channels (email/Slack)
+
+**Given** the CostService gRPC API is unavailable
+**When** the dashboard loads
+**Then** Cached data is shown with "Last updated: X" timestamp
+**And** A warning banner indicates the data may be stale
+
+**UI Wireframe:**
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│  LLM COST DASHBOARD                                   [Export CSV] [⚙ Alerts]│
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                              │
+│  DATE RANGE: [Last 7 days ▼]  [Custom: _____ to _____]                      │
+│                                                                              │
+│  ┌──────────────────────────────────────────────────────────────────────┐   │
+│  │  DAILY COST TREND                                                     │   │
+│  │  $50 ─┬─────────────────────────────────────────────────────────────  │   │
+│  │       │     ╭──╮                                                      │   │
+│  │  $25 ─┼────╱    ╲────────╱╲──────────────────────────────────────────  │   │
+│  │       │   ╱      ╲──────╱  ╲                                          │   │
+│  │   $0 ─┴──────────────────────────────────────────────────────────────  │   │
+│  │       Mon  Tue  Wed  Thu  Fri  Sat  Sun                               │   │
+│  └──────────────────────────────────────────────────────────────────────┘   │
+│                                                                              │
+│  ┌────────────────────────────┐  ┌────────────────────────────────────┐    │
+│  │  COST BY AGENT TYPE        │  │  COST BY MODEL                      │    │
+│  │  ┌────────────────────┐    │  │  ┌────────────────────────────┐    │    │
+│  │  │    [PIE CHART]     │    │  │  │      [PIE CHART]           │    │    │
+│  │  │  Explorer: 45%     │    │  │  │  claude-sonnet: 60%        │    │    │
+│  │  │  Generator: 30%    │    │  │  │  gpt-4o-mini: 25%          │    │    │
+│  │  │  Vision: 15%       │    │  │  │  gpt-4o: 15%               │    │    │
+│  │  │  Other: 10%        │    │  │  │                            │    │    │
+│  │  └────────────────────┘    │  │  └────────────────────────────┘    │    │
+│  └────────────────────────────┘  └────────────────────────────────────┘    │
+│                                                                              │
+│  TOP COST DRIVERS                                                           │
+│  ┌──────────────────────────────────────────────────────────────────────┐   │
+│  │  Agent ID              │ Type       │ Requests │ Cost (7d) │ Trend   │   │
+│  ├──────────────────────────────────────────────────────────────────────┤   │
+│  │  disease-diagnosis     │ Explorer   │ 1,234    │ $45.20    │ ↑ 12%   │   │
+│  │  weekly-action-plan    │ Generator  │ 892      │ $32.10    │ ↓ 5%    │   │
+│  │  leaf-image-analyzer   │ Vision     │ 567      │ $18.50    │ → 0%    │   │
+│  └──────────────────────────────────────────────────────────────────────┘   │
+│                                                                              │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+**Technical Notes:**
+- Location: `web/platform-admin/src/pages/costs/`
+- Consumes gRPC `CostService` API from AI Model (Story 0.75.5)
+- BFF endpoints: `GET /api/admin/costs/summary`, `GET /api/admin/costs/by-agent`, etc.
+- Charts: Use existing charting library from @fp/ui-components
+- Caching: BFF caches responses for 5 minutes to reduce load
+
+**Dependencies:**
+- Story 9.1: Platform Admin Application Scaffold
+- Story 0.75.5: OpenRouter LLM Gateway with Cost Observability (provides gRPC API)
+
+**Story Points:** 5

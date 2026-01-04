@@ -203,6 +203,8 @@ development_status:
   9-2-factory-onboarding-wizard: backlog
   9-3-user-management-dashboard: backlog
   9-4-platform-health-dashboard: backlog
+  9-5-knowledge-management-interface: backlog  # RAG document ingestion UI
+  9-6-llm-cost-dashboard: backlog  # Ops visibility, depends on 0.75.5
   epic-9-retrospective: optional
 
   # ═══════════════════════════════════════════════════════════════════════════
