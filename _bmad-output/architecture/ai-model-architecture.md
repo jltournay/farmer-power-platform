@@ -1432,6 +1432,22 @@ class RAGDocumentMetadata(BaseModel):
     tags: list[str] = []                     # Searchable tags
 
 
+class SourceFile(BaseModel):
+    """Original uploaded file reference (for PDF/DOCX uploads)."""
+    filename: str                            # "blister-blight-guide.pdf"
+    file_type: Literal["pdf", "docx", "md", "txt"]
+    blob_path: str                           # Azure Blob path to original file
+    file_size_bytes: int
+    extraction_method: Literal[
+        "manual",           # User typed content directly
+        "text_extraction",  # PyMuPDF for digital PDFs
+        "azure_doc_intel",  # Azure Document Intelligence for scanned/complex PDFs
+        "vision_llm"        # Vision LLM for diagrams/tables
+    ] | None = None
+    extraction_confidence: float | None = None  # 0-1 quality score
+    page_count: int | None = None
+
+
 class RAGDocument(BaseModel):
     """RAG knowledge document for expert knowledge storage."""
     document_id: str                         # Stable ID across versions
@@ -1446,7 +1462,10 @@ class RAGDocument(BaseModel):
         "quality_standards",
         "regional_context"
     ]
-    content: str                             # Full document text (markdown supported)
+    content: str                             # Extracted/authored markdown text
+
+    # Source file (if uploaded as PDF/DOCX)
+    source_file: SourceFile | None = None    # Original file reference
 
     # Lifecycle
     status: Literal["draft", "staged", "active", "archived"] = "draft"
@@ -1465,6 +1484,167 @@ class RAGDocument(BaseModel):
     content_hash: str | None = None          # SHA256 for change detection
 ```
 
+### PDF Ingestion Pipeline
+
+Agronomists can upload PDFs directly. The system auto-detects the PDF type and uses the appropriate extraction method:
+
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│                     PDF INGESTION PIPELINE                           │
+├─────────────────────────────────────────────────────────────────────┤
+│                                                                     │
+│  PDF Upload                                                         │
+│      │                                                              │
+│      ▼                                                              │
+│  ┌─────────────────────────────────────────────────────────────┐   │
+│  │                    PDF TYPE DETECTION                        │   │
+│  │  • Check if text layer exists                               │   │
+│  │  • Detect scanned images                                    │   │
+│  │  • Identify tables/diagrams                                 │   │
+│  └─────────────────────────────────────────────────────────────┘   │
+│      │                                                              │
+│      ├──► Digital PDF (has text layer)                             │
+│      │    └─► PyMuPDF extraction                                   │
+│      │        • Fast, cheap, accurate                              │
+│      │        • ~100ms per page                                    │
+│      │                                                              │
+│      ├──► Scanned PDF (image-based)                                │
+│      │    └─► Azure Document Intelligence                          │
+│      │        • OCR + layout analysis                              │
+│      │        • Table extraction                                   │
+│      │        • ~2-5s per page                                     │
+│      │                                                              │
+│      └──► Complex PDF (diagrams, mixed content)                    │
+│           └─► Vision LLM (Claude/GPT-4V)                           │
+│               • Semantic understanding                             │
+│               • Diagram description                                │
+│               • ~5-10s per page, higher cost                       │
+│                                                                     │
+│      ▼                                                              │
+│  ┌─────────────────────────────────────────────────────────────┐   │
+│  │                    OUTPUT                                    │   │
+│  │  • Markdown content                                         │   │
+│  │  • Original PDF stored in Azure Blob                        │   │
+│  │  • Extraction confidence score                              │   │
+│  │  • Review flag if confidence < 0.8                          │   │
+│  └─────────────────────────────────────────────────────────────┘   │
+│                                                                     │
+└─────────────────────────────────────────────────────────────────────┘
+```
+
+**Extraction Methods:**
+
+| Method | Use Case | Speed | Cost | Accuracy |
+|--------|----------|-------|------|----------|
+| **PyMuPDF** | Digital PDFs with text layer | ~100ms/page | Free | 99%+ |
+| **Azure Document Intelligence** | Scanned PDFs, forms, tables | ~2-5s/page | $0.01/page | 95%+ |
+| **Vision LLM** | Complex diagrams, mixed content | ~5-10s/page | $0.02-0.05/page | 90%+ |
+
+**Azure Document Intelligence Configuration:**
+
+```python
+from azure.ai.documentintelligence import DocumentIntelligenceClient
+from azure.core.credentials import AzureKeyCredential
+
+
+class PDFExtractor:
+    """Extract text from PDFs using appropriate method."""
+
+    def __init__(self, settings: Settings):
+        self.doc_intel_client = DocumentIntelligenceClient(
+            endpoint=settings.azure_doc_intel_endpoint,
+            credential=AzureKeyCredential(settings.azure_doc_intel_key)
+        )
+
+    async def extract(self, pdf_bytes: bytes, filename: str) -> ExtractionResult:
+        """Extract content from PDF, auto-detecting best method."""
+        # 1. Try text extraction first (fast, free)
+        text_result = await self._try_text_extraction(pdf_bytes)
+        if text_result.confidence > 0.9:
+            return text_result
+
+        # 2. Fall back to Azure Document Intelligence
+        return await self._extract_with_azure(pdf_bytes, filename)
+
+    async def _try_text_extraction(self, pdf_bytes: bytes) -> ExtractionResult:
+        """Try PyMuPDF text extraction for digital PDFs."""
+        import pymupdf
+
+        doc = pymupdf.open(stream=pdf_bytes, filetype="pdf")
+        pages_text = []
+        total_chars = 0
+
+        for page in doc:
+            text = page.get_text("markdown")
+            pages_text.append(text)
+            total_chars += len(text)
+
+        # Low char count per page suggests scanned PDF
+        avg_chars_per_page = total_chars / len(doc) if doc else 0
+        confidence = min(1.0, avg_chars_per_page / 500)  # Expect ~500+ chars/page
+
+        return ExtractionResult(
+            content="\n\n---\n\n".join(pages_text),
+            method="text_extraction",
+            confidence=confidence,
+            page_count=len(doc),
+            review_recommended=confidence < 0.8
+        )
+
+    async def _extract_with_azure(
+        self,
+        pdf_bytes: bytes,
+        filename: str
+    ) -> ExtractionResult:
+        """Extract using Azure Document Intelligence."""
+        poller = await self.doc_intel_client.begin_analyze_document(
+            model_id="prebuilt-layout",  # Best for general documents
+            body=pdf_bytes,
+            content_type="application/pdf"
+        )
+        result = await poller.result()
+
+        # Convert to markdown
+        markdown_content = self._azure_result_to_markdown(result)
+
+        return ExtractionResult(
+            content=markdown_content,
+            method="azure_doc_intel",
+            confidence=0.95,  # Azure is generally reliable
+            page_count=len(result.pages),
+            review_recommended=False
+        )
+
+    def _azure_result_to_markdown(self, result) -> str:
+        """Convert Azure Document Intelligence result to markdown."""
+        sections = []
+
+        for paragraph in result.paragraphs or []:
+            # Handle headings
+            if paragraph.role == "title":
+                sections.append(f"# {paragraph.content}")
+            elif paragraph.role == "sectionHeading":
+                sections.append(f"## {paragraph.content}")
+            else:
+                sections.append(paragraph.content)
+
+        # Handle tables
+        for table in result.tables or []:
+            sections.append(self._table_to_markdown(table))
+
+        return "\n\n".join(sections)
+
+
+class ExtractionResult(BaseModel):
+    """Result of PDF extraction."""
+    content: str
+    method: Literal["text_extraction", "azure_doc_intel", "vision_llm"]
+    confidence: float
+    page_count: int
+    review_recommended: bool
+    warnings: list[str] = []
+```
+
 ### gRPC API (Proto Definition)
 
 ```protobuf
@@ -1477,7 +1657,7 @@ import "google/protobuf/timestamp.proto";
 
 service RAGDocumentService {
   // CRUD Operations
-  rpc CreateDocument(CreateDocumentRequest) returns (RAGDocument);
+  rpc CreateDocument(CreateDocumentRequest) returns (CreateDocumentResponse);
   rpc GetDocument(GetDocumentRequest) returns (RAGDocument);
   rpc UpdateDocument(UpdateDocumentRequest) returns (RAGDocument);
   rpc DeleteDocument(DeleteDocumentRequest) returns (DeleteDocumentResponse);
@@ -1509,6 +1689,7 @@ message RAGDocument {
   string change_summary = 8;
   google.protobuf.Timestamp created_at = 9;
   google.protobuf.Timestamp updated_at = 10;
+  optional SourceFile source_file = 11;      // If created from PDF/DOCX
 }
 
 message RAGDocumentMetadata {
@@ -1519,11 +1700,40 @@ message RAGDocumentMetadata {
   repeated string tags = 5;
 }
 
+message SourceFile {
+  string filename = 1;
+  string file_type = 2;                      // "pdf", "docx", "md", "txt"
+  string blob_path = 3;                      // Azure Blob path to original
+  int64 file_size_bytes = 4;
+  string extraction_method = 5;              // "text_extraction", "azure_doc_intel", "vision_llm"
+  float extraction_confidence = 6;           // 0-1 quality score
+  int32 page_count = 7;
+}
+
 message CreateDocumentRequest {
   string title = 1;
   string domain = 2;
-  string content = 3;
-  RAGDocumentMetadata metadata = 4;
+  RAGDocumentMetadata metadata = 3;
+
+  // Content source: provide ONE of these
+  oneof content_source {
+    string content = 4;                      // Direct markdown content
+    bytes pdf_file = 5;                      // PDF binary for extraction
+    bytes docx_file = 6;                     // DOCX binary for extraction
+  }
+}
+
+message CreateDocumentResponse {
+  RAGDocument document = 1;
+  optional ExtractionResult extraction = 2;  // Present if PDF/DOCX was processed
+}
+
+message ExtractionResult {
+  string method = 1;                         // "text_extraction", "azure_doc_intel", "vision_llm"
+  float confidence = 2;                      // 0-1 quality score
+  int32 page_count = 3;
+  bool review_recommended = 4;               // True if human review advised
+  repeated string warnings = 5;              // Any issues detected
 }
 
 message GetDocumentRequest {
@@ -1632,26 +1842,31 @@ message ABTestResult {
 │  ADMIN UI (Web)                     BFF                    AI MODEL     │
 │  ┌─────────────────┐           ┌──────────┐           ┌──────────────┐ │
 │  │  Agronomist     │  GraphQL  │          │   gRPC    │              │ │
-│  │  uploads doc    │──────────▶│  BFF     │──────────▶│  RAGDocument │ │
+│  │  uploads PDF    │──────────▶│  BFF     │──────────▶│  RAGDocument │ │
 │  │                 │           │  Service │           │  Service     │ │
-│  │  • Title        │           │          │           │              │ │
-│  │  • Domain       │           │          │           │  • Validate  │ │
-│  │  • Content      │           │          │           │  • Store     │ │
+│  │  • PDF file     │           │          │           │              │ │
+│  │  • Title        │           │          │           │  • Extract   │ │
+│  │  • Domain       │           │          │           │  • Store     │ │
 │  │  • Metadata     │           │          │           │  • Vectorize │ │
 │  └─────────────────┘           └──────────┘           └──────────────┘ │
 │                                                              │          │
-│                                                              ▼          │
-│  CLI (Ops)                                            ┌──────────────┐ │
-│  ┌─────────────────┐                                  │   MongoDB    │ │
-│  │ farmer-cli rag  │                                  │  (documents) │ │
-│  │   create        │─────────────────────────────────▶│              │ │
-│  │   list          │          Direct gRPC             └──────────────┘ │
-│  │   stage         │                                         │          │
-│  │   activate      │                                         ▼          │
-│  └─────────────────┘                                  ┌──────────────┐ │
-│                                                       │   Pinecone   │ │
-│                                                       │  (vectors)   │ │
-│                                                       └──────────────┘ │
+│                                         ┌────────────────────┼──────┐   │
+│                                         │                    │      │   │
+│                                         ▼                    ▼      │   │
+│  CLI (Ops)                       ┌──────────────┐    ┌────────────┐ │   │
+│  ┌─────────────────┐             │ Azure Doc    │    │  MongoDB   │ │   │
+│  │ farmer-cli rag  │             │ Intelligence │    │ (documents)│ │   │
+│  │   create --pdf  │────────────▶│  (OCR/PDF)   │    └────────────┘ │   │
+│  │   list          │ Direct gRPC └──────────────┘           │       │   │
+│  │   stage         │                                        ▼       │   │
+│  │   activate      │                                 ┌────────────┐ │   │
+│  └─────────────────┘                                 │  Pinecone  │ │   │
+│                                                      │  (vectors) │ │   │
+│                      ┌──────────────┐                └────────────┘ │   │
+│                      │ Azure Blob   │◄──────────────────────────────┘   │
+│                      │ (original    │   Store original PDF              │
+│                      │  PDFs)       │                                   │
+│                      └──────────────┘                                   │
 │                                                                         │
 └─────────────────────────────────────────────────────────────────────────┘
 ```
@@ -1659,16 +1874,28 @@ message ABTestResult {
 ### CLI Commands (for Ops)
 
 ```bash
-# Create document from file
+# Create document from PDF (auto-extraction)
 farmer-cli rag create --title "Blister Blight Treatment" \
   --domain plant_diseases \
-  --file treatment-guide.md \
+  --pdf ./documents/blister-blight-guide.pdf \
   --author "Dr. Wanjiku" \
   --region Kenya
 
-# Create document inline
+# Output:
+# ✓ Uploaded PDF (2.3 MB, 15 pages)
+# ✓ Extracted using azure_doc_intel (confidence: 0.96)
+# ✓ Document created: doc-789 (status: draft)
+# ℹ Review recommended: Found 3 tables, verify formatting
+
+# Create document from markdown file
 farmer-cli rag create --title "Frost Protection" \
   --domain weather_patterns \
+  --file frost-protection.md \
+  --author "Operations"
+
+# Create document with inline content
+farmer-cli rag create --title "Quick Tip: Pruning" \
+  --domain tea_cultivation \
   --content "When temperatures drop below 4°C..." \
   --author "Operations"
 
