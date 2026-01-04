@@ -473,10 +473,11 @@ async def classify_intent_node(state: ConversationalState) -> dict:
     Fast intent classification using Haiku.
     Determines what the farmer is asking about.
     """
-    llm = LLMGateway(task_type="triage")  # Routes to Haiku
+    from ai_model.config import settings
 
-    intent_result = await llm.generate(
-        system_prompt="""You are an intent classifier for farmer quality conversations.
+    llm = LLMGateway(settings=settings)
+
+    system_prompt = """You are an intent classifier for farmer quality conversations.
 
 Classify the farmer's message into one of these intents:
 - quality_explanation: Asking why their quality was low/high
@@ -488,11 +489,19 @@ Classify the farmer's message into one of these intents:
 - clarification: Asking for more detail on previous response
 - off_topic: Not related to tea quality
 
-Respond in JSON: {"intent": "...", "confidence": 0.0-1.0, "entities": {...}}""",
-        user_message=state["user_input"],
+Respond in JSON: {"intent": "...", "confidence": 0.0-1.0, "entities": {...}}"""
+
+    response = await llm.complete(
+        model="anthropic/claude-3-haiku",  # Fast intent classification
+        messages=[
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": state["user_input"]},
+        ],
         max_tokens=150,
-        temperature=0.1
+        temperature=0.1,
     )
+
+    intent_result = json.loads(response.content)
 
     return {
         "user_intent": intent_result,
@@ -508,7 +517,9 @@ async def generate_response_node(state: ConversationalState) -> dict:
     Generate personalized, data-grounded response.
     Uses Sonnet for quality reasoning.
     """
-    llm = LLMGateway(task_type="generation")  # Routes to Sonnet
+    from ai_model.config import settings
+
+    llm = LLMGateway(settings=settings)
 
     # Build context from farmer data
     farmer = state.get("farmer_context", {})
@@ -544,14 +555,17 @@ USER INTENT: {state.get('user_intent', {}).get('intent', 'unknown')}
 Respond in the farmer's language ({state.get('language', 'sw')}).
 """
 
-    response = await llm.generate(
-        system_prompt=system_prompt,
-        user_message=state["user_input"],
+    response = await llm.complete(
+        model="anthropic/claude-3-5-sonnet",  # Quality response generation
+        messages=[
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": state["user_input"]},
+        ],
         max_tokens=300,
-        temperature=0.7
+        temperature=0.7,
     )
 
-    return {"response_text": response}
+    return {"response_text": response.content}
 
 
 def format_history(history: list[dict]) -> str:
@@ -676,11 +690,11 @@ agent:
 
   llm:
     intent_classification:
-      task_type: "triage"  # Haiku
+      model: "anthropic/claude-3-haiku"   # Fast intent classification
       temperature: 0.1
       max_tokens: 150
     response_generation:
-      task_type: "generation"  # Sonnet
+      model: "anthropic/claude-3-5-sonnet"   # Quality response generation
       temperature: 0.7
       max_tokens: 300
 

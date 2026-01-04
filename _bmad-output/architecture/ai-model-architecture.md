@@ -37,7 +37,8 @@ The AI Model is the **6th Domain Model** - the centralized intelligence layer fo
 │  └── References: AI Model for conversational agent implementation       │
 │                                                                         │
 │  AI MODEL ARCHITECTURE (this document)                                  │
-│  ├── Owns: Agent types (Extractor, Explorer, Generator, Conversational)│
+│  ├── Owns: Agent types (5: Extractor, Explorer, Generator,             │
+│  │         Conversational, Tiered-Vision)                              │
 │  ├── Owns: Agent instance configurations (YAML specs)                  │
 │  ├── Owns: LLM gateway configuration (OpenRouter, model routing)       │
 │  ├── Owns: RAG engine (Pinecone, knowledge domains, versioning)        │
@@ -187,9 +188,37 @@ Domain Models                          AI Model
 
 ## Agent Types
 
-Four agent types are implemented in code, each with a specific workflow pattern.
+Five agent types are implemented in code, each with a specific workflow pattern.
 
-> **Implementation details:** See `ai-model-developer-guide.md` § *Step-by-Step Agent Creation Guide* for creating new agents and § *LangChain vs LangGraph Usage Patterns* for workflow implementation.
+> **Implementation details:** See `ai-model-developer-guide/3-agent-development.md` for creating new agents and `ai-model-developer-guide/1-sdk-framework.md` for LangChain vs LangGraph usage patterns.
+
+```
+┌─────────────────────────────────────────────────────────────────────────┐
+│                         AGENT TYPES (5)                                  │
+├─────────────────────────────────────────────────────────────────────────┤
+│                                                                         │
+│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐                     │
+│  │  EXTRACTOR  │  │  EXPLORER   │  │  GENERATOR  │                     │
+│  │             │  │             │  │             │                     │
+│  │ • Extract   │  │ • Analyze   │  │ • Create    │                     │
+│  │ • Validate  │  │ • Diagnose  │  │ • Translate │                     │
+│  │ • Normalize │  │ • Pattern   │  │ • Format    │                     │
+│  │             │  │             │  │             │                     │
+│  │ LLM: 1      │  │ LLM: 1      │  │ LLM: 1      │                     │
+│  └─────────────┘  └─────────────┘  └─────────────┘                     │
+│                                                                         │
+│  ┌─────────────────────────────┐  ┌─────────────────────────────┐      │
+│  │  CONVERSATIONAL             │  │  TIERED-VISION              │      │
+│  │                             │  │                             │      │
+│  │ • Intent classify           │  │ • Screen (Tier 1)           │      │
+│  │ • Dialogue respond          │  │ • Diagnose (Tier 2)         │      │
+│  │ • Context manage            │  │ • Conditional routing       │      │
+│  │                             │  │                             │      │
+│  │ LLM: 2 (intent + response)  │  │ LLM: 2 (screen + diagnose)  │      │
+│  └─────────────────────────────┘  └─────────────────────────────┘      │
+│                                                                         │
+└─────────────────────────────────────────────────────────────────────────┘
+```
 
 ### Extractor Type
 
@@ -206,11 +235,11 @@ workflow:
 
 defaults:
   llm:
-    task_type: "extraction"
-    temperature: 0.1           # Very deterministic
+    model: "anthropic/claude-3-haiku"   # Fast, cheap for structured extraction
+    temperature: 0.1                     # Very deterministic
     output_format: "json"
   rag:
-    enabled: false             # Extractors typically don't need RAG
+    enabled: false                       # Extractors typically don't need RAG
 ```
 
 ### Explorer Type
@@ -228,7 +257,7 @@ workflow:
 
 defaults:
   llm:
-    task_type: "diagnosis"
+    model: "anthropic/claude-3-5-sonnet"   # Complex reasoning, accuracy critical
     temperature: 0.3
     output_format: "json"
   rag:
@@ -252,11 +281,11 @@ workflow:
 
 defaults:
   llm:
-    task_type: "generation"
-    temperature: 0.5           # More creative
+    model: "anthropic/claude-3-5-sonnet"   # Translation, simplification, cultural context
+    temperature: 0.5                        # More creative
     output_format: "markdown"
   rag:
-    enabled: true              # For best practices
+    enabled: true                           # For best practices
 ```
 
 ### Conversational Type
@@ -289,16 +318,6 @@ defaults:
     checkpoint_backend: "mongodb"
 ```
 
-**Key Differences from Other Types:**
-
-| Aspect | Extractor/Explorer/Generator | Conversational |
-|--------|------------------------------|----------------|
-| **Trigger** | Event (single invocation) | Session (multi-turn) |
-| **State** | Stateless | Stateful (LangGraph checkpoints) |
-| **LLM Calls** | 1 per invocation | 2+ per turn (intent + response) |
-| **Persona** | N/A | Required (tone, language, constraints) |
-| **Output** | Event with result | Response to channel adapter |
-
 **Integration with Conversational AI Model:**
 
 The Conversational AI Model (8th domain) delegates agent logic here:
@@ -313,6 +332,69 @@ Conversational AI Model                    AI Model
 +---------------------------+             | • State checkpointing     |
                                           +---------------------------+
 ```
+
+### Tiered-Vision Type
+
+**Purpose:** Cost-optimized image analysis with two-tier LLM processing
+
+```yaml
+agent_type: tiered-vision
+workflow:
+  1_fetch_thumbnail: "Fetch pre-generated thumbnail via MCP"
+  2_screen: "Quick classification with cheap model (Tier 1)"
+  3_route: "Conditional routing based on screen result"
+  4_fetch_original: "Fetch full image if escalated (Tier 2 only)"
+  5_diagnose: "Deep analysis with capable model + RAG (Tier 2 only)"
+  6_output: "Publish diagnosis result"
+
+defaults:
+  llm:
+    screen:                              # Tier 1: Fast, cheap
+      model: "anthropic/claude-3-haiku"
+      temperature: 0.1
+      max_tokens: 200
+    diagnose:                            # Tier 2: Capable, expensive
+      model: "anthropic/claude-3-5-sonnet"
+      temperature: 0.3
+      max_tokens: 2000
+  rag:
+    enabled: true                        # Used in Tier 2 only
+    top_k: 5
+  routing:
+    screen_threshold: 0.7                # Escalate if confidence < 0.7
+```
+
+**Key Characteristics:**
+
+| Aspect | Tiered-Vision |
+|--------|---------------|
+| **Trigger** | Event (single invocation) |
+| **State** | Stateless (single request) |
+| **LLM Calls** | 2 (screen + diagnose, conditional) |
+| **Cost Optimization** | 40% skip Tier 2, 57% cost savings at scale |
+| **Output** | Event with diagnosis result |
+
+**Routing Logic:**
+
+```
+Screen Result      Confidence    Action
+─────────────────────────────────────────────────────
+"healthy"          ≥ 0.85        → Output: no_issue (skip Tier 2)
+"healthy"          < 0.85        → Escalate to Tier 2 (uncertain)
+"obvious_issue"    ≥ 0.75        → Output: Haiku diagnosis (skip Tier 2)
+"obvious_issue"    < 0.75        → Escalate to Tier 2
+"needs_expert"     any           → Always Tier 2 (Sonnet + RAG)
+```
+
+### Agent Types Comparison
+
+| Type | LLM Calls | Pattern | Framework | Use Case |
+|------|-----------|---------|-----------|----------|
+| **Extractor** | 1 | Linear | LangChain | Parse documents, extract fields |
+| **Explorer** | 1 | RAG + iterate | LangGraph | Diagnose issues, analyze patterns |
+| **Generator** | 1 | RAG + format | LangGraph | Create reports, translate messages |
+| **Conversational** | 2 | Intent → Response | LangGraph | Multi-turn dialogue |
+| **Tiered-Vision** | 2 | Screen → Diagnose | LangGraph | Cost-optimized image analysis |
 
 ## Agent Configuration Schema
 
@@ -350,7 +432,7 @@ Agent configurations follow the same pattern as `SourceConfig` in Collection Mod
 │  │  class AgentConfig(BaseModel):                                   │   │
 │  │      agent_id: str                                               │   │
 │  │      type: Literal["extractor", "explorer", "generator",         │   │
-│  │                    "conversational"]                             │   │
+│  │                    "conversational", "tiered-vision"]            │   │
 │  │      version: str                                                │   │
 │  │      input: InputConfig                                          │   │
 │  │      output: OutputConfig                                        │   │
@@ -363,21 +445,92 @@ Agent configurations follow the same pattern as `SourceConfig` in Collection Mod
 └─────────────────────────────────────────────────────────────────────────┘
 ```
 
-**YAML Schema (source file in Git):**
+**YAML Schemas by Agent Type:**
+
+Each agent type has common fields plus type-specific configuration. Below are complete examples for each type.
+
+---
+
+### Extractor YAML Schema
 
 ```yaml
+# config/agents/qc-event-extractor.yaml
 agent:
+  id: "qc-event-extractor"
+  type: extractor
+  version: "1.0.0"
+  description: "Extracts structured data from QC analyzer payloads"
+
+  input:
+    event: "collection.document.received"
+    schema:
+      required: [doc_id]
+      optional: [source, event_type]
+
+  output:
+    event: "ai.extraction.complete"
+    schema:
+      fields: [farmer_id, grade, quality_score, validation_warnings]
+
+  mcp_sources:
+    - server: collection
+      tools: [get_document]
+
   # ═══════════════════════════════════════════════════════════════════
-  # IDENTITY
+  # EXTRACTOR: Single LLM, fast model for structured extraction
   # ═══════════════════════════════════════════════════════════════════
+  llm:
+    model: "anthropic/claude-3-haiku"    # Fast, cheap for extraction
+    temperature: 0.1                      # Very deterministic
+    max_tokens: 500
+
+  prompt:
+    system_file: "prompts/extractors/qc-event/system.md"
+    template_file: "prompts/extractors/qc-event/template.md"
+    output_format: "json"
+    output_schema:
+      type: object
+      properties:
+        farmer_id: { type: string, pattern: "^WM-\\d+$" }
+        grade: { type: string, enum: [A, B, C, D, Reject] }
+        quality_score: { type: number, min: 0, max: 100 }
+        validation_warnings: { type: array, items: { type: string } }
+
+  # EXTRACTOR-SPECIFIC: Schema for extraction validation
+  extraction_schema:
+    required_fields: [farmer_id, grade]
+    validation_rules:
+      - field: farmer_id
+        pattern: "^WM-\\d+$"
+      - field: quality_score
+        range: [0, 100]
+
+  # EXTRACTOR-SPECIFIC: Value normalization
+  normalization_rules:
+    - field: grade
+      uppercase: true
+    - field: farmer_id
+      prefix: "WM-"
+
+  error_handling:
+    retry:
+      max_attempts: 3
+      backoff_ms: [100, 500, 2000]
+    on_failure: "publish_error_event"
+```
+
+---
+
+### Explorer YAML Schema
+
+```yaml
+# config/agents/disease-diagnosis.yaml
+agent:
   id: "disease-diagnosis"
-  type: explorer                     # Uses explorer workflow
+  type: explorer
   version: "1.0.0"
   description: "Analyzes quality issues and produces diagnosis"
 
-  # ═══════════════════════════════════════════════════════════════════
-  # INPUT / OUTPUT CONTRACT
-  # ═══════════════════════════════════════════════════════════════════
   input:
     event: "collection.poor_quality_detected"
     schema:
@@ -389,9 +542,6 @@ agent:
     schema:
       fields: [diagnosis, confidence, severity, details, recommendations]
 
-  # ═══════════════════════════════════════════════════════════════════
-  # DATA SOURCES (MCP)
-  # ═══════════════════════════════════════════════════════════════════
   mcp_sources:
     - server: collection
       tools: [get_document, get_farmer_documents]
@@ -399,20 +549,16 @@ agent:
       tools: [get_farmer, get_farmer_summary]
 
   # ═══════════════════════════════════════════════════════════════════
-  # LLM CONFIGURATION
+  # EXPLORER: Single LLM, capable model for analysis
   # ═══════════════════════════════════════════════════════════════════
   llm:
-    task_type: "diagnosis"          # Routes to appropriate model
-    model_override: null            # Or specific: "anthropic/claude-3-5-sonnet"
+    model: "anthropic/claude-3-5-sonnet"   # Complex reasoning
     temperature: 0.3
     max_tokens: 2000
 
-  # ═══════════════════════════════════════════════════════════════════
-  # PROMPT CONFIGURATION
-  # ═══════════════════════════════════════════════════════════════════
   prompt:
-    system_file: "prompts/explorers/disease-diagnosis.system.md"
-    template_file: "prompts/explorers/disease-diagnosis.template.md"
+    system_file: "prompts/explorers/disease-diagnosis/system.md"
+    template_file: "prompts/explorers/disease-diagnosis/template.md"
     output_format: "json"
     output_schema:
       type: object
@@ -426,9 +572,7 @@ agent:
             details: { type: string }
         recommendations: { type: array, items: { type: string } }
 
-  # ═══════════════════════════════════════════════════════════════════
-  # RAG CONFIGURATION
-  # ═══════════════════════════════════════════════════════════════════
+  # EXPLORER-SPECIFIC: RAG for expert knowledge
   rag:
     enabled: true
     query_template: "tea leaf quality issues {{quality_issues}} {{grade}}"
@@ -436,9 +580,6 @@ agent:
     top_k: 5
     min_similarity: 0.7
 
-  # ═══════════════════════════════════════════════════════════════════
-  # ERROR HANDLING
-  # ═══════════════════════════════════════════════════════════════════
   error_handling:
     retry:
       max_attempts: 3
@@ -446,6 +587,221 @@ agent:
     on_failure: "publish_error_event"
     dead_letter_topic: "ai.errors.dead_letter"
 ```
+
+---
+
+### Generator YAML Schema
+
+```yaml
+# config/agents/weekly-action-plan.yaml
+agent:
+  id: "weekly-action-plan"
+  type: generator
+  version: "1.0.0"
+  description: "Generates personalized weekly action plans for farmers"
+
+  input:
+    event: "action_plan.generation.requested"
+    schema:
+      required: [farmer_id, week_start]
+      optional: [priority_issues]
+
+  output:
+    event: "ai.action_plan.complete"
+    schema:
+      fields: [plan_markdown, farmer_message, priority_actions]
+
+  mcp_sources:
+    - server: knowledge
+      tools: [get_farmer_diagnoses, get_open_issues]
+    - server: plantation
+      tools: [get_farmer, get_farm_details]
+    - server: market
+      tools: [get_upcoming_auctions]
+
+  # ═══════════════════════════════════════════════════════════════════
+  # GENERATOR: Single LLM, creative for content generation
+  # ═══════════════════════════════════════════════════════════════════
+  llm:
+    model: "anthropic/claude-3-5-sonnet"   # Translation, cultural context
+    temperature: 0.5                        # More creative
+    max_tokens: 3000
+
+  prompt:
+    system_file: "prompts/generators/action-plan/system.md"
+    template_file: "prompts/generators/action-plan/template.md"
+    output_format: "markdown"
+
+  # GENERATOR-SPECIFIC: RAG for best practices
+  rag:
+    enabled: true
+    query_template: "tea farming best practices {{season}} {{region}}"
+    knowledge_domains: [tea_cultivation, regional_context, seasonal_guidance]
+    top_k: 5
+
+  # GENERATOR-SPECIFIC: Output format
+  output_format: markdown
+
+  error_handling:
+    retry:
+      max_attempts: 3
+      backoff_ms: [100, 500, 2000]
+    on_failure: "publish_error_event"
+```
+
+---
+
+### Conversational YAML Schema
+
+```yaml
+# config/agents/dialogue-responder.yaml
+agent:
+  id: "dialogue-responder"
+  type: conversational
+  version: "1.0.0"
+  description: "Handles multi-turn dialogue with farmers via voice/WhatsApp"
+
+  input:
+    event: "conversation.turn.received"
+    schema:
+      required: [session_id, user_message, channel]
+      optional: [farmer_id, locale]
+
+  output:
+    event: "conversation.turn.response"
+    schema:
+      fields: [response_text, suggested_actions, session_state]
+
+  mcp_sources:
+    - server: plantation
+      tools: [get_farmer, get_farm_summary]
+    - server: knowledge
+      tools: [get_recent_diagnoses]
+    - server: action_plan
+      tools: [get_current_plan]
+
+  # ═══════════════════════════════════════════════════════════════════
+  # CONVERSATIONAL: Two LLMs (intent + response)
+  # ═══════════════════════════════════════════════════════════════════
+  intent_model: "anthropic/claude-3-haiku"      # Fast classification
+  response_model: "anthropic/claude-3-5-sonnet"  # Quality responses
+
+  llm:
+    temperature: 0.4
+    max_tokens: 500
+
+  prompt:
+    intent_system_file: "prompts/conversational/intent/system.md"
+    response_system_file: "prompts/conversational/response/system.md"
+    template_file: "prompts/conversational/dialogue/template.md"
+    output_format: "text"
+
+  # CONVERSATIONAL-SPECIFIC: RAG for knowledge grounding
+  rag:
+    enabled: true
+    query_template: "{{user_intent}} {{context_summary}}"
+    knowledge_domains: [tea_cultivation, common_questions, troubleshooting]
+    top_k: 3
+
+  # CONVERSATIONAL-SPECIFIC: Session state management
+  state:
+    max_turns: 5
+    session_ttl_minutes: 30
+    checkpoint_backend: mongodb
+    context_window: 3                  # Keep last N turns in context
+
+  error_handling:
+    retry:
+      max_attempts: 2
+      backoff_ms: [100, 300]
+    on_failure: "graceful_fallback"    # Return helpful error message
+```
+
+---
+
+### Tiered-Vision YAML Schema
+
+```yaml
+# config/agents/leaf-quality-analyzer.yaml
+agent:
+  id: "leaf-quality-analyzer"
+  type: tiered-vision
+  version: "1.0.0"
+  description: "Cost-optimized image analysis for tea leaf quality"
+
+  input:
+    event: "collection.image.received"
+    schema:
+      required: [doc_id, thumbnail_url, original_url]
+      optional: [metadata, farmer_id]
+
+  output:
+    event: "ai.vision_analysis.complete"
+    schema:
+      fields: [classification, confidence, diagnosis, tier_used, cost]
+
+  mcp_sources:
+    - server: collection
+      tools: [get_document_thumbnail, get_document_original]
+    - server: plantation
+      tools: [get_farmer, get_farm_context]
+
+  # ═══════════════════════════════════════════════════════════════════
+  # TIERED-VISION: Two-tier LLM (screen + diagnose)
+  # ═══════════════════════════════════════════════════════════════════
+  tiered_llm:
+    screen:                              # Tier 1: Fast screening
+      model: "anthropic/claude-3-haiku"
+      temperature: 0.1
+      max_tokens: 200
+    diagnose:                            # Tier 2: Deep analysis
+      model: "anthropic/claude-3-5-sonnet"
+      temperature: 0.3
+      max_tokens: 2000
+
+  prompt:
+    screen_system_file: "prompts/tiered-vision/screen/system.md"
+    screen_template_file: "prompts/tiered-vision/screen/template.md"
+    diagnose_system_file: "prompts/tiered-vision/diagnose/system.md"
+    diagnose_template_file: "prompts/tiered-vision/diagnose/template.md"
+    output_format: "json"
+
+  # TIERED-VISION-SPECIFIC: Routing thresholds
+  routing:
+    screen_threshold: 0.7               # Escalate to Tier 2 if confidence < 0.7
+    healthy_skip_threshold: 0.85        # Skip Tier 2 for "healthy" above this
+    obvious_skip_threshold: 0.75        # Skip Tier 2 for "obvious_issue" above this
+
+  # TIERED-VISION-SPECIFIC: RAG (Tier 2 only)
+  rag:
+    enabled: true
+    query_template: "tea leaf symptoms {{screen_findings}}"
+    knowledge_domains: [plant_diseases, visual_symptoms, tea_cultivation]
+    top_k: 5
+
+  error_handling:
+    retry:
+      max_attempts: 3
+      backoff_ms: [100, 500, 2000]
+    on_failure: "publish_error_event"
+```
+
+---
+
+### Schema Comparison Summary
+
+| Field | Extractor | Explorer | Generator | Conversational | Tiered-Vision |
+|-------|-----------|----------|-----------|----------------|---------------|
+| `llm` | ✓ (single) | ✓ (single) | ✓ (single) | ✓ (base config) | ✗ |
+| `intent_model` | ✗ | ✗ | ✗ | ✓ | ✗ |
+| `response_model` | ✗ | ✗ | ✗ | ✓ | ✗ |
+| `tiered_llm` | ✗ | ✗ | ✗ | ✗ | ✓ |
+| `rag` | ✗ | ✓ | ✓ | ✓ | ✓ (Tier 2) |
+| `extraction_schema` | ✓ | ✗ | ✗ | ✗ | ✗ |
+| `normalization_rules` | ✓ | ✗ | ✗ | ✗ | ✗ |
+| `output_format` | ✗ | ✗ | ✓ | ✗ | ✗ |
+| `state` | ✗ | ✗ | ✗ | ✓ | ✗ |
+| `routing` | ✗ | ✗ | ✗ | ✗ | ✓ |
 
 **Pydantic Models (application code):**
 
@@ -461,8 +817,7 @@ from pydantic import BaseModel, Field
 
 class LLMConfig(BaseModel):
     """LLM configuration for agent execution."""
-    task_type: str
-    model_override: str | None = None
+    model: str                          # Explicit model, e.g. "anthropic/claude-3-5-sonnet"
     temperature: float = 0.3
     max_tokens: int = 2000
 
@@ -546,12 +901,30 @@ class ConversationalConfig(AgentConfigBase):
     intent_model: str = "anthropic/claude-3-haiku"
     response_model: str = "anthropic/claude-3-5-sonnet"
 
+class TieredVisionLLMConfig(BaseModel):
+    """Two-tier LLM configuration for vision processing."""
+    screen: LLMConfig                       # Tier 1: Fast screening (Haiku)
+    diagnose: LLMConfig                     # Tier 2: Deep analysis (Sonnet)
+
+class TieredVisionRoutingConfig(BaseModel):
+    """Routing configuration for tiered vision processing."""
+    screen_threshold: float = 0.7           # Escalate to Tier 2 if confidence < threshold
+    healthy_skip_threshold: float = 0.85    # Skip Tier 2 for "healthy" above this
+    obvious_skip_threshold: float = 0.75    # Skip Tier 2 for "obvious_issue" above this
+
+class TieredVisionConfig(AgentConfigBase):
+    """Tiered-Vision agent: cost-optimized image analysis with two-tier processing."""
+    type: Literal["tiered-vision"] = "tiered-vision"
+    rag: RAGConfig                          # Used in Tier 2 only
+    tiered_llm: TieredVisionLLMConfig       # Replaces base llm config
+    routing: TieredVisionRoutingConfig = Field(default_factory=TieredVisionRoutingConfig)
+
 # ═══════════════════════════════════════════════════════════════════════════
 # DISCRIMINATED UNION (automatic type detection)
 # ═══════════════════════════════════════════════════════════════════════════
 
 AgentConfig = Annotated[
-    ExtractorConfig | ExplorerConfig | GeneratorConfig | ConversationalConfig,
+    ExtractorConfig | ExplorerConfig | GeneratorConfig | ConversationalConfig | TieredVisionConfig,
     Field(discriminator="type")
 ]
 
@@ -574,9 +947,10 @@ AgentConfig = Annotated[
 
 | Decision | Choice | Rationale |
 |----------|--------|-----------|
-| **Number of types** | 4 (Extractor, Explorer, Generator, Conversational) | Covers fundamental AI patterns including dialogue |
+| **Number of types** | 5 (Extractor, Explorer, Generator, Conversational, Tiered-Vision) | Covers fundamental AI patterns including dialogue and cost-optimized image analysis |
 | **Type location** | In code | Workflow logic requires conditionals, loops, error handling |
 | **Instance location** | YAML → MongoDB → Pydantic | Git source, MongoDB runtime, type-safe loading |
+| **Model selection** | Explicit per agent | No indirection; agent config shows exact model used |
 | **Inheritance** | Flat (Type → Instance only) | Avoids complexity; use parameters for variations |
 | **Prompts** | Separate .md files | Better diffs, easier review, can be long |
 
@@ -605,7 +979,7 @@ Triage (Haiku)
                                     Aggregator (combine findings)
 ```
 
-> **Implementation details:** See `ai-model-developer-guide.md` § *LangGraph Saga Patterns* for workflow code, checkpointing configuration, and error compensation strategies.
+> **Implementation details:** See `ai-model-developer-guide/1-sdk-framework.md` § *LangGraph Saga Pattern* for workflow code, checkpointing configuration, and error compensation strategies.
 
 ## Triggering
 
@@ -666,64 +1040,294 @@ trigger:
 | Benefit | Description |
 |---------|-------------|
 | **Multi-Provider** | Access OpenAI, Anthropic, Google, Meta, Mistral through single API |
-| **Model Flexibility** | Switch models per task without code changes |
-| **Cost Optimization** | Route simple tasks to cheaper models, complex to capable ones |
+| **Model Flexibility** | Switch models per agent without code changes |
 | **Fallback** | Automatic failover if one provider is down |
 | **Unified Billing** | Single invoice, per-model cost breakdown |
 | **No Vendor Lock-in** | Can switch providers without changing integration |
 
-**Model Routing Strategy:**
+**Model Configuration Strategy:**
 
-| Task Type | Recommended Model | Rationale |
-|-----------|-------------------|-----------|
+Models are configured **explicitly per agent** (not via centralized task-type routing). This provides:
+
+- **Clarity:** Agent config shows exactly what model it uses
+- **Flexibility:** Each agent can use any model without override patterns
+- **Self-contained:** No need to check gateway config to understand agent behavior
+
+**Recommended Models by Use Case:**
+
+| Use Case | Recommended Model | Rationale |
+|----------|-------------------|-----------|
 | **Extraction** | Claude Haiku / GPT-4o-mini | Fast, cheap, structured output |
 | **Diagnosis** | Claude Sonnet / GPT-4o | Complex reasoning, accuracy critical |
 | **Generation** | Claude Sonnet | Translation, simplification, cultural context |
 | **Market Analysis** | GPT-4o | Data synthesis, pattern recognition |
-| **RAG Queries** | Claude Haiku | Fast retrieval augmentation |
+| **Intent Classification** | Claude Haiku | Fast, low-latency classification |
 
-**Configuration:**
+**Gateway Configuration:**
+
+The gateway handles **resilience and operational concerns**, not model selection.
+
+Configuration follows the **established project pattern**: Pydantic Settings loaded from environment variables.
+
+```
+┌─────────────────────────────────────────────────────────────────────────┐
+│                    LLM GATEWAY CONFIGURATION FLOW                        │
+├─────────────────────────────────────────────────────────────────────────┤
+│                                                                         │
+│  SOURCE OF TRUTH: Environment Variables                                 │
+│  ┌─────────────────────────────────────────────────────────────────┐   │
+│  │  # .env (local) or K8s ConfigMap/Secrets (deployed)            │   │
+│  │  AI_MODEL_OPENROUTER_API_KEY=sk-or-...                          │   │
+│  │  AI_MODEL_OPENROUTER_BASE_URL=https://openrouter.ai/api/v1      │   │
+│  │  AI_MODEL_LLM_FALLBACK_MODELS=claude-3-5-sonnet,gpt-4o,gemini   │   │
+│  │  AI_MODEL_LLM_RETRY_MAX_ATTEMPTS=3                              │   │
+│  │  AI_MODEL_LLM_RATE_LIMIT_RPM=100                                │   │
+│  └─────────────────────────────────────────────────────────────────┘   │
+│                              │                                          │
+│                              │ Loaded at startup                        │
+│                              ▼                                          │
+│  PYDANTIC SETTINGS: services/ai-model/src/ai_model/config.py           │
+│  ┌─────────────────────────────────────────────────────────────────┐   │
+│  │  Validated, typed, with defaults                                │   │
+│  └─────────────────────────────────────────────────────────────────┘   │
+│                              │                                          │
+│                              │ Dependency injection                     │
+│                              ▼                                          │
+│  LLM GATEWAY CLASS: Retry, fallback, rate limiting, cost tracking      │
+│                                                                         │
+└─────────────────────────────────────────────────────────────────────────┘
+```
+
+**Pydantic Settings (config.py):**
+
+```python
+# services/ai-model/src/ai_model/config.py
+from pydantic import SecretStr
+from pydantic_settings import BaseSettings, SettingsConfigDict
+
+
+class Settings(BaseSettings):
+    """AI Model service configuration.
+
+    Follows project pattern: env vars with AI_MODEL_ prefix.
+    """
+
+    model_config = SettingsConfigDict(
+        env_prefix="AI_MODEL_",
+        env_file=".env",
+        env_file_encoding="utf-8",
+        case_sensitive=False,
+    )
+
+    # Service identification
+    service_name: str = "ai-model"
+    service_version: str = "0.1.0"
+    environment: str = "development"
+
+    # Server configuration (ADR-011: Two-port pattern)
+    host: str = "0.0.0.0"
+    port: int = 8000
+    grpc_port: int = 50051
+
+    # MongoDB configuration
+    mongodb_uri: str = "mongodb://localhost:27017"
+    mongodb_database: str = "ai_model"
+
+    # ═══════════════════════════════════════════════════════════════════
+    # LLM GATEWAY CONFIGURATION
+    # ═══════════════════════════════════════════════════════════════════
+
+    # OpenRouter connection
+    openrouter_api_key: SecretStr  # Required, no default
+    openrouter_base_url: str = "https://openrouter.ai/api/v1"
+
+    # Fallback chain (comma-separated in env var)
+    llm_fallback_models: list[str] = [
+        "anthropic/claude-3-5-sonnet",
+        "openai/gpt-4o",
+        "google/gemini-pro",
+    ]
+
+    # Retry configuration
+    llm_retry_max_attempts: int = 3
+    llm_retry_backoff_ms: list[int] = [100, 500, 2000]
+
+    # Rate limiting
+    llm_rate_limit_rpm: int = 100      # Requests per minute
+    llm_rate_limit_tpm: int = 100000   # Tokens per minute
+
+    # Cost tracking
+    llm_cost_tracking_enabled: bool = True
+    llm_cost_log_per_call: bool = True
+    llm_cost_alert_daily_usd: float = 100.0
+
+    # ═══════════════════════════════════════════════════════════════════
+    # PINECONE (RAG)
+    # ═══════════════════════════════════════════════════════════════════
+
+    pinecone_api_key: SecretStr  # Required, no default
+    pinecone_environment: str = "us-east-1"
+    pinecone_index_name: str = "farmer-power-knowledge"
+
+    # ═══════════════════════════════════════════════════════════════════
+    # DAPR
+    # ═══════════════════════════════════════════════════════════════════
+
+    dapr_host: str = "localhost"
+    dapr_http_port: int = 3500
+    dapr_pubsub_name: str = "pubsub"
+
+    # ═══════════════════════════════════════════════════════════════════
+    # OBSERVABILITY
+    # ═══════════════════════════════════════════════════════════════════
+
+    log_level: str = "INFO"
+    otel_enabled: bool = True
+    otel_exporter_endpoint: str = "http://localhost:4317"
+
+
+# Global settings instance
+settings = Settings()
+```
+
+**LLM Gateway Class:**
+
+```python
+# services/ai-model/src/ai_model/llm/gateway.py
+from ai_model.config import Settings
+
+
+class LLMGateway:
+    """Unified LLM access via OpenRouter with resilience.
+
+    Handles: retry, fallback, rate limiting, cost tracking.
+    Does NOT handle: model selection (per-agent config).
+    """
+
+    def __init__(self, settings: Settings):
+        self.settings = settings
+        self.client = self._create_client()
+        self.rate_limiter = RateLimiter(
+            rpm=settings.llm_rate_limit_rpm,
+            tpm=settings.llm_rate_limit_tpm,
+        )
+
+    async def complete(
+        self,
+        model: str,  # Explicit model from agent config
+        messages: list[dict],
+        **kwargs,
+    ) -> LLMResponse:
+        """Execute LLM completion with resilience."""
+
+        await self.rate_limiter.acquire()
+
+        # Try primary model, then fallback chain
+        models_to_try = [model] + self.settings.llm_fallback_models
+
+        for attempt_model in models_to_try:
+            try:
+                response = await self._call_with_retry(
+                    attempt_model, messages, **kwargs
+                )
+                self._track_cost(response)
+                return response
+            except ModelUnavailableError:
+                continue  # Try next in fallback chain
+
+        raise AllModelsUnavailableError(models_to_try)
+```
+
+**Why This Pattern:**
+
+| Aspect | Decision | Rationale |
+|--------|----------|-----------|
+| **No YAML file** | Env vars only | Aligns with project pattern (collection, plantation, etc.) |
+| **Pydantic Settings** | Type-safe config | Validated at startup, IDE support, clear defaults |
+| **SecretStr for keys** | API key protection | Never logged, K8s secrets integration |
+| **Flat structure** | Simple env vars | Easy to override per environment |
+| **Global instance** | `settings = Settings()` | Consistent with other services |
+
+**Agent-Level Model Configuration:**
+
+Each agent explicitly declares its model in its configuration:
 
 ```yaml
-# ai-model/config/llm-gateway.yaml
-openrouter:
-  api_key: ${OPENROUTER_API_KEY}
-  base_url: https://openrouter.ai/api/v1
-
-  default_models:
-    extraction: "anthropic/claude-3-haiku"
-    diagnosis: "anthropic/claude-3-5-sonnet"
-    generation: "anthropic/claude-3-5-sonnet"
-    market_analysis: "openai/gpt-4o"
-    rag_query: "anthropic/claude-3-haiku"
-
-  fallback_chain:
-    - "anthropic/claude-3-5-sonnet"
-    - "openai/gpt-4o"
-    - "google/gemini-pro"
-
-  retry:
-    max_attempts: 3
-    backoff_ms: [100, 500, 2000]
+# Example: disease-diagnosis agent
+agent:
+  id: "disease-diagnosis"
+  llm:
+    model: "anthropic/claude-3-5-sonnet"   # Explicit, no indirection
+    temperature: 0.3
+    max_tokens: 2000
 ```
 
 ## Tiered Vision Processing (Cost Optimization)
 
-To optimize vision model costs at scale, the Disease Diagnosis agent uses a two-tier approach.
+To optimize vision model costs at scale, the Disease Diagnosis workflow uses a two-tier approach with **two agents**.
 
-> **Implementation details:** See `ai-model-developer-guide.md` § *Performance Optimization* for image preprocessing, batching strategies, and token efficiency.
+> **Implementation details:** See `ai-model-developer-guide/8-performance.md` for image preprocessing, batching strategies, and token efficiency.
+
+### Thumbnail Generation (Collection Model Responsibility)
+
+**Key Decision:** Collection Model generates thumbnails at ingestion time, not AI Model on-demand.
+
+```
+┌─────────────────────────────────────────────────────────────────────────┐
+│                    IMAGE INGESTION FLOW                                  │
+├─────────────────────────────────────────────────────────────────────────┤
+│                                                                         │
+│  QC Analyzer ──────► Collection Model                                   │
+│  (sends image)            │                                             │
+│                           │ 1. Store original image                     │
+│                           │ 2. Generate thumbnail (256x256, JPEG 60%)   │
+│                           │ 3. Store thumbnail                          │
+│                           ▼                                             │
+│                    Azure Blob Storage                                   │
+│                    ┌─────────────────────────────────────────────┐     │
+│                    │  /documents/{doc_id}/                       │     │
+│                    │  ├── original.jpg    (full resolution)      │     │
+│                    │  └── thumbnail.jpg   (256x256)              │     │
+│                    └─────────────────────────────────────────────┘     │
+│                           │                                             │
+│                           │ 4. Store metadata in MongoDB                │
+│                           ▼                                             │
+│                    ┌─────────────────────────────────────────────┐     │
+│                    │  { doc_id, original_url, thumbnail_url,     │     │
+│                    │    thumbnail_generated: true }              │     │
+│                    └─────────────────────────────────────────────┘     │
+│                           │                                             │
+│                           │ 5. Publish event                            │
+│                           ▼                                             │
+│                    Event: collection.document.received                  │
+│                    Payload: { doc_id, has_thumbnail: true }             │
+│                                                                         │
+└─────────────────────────────────────────────────────────────────────────┘
+```
+
+**Why Collection Model owns thumbnail generation:**
+
+| Aspect | Rationale |
+|--------|-----------|
+| **Done once** | Generated at ingestion, reused for all analysis |
+| **No wasted bandwidth** | AI Model fetches only what it needs |
+| **Separation of concerns** | Collection owns blob storage, AI owns analysis |
+| **40% savings** | "Healthy" images never need full image fetch |
+
+### Tiered Processing Flow
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────┐
 │                    TIERED VISION PROCESSING                              │
 ├─────────────────────────────────────────────────────────────────────────┤
 │                                                                         │
-│  INCOMING IMAGE (POOR_QUALITY_DETECTED event)                           │
+│  Event: collection.poor_quality_detected                                │
+│  Payload: { doc_id, thumbnail_url, original_url }                       │
 │                          │                                              │
 │                          ▼                                              │
-│  TIER 1: QUICK SCREEN (Claude Haiku)                                   │
+│  TIER 1: vision-screen (Extractor, Haiku)                              │
 │  ┌─────────────────────────────────────────────────────────────────┐   │
-│  │  Input: Low-res thumbnail (256x256) + basic metadata            │   │
+│  │  Input: Fetch THUMBNAIL only (256x256) + basic metadata         │   │
 │  │  Cost: ~$0.001/image                                            │   │
 │  │                                                                  │   │
 │  │  Classification:                                                 │   │
@@ -744,16 +1348,25 @@ To optimize vision model costs at scale, the Disease Diagnosis agent uses a two-
 │  └─────────────────┘   └─────────────────┘   └─────────────────┘      │
 │                                                     │                  │
 │                                                     ▼                  │
-│                                    ┌─────────────────────────────┐    │
-│                                    │  Full-res image + context   │    │
-│                                    │  + RAG + farmer history     │    │
-│                                    │  Cost: ~$0.012/image        │    │
-│                                    └─────────────────────────────┘    │
+│                         disease-diagnosis (Explorer, Sonnet)           │
+│                         ┌─────────────────────────────────────────┐   │
+│                         │  Input: Fetch ORIGINAL image            │   │
+│                         │         + farmer context (MCP)          │   │
+│                         │         + RAG knowledge                 │   │
+│                         │  Cost: ~$0.012/image                    │   │
+│                         └─────────────────────────────────────────┘   │
 │                                                                         │
 └─────────────────────────────────────────────────────────────────────────┘
 ```
 
-**Cost Impact at Scale (10,000 images/day):**
+### Agent Types Summary
+
+| Tier | Agent ID | Agent Type | Model | Fetches | Purpose |
+|------|----------|------------|-------|---------|---------|
+| **1** | `vision-screen` | Extractor | Haiku | Thumbnail only | Fast screening, routing |
+| **2** | `disease-diagnosis` | Explorer | Sonnet | Original + context | Deep analysis with RAG |
+
+### Cost Impact at Scale (10,000 images/day)
 
 | Approach | Calculation | Daily Cost | Annual Cost |
 |----------|-------------|------------|-------------|
@@ -761,31 +1374,40 @@ To optimize vision model costs at scale, the Disease Diagnosis agent uses a two-
 | **Tiered** | 10,000 × $0.001 + 3,500 × $0.012 | $52 | ~$19,000 |
 | **Savings** | | **57%** | **~$24,800** |
 
-**Tier 1 Screening Agent:**
+**Additional bandwidth savings:** 40% of images ("healthy") never require full image fetch.
+
+### Tier 1 Screening Agent
 
 ```yaml
 agent:
   id: "vision-screen"
   type: extractor
+  version: "1.0.0"
+  description: "Fast screening of quality images using thumbnail"
 
   input:
     event: "collection.poor_quality_detected"
+    schema:
+      required: [doc_id, thumbnail_url]
+      optional: [original_url, metadata]
+
+  # Fetches thumbnail from Collection MCP (pre-generated by Collection Model)
+  mcp_sources:
+    - server: collection
+      tools: [get_document_thumbnail]
 
   llm:
-    model_override: "anthropic/claude-3-haiku"
+    model: "anthropic/claude-3-haiku"
     temperature: 0.1
-
-  preprocessing:
-    image:
-      resize: [256, 256]
-      quality: 60                    # JPEG quality
+    max_tokens: 200
 
   output:
+    event: "ai.vision_screen.complete"
     schema:
       classification: enum           # healthy, obvious_issue, needs_expert
       confidence: number
       reason: string
-      skip_full_analysis: boolean
+      route_to: string               # null, "haiku-metadata", "disease-diagnosis"
 ```
 
 **Routing Logic:**
@@ -802,7 +1424,7 @@ agent:
 
 The RAG (Retrieval-Augmented Generation) engine is internal to the AI Model.
 
-> **Implementation details:** See `ai-model-developer-guide.md` § *RAG Configuration* for knowledge domain setup and query optimization.
+> **Implementation details:** See `ai-model-developer-guide/10-rag-knowledge-management.md` for knowledge domain setup and query optimization.
 
 | Aspect | Decision |
 |--------|----------|
@@ -833,7 +1455,7 @@ The RAG (Retrieval-Augmented Generation) engine is internal to the AI Model.
 
 **Solution:** Externalized prompt management with the same versioning pattern as RAG knowledge.
 
-> **Implementation details:** See `ai-model-developer-guide.md` § *Prompt Engineering Standards* for writing effective prompts and § *Testing Strategies* for prompt validation with golden samples.
+> **Implementation details:** See `ai-model-developer-guide/4-prompt-engineering.md` for writing effective prompts and `ai-model-developer-guide/5-testing-tuning.md` for prompt validation with golden samples.
 
 ### Prompt Storage Architecture
 
@@ -1203,7 +1825,7 @@ Agronomist Updates Document
 
 **DAPR provides OpenTelemetry instrumentation out of the box.**
 
-> **Implementation details:** See `ai-model-developer-guide.md` § *Observability Standards* for logging conventions, custom metrics, and trace correlation.
+> **Implementation details:** See `ai-model-developer-guide/9-observability.md` for logging conventions, custom metrics, and trace correlation.
 
 | Aspect | Approach |
 |--------|----------|
@@ -1245,15 +1867,20 @@ Collection ──▶ DAPR ──▶ AI Model ──▶ MCP calls ──▶ DAPR 
 | **Scheduler** | DAPR Jobs | Scheduler-backend agnostic |
 | **RAG Access** | Internal only | Domain models don't need to know about RAG |
 | **RAG Curation** | Admin UI (manual) | Agronomists manage knowledge |
-| **Agent Types** | 4 (Extractor, Explorer, Generator, Conversational) | Covers patterns including multi-turn dialogue |
+| **Agent Types** | 5 (Extractor, Explorer, Generator, Conversational, Tiered-Vision) | Covers patterns including dialogue and cost-optimized image analysis |
 | **Type Implementation** | In code | Workflow logic is code |
 | **Instance Config** | YAML → MongoDB → Pydantic | Git source, MongoDB runtime, type-safe |
+| **LLM Model Config** | Explicit per agent | Clarity over indirection; no task_type routing |
+| **LLM Gateway Role** | Resilience only | Fallback, retry, cost tracking; not model selection |
+| **LLM Gateway Config** | Pydantic Settings | Aligns with project pattern; env vars, no YAML |
+| **Thumbnail Generation** | Collection Model at ingestion | Done once, AI fetches only what it needs |
+| **Tiered Vision Agents** | Extractor (screen) + Explorer (diagnose) | Fast Haiku screen, Sonnet only when needed |
 | **Prompts** | Separate .md files | Better review, can be long |
 | **Observability** | DAPR OpenTelemetry | Backend-agnostic |
 
 ## Testing Strategy
 
-> **Implementation details:** See `ai-model-developer-guide.md` § *Testing Strategies* for golden sample creation, LLM mocking, and test fixtures.
+> **Implementation details:** See `ai-model-developer-guide/5-testing-tuning.md` for golden sample creation, LLM mocking, and test fixtures.
 
 | Test Type | Focus |
 |-----------|-------|
@@ -1268,7 +1895,7 @@ Collection ──▶ DAPR ──▶ AI Model ──▶ MCP calls ──▶ DAPR 
 
 ## Developer Guide
 
-> **See:** `ai-model-developer-guide.md` for comprehensive developer guidelines including:
+> **See:** `ai-model-developer-guide/` directory for comprehensive developer guidelines including:
 > - LangChain vs LangGraph usage patterns
 > - Project structure and naming conventions
 > - Step-by-step agent creation guide

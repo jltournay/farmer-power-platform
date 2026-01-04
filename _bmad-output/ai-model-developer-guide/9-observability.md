@@ -73,7 +73,7 @@ async def run_agent(event: dict):
         # Child span for LLM
         with tracer.start_as_current_span(
             "llm.complete",
-            attributes={"llm.model": model, "llm.task_type": task_type}
+            attributes={"llm.model": model, "agent.id": agent_id}
         ):
             result = await llm_gateway.complete(prompt)
 
@@ -88,7 +88,7 @@ async def run_agent(event: dict):
 | `agent_invocations_total` | Counter | agent_id, status | Track usage |
 | `agent_duration_seconds` | Histogram | agent_id | Performance |
 | `llm_tokens_total` | Counter | model, direction | Cost tracking |
-| `llm_latency_seconds` | Histogram | model, task_type | LLM performance |
+| `llm_latency_seconds` | Histogram | model, agent_id | LLM performance |
 | `rag_queries_total` | Counter | domain, cache_hit | RAG usage |
 | `agent_errors_total` | Counter | agent_id, error_type | Error tracking |
 

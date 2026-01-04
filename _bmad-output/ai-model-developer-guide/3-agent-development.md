@@ -12,6 +12,7 @@ Determine which type fits your use case:
 | Analyze, diagnose, find patterns | Explorer |
 | Create content, reports, messages | Generator |
 | Handle multi-turn dialogue with users | Conversational |
+| Cost-optimized image analysis (screen → diagnose) | Tiered-Vision |
 
 ### Step 2: Create Instance Configuration
 
@@ -43,7 +44,7 @@ agent:
       tools: [get_farmer]
 
   llm:
-    task_type: "diagnosis"        # Routes to configured model
+    model: "anthropic/claude-3-5-sonnet"   # Explicit model per agent
     temperature: 0.3
     max_tokens: 2000
 
@@ -156,6 +157,13 @@ Create test data:
 - [ ] Golden sample tests created
 - [ ] Trigger registered in domain model
 
+**Additional for Tiered-Vision agents:**
+- [ ] Both `tiered_llm.screen` and `tiered_llm.diagnose` configured
+- [ ] Routing thresholds tuned for use case
+- [ ] Thumbnail MCP tool available (collection.get_document_thumbnail)
+- [ ] Original image MCP tool available (collection.get_document_original)
+- [ ] Golden samples include test cases for all routing paths
+
 ## Advanced Patterns
 
 ### Triage Agent Pattern
@@ -189,9 +197,9 @@ agent:
   description: "Fast classification of quality issues for routing"
 
   llm:
-    task_type: "triage"  # Routes to Haiku
-    temperature: 0.1     # Low temperature for consistent classification
-    max_tokens: 200      # Short response
+    model: "anthropic/claude-3-haiku"   # Fast, cheap for triage
+    temperature: 0.1                     # Low temperature for consistent classification
+    max_tokens: 200                      # Short response
 
   prompt:
     system_file: "prompts/triage/quality/system.md"
@@ -277,7 +285,7 @@ async def record_triage_correction(
 
 ### Tiered Vision Processing
 
-For image analysis, use a two-tier approach to minimize expensive vision API calls:
+For image analysis, use the **tiered-vision** agent type to minimize expensive vision API calls. This is a dedicated agent type with two-tier LLM configuration:
 
 ```
 ┌───────────────────────────────────────────────────────────────────┐
@@ -303,7 +311,64 @@ For image analysis, use a two-tier approach to minimize expensive vision API cal
 └───────────────────────────────────────────────────────────────────┘
 ```
 
-**Tiered Vision Implementation:**
+**Tiered-Vision Agent Configuration:**
+
+```yaml
+# src/agents/instances/tiered-vision/leaf-analysis.yaml
+agent:
+  id: "leaf-analysis"
+  type: tiered-vision   # Dedicated type for two-tier processing
+  version: "1.0.0"
+  description: "Cost-optimized image analysis for tea leaf quality"
+
+  input:
+    event: "collection.poor_quality_detected"
+    schema:
+      required: [doc_id, thumbnail_url, original_url]
+      optional: [metadata]
+
+  output:
+    event: "ai.leaf_analysis.complete"
+    schema:
+      fields: [classification, confidence, diagnosis, tier_used]
+
+  mcp_sources:
+    - server: collection
+      tools: [get_document_thumbnail, get_document_original]
+    - server: plantation
+      tools: [get_farmer]
+
+  # Two-tier LLM configuration (replaces single llm config)
+  tiered_llm:
+    screen:                              # Tier 1: Fast screening
+      model: "anthropic/claude-3-haiku"
+      temperature: 0.1
+      max_tokens: 200
+    diagnose:                            # Tier 2: Deep analysis
+      model: "anthropic/claude-3-5-sonnet"
+      temperature: 0.3
+      max_tokens: 2000
+
+  # Routing thresholds
+  routing:
+    screen_threshold: 0.7               # Escalate to Tier 2 if confidence < 0.7
+    healthy_skip_threshold: 0.85        # Skip Tier 2 for "healthy" above this
+    obvious_skip_threshold: 0.75        # Skip Tier 2 for "obvious_issue" above this
+
+  rag:
+    enabled: true                        # Used in Tier 2 only
+    query_template: "tea leaf quality issues {{findings}}"
+    knowledge_domains: [plant_diseases, tea_cultivation]
+    top_k: 5
+
+  error_handling:
+    retry:
+      max_attempts: 3
+      backoff_ms: [100, 500, 2000]
+    on_failure: "publish_error_event"
+```
+
+**Tiered Vision Implementation (workflow logic):**
 
 ```python
 async def analyze_image_tiered(
