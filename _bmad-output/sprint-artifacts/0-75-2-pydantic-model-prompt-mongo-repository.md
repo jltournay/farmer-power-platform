@@ -1,7 +1,7 @@
 # Story 0.75.2: Pydantic Model for Prompt + Mongo Repository
 
-**Status:** ready-for-dev
-**GitHub Issue:** <!-- Auto-created by dev-story workflow -->
+**Status:** review
+**GitHub Issue:** #91
 
 ## Story
 
@@ -26,66 +26,66 @@ So that prompts are type-safe and properly managed in MongoDB.
 
 ## Tasks / Subtasks
 
-- [ ] **Task 1: Prompt Domain Models** (AC: #1, #2, #3, #4, #5)
-  - [ ] Create `services/ai-model/src/ai_model/domain/` directory if not exists
-  - [ ] Create `services/ai-model/src/ai_model/domain/__init__.py`
-  - [ ] Create `services/ai-model/src/ai_model/domain/prompt.py` with:
-    - [ ] `PromptStatus` enum (draft, staged, active, archived)
-    - [ ] `PromptContent` Pydantic model (system_prompt, template, output_schema, few_shot_examples)
-    - [ ] `PromptMetadata` Pydantic model (author, created_at, updated_at, changelog, git_commit)
-    - [ ] `PromptABTest` Pydantic model (enabled, traffic_percentage, test_id)
-    - [ ] `Prompt` Pydantic model with all fields per architecture spec
+- [x] **Task 1: Prompt Domain Models** (AC: #1, #2, #3, #4, #5)
+  - [x] Create `services/ai-model/src/ai_model/domain/` directory if not exists
+  - [x] Create `services/ai-model/src/ai_model/domain/__init__.py`
+  - [x] Create `services/ai-model/src/ai_model/domain/prompt.py` with:
+    - [x] `PromptStatus` enum (draft, staged, active, archived)
+    - [x] `PromptContent` Pydantic model (system_prompt, template, output_schema, few_shot_examples)
+    - [x] `PromptMetadata` Pydantic model (author, created_at, updated_at, changelog, git_commit)
+    - [x] `PromptABTest` Pydantic model (enabled, traffic_percentage, test_id)
+    - [x] `Prompt` Pydantic model with all fields per architecture spec
 
-- [ ] **Task 2: Prompt Repository** (AC: #6, #7, #8, #9, #10)
-  - [ ] Create `services/ai-model/src/ai_model/infrastructure/repositories/` directory
-  - [ ] Create `services/ai-model/src/ai_model/infrastructure/repositories/__init__.py`
-  - [ ] Create `services/ai-model/src/ai_model/infrastructure/repositories/base.py` (copy pattern from plantation-model)
-  - [ ] Create `services/ai-model/src/ai_model/infrastructure/repositories/prompt_repository.py` with:
-    - [ ] Inherit from `BaseRepository[Prompt]`
-    - [ ] `COLLECTION_NAME = "prompts"`
-    - [ ] `get_active(prompt_id: str) -> Prompt | None` - get currently active prompt
-    - [ ] `get_by_version(prompt_id: str, version: str) -> Prompt | None`
-    - [ ] `list_versions(prompt_id: str) -> list[Prompt]`
-    - [ ] `list_by_agent(agent_id: str) -> list[Prompt]`
-    - [ ] `ensure_indexes()` - create compound indexes
+- [x] **Task 2: Prompt Repository** (AC: #6, #7, #8, #9, #10)
+  - [x] Create `services/ai-model/src/ai_model/infrastructure/repositories/` directory
+  - [x] Create `services/ai-model/src/ai_model/infrastructure/repositories/__init__.py`
+  - [x] Create `services/ai-model/src/ai_model/infrastructure/repositories/base.py` (copy pattern from plantation-model)
+  - [x] Create `services/ai-model/src/ai_model/infrastructure/repositories/prompt_repository.py` with:
+    - [x] Inherit from `BaseRepository[Prompt]`
+    - [x] `COLLECTION_NAME = "prompts"`
+    - [x] `get_active(prompt_id: str) -> Prompt | None` - get currently active prompt
+    - [x] `get_by_version(prompt_id: str, version: str) -> Prompt | None`
+    - [x] `list_versions(prompt_id: str) -> list[Prompt]`
+    - [x] `list_by_agent(agent_id: str) -> list[Prompt]`
+    - [x] `ensure_indexes()` - create compound indexes
 
-- [ ] **Task 3: Unit Tests - Models** (AC: #11)
-  - [ ] Create `tests/unit/ai_model/test_prompt_model.py` with tests for:
-    - [ ] PromptStatus enum values
-    - [ ] PromptContent model validation
-    - [ ] PromptMetadata model validation
-    - [ ] PromptABTest model validation
-    - [ ] Prompt model validation (complete model)
-    - [ ] Prompt model serialization (model_dump)
-    - [ ] Prompt model deserialization (model_validate)
-    - [ ] Invalid field rejection tests
+- [x] **Task 3: Unit Tests - Models** (AC: #11)
+  - [x] Create `tests/unit/ai_model/test_prompt_model.py` with tests for:
+    - [x] PromptStatus enum values
+    - [x] PromptContent model validation
+    - [x] PromptMetadata model validation
+    - [x] PromptABTest model validation
+    - [x] Prompt model validation (complete model)
+    - [x] Prompt model serialization (model_dump)
+    - [x] Prompt model deserialization (model_validate)
+    - [x] Invalid field rejection tests
 
-- [ ] **Task 4: Unit Tests - Repository** (AC: #11)
-  - [ ] Create `tests/unit/ai_model/test_prompt_repository.py` with tests for:
-    - [ ] create() - creates new prompt
-    - [ ] get_by_id() - retrieves prompt by ID
-    - [ ] update() - updates prompt fields
-    - [ ] delete() - deletes prompt
-    - [ ] list() - lists prompts with pagination
-    - [ ] get_active() - gets active prompt for prompt_id
-    - [ ] get_by_version() - gets specific version
-    - [ ] list_versions() - lists all versions of a prompt
-    - [ ] list_by_agent() - lists prompts for an agent
-    - [ ] ensure_indexes() - creates proper indexes
+- [x] **Task 4: Unit Tests - Repository** (AC: #11)
+  - [x] Create `tests/unit/ai_model/test_prompt_repository.py` with tests for:
+    - [x] create() - creates new prompt
+    - [x] get_by_id() - retrieves prompt by ID
+    - [x] update() - updates prompt fields
+    - [x] delete() - deletes prompt
+    - [x] list() - lists prompts with pagination
+    - [x] get_active() - gets active prompt for prompt_id
+    - [x] get_by_version() - gets specific version
+    - [x] list_versions() - lists all versions of a prompt
+    - [x] list_by_agent() - lists prompts for an agent
+    - [x] ensure_indexes() - creates proper indexes
 
-- [ ] **Task 5: CI Verification** (AC: #12)
-  - [ ] Run `ruff check services/ai-model/` - lint passes
-  - [ ] Run `ruff format --check services/ai-model/` - format passes
-  - [ ] Run unit tests locally with ≥20 tests passing
-  - [ ] Push and verify CI passes
+- [x] **Task 5: CI Verification** (AC: #12)
+  - [x] Run `ruff check services/ai-model/` - lint passes
+  - [x] Run `ruff format --check services/ai-model/` - format passes
+  - [x] Run unit tests locally with ≥20 tests passing (46 tests total)
+  - [x] Push and verify CI passes
 
 ## Git Workflow (MANDATORY)
 
 **All story development MUST use feature branches.** Direct pushes to main are blocked.
 
 ### Story Start
-- [ ] GitHub Issue exists or created: `gh issue create --title "Story 0.75.2: Pydantic Model for Prompt + Mongo Repository"`
-- [ ] Feature branch created from main:
+- [x] GitHub Issue exists or created: #91
+- [x] Feature branch created from main:
   ```bash
   git checkout main && git pull origin main
   git checkout -b story/0-75-2-pydantic-model-prompt-mongo-repository
@@ -94,18 +94,18 @@ So that prompts are type-safe and properly managed in MongoDB.
 **Branch name:** `story/0-75-2-pydantic-model-prompt-mongo-repository`
 
 ### During Development
-- [ ] All commits reference GitHub issue: `Relates to #XX`
-- [ ] Commits are atomic by type (production, test, seed - not mixed)
-- [ ] Push to feature branch: `git push -u origin story/0-75-2-pydantic-model-prompt-mongo-repository`
+- [x] All commits reference GitHub issue: `Relates to #91`
+- [x] Commits are atomic by type (production, test, seed - not mixed)
+- [x] Push to feature branch: `git push -u origin story/0-75-2-pydantic-model-prompt-mongo-repository`
 
 ### Story Done
-- [ ] Create Pull Request: `gh pr create --title "Story 0.75.2: Pydantic Model for Prompt + Mongo Repository" --base main`
-- [ ] CI passes on PR (including E2E tests)
-- [ ] Code review completed (`/code-review` or human review)
+- [x] Create Pull Request: `gh pr create --title "Story 0.75.2: Pydantic Model for Prompt + Mongo Repository" --base main`
+- [x] CI passes on PR (including E2E tests)
+- [x] Code review completed (`/code-review` or human review)
 - [ ] PR approved and merged (squash)
 - [ ] Local branch cleaned up: `git branch -d story/0-75-2-pydantic-model-prompt-mongo-repository`
 
-**PR URL:** _______________ (fill in when created)
+**PR URL:** https://github.com/jltournay/farmer-power-platform/pull/92
 
 ---
 
@@ -119,7 +119,10 @@ PYTHONPATH="${PYTHONPATH}:.:services/ai-model/src:libs/fp-common:libs/fp-proto/s
 ```
 **Output:**
 ```
-(paste test summary here - must show ≥20 tests passing)
+======================== 76 passed, 5 warnings in 3.79s ========================
+- test_prompt_model.py: 28 tests (PromptStatus, PromptContent, PromptMetadata, PromptABTest, Prompt)
+- test_prompt_repository.py: 18 tests (CRUD, get_active, get_by_version, list_versions, list_by_agent)
+- Other AI model tests: 30 tests (config, grpc, health, mongodb, tracing)
 ```
 
 ### 2. E2E Tests (MANDATORY)
@@ -139,15 +142,24 @@ docker compose -f tests/e2e/infrastructure/docker-compose.e2e.yaml down -v
 ```
 **Output:**
 ```
-(paste E2E test output here - story is NOT ready for review without this)
+================== 102 passed, 1 skipped in 131.25s (0:02:11) ==================
+- test_01_plantation_mcp_contracts.py: Passed
+- test_02_collection_mcp_contracts.py: Passed
+- test_03_factory_farmer_flow.py: Passed
+- test_04_quality_blob_ingestion.py: Passed
+- test_05_weather_ingestion.py: Passed
+- test_06_cross_model_events.py: Passed
+- test_07_grading_validation.py: Passed
+- test_08_zip_ingestion.py: Passed (1 skipped: size limit test)
+- test_30_bff_farmer_api.py: Passed
 ```
-**E2E passed:** [ ] Yes / [ ] No
+**E2E passed:** [x] Yes / [ ] No
 
 ### 3. Lint Check
 ```bash
 ruff check services/ai-model/ && ruff format --check services/ai-model/
 ```
-**Lint passed:** [ ] Yes / [ ] No
+**Lint passed:** [x] Yes / [ ] No
 
 ### 4. CI Verification on Story Branch (MANDATORY)
 
@@ -160,11 +172,11 @@ git push origin story/0-75-2-pydantic-model-prompt-mongo-repository
 # Wait ~30s, then check CI status
 gh run list --branch story/0-75-2-pydantic-model-prompt-mongo-repository --limit 3
 ```
-**Quality CI Run ID:** _______________
-**Quality CI Status:** [ ] Passed / [ ] Failed
-**E2E CI Run ID:** _______________
-**E2E CI Status:** [ ] Passed / [ ] Failed
-**Verification Date:** _______________
+**Quality CI Run ID:** 20695458012
+**Quality CI Status:** [x] Passed / [ ] Failed
+**E2E CI Run ID:** 20695563151
+**E2E CI Status:** [x] Passed / [ ] Failed
+**Verification Date:** 2026-01-04
 
 ---
 
@@ -335,20 +347,65 @@ services/ai-model/src/ai_model/
 
 ---
 
+## Code Review Evidence (MANDATORY)
+
+> **Completed 2026-01-04** via `/code-review` workflow
+
+### Review Outcome: APPROVED
+
+### Issues Found and Resolved
+
+| # | Severity | Issue | Resolution |
+|---|----------|-------|------------|
+| 1 | MEDIUM | Task 5 marked incomplete but CI passed | Marked complete |
+| 2 | MEDIUM | Story status still "in-progress" | Updated to "review" |
+| 3 | MEDIUM | Import order in test file | Auto-fixed by ruff |
+| 4 | LOW | Missing infrastructure/__init__.py export | Added PromptRepository export |
+| 5 | LOW | No validation added by agent (expected) | N/A |
+| 6 | LOW | Git workflow checkboxes (during review) | Completed |
+
+### Action Items: All Completed
+
+- [x] Mark Task 5 as complete
+- [x] Update story status to "review"
+- [x] Add export to infrastructure/__init__.py
+- [x] Update sprint-status.yaml
+- [x] Commit fixes: `87dcd5e`
+- [x] Create PR: #92
+
+---
+
 ## Dev Agent Record
 
 ### Agent Model Used
 
-{{agent_model_name_version}}
+Claude Opus 4.5 (claude-opus-4-5-20251101)
 
 ### Debug Log References
 
+None required.
+
 ### Completion Notes List
+
+1. Implemented all 5 Pydantic models: PromptStatus, PromptContent, PromptMetadata, PromptABTest, Prompt
+2. Implemented BaseRepository[T] generic pattern for reusability
+3. Implemented PromptRepository with specialized queries (get_active, get_by_version, list_versions, list_by_agent)
+4. Enhanced MockMongoCollection in tests/conftest.py with find_one_and_update, create_index, and _match_filter methods
+5. All 46 new tests passing (28 model + 18 repository)
+6. All existing E2E tests passing (102 tests)
 
 ### File List
 
 **Created:**
-- (list new files)
+- `services/ai-model/src/ai_model/domain/__init__.py` - Domain model exports
+- `services/ai-model/src/ai_model/domain/prompt.py` - Prompt Pydantic models
+- `services/ai-model/src/ai_model/infrastructure/repositories/__init__.py` - Repository exports
+- `services/ai-model/src/ai_model/infrastructure/repositories/base.py` - Generic BaseRepository[T]
+- `services/ai-model/src/ai_model/infrastructure/repositories/prompt_repository.py` - PromptRepository with specialized queries
+- `tests/unit/ai_model/test_prompt_model.py` - 28 unit tests for Pydantic models
+- `tests/unit/ai_model/test_prompt_repository.py` - 18 unit tests for repository
 
 **Modified:**
-- (list modified files with brief description)
+- `tests/conftest.py` - Added find_one_and_update, create_index, _match_filter to MockMongoCollection
+- `_bmad-output/sprint-artifacts/sprint-status.yaml` - Updated story status to in-progress
+- `_bmad-output/sprint-artifacts/0-75-2-pydantic-model-prompt-mongo-repository.md` - Updated with evidence
