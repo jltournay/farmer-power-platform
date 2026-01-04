@@ -21,4 +21,6 @@
 | **Thumbnail Generation** | Collection Model at ingestion | Done once, AI fetches only what it needs |
 | **Tiered Vision Agents** | Extractor (screen) + Explorer (diagnose) | Fast Haiku screen, Sonnet only when needed |
 | **Prompts** | Separate .md files | Better review, can be long |
+| **Prompt Storage** | Single `prompts` collection | Discriminator field `prompt_type`; simpler queries, one repository, MongoDB schema-flexible |
+| **Agent Config Storage** | Single `agent_configs` collection | Discriminator field `agent_type`; Pydantic discriminated unions handle 5 agent types; cross-agent queries simple |
 | **Observability** | DAPR OpenTelemetry | Backend-agnostic |

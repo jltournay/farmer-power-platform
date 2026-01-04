@@ -122,7 +122,9 @@ So that prompts are type-safe and properly managed in MongoDB.
 - `Prompt` Pydantic model with versioning fields
 - `PromptRepository` with CRUD operations
 - MongoDB collection: `ai_model.prompts`
-- Prompt schema: `prompt_id`, `version`, `status`, `content`, `metadata`
+- Prompt schema: `prompt_id`, `agent_id`, `version`, `status`, `content`, `metadata`
+
+**Key Decision:** Single `prompts` collection with `prompt_type` discriminator field. All 5 agent types share one collection. See `key-decisions.md`.
 
 ---
 
@@ -140,6 +142,8 @@ So that agent configs are type-safe and properly managed in MongoDB.
 - MongoDB collection: `ai_model.agent_configs`
 - Support for all 5 agent types: extractor, explorer, generator, conversational, tiered-vision
 - LLM configuration fields per agent (model, temperature, max_tokens, fallback chain)
+
+**Key Decision:** Single `agent_configs` collection with `agent_type` discriminator field. Pydantic discriminated unions handle 5 agent types. See `key-decisions.md`.
 
 ---
 
@@ -206,6 +210,11 @@ So that prompts can be deployed and versioned without code changes.
 - YAML-based prompt definition files
 - Version management (staged, active, archived)
 - Built-in `--help` with usage examples for each command
+
+**Validation Rules:**
+- `agent_id` validation: When publishing with status `staged` or `active`, validate that the referenced `agent_id` exists in `agent_configs` collection
+- `draft` status prompts skip agent validation (allows prompt development before agent config)
+- See: `_bmad-output/architecture/ai-model-architecture/prompt-management.md` § *Prompt-Agent Validation Rules*
 
 **Command vocabulary:** See CLI Standards below.
 
@@ -739,11 +748,14 @@ So that images can be analyzed with cost optimization.
 |-------|----------|
 | AI Model Overview | `_bmad-output/architecture/ai-model-architecture/index.md` |
 | Agent Types | `_bmad-output/architecture/ai-model-architecture/agent-types.md` |
+| Agent Configuration Schema | `_bmad-output/architecture/ai-model-architecture/agent-configuration-schema.md` |
+| Prompt Management | `_bmad-output/architecture/ai-model-architecture/prompt-management.md` |
 | LangGraph Orchestration | `_bmad-output/architecture/ai-model-architecture/langgraph-workflow-orchestration.md` |
 | LLM Gateway | `_bmad-output/architecture/ai-model-architecture/llm-gateway.md` |
 | RAG Engine | `_bmad-output/architecture/ai-model-architecture/rag-engine.md` |
 | Tiered-Vision | `_bmad-output/architecture/ai-model-architecture/tiered-vision-processing-cost-optimization.md` |
 | Cache Pattern | `_bmad-output/architecture/adr/ADR-013-ai-model-configuration-cache.md` |
+| Key Decisions | `_bmad-output/architecture/ai-model-architecture/key-decisions.md` |
 | **Developer Guide** | `_bmad-output/ai-model-developer-guide/index.md` |
 
 ---

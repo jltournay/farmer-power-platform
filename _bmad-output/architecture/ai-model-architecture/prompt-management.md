@@ -227,6 +227,68 @@ prompt_ab_test:
     enabled: false                 # Require manual review
 ```
 
+## Prompt-Agent Validation Rules
+
+Prompts reference agents via `agent_id`. Validation ensures referential integrity.
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│  VALIDATION FLOW                                                 │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                  │
+│  farmer-cli prompt publish                                       │
+│       │                                                          │
+│       ▼                                                          │
+│  ┌─────────────────────────────────────────────────────────────┐│
+│  │  1. Read prompt YAML from git                               ││
+│  │  2. Check prompt status                                     ││
+│  │       │                                                     ││
+│  │       ├── draft → Skip agent validation (dev flexibility)  ││
+│  │       │                                                     ││
+│  │       └── staged/active → Validate agent_id exists         ││
+│  │              │                                              ││
+│  │              ├── Agent exists → Publish to MongoDB          ││
+│  │              │                                              ││
+│  │              └── Agent missing → ERROR, abort publish       ││
+│  └─────────────────────────────────────────────────────────────┘│
+│                                                                  │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+**Validation Rules:**
+
+| Prompt Status | Agent Validation | Rationale |
+|---------------|------------------|-----------|
+| `draft` | Not required | Development flexibility - prompts can be drafted before agent config |
+| `staged` | Required | Pre-production must have valid agent reference |
+| `active` | Required | Production prompts must have valid agent |
+| `archived` | Not checked | Historical record, agent may have been deleted |
+
+**Implementation:**
+
+```python
+# In farmer-cli prompt publish command
+async def validate_prompt_agent_reference(prompt: PromptDocument) -> None:
+    """Validate agent_id exists in agent_configs collection."""
+    if prompt.status in ("staged", "active"):
+        agent = await agent_config_repo.get_by_id(prompt.agent_id)
+        if agent is None:
+            raise ValidationError(
+                f"Cannot publish prompt '{prompt.prompt_id}' with status '{prompt.status}': "
+                f"agent_id '{prompt.agent_id}' does not exist in agent_configs"
+            )
+```
+
+**Why CLI validation, not runtime:**
+
+| Approach | Pros | Cons |
+|----------|------|------|
+| CLI validation | No runtime overhead, early error detection | Requires CI/CD discipline |
+| Runtime validation | Always consistent | Adds latency to every request |
+| Database constraints | Enforced at DB level | MongoDB lacks foreign keys |
+
+**Decision:** CLI validation at publish time. Trust CI/CD pipeline. No runtime validation overhead.
+
 ## Key Benefits
 
 | Benefit | Description |
