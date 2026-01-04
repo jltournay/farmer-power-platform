@@ -171,28 +171,79 @@ So that configuration lookups are fast without stale data.
 
 ---
 
-### Story 0.75.5: OpenRouter LLM Gateway with Cost Management
+### Story 0.75.5: OpenRouter LLM Gateway with Cost Observability
 
 **Story File:** Not yet created | Status: Backlog
 
 As a **developer implementing AI agents**,
-I want a unified LLM gateway with cost tracking and resilience,
-So that agents can reliably call LLMs with automatic retry and fallback.
+I want a unified LLM gateway with cost tracking, observability, and resilience,
+So that agents can reliably call LLMs with automatic retry, fallback, and full cost visibility.
 
 **Scope:**
+
+**LLM Gateway Core:**
 - OpenRouter API integration
 - Execute LLM requests per agent configuration (model + fallback chain)
 - Validate model availability via OpenRouter API
-- Cost tracking per request (input/output tokens, USD)
-- OpenTelemetry metrics: `llm_request_cost_usd`, `llm_tokens_total`
 - Retry with exponential backoff
 - Fallback execution when primary model fails
+
+**Cost Observability:**
+- Cost tracking per request (input/output tokens, USD)
+- Cost event emission via DAPR pub/sub (`ai.cost.recorded`)
+- Cost persistence to MongoDB collection: `ai_model.llm_cost_events`
+- gRPC `CostService` API for querying costs (contract for Epic 5 dashboard)
+- Budget threshold alerting (configurable daily/monthly limits)
+
+**Cost Event Schema:**
+```python
+class LlmCostEvent(BaseModel):
+    timestamp: datetime
+    request_id: str           # Correlation ID
+    agent_type: str           # "extractor", "explorer", "generator", etc.
+    agent_id: str             # Specific agent configuration ID
+    model: str                # "gpt-4o-mini", "claude-3-5-sonnet", etc.
+    tokens_in: int
+    tokens_out: int
+    cost_usd: Decimal
+    factory_id: Optional[str] # For future per-factory attribution
+    success: bool             # Whether the request succeeded
+    retry_count: int          # Number of retries before success/failure
+```
+
+**gRPC CostService API (Contract for Epic 5 Dashboard):**
+```protobuf
+service CostService {
+    // Summary queries
+    rpc GetDailyCostSummary(DateRangeRequest) returns (DailyCostSummaryResponse);
+    rpc GetCurrentDayCost(Empty) returns (CostSummary);
+
+    // Breakdown queries
+    rpc GetCostByAgentType(DateRangeRequest) returns (CostByAgentTypeResponse);
+    rpc GetCostByModel(DateRangeRequest) returns (CostByModelResponse);
+
+    // Alerts
+    rpc GetCostAlerts(Empty) returns (CostAlertsResponse);
+    rpc ConfigureCostThreshold(ThresholdConfig) returns (Empty);
+}
+```
+
+**OpenTelemetry Metrics:**
+- `llm_request_cost_usd` (histogram) - Cost per request
+- `llm_tokens_total` (counter) - Total tokens by model
+- `llm_daily_cost_usd` (gauge) - Running daily total
+- `llm_cost_alert_triggered` (counter) - Alert trigger count
 
 **Testing Requirements:**
 - Unit tests for retry logic with simulated transient failures (429, 503)
 - Unit tests for exponential backoff timing
 - Integration test for fallback chain execution (primary fails → fallback succeeds)
 - Test that cost tracking works even after retries/fallback
+- Test cost event persistence to MongoDB
+- Test gRPC CostService query methods
+- Test budget threshold alerting triggers
+
+**Note:** The Platform Admin Dashboard UI for cost visualization is defined in Epic 9 (Story 9.6). This story provides the backend infrastructure and API contract.
 
 ---
 
@@ -699,7 +750,7 @@ So that images can be analyzed with cost optimization.
 | 2    | Pydantic Model for Prompt + Mongo Repository             | Data Model     | Backlog |
 | 3    | Pydantic Model for Agent Configuration + Mongo Repository| Data Model     | Backlog |
 | 4    | Source Cache for Agent Types and Prompt Config           | Infrastructure | Backlog |
-| 5    | OpenRouter LLM Gateway with Cost Management              | Infrastructure | Backlog |
+| 5    | OpenRouter LLM Gateway with Cost Observability           | Infrastructure | Backlog |
 | 6    | CLI to Manage Prompt Type Configuration                  | Tooling        | Backlog |
 | 7    | CLI to Manage Agent Configuration                        | Tooling        | Backlog |
 | 8    | Event Flow, Subscriber, and Publisher                    | Infrastructure | Backlog |

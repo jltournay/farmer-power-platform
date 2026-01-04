@@ -4,8 +4,21 @@ Complete inventory of all user interfaces and their screens for the Farmer Power
 
 ---
 
+## Frontend Application Mapping
+
+| Frontend Application | Epic | UI Sections Included |
+|---------------------|------|----------------------|
+| **Factory Portal** | Epic 3 | Factory Manager Dashboard, Factory Owner Dashboard, Factory Admin UI |
+| **Platform Admin Portal** | Epic 9 | Platform Admin UI, Knowledge Management UI (RAG) |
+| **Regulator Dashboard** | Epic 10 | Regulator Dashboard |
+| **Registration Kiosk PWA** | Epic 11 | Farmer Registration UI |
+| **Non-Web Channels** | Epic 4, 7 | SMS, Voice IVR |
+
+---
+
 ## 1. Factory Manager Dashboard (Joseph)
 
+**Frontend Application:** Factory Portal (Epic 3)
 **User:** Quality Manager (Joseph)
 **Purpose:** Daily operations, farmer intervention, pattern analysis
 
@@ -24,6 +37,7 @@ Complete inventory of all user interfaces and their screens for the Farmer Power
 
 ## 2. Factory Owner Dashboard
 
+**Frontend Application:** Factory Portal (Epic 3)
 **User:** Factory Owner
 **Purpose:** ROI validation, subscription value proof
 
@@ -41,6 +55,7 @@ Complete inventory of all user interfaces and their screens for the Farmer Power
 
 ## 3. Regulator Dashboard (Tea Board of Kenya)
 
+**Frontend Application:** Regulator Dashboard (Epic 10)
 **User:** Tea Board of Kenya regulators
 **Purpose:** National quality intelligence, policy decisions, export strategy
 
@@ -58,6 +73,7 @@ Complete inventory of all user interfaces and their screens for the Farmer Power
 
 ## 4. Factory Admin UI
 
+**Frontend Application:** Factory Portal (Epic 3)
 **User:** Factory Administrator
 **Purpose:** Configure payment policies, quality thresholds, and customize farmer communications
 
@@ -77,44 +93,44 @@ Complete inventory of all user interfaces and their screens for the Farmer Power
 
 ## 5. Platform Admin UI
 
-**User:** Farmer Power platform administrators
-**Purpose:** Factory onboarding, user management, system monitoring
+**Frontend Application:** Platform Admin Portal (Epic 9)
+**User:** Farmer Power platform administrators, Agronomists, TBK specialists
+**Purpose:** Factory onboarding, user management, system monitoring, AI knowledge management
+
+### Core Admin Screens
 
 | # | Screen | Purpose |
 |---|--------|---------|
-| 1 | **Platform Dashboard** | Factory status overview, system health |
+| 1 | **Platform Dashboard** | Factory status overview, system health, cost summary widget |
 | 2 | **Factory Onboarding Wizard** | 4-step flow: Details → Admin User → QC Integration → Go Live |
 | 3 | **User Management** | Add/edit users, role assignment |
 | 4 | **Factory List** | All factories with status (Active/Onboarding/Issues) |
+| 5 | **LLM Cost Dashboard** | Monitor AI spending, cost trends, breakdown by agent/model, configure alerts |
 
-**Related Docs:**
-- [Admin Interface: Platform Admin UI](./admin-interface-core-experience.md#platform-admin-ui)
-
----
-
-## 5b. Knowledge Management UI
-
-**User:** Agronomists, TBK specialists, Platform administrators
-**Purpose:** Upload and manage expert knowledge documents that power AI recommendations
+### RAG Document Ingestion Screens
 
 | # | Screen | Purpose |
 |---|--------|---------|
-| 1 | **Knowledge Document Library** | Browse, search, filter documents by domain/status |
-| 2 | **Document Upload (Step 1)** | Drag & drop file, enter title/domain/author metadata |
-| 3 | **Document Processing (Step 2)** | Automatic extraction progress, confidence score display |
-| 4 | **Content Preview (Step 2b)** | Review extracted content, edit if needed |
-| 5 | **Extraction Quality Warning** | Low confidence handling, re-extraction options |
-| 6 | **Save Document (Step 3)** | Summary, save as Draft/Staged/Active |
-| 7 | **Document Review & Activation** | Preview, test with AI, approve for production |
-| 8 | **Version History** | View all versions, compare, rollback |
+| 6 | **Knowledge Document Library** | Browse, search, filter documents by domain/status |
+| 7 | **Document Upload (Step 1)** | Drag & drop file, enter title/domain/author metadata |
+| 8 | **Document Processing (Step 2)** | Automatic extraction progress, confidence score display |
+| 9 | **Content Preview (Step 2b)** | Review extracted content, edit if needed |
+| 10 | **Extraction Quality Warning** | Low confidence handling, re-extraction options |
+| 11 | **Save Document (Step 3)** | Summary, save as Draft/Staged/Active |
+| 12 | **Document Review & Activation** | Preview, test with AI, approve for production |
+| 13 | **Version History** | View all versions, compare, rollback |
 
 **Related Docs:**
-- [Admin Interface: Knowledge Management UI](./admin-interface-core-experience.md#knowledge-management-ui)
+- [Admin Interface: Platform Admin UI](./admin-interface-core-experience.md#platform-admin-ui)
+- [RAG Document Ingestion UX Specification](./rag-document-ingestion-ux.md)
+- [Epic 9 Story 9.5: Knowledge Management Interface](../epics/epic-9-admin-portal.md#story-95-knowledge-management-interface)
+- [Epic 9 Story 9.6: LLM Cost Dashboard](../epics/epic-9-admin-portal.md#story-96-llm-cost-dashboard)
 
 ---
 
 ## 6. Farmer Registration UI (Collection Point)
 
+**Frontend Application:** Registration Kiosk PWA (Epic 11)
 **User:** Registration Clerk (at collection point or factory)
 **Purpose:** Rapid farmer enrollment with immediate ID issuance
 
@@ -133,6 +149,7 @@ Complete inventory of all user interfaces and their screens for the Farmer Power
 
 ## 7. Farmer Touchpoints (Non-Web)
 
+**Channels:** SMS (Epic 4), Voice IVR (Epic 7)
 **User:** Farmer (Wanjiku)
 **Purpose:** Quality feedback delivery, actionable coaching
 
@@ -152,16 +169,15 @@ Complete inventory of all user interfaces and their screens for the Farmer Power
 
 ### Total Screens by UI
 
-| UI | Screen Count |
-|----|--------------|
-| Factory Manager Dashboard | 4 |
-| Factory Owner Dashboard | 3 |
-| Regulator Dashboard | 4 |
-| Factory Admin | 5 |
-| Platform Admin | 4 |
-| Knowledge Management | 8 |
-| Farmer Registration | 4 |
-| **Total Web Screens** | **32** |
+| UI | Frontend Application | Epic | Screen Count |
+|----|---------------------|------|--------------|
+| Factory Manager Dashboard | Factory Portal | 3 | 4 |
+| Factory Owner Dashboard | Factory Portal | 3 | 3 |
+| Factory Admin | Factory Portal | 3 | 5 |
+| Regulator Dashboard | Regulator Dashboard | 10 | 4 |
+| Platform Admin (Core + RAG) | Platform Admin Portal | 9 | 13 |
+| Farmer Registration | Registration Kiosk PWA | 11 | 4 |
+| **Total Web Screens** | | | **33** |
 
 ### Non-Web Channels
 
