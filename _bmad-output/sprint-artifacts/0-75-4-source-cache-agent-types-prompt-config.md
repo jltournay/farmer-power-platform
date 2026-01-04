@@ -1,6 +1,6 @@
 # Story 0.75.4: Source Cache for Agent Types and Prompt Config
 
-**Status:** review
+**Status:** done
 **GitHub Issue:** #95
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
