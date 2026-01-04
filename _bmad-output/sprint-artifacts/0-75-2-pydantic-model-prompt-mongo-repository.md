@@ -119,7 +119,10 @@ PYTHONPATH="${PYTHONPATH}:.:services/ai-model/src:libs/fp-common:libs/fp-proto/s
 ```
 **Output:**
 ```
-(paste test summary here - must show ≥20 tests passing)
+======================== 76 passed, 5 warnings in 3.79s ========================
+- test_prompt_model.py: 28 tests (PromptStatus, PromptContent, PromptMetadata, PromptABTest, Prompt)
+- test_prompt_repository.py: 18 tests (CRUD, get_active, get_by_version, list_versions, list_by_agent)
+- Other AI model tests: 30 tests (config, grpc, health, mongodb, tracing)
 ```
 
 ### 2. E2E Tests (MANDATORY)
@@ -139,15 +142,24 @@ docker compose -f tests/e2e/infrastructure/docker-compose.e2e.yaml down -v
 ```
 **Output:**
 ```
-(paste E2E test output here - story is NOT ready for review without this)
+================== 102 passed, 1 skipped in 131.25s (0:02:11) ==================
+- test_01_plantation_mcp_contracts.py: Passed
+- test_02_collection_mcp_contracts.py: Passed
+- test_03_factory_farmer_flow.py: Passed
+- test_04_quality_blob_ingestion.py: Passed
+- test_05_weather_ingestion.py: Passed
+- test_06_cross_model_events.py: Passed
+- test_07_grading_validation.py: Passed
+- test_08_zip_ingestion.py: Passed (1 skipped: size limit test)
+- test_30_bff_farmer_api.py: Passed
 ```
-**E2E passed:** [ ] Yes / [ ] No
+**E2E passed:** [x] Yes / [ ] No
 
 ### 3. Lint Check
 ```bash
 ruff check services/ai-model/ && ruff format --check services/ai-model/
 ```
-**Lint passed:** [ ] Yes / [ ] No
+**Lint passed:** [x] Yes / [ ] No
 
 ### 4. CI Verification on Story Branch (MANDATORY)
 
@@ -160,11 +172,11 @@ git push origin story/0-75-2-pydantic-model-prompt-mongo-repository
 # Wait ~30s, then check CI status
 gh run list --branch story/0-75-2-pydantic-model-prompt-mongo-repository --limit 3
 ```
-**Quality CI Run ID:** _______________
-**Quality CI Status:** [ ] Passed / [ ] Failed
-**E2E CI Run ID:** _______________
-**E2E CI Status:** [ ] Passed / [ ] Failed
-**Verification Date:** _______________
+**Quality CI Run ID:** 20695458012
+**Quality CI Status:** [x] Passed / [ ] Failed
+**E2E CI Run ID:** 20695563151
+**E2E CI Status:** [x] Passed / [ ] Failed
+**Verification Date:** 2026-01-04
 
 ---
 
@@ -339,16 +351,33 @@ services/ai-model/src/ai_model/
 
 ### Agent Model Used
 
-{{agent_model_name_version}}
+Claude Opus 4.5 (claude-opus-4-5-20251101)
 
 ### Debug Log References
 
+None required.
+
 ### Completion Notes List
+
+1. Implemented all 5 Pydantic models: PromptStatus, PromptContent, PromptMetadata, PromptABTest, Prompt
+2. Implemented BaseRepository[T] generic pattern for reusability
+3. Implemented PromptRepository with specialized queries (get_active, get_by_version, list_versions, list_by_agent)
+4. Enhanced MockMongoCollection in tests/conftest.py with find_one_and_update, create_index, and _match_filter methods
+5. All 46 new tests passing (28 model + 18 repository)
+6. All existing E2E tests passing (102 tests)
 
 ### File List
 
 **Created:**
-- (list new files)
+- `services/ai-model/src/ai_model/domain/__init__.py` - Domain model exports
+- `services/ai-model/src/ai_model/domain/prompt.py` - Prompt Pydantic models
+- `services/ai-model/src/ai_model/infrastructure/repositories/__init__.py` - Repository exports
+- `services/ai-model/src/ai_model/infrastructure/repositories/base.py` - Generic BaseRepository[T]
+- `services/ai-model/src/ai_model/infrastructure/repositories/prompt_repository.py` - PromptRepository with specialized queries
+- `tests/unit/ai_model/test_prompt_model.py` - 28 unit tests for Pydantic models
+- `tests/unit/ai_model/test_prompt_repository.py` - 18 unit tests for repository
 
 **Modified:**
-- (list modified files with brief description)
+- `tests/conftest.py` - Added find_one_and_update, create_index, _match_filter to MockMongoCollection
+- `_bmad-output/sprint-artifacts/sprint-status.yaml` - Updated story status to in-progress
+- `_bmad-output/sprint-artifacts/0-75-2-pydantic-model-prompt-mongo-repository.md` - Updated with evidence
