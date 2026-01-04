@@ -1,8 +1,17 @@
 # 10. RAG Knowledge Management
 
+## Overview
+
+RAG (Retrieval-Augmented Generation) documents are managed through a **gRPC API** exposed by the AI Model service. This enables:
+
+- **Admin UI** for agronomists (non-technical experts) to manage knowledge via web interface
+- **CLI** (`farmer-cli rag`) for Ops team automation and bulk operations
+
+> **Architecture Reference:** See `architecture/ai-model-architecture.md` → "RAG Document API" for complete Pydantic models and proto definitions.
+
 ## Knowledge Document Lifecycle
 
-Knowledge documents in Pinecone follow a versioned lifecycle to ensure safe updates and rollback capability:
+Knowledge documents follow a versioned lifecycle to ensure safe updates and rollback capability:
 
 ```
 ┌───────────────────────────────────────────────────────────────────┐
@@ -35,208 +44,291 @@ Knowledge documents in Pinecone follow a versioned lifecycle to ensure safe upda
 | `active` | Live in production | Yes |
 | `archived` | Replaced by newer version, kept for rollback | Rollback only |
 
-## Versioning Schema
+## Storage Architecture
 
-```yaml
-# knowledge/documents/disease/fungal-blister-blight.yaml
-document:
-  id: "disease-fungal-blister-blight"
-  version: "2.1.0"
-  status: active
-  domain: "tea_diseases"
-
-  metadata:
-    title: "Blister Blight (Exobasidium vexans)"
-    author: "agronomist_team"
-    created_at: "2024-01-10"
-    updated_at: "2024-06-15"
-    review_status: approved
-    reviewer: "dr_ochieng"
-
-  versioning:
-    previous_version: "2.0.0"
-    changelog:
-      - "2.1.0: Added regional severity variations for highland vs lowland"
-      - "2.0.0: Updated treatment recommendations based on 2024 research"
-      - "1.0.0: Initial version"
-    rollback_available: true
-
-  content:
-    description: |
-      Blister blight is a fungal disease affecting tea plants,
-      caused by Exobasidium vexans...
-
-    symptoms:
-      - "Pale, translucent spots on young leaves"
-      - "Blisters that turn white and velvety"
-      - "Leaf curling and distortion"
-
-    conditions:
-      - "High humidity (>80%)"
-      - "Cool temperatures (15-20°C)"
-      - "Frequent rainfall"
-
-    recommendations:
-      immediate:
-        - "Remove and destroy infected leaves"
-        - "Improve air circulation by pruning"
-      preventive:
-        - "Apply copper-based fungicide before rainy season"
-        - "Maintain proper spacing between plants"
-
-  embedding_config:
-    chunk_strategy: section  # Embed each section separately
-    include_metadata: true   # Include metadata in embeddings
+```
+┌─────────────────────────────────────────────────────────────────────────┐
+│                         STORAGE ARCHITECTURE                             │
+├─────────────────────────────────────────────────────────────────────────┤
+│                                                                         │
+│  Admin UI / CLI                                                         │
+│       │                                                                 │
+│       │ gRPC (RAGDocumentService)                                       │
+│       ▼                                                                 │
+│  ┌──────────────────────────────────────────────────────────────────┐  │
+│  │                        AI MODEL SERVICE                           │  │
+│  │                                                                   │  │
+│  │  ┌─────────────────┐    ┌─────────────────┐                      │  │
+│  │  │  RAGDocument    │    │  Vectorization  │                      │  │
+│  │  │  Service        │───▶│  Pipeline       │                      │  │
+│  │  └─────────────────┘    └─────────────────┘                      │  │
+│  │          │                      │                                 │  │
+│  └──────────┼──────────────────────┼─────────────────────────────────┘  │
+│             │                      │                                    │
+│             ▼                      ▼                                    │
+│  ┌─────────────────┐    ┌─────────────────┐                            │
+│  │    MongoDB      │    │    Pinecone     │                            │
+│  │  (documents)    │    │   (vectors)     │                            │
+│  │                 │    │                 │                            │
+│  │  • RAGDocument  │    │  • Embeddings   │                            │
+│  │  • Metadata     │    │  • Namespaces   │                            │
+│  │  • Versions     │    │  • Filters      │                            │
+│  └─────────────────┘    └─────────────────┘                            │
+│                                                                         │
+└─────────────────────────────────────────────────────────────────────────┘
 ```
 
-## Pinecone Namespace Strategy
+## Document Model
 
-Use Pinecone namespaces for version isolation:
+RAG documents use the following structure (stored in MongoDB):
 
 ```python
-class KnowledgeVersionManager:
-    """Manage knowledge versions in Pinecone."""
+from datetime import datetime
+from typing import Literal
+from pydantic import BaseModel, Field
 
-    def __init__(self, pinecone_index):
-        self.index = pinecone_index
 
-    def get_namespace(self, version: str, status: str) -> str:
-        """
-        Namespace naming convention:
-        - Active: knowledge-v{version}
-        - Staged: knowledge-v{version}-staged
-        - Archived: knowledge-v{version}-archived
-        """
-        if status == "active":
-            return f"knowledge-v{version}"
-        return f"knowledge-v{version}-{status}"
+class RAGDocumentMetadata(BaseModel):
+    """Metadata for RAG document."""
+    author: str                              # Agronomist who created/updated
+    source: str | None = None                # Original source (book, paper, etc.)
+    region: str | None = None                # Geographic relevance
+    season: str | None = None                # Seasonal relevance
+    tags: list[str] = []                     # Searchable tags
 
-    async def promote_staged_to_active(
-        self,
-        document_id: str,
-        new_version: str,
-        old_version: str
-    ):
-        """
-        Promote staged document to active, archive old version.
-        """
-        # 1. Copy staged vectors to active namespace
-        staged_ns = self.get_namespace(new_version, "staged")
-        active_ns = self.get_namespace(new_version, "active")
 
-        await self._copy_vectors(
-            source_ns=staged_ns,
-            target_ns=active_ns,
-            doc_id_prefix=document_id
-        )
+class RAGDocument(BaseModel):
+    """RAG knowledge document."""
+    document_id: str                         # Stable ID across versions
+    version: int = 1                         # Incrementing version number
 
-        # 2. Archive old active version
-        old_active_ns = self.get_namespace(old_version, "active")
-        old_archived_ns = self.get_namespace(old_version, "archived")
+    # Content
+    title: str
+    domain: Literal[
+        "plant_diseases",
+        "tea_cultivation",
+        "weather_patterns",
+        "quality_standards",
+        "regional_context"
+    ]
+    content: str                             # Full text (markdown supported)
 
-        await self._move_vectors(
-            source_ns=old_active_ns,
-            target_ns=old_archived_ns,
-            doc_id_prefix=document_id
-        )
+    # Lifecycle
+    status: Literal["draft", "staged", "active", "archived"] = "draft"
+    created_at: datetime
+    updated_at: datetime
 
-        # 3. Update routing config
-        await self._update_routing(document_id, new_version)
+    # Metadata
+    metadata: RAGDocumentMetadata
 
-    async def rollback(self, document_id: str, to_version: str):
-        """
-        Rollback to a previous archived version.
-        """
-        # Restore archived version to active
-        archived_ns = self.get_namespace(to_version, "archived")
-        active_ns = self.get_namespace(to_version, "active")
+    # Change tracking
+    change_summary: str | None = None
 
-        await self._copy_vectors(
-            source_ns=archived_ns,
-            target_ns=active_ns,
-            doc_id_prefix=document_id
-        )
-
-        # Update routing
-        await self._update_routing(document_id, to_version)
-
-        logger.info(
-            "Knowledge rollback completed",
-            document_id=document_id,
-            rolled_back_to=to_version
-        )
+    # Embedding reference (populated after vectorization)
+    pinecone_namespace: str | None = None
+    pinecone_ids: list[str] = []
+    content_hash: str | None = None
 ```
 
-## Knowledge Update Workflow
+## Knowledge Domains
+
+| Domain | Content | Used By Agents |
+|--------|---------|----------------|
+| `plant_diseases` | Symptoms, identification, treatments | diagnose-quality-issue |
+| `tea_cultivation` | Best practices, seasonal guidance | analyze-weather-impact, generate-action-plan |
+| `weather_patterns` | Regional climate, crop impact | analyze-weather-impact |
+| `quality_standards` | Grading criteria, buyer expectations | extract-and-validate, analyze-market |
+| `regional_context` | Local practices, cultural factors | generate-action-plan |
+
+## CLI Commands (for Ops)
+
+### Document CRUD
+
+```bash
+# Create document from file
+farmer-cli rag create --title "Blister Blight Treatment" \
+  --domain plant_diseases \
+  --file treatment-guide.md \
+  --author "Dr. Wanjiku" \
+  --region Kenya
+
+# Create document inline
+farmer-cli rag create --title "Frost Protection" \
+  --domain weather_patterns \
+  --content "When temperatures drop below 4°C..." \
+  --author "Operations"
+
+# List documents with filters
+farmer-cli rag list --domain plant_diseases --status active
+farmer-cli rag list --author "Dr. Wanjiku"
+
+# Get specific document
+farmer-cli rag get --id doc-123
+farmer-cli rag get --id doc-123 --version 2
+
+# Update document (creates new version)
+farmer-cli rag update --id doc-123 \
+  --file updated-guide.md \
+  --change-summary "Added new treatment protocol for resistant strains"
+
+# Delete document (soft delete - archives all versions)
+farmer-cli rag delete --id doc-123
+```
+
+### Lifecycle Management
+
+```bash
+# Stage document for testing/review
+farmer-cli rag stage --id doc-123
+
+# Activate (promote to production)
+farmer-cli rag activate --id doc-123
+
+# Archive document
+farmer-cli rag archive --id doc-123
+
+# Rollback to previous version
+farmer-cli rag rollback --id doc-123 --to-version 2
+```
+
+### A/B Testing
+
+```bash
+# Start A/B test with staged version
+farmer-cli rag ab-test start --id doc-123 --traffic 20 --duration 7
+
+# Check A/B test status
+farmer-cli rag ab-test status --test-id test-456
+
+# End A/B test (promote or rollback)
+farmer-cli rag ab-test end --test-id test-456 --promote
+farmer-cli rag ab-test end --test-id test-456 --rollback
+```
+
+### Bulk Operations
+
+```bash
+# Bulk import from directory
+farmer-cli rag import --dir ./knowledge-base/ --domain tea_cultivation --author "Import"
+
+# Export all documents in a domain
+farmer-cli rag export --domain plant_diseases --output ./backup/
+
+# Sync all documents to Pinecone (for recovery)
+farmer-cli rag sync --domain tea_diseases
+```
+
+## Admin UI Workflow (for Agronomists)
+
+Non-technical experts use the Admin UI web interface:
 
 ```
 ┌───────────────────────────────────────────────────────────────────┐
-│                   KNOWLEDGE UPDATE WORKFLOW                        │
+│                   AGRONOMIST WORKFLOW (Admin UI)                   │
 ├───────────────────────────────────────────────────────────────────┤
 │                                                                   │
-│  1. AUTHOR                                                        │
-│     └─→ Create/update document in Git                            │
-│     └─→ farmer-cli knowledge validate --doc disease/xxx.yaml     │
-│     └─→ Commit with status: draft                                │
+│  1. CREATE                                                        │
+│     └─→ Navigate to Knowledge Management                         │
+│     └─→ Click "New Document"                                     │
+│     └─→ Fill form: Title, Domain, Content (markdown editor)      │
+│     └─→ Add metadata: Region, Season, Tags                       │
+│     └─→ Save as Draft                                            │
 │                                                                   │
 │  2. REVIEW                                                        │
-│     └─→ Agronomist/domain expert reviews                         │
-│     └─→ farmer-cli knowledge review --doc disease/xxx.yaml       │
-│     └─→ Approve or request changes                               │
+│     └─→ Senior agronomist reviews draft                          │
+│     └─→ Request changes or approve                               │
+│     └─→ Approved documents can be staged                         │
 │                                                                   │
 │  3. STAGE                                                         │
-│     └─→ farmer-cli knowledge stage --doc disease/xxx.yaml        │
-│     └─→ Embed and upload to staged namespace                     │
-│     └─→ Run integration tests against staged version             │
+│     └─→ Click "Stage for Testing"                                │
+│     └─→ System vectorizes and uploads to Pinecone                │
+│     └─→ Document available for A/B testing                       │
 │                                                                   │
-│  4. TEST (Optional)                                               │
-│     └─→ Configure A/B test with 10-20% traffic                   │
-│     └─→ Monitor accuracy metrics                                 │
-│     └─→ Wait for statistical significance                        │
+│  4. A/B TEST (Optional)                                           │
+│     └─→ Configure traffic percentage (e.g., 20%)                 │
+│     └─→ Set duration (e.g., 7 days)                              │
+│     └─→ Monitor accuracy metrics in dashboard                    │
 │                                                                   │
-│  5. PROMOTE                                                       │
-│     └─→ farmer-cli knowledge promote --doc disease/xxx.yaml      │
-│     └─→ Archive previous version                                 │
-│     └─→ Route all traffic to new version                         │
+│  5. ACTIVATE                                                      │
+│     └─→ Review A/B test results                                  │
+│     └─→ Click "Activate" to promote to production                │
+│     └─→ Previous version automatically archived                  │
 │                                                                   │
 │  6. MONITOR                                                       │
-│     └─→ Watch for accuracy regressions                           │
-│     └─→ If issues: farmer-cli knowledge rollback --to v1.0.0     │
+│     └─→ View usage metrics in dashboard                          │
+│     └─→ If issues detected: Click "Rollback"                     │
 │                                                                   │
 └───────────────────────────────────────────────────────────────────┘
 ```
 
-## CLI Commands for Knowledge Management
+## Pinecone Namespace Strategy
 
-```bash
-# Validate document structure and content
-farmer-cli knowledge validate --doc knowledge/disease/fungal-xxx.yaml
+Versions are isolated using Pinecone namespaces:
 
-# Stage a document (embed and upload to staged namespace)
-farmer-cli knowledge stage --doc knowledge/disease/fungal-xxx.yaml
+```python
+def get_namespace(version: int, status: str) -> str:
+    """
+    Namespace naming convention:
+    - Active:   knowledge-v{version}
+    - Staged:   knowledge-v{version}-staged
+    - Archived: knowledge-v{version}-archived
+    """
+    if status == "active":
+        return f"knowledge-v{version}"
+    return f"knowledge-v{version}-{status}"
+```
 
-# Start A/B test with staged version
-farmer-cli knowledge ab-test start \
-  --doc knowledge/disease/fungal-xxx.yaml \
-  --traffic 20 \
-  --duration 7d
+**Example:**
+- Document `doc-123` version 1 active: `knowledge-v1`
+- Document `doc-123` version 2 staged: `knowledge-v2-staged`
+- After promotion: version 2 in `knowledge-v2`, version 1 in `knowledge-v1-archived`
 
-# Check A/B test status
-farmer-cli knowledge ab-test status --doc knowledge/disease/fungal-xxx.yaml
+## Vectorization Process
 
-# Promote staged to active
-farmer-cli knowledge promote --doc knowledge/disease/fungal-xxx.yaml
+When a document is staged or activated:
 
-# Rollback to previous version
-farmer-cli knowledge rollback \
-  --doc knowledge/disease/fungal-xxx.yaml \
-  --to-version 1.0.0
+1. **Chunk content** - Split into semantic chunks (by heading or paragraph)
+2. **Generate embeddings** - Using `text-embedding-3-small`
+3. **Store in Pinecone** - With namespace based on version
+4. **Update document record** - Store `pinecone_namespace` and `pinecone_ids`
 
-# List all versions of a document
-farmer-cli knowledge versions --doc knowledge/disease/fungal-xxx.yaml
+```python
+async def vectorize_document(document: RAGDocument) -> RAGDocument:
+    """Vectorize document content and store in Pinecone."""
+    # 1. Chunk content by markdown headings
+    chunks = chunk_by_heading(document.content)
 
-# Sync all knowledge to Pinecone (for initial setup or recovery)
-farmer-cli knowledge sync --domain tea_diseases
+    # 2. Generate embeddings
+    embeddings = await embedding_client.embed(
+        texts=[chunk.text for chunk in chunks],
+        model="text-embedding-3-small"
+    )
+
+    # 3. Store in Pinecone with metadata
+    namespace = f"knowledge-v{document.version}"
+    vectors = [
+        {
+            "id": f"{document.document_id}-{i}",
+            "values": embedding,
+            "metadata": {
+                "document_id": document.document_id,
+                "domain": document.domain,
+                "chunk_index": i,
+                "title": document.title,
+                "region": document.metadata.region,
+                "tags": document.metadata.tags,
+            }
+        }
+        for i, embedding in enumerate(embeddings)
+    ]
+    await pinecone_client.upsert(vectors, namespace=namespace)
+
+    # 4. Update document record
+    document.pinecone_namespace = namespace
+    document.pinecone_ids = [v["id"] for v in vectors]
+    document.content_hash = hashlib.sha256(document.content.encode()).hexdigest()
+
+    return document
 ```
 
 ## Knowledge Query Routing
@@ -251,27 +343,20 @@ class RAGEngine:
         self,
         query: str,
         domains: list[str],
-        knowledge_version: str = None,  # For A/B testing
-        farmer_id: str = None
+        ab_test_version: int | None = None,
+        farmer_id: str | None = None
     ) -> dict:
-        """
-        Query knowledge base with version routing.
-        """
-        # Determine version to use
-        if knowledge_version:
-            # Explicit version (from A/B test)
-            version = knowledge_version
+        """Query knowledge base with version routing."""
+        # Determine version (A/B test or active)
+        if ab_test_version:
+            namespace = f"knowledge-v{ab_test_version}-staged"
         else:
-            # Use active version
-            version = await self._get_active_version(domains)
-
-        # Build namespace
-        namespace = f"knowledge-v{version}"
+            namespace = await self._get_active_namespace(domains)
 
         # Embed query
         query_embedding = await self.embedder.embed(query)
 
-        # Query Pinecone
+        # Query Pinecone with domain filter
         results = await self.pinecone_index.query(
             vector=query_embedding,
             namespace=namespace,
@@ -281,29 +366,25 @@ class RAGEngine:
         )
 
         # Format results
-        context_chunks = [
-            {
-                "content": r.metadata["content"],
-                "source": r.metadata["document_id"],
-                "version": r.metadata["version"],
-                "relevance": r.score
-            }
-            for r in results.matches
-        ]
-
         return {
-            "context": context_chunks,
-            "version_used": version,
+            "context": [
+                {
+                    "content": r.metadata["content"],
+                    "source": r.metadata["document_id"],
+                    "relevance": r.score
+                }
+                for r in results.matches
+            ],
             "namespace": namespace
         }
 ```
 
 ## Knowledge Quality Metrics
 
-Track knowledge effectiveness:
+Track knowledge effectiveness with these metrics:
 
 ```python
-# Metrics to capture for knowledge quality
+# OpenTelemetry metrics for knowledge quality
 knowledge_metrics = {
     "rag_retrieval_relevance": Histogram(
         "rag_retrieval_relevance_score",
@@ -312,22 +393,22 @@ knowledge_metrics = {
         buckets=[0.5, 0.6, 0.7, 0.8, 0.9, 0.95, 1.0]
     ),
 
-    "rag_context_usage": Counter(
-        "rag_context_usage_total",
+    "rag_document_usage": Counter(
+        "rag_document_usage_total",
         "How often each document is retrieved",
         ["document_id", "version"]
     ),
 
-    "diagnosis_with_rag_accuracy": Gauge(
-        "diagnosis_with_rag_accuracy",
-        "Accuracy of diagnoses using specific knowledge version",
-        ["domain", "version"]
+    "rag_ab_test_queries": Counter(
+        "rag_ab_test_queries_total",
+        "Queries served by A/B test variants",
+        ["test_id", "variant"]  # variant: "staged" or "active"
     ),
 
     "knowledge_staleness": Gauge(
         "knowledge_staleness_days",
         "Days since knowledge document was last updated",
-        ["document_id"]
+        ["document_id", "domain"]
     )
 }
 ```
@@ -343,82 +424,120 @@ histogram_quantile(0.5,
 
 # Most frequently used documents
 topk(10,
-  sum(rate(rag_context_usage_total[24h])) by (document_id)
+  sum(rate(rag_document_usage_total[24h])) by (document_id)
 )
 
-# Documents that may need updating
+# Documents that may need updating (stale > 180 days)
 knowledge_staleness_days > 180
 
-# Accuracy comparison between versions
-diagnosis_with_rag_accuracy{version="2.0.0"}
-  - diagnosis_with_rag_accuracy{version="1.0.0"}
+# A/B test traffic distribution
+sum(rate(rag_ab_test_queries_total[1h])) by (test_id, variant)
 ```
 
-## Knowledge Document Best Practices
+## Document Content Best Practices
 
-**DO:**
-- Use clear, structured content with sections
+### DO:
+- Use clear, structured content with markdown headings
 - Include specific symptoms, conditions, and recommendations
 - Add regional variations where applicable
-- Version all changes with meaningful changelogs
-- Test with A/B before major updates
+- Write for farmer comprehension (LLM will relay this content)
+- Include severity levels and urgency indicators
+- Provide actionable recommendations
 
-**DON'T:**
+### DON'T:
 - Mix multiple diseases/conditions in one document
-- Use overly technical language (farmers read these via LLM)
-- Remove information without archiving first
+- Use overly technical jargon without explanation
 - Skip the staging/review process for "small" changes
+- Leave documents without regional context
+- Create duplicate content across documents
 
-**Document Structure Template:**
+### Document Structure Template
 
 ```markdown
 # {Condition Name}
 
-# Overview
+## Overview
 Brief description of the condition.
 
-# Identification
-## Visual Symptoms
+## Identification
+
+### Visual Symptoms
 - Symptom 1
 - Symptom 2
 
-## Affected Plant Parts
+### Affected Plant Parts
 - Leaves, stems, roots, etc.
 
-# Conditions Favoring Development
+## Conditions Favoring Development
 - Environmental factors
 - Seasonal patterns
 - Regional variations
 
-# Severity Assessment
+## Severity Assessment
+
 | Level | Indicators | Urgency |
 |-------|------------|---------|
 | Low | ... | Monitor |
 | Moderate | ... | Treat within 1 week |
 | High | ... | Immediate action |
 
-# Recommendations
-## Immediate Actions
+## Recommendations
+
+### Immediate Actions
 1. Action 1
 2. Action 2
 
-## Preventive Measures
+### Preventive Measures
 1. Measure 1
 2. Measure 2
 
-## Product Recommendations
+### Product Recommendations
 - Product A: For severe cases
 - Product B: For prevention
 
-# Regional Notes
-## Highland (>1500m)
+## Regional Notes
+
+### Highland (>1500m)
 - Specific considerations
 
-## Lowland (<1500m)
+### Lowland (<1500m)
 - Specific considerations
+```
+
+## Troubleshooting
+
+### Document not appearing in queries
+
+1. Check document status is `active`
+2. Verify vectorization completed (`pinecone_ids` not empty)
+3. Check domain filter matches query
+
+```bash
+farmer-cli rag get --id doc-123
+# Look for: status=active, pinecone_ids=[...]
+```
+
+### A/B test not routing traffic
+
+1. Verify test is running
+2. Check traffic percentage
+3. Confirm staged version is vectorized
+
+```bash
+farmer-cli rag ab-test status --test-id test-456
+```
+
+### Rollback not working
+
+1. Check archived version exists
+2. Verify Pinecone namespace still has vectors
+
+```bash
+farmer-cli rag get --id doc-123 --version 2
+# Should show status=archived
 ```
 
 ---
 
-_Last Updated: 2025-12-22_
+_Last Updated: 2025-01-04_
 _Maintainer: Platform AI Team_
