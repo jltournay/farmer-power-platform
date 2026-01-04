@@ -128,7 +128,7 @@ _Single entry point for all platform documentation. This index ensures coherence
        ▼              ▼                            ▼
 ┌─────────────────────┐  ┌─────────────────────┐  ┌─────────────────────┐
 │ architecture/adr/   │  │ ai-model-developer- │  │ sprint-artifacts/   │
-│ ADR-001 to ADR-012  │  │ guide/ (12 files)   │  │ Story files + YAML  │
+│ ADR-001 to ADR-013  │  │ guide/ (12 files)   │  │ Story files + YAML  │
 │ (Tech Decisions)    │  │                     │  │                     │
 └──────────┬──────────┘  └─────────────────────┘  └─────────────────────┘
            │
@@ -162,6 +162,7 @@ Product Brief → Architecture → ADRs → Epics → Stories → Test Design �
 | ADR-010 | DAPR Patterns and Configuration | Stories 0.6.5, 0.6.6 |
 | ADR-011 | gRPC/FastAPI/DAPR Service Architecture | Stories 0.6.5, 0.6.6 |
 | ADR-012 | BFF Service Composition and API Design | Stories 0.5.4a, 0.5.4b |
+| ADR-013 | AI Model Configuration Cache with Change Streams | Story 0.75.x (AI Model Foundation) |
 
 ---
 
