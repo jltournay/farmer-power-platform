@@ -1,6 +1,6 @@
 # Story 0.75.9: Pydantic Model for RAG Document Storage
 
-**Status:** in-progress
+**Status:** done
 **GitHub Issue:** #107
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
@@ -395,7 +395,7 @@ From completed Story 0.75.8b:
 
 ### Agent Model Used
 
-{{agent_model_name_version}}
+Claude Opus 4.5 (claude-opus-4-5-20251101)
 
 ### Debug Log References
 
@@ -404,7 +404,14 @@ From completed Story 0.75.8b:
 ### File List
 
 **Created:**
-- (list new files)
+- `services/ai-model/src/ai_model/domain/rag_document.py` - RagDocument, RagChunk, SourceFile, RAGDocumentMetadata models + enums
+- `services/ai-model/src/ai_model/infrastructure/repositories/rag_document_repository.py` - RagDocumentRepository with CRUD + specialized queries
+- `tests/unit/ai_model/test_rag_document.py` - 29 unit tests for domain models
+- `tests/unit/ai_model/test_rag_document_repository.py` - 13 unit tests for repository
 
 **Modified:**
-- (list modified files with brief description)
+- `services/ai-model/src/ai_model/domain/__init__.py` - Added exports for new RAG models
+- `services/ai-model/src/ai_model/infrastructure/repositories/__init__.py` - Added RagDocumentRepository export
+
+**Architecture Deviation (Documented):**
+- Added `id` field to `RagDocument` (not in architecture spec) - Required for MongoDB `_id` mapping and `get_by_id()` operations. Format: `{document_id}:v{version}`

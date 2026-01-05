@@ -18,6 +18,7 @@ from datetime import UTC, datetime
 import pytest
 from ai_model.domain.rag_document import (
     ExtractionMethod,
+    FileType,
     KnowledgeDomain,
     RagChunk,
     RagDocument,
@@ -84,6 +85,16 @@ class TestExtractionMethod:
         assert set(actual_methods) == set(expected_methods)
 
 
+class TestFileType:
+    """Tests for FileType enum."""
+
+    def test_file_type_has_all_values(self) -> None:
+        """All expected file types are defined."""
+        expected_types = ["pdf", "docx", "md", "txt"]
+        actual_types = [t.value for t in FileType]
+        assert set(actual_types) == set(expected_types)
+
+
 class TestSourceFile:
     """Tests for SourceFile model."""
 
@@ -91,12 +102,12 @@ class TestSourceFile:
         """SourceFile can be created with required fields only."""
         source = SourceFile(
             filename="guide.pdf",
-            file_type="pdf",
+            file_type=FileType.PDF,
             blob_path="rag-documents/guide.pdf",
             file_size_bytes=1024,
         )
         assert source.filename == "guide.pdf"
-        assert source.file_type == "pdf"
+        assert source.file_type == FileType.PDF
         assert source.blob_path == "rag-documents/guide.pdf"
         assert source.file_size_bytes == 1024
         assert source.extraction_method is None
@@ -107,7 +118,7 @@ class TestSourceFile:
         """SourceFile can be created with all fields."""
         source = SourceFile(
             filename="guide.pdf",
-            file_type="pdf",
+            file_type=FileType.PDF,
             blob_path="rag-documents/guide.pdf",
             file_size_bytes=245760,
             extraction_method=ExtractionMethod.AZURE_DOC_INTEL,
@@ -123,7 +134,7 @@ class TestSourceFile:
         with pytest.raises(ValidationError) as exc_info:
             SourceFile(
                 filename="test.pdf",
-                file_type="pdf",
+                file_type=FileType.PDF,
                 blob_path="path/test.pdf",
                 file_size_bytes=-100,
             )
@@ -134,7 +145,7 @@ class TestSourceFile:
         with pytest.raises(ValidationError) as exc_info:
             SourceFile(
                 filename="test.pdf",
-                file_type="pdf",
+                file_type=FileType.PDF,
                 blob_path="path/test.pdf",
                 file_size_bytes=1024,
                 extraction_confidence=1.5,

@@ -165,7 +165,7 @@ development_status:
   0-75-7-cli-manage-agent-configuration: done  # github_issue: 101, fp-agent-config CLI
   0-75-8-event-flow-subscriber-publisher: done  # github_issue: 103, PR: #104, DAPR pub/sub integration
   0-75-8b-mcp-client-integration-agent-workflows: done  # github_issue: 105, PR: #106, MCP client from fp-common for agents
-  0-75-9-pydantic-model-rag-document-storage: in-progress  # RagDocument, RagChunk models
+  0-75-9-pydantic-model-rag-document-storage: done  # github_issue: 107 - RagDocument, RagChunk models
   0-75-10-grpc-model-rag-document: backlog  # Proto + gRPC service (metadata only)
   0-75-10b-basic-pdf-markdown-extraction: backlog  # PyMuPDF, Markdown parsing, async jobs
   0-75-10c-azure-document-intelligence-integration: backlog  # Scanned PDF OCR
@@ -175,7 +175,7 @@ development_status:
   0-75-13-rag-vector-storage: backlog  # Pinecone client/repository
   0-75-13b-rag-vectorization-pipeline: backlog  # Orchestrate embed + store, progress tracking
   0-75-14-rag-retrieval-service: backlog  # Similarity search, synthetic sample generator
-  0-75-15-rag-ranking-logic: backlog  # Re-ranking, domain boosting, golden samples
+  0-75-15-rag-ranking-logic: b/clearacklog  # Re-ranking, domain boosting, golden samples
   0-75-16-langgraph-sdk-integration-base-workflows: backlog  # Saga, checkpointing, async risk
   0-75-17-extractor-agent-implementation: backlog  # LangChain linear workflow, golden samples
   0-75-18-e2e-weather-observation-extraction-flow: blocked  # Blocked by: 2-12, 2-13 - E2E validation gate

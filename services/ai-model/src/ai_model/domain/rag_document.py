@@ -12,7 +12,6 @@ Key design decisions (see architecture/ai-model-architecture/rag-document-api.md
 
 from datetime import UTC, datetime
 from enum import Enum
-from typing import Literal
 
 from pydantic import BaseModel, Field
 
@@ -82,7 +81,7 @@ class SourceFile(BaseModel):
     """
 
     filename: str = Field(description="Original filename (e.g., 'blister-blight-guide.pdf')")
-    file_type: Literal["pdf", "docx", "md", "txt"] = Field(description="File type indicator")
+    file_type: FileType = Field(description="File type indicator")
     blob_path: str = Field(description="Azure Blob path to original file")
     file_size_bytes: int = Field(ge=0, description="File size in bytes")
     extraction_method: ExtractionMethod | None = Field(
