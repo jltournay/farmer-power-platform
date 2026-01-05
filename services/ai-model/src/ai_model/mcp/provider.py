@@ -53,8 +53,11 @@ class AgentToolProvider:
             List of GrpcMcpTool instances ready for LangGraph
 
         Raises:
-            ValueError: If a server is not registered
-            RuntimeError: If tool resolution fails
+            ValueError: If a server is not registered (from integration.get_tool)
+            KeyError: If tool is not found in cache (from integration.get_tool)
+
+        Note:
+            Exceptions from the underlying integration layer are propagated directly.
         """
         tools: list[GrpcMcpTool] = []
 
