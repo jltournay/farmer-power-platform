@@ -1,0 +1,40 @@
+agent_id: disease-diagnosis
+type: explorer
+version: "1.0.0"
+status: draft
+description: Analyzes quality issues and produces diagnosis with knowledge retrieval
+input:
+  event: ai.extraction.complete
+  schema:
+    required:
+      - farmer_id
+      - quality_data
+output:
+  event: ai.diagnosis.complete
+  schema:
+    fields:
+      - diagnosis_id
+      - category
+      - confidence
+      - recommendations
+llm:
+  model: anthropic/claude-3-5-sonnet
+  temperature: 0.3
+  max_tokens: 2000
+rag:
+  enabled: true
+  knowledge_domains:
+    - plant_diseases
+    - tea_cultivation
+  top_k: 5
+  min_similarity: 0.7
+mcp_sources:
+  - server: plantation
+    tools:
+      - get_farmer
+      - get_weather_history
+  - server: collection
+    tools:
+      - get_document
+metadata:
+  author: test-user

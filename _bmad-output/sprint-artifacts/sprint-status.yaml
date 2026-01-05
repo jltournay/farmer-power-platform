@@ -160,7 +160,7 @@ development_status:
   0-75-4-source-cache-agent-types-prompt-config: done  # github_issue: 95, ADR-013 cache pattern, extract to fp-common
   0-75-5-openrouter-llm-gateway-cost-management: done  # github_issue: 97, Model routing, cost tracking, resilience
   0-75-6-cli-manage-prompt-type-configuration: done  # github_issue: 99, fp-prompt-config CLI
-  0-75-7-cli-manage-agent-configuration: backlog  # fp-agent-config CLI
+  0-75-7-cli-manage-agent-configuration: done  # github_issue: 101, fp-agent-config CLI
   0-75-8-event-flow-subscriber-publisher: backlog  # DAPR pub/sub integration
   0-75-8b-mcp-client-integration-agent-workflows: backlog  # MCP client from fp-common for agents
   0-75-9-pydantic-model-rag-document-storage: backlog  # RagDocument, RagChunk models

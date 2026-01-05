@@ -1,0 +1,21 @@
+agent_id: bad-version
+type: extractor
+version: "not-semver"
+status: draft
+description: This config has an invalid version format
+input:
+  event: test.event
+  schema:
+    required: []
+output:
+  event: test.output
+  schema:
+    fields: []
+llm:
+  model: anthropic/claude-3-haiku
+  temperature: 0.1
+  max_tokens: 500
+extraction_schema:
+  required_fields: []
+metadata:
+  author: test-user
