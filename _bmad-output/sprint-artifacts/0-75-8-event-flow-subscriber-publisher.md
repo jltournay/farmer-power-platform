@@ -1,6 +1,6 @@
 # Story 0.75.8: Event Flow, Subscriber, and Publisher
 
-**Status:** in-progress
+**Status:** done
 **GitHub Issue:** #103
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
@@ -361,7 +361,7 @@ So that agents can be invoked via events and publish results asynchronously.
 - [ ] PR approved and merged (squash)
 - [ ] Local branch cleaned up: `git branch -d feature/0-75-8-event-flow-subscriber-publisher`
 
-**PR URL:** _______________ (fill in when created)
+**PR URL:** https://github.com/jltournay/farmer-power-platform/pull/104
 
 ---
 
