@@ -314,6 +314,19 @@ class TestEnableCommand:
 
         assert result.exit_code == 1
 
+    @patch("fp_agent_config.cli.AgentConfigClient")
+    def test_enable_calls_client_with_agent_id(self, mock_client_class):
+        """Test that enable command calls client.enable with correct agent_id."""
+        mock_client = AsyncMock()
+        mock_client.connect = AsyncMock()
+        mock_client.disconnect = AsyncMock()
+        mock_client.enable = AsyncMock(return_value=(True, None))
+        mock_client_class.return_value = mock_client
+
+        runner.invoke(app, ["enable", "--agent-id", "my-test-agent", "--env", "dev"])
+
+        mock_client.enable.assert_called_once_with("my-test-agent")
+
 
 class TestDisableCommand:
     """Tests for the disable command."""
@@ -344,6 +357,19 @@ class TestDisableCommand:
         result = runner.invoke(app, ["disable", "--agent-id", "test", "--env", "dev"])
 
         assert result.exit_code == 1
+
+    @patch("fp_agent_config.cli.AgentConfigClient")
+    def test_disable_calls_client_with_agent_id(self, mock_client_class):
+        """Test that disable command calls client.disable with correct agent_id."""
+        mock_client = AsyncMock()
+        mock_client.connect = AsyncMock()
+        mock_client.disconnect = AsyncMock()
+        mock_client.disable = AsyncMock(return_value=(True, None))
+        mock_client_class.return_value = mock_client
+
+        runner.invoke(app, ["disable", "--agent-id", "my-test-agent", "--env", "dev"])
+
+        mock_client.disable.assert_called_once_with("my-test-agent")
 
 
 class TestHelpText:

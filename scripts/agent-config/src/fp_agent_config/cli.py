@@ -8,6 +8,7 @@ import asyncio
 from pathlib import Path
 
 import typer
+import yaml
 from rich.console import Console
 from rich.table import Table
 
@@ -338,8 +339,6 @@ def get(
     environment = _validate_environment(env)
 
     async def run_get() -> None:
-        import yaml
-
         settings = get_settings()
         client = AgentConfigClient(settings, environment)
         try:
