@@ -637,20 +637,28 @@ So that structured data can be extracted from unstructured input.
 
 ### Story 0.75.18: E2E: Weather Observation Extraction Flow
 
-**Story File:** Not yet created | Status: Backlog
+**Story File:** Not yet created | Status: Blocked
+**Blocked By:** Story 2-12 (Collection Event-Driven), Story 2-13 (Thumbnail Generation)
 
 As a **developer**,
 I want end-to-end validation of the weather extraction flow,
 So that the AI Model integration is proven before building more agents.
 
-**Sub-tasks:**
-1. Adapt Collection Model for AI Model compliance (GitHub #81, #88)
-2. Create working prompts and agent configuration for weather extraction
-3. Replace AI mock container with real AI Model container in E2E infrastructure
-4. Add test validating weather observation updates plantation model
+**Scope (Revised 2026-01-05):**
+1. AI Model Docker image builds and runs in E2E infrastructure
+2. Create weather-extractor agent configuration (YAML)
+3. Create weather-extractor prompt
+4. Replace AI mock container with real AI Model container in E2E infrastructure
+5. E2E test: weather observation → AI extraction → plantation update
+
+**Out of Scope (moved to Epic 2):**
+- Collection Model async event refactor → Story 2-12 (GitHub #81)
+- Thumbnail generation → Story 2-13 (GitHub #88)
 
 **Acceptance Criteria:**
-- E2E test passes with real AI Model container
+- AI Model Docker image builds successfully in CI
+- AI Model container starts and passes health checks in E2E infrastructure
+- E2E test passes with real AI Model container (not mock)
 - Weather data extracted and stored correctly
 - Plantation model updated via event flow
 

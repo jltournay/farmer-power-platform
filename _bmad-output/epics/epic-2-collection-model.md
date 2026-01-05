@@ -762,6 +762,61 @@ During Story 0.4.6 (Weather Data Ingestion), multiple production code bugs were 
 
 ---
 
+### Story 2.12: Collection → AI Model Event-Driven Communication
+
+**[📄 Story File](../sprint-artifacts/2-12-collection-ai-model-event-driven-communication.md)** | Status: Blocked
+**Blocked By:** Story 0.75.17 (Extractor Agent Implementation)
+**Blocks:** Story 0.75.18 (E2E Weather Observation Extraction Flow)
+**GitHub Issue:** #81
+
+As a **platform developer**,
+I want Collection Model to communicate with AI Model via async events instead of synchronous gRPC,
+So that the system follows the architecture specification and scales properly.
+
+**Scope:**
+- Add event publishing after document storage (`collection.document.received`)
+- Add event subscription for AI results (`ai.extraction.complete`)
+- Remove/deprecate synchronous `AiModelClient.extract()` method
+- Follow dead letter queue pattern (ADR-006)
+
+**Acceptance Criteria:**
+- Collection Model publishes `collection.document.received` event after document storage
+- Collection Model subscribes to `ai.extraction.complete` events
+- Document updated with extracted fields via event handler
+- No synchronous gRPC calls for extraction workflow
+- Unit tests cover event publishing and subscription
+- `test_05_weather_ingestion.py` marked as xfail (replaced by Story 0.75.18)
+
+---
+
+### Story 2.13: Thumbnail Generation for AI Tiered Vision Processing
+
+**[📄 Story File](../sprint-artifacts/2-13-thumbnail-generation-tiered-vision.md)** | Status: Blocked
+**Blocked By:** Story 0.75.17 (Extractor Agent Implementation)
+**Blocks:** Story 0.75.18 (E2E Weather Observation Extraction Flow), Story 0.75.22 (Tiered-Vision Agent)
+**GitHub Issue:** #88
+
+As a **platform operator**,
+I want Collection Model to generate thumbnails at image ingestion time,
+So that AI Model's Tiered Vision processing can reduce LLM costs by 57%.
+
+**Scope:**
+- Add Pillow dependency and ThumbnailGenerator service
+- Generate 256x256 JPEG thumbnails at image ingestion
+- Store thumbnails in blob storage alongside originals
+- Update document schema with `thumbnail_url` field
+- Add `get_document_thumbnail` MCP tool
+- Update event payload with `has_thumbnail` flag
+
+**Acceptance Criteria:**
+- Images ingested via ZIP processor have thumbnails generated
+- Thumbnails stored in blob storage alongside originals
+- Document records include `thumbnail_url` field
+- `get_document_thumbnail` MCP tool returns thumbnail bytes
+- Unit tests for thumbnail generation
+
+---
+
 ## Retrospective
 
 **[📋 Epic 2 Retrospective](../sprint-artifacts/epic-2-retro-2025-12-27.md)** | Completed: 2025-12-27

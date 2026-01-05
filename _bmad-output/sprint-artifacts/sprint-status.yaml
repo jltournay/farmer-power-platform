@@ -77,7 +77,7 @@ development_status:
 
   # Epic 2: Quality Data Ingestion (REVISED - BLOB_TRIGGER architecture)
   # Dependencies: Epic 0, Epic 1
-  epic-2: in-progress  # Reopened for tech debt story 2-10
+  epic-2: in-progress  # Reopened for stories 2-12, 2-13 (AI Model integration prerequisites)
   2-1-collection-model-service-setup: done  # github_issue: 16
   2-2-source-configuration-cli: done  # github_issue: 17
   2-3-event-grid-trigger-handler: done  # github_issue: 18
@@ -89,6 +89,8 @@ development_status:
   2-9-collection-model-mcp-server: done  # github_issue: 23
   2-10-collection-model-repository-refactoring: done  # github_issue: 35 - Tech debt: Pydantic models + repository pattern
   2-11-source-config-cli-schema-alignment: done  # github_issue: 36 - Tech debt: CLI writes nested schema, Collection Model expects flat
+  2-12-collection-ai-model-event-driven-communication: blocked  # github_issue: 81 - Blocked by: 0.75.17, Blocks: 0.75.18
+  2-13-thumbnail-generation-tiered-vision: blocked  # github_issue: 88 - Blocked by: 0.75.17, Blocks: 0.75.18, 0.75.22
   epic-2-retrospective: done
 
   # Epic 0.4: E2E Test Scenarios for Plantation & Collection Models
@@ -176,7 +178,7 @@ development_status:
   0-75-15-rag-ranking-logic: backlog  # Re-ranking, domain boosting, golden samples
   0-75-16-langgraph-sdk-integration-base-workflows: backlog  # Saga, checkpointing, async risk
   0-75-17-extractor-agent-implementation: backlog  # LangChain linear workflow, golden samples
-  0-75-18-e2e-weather-observation-extraction-flow: backlog  # github_issue: 81, 88 - Validation gate
+  0-75-18-e2e-weather-observation-extraction-flow: blocked  # Blocked by: 2-12, 2-13 - E2E validation gate
   0-75-19-explorer-agent-implementation: backlog  # LangGraph + RAG, golden samples
   0-75-20-generator-agent-implementation: backlog  # LangGraph + RAG, multi-format, golden samples
   0-75-21-conversational-agent-implementation: backlog  # Two LLM calls, state management, golden samples
