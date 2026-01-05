@@ -4,6 +4,87 @@ Five agent types are implemented in code, each with a specific workflow pattern.
 
 > **Implementation details:** See `ai-model-developer-guide/3-agent-development.md` for creating new agents and `ai-model-developer-guide/1-sdk-framework.md` for LangChain vs LangGraph usage patterns.
 
+---
+
+## Critical Principle: Configuration-Driven Agents (NO CODE Required)
+
+> **⚠️ ARCHITECTURAL DECISION: Agent types are generic, reusable patterns. Specific analyses are created ENTIRELY through configuration.**
+
+```
+┌─────────────────────────────────────────────────────────────────────────┐
+│                    CONFIGURATION-DRIVEN AGENTS                           │
+├─────────────────────────────────────────────────────────────────────────┤
+│                                                                         │
+│  IMPLEMENTED ONCE IN CODE (5 types):                                    │
+│  ┌─────────────────────────────────────────────────────────────────┐   │
+│  │  • Extractor   - Generic extraction workflow                    │   │
+│  │  • Explorer    - Generic analysis workflow                      │   │
+│  │  • Generator   - Generic content generation workflow            │   │
+│  │  • Conversational - Generic dialogue workflow                   │   │
+│  │  • Tiered-Vision - Generic two-tier image analysis workflow     │   │
+│  │                                                                  │   │
+│  │  ⚠️ NO NEW CODE is written for these types                       │   │
+│  └─────────────────────────────────────────────────────────────────┘   │
+│                              │                                          │
+│                              │ Instances created via                    │
+│                              ▼                                          │
+│  CONFIGURATION ONLY (YAML + MongoDB):                                   │
+│  ┌─────────────────────────────────────────────────────────────────┐   │
+│  │  config/agents/disease-diagnosis.yaml  ─► Explorer instance     │   │
+│  │  config/agents/weather-analyzer.yaml   ─► Explorer instance     │   │
+│  │  config/agents/technique-advisor.yaml  ─► Explorer instance     │   │
+│  │  config/agents/qc-event-extractor.yaml ─► Extractor instance    │   │
+│  │  config/agents/leaf-quality-screen.yaml ─► Tiered-Vision inst.  │   │
+│  │  config/agents/farmer-voice-advisor.yaml ─► Conversational inst.│   │
+│  │                                                                  │   │
+│  │  ⚠️ NO NEW CODE - only YAML configuration + prompts in MongoDB   │   │
+│  └─────────────────────────────────────────────────────────────────┘   │
+│                                                                         │
+│  WHAT CONFIGURATION PROVIDES:                                           │
+│  • Which agent type to use (type: explorer, extractor, etc.)           │
+│  • Input/output event contracts                                         │
+│  • MCP data sources to fetch from                                       │
+│  • LLM model selection and parameters                                   │
+│  • RAG knowledge domains                                                │
+│  • Routing thresholds (for tiered-vision)                              │
+│  • Session settings (for conversational)                                │
+│                                                                         │
+│  PROMPTS (stored in MongoDB, NOT in code):                              │
+│  • System prompts per agent instance                                    │
+│  • Output schema definitions                                            │
+│  • Few-shot examples                                                    │
+│  • Hot-reloadable without deployment                                    │
+│                                                                         │
+└─────────────────────────────────────────────────────────────────────────┘
+```
+
+### To Add a New Analysis (e.g., "Soil Quality Analyzer")
+
+| Step | Action | Code Required? |
+|------|--------|----------------|
+| 1 | Create `config/agents/soil-quality-analyzer.yaml` | ❌ No |
+| 2 | Set `type: explorer` (reuses existing Explorer workflow) | ❌ No |
+| 3 | Configure MCP sources, LLM model, RAG domains | ❌ No |
+| 4 | Add prompts to MongoDB via CLI: `fp-prompt-config deploy` | ❌ No |
+| 5 | Deploy config via CI/CD: `fp-agent-config deploy` | ❌ No |
+
+**Result:** New "Soil Quality Analyzer" agent is live - zero lines of Python written.
+
+### When IS Code Required?
+
+| Scenario | Code Required? |
+|----------|----------------|
+| New analysis using existing agent type | ❌ No - configuration only |
+| New prompt for existing agent | ❌ No - MongoDB only |
+| Changing LLM model or parameters | ❌ No - YAML only |
+| Adding new MCP data source | ❌ No - YAML only |
+| **New agent TYPE with different workflow** | ✅ Yes - new LangGraph workflow |
+| **New MCP server (new domain model)** | ✅ Yes - new gRPC service |
+
+**Rule:** If the workflow pattern exists (extract, analyze, generate, converse, tiered-vision), use configuration. Only write code for fundamentally new workflow patterns.
+
+---
+
 ```
 ┌─────────────────────────────────────────────────────────────────────────┐
 │                         AGENT TYPES (5)                                  │

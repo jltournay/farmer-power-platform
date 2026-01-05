@@ -18,6 +18,85 @@
 | **Explorer** | LangGraph | Complex workflows - iterative analysis, conditional RAG, confidence-based re-analysis |
 | **Generator** | LangGraph | Complex workflows - multiple outputs, prioritization, translation with quality checks |
 | **Conversational** | LangGraph | Multi-turn dialogue requiring session state, context management, and channel routing |
+| **Tiered-Vision** | LangGraph | Two-tier image processing with conditional routing - screen (Haiku) → diagnose (Sonnet) |
+
+---
+
+## Critical Principle: Configuration-Driven Agents (NO CODE Required)
+
+> **⚠️ IMPORTANT: The 5 agent types above are GENERIC, REUSABLE PATTERNS implemented once in code. To create a new analysis or agent instance, you write ZERO Python code - only YAML configuration + prompts in MongoDB.**
+
+### What This Means for Developers
+
+| To Create... | You Need | Code Required? |
+|--------------|----------|----------------|
+| New disease analyzer | YAML config (`type: explorer`) + prompts | ❌ No |
+| New data extractor | YAML config (`type: extractor`) + prompts | ❌ No |
+| New content generator | YAML config (`type: generator`) + prompts | ❌ No |
+| New chatbot persona | YAML config (`type: conversational`) + prompts | ❌ No |
+| New image classifier | YAML config (`type: tiered-vision`) + prompts | ❌ No |
+
+### Example: Adding "Weather Impact Analyzer"
+
+```bash
+# Step 1: Create configuration (NO CODE)
+cat > config/agents/weather-impact-analyzer.yaml << EOF
+agent:
+  id: "weather-impact-analyzer"
+  type: explorer                    # Reuses existing Explorer workflow
+  version: "1.0.0"
+  description: "Correlates quality issues with weather patterns"
+
+  input:
+    event: "collection.quality_event.created"
+    schema:
+      required: [doc_id, farmer_id, region]
+
+  output:
+    event: "ai.weather_analysis.complete"
+    schema:
+      fields: [correlation, confidence, weather_factors, recommendations]
+
+  mcp_sources:
+    - server: collection
+      tools: [get_document, get_quality_events]
+    - server: plantation
+      tools: [get_weather_history, get_region_climate]
+
+  llm:
+    model: "anthropic/claude-3-5-sonnet"
+    temperature: 0.3
+    max_tokens: 1500
+
+  rag:
+    enabled: true
+    knowledge_domains: [weather_patterns, tea_climate_sensitivity]
+    top_k: 5
+EOF
+
+# Step 2: Add prompts to MongoDB (NO CODE)
+fp-prompt-config deploy prompts/weather-analyzer.yaml
+
+# Step 3: Deploy configuration (NO CODE)
+fp-agent-config deploy config/agents/weather-impact-analyzer.yaml
+
+# Result: New agent is live - ZERO lines of Python written
+```
+
+### When IS Code Required?
+
+| Scenario | Code Required? |
+|----------|----------------|
+| New agent using existing type | ❌ No - YAML + prompts only |
+| Changing prompts | ❌ No - MongoDB hot-reload |
+| Switching LLM models | ❌ No - YAML only |
+| Adding RAG knowledge | ❌ No - Pinecone + config |
+| **New workflow pattern** (6th agent type) | ✅ Yes - new LangGraph workflow |
+| **New MCP server** (new domain model) | ✅ Yes - new gRPC service |
+
+**Rule:** The code examples in this guide show how the GENERIC workflows work. You don't copy/modify them for each new analysis - you configure instances via YAML.
+
+---
 
 ## When to Use LangChain vs LangGraph
 
@@ -721,6 +800,297 @@ agent:
     on_stt_failure: "send_sms_with_details"
     on_timeout: "polite_goodbye"
     on_max_turns: "summarize_and_close"
+```
+
+---
+
+### Tiered-Vision Agent Graph (Cost-Optimized Image Analysis)
+
+The Tiered-Vision agent type handles cost-optimized image analysis by using a two-tier approach: fast screening with a cheap model, then conditional escalation to an expensive model only when needed.
+
+**Architecture Overview:**
+
+```
+┌───────────────────────────────────────────────────────────────────┐
+│                  TIERED-VISION AGENT PATTERN                       │
+├───────────────────────────────────────────────────────────────────┤
+│                                                                    │
+│   Event ──► Fetch Thumbnail ──► Screen (Haiku) ──► Route          │
+│                                       │                            │
+│                    ┌──────────────────┼──────────────────┐        │
+│                    ▼                  ▼                  ▼         │
+│               "healthy"        "obvious_issue"    "needs_expert"   │
+│                    │                  │                  │         │
+│                    ▼                  ▼                  ▼         │
+│              Skip (40%)      Haiku Only (25%)    Tier 2 (35%)     │
+│                                                         │         │
+│                                                         ▼         │
+│                                    Fetch Original + RAG + Sonnet  │
+│                                                         │         │
+│                                                         ▼         │
+│                                                   Deep Diagnosis   │
+│                                                                    │
+│   Cost Savings: 57% vs all-Sonnet approach                        │
+│                                                                    │
+└───────────────────────────────────────────────────────────────────┘
+```
+
+**Tiered-Vision State Definition:**
+
+```python
+from langgraph.graph import StateGraph, END
+from langgraph.checkpoint.mongodb import MongoDBSaver
+from typing import TypedDict, Optional, Literal
+
+class TieredVisionState(TypedDict):
+    # Input
+    doc_id: str
+    thumbnail_url: str
+    original_url: str
+    metadata: dict
+
+    # Tier 1: Screening
+    screen_result: Optional[dict]  # {classification, confidence, reason}
+    screen_route: Literal["skip", "haiku_only", "tier2"]
+
+    # Tier 2: Deep diagnosis (only populated if escalated)
+    original_image: Optional[bytes]
+    farmer_context: Optional[dict]
+    rag_context: list[str]
+    diagnosis: Optional[dict]
+
+    # Output
+    final_result: dict
+    tier_used: Literal["tier1", "tier2"]
+    cost_saved: bool  # True if Tier 2 was skipped
+
+
+def create_tiered_vision_graph():
+    """
+    LangGraph for cost-optimized image analysis.
+    57% cost savings by screening with Haiku first.
+    """
+    workflow = StateGraph(TieredVisionState)
+
+    # Add nodes
+    workflow.add_node("fetch_thumbnail", fetch_thumbnail_node)
+    workflow.add_node("screen", screen_node)
+    workflow.add_node("output_tier1", output_tier1_node)
+    workflow.add_node("fetch_original", fetch_original_node)
+    workflow.add_node("build_context", build_context_node)
+    workflow.add_node("retrieve_rag", retrieve_rag_node)
+    workflow.add_node("diagnose", diagnose_node)
+    workflow.add_node("output_tier2", output_tier2_node)
+
+    # Entry point
+    workflow.set_entry_point("fetch_thumbnail")
+
+    # Linear flow for Tier 1
+    workflow.add_edge("fetch_thumbnail", "screen")
+
+    # Conditional routing based on screen result
+    workflow.add_conditional_edges(
+        "screen",
+        route_by_screen_result,
+        {
+            "skip": "output_tier1",           # Healthy - no diagnosis needed
+            "haiku_only": "output_tier1",     # Obvious issue - Haiku sufficient
+            "tier2": "fetch_original"         # Needs expert - escalate
+        }
+    )
+
+    workflow.add_edge("output_tier1", END)
+
+    # Tier 2 flow
+    workflow.add_edge("fetch_original", "build_context")
+    workflow.add_edge("build_context", "retrieve_rag")
+    workflow.add_edge("retrieve_rag", "diagnose")
+    workflow.add_edge("diagnose", "output_tier2")
+    workflow.add_edge("output_tier2", END)
+
+    # Compile with MongoDB checkpointing
+    checkpointer = MongoDBSaver.from_conn_string(
+        conn_string=os.environ["MONGODB_URI"],
+        db_name="ai_model",
+        collection_name="workflow_checkpoints"
+    )
+
+    return workflow.compile(checkpointer=checkpointer)
+
+
+def route_by_screen_result(state: TieredVisionState) -> str:
+    """Route based on Tier 1 screening result."""
+    screen = state["screen_result"]
+    classification = screen["classification"]
+    confidence = screen["confidence"]
+
+    if classification == "healthy" and confidence >= 0.85:
+        return "skip"
+    elif classification == "obvious_issue" and confidence >= 0.75:
+        return "haiku_only"
+    else:
+        return "tier2"
+```
+
+**Tier 1: Screening Node (Haiku - Fast & Cheap):**
+
+```python
+async def screen_node(state: TieredVisionState) -> dict:
+    """
+    Fast screening using thumbnail and Haiku.
+    Cost: ~$0.001/image
+    """
+    from ai_model.config import settings
+
+    llm = LLMGateway(settings=settings)
+
+    # Fetch thumbnail via Collection MCP
+    thumbnail = await collection_mcp.get_document_thumbnail(state["doc_id"])
+
+    system_prompt = """You are a tea leaf quality screening agent.
+
+Analyze this thumbnail image and classify into one of these categories:
+- "healthy": Leaf appears healthy, no visible issues
+- "obvious_issue": Clear, easily identifiable problem (e.g., obvious disease, damage)
+- "needs_expert": Ambiguous or complex issue requiring detailed analysis
+
+Respond in JSON: {"classification": "...", "confidence": 0.0-1.0, "reason": "..."}"""
+
+    response = await llm.complete(
+        model="anthropic/claude-3-haiku",  # Fast, cheap screening
+        messages=[
+            {"role": "system", "content": system_prompt},
+            {
+                "role": "user",
+                "content": [
+                    {"type": "image", "source": {"type": "base64", "data": thumbnail}},
+                    {"type": "text", "text": f"Metadata: {state.get('metadata', {})}"}
+                ]
+            },
+        ],
+        max_tokens=200,
+        temperature=0.1,
+    )
+
+    screen_result = json.loads(response.content)
+
+    return {"screen_result": screen_result}
+```
+
+**Tier 2: Deep Diagnosis Node (Sonnet - High Quality):**
+
+```python
+async def diagnose_node(state: TieredVisionState) -> dict:
+    """
+    Deep diagnosis using original image, farmer context, and RAG.
+    Cost: ~$0.012/image
+    Only called for 35% of images (needs_expert cases).
+    """
+    from ai_model.config import settings
+
+    llm = LLMGateway(settings=settings)
+
+    farmer = state.get("farmer_context", {})
+    rag = state.get("rag_context", [])
+
+    system_prompt = f"""You are an expert tea leaf disease diagnosis agent.
+
+Analyze this full-resolution image with complete context to provide detailed diagnosis.
+
+FARMER CONTEXT:
+- Farm: {farmer.get('farm_name', 'unknown')}
+- Region: {farmer.get('region', 'unknown')}
+- Recent Weather: {farmer.get('weather_summary', 'unknown')}
+- Historical Issues: {farmer.get('past_issues', [])}
+
+AGRONOMIC KNOWLEDGE:
+{chr(10).join(rag) if rag else 'No specific knowledge retrieved.'}
+
+Provide diagnosis in JSON format:
+{{
+  "condition": "disease/pest/nutrient/environmental/handling",
+  "specific_issue": "name of specific issue",
+  "confidence": 0.0-1.0,
+  "severity": "low/medium/high",
+  "evidence": ["list of visual evidence"],
+  "recommendations": ["list of actionable recommendations"],
+  "requires_followup": true/false
+}}"""
+
+    response = await llm.complete(
+        model="anthropic/claude-3-5-sonnet",  # High quality diagnosis
+        messages=[
+            {"role": "system", "content": system_prompt},
+            {
+                "role": "user",
+                "content": [
+                    {"type": "image", "source": {"type": "base64", "data": state["original_image"]}},
+                    {"type": "text", "text": "Provide detailed diagnosis."}
+                ]
+            },
+        ],
+        max_tokens=1000,
+        temperature=0.3,
+    )
+
+    diagnosis = json.loads(response.content)
+
+    return {"diagnosis": diagnosis, "tier_used": "tier2", "cost_saved": False}
+```
+
+**Tiered-Vision Agent Instance Configuration:**
+
+```yaml
+# src/agents/instances/tiered-vision/leaf-quality-screen.yaml
+agent:
+  id: "leaf-quality-screen"
+  type: tiered-vision
+  version: "1.0.0"
+  description: "Cost-optimized leaf quality image analysis"
+
+  input:
+    event: "collection.poor_quality_detected"
+    schema:
+      required: [doc_id, thumbnail_url]
+      optional: [original_url, metadata]
+
+  tier1:
+    llm:
+      model: "anthropic/claude-3-haiku"
+      temperature: 0.1
+      max_tokens: 200
+    routing:
+      healthy_threshold: 0.85      # Skip Tier 2 if confidence >= this
+      obvious_threshold: 0.75      # Haiku-only if confidence >= this
+
+  tier2:
+    llm:
+      model: "anthropic/claude-3-5-sonnet"
+      temperature: 0.3
+      max_tokens: 1000
+    mcp_sources:
+      - server: collection
+        tools: [get_document, get_document_image]
+      - server: plantation
+        tools: [get_farmer, get_weather_history]
+    rag:
+      enabled: true
+      knowledge_domains: [tea_diseases, pest_identification, nutrient_deficiency]
+      top_k: 5
+
+  output:
+    event: "ai.diagnosis.complete"
+    schema:
+      condition: string
+      confidence: number
+      tier_used: enum
+      cost_saved: boolean
+
+  cost_optimization:
+    expected_tier1_skip_rate: 0.40    # 40% healthy images
+    expected_tier1_only_rate: 0.25    # 25% obvious issues
+    expected_tier2_rate: 0.35         # 35% need expert analysis
+    estimated_daily_savings: 57%       # vs all-Sonnet approach
 ```
 
 ---
