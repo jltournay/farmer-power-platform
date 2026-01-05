@@ -207,11 +207,11 @@ So that agents can be deployed and updated without code changes.
   - [x] Verify no regressions
   - [x] Capture test output in story file
 
-- [ ] **Task 23: CI Verification** (AC: #20)
-  - [ ] Run `ruff check .` - lint passes
-  - [ ] Run `ruff format --check .` - format passes
-  - [ ] Push and verify CI passes
-  - [ ] Trigger E2E CI workflow and verify passes
+- [x] **Task 23: CI Verification** (AC: #20)
+  - [x] Run `ruff check .` - lint passes
+  - [x] Run `ruff format --check .` - format passes
+  - [x] Push and verify CI passes (Run ID: 20708104019)
+  - [x] Trigger E2E CI workflow and verify passes (Run ID: 20708173334)
 
 ## Git Workflow (MANDATORY)
 
@@ -228,9 +228,9 @@ So that agents can be deployed and updated without code changes.
 **Branch name:** `feature/0-75-7-cli-manage-agent-configuration`
 
 ### During Development
-- [ ] All commits reference GitHub issue: `Relates to #XX`
-- [ ] Commits are atomic by type (production, test, seed - not mixed)
-- [ ] Push to feature branch: `git push -u origin feature/0-75-7-cli-manage-agent-configuration`
+- [x] All commits reference GitHub issue: `Relates to #101`
+- [x] Commits are atomic by type (production, test, seed - not mixed)
+- [x] Push to feature branch: `git push -u origin feature/0-75-7-cli-manage-agent-configuration`
 
 ### Story Done
 - [ ] Create Pull Request: `gh pr create --title "Story 0.75.7: CLI to Manage Agent Configuration" --base main`
@@ -311,9 +311,9 @@ git push origin feature/0-75-7-cli-manage-agent-configuration
 # Wait ~30s, then check CI status
 gh run list --branch feature/0-75-7-cli-manage-agent-configuration --limit 3
 ```
-**CI Run ID:** _______________
-**CI E2E Status:** [ ] Passed / [ ] Failed
-**Verification Date:** _______________
+**CI Run ID:** 20708104019 (CI), 20708173334 (E2E)
+**CI E2E Status:** [x] Passed / [ ] Failed
+**Verification Date:** 2026-01-05
 
 ---
 
