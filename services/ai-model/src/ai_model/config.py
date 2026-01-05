@@ -105,6 +105,14 @@ class Settings(BaseSettings):
     # Timeout for agent execution in event handlers (seconds)
     event_handler_execution_timeout_s: int = 30
 
+    # ========================================
+    # MCP Integration Configuration (Story 0.75.8b)
+    # ========================================
+
+    # TTL for discovered MCP tools cache (seconds)
+    # After this duration, tools are re-discovered from MCP servers
+    mcp_tool_cache_ttl_seconds: int = 300  # 5 minutes
+
 
 # Global settings instance
 settings = Settings()
