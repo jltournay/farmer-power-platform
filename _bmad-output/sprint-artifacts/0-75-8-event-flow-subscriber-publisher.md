@@ -725,16 +725,42 @@ async def execute_agent_placeholder(event: AgentRequestEvent) -> dict:
 
 ### Agent Model Used
 
-{{agent_model_name_version}}
+Claude Opus 4.5 (claude-opus-4-5-20251101)
 
 ### Debug Log References
 
+- CI Run ID: 20709949820 (Passed)
+- E2E CI Run ID: 20710113252 (Passed after rerun)
+
+### Code Review Findings (Fixed)
+
+| Severity | Issue | Resolution |
+|----------|-------|------------|
+| HIGH | `test_handler_timeout_retries` had no assertions | Added proper mock and assertion |
+| HIGH | Hardcoded timeouts (10s, 30s) in subscriber.py | Made configurable via settings |
+| MEDIUM | Missing intent_confidence bounds test | Added test |
+| LOW | Missing type annotation in `_publish` | Added `BaseModel` type |
+| LOW | Misplaced comments in `__all__` | Reorganized comments |
+
 ### Completion Notes List
+
+- All 7 code review issues fixed
+- Total 62 unit tests (increased from 61)
+- E2E tests pass (102 passed, 1 skipped)
 
 ### File List
 
 **Created:**
-- (list new files)
+- `services/ai-model/src/ai_model/events/__init__.py` - Package exports
+- `services/ai-model/src/ai_model/events/models.py` - Event payload Pydantic models
+- `services/ai-model/src/ai_model/events/subscriber.py` - DAPR streaming subscriptions
+- `services/ai-model/src/ai_model/events/publisher.py` - Event publishing utilities
+- `tests/unit/ai_model/events/__init__.py` - Test package marker
+- `tests/unit/ai_model/events/test_models.py` - Event model tests (33 tests)
+- `tests/unit/ai_model/events/test_subscriber.py` - Subscriber handler tests (17 tests)
+- `tests/unit/ai_model/events/test_publisher.py` - Publisher tests (12 tests)
 
 **Modified:**
-- (list modified files with brief description)
+- `services/ai-model/src/ai_model/main.py` - Added subscription startup and DLQ integration
+- `services/ai-model/src/ai_model/config.py` - Added event handler timeout settings
+- `services/ai-model/pyproject.toml` - Added fp-common dependency

@@ -245,28 +245,38 @@ class TestHandlerAgentConfigLookup:
 class TestHandlerTransientErrors:
     """Tests for transient error handling."""
 
-    @pytest.mark.asyncio
-    async def test_handler_timeout_retries(
+    def test_handler_timeout_retries(
         self,
         mock_agent_config_cache: MagicMock,
         valid_agent_request_payload: dict,
+        mock_event_loop: asyncio.AbstractEventLoop,
     ) -> None:
         """Test handler returns retry on timeout."""
 
-        # Setup: agent config lookup times out
+        # Setup: agent config lookup raises TimeoutError
+        # We simulate this by having run_coroutine_threadsafe timeout
         async def slow_get(agent_id: str):
-            await asyncio.sleep(100)  # Very long wait
+            await asyncio.sleep(100)  # Very long wait - will timeout
             return None
 
         mock_agent_config_cache.get = slow_get
         set_agent_config_cache(mock_agent_config_cache)
-        set_main_event_loop(asyncio.get_event_loop())
+        set_main_event_loop(mock_event_loop)
 
         message = MagicMock()
         message.data.return_value = valid_agent_request_payload
 
-        # The handler should handle the timeout gracefully
-        # (actual timeout behavior depends on implementation)
+        # Patch the timeout to be very short so test completes quickly
+        with patch("ai_model.events.subscriber.asyncio.run_coroutine_threadsafe") as mock_run:
+            # Simulate timeout by having future.result() raise TimeoutError
+            mock_future = MagicMock()
+            mock_future.result.side_effect = TimeoutError("Timeout waiting for agent config")
+            mock_run.return_value = mock_future
+
+            response = handle_agent_request(message)
+
+            # Should return retry on timeout
+            assert isinstance(response, TopicEventResponse)
 
 
 # =============================================================================

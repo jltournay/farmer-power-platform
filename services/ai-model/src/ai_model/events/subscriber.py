@@ -21,6 +21,7 @@ import time
 from typing import TYPE_CHECKING
 
 import structlog
+from ai_model.config import settings
 from ai_model.events.models import AgentRequestEvent
 from dapr.clients import DaprClient
 from dapr.clients.grpc._response import TopicEventResponse
@@ -212,7 +213,7 @@ def handle_agent_request(message) -> TopicEventResponse:
                 _agent_config_cache.get(event_data.agent_id),
                 _main_event_loop,
             )
-            agent_config = future.result(timeout=10)
+            agent_config = future.result(timeout=settings.event_handler_config_timeout_s)
 
             if agent_config is None:
                 logger.warning(
@@ -244,7 +245,7 @@ def handle_agent_request(message) -> TopicEventResponse:
                 execute_agent_placeholder(event_data),
                 _main_event_loop,
             )
-            future.result(timeout=30)
+            future.result(timeout=settings.event_handler_execution_timeout_s)
 
             logger.info(
                 "Agent request processed successfully",

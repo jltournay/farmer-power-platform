@@ -16,6 +16,7 @@ from ai_model.events.models import (
 )
 from dapr.clients import DaprClient
 from opentelemetry import trace
+from pydantic import BaseModel
 
 logger = structlog.get_logger(__name__)
 tracer = trace.get_tracer(__name__)
@@ -97,7 +98,7 @@ class EventPublisher:
             cost_usd=str(event.cost_usd),
         )
 
-    async def _publish(self, topic: str, event) -> None:
+    async def _publish(self, topic: str, event: BaseModel) -> None:
         """Internal method to publish an event to DAPR pub/sub.
 
         Args:

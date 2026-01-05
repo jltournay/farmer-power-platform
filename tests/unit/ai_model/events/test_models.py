@@ -231,6 +231,37 @@ class TestConversationalAgentResult:
                 turn_number=0,  # Invalid - must be >= 1
             )
 
+    def test_conversational_result_intent_confidence_bounds(self) -> None:
+        """Test intent_confidence bounds (0.0-1.0) enforcement."""
+        # Valid bounds
+        result = ConversationalAgentResult(
+            response_text="Test",
+            detected_intent="test",
+            intent_confidence=0.0,
+            session_id="session-123",
+            turn_number=1,
+        )
+        assert result.intent_confidence == 0.0
+
+        result = ConversationalAgentResult(
+            response_text="Test",
+            detected_intent="test",
+            intent_confidence=1.0,
+            session_id="session-123",
+            turn_number=1,
+        )
+        assert result.intent_confidence == 1.0
+
+        # Invalid: > 1.0
+        with pytest.raises(ValidationError):
+            ConversationalAgentResult(
+                response_text="Test",
+                detected_intent="test",
+                intent_confidence=1.5,  # Invalid - must be <= 1.0
+                session_id="session-123",
+                turn_number=1,
+            )
+
 
 class TestTieredVisionAgentResult:
     """Tests for TieredVisionAgentResult model."""
