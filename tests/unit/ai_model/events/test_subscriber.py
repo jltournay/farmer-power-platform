@@ -35,8 +35,10 @@ def mock_agent_config_cache() -> MagicMock:
 
 @pytest.fixture
 def mock_event_loop() -> asyncio.AbstractEventLoop:
-    """Get the current event loop for tests."""
-    return asyncio.get_event_loop()
+    """Create a new event loop for tests."""
+    loop = asyncio.new_event_loop()
+    yield loop
+    loop.close()
 
 
 @pytest.fixture
