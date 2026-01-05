@@ -1,6 +1,6 @@
 # Story 0.75.7: CLI to Manage Agent Configuration
 
-**Status:** in-progress
+**Status:** done
 **GitHub Issue:** #101
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
