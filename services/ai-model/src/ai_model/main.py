@@ -11,6 +11,7 @@ Architecture (ADR-011):
 
 Story 0.75.4: Added cache warming and change streams for AgentConfig and Prompt.
 Story 0.75.8: Added DAPR streaming subscriptions and DLQ handling.
+Story 0.75.8b: Added MCP integration for agent workflows.
 """
 
 import asyncio
@@ -41,6 +42,7 @@ from ai_model.infrastructure.tracing import (
 )
 from ai_model.llm import LLMGateway, RateLimiter
 from ai_model.llm.budget_monitor import BudgetMonitor
+from ai_model.mcp import AgentToolProvider, McpIntegration
 from ai_model.services import AgentConfigCache, PromptCache
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -127,6 +129,30 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
 
         # Register cache services with health module
         health.set_cache_services(agent_config_cache, prompt_cache)
+
+        # Story 0.75.8b: Initialize MCP integration for agent workflows
+        mcp_integration = McpIntegration(cache_ttl_seconds=settings.mcp_tool_cache_ttl_seconds)
+
+        # Extract unique servers from all cached agent configs and register
+        registered_servers = mcp_integration.register_from_agent_configs(agent_configs)
+        logger.info("Registered MCP servers", servers=list(registered_servers))
+
+        # Discover tools from all servers (graceful failure - startup continues)
+        try:
+            await mcp_integration.discover_all_tools()
+            logger.info("MCP tools discovered from all servers")
+        except Exception as e:
+            logger.warning(
+                "Some MCP servers unavailable at startup - tools will be discovered on first access",
+                error=str(e),
+            )
+
+        # Create tool provider for agents to resolve mcp_sources
+        tool_provider = AgentToolProvider(mcp_integration)
+
+        # Store in app.state for dependency injection
+        app.state.mcp_integration = mcp_integration
+        app.state.tool_provider = tool_provider
 
         # Story 0.75.8: Set up DAPR streaming subscriptions (ADR-010, ADR-011)
         # CRITICAL: Pass the main event loop to streaming subscription handlers
