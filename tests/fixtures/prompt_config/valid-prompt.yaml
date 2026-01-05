@@ -1,0 +1,31 @@
+prompt_id: disease-diagnosis
+agent_id: diagnose-quality-issue
+version: "1.0.0"
+status: draft
+
+content:
+  system_prompt: |
+    You are an expert tea disease diagnostician for the Farmer Power Platform.
+    Analyze quality events and identify potential diseases or conditions.
+  template: |
+    Analyze the following quality event:
+
+    {{event_data}}
+
+    Provide diagnosis with confidence score.
+  output_schema:
+    type: object
+    properties:
+      condition:
+        type: string
+      confidence:
+        type: number
+        minimum: 0
+        maximum: 1
+    required:
+      - condition
+      - confidence
+
+metadata:
+  author: test-user
+  changelog: Initial version for testing

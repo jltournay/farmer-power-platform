@@ -1,0 +1,12 @@
+prompt_id: test-prompt
+agent_id: test-agent
+version: "1.0.0"
+status: invalid-status  # Invalid status value
+
+content:
+  system_prompt: Test system prompt
+  template: Test template with {{variable}}
+
+metadata:
+  author: test-user
+  changelog: Test version

@@ -159,7 +159,7 @@ development_status:
   0-75-3-pydantic-model-agent-config-mongo-repository: done  # github_issue: 93, Agent configuration storage
   0-75-4-source-cache-agent-types-prompt-config: done  # github_issue: 95, ADR-013 cache pattern, extract to fp-common
   0-75-5-openrouter-llm-gateway-cost-management: in-progress  # github_issue: 97, Model routing, cost tracking, resilience
-  0-75-6-cli-manage-prompt-type-configuration: backlog  # fp-prompt-config CLI
+  0-75-6-cli-manage-prompt-type-configuration: in-progress  # github_issue: 99, fp-prompt-config CLI
   0-75-7-cli-manage-agent-configuration: backlog  # fp-agent-config CLI
   0-75-8-event-flow-subscriber-publisher: backlog  # DAPR pub/sub integration
   0-75-8b-mcp-client-integration-agent-workflows: backlog  # MCP client from fp-common for agents
