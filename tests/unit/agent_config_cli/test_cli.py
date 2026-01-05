@@ -1,5 +1,6 @@
 """Unit tests for agent config CLI commands."""
 
+import re
 from pathlib import Path
 from unittest.mock import AsyncMock, patch
 
@@ -7,6 +8,12 @@ from fp_agent_config.cli import app
 from typer.testing import CliRunner
 
 runner = CliRunner()
+
+
+def strip_ansi(text: str) -> str:
+    """Strip ANSI escape codes from text for assertion comparisons."""
+    ansi_pattern = re.compile(r"\x1b\[[0-9;]*m")
+    return ansi_pattern.sub("", text)
 
 
 class TestValidateCommand:
@@ -345,44 +352,50 @@ class TestHelpText:
     def test_main_help(self):
         """Test main CLI help text."""
         result = runner.invoke(app, ["--help"])
+        stdout = strip_ansi(result.stdout)
 
         assert result.exit_code == 0
-        assert "fp-agent-config" in result.stdout or "Manage agent configurations" in result.stdout
+        assert "fp-agent-config" in stdout or "Manage agent configurations" in stdout
 
     def test_validate_help(self):
         """Test validate command help text."""
         result = runner.invoke(app, ["validate", "--help"])
+        stdout = strip_ansi(result.stdout)
 
         assert result.exit_code == 0
-        assert "validate" in result.stdout.lower()
-        assert "--file" in result.stdout
+        assert "validate" in stdout.lower()
+        assert "--file" in stdout
 
     def test_deploy_help(self):
         """Test deploy command help text."""
         result = runner.invoke(app, ["deploy", "--help"])
+        stdout = strip_ansi(result.stdout)
 
         assert result.exit_code == 0
-        assert "deploy" in result.stdout.lower()
-        assert "--env" in result.stdout
+        assert "deploy" in stdout.lower()
+        assert "--env" in stdout
 
     def test_list_help(self):
         """Test list command help text."""
         result = runner.invoke(app, ["list", "--help"])
+        stdout = strip_ansi(result.stdout)
 
         assert result.exit_code == 0
-        assert "--status" in result.stdout
-        assert "--type" in result.stdout
+        assert "--status" in stdout
+        assert "--type" in stdout
 
     def test_enable_help(self):
         """Test enable command help text."""
         result = runner.invoke(app, ["enable", "--help"])
+        stdout = strip_ansi(result.stdout)
 
         assert result.exit_code == 0
-        assert "--agent-id" in result.stdout
+        assert "--agent-id" in stdout
 
     def test_disable_help(self):
         """Test disable command help text."""
         result = runner.invoke(app, ["disable", "--help"])
+        stdout = strip_ansi(result.stdout)
 
         assert result.exit_code == 0
-        assert "--agent-id" in result.stdout
+        assert "--agent-id" in stdout
