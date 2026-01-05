@@ -95,6 +95,16 @@ class Settings(BaseSettings):
     llm_cost_event_topic: str = "ai.cost.recorded"
     llm_cost_alert_topic: str = "ai.cost.threshold_exceeded"
 
+    # ========================================
+    # Event Handler Configuration (Story 0.75.8)
+    # ========================================
+
+    # Timeout for agent config cache lookups in event handlers (seconds)
+    event_handler_config_timeout_s: int = 10
+
+    # Timeout for agent execution in event handlers (seconds)
+    event_handler_execution_timeout_s: int = 30
+
 
 # Global settings instance
 settings = Settings()

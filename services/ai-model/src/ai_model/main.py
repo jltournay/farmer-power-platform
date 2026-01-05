@@ -1,4 +1,4 @@
-"""AI Model Service - FastAPI + gRPC entrypoint.
+"""AI Model Service - FastAPI + gRPC + DAPR Streaming entrypoint.
 
 Agent orchestration and LLM gateway for the Farmer Power Platform.
 Coordinates AI agents (Extractor, Explorer, Generator, Conversational)
@@ -7,10 +7,14 @@ and provides centralized access to language models via OpenRouter.
 Architecture (ADR-011):
 - Port 8000: FastAPI health endpoints (direct, no DAPR)
 - Port 50051: gRPC server (via DAPR sidecar)
+- Pub/sub: DAPR streaming subscriptions (outbound, no extra port)
 
 Story 0.75.4: Added cache warming and change streams for AgentConfig and Prompt.
+Story 0.75.8: Added DAPR streaming subscriptions and DLQ handling.
 """
 
+import asyncio
+import threading
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 
@@ -18,6 +22,11 @@ import structlog
 from ai_model.api import health
 from ai_model.api.grpc_server import start_grpc_server, stop_grpc_server
 from ai_model.config import settings
+from ai_model.events.subscriber import (
+    run_streaming_subscriptions,
+    set_agent_config_cache,
+    set_main_event_loop,
+)
 from ai_model.infrastructure.mongodb import (
     check_mongodb_connection,
     close_mongodb_connection,
@@ -35,6 +44,12 @@ from ai_model.llm.budget_monitor import BudgetMonitor
 from ai_model.services import AgentConfigCache, PromptCache
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fp_common.events import (
+    DLQRepository,
+    set_dlq_event_loop,
+    set_dlq_repository,
+    start_dlq_subscription,
+)
 
 # Configure structured logging
 structlog.configure(
@@ -113,6 +128,43 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
         # Register cache services with health module
         health.set_cache_services(agent_config_cache, prompt_cache)
 
+        # Story 0.75.8: Set up DAPR streaming subscriptions (ADR-010, ADR-011)
+        # CRITICAL: Pass the main event loop to streaming subscription handlers
+        # The handlers run in a separate thread, but Motor (MongoDB) and other
+        # async clients are bound to this loop. Handlers use run_coroutine_threadsafe()
+        # to schedule async operations on this loop.
+        main_loop = asyncio.get_running_loop()
+        set_main_event_loop(main_loop)
+        set_agent_config_cache(agent_config_cache)
+        logger.info("Subscription handler dependencies configured")
+
+        # Initialize DLQ repository and configure DLQ handler (ADR-006)
+        dlq_repository = DLQRepository(db["event_dead_letter"])
+        set_dlq_repository(dlq_repository)
+        set_dlq_event_loop(main_loop)
+        logger.info("DLQ handler dependencies configured")
+
+        # Start DAPR streaming subscriptions in background thread
+        # ADR-010/011 pattern: run_streaming_subscriptions keeps DaprClient alive
+        # Subscriptions are outbound - no extra HTTP port needed
+        subscription_thread = threading.Thread(
+            target=run_streaming_subscriptions,
+            daemon=True,
+            name="dapr-ai-subscriptions",
+        )
+        subscription_thread.start()
+        logger.info("DAPR streaming subscriptions thread started")
+
+        # Start DLQ subscription in separate thread
+        # DLQ handler stores failed events in MongoDB for inspection and replay
+        dlq_thread = threading.Thread(
+            target=start_dlq_subscription,
+            daemon=True,
+            name="dapr-dlq-subscription",
+        )
+        dlq_thread.start()
+        logger.info("DLQ subscription thread started")
+
         # Story 0.75.5: Initialize LLM Gateway (AC15)
         if settings.openrouter_api_key:
             cost_repository = LlmCostEventRepository(db)
@@ -177,6 +229,10 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
 
     # Shutdown
     logger.info("Shutting down AI Model service")
+
+    # Story 0.75.8: Streaming subscriptions run in daemon threads with own cleanup
+    # The threads will be terminated when the main process exits
+    logger.info("Subscriptions will be closed by daemon threads")
 
     # Story 0.75.4: Stop change streams
     if agent_config_cache:
