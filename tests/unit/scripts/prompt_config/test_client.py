@@ -1,45 +1,13 @@
 """Unit tests for prompt MongoDB client."""
 
-from datetime import UTC, datetime
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 from fp_prompt_config.client import PromoteResult, PromptClient, RollbackResult
-from fp_prompt_config.models import (
-    Prompt,
-    PromptABTest,
-    PromptContent,
-    PromptMetadata,
-    PromptStatus,
-)
+from fp_prompt_config.models import PromptStatus
 from fp_prompt_config.settings import Settings
 
-
-def make_prompt(
-    prompt_id: str = "test-prompt",
-    agent_id: str = "test-agent",
-    version: str = "1.0.0",
-    status: PromptStatus = PromptStatus.DRAFT,
-) -> Prompt:
-    """Create a test Prompt object."""
-    return Prompt(
-        id=f"{prompt_id}:{version}",
-        prompt_id=prompt_id,
-        agent_id=agent_id,
-        version=version,
-        status=status,
-        content=PromptContent(
-            system_prompt="Test system prompt",
-            template="Test template with {{variable}}",
-        ),
-        metadata=PromptMetadata(
-            author="test-user",
-            created_at=datetime(2024, 1, 1, tzinfo=UTC),
-            updated_at=datetime(2024, 1, 1, tzinfo=UTC),
-            changelog="Test version",
-        ),
-        ab_test=PromptABTest(),
-    )
+from .conftest import make_prompt
 
 
 def make_prompt_doc(

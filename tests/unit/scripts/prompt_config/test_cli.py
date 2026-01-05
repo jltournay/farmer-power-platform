@@ -1,19 +1,14 @@
 """Unit tests for fp-prompt-config CLI commands."""
 
-from datetime import UTC, datetime
 from pathlib import Path
 from unittest.mock import AsyncMock, MagicMock, patch
 
 from fp_prompt_config.cli import app
 from fp_prompt_config.client import PromoteResult, RollbackResult
-from fp_prompt_config.models import (
-    Prompt,
-    PromptABTest,
-    PromptContent,
-    PromptMetadata,
-    PromptStatus,
-)
+from fp_prompt_config.models import PromptStatus
 from typer.testing import CliRunner
+
+from .conftest import make_prompt
 
 runner = CliRunner()
 
@@ -25,33 +20,6 @@ def get_all_output(result) -> str:
     The 'output' attribute contains the combined output.
     """
     return result.output or ""
-
-
-def make_prompt(
-    prompt_id: str = "test-prompt",
-    agent_id: str = "test-agent",
-    version: str = "1.0.0",
-    status: PromptStatus = PromptStatus.DRAFT,
-) -> Prompt:
-    """Create a test Prompt object."""
-    return Prompt(
-        id=f"{prompt_id}:{version}",
-        prompt_id=prompt_id,
-        agent_id=agent_id,
-        version=version,
-        status=status,
-        content=PromptContent(
-            system_prompt="Test system prompt",
-            template="Test template with {{variable}}",
-        ),
-        metadata=PromptMetadata(
-            author="test-user",
-            created_at=datetime(2024, 1, 1, tzinfo=UTC),
-            updated_at=datetime(2024, 1, 1, tzinfo=UTC),
-            changelog="Test version",
-        ),
-        ab_test=PromptABTest(),
-    )
 
 
 class TestValidateCommand:
@@ -306,6 +274,34 @@ class TestGetCommand:
 
         assert result.exit_code == 1
         assert "Error:" in get_all_output(result)
+
+    @patch("fp_prompt_config.cli.PromptClient")
+    @patch("fp_prompt_config.cli.get_settings")
+    def test_get_with_output_file(
+        self,
+        mock_get_settings: MagicMock,
+        mock_client_class: MagicMock,
+        tmp_path: Path,
+    ) -> None:
+        """Test get command with --output flag writes to file."""
+        prompt = make_prompt(status=PromptStatus.ACTIVE)
+        mock_client = AsyncMock()
+        mock_client.connect = AsyncMock()
+        mock_client.disconnect = AsyncMock()
+        mock_client.get_active = AsyncMock(return_value=prompt)
+        mock_client_class.return_value = mock_client
+
+        output_file = tmp_path / "output.yaml"
+        result = runner.invoke(
+            app,
+            ["get", "--prompt-id", "test-prompt", "--env", "dev", "--output", str(output_file)],
+        )
+
+        assert result.exit_code == 0
+        assert "Saved to" in result.stdout
+        assert output_file.exists()
+        content = output_file.read_text()
+        assert "test-prompt" in content
 
 
 class TestStageCommand:

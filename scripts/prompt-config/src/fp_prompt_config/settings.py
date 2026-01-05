@@ -3,6 +3,7 @@
 Handles configuration for different deployment environments (dev, staging, prod).
 """
 
+from functools import lru_cache
 from typing import Literal
 
 from pydantic import Field
@@ -56,6 +57,7 @@ class Settings(BaseSettings):
         return uri_map[env]
 
 
+@lru_cache
 def get_settings() -> Settings:
     """Get application settings singleton."""
     return Settings()

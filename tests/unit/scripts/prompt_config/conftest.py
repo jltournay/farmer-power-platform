@@ -1,9 +1,44 @@
 """Shared fixtures for fp-prompt-config CLI tests."""
 
+from datetime import UTC, datetime
 from pathlib import Path
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
+from fp_prompt_config.models import (
+    Prompt,
+    PromptABTest,
+    PromptContent,
+    PromptMetadata,
+    PromptStatus,
+)
+
+
+def make_prompt(
+    prompt_id: str = "test-prompt",
+    agent_id: str = "test-agent",
+    version: str = "1.0.0",
+    status: PromptStatus = PromptStatus.DRAFT,
+) -> Prompt:
+    """Create a test Prompt object."""
+    return Prompt(
+        id=f"{prompt_id}:{version}",
+        prompt_id=prompt_id,
+        agent_id=agent_id,
+        version=version,
+        status=status,
+        content=PromptContent(
+            system_prompt="Test system prompt",
+            template="Test template with {{variable}}",
+        ),
+        metadata=PromptMetadata(
+            author="test-user",
+            created_at=datetime(2024, 1, 1, tzinfo=UTC),
+            updated_at=datetime(2024, 1, 1, tzinfo=UTC),
+            changelog="Test version",
+        ),
+        ab_test=PromptABTest(),
+    )
 
 
 @pytest.fixture
