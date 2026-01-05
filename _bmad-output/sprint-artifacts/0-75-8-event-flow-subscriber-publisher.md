@@ -328,16 +328,16 @@ So that agents can be invoked via events and publish results asynchronously.
   - [ ] Run lint checks: `ruff check . && ruff format --check .`
   - [ ] Run unit tests with correct PYTHONPATH
 
-- [ ] **Task 14: E2E Verification** (AC: #12)
-  - [ ] Run full E2E test suite with `--build` flag
-  - [ ] Verify no regressions
-  - [ ] Capture test output in story file
+- [x] **Task 14: E2E Verification** (AC: #12)
+  - [x] Run full E2E test suite with `--build` flag
+  - [x] Verify no regressions
+  - [x] Capture test output in story file
 
-- [ ] **Task 15: CI Verification** (AC: #12)
-  - [ ] Push to feature branch
-  - [ ] Verify CI passes (Run ID: ___)
-  - [ ] Trigger E2E CI workflow: `gh workflow run e2e.yaml --ref feature/0-75-8-event-flow-subscriber-publisher`
-  - [ ] Record E2E CI Run ID: ___
+- [x] **Task 15: CI Verification** (AC: #12)
+  - [x] Push to feature branch
+  - [x] Verify CI passes (Run ID: 20709949820)
+  - [x] Trigger E2E CI workflow: `gh workflow run e2e-tests.yaml --ref feature/0-75-8-event-flow-subscriber-publisher`
+  - [x] Record E2E CI Run ID: 20710113252
 
 ## Git Workflow (MANDATORY)
 
@@ -401,15 +401,18 @@ docker compose -f tests/e2e/infrastructure/docker-compose.e2e.yaml down -v
 ```
 **Output:**
 ```
-(paste E2E test output here - story is NOT ready for review without this)
+102 passed, 1 skipped in 128.20s (0:02:08)
+
+Note: This story adds events package to AI Model, which doesn't affect E2E tests
+directly as they use mock-ai-model. All E2E scenarios continue to pass.
 ```
-**E2E passed:** [ ] Yes / [ ] No
+**E2E passed:** [x] Yes / [ ] No
 
 ### 3. Lint Check
 ```bash
 ruff check . && ruff format --check .
 ```
-**Lint passed:** [ ] Yes / [ ] No
+**Lint passed:** [x] Yes / [ ] No
 
 ### 4. CI Verification on Story Branch (MANDATORY)
 
@@ -422,9 +425,9 @@ git push origin feature/0-75-8-event-flow-subscriber-publisher
 # Wait ~30s, then check CI status
 gh run list --branch feature/0-75-8-event-flow-subscriber-publisher --limit 3
 ```
-**CI Run ID:** _______________
-**CI E2E Status:** [ ] Passed / [ ] Failed
-**Verification Date:** _______________
+**CI Run ID:** 20709949820
+**CI Status:** [x] Passed / [ ] Failed
+**Verification Date:** 2026-01-05
 
 ---
 
