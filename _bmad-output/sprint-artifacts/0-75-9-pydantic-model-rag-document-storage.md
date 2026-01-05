@@ -75,10 +75,10 @@ So that knowledge documents are type-safe and properly structured.
   - [x] Test list_by_status() filters correctly - 1 test
   - [x] Test ensure_indexes() creates expected indexes - 1 test
 
-- [ ] **Task 6: CI Verification** (AC: #13)
+- [x] **Task 6: CI Verification** (AC: #13) ✅
   - [x] Run lint checks: `ruff check . && ruff format --check .`
   - [x] Run unit tests with correct PYTHONPATH
-  - [ ] Push to feature branch and verify CI passes
+  - [x] Push to feature branch and verify CI passes
 
 ## Git Workflow (MANDATORY)
 
@@ -93,7 +93,7 @@ So that knowledge documents are type-safe and properly structured.
 ### During Development
 - [x] All commits reference GitHub issue: `Relates to #107`
 - [x] Commits are atomic by type (production, test, seed - not mixed)
-- [ ] Push to feature branch: `git push -u origin feature/0-75-9-pydantic-model-rag-document-storage`
+- [x] Push to feature branch: `git push -u origin feature/0-75-9-pydantic-model-rag-document-storage`
 
 ### Story Done
 - [ ] Create Pull Request: `gh pr create --title "Story 0.75.9: Pydantic Model for RAG Document Storage" --base main`
@@ -156,9 +156,9 @@ git push origin feature/0-75-9-pydantic-model-rag-document-storage
 # Wait ~30s, then check CI status
 gh run list --branch feature/0-75-9-pydantic-model-rag-document-storage --limit 3
 ```
-**CI Run ID:** _______________
-**CI E2E Status:** [ ] Passed / [ ] Failed
-**Verification Date:** _______________
+**CI Run ID:** 20726816657 (CI), 20727206246 (E2E)
+**CI E2E Status:** [x] Passed / [ ] Failed
+**Verification Date:** 2026-01-05
 
 ---
 
