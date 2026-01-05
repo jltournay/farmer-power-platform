@@ -1,0 +1,39 @@
+agent_id: weekly-action-plan
+type: generator
+version: "1.0.0"
+status: draft
+description: Generates personalized weekly action plans for farmers
+input:
+  event: action-plan.request
+  schema:
+    required:
+      - farmer_id
+      - diagnosis_ids
+output:
+  event: action-plan.generated
+  schema:
+    fields:
+      - plan_id
+      - actions
+      - sms_summary
+      - voice_script
+llm:
+  model: anthropic/claude-3-5-sonnet
+  temperature: 0.5
+  max_tokens: 3000
+rag:
+  enabled: true
+  knowledge_domains:
+    - tea_cultivation
+    - regional_context
+    - best_practices
+  top_k: 8
+  min_similarity: 0.6
+output_format: markdown
+mcp_sources:
+  - server: plantation
+    tools:
+      - get_farmer
+      - get_region
+metadata:
+  author: test-user

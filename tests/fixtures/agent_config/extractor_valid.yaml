@@ -1,0 +1,35 @@
+agent_id: qc-event-extractor
+type: extractor
+version: "1.0.0"
+status: draft
+description: Extracts structured data from QC analyzer payloads
+input:
+  event: collection.document.received
+  schema:
+    required:
+      - doc_id
+output:
+  event: ai.extraction.complete
+  schema:
+    fields:
+      - farmer_id
+      - grade
+      - quality_score
+llm:
+  model: anthropic/claude-3-haiku
+  temperature: 0.1
+  max_tokens: 500
+extraction_schema:
+  required_fields:
+    - farmer_id
+    - grade
+    - quality_score
+  field_types:
+    farmer_id: string
+    grade: string
+    quality_score: number
+normalization_rules:
+  - field: grade
+    transform: uppercase
+metadata:
+  author: test-user

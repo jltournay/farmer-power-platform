@@ -1,0 +1,18 @@
+agent_id: missing-type
+version: "1.0.0"
+status: draft
+description: This config is missing the required type field
+input:
+  event: test.event
+  schema:
+    required: []
+output:
+  event: test.output
+  schema:
+    fields: []
+llm:
+  model: anthropic/claude-3-haiku
+  temperature: 0.1
+  max_tokens: 500
+metadata:
+  author: test-user
