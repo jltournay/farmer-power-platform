@@ -96,13 +96,13 @@ So that knowledge documents are type-safe and properly structured.
 - [x] Push to feature branch: `git push -u origin feature/0-75-9-pydantic-model-rag-document-storage`
 
 ### Story Done
-- [ ] Create Pull Request: `gh pr create --title "Story 0.75.9: Pydantic Model for RAG Document Storage" --base main`
+- [x] Create Pull Request: `gh pr create --title "Story 0.75.9: Pydantic Model for RAG Document Storage" --base main`
 - [ ] CI passes on PR (including E2E tests)
-- [ ] Code review completed (`/code-review` or human review)
+- [x] Code review completed (`/code-review` or human review)
 - [ ] PR approved and merged (squash)
 - [ ] Local branch cleaned up: `git branch -d feature/0-75-9-pydantic-model-rag-document-storage`
 
-**PR URL:** _______________ (fill in when created)
+**PR URL:** https://github.com/jltournay/farmer-power-platform/pull/108
 
 ---
 
