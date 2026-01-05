@@ -1,6 +1,6 @@
 # Story 0.75.8b: MCP Client Integration for Agent Workflows
 
-**Status:** in-progress
+**Status:** review
 **GitHub Issue:** #105
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
@@ -144,10 +144,11 @@ So that agents can fetch data from Collection, Plantation, and other domain mode
     - Test MCP integration in lifespan startup (2 tests)
     - Test tools available in app.state (1 test)
 
-- [ ] **Task 9: CI Verification** (AC: #11)
+- [x] **Task 9: CI Verification** (AC: #11)
   - [x] Run lint checks: `ruff check . && ruff format --check .`
   - [x] Run unit tests with correct PYTHONPATH
-  - [ ] Push to feature branch and verify CI passes
+  - [x] Push to feature branch and verify CI passes (Run ID: 20725436874)
+  - [x] E2E CI passes (Run ID: 20725645445)
 
 ## Git Workflow (MANDATORY)
 
@@ -208,15 +209,15 @@ docker compose -f tests/e2e/infrastructure/docker-compose.e2e.yaml down -v
 ```
 **Output:**
 ```
-(paste E2E test output here - story is NOT ready for review without this)
+================== 102 passed, 1 skipped in 126.93s (0:02:06) ==================
 ```
-**E2E passed:** [ ] Yes / [ ] No
+**E2E passed:** [x] Yes / [ ] No
 
 ### 3. Lint Check
 ```bash
 ruff check . && ruff format --check .
 ```
-**Lint passed:** [ ] Yes / [ ] No
+**Lint passed:** [x] Yes / [ ] No
 
 ### 4. CI Verification on Story Branch (MANDATORY)
 
@@ -229,9 +230,11 @@ git push origin feature/0-75-8b-mcp-client-integration
 # Wait ~30s, then check CI status
 gh run list --branch feature/0-75-8b-mcp-client-integration --limit 3
 ```
-**CI Run ID:** _______________
-**CI E2E Status:** [ ] Passed / [ ] Failed
-**Verification Date:** _______________
+**CI Run ID:** 20725436874
+**CI Quality Status:** [x] Passed / [ ] Failed
+**E2E CI Run ID:** 20725645445
+**E2E CI Status:** [x] Passed / [ ] Failed
+**Verification Date:** 2026-01-05
 
 ---
 
