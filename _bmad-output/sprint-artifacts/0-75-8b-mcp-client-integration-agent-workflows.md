@@ -1,6 +1,6 @@
 # Story 0.75.8b: MCP Client Integration for Agent Workflows
 
-**Status:** review
+**Status:** done
 **GitHub Issue:** #105
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
@@ -176,7 +176,7 @@ So that agents can fetch data from Collection, Plantation, and other domain mode
 - [ ] PR approved and merged (squash)
 - [ ] Local branch cleaned up: `git branch -d feature/0-75-8b-mcp-client-integration`
 
-**PR URL:** _______________ (fill in when created)
+**PR URL:** https://github.com/jltournay/farmer-power-platform/pull/106
 
 ---
 

@@ -164,7 +164,7 @@ development_status:
   0-75-6-cli-manage-prompt-type-configuration: done  # github_issue: 99, fp-prompt-config CLI
   0-75-7-cli-manage-agent-configuration: done  # github_issue: 101, fp-agent-config CLI
   0-75-8-event-flow-subscriber-publisher: done  # github_issue: 103, PR: #104, DAPR pub/sub integration
-  0-75-8b-mcp-client-integration-agent-workflows: review  # github_issue: 105, MCP client from fp-common for agents
+  0-75-8b-mcp-client-integration-agent-workflows: done  # github_issue: 105, PR: #106, MCP client from fp-common for agents
   0-75-9-pydantic-model-rag-document-storage: backlog  # RagDocument, RagChunk models
   0-75-10-grpc-model-rag-document: backlog  # Proto + gRPC service (metadata only)
   0-75-10b-basic-pdf-markdown-extraction: backlog  # PyMuPDF, Markdown parsing, async jobs
