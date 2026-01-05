@@ -1,8 +1,10 @@
 """Domain models for the AI Model service.
 
-This module exports all domain models for prompt, agent configuration, and cost tracking.
+This module exports all domain models for prompt, agent configuration, cost tracking,
+and RAG document storage.
 
 Story 0.75.5: Added LlmCostEvent and related cost models.
+Story 0.75.9: Added RagDocument, RagChunk, and related RAG models.
 """
 
 from ai_model.domain.agent_config import (
@@ -40,6 +42,16 @@ from ai_model.domain.prompt import (
     PromptMetadata,
     PromptStatus,
 )
+from ai_model.domain.rag_document import (
+    ExtractionMethod,
+    FileType,
+    KnowledgeDomain,
+    RagChunk,
+    RagDocument,
+    RAGDocumentMetadata,
+    RagDocumentStatus,
+    SourceFile,
+)
 
 __all__ = [
     "AgentConfig",
@@ -53,9 +65,12 @@ __all__ = [
     "DailyCostSummary",
     "ErrorHandlingConfig",
     "ExplorerConfig",
+    "ExtractionMethod",
     "ExtractorConfig",
+    "FileType",
     "GeneratorConfig",
     "InputConfig",
+    "KnowledgeDomain",
     "LLMConfig",
     "LlmCostEvent",
     "MCPSourceConfig",
@@ -67,6 +82,11 @@ __all__ = [
     "PromptMetadata",
     "PromptStatus",
     "RAGConfig",
+    "RAGDocumentMetadata",
+    "RagChunk",
+    "RagDocument",
+    "RagDocumentStatus",
+    "SourceFile",
     "StateConfig",
     "TieredVisionConfig",
     "TieredVisionLLMConfig",
