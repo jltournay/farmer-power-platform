@@ -361,20 +361,21 @@ class TestCollectionE2EOpenMeteo:
 
         try:
             # Query by source_id
+            # Note: DocumentClient now returns Pydantic Document models (Story 0.6.12)
             documents = await mcp_client.get_documents(
                 source_id="weather-api-test",
                 limit=10,
             )
 
             assert len(documents) == 1
-            assert documents[0]["source_id"] == "weather-api-test"
-            assert documents[0]["document_id"] == document.document_id
-            assert "extracted_fields" in documents[0]
-            assert documents[0]["extracted_fields"]["timezone"] == "Africa/Nairobi"
+            assert documents[0].ingestion.source_id == "weather-api-test"
+            assert documents[0].document_id == document.document_id
+            assert documents[0].extracted_fields is not None
+            assert documents[0].extracted_fields["timezone"] == "Africa/Nairobi"
 
             # Query by document_id
             single_doc = await mcp_client.get_document_by_id(document.document_id)
-            assert single_doc["document_id"] == document.document_id
+            assert single_doc.document_id == document.document_id
 
         finally:
             await mcp_client.close()
