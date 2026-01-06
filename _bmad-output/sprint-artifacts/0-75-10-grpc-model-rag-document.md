@@ -1,6 +1,6 @@
 # Story 0.75.10: gRPC Model for RAG Document
 
-**Status:** review
+**Status:** done
 **GitHub Issue:** #117
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
@@ -111,7 +111,7 @@ So that documents can be managed via API.
 - [ ] PR approved and merged (squash)
 - [ ] Local branch cleaned up: `git branch -d feature/0-75-10-grpc-model-rag-document`
 
-**PR URL:** _______________ (fill in when created)
+**PR URL:** https://github.com/jltournay/farmer-power-platform/pull/118
 
 ---
 
