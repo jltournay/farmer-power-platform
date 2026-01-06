@@ -621,6 +621,60 @@ So that I have type safety and IDE autocomplete throughout the call chain.
 
 ---
 
+### Story 0.6.13: Replace CollectionClient Direct DB Access with gRPC
+
+**[📄 Story File](../sprint-artifacts/0-6-13-collection-client-grpc.md)** | Status: To Do
+
+As a **platform engineer**,
+I want Plantation Model to fetch documents from Collection Model via gRPC instead of direct MongoDB access,
+So that domain boundaries are respected and services communicate through proper DAPR channels.
+
+**ADR:** ADR-010/011 - DAPR Patterns and Service Architecture
+
+**Context:**
+`plantation_model/infrastructure/collection_client.py` currently connects directly to Collection Model's MongoDB
+to fetch quality documents during event processing. This violates the "ALL inter-service communication via DAPR"
+rule and creates tight coupling to Collection Model's internal schema.
+
+Collection Model already exposes `GetDocument` via gRPC (proto/collection/v1/collection.proto:22).
+
+**Acceptance Criteria:**
+
+**Given** `CollectionClient` accesses MongoDB directly
+**When** I check `services/plantation-model/src/plantation_model/infrastructure/collection_client.py`
+**Then** it uses `AsyncIOMotorClient` to connect to `collection_mongodb_uri`
+
+**Given** the migration is complete
+**When** I check the updated implementation
+**Then** a new `CollectionGrpcClient` exists that:
+  - Calls Collection Model's `GetDocument` RPC via DAPR service invocation
+  - Uses singleton channel pattern with retry (matching Story 0.6.3/0.6.4 pattern)
+  - Returns Pydantic model (consistent with Story 0.6.12)
+
+**Given** `QualityEventProcessor` needs a document
+**When** it calls `get_document(document_id)`
+**Then** the request flows: Plantation Model → DAPR → Collection Model gRPC → MongoDB
+**And** no direct MongoDB connection exists from Plantation Model to Collection Model DB
+
+**Given** the old client is removed
+**When** I check plantation-model settings
+**Then** `collection_mongodb_uri` and `collection_mongodb_database` are removed
+**And** `collection_app_id` (DAPR app ID) is used instead
+
+**Unit Tests Required:**
+- `tests/unit/plantation_model/infrastructure/test_collection_grpc_client.py`
+  - `test_get_document_calls_grpc` - Verify gRPC call, not MongoDB
+  - `test_retry_on_unavailable` - Retry triggers on UNAVAILABLE status
+  - `test_document_not_found_raises` - Proper error propagation
+
+**E2E Test Impact:**
+- E2E tests should pass unchanged (behavior identical, only transport changes)
+- Remove `COLLECTION_MONGODB_URI` from plantation-model E2E config
+
+**Story Points:** 3
+
+---
+
 ## Summary
 
 ### Wave 1: Foundation (12 points)
@@ -651,15 +705,16 @@ So that I have type safety and IDE autocomplete throughout the call chain.
 | 0.6.10 | Linkage Field Validation + Metrics | ADR-008 | 3 | To Do |
 | **Wave 3 Total** | | | **8** | |
 
-### Wave 4: Type Safety at MCP Boundary (8 points)
+### Wave 4: Type Safety & Service Boundaries (11 points)
 
 | Story | Description | ADR | Points | Status |
 |-------|-------------|-----|--------|--------|
 | 0.6.11 | Proto-to-Pydantic Converters | ADR-004 | 3 | To Do |
 | 0.6.12 | MCP Clients Return Pydantic Models | ADR-004 | 5 | To Do |
-| **Wave 4 Total** | | | **8** | |
+| 0.6.13 | Replace CollectionClient Direct DB with gRPC | ADR-010/011 | 3 | To Do |
+| **Wave 4 Total** | | | **11** | |
 
-### Epic Total: 43 Story Points (Wave 1: 12 + Wave 2: 15 + Wave 3: 8 + Wave 4: 8)
+### Epic Total: 46 Story Points (Wave 1: 12 + Wave 2: 15 + Wave 3: 8 + Wave 4: 11)
 
 ## Testing Strategy
 
@@ -731,12 +786,14 @@ All stories must pass CI before merge:
 - [ ] ADR-007, ADR-008 marked as "Implemented"
 
 ### Wave 4
-- [ ] Stories 0.6.11-0.6.12 implemented and merged
+- [ ] Stories 0.6.11-0.6.13 implemented and merged
 - [ ] All unit tests pass
 - [ ] E2E test suite passes (no regressions)
 - [ ] MCP clients return Pydantic models (type-safe)
 - [ ] Manual `_to_dict()` methods removed from plantation_client.py
 - [ ] Proto-to-Pydantic converters centralized in fp-common
+- [ ] Plantation Model fetches documents via gRPC, not direct MongoDB
+- [ ] `collection_mongodb_uri` removed from plantation-model settings
 - [ ] CI pipelines green on all PRs
 
 ---
@@ -753,6 +810,6 @@ All stories must pass CI before merge:
 
 ---
 
-**Total Story Points:** 43 (Wave 1: 12 + Wave 2: 15 + Wave 3: 8 + Wave 4: 8)
+**Total Story Points:** 46 (Wave 1: 12 + Wave 2: 15 + Wave 3: 8 + Wave 4: 11)
 
 **Estimated Duration:** 4 sprints (1 sprint per wave)
