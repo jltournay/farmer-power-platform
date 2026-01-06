@@ -1,6 +1,6 @@
 # Story 0.6.11: Proto-to-Pydantic Converters in fp-common
 
-**Status:** in-progress
+**Status:** review
 **GitHub Issue:** #109
 **Epic:** [Epic 0.6: Infrastructure Hardening](../epics/epic-0-6-infrastructure-hardening.md)
 **ADR:** [ADR-004: Type Safety - Shared Pydantic Models](../architecture/adr/ADR-004-type-safety-shared-pydantic-models.md)
