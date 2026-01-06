@@ -539,8 +539,8 @@ git push origin feature/0-6-11-proto-pydantic-converters
 # Wait ~30s, then check CI status
 gh run list --branch feature/0-6-11-proto-pydantic-converters --limit 3
 ```
-**CI Run ID:** (to be updated after push)
-**CI E2E Status:** [ ] Passed / [ ] Failed
+**CI Run ID:** 20753588242 (CI), 20753678048 (E2E)
+**CI E2E Status:** [x] Passed / [ ] Failed
 **Verification Date:** 2026-01-06
 
 ---
