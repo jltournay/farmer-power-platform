@@ -2,11 +2,12 @@
 
 Story 1.7: Quality Grading Event Subscription
 Story 0.6.13: Updated to use Pydantic Document model from gRPC client
+Story 0.6.14: Updated to patch module-level publish_event() per ADR-010
 """
 
 import datetime as dt
 from datetime import UTC, datetime
-from unittest.mock import AsyncMock
+from unittest.mock import AsyncMock, patch
 
 import pytest
 from fp_common.models import Document, ExtractionMetadata, IngestionMetadata, RawDocumentRef
@@ -48,26 +49,19 @@ def mock_farmer_performance_repo() -> AsyncMock:
 
 
 @pytest.fixture
-def mock_event_publisher() -> AsyncMock:
-    """Create a mock DAPR event publisher."""
-    mock = AsyncMock()
-    mock.publish_event = AsyncMock(return_value=True)
-    return mock
-
-
-@pytest.fixture
 def processor(
     mock_collection_client: AsyncMock,
     mock_grading_model_repo: AsyncMock,
     mock_farmer_performance_repo: AsyncMock,
-    mock_event_publisher: AsyncMock,
 ) -> QualityEventProcessor:
-    """Create a QualityEventProcessor with mocked dependencies."""
+    """Create a QualityEventProcessor with mocked dependencies.
+
+    Story 0.6.14: No longer requires event_publisher - uses module-level publish_event().
+    """
     return QualityEventProcessor(
         collection_client=mock_collection_client,
         grading_model_repo=mock_grading_model_repo,
         farmer_performance_repo=mock_farmer_performance_repo,
-        event_publisher=mock_event_publisher,
     )
 
 
@@ -188,12 +182,17 @@ class TestQualityEventProcessor:
         mock_farmer_performance_repo.get_by_farmer_id.return_value = sample_farmer_performance
         mock_farmer_performance_repo.increment_today_delivery.return_value = sample_farmer_performance
 
-        # Act
-        result = await processor.process(
-            document_id="doc-123",
-            farmer_id="WM-0001",
-            batch_timestamp=datetime.now(dt.UTC),
-        )
+        # Act - Story 0.6.14: Patch module-level publish_event
+        with patch(
+            "plantation_model.domain.services.quality_event_processor.publish_event",
+            new_callable=AsyncMock,
+            return_value=True,
+        ):
+            result = await processor.process(
+                document_id="doc-123",
+                farmer_id="WM-0001",
+                batch_timestamp=datetime.now(dt.UTC),
+            )
 
         # Assert
         assert result["status"] == "success"
@@ -348,11 +347,16 @@ class TestQualityEventProcessor:
         mock_farmer_performance_repo.reset_today.return_value = sample_farmer_performance
         mock_farmer_performance_repo.increment_today_delivery.return_value = sample_farmer_performance
 
-        # Act
-        await processor.process(
-            document_id="doc-123",
-            farmer_id="WM-0001",
-        )
+        # Act - Story 0.6.14: Patch module-level publish_event
+        with patch(
+            "plantation_model.domain.services.quality_event_processor.publish_event",
+            new_callable=AsyncMock,
+            return_value=True,
+        ):
+            await processor.process(
+                document_id="doc-123",
+                farmer_id="WM-0001",
+            )
 
         # Assert
         mock_farmer_performance_repo.reset_today.assert_called_once_with("WM-0001")
@@ -364,31 +368,38 @@ class TestQualityEventProcessor:
         mock_collection_client: AsyncMock,
         mock_grading_model_repo: AsyncMock,
         mock_farmer_performance_repo: AsyncMock,
-        mock_event_publisher: AsyncMock,
         sample_document: dict,
         sample_grading_model: GradingModel,
         sample_farmer_performance: FarmerPerformance,
     ) -> None:
-        """Test that plantation.quality.graded event is emitted."""
+        """Test that plantation.quality.graded event is emitted.
+
+        Story 0.6.14: Updated to patch module-level publish_event().
+        """
         # Arrange
         mock_collection_client.get_document.return_value = sample_document
         mock_grading_model_repo.get_by_id_and_version.return_value = sample_grading_model
         mock_farmer_performance_repo.get_by_farmer_id.return_value = sample_farmer_performance
         mock_farmer_performance_repo.increment_today_delivery.return_value = sample_farmer_performance
 
-        # Act
-        await processor.process(
-            document_id="doc-123",
-            farmer_id="WM-0001",
-        )
+        # Act - Patch module-level publish_event and track calls
+        with patch(
+            "plantation_model.domain.services.quality_event_processor.publish_event",
+            new_callable=AsyncMock,
+            return_value=True,
+        ) as mock_publish:
+            await processor.process(
+                document_id="doc-123",
+                farmer_id="WM-0001",
+            )
 
-        # Assert - check event publisher was called with quality.graded
-        calls = mock_event_publisher.publish_event.call_args_list
-        quality_graded_call = next(
-            (c for c in calls if c.kwargs.get("topic") == "plantation.quality.graded"),
-            None,
-        )
-        assert quality_graded_call is not None
+            # Assert - check publish_event was called with quality.graded topic
+            calls = mock_publish.call_args_list
+            quality_graded_call = next(
+                (c for c in calls if c.kwargs.get("topic") == "plantation.quality.graded"),
+                None,
+            )
+            assert quality_graded_call is not None
 
     @pytest.mark.asyncio
     async def test_process_emits_performance_updated_event(
@@ -397,34 +408,41 @@ class TestQualityEventProcessor:
         mock_collection_client: AsyncMock,
         mock_grading_model_repo: AsyncMock,
         mock_farmer_performance_repo: AsyncMock,
-        mock_event_publisher: AsyncMock,
         sample_document: dict,
         sample_grading_model: GradingModel,
         sample_farmer_performance: FarmerPerformance,
     ) -> None:
-        """Test that plantation.performance_updated event is emitted."""
+        """Test that plantation.performance_updated event is emitted.
+
+        Story 0.6.14: Updated to patch module-level publish_event().
+        """
         # Arrange
         mock_collection_client.get_document.return_value = sample_document
         mock_grading_model_repo.get_by_id_and_version.return_value = sample_grading_model
         mock_farmer_performance_repo.get_by_farmer_id.return_value = sample_farmer_performance
         mock_farmer_performance_repo.increment_today_delivery.return_value = sample_farmer_performance
 
-        # Act
-        await processor.process(
-            document_id="doc-123",
-            farmer_id="WM-0001",
-        )
+        # Act - Patch module-level publish_event and track calls
+        with patch(
+            "plantation_model.domain.services.quality_event_processor.publish_event",
+            new_callable=AsyncMock,
+            return_value=True,
+        ) as mock_publish:
+            await processor.process(
+                document_id="doc-123",
+                farmer_id="WM-0001",
+            )
 
-        # Assert - check performance_updated event
-        calls = mock_event_publisher.publish_event.call_args_list
-        perf_updated_call = next(
-            (c for c in calls if c.kwargs.get("topic") == "plantation.performance_updated"),
-            None,
-        )
-        assert perf_updated_call is not None
-        # Verify NO current_category field (Engagement Model owns this)
-        payload = perf_updated_call.kwargs.get("data", {})
-        assert "current_category" not in payload
+            # Assert - check performance_updated event
+            calls = mock_publish.call_args_list
+            perf_updated_call = next(
+                (c for c in calls if c.kwargs.get("topic") == "plantation.performance_updated"),
+                None,
+            )
+            assert perf_updated_call is not None
+            # Verify NO current_category field (Engagement Model owns this)
+            payload = perf_updated_call.kwargs.get("data", {})
+            assert "current_category" not in payload
 
 
 class TestGradeCountExtraction:

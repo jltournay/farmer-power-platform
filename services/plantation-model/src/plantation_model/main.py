@@ -35,7 +35,6 @@ from plantation_model.events.subscriber import (
     set_regional_weather_repo,
 )
 from plantation_model.infrastructure.collection_grpc_client import CollectionGrpcClient
-from plantation_model.infrastructure.dapr_client import DaprPubSubClient
 from plantation_model.infrastructure.mongodb import (
     check_mongodb_connection,
     close_mongodb_connection,
@@ -124,10 +123,8 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
         collection_client = CollectionGrpcClient()
         app.state.collection_client = collection_client
 
-        # Initialize DAPR pub/sub client for event emission
-        event_publisher = DaprPubSubClient()
-
         # Initialize QualityEventProcessor (Story 1.7 + Story 0.6.10)
+        # Story 0.6.14: DAPR publishing uses module-level publish_event() per ADR-010
         quality_event_processor = QualityEventProcessor(
             collection_client=collection_client,
             grading_model_repo=grading_model_repo,
@@ -135,7 +132,6 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
             farmer_repo=farmer_repo,
             factory_repo=factory_repo,
             region_repo=region_repo,
-            event_publisher=event_publisher,
         )
         app.state.quality_event_processor = quality_event_processor
         logger.info("QualityEventProcessor initialized")

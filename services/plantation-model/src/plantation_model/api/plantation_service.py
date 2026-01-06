@@ -43,7 +43,7 @@ from plantation_model.domain.models import (
     WeatherConfig,
 )
 from plantation_model.domain.models.id_generator import IDGenerator
-from plantation_model.infrastructure.dapr_client import DaprPubSubClient
+from plantation_model.events.publisher import publish_event
 from plantation_model.infrastructure.google_elevation import (
     GoogleElevationClient,
     assign_region_from_altitude,
@@ -117,7 +117,6 @@ class PlantationServiceServicer(plantation_pb2_grpc.PlantationServiceServicer):
         farmer_repo: FarmerRepository,
         id_generator: IDGenerator,
         elevation_client: GoogleElevationClient,
-        dapr_client: DaprPubSubClient | None = None,
         grading_model_repo: GradingModelRepository | None = None,
         farmer_performance_repo: FarmerPerformanceRepository | None = None,
         region_repo: RegionRepository | None = None,
@@ -131,19 +130,20 @@ class PlantationServiceServicer(plantation_pb2_grpc.PlantationServiceServicer):
             farmer_repo: Farmer repository instance.
             id_generator: ID generator instance.
             elevation_client: Google Elevation API client.
-            dapr_client: Optional Dapr pub/sub client for event publishing.
             grading_model_repo: Optional grading model repository instance.
             farmer_performance_repo: Optional farmer performance repository instance.
             region_repo: Optional region repository instance (Story 1.8).
             regional_weather_repo: Optional regional weather repository instance (Story 1.8).
 
+        Note:
+            Story 0.6.14: DAPR publishing now uses module-level publish_event() function
+            from events.publisher per ADR-010.
         """
         self._factory_repo = factory_repo
         self._cp_repo = collection_point_repo
         self._farmer_repo = farmer_repo
         self._id_generator = id_generator
         self._elevation_client = elevation_client
-        self._dapr_client = dapr_client or DaprPubSubClient()
         self._grading_model_repo = grading_model_repo
         self._farmer_performance_repo = farmer_performance_repo
         self._region_repo = region_repo
@@ -933,6 +933,7 @@ class PlantationServiceServicer(plantation_pb2_grpc.PlantationServiceServicer):
         )
 
         # Publish farmer registered event (AC #4)
+        # Story 0.6.14: Uses module-level publish_event() per ADR-010
         event = FarmerRegisteredEvent(
             farmer_id=farmer.id,
             phone=farmer.contact.phone,
@@ -941,7 +942,7 @@ class PlantationServiceServicer(plantation_pb2_grpc.PlantationServiceServicer):
             region_id=farmer.region_id,
             farm_scale=farmer.farm_scale.value,
         )
-        await self._dapr_client.publish_event(
+        await publish_event(
             pubsub_name=settings.dapr_pubsub_name,
             topic=settings.dapr_farmer_events_topic,
             data=event,

@@ -1,4 +1,7 @@
-"""Integration tests for Farmer registration flow."""
+"""Integration tests for Farmer registration flow.
+
+Story 0.6.14: Updated to use module-level publish_event() per ADR-010.
+"""
 
 from unittest.mock import AsyncMock, MagicMock, patch
 
@@ -6,7 +9,7 @@ import pytest
 from plantation_model.domain.events.farmer_events import FarmerRegisteredEvent
 from plantation_model.domain.models import ContactInfo, Farmer, FarmScale, GeoLocation
 from plantation_model.domain.models.id_generator import IDGenerator
-from plantation_model.infrastructure.dapr_client import DaprPubSubClient
+from plantation_model.events.publisher import publish_event
 from plantation_model.infrastructure.google_elevation import (
     GoogleElevationClient,
     assign_region_from_altitude,
@@ -36,11 +39,6 @@ class TestFarmerRegistrationFlow:
     def id_generator(self, mock_db: MagicMock) -> IDGenerator:
         """Create an ID generator with mock database."""
         return IDGenerator(mock_db)
-
-    @pytest.fixture
-    def dapr_client(self) -> DaprPubSubClient:
-        """Create a Dapr pub/sub client."""
-        return DaprPubSubClient(dapr_host="localhost", dapr_http_port=3500)
 
     @pytest.mark.asyncio
     async def test_full_farmer_registration_flow(
@@ -237,11 +235,11 @@ class TestFarmerRegistrationFlow:
         assert FarmScale.from_hectares(100.0) == FarmScale.ESTATE
 
     @pytest.mark.asyncio
-    async def test_farmer_event_publishing(
-        self,
-        dapr_client: DaprPubSubClient,
-    ) -> None:
-        """Test FarmerRegisteredEvent publishing to Dapr."""
+    async def test_farmer_event_publishing(self) -> None:
+        """Test FarmerRegisteredEvent publishing via DAPR SDK.
+
+        Story 0.6.14: Updated to use module-level publish_event() per ADR-010.
+        """
         event = FarmerRegisteredEvent(
             farmer_id="WM-0001",
             phone="+254712345678",
@@ -251,26 +249,23 @@ class TestFarmerRegistrationFlow:
             farm_scale="medium",
         )
 
-        # Mock successful publish
-        with patch("plantation_model.infrastructure.dapr_client.httpx.AsyncClient") as mock_client_class:
-            mock_response = MagicMock()
-            mock_response.raise_for_status = MagicMock()
+        # Mock successful publish using SDK
+        with patch("plantation_model.events.publisher.DaprClient") as mock_client_class:
+            mock_client = MagicMock()
+            mock_client_class.return_value.__enter__ = MagicMock(return_value=mock_client)
+            mock_client_class.return_value.__exit__ = MagicMock(return_value=None)
 
-            mock_client = AsyncMock()
-            mock_client.post = AsyncMock(return_value=mock_response)
-            mock_client_class.return_value.__aenter__ = AsyncMock(return_value=mock_client)
-            mock_client_class.return_value.__aexit__ = AsyncMock(return_value=None)
-
-            result = await dapr_client.publish_event(
+            result = await publish_event(
                 pubsub_name="pubsub",
                 topic="farmer-events",
                 data=event,
             )
 
             assert result is True
-            mock_client.post.assert_called_once()
-            call_args = mock_client.post.call_args
-            assert "farmer-events" in str(call_args)
+            mock_client.publish_event.assert_called_once()
+            call_kwargs = mock_client.publish_event.call_args.kwargs
+            assert call_kwargs["topic_name"] == "farmer-events"
+            assert call_kwargs["pubsub_name"] == "pubsub"
 
     @pytest.mark.asyncio
     async def test_farmer_list_by_collection_point(
