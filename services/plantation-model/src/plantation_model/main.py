@@ -34,7 +34,7 @@ from plantation_model.events.subscriber import (
     set_quality_event_processor,
     set_regional_weather_repo,
 )
-from plantation_model.infrastructure.collection_client import CollectionClient
+from plantation_model.infrastructure.collection_grpc_client import CollectionGrpcClient
 from plantation_model.infrastructure.dapr_client import DaprPubSubClient
 from plantation_model.infrastructure.mongodb import (
     check_mongodb_connection,
@@ -119,8 +119,9 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
         factory_repo = FactoryRepository(db)
         region_repo = RegionRepository(db)
 
-        # Initialize Collection client for fetching quality documents
-        collection_client = CollectionClient()
+        # Initialize Collection gRPC client for fetching quality documents
+        # Story 0.6.13: Uses gRPC via DAPR instead of direct MongoDB
+        collection_client = CollectionGrpcClient()
         app.state.collection_client = collection_client
 
         # Initialize DAPR pub/sub client for event emission
