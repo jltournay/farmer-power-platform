@@ -136,28 +136,24 @@ So that field mappings are defined once and reused by both services and MCP clie
 **All story development MUST use feature branches.** Direct pushes to main are blocked.
 
 ### Story Start
-- [ ] GitHub Issue exists or created: `gh issue create --title "Story 0.6.11: Proto-to-Pydantic Converters in fp-common"`
-- [ ] Feature branch created from main:
-  ```bash
-  git checkout main && git pull origin main
-  git checkout -b story/0-6-11-proto-pydantic-converters
-  ```
+- [x] GitHub Issue exists or created: #109
+- [x] Feature branch created from main: `feature/0-6-11-proto-pydantic-converters`
 
-**Branch name:** `story/0-6-11-proto-pydantic-converters`
+**Branch name:** `feature/0-6-11-proto-pydantic-converters`
 
 ### During Development
-- [ ] All commits reference GitHub issue: `Relates to #XX`
-- [ ] Commits are atomic by type (production, test, seed - not mixed)
-- [ ] Push to feature branch: `git push -u origin story/0-6-11-proto-pydantic-converters`
+- [x] All commits reference GitHub issue: `Relates to #109`
+- [x] Commits are atomic by type (production, test, seed - not mixed)
+- [x] Push to feature branch: `git push -u origin feature/0-6-11-proto-pydantic-converters`
 
 ### Story Done
 - [ ] Create Pull Request: `gh pr create --title "Story 0.6.11: Proto-to-Pydantic Converters" --base main`
 - [ ] CI passes on PR (including E2E tests)
-- [ ] Code review completed (`/code-review` or human review)
+- [x] Code review completed (`/code-review` or human review)
 - [ ] PR approved and merged (squash)
-- [ ] Local branch cleaned up: `git branch -d story/0-6-11-proto-pydantic-converters`
+- [ ] Local branch cleaned up: `git branch -d feature/0-6-11-proto-pydantic-converters`
 
-**PR URL:** _______________ (fill in when created)
+**PR URL:** (pending - to be created after code review)
 
 ---
 
@@ -681,5 +677,6 @@ N/A
 - tests/unit/fp_common/converters/test_plantation_converters.py
 
 **Modified:**
-- _bmad-output/sprint-artifacts/sprint-status.yaml (status: in-progress)
+- _bmad-output/sprint-artifacts/sprint-status.yaml (status: in-progress → review)
 - _bmad-output/sprint-artifacts/0-6-11-proto-to-pydantic-converters.md (this file)
+- _bmad-output/epics/epic-0-6-infrastructure-hardening.md (updated Story 0.6.12 scope)

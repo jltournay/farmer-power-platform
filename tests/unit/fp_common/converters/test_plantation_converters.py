@@ -404,6 +404,34 @@ class TestCollectionPointFromProto:
 class TestRegionFromProto:
     """Tests for region_from_proto converter."""
 
+    def test_minimal_region_proto(self):
+        """Minimal Region proto with only required fields uses defaults."""
+        proto = plantation_pb2.Region(
+            region_id="test-highland",  # Must match {{county}}-{{altitude_band}} format
+            name="Test Region",
+            county="Test",
+        )
+        # Don't set any nested messages - test default handling
+
+        region = region_from_proto(proto)
+
+        assert isinstance(region, Region)
+        assert region.region_id == "test-highland"
+        assert region.name == "Test Region"
+        assert region.county == "Test"
+        assert region.country == "Kenya"  # Default
+        # Geography defaults
+        assert region.geography.center_gps.lat == 0.0
+        assert region.geography.center_gps.lng == 0.0
+        assert region.geography.radius_km == 25.0  # Default
+        # Flush calendar defaults
+        assert region.flush_calendar.first_flush.start == "01-01"
+        # Agronomic defaults
+        assert region.agronomic.soil_type == "unknown"
+        assert region.agronomic.typical_diseases == []
+        # Weather config defaults
+        assert region.weather_config.api_location.lat == 0.0
+
     def test_basic_fields_mapped(self):
         """Basic fields are correctly mapped."""
         proto = plantation_pb2.Region(
