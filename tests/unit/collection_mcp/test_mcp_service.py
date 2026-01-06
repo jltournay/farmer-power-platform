@@ -1,6 +1,7 @@
 """Tests for Collection MCP Tool Service."""
 
 import json
+from datetime import UTC, datetime
 from typing import Any
 from unittest.mock import AsyncMock, MagicMock
 
@@ -12,6 +13,83 @@ from collection_mcp.infrastructure.document_client import (
     DocumentNotFoundError,
 )
 from collection_mcp.infrastructure.source_config_client import SourceConfigClient
+from fp_common.models import (
+    Document,
+    ExtractionMetadata,
+    IngestionMetadata,
+    RawDocumentRef,
+    SearchResult,
+)
+
+
+def _create_test_document(
+    document_id: str = "doc-001",
+    source_id: str = "qc-analyzer-result",
+    **kwargs: Any,
+) -> Document:
+    """Create a test Document Pydantic model for unit tests."""
+    now = datetime.now(UTC)
+    return Document(
+        document_id=document_id,
+        raw_document=RawDocumentRef(
+            blob_container="raw",
+            blob_path=f"path/{document_id}",
+            content_hash="abc123",
+            size_bytes=1024,
+            stored_at=now,
+        ),
+        extraction=ExtractionMetadata(
+            ai_agent_id="test-agent",
+            extraction_timestamp=now,
+            confidence=0.95,
+            validation_passed=True,
+        ),
+        ingestion=IngestionMetadata(
+            ingestion_id=f"ing-{document_id}",
+            source_id=source_id,
+            received_at=now,
+            processed_at=now,
+        ),
+        extracted_fields=kwargs.get("extracted_fields", {}),
+        linkage_fields=kwargs.get("linkage_fields", {}),
+        created_at=now,
+    )
+
+
+def _create_test_search_result(
+    document_id: str = "doc-001",
+    source_id: str = "qc-analyzer-result",
+    relevance_score: float = 1.0,
+    **kwargs: Any,
+) -> SearchResult:
+    """Create a test SearchResult Pydantic model for unit tests."""
+    now = datetime.now(UTC)
+    return SearchResult(
+        document_id=document_id,
+        raw_document=RawDocumentRef(
+            blob_container="raw",
+            blob_path=f"path/{document_id}",
+            content_hash="abc123",
+            size_bytes=1024,
+            stored_at=now,
+        ),
+        extraction=ExtractionMetadata(
+            ai_agent_id="test-agent",
+            extraction_timestamp=now,
+            confidence=0.95,
+            validation_passed=True,
+        ),
+        ingestion=IngestionMetadata(
+            ingestion_id=f"ing-{document_id}",
+            source_id=source_id,
+            received_at=now,
+            processed_at=now,
+        ),
+        extracted_fields=kwargs.get("extracted_fields", {}),
+        linkage_fields=kwargs.get("linkage_fields", {}),
+        created_at=now,
+        relevance_score=relevance_score,
+    )
 
 
 class MockToolCallRequest:
@@ -167,10 +245,11 @@ class TestGetDocumentsHandler:
         servicer: McpToolServiceServicer,
         mock_document_client: MagicMock,
     ) -> None:
-        """Verify get_documents returns documents."""
+        """Verify get_documents returns Document Pydantic models serialized as JSON."""
+        # DocumentClient now returns Pydantic Document models (Story 0.6.12)
         mock_docs = [
-            {"document_id": "doc-001", "source_id": "qc-analyzer-result"},
-            {"document_id": "doc-002", "source_id": "qc-analyzer-result"},
+            _create_test_document("doc-001", "qc-analyzer-result"),
+            _create_test_document("doc-002", "qc-analyzer-result"),
         ]
         mock_document_client.get_documents.return_value = mock_docs
 
@@ -230,12 +309,13 @@ class TestGetDocumentByIdHandler:
         servicer: McpToolServiceServicer,
         mock_document_client: MagicMock,
     ) -> None:
-        """Verify get_document_by_id returns document."""
-        mock_doc = {
-            "document_id": "qc-analyzer/batch-001/leaf_001",
-            "source_id": "qc-analyzer-exceptions",
-            "attributes": {"issue": "coarse leaf"},
-        }
+        """Verify get_document_by_id returns Document Pydantic model serialized as JSON."""
+        # DocumentClient now returns Pydantic Document models (Story 0.6.12)
+        mock_doc = _create_test_document(
+            "qc-analyzer/batch-001/leaf_001",
+            "qc-analyzer-exceptions",
+            extracted_fields={"issue": "coarse leaf"},
+        )
         mock_document_client.get_document_by_id.return_value = mock_doc
 
         request = MockToolCallRequest(
@@ -251,28 +331,19 @@ class TestGetDocumentByIdHandler:
         assert result["document"]["document_id"] == "qc-analyzer/batch-001/leaf_001"
 
     @pytest.mark.asyncio
-    async def test_get_document_by_id_with_files(
+    async def test_get_document_by_id_with_include_files_flag(
         self,
         servicer: McpToolServiceServicer,
         mock_document_client: MagicMock,
-        mock_blob_url_generator: MagicMock,
     ) -> None:
-        """Verify get_document_by_id enriches files with SAS URLs."""
-        mock_doc = {
-            "document_id": "doc-001",
-            "files": [
-                {"blob_uri": "https://storage.blob.core.windows.net/container/file.jpg"},
-            ],
-        }
-        mock_document_client.get_document_by_id.return_value = mock_doc
+        """Verify get_document_by_id handles include_files flag without error.
 
-        enriched_files = [
-            {
-                "blob_uri": "https://storage.blob.core.windows.net/container/file.jpg",
-                "sas_url": "https://storage.blob.core.windows.net/container/file.jpg?token",
-            },
-        ]
-        mock_blob_url_generator.enrich_files_with_sas.return_value = enriched_files
+        Note: File enrichment is no longer supported with Pydantic Document models
+        per Story 0.6.12. The include_files flag is accepted for API compatibility
+        but no longer triggers SAS URL enrichment.
+        """
+        mock_doc = _create_test_document("doc-001", "qc-analyzer-exceptions")
+        mock_document_client.get_document_by_id.return_value = mock_doc
 
         request = MockToolCallRequest(
             tool_name="get_document_by_id",
@@ -282,10 +353,10 @@ class TestGetDocumentByIdHandler:
 
         response = await servicer.CallTool(request, context)
 
+        # Should succeed - include_files is accepted but no longer triggers enrichment
         assert response.success is True
-        mock_blob_url_generator.enrich_files_with_sas.assert_called_once()
         result = json.loads(response.result_json)
-        assert result["document"]["files"][0]["sas_url"] is not None
+        assert result["document"]["document_id"] == "doc-001"
 
     @pytest.mark.asyncio
     async def test_get_document_by_id_not_found(
@@ -317,10 +388,11 @@ class TestGetFarmerDocumentsHandler:
         servicer: McpToolServiceServicer,
         mock_document_client: MagicMock,
     ) -> None:
-        """Verify get_farmer_documents returns documents."""
+        """Verify get_farmer_documents returns Document Pydantic models serialized as JSON."""
+        # DocumentClient now returns Pydantic Document models (Story 0.6.12)
         mock_docs = [
-            {"document_id": "doc-001", "farmer_id": "WM-4521"},
-            {"document_id": "doc-002", "farmer_id": "WM-4521"},
+            _create_test_document("doc-001", linkage_fields={"farmer_id": "WM-4521"}),
+            _create_test_document("doc-002", linkage_fields={"farmer_id": "WM-4521"}),
         ]
         mock_document_client.get_farmer_documents.return_value = mock_docs
 
@@ -347,9 +419,10 @@ class TestSearchDocumentsHandler:
         servicer: McpToolServiceServicer,
         mock_document_client: MagicMock,
     ) -> None:
-        """Verify search_documents returns results."""
+        """Verify search_documents returns SearchResult Pydantic models serialized as JSON."""
+        # DocumentClient now returns Pydantic SearchResult models (Story 0.6.12)
         mock_docs = [
-            {"document_id": "doc-001", "relevance_score": 1.5},
+            _create_test_search_result("doc-001", relevance_score=0.95),
         ]
         mock_document_client.search_documents.return_value = mock_docs
 

@@ -4,6 +4,8 @@ from datetime import datetime
 from typing import Any
 
 import structlog
+from fp_common.converters import document_from_dict, search_result_from_dict
+from fp_common.models import Document, SearchResult
 from motor.motor_asyncio import AsyncIOMotorClient, AsyncIOMotorDatabase
 
 logger = structlog.get_logger(__name__)
@@ -24,7 +26,12 @@ class DocumentClientError(Exception):
 
 
 class DocumentClient:
-    """Async MongoDB client for document operations."""
+    """Async MongoDB client for document operations.
+
+    Note:
+        All methods return Pydantic models instead of dicts.
+        Call model.model_dump() at serialization boundaries if needed.
+    """
 
     # Default collection for backward compatibility
     DEFAULT_COLLECTION = "quality_documents"
@@ -122,7 +129,7 @@ class DocumentClient:
         date_range: dict[str, str] | None = None,
         limit: int = 50,
         collection_name: str | None = None,
-    ) -> list[dict[str, Any]]:
+    ) -> list[Document]:
         """Query documents with flexible filters.
 
         Args:
@@ -135,7 +142,7 @@ class DocumentClient:
             collection_name: Optional collection to query (from source_config.storage.index_collection)
 
         Returns:
-            List of matching documents sorted by created_at descending
+            List of Document Pydantic models sorted by created_at descending.
         """
         query = self._build_query(
             source_id=source_id,
@@ -159,12 +166,10 @@ class DocumentClient:
         )
 
         cursor = collection.find(query).sort("created_at", -1).limit(limit)
-        documents = await cursor.to_list(length=limit)
+        raw_documents = await cursor.to_list(length=limit)
 
-        # Convert ObjectId to string for JSON serialization
-        for doc in documents:
-            if "_id" in doc:
-                doc["_id"] = str(doc["_id"])
+        # Convert to Pydantic models
+        documents = [document_from_dict(doc) for doc in raw_documents]
 
         logger.info(
             "Documents query completed",
@@ -175,32 +180,28 @@ class DocumentClient:
 
         return documents
 
-    async def get_document_by_id(self, document_id: str) -> dict[str, Any]:
+    async def get_document_by_id(self, document_id: str) -> Document:
         """Get a single document by its document_id.
 
         Args:
             document_id: The document's unique identifier
 
         Returns:
-            The document dictionary
+            Document Pydantic model.
 
         Raises:
             DocumentNotFoundError: If no document with the given ID exists
         """
         logger.debug("Getting document by ID", document_id=document_id)
 
-        document = await self._default_collection.find_one({"document_id": document_id})
+        raw_document = await self._default_collection.find_one({"document_id": document_id})
 
-        if document is None:
+        if raw_document is None:
             logger.warning("Document not found", document_id=document_id)
             raise DocumentNotFoundError(document_id)
 
-        # Convert ObjectId to string
-        if "_id" in document:
-            document["_id"] = str(document["_id"])
-
         logger.info("Document retrieved", document_id=document_id)
-        return document
+        return document_from_dict(raw_document)
 
     async def get_farmer_documents(
         self,
@@ -208,7 +209,7 @@ class DocumentClient:
         source_ids: list[str] | None = None,
         date_range: dict[str, str] | None = None,
         limit: int = 100,
-    ) -> list[dict[str, Any]]:
+    ) -> list[Document]:
         """Get all documents for a specific farmer.
 
         Args:
@@ -218,7 +219,7 @@ class DocumentClient:
             limit: Maximum number of results (default 100, max 1000)
 
         Returns:
-            List of matching documents sorted by created_at descending
+            List of Document Pydantic models sorted by created_at descending.
         """
         # Check both linkage_fields and extracted_fields for farmer_id
         query: dict[str, Any] = {
@@ -250,12 +251,10 @@ class DocumentClient:
         )
 
         cursor = self._default_collection.find(query).sort("created_at", -1).limit(limit)
-        documents = await cursor.to_list(length=limit)
+        raw_documents = await cursor.to_list(length=limit)
 
-        # Convert ObjectId to string
-        for doc in documents:
-            if "_id" in doc:
-                doc["_id"] = str(doc["_id"])
+        # Convert to Pydantic models
+        documents = [document_from_dict(doc) for doc in raw_documents]
 
         logger.info(
             "Farmer documents query completed",
@@ -271,7 +270,7 @@ class DocumentClient:
         source_ids: list[str] | None = None,
         farmer_id: str | None = None,
         limit: int = 20,
-    ) -> list[dict[str, Any]]:
+    ) -> list[SearchResult]:
         """Full-text search across documents.
 
         Uses MongoDB text index if available, otherwise falls back to regex search.
@@ -283,7 +282,7 @@ class DocumentClient:
             limit: Maximum number of results (default 20, max 100)
 
         Returns:
-            List of matching documents with relevance scoring
+            List of SearchResult Pydantic models with relevance scoring.
         """
         # Enforce maximum limit
         limit = min(limit, 100)
@@ -314,21 +313,21 @@ class DocumentClient:
                 .sort([("score", {"$meta": "textScore"})])
                 .limit(limit)
             )
-            documents = await cursor.to_list(length=limit)
+            raw_documents = await cursor.to_list(length=limit)
 
-            if documents:
-                # Convert ObjectId and add relevance score
-                for doc in documents:
-                    if "_id" in doc:
-                        doc["_id"] = str(doc["_id"])
-                    doc["relevance_score"] = doc.pop("score", 0)
+            if raw_documents:
+                # Convert to SearchResult models with relevance score
+                results = []
+                for doc in raw_documents:
+                    doc["relevance_score"] = doc.pop("score", 1.0)
+                    results.append(search_result_from_dict(doc))
 
                 logger.info(
                     "Text search completed",
                     query=query_text,
-                    count=len(documents),
+                    count=len(results),
                 )
-                return documents
+                return results
         except Exception as e:
             logger.debug(
                 "Text search failed, falling back to regex",
@@ -346,21 +345,21 @@ class DocumentClient:
         }
 
         cursor = self._default_collection.find(regex_query).limit(limit)
-        documents = await cursor.to_list(length=limit)
+        raw_documents = await cursor.to_list(length=limit)
 
-        # Convert ObjectId
-        for doc in documents:
-            if "_id" in doc:
-                doc["_id"] = str(doc["_id"])
+        # Convert to SearchResult models with default relevance score
+        results = []
+        for doc in raw_documents:
             doc["relevance_score"] = 1.0  # Default score for regex matches
+            results.append(search_result_from_dict(doc))
 
         logger.info(
             "Regex search completed",
             query=query_text,
-            count=len(documents),
+            count=len(results),
         )
 
-        return documents
+        return results
 
     async def close(self) -> None:
         """Close the MongoDB client connection."""

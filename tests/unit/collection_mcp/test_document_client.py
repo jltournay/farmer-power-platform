@@ -139,10 +139,25 @@ class TestDocumentClientGetDocuments:
 
     @pytest.mark.asyncio
     async def test_get_documents_returns_list(self, client: DocumentClient) -> None:
-        """Verify get_documents returns a list."""
+        """Verify get_documents returns a list of Document Pydantic models."""
+        # Mock data must match DocumentIndex schema with nested structures
         mock_docs = [
-            {"_id": "id1", "document_id": "doc-001", "source_id": "test"},
-            {"_id": "id2", "document_id": "doc-002", "source_id": "test"},
+            {
+                "_id": "id1",
+                "document_id": "doc-001",
+                "ingestion": {"source_id": "test", "ingestion_id": "ing-001"},
+                "raw_document": {"blob_container": "raw", "blob_path": "path1"},
+                "extraction": {"ai_agent_id": "agent-1"},
+                "extracted_fields": {},
+            },
+            {
+                "_id": "id2",
+                "document_id": "doc-002",
+                "ingestion": {"source_id": "test", "ingestion_id": "ing-002"},
+                "raw_document": {"blob_container": "raw", "blob_path": "path2"},
+                "extraction": {"ai_agent_id": "agent-1"},
+                "extracted_fields": {},
+            },
         ]
         mock_cursor = MockAsyncCursor(mock_docs)
         client._default_collection = MagicMock()
@@ -150,15 +165,26 @@ class TestDocumentClientGetDocuments:
 
         result = await client.get_documents(source_id="test")
 
+        # Returns Pydantic Document models (Story 0.6.12)
         assert len(result) == 2
-        assert result[0]["document_id"] == "doc-001"
-        # Verify ObjectId was converted to string
-        assert isinstance(result[0]["_id"], str)
+        assert result[0].document_id == "doc-001"
+        assert result[0].ingestion.source_id == "test"
 
     @pytest.mark.asyncio
     async def test_get_documents_respects_limit(self, client: DocumentClient) -> None:
         """Verify get_documents respects limit parameter."""
-        mock_docs = [{"_id": f"id{i}", "document_id": f"doc-{i:03d}"} for i in range(100)]
+        # Mock data must match DocumentIndex schema with nested structures
+        mock_docs = [
+            {
+                "_id": f"id{i}",
+                "document_id": f"doc-{i:03d}",
+                "ingestion": {"source_id": "test", "ingestion_id": f"ing-{i}"},
+                "raw_document": {"blob_container": "raw", "blob_path": f"path{i}"},
+                "extraction": {"ai_agent_id": "agent-1"},
+                "extracted_fields": {},
+            }
+            for i in range(100)
+        ]
         mock_cursor = MockAsyncCursor(mock_docs)
         client._default_collection = MagicMock()
         client._default_collection.find = MagicMock(return_value=mock_cursor)
@@ -170,7 +196,17 @@ class TestDocumentClientGetDocuments:
     @pytest.mark.asyncio
     async def test_get_documents_enforces_max_limit(self, client: DocumentClient) -> None:
         """Verify get_documents enforces maximum limit of 1000."""
-        mock_docs = [{"_id": "id1", "document_id": "doc-001"}]
+        # Mock data must match DocumentIndex schema with nested structures
+        mock_docs = [
+            {
+                "_id": "id1",
+                "document_id": "doc-001",
+                "ingestion": {"source_id": "test", "ingestion_id": "ing-001"},
+                "raw_document": {"blob_container": "raw", "blob_path": "path1"},
+                "extraction": {"ai_agent_id": "agent-1"},
+                "extracted_fields": {},
+            }
+        ]
         mock_cursor = MockAsyncCursor(mock_docs)
         client._default_collection = MagicMock()
         client._default_collection.find = MagicMock(return_value=mock_cursor)
@@ -197,20 +233,24 @@ class TestDocumentClientGetDocumentById:
 
     @pytest.mark.asyncio
     async def test_get_document_by_id_returns_document(self, client: DocumentClient) -> None:
-        """Verify get_document_by_id returns document."""
+        """Verify get_document_by_id returns a Document Pydantic model."""
+        # Mock data must match DocumentIndex schema with nested structures
         mock_doc = {
             "_id": "id1",
             "document_id": "qc-analyzer/batch-001/leaf_001",
-            "source_id": "qc-analyzer-exceptions",
-            "files": [{"blob_uri": "https://storage.blob.core.windows.net/test/file.jpg"}],
+            "ingestion": {"source_id": "qc-analyzer-exceptions", "ingestion_id": "ing-001"},
+            "raw_document": {"blob_container": "raw", "blob_path": "batch-001/leaf_001.jpg"},
+            "extraction": {"ai_agent_id": "qc-analyzer"},
+            "extracted_fields": {"grade": "A"},
         }
         client._default_collection = MagicMock()
         client._default_collection.find_one = AsyncMock(return_value=mock_doc)
 
         result = await client.get_document_by_id("qc-analyzer/batch-001/leaf_001")
 
-        assert result["document_id"] == "qc-analyzer/batch-001/leaf_001"
-        assert isinstance(result["_id"], str)
+        # Returns Pydantic Document model (Story 0.6.12)
+        assert result.document_id == "qc-analyzer/batch-001/leaf_001"
+        assert result.ingestion.source_id == "qc-analyzer-exceptions"
 
     @pytest.mark.asyncio
     async def test_get_document_by_id_raises_not_found(self, client: DocumentClient) -> None:
@@ -239,10 +279,27 @@ class TestDocumentClientGetFarmerDocuments:
 
     @pytest.mark.asyncio
     async def test_get_farmer_documents_basic(self, client: DocumentClient) -> None:
-        """Verify get_farmer_documents returns documents for farmer."""
+        """Verify get_farmer_documents returns Document Pydantic models for farmer."""
+        # Mock data must match DocumentIndex schema with nested structures
         mock_docs = [
-            {"_id": "id1", "document_id": "doc-001", "farmer_id": "WM-4521"},
-            {"_id": "id2", "document_id": "doc-002", "farmer_id": "WM-4521"},
+            {
+                "_id": "id1",
+                "document_id": "doc-001",
+                "ingestion": {"source_id": "qc-analyzer", "ingestion_id": "ing-001"},
+                "raw_document": {"blob_container": "raw", "blob_path": "path1"},
+                "extraction": {"ai_agent_id": "agent-1"},
+                "extracted_fields": {"farmer_id": "WM-4521"},
+                "linkage_fields": {"farmer_id": "WM-4521"},
+            },
+            {
+                "_id": "id2",
+                "document_id": "doc-002",
+                "ingestion": {"source_id": "qc-analyzer", "ingestion_id": "ing-002"},
+                "raw_document": {"blob_container": "raw", "blob_path": "path2"},
+                "extraction": {"ai_agent_id": "agent-1"},
+                "extracted_fields": {"farmer_id": "WM-4521"},
+                "linkage_fields": {"farmer_id": "WM-4521"},
+            },
         ]
         mock_cursor = MockAsyncCursor(mock_docs)
         client._default_collection = MagicMock()
@@ -250,13 +307,25 @@ class TestDocumentClientGetFarmerDocuments:
 
         result = await client.get_farmer_documents(farmer_id="WM-4521")
 
+        # Returns Pydantic Document models (Story 0.6.12)
         assert len(result) == 2
-        assert all(doc["farmer_id"] == "WM-4521" for doc in result)
+        assert all(doc.linkage_fields.get("farmer_id") == "WM-4521" for doc in result)
 
     @pytest.mark.asyncio
     async def test_get_farmer_documents_with_source_filter(self, client: DocumentClient) -> None:
         """Verify get_farmer_documents filters by source_ids."""
-        mock_docs = [{"_id": "id1", "document_id": "doc-001", "farmer_id": "WM-4521"}]
+        # Mock data must match DocumentIndex schema with nested structures
+        mock_docs = [
+            {
+                "_id": "id1",
+                "document_id": "doc-001",
+                "ingestion": {"source_id": "qc-analyzer-result", "ingestion_id": "ing-001"},
+                "raw_document": {"blob_container": "raw", "blob_path": "path1"},
+                "extraction": {"ai_agent_id": "agent-1"},
+                "extracted_fields": {"farmer_id": "WM-4521"},
+                "linkage_fields": {"farmer_id": "WM-4521"},
+            }
+        ]
         mock_cursor = MockAsyncCursor(mock_docs)
         client._default_collection = MagicMock()
         client._default_collection.find = MagicMock(return_value=mock_cursor)
@@ -289,9 +358,18 @@ class TestDocumentClientSearchDocuments:
 
     @pytest.mark.asyncio
     async def test_search_documents_text_search(self, client: DocumentClient) -> None:
-        """Verify search_documents uses text search when available."""
+        """Verify search_documents uses text search and returns SearchResult models."""
+        # Mock data must match DocumentIndex schema with nested structures
         mock_docs = [
-            {"_id": "id1", "document_id": "doc-001", "score": 1.5},
+            {
+                "_id": "id1",
+                "document_id": "doc-001",
+                "ingestion": {"source_id": "qc-analyzer", "ingestion_id": "ing-001"},
+                "raw_document": {"blob_container": "raw", "blob_path": "path1"},
+                "extraction": {"ai_agent_id": "agent-1"},
+                "extracted_fields": {"description": "coarse leaf"},
+                "relevance_score": 1.5,
+            },
         ]
         mock_cursor = MockAsyncCursor(mock_docs)
 
@@ -305,7 +383,9 @@ class TestDocumentClientSearchDocuments:
 
         result = await client.search_documents(query_text="coarse leaf")
 
+        # Returns Pydantic SearchResult models (Story 0.6.12)
         assert len(result) == 1
+        assert result[0].document_id == "doc-001"
         # Verify text search query was used
         call_args = client._default_collection.find.call_args
         query = call_args[0][0]
@@ -314,7 +394,18 @@ class TestDocumentClientSearchDocuments:
     @pytest.mark.asyncio
     async def test_search_documents_enforces_max_limit(self, client: DocumentClient) -> None:
         """Verify search_documents enforces maximum limit of 100."""
-        mock_docs = [{"_id": "id1", "document_id": "doc-001", "score": 1.0}]
+        # Mock data must match DocumentIndex schema with nested structures
+        mock_docs = [
+            {
+                "_id": "id1",
+                "document_id": "doc-001",
+                "ingestion": {"source_id": "qc-analyzer", "ingestion_id": "ing-001"},
+                "raw_document": {"blob_container": "raw", "blob_path": "path1"},
+                "extraction": {"ai_agent_id": "agent-1"},
+                "extracted_fields": {},
+                "relevance_score": 1.0,
+            }
+        ]
         mock_cursor = MockAsyncCursor(mock_docs)
         mock_cursor_with_sort = MagicMock()
         mock_cursor_with_sort.sort = MagicMock(return_value=mock_cursor)

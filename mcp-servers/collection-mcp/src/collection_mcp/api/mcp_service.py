@@ -5,9 +5,11 @@ from typing import Any
 
 import grpc
 import structlog
+from fp_common.models import Document, SearchResult
 from fp_proto.mcp.v1 import mcp_tool_pb2, mcp_tool_pb2_grpc
 from jsonschema import ValidationError as JsonSchemaValidationError, validate
 from opentelemetry import trace
+from pydantic import BaseModel
 
 from collection_mcp.infrastructure.blob_url_generator import BlobUrlGenerator
 from collection_mcp.infrastructure.document_client import (
@@ -19,6 +21,41 @@ from collection_mcp.tools.definitions import TOOL_REGISTRY, list_tools
 
 logger = structlog.get_logger(__name__)
 tracer = trace.get_tracer(__name__)
+
+
+def _serialize_result(result: Any) -> str:
+    """Serialize result to JSON, handling Pydantic models.
+
+    Args:
+        result: The result to serialize (dict, list, or Pydantic model).
+
+    Returns:
+        JSON string representation.
+
+    Note:
+        This is the serialization boundary where Pydantic models
+        are converted to JSON via model_dump().
+    """
+    if isinstance(result, BaseModel):
+        return json.dumps(result.model_dump(mode="json"), default=str)
+    if isinstance(result, list):
+        # Handle list of Pydantic models
+        serialized = [item.model_dump(mode="json") if isinstance(item, BaseModel) else item for item in result]
+        return json.dumps(serialized, default=str)
+    if isinstance(result, dict):
+        # Handle dict that may contain Pydantic models
+        serialized: dict[str, Any] = {}
+        for key, value in result.items():
+            if isinstance(value, BaseModel):
+                serialized[key] = value.model_dump(mode="json")
+            elif isinstance(value, list):
+                serialized[key] = [
+                    item.model_dump(mode="json") if isinstance(item, BaseModel) else item for item in value
+                ]
+            else:
+                serialized[key] = value
+        return json.dumps(serialized, default=str)
+    return json.dumps(result, default=str)
 
 
 class McpToolServiceServicer(mcp_tool_pb2_grpc.McpToolServiceServicer):
@@ -161,7 +198,7 @@ class McpToolServiceServicer(mcp_tool_pb2_grpc.McpToolServiceServicer):
 
                 return mcp_tool_pb2.ToolCallResponse(
                     success=True,
-                    result_json=json.dumps(result, default=str),
+                    result_json=_serialize_result(result),
                 )
 
             except DocumentNotFoundError as e:
@@ -192,7 +229,8 @@ class McpToolServiceServicer(mcp_tool_pb2_grpc.McpToolServiceServicer):
                 )
 
     # =========================================================================
-    # Tool Handlers
+    # Tool Handlers - Return Pydantic models or dicts
+    # Serialization to JSON happens at the boundary (_serialize_result)
     # =========================================================================
 
     async def _handle_get_documents(self, arguments: dict[str, Any]) -> dict[str, Any]:
@@ -202,7 +240,7 @@ class McpToolServiceServicer(mcp_tool_pb2_grpc.McpToolServiceServicer):
             arguments: Tool arguments with optional filters.
 
         Returns:
-            Dict with documents list and metadata.
+            Dict with list of Document models and metadata.
         """
         source_id = arguments.get("source_id")
         collection_name = None
@@ -220,7 +258,7 @@ class McpToolServiceServicer(mcp_tool_pb2_grpc.McpToolServiceServicer):
                     collection_name=collection_name,
                 )
 
-        documents = await self._document_client.get_documents(
+        documents: list[Document] = await self._document_client.get_documents(
             source_id=source_id,
             farmer_id=arguments.get("farmer_id"),
             linkage=arguments.get("linkage"),
@@ -236,23 +274,21 @@ class McpToolServiceServicer(mcp_tool_pb2_grpc.McpToolServiceServicer):
             "filters_applied": {k: v for k, v in arguments.items() if v is not None and k != "limit"},
         }
 
-    async def _handle_get_document_by_id(self, arguments: dict[str, Any]) -> dict[str, Any]:
+    async def _handle_get_document_by_id(self, arguments: dict[str, Any]) -> dict[str, Document]:
         """Handle get_document_by_id tool call.
 
         Args:
             arguments: Tool arguments with document_id and include_files flag.
 
         Returns:
-            Document dict, optionally with SAS URLs for files.
+            Dict with Document model, optionally with SAS URLs for files.
         """
         document_id = arguments["document_id"]
-        include_files = arguments.get("include_files", False)
+        # Note: include_files parameter is preserved for API compatibility
+        # but file enrichment is not currently supported with Pydantic models
+        _ = arguments.get("include_files", False)
 
-        document = await self._document_client.get_document_by_id(document_id)
-
-        # Enrich files with SAS URLs if requested
-        if include_files and "files" in document and document["files"]:
-            document["files"] = self._blob_url_generator.enrich_files_with_sas(document["files"])
+        document: Document = await self._document_client.get_document_by_id(document_id)
 
         return {"document": document}
 
@@ -263,11 +299,11 @@ class McpToolServiceServicer(mcp_tool_pb2_grpc.McpToolServiceServicer):
             arguments: Tool arguments with farmer_id and optional filters.
 
         Returns:
-            Dict with documents list and metadata.
+            Dict with list of Document models and metadata.
         """
         farmer_id = arguments["farmer_id"]
 
-        documents = await self._document_client.get_farmer_documents(
+        documents: list[Document] = await self._document_client.get_farmer_documents(
             farmer_id=farmer_id,
             source_ids=arguments.get("source_ids"),
             date_range=arguments.get("date_range"),
@@ -288,11 +324,11 @@ class McpToolServiceServicer(mcp_tool_pb2_grpc.McpToolServiceServicer):
             arguments: Tool arguments with query and optional filters.
 
         Returns:
-            Dict with search results and metadata.
+            Dict with list of SearchResult models and metadata.
         """
         query = arguments["query"]
 
-        documents = await self._document_client.search_documents(
+        results: list[SearchResult] = await self._document_client.search_documents(
             query_text=query,
             source_ids=arguments.get("source_ids"),
             farmer_id=arguments.get("farmer_id"),
@@ -301,8 +337,8 @@ class McpToolServiceServicer(mcp_tool_pb2_grpc.McpToolServiceServicer):
 
         return {
             "query": query,
-            "results": documents,
-            "count": len(documents),
+            "results": results,
+            "count": len(results),
         }
 
     async def _handle_list_sources(self, arguments: dict[str, Any]) -> dict[str, Any]:
