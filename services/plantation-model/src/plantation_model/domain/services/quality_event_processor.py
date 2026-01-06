@@ -516,11 +516,28 @@ class QualityEventProcessor:
         """Extract bag summary from document.
 
         Story 0.6.13: Updated to work with Pydantic Document model.
+        Handles stringified dicts from proto map<string, string>.
         """
+        import ast
+
         # Check extracted_fields (where DocumentIndex stores it)
         if "bag_summary" in document.extracted_fields:
             bag_summary = document.extracted_fields["bag_summary"]
-            return bag_summary if isinstance(bag_summary, dict) else {}
+            if isinstance(bag_summary, dict):
+                return bag_summary
+            if isinstance(bag_summary, str):
+                # Proto map<string, string> converts nested dicts to strings
+                # e.g., "{'grade_counts': {'Primary': 5}}" needs parsing
+                try:
+                    parsed = ast.literal_eval(bag_summary)
+                    if isinstance(parsed, dict):
+                        return parsed
+                except (ValueError, SyntaxError):
+                    logger.warning(
+                        "Failed to parse bag_summary string",
+                        bag_summary=bag_summary[:100] if len(bag_summary) > 100 else bag_summary,
+                    )
+            return {}
         return {}
 
     def _get_total_weight(self, bag_summary: dict[str, Any]) -> float:
