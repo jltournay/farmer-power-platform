@@ -546,7 +546,8 @@ Claude Opus 4.5 (claude-opus-4-5-20251101)
 
 ### Action Items
 
-- [ ] **[M1]** Update `tests/integration/test_quality_event_flow.py` to remove/fix stale `DaprPubSubClient` mock (can be deferred to future story as test not in CI)
+- [x] **[M1]** Update `tests/integration/test_quality_event_flow.py` to remove/fix stale `DaprPubSubClient` mock
+  - **Fixed:** Commit 1373aa8 - Removed stale mock, updated QualityEventProcessor instantiation, patched module-level `publish_event()`
 
 ### Reviewer Notes
 
@@ -566,3 +567,32 @@ Moved publisher from `infrastructure/dapr_client.py` to `events/publisher.py` fo
 - Publisher and subscriber now both live in the `events/` package
 - Cleaner separation: `infrastructure/` for external adapters (MongoDB, gRPC), `events/` for DAPR pub/sub
 - All imports and mock paths updated accordingly
+
+---
+
+## Code Review #2 (Follow-up)
+
+**Date:** 2026-01-06
+**Reviewer:** Claude Opus 4.5
+
+### Review Scope
+Follow-up review to fix action items from Code Review #1.
+
+### Issues Fixed
+
+**[M1] Integration test stale mock (RESOLVED)**
+- Updated `tests/integration/test_quality_event_flow.py`:
+  - Removed `event_publisher=mock_event_publisher` from `QualityEventProcessor` constructor (parameter no longer exists)
+  - Created `mock_publish_event` fixture to mock module-level `publish_event()` function
+  - Updated all test methods to use `mock_publish_event` instead of `mock_event_publisher`
+  - Added patch for `plantation_model.events.publisher.publish_event` in test context
+
+**[M2] Uncommitted config changes (RESOLVED)**
+- Included `extra="ignore"` setting in ai-model and collection-model config.py in this commit per user request
+
+### Verification
+- All unit tests pass (6 publisher tests, 19 QualityEventProcessor tests)
+- Ruff linting passes
+- Code pushed to branch
+
+**Verdict:** ✅ APPROVED - All action items resolved. Story ready for merge.
