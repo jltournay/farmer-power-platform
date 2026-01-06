@@ -1,6 +1,6 @@
 # Story 0.6.12: MCP Clients Return Pydantic Models
 
-**Status:** in-progress
+**Status:** review
 **GitHub Issue:** #111
 **Epic:** [Epic 0.6: Infrastructure Hardening](../epics/epic-0-6-infrastructure-hardening.md)
 **ADR:** [ADR-004: Type Safety - Shared Pydantic Models](../architecture/adr/ADR-004-type-safety-shared-pydantic-models.md)
@@ -442,9 +442,9 @@ git push origin feature/0-6-12-mcp-clients-pydantic-models
 # Wait ~30s, then check CI status
 gh run list --branch feature/0-6-12-mcp-clients-pydantic-models --limit 3
 ```
-**CI Run ID:** _______________ (to be filled after push)
-**CI E2E Status:** [ ] Passed / [ ] Failed (to be verified)
-**Verification Date:** _______________
+**CI Quality Run ID:** 20755854155 ✅ PASSED
+**CI E2E Run ID:** 20755952039 ✅ PASSED
+**Verification Date:** 2026-01-06
 
 ---
 
@@ -589,3 +589,24 @@ N/A
 - `mcp-servers/plantation-mcp/src/plantation_mcp/api/mcp_service.py` - Added _serialize_result() for model_dump() at boundary
 - `mcp-servers/collection-mcp/src/collection_mcp/infrastructure/document_client.py` - Returns Pydantic Document/SearchResult models
 - `mcp-servers/collection-mcp/src/collection_mcp/api/mcp_service.py` - Added _serialize_result() for model_dump() at boundary
+- `tests/integration/test_collection_e2e_open_meteo.py` - Updated assertions for Pydantic attribute access
+- `tests/unit/collection_mcp/test_document_client.py` - Updated mock data for Pydantic model returns
+- `tests/unit/collection_mcp/test_mcp_service.py` - Updated mock return values to use Pydantic models
+
+### Code Review Notes
+
+**Review Date:** 2026-01-06
+**Reviewer:** Claude Opus 4.5 (adversarial code review)
+
+**Issues Found & Resolution:**
+
+| # | Severity | Issue | Resolution |
+|---|----------|-------|------------|
+| M1 | MEDIUM | Story File List missing test file updates | ✅ FIXED - Added 3 test files to File List |
+| M2 | MEDIUM | Code duplication: `_serialize_result()` in both MCP services | ⏳ DEFERRED - Future story to extract to `fp_common.serialization` |
+| M3 | MEDIUM | Inconsistent `default=str` in `_serialize_result()` implementations | ⏳ DEFERRED - Will be fixed when M2 is addressed |
+| L1 | LOW | Story status not updated to "review" | ✅ FIXED |
+| L2 | LOW | CI verification section not filled | ✅ FIXED |
+
+**Follow-up Consideration (Future Story):**
+The `_serialize_result()` helper function is duplicated in both `plantation_mcp/api/mcp_service.py` and `collection_mcp/api/mcp_service.py`. Consider extracting to `fp_common` as a shared utility in a future infrastructure story.
