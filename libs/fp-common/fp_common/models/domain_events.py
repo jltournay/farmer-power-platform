@@ -45,8 +45,6 @@ class PlantationEventTopic(StrEnum):
 
     # Farmer events
     FARMER_REGISTERED = "plantation.farmer.registered"
-    FARMER_UPDATED = "plantation.farmer.updated"
-    FARMER_DEACTIVATED = "plantation.farmer.deactivated"
 
     # Plot events
     PLOT_CREATED = "plantation.plot.created"

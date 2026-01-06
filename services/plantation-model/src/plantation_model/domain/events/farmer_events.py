@@ -51,39 +51,3 @@ class FarmerRegisteredEvent(BaseModel):
     }
 
 
-class FarmerUpdatedEvent(BaseModel):
-    """Event published when a farmer's information is updated.
-
-    Topic: farmer-events
-    Event Type: plantation.farmer.updated
-    """
-
-    event_type: str = Field(
-        default="plantation.farmer.updated",
-        description="Event type identifier",
-    )
-    farmer_id: str = Field(description="Unique farmer ID (WM-XXXX format)")
-    updated_fields: list[str] = Field(description="List of field names that were updated")
-    timestamp: datetime = Field(
-        default_factory=lambda: datetime.now(UTC),
-        description="Event timestamp",
-    )
-
-
-class FarmerDeactivatedEvent(BaseModel):
-    """Event published when a farmer is deactivated.
-
-    Topic: farmer-events
-    Event Type: plantation.farmer.deactivated
-    """
-
-    event_type: str = Field(
-        default="plantation.farmer.deactivated",
-        description="Event type identifier",
-    )
-    farmer_id: str = Field(description="Unique farmer ID (WM-XXXX format)")
-    reason: str = Field(default="", description="Reason for deactivation")
-    timestamp: datetime = Field(
-        default_factory=lambda: datetime.now(UTC),
-        description="Event timestamp",
-    )

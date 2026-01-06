@@ -42,7 +42,8 @@ So that farmers can receive SMS notifications about their quality results.
 
 **Given** the service is running
 **When** subscribed to Dapr pub/sub topics
-**Then** "collection.end_bag.received" events trigger SMS generation
+**Then** "plantation.farmer.registered" events trigger welcome SMS (Story 4.8)
+**And** "collection.end_bag.received" events trigger SMS generation
 **And** "action_plan.generated" events trigger weekly SMS delivery
 
 **Given** the service receives a send request
@@ -331,3 +332,47 @@ So that I can communicate important announcements efficiently.
 - Scheduling: Dapr Jobs component
 - Rate limit: configurable per factory
 - Cost estimate shown before send: "~KES {amount}"
+
+---
+
+### Story 4.8: Welcome SMS on Farmer Registration
+
+As a **newly registered farmer**,
+I want to receive a welcome SMS immediately after registration,
+So that I know my registration was successful and understand what to expect.
+
+**Acceptance Criteria:**
+
+**Given** a farmer is registered in Plantation Model
+**When** the "plantation.farmer.registered" event is published
+**Then** the Notification Model receives the event via DAPR subscription
+**And** a welcome SMS is triggered within 30 seconds
+
+**Given** the welcome SMS is being composed
+**When** the farmer's preferences are fetched
+**Then** the message is translated to the farmer's pref_lang
+**And** the message includes: farmer_name, factory_name, collection_point_name
+
+**Given** the welcome SMS content
+**When** composed in any language
+**Then** it includes:
+  - Greeting with farmer's name
+  - Confirmation of registration
+  - Brief explanation of the service (quality feedback, weekly tips)
+  - Voice IVR number for assistance
+
+**Given** the welcome SMS
+**When** sent successfully
+**Then** the delivery is logged with farmer_id and timestamp
+**And** the event is marked as processed (idempotency)
+
+**Given** the "plantation.farmer.registered" event is received again (duplicate)
+**When** the farmer already received a welcome SMS
+**Then** no duplicate SMS is sent
+**And** the duplicate event is logged but ignored
+
+**Technical Notes:**
+- Subscribe to topic: "farmer-events" (event_type: "plantation.farmer.registered")
+- Idempotency key: farmer_id + event_type
+- Template: welcome_sms_{lang}.txt (Swahili, Kikuyu, Luo, English)
+- Single SMS (160 chars max) - condensed message

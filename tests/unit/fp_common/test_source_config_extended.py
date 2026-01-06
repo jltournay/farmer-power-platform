@@ -138,8 +138,6 @@ class TestEventConfig:
         """Test EventConfig accepts all valid Plantation event topics."""
         valid_topics = [
             "plantation.farmer.registered",
-            "plantation.farmer.updated",
-            "plantation.farmer.deactivated",
             "plantation.plot.created",
             "plantation.plot.updated",
         ]

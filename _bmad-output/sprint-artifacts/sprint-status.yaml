@@ -265,6 +265,7 @@ development_status:
   4-5-lead-farmer-escalation: backlog
   4-6-inbound-keyword-handling: backlog
   4-7-group-and-regional-messaging: backlog
+  4-8-welcome-sms-farmer-registration: backlog  # Subscribe to plantation.farmer.registered, send welcome SMS
   epic-4-retrospective: optional
 
   # ═══════════════════════════════════════════════════════════════════════════
