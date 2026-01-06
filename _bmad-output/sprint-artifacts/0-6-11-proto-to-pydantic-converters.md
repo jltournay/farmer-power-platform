@@ -147,13 +147,13 @@ So that field mappings are defined once and reused by both services and MCP clie
 - [x] Push to feature branch: `git push -u origin feature/0-6-11-proto-pydantic-converters`
 
 ### Story Done
-- [ ] Create Pull Request: `gh pr create --title "Story 0.6.11: Proto-to-Pydantic Converters" --base main`
-- [ ] CI passes on PR (including E2E tests)
+- [x] Create Pull Request: `gh pr create --title "Story 0.6.11: Proto-to-Pydantic Converters" --base main`
+- [x] CI passes on PR (including E2E tests)
 - [x] Code review completed (`/code-review` or human review)
 - [ ] PR approved and merged (squash)
 - [ ] Local branch cleaned up: `git branch -d feature/0-6-11-proto-pydantic-converters`
 
-**PR URL:** (pending - to be created after code review)
+**PR URL:** https://github.com/jltournay/farmer-power-platform/pull/110
 
 ---
 
