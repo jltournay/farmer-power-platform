@@ -1,28 +1,23 @@
-"""Unit tests for DaprPubSubClient."""
+"""Unit tests for DAPR publish_event function.
 
-from unittest.mock import AsyncMock, MagicMock, patch
+Story 0.6.14: Tests for SDK-based publish_event() per ADR-010.
+"""
 
-import httpx
+from unittest.mock import MagicMock, patch
+
 import pytest
+from dapr.clients.exceptions import DaprInternalError
+from grpc import RpcError
 from plantation_model.domain.events.farmer_events import FarmerRegisteredEvent
-from plantation_model.infrastructure.dapr_client import DaprPubSubClient
+from plantation_model.infrastructure.dapr_client import publish_event
 
 
-@pytest.fixture
-def dapr_client() -> DaprPubSubClient:
-    """Create a DaprPubSubClient with test settings."""
-    return DaprPubSubClient(dapr_host="localhost", dapr_http_port=3500)
-
-
-class TestDaprPubSubClientPublish:
-    """Tests for DaprPubSubClient.publish_event method."""
+class TestPublishEvent:
+    """Tests for publish_event function using DAPR SDK."""
 
     @pytest.mark.asyncio
-    async def test_publish_event_success(
-        self,
-        dapr_client: DaprPubSubClient,
-    ) -> None:
-        """Test successful event publishing."""
+    async def test_publish_event_success(self) -> None:
+        """Test successful event publishing via SDK."""
         event = FarmerRegisteredEvent(
             farmer_id="WM-0001",
             phone="+254712345678",
@@ -32,31 +27,28 @@ class TestDaprPubSubClientPublish:
             farm_scale="medium",
         )
 
-        mock_response = MagicMock()
-        mock_response.raise_for_status = MagicMock()
+        with patch("plantation_model.infrastructure.dapr_client.DaprClient") as mock_client_class:
+            mock_client = MagicMock()
+            mock_client_class.return_value.__enter__ = MagicMock(return_value=mock_client)
+            mock_client_class.return_value.__exit__ = MagicMock(return_value=None)
 
-        with patch("plantation_model.infrastructure.dapr_client.httpx.AsyncClient") as mock_client_class:
-            mock_client = AsyncMock()
-            mock_client.post = AsyncMock(return_value=mock_response)
-            mock_client_class.return_value.__aenter__ = AsyncMock(return_value=mock_client)
-            mock_client_class.return_value.__aexit__ = AsyncMock(return_value=None)
-
-            result = await dapr_client.publish_event(
+            result = await publish_event(
                 pubsub_name="pubsub",
                 topic="farmer-events",
                 data=event,
             )
 
             assert result is True
-            mock_client.post.assert_called_once()
-            call_args = mock_client.post.call_args
-            assert "http://localhost:3500/v1.0/publish/pubsub/farmer-events" in str(call_args)
+            mock_client.publish_event.assert_called_once()
+            call_kwargs = mock_client.publish_event.call_args.kwargs
+            assert call_kwargs["pubsub_name"] == "pubsub"
+            assert call_kwargs["topic_name"] == "farmer-events"
+            assert call_kwargs["data_content_type"] == "application/json"
+            # Data should be JSON string
+            assert '"farmer_id": "WM-0001"' in call_kwargs["data"]
 
     @pytest.mark.asyncio
-    async def test_publish_event_with_dict_data(
-        self,
-        dapr_client: DaprPubSubClient,
-    ) -> None:
+    async def test_publish_event_with_dict_data(self) -> None:
         """Test publishing event with dict data instead of Pydantic model."""
         event_dict = {
             "event_type": "plantation.farmer.registered",
@@ -64,29 +56,24 @@ class TestDaprPubSubClientPublish:
             "phone": "+254712345678",
         }
 
-        mock_response = MagicMock()
-        mock_response.raise_for_status = MagicMock()
+        with patch("plantation_model.infrastructure.dapr_client.DaprClient") as mock_client_class:
+            mock_client = MagicMock()
+            mock_client_class.return_value.__enter__ = MagicMock(return_value=mock_client)
+            mock_client_class.return_value.__exit__ = MagicMock(return_value=None)
 
-        with patch("plantation_model.infrastructure.dapr_client.httpx.AsyncClient") as mock_client_class:
-            mock_client = AsyncMock()
-            mock_client.post = AsyncMock(return_value=mock_response)
-            mock_client_class.return_value.__aenter__ = AsyncMock(return_value=mock_client)
-            mock_client_class.return_value.__aexit__ = AsyncMock(return_value=None)
-
-            result = await dapr_client.publish_event(
+            result = await publish_event(
                 pubsub_name="pubsub",
                 topic="farmer-events",
                 data=event_dict,
             )
 
             assert result is True
+            call_kwargs = mock_client.publish_event.call_args.kwargs
+            assert '"event_type": "plantation.farmer.registered"' in call_kwargs["data"]
 
     @pytest.mark.asyncio
-    async def test_publish_event_dapr_not_available(
-        self,
-        dapr_client: DaprPubSubClient,
-    ) -> None:
-        """Test event publishing when Dapr sidecar is not available."""
+    async def test_publish_event_dapr_internal_error(self) -> None:
+        """Test event publishing when DAPR returns internal error."""
         event = FarmerRegisteredEvent(
             farmer_id="WM-0001",
             phone="+254712345678",
@@ -96,13 +83,13 @@ class TestDaprPubSubClientPublish:
             farm_scale="medium",
         )
 
-        with patch("plantation_model.infrastructure.dapr_client.httpx.AsyncClient") as mock_client_class:
-            mock_client = AsyncMock()
-            mock_client.post = AsyncMock(side_effect=httpx.ConnectError("Connection refused"))
-            mock_client_class.return_value.__aenter__ = AsyncMock(return_value=mock_client)
-            mock_client_class.return_value.__aexit__ = AsyncMock(return_value=None)
+        with patch("plantation_model.infrastructure.dapr_client.DaprClient") as mock_client_class:
+            mock_client = MagicMock()
+            mock_client.publish_event.side_effect = DaprInternalError("Sidecar unavailable")
+            mock_client_class.return_value.__enter__ = MagicMock(return_value=mock_client)
+            mock_client_class.return_value.__exit__ = MagicMock(return_value=None)
 
-            result = await dapr_client.publish_event(
+            result = await publish_event(
                 pubsub_name="pubsub",
                 topic="farmer-events",
                 data=event,
@@ -112,11 +99,8 @@ class TestDaprPubSubClientPublish:
             assert result is False
 
     @pytest.mark.asyncio
-    async def test_publish_event_http_error(
-        self,
-        dapr_client: DaprPubSubClient,
-    ) -> None:
-        """Test event publishing with HTTP error response."""
+    async def test_publish_event_grpc_error(self) -> None:
+        """Test event publishing when gRPC returns error."""
         event = FarmerRegisteredEvent(
             farmer_id="WM-0001",
             phone="+254712345678",
@@ -126,26 +110,13 @@ class TestDaprPubSubClientPublish:
             farm_scale="medium",
         )
 
-        with patch("plantation_model.infrastructure.dapr_client.httpx.AsyncClient") as mock_client_class:
-            mock_client = AsyncMock()
+        with patch("plantation_model.infrastructure.dapr_client.DaprClient") as mock_client_class:
+            mock_client = MagicMock()
+            mock_client.publish_event.side_effect = RpcError()
+            mock_client_class.return_value.__enter__ = MagicMock(return_value=mock_client)
+            mock_client_class.return_value.__exit__ = MagicMock(return_value=None)
 
-            # Create mock response that raises on raise_for_status
-            mock_response = MagicMock()
-            mock_response.status_code = 500
-
-            def raise_for_status():
-                raise httpx.HTTPStatusError(
-                    "Internal Server Error",
-                    request=MagicMock(),
-                    response=mock_response,
-                )
-
-            mock_response.raise_for_status = raise_for_status
-            mock_client.post = AsyncMock(return_value=mock_response)
-            mock_client_class.return_value.__aenter__ = AsyncMock(return_value=mock_client)
-            mock_client_class.return_value.__aexit__ = AsyncMock(return_value=None)
-
-            result = await dapr_client.publish_event(
+            result = await publish_event(
                 pubsub_name="pubsub",
                 topic="farmer-events",
                 data=event,
@@ -155,10 +126,7 @@ class TestDaprPubSubClientPublish:
             assert result is False
 
     @pytest.mark.asyncio
-    async def test_publish_event_unexpected_error(
-        self,
-        dapr_client: DaprPubSubClient,
-    ) -> None:
+    async def test_publish_event_unexpected_error(self) -> None:
         """Test event publishing with unexpected error."""
         event = FarmerRegisteredEvent(
             farmer_id="WM-0001",
@@ -169,13 +137,13 @@ class TestDaprPubSubClientPublish:
             farm_scale="medium",
         )
 
-        with patch("plantation_model.infrastructure.dapr_client.httpx.AsyncClient") as mock_client_class:
-            mock_client = AsyncMock()
-            mock_client.post = AsyncMock(side_effect=Exception("Unexpected error"))
-            mock_client_class.return_value.__aenter__ = AsyncMock(return_value=mock_client)
-            mock_client_class.return_value.__aexit__ = AsyncMock(return_value=None)
+        with patch("plantation_model.infrastructure.dapr_client.DaprClient") as mock_client_class:
+            mock_client = MagicMock()
+            mock_client.publish_event.side_effect = Exception("Unexpected error")
+            mock_client_class.return_value.__enter__ = MagicMock(return_value=mock_client)
+            mock_client_class.return_value.__exit__ = MagicMock(return_value=None)
 
-            result = await dapr_client.publish_event(
+            result = await publish_event(
                 pubsub_name="pubsub",
                 topic="farmer-events",
                 data=event,
@@ -185,11 +153,8 @@ class TestDaprPubSubClientPublish:
             assert result is False
 
     @pytest.mark.asyncio
-    async def test_publish_event_with_metadata(
-        self,
-        dapr_client: DaprPubSubClient,
-    ) -> None:
-        """Test publishing event with custom metadata headers."""
+    async def test_publish_event_json_serialization(self) -> None:
+        """Test that data is properly JSON serialized per ADR-010."""
         event = FarmerRegisteredEvent(
             farmer_id="WM-0001",
             phone="+254712345678",
@@ -199,46 +164,19 @@ class TestDaprPubSubClientPublish:
             farm_scale="medium",
         )
 
-        mock_response = MagicMock()
-        mock_response.raise_for_status = MagicMock()
+        with patch("plantation_model.infrastructure.dapr_client.DaprClient") as mock_client_class:
+            mock_client = MagicMock()
+            mock_client_class.return_value.__enter__ = MagicMock(return_value=mock_client)
+            mock_client_class.return_value.__exit__ = MagicMock(return_value=None)
 
-        with patch("plantation_model.infrastructure.dapr_client.httpx.AsyncClient") as mock_client_class:
-            mock_client = AsyncMock()
-            mock_client.post = AsyncMock(return_value=mock_response)
-            mock_client_class.return_value.__aenter__ = AsyncMock(return_value=mock_client)
-            mock_client_class.return_value.__aexit__ = AsyncMock(return_value=None)
-
-            result = await dapr_client.publish_event(
+            await publish_event(
                 pubsub_name="pubsub",
                 topic="farmer-events",
                 data=event,
-                metadata={"x-trace-id": "abc123"},
             )
 
-            assert result is True
-            # Verify metadata was included in headers
-            call_kwargs = mock_client.post.call_args.kwargs
-            assert "x-trace-id" in call_kwargs.get("headers", {})
-
-
-class TestDaprPubSubClientConfiguration:
-    """Tests for DaprPubSubClient configuration."""
-
-    def test_client_uses_default_settings(self) -> None:
-        """Test client uses settings when not explicitly provided."""
-        with patch("plantation_model.infrastructure.dapr_client.settings") as mock_settings:
-            mock_settings.dapr_host = "test-host"
-            mock_settings.dapr_http_port = 9999
-
-            client = DaprPubSubClient()
-
-            assert client._dapr_host == "test-host"
-            assert client._dapr_http_port == 9999
-
-    def test_client_uses_explicit_settings(self) -> None:
-        """Test client uses explicitly provided settings."""
-        client = DaprPubSubClient(dapr_host="explicit-host", dapr_http_port=1234)
-
-        assert client._dapr_host == "explicit-host"
-        assert client._dapr_http_port == 1234
-        assert client._base_url == "http://explicit-host:1234"
+            # Verify SDK parameters match ADR-010 spec
+            call_kwargs = mock_client.publish_event.call_args.kwargs
+            assert call_kwargs["data_content_type"] == "application/json"
+            # Data must be JSON string, not dict
+            assert isinstance(call_kwargs["data"], str)

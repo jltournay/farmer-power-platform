@@ -27,7 +27,7 @@ from plantation_model.infrastructure.collection_grpc_client import (
     CollectionGrpcClient,
     DocumentNotFoundError,
 )
-from plantation_model.infrastructure.dapr_client import DaprPubSubClient
+from plantation_model.infrastructure.dapr_client import publish_event
 from plantation_model.infrastructure.repositories.factory_repository import (
     FactoryRepository,
 )
@@ -125,7 +125,6 @@ class QualityEventProcessor:
         farmer_repo: FarmerRepository | None = None,
         factory_repo: FactoryRepository | None = None,
         region_repo: RegionRepository | None = None,
-        event_publisher: DaprPubSubClient | None = None,
     ) -> None:
         """Initialize the processor with required dependencies.
 
@@ -136,7 +135,10 @@ class QualityEventProcessor:
             farmer_repo: Repository for farmer validation (Story 0.6.10).
             factory_repo: Repository for factory validation (Story 0.6.10).
             region_repo: Repository for region validation (Story 0.6.10).
-            event_publisher: Optional DAPR pub/sub client for event emission.
+
+        Note:
+            Story 0.6.14: DAPR publishing now uses module-level publish_event() function
+            from infrastructure.dapr_client per ADR-010.
         """
         self._collection_client = collection_client
         self._grading_model_repo = grading_model_repo
@@ -144,7 +146,6 @@ class QualityEventProcessor:
         self._farmer_repo = farmer_repo
         self._factory_repo = factory_repo
         self._region_repo = region_repo
-        self._event_publisher = event_publisher
 
     async def process(
         self,
@@ -721,14 +722,10 @@ class QualityEventProcessor:
         grade_counts: dict[str, int],
         attribute_distribution: dict[str, dict[str, int]],
     ) -> bool:
-        """Emit plantation.quality.graded event via DAPR pub/sub."""
-        if self._event_publisher is None:
-            logger.debug(
-                "Event publisher not configured - skipping quality.graded event",
-                farmer_id=farmer_id,
-            )
-            return False
+        """Emit plantation.quality.graded event via DAPR pub/sub.
 
+        Story 0.6.14: Uses module-level publish_event() per ADR-010.
+        """
         payload = {
             "event_type": "plantation.quality.graded",
             "farmer_id": farmer_id,
@@ -740,7 +737,7 @@ class QualityEventProcessor:
             "timestamp": datetime.now(dt.UTC).isoformat(),
         }
 
-        success = await self._event_publisher.publish_event(
+        success = await publish_event(
             pubsub_name=settings.dapr_pubsub_name,
             topic="plantation.quality.graded",
             data=payload,
@@ -767,14 +764,9 @@ class QualityEventProcessor:
 
         NOTE: No current_category field - Engagement Model owns WIN/WATCH/WORK
         vocabulary and computes category from primary_percentage + factory thresholds.
-        """
-        if self._event_publisher is None:
-            logger.debug(
-                "Event publisher not configured - skipping performance_updated event",
-                farmer_id=farmer_id,
-            )
-            return False
 
+        Story 0.6.14: Uses module-level publish_event() per ADR-010.
+        """
         payload = {
             "event_type": "plantation.performance_updated",
             "farmer_id": farmer_id,
@@ -786,7 +778,7 @@ class QualityEventProcessor:
             "timestamp": datetime.now(dt.UTC).isoformat(),
         }
 
-        success = await self._event_publisher.publish_event(
+        success = await publish_event(
             pubsub_name=settings.dapr_pubsub_name,
             topic="plantation.performance_updated",
             data=payload,

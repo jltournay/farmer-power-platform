@@ -23,7 +23,6 @@ from plantation_model.domain.models import (
     TrendDirection,
 )
 from plantation_model.domain.models.id_generator import IDGenerator
-from plantation_model.infrastructure.dapr_client import DaprPubSubClient
 from plantation_model.infrastructure.google_elevation import GoogleElevationClient
 from plantation_model.infrastructure.repositories.collection_point_repository import (
     CollectionPointRepository,
@@ -81,11 +80,6 @@ class TestFarmerSummaryGrpcService:
         return MagicMock(spec=GoogleElevationClient)
 
     @pytest.fixture
-    def mock_dapr_client(self) -> MagicMock:
-        """Create a mock Dapr pub/sub client."""
-        return MagicMock(spec=DaprPubSubClient)
-
-    @pytest.fixture
     def mock_context(self) -> MagicMock:
         """Create a mock gRPC context."""
         context = MagicMock(spec=grpc.aio.ServicerContext)
@@ -102,16 +96,17 @@ class TestFarmerSummaryGrpcService:
         mock_grading_model_repo: MagicMock,
         mock_id_generator: MagicMock,
         mock_elevation_client: MagicMock,
-        mock_dapr_client: MagicMock,
     ) -> PlantationServiceServicer:
-        """Create a servicer with mock dependencies."""
+        """Create a servicer with mock dependencies.
+
+        Story 0.6.14: No longer requires dapr_client - uses module-level publish_event().
+        """
         return PlantationServiceServicer(
             factory_repo=mock_factory_repo,
             collection_point_repo=mock_cp_repo,
             farmer_repo=mock_farmer_repo,
             id_generator=mock_id_generator,
             elevation_client=mock_elevation_client,
-            dapr_client=mock_dapr_client,
             grading_model_repo=mock_grading_model_repo,
             farmer_performance_repo=mock_farmer_performance_repo,
         )
@@ -351,13 +346,6 @@ class TestFarmerPerformanceAutoInit:
         return MagicMock(spec=GoogleElevationClient)
 
     @pytest.fixture
-    def mock_dapr_client(self) -> MagicMock:
-        """Create a mock Dapr pub/sub client."""
-        mock = MagicMock(spec=DaprPubSubClient)
-        mock.publish_event = AsyncMock()
-        return mock
-
-    @pytest.fixture
     def mock_context(self) -> MagicMock:
         """Create a mock gRPC context."""
         context = MagicMock(spec=grpc.aio.ServicerContext)
@@ -374,16 +362,17 @@ class TestFarmerPerformanceAutoInit:
         mock_grading_model_repo: MagicMock,
         mock_id_generator: MagicMock,
         mock_elevation_client: MagicMock,
-        mock_dapr_client: MagicMock,
     ) -> PlantationServiceServicer:
-        """Create a servicer with mock dependencies."""
+        """Create a servicer with mock dependencies.
+
+        Story 0.6.14: No longer requires dapr_client - uses module-level publish_event().
+        """
         return PlantationServiceServicer(
             factory_repo=mock_factory_repo,
             collection_point_repo=mock_cp_repo,
             farmer_repo=mock_farmer_repo,
             id_generator=mock_id_generator,
             elevation_client=mock_elevation_client,
-            dapr_client=mock_dapr_client,
             grading_model_repo=mock_grading_model_repo,
             farmer_performance_repo=mock_farmer_performance_repo,
         )
