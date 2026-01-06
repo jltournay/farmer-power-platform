@@ -49,5 +49,3 @@ class FarmerRegisteredEvent(BaseModel):
             }
         }
     }
-
-
