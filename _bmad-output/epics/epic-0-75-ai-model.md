@@ -21,6 +21,7 @@ The AI Model is the most complex and strategic module of the Farmer Power Platfo
 - **RAG Infrastructure** — Document storage, embedding, vector storage, retrieval, and ranking
 - **Prompt Management** — MongoDB storage with versioning and CLI tooling
 - **Event-Driven Architecture** — DAPR pub/sub for agent triggering and result publishing
+- **LangSmith Integration** — Dev/eval observability for LangGraph workflow debugging and golden sample evaluation (disabled in production)
 
 ### Key Principle: Generic Agent Framework
 
@@ -606,6 +607,24 @@ So that agents can reuse common orchestration logic.
 - Conditional routing utilities
 - Base workflow classes for each agent type
 - Error handling and retry logic
+
+**LangSmith Integration (Dev/Eval Only):**
+- Configure LangSmith tracing via environment variables:
+  - `LANGCHAIN_TRACING_V2=true` (dev/eval environments only)
+  - `LANGCHAIN_API_KEY` (from secrets)
+  - `LANGCHAIN_PROJECT=farmer-power-ai-model`
+- Visual debugging of LangGraph multi-step workflows
+- Automatic trace capture for all LLM calls and tool invocations
+- Integration with golden sample evaluation datasets
+- **Production:** `LANGCHAIN_TRACING_V2=false` (disabled to avoid cost/latency)
+
+**LangSmith Benefits:**
+| Use Case | Value |
+|----------|-------|
+| Workflow debugging | Visual trace of each LangGraph node with inputs/outputs |
+| Prompt iteration | Test prompt changes before deployment |
+| Golden sample eval | Automated evaluation against test datasets |
+| Failure analysis | Root cause analysis for failed agent runs |
 
 **Risk:** Verify `AsyncMongoDBSaver` compatibility with LangGraph 1.0+ — there's a [known issue](https://github.com/langchain-ai/langgraph/issues/6506) with async imports. May need to use sync version or wait for fix.
 
