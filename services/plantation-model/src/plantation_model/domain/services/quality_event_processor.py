@@ -22,12 +22,12 @@ from fp_common.models import Document
 from opentelemetry import metrics, trace
 from plantation_model.config import settings
 from plantation_model.domain.models import TrendDirection
+from plantation_model.events.publisher import publish_event
 from plantation_model.infrastructure.collection_grpc_client import (
     CollectionClientError,
     CollectionGrpcClient,
     DocumentNotFoundError,
 )
-from plantation_model.infrastructure.dapr_client import publish_event
 from plantation_model.infrastructure.repositories.factory_repository import (
     FactoryRepository,
 )
@@ -138,7 +138,7 @@ class QualityEventProcessor:
 
         Note:
             Story 0.6.14: DAPR publishing now uses module-level publish_event() function
-            from infrastructure.dapr_client per ADR-010.
+            from events.publisher per ADR-010.
         """
         self._collection_client = collection_client
         self._grading_model_repo = grading_model_repo

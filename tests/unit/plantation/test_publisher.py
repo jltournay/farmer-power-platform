@@ -1,4 +1,4 @@
-"""Unit tests for DAPR publish_event function.
+"""Unit tests for DAPR publisher (events/publisher.py).
 
 Story 0.6.14: Tests for SDK-based publish_event() per ADR-010.
 """
@@ -9,7 +9,7 @@ import pytest
 from dapr.clients.exceptions import DaprInternalError
 from grpc import RpcError
 from plantation_model.domain.events.farmer_events import FarmerRegisteredEvent
-from plantation_model.infrastructure.dapr_client import publish_event
+from plantation_model.events.publisher import publish_event
 
 
 class TestPublishEvent:
@@ -27,7 +27,7 @@ class TestPublishEvent:
             farm_scale="medium",
         )
 
-        with patch("plantation_model.infrastructure.dapr_client.DaprClient") as mock_client_class:
+        with patch("plantation_model.events.publisher.DaprClient") as mock_client_class:
             mock_client = MagicMock()
             mock_client_class.return_value.__enter__ = MagicMock(return_value=mock_client)
             mock_client_class.return_value.__exit__ = MagicMock(return_value=None)
@@ -56,7 +56,7 @@ class TestPublishEvent:
             "phone": "+254712345678",
         }
 
-        with patch("plantation_model.infrastructure.dapr_client.DaprClient") as mock_client_class:
+        with patch("plantation_model.events.publisher.DaprClient") as mock_client_class:
             mock_client = MagicMock()
             mock_client_class.return_value.__enter__ = MagicMock(return_value=mock_client)
             mock_client_class.return_value.__exit__ = MagicMock(return_value=None)
@@ -83,7 +83,7 @@ class TestPublishEvent:
             farm_scale="medium",
         )
 
-        with patch("plantation_model.infrastructure.dapr_client.DaprClient") as mock_client_class:
+        with patch("plantation_model.events.publisher.DaprClient") as mock_client_class:
             mock_client = MagicMock()
             mock_client.publish_event.side_effect = DaprInternalError("Sidecar unavailable")
             mock_client_class.return_value.__enter__ = MagicMock(return_value=mock_client)
@@ -110,7 +110,7 @@ class TestPublishEvent:
             farm_scale="medium",
         )
 
-        with patch("plantation_model.infrastructure.dapr_client.DaprClient") as mock_client_class:
+        with patch("plantation_model.events.publisher.DaprClient") as mock_client_class:
             mock_client = MagicMock()
             mock_client.publish_event.side_effect = RpcError()
             mock_client_class.return_value.__enter__ = MagicMock(return_value=mock_client)
@@ -137,7 +137,7 @@ class TestPublishEvent:
             farm_scale="medium",
         )
 
-        with patch("plantation_model.infrastructure.dapr_client.DaprClient") as mock_client_class:
+        with patch("plantation_model.events.publisher.DaprClient") as mock_client_class:
             mock_client = MagicMock()
             mock_client.publish_event.side_effect = Exception("Unexpected error")
             mock_client_class.return_value.__enter__ = MagicMock(return_value=mock_client)
@@ -164,7 +164,7 @@ class TestPublishEvent:
             farm_scale="medium",
         )
 
-        with patch("plantation_model.infrastructure.dapr_client.DaprClient") as mock_client_class:
+        with patch("plantation_model.events.publisher.DaprClient") as mock_client_class:
             mock_client = MagicMock()
             mock_client_class.return_value.__enter__ = MagicMock(return_value=mock_client)
             mock_client_class.return_value.__exit__ = MagicMock(return_value=None)

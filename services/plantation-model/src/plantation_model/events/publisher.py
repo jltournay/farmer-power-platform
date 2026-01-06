@@ -1,4 +1,4 @@
-"""Dapr pub/sub client for event publishing.
+"""DAPR pub/sub publisher for event publishing.
 
 Story 0.6.14: Uses official DAPR Python SDK per ADR-010.
 Replaces custom httpx-based implementation with SDK's publish_event().

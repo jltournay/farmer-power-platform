@@ -43,7 +43,7 @@ from plantation_model.domain.models import (
     WeatherConfig,
 )
 from plantation_model.domain.models.id_generator import IDGenerator
-from plantation_model.infrastructure.dapr_client import publish_event
+from plantation_model.events.publisher import publish_event
 from plantation_model.infrastructure.google_elevation import (
     GoogleElevationClient,
     assign_region_from_altitude,
@@ -137,7 +137,7 @@ class PlantationServiceServicer(plantation_pb2_grpc.PlantationServiceServicer):
 
         Note:
             Story 0.6.14: DAPR publishing now uses module-level publish_event() function
-            from infrastructure.dapr_client per ADR-010.
+            from events.publisher per ADR-010.
         """
         self._factory_repo = factory_repo
         self._cp_repo = collection_point_repo
