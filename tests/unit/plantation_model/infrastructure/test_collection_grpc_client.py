@@ -143,8 +143,8 @@ class TestCollectionGrpcClient:
             assert exc_info.value.document_id == "nonexistent-doc"
 
     @pytest.mark.asyncio
-    async def test_get_document_unavailable_raises_client_error(self, mock_channel):
-        """get_document raises CollectionClientError for UNAVAILABLE status."""
+    async def test_get_document_unavailable_retries_then_raises(self, mock_channel, sample_proto_document):
+        """get_document retries on UNAVAILABLE then raises AioRpcError after exhaustion."""
         mock_stub = MagicMock()
         mock_rpc_error = grpc.aio.AioRpcError(
             code=grpc.StatusCode.UNAVAILABLE,
@@ -153,20 +153,76 @@ class TestCollectionGrpcClient:
             details="Service unavailable",
             debug_error_string="",
         )
+        # Fail 3 times (exhausts retries)
         mock_stub.GetDocument = AsyncMock(side_effect=mock_rpc_error)
 
         with patch(
             "plantation_model.infrastructure.collection_grpc_client.collection_pb2_grpc.CollectionServiceStub"
         ) as mock_stub_class:
             mock_stub_class.return_value = mock_stub
-            # Disable retry for faster test
-            with patch.object(CollectionGrpcClient, "get_document", new=CollectionGrpcClient.get_document.__wrapped__):
-                client = CollectionGrpcClient(channel=mock_channel)
 
-                with pytest.raises(CollectionClientError) as exc_info:
-                    await client.get_document("doc-123")
+            client = CollectionGrpcClient(channel=mock_channel)
 
-                assert "doc-123" in str(exc_info.value)
+            with pytest.raises(grpc.aio.AioRpcError) as exc_info:
+                await client.get_document("doc-123")
+
+            assert exc_info.value.code() == grpc.StatusCode.UNAVAILABLE
+            # Verify retry happened: should have 3 attempts
+            assert mock_stub.GetDocument.call_count == 3
+
+    @pytest.mark.asyncio
+    async def test_get_document_retries_then_succeeds(self, mock_channel, sample_proto_document):
+        """get_document retries on transient error then succeeds."""
+        mock_stub = MagicMock()
+        mock_rpc_error = grpc.aio.AioRpcError(
+            code=grpc.StatusCode.UNAVAILABLE,
+            initial_metadata=grpc.aio.Metadata(),
+            trailing_metadata=grpc.aio.Metadata(),
+            details="Service unavailable",
+            debug_error_string="",
+        )
+        # Fail twice, then succeed
+        mock_stub.GetDocument = AsyncMock(side_effect=[mock_rpc_error, mock_rpc_error, sample_proto_document])
+
+        with patch(
+            "plantation_model.infrastructure.collection_grpc_client.collection_pb2_grpc.CollectionServiceStub"
+        ) as mock_stub_class:
+            mock_stub_class.return_value = mock_stub
+
+            client = CollectionGrpcClient(channel=mock_channel)
+
+            result = await client.get_document("doc-123")
+
+            # Should succeed after 2 retries
+            assert result.document_id == "doc-grpc-001"
+            assert mock_stub.GetDocument.call_count == 3
+
+    @pytest.mark.asyncio
+    async def test_get_document_non_retryable_error_raises_immediately(self, mock_channel):
+        """get_document raises CollectionClientError for non-retryable errors without retry."""
+        mock_stub = MagicMock()
+        mock_rpc_error = grpc.aio.AioRpcError(
+            code=grpc.StatusCode.INVALID_ARGUMENT,
+            initial_metadata=grpc.aio.Metadata(),
+            trailing_metadata=grpc.aio.Metadata(),
+            details="Invalid argument",
+            debug_error_string="",
+        )
+        mock_stub.GetDocument = AsyncMock(side_effect=mock_rpc_error)
+
+        with patch(
+            "plantation_model.infrastructure.collection_grpc_client.collection_pb2_grpc.CollectionServiceStub"
+        ) as mock_stub_class:
+            mock_stub_class.return_value = mock_stub
+
+            client = CollectionGrpcClient(channel=mock_channel)
+
+            with pytest.raises(CollectionClientError) as exc_info:
+                await client.get_document("doc-123")
+
+            assert "doc-123" in str(exc_info.value)
+            # Should NOT retry for non-retryable errors
+            assert mock_stub.GetDocument.call_count == 1
 
     @pytest.mark.asyncio
     async def test_close_closes_channel(self, mock_channel):

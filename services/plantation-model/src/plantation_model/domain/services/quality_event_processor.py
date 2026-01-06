@@ -520,12 +520,24 @@ class QualityEventProcessor:
         """
         import ast
 
+        # Maximum size for bag_summary string to prevent DoS via oversized payloads
+        MAX_BAG_SUMMARY_SIZE = 10_000  # 10KB should be plenty for QC data
+
         # Check extracted_fields (where DocumentIndex stores it)
         if "bag_summary" in document.extracted_fields:
             bag_summary = document.extracted_fields["bag_summary"]
             if isinstance(bag_summary, dict):
                 return bag_summary
             if isinstance(bag_summary, str):
+                # Defense-in-depth: check size before parsing
+                if len(bag_summary) > MAX_BAG_SUMMARY_SIZE:
+                    logger.warning(
+                        "bag_summary string too large, skipping parse",
+                        size=len(bag_summary),
+                        max_size=MAX_BAG_SUMMARY_SIZE,
+                        document_id=document.document_id,
+                    )
+                    return {}
                 # Proto map<string, string> converts nested dicts to strings
                 # e.g., "{'grade_counts': {'Primary': 5}}" needs parsing
                 try:

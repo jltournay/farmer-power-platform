@@ -17,12 +17,36 @@ from fp_proto.collection.v1 import collection_pb2, collection_pb2_grpc
 from plantation_model.config import settings
 from tenacity import (
     retry,
-    retry_if_exception_type,
+    retry_if_exception,
     stop_after_attempt,
     wait_exponential,
 )
 
 logger = structlog.get_logger(__name__)
+
+# Retryable gRPC status codes (transient errors)
+RETRYABLE_STATUS_CODES = {
+    grpc.StatusCode.UNAVAILABLE,
+    grpc.StatusCode.DEADLINE_EXCEEDED,
+    grpc.StatusCode.RESOURCE_EXHAUSTED,
+    grpc.StatusCode.ABORTED,
+    grpc.StatusCode.INTERNAL,
+}
+
+
+def _is_retryable_grpc_error(exception: BaseException) -> bool:
+    """Check if exception is a retryable gRPC error.
+
+    Returns True for transient errors that should be retried:
+    - UNAVAILABLE: Service temporarily unavailable
+    - DEADLINE_EXCEEDED: Request timed out
+    - RESOURCE_EXHAUSTED: Rate limited
+    - ABORTED: Operation aborted (e.g., transaction conflict)
+    - INTERNAL: Internal server error (may be transient)
+    """
+    if isinstance(exception, grpc.aio.AioRpcError):
+        return exception.code() in RETRYABLE_STATUS_CODES
+    return False
 
 
 class DocumentNotFoundError(Exception):
@@ -96,7 +120,7 @@ class CollectionGrpcClient:
         return [("dapr-app-id", settings.collection_app_id)]
 
     @retry(
-        retry=retry_if_exception_type(grpc.aio.AioRpcError),
+        retry=retry_if_exception(_is_retryable_grpc_error),
         stop=stop_after_attempt(3),
         wait=wait_exponential(multiplier=1, min=1, max=10),
         reraise=True,
@@ -130,7 +154,7 @@ class CollectionGrpcClient:
 
             response = await stub.GetDocument(request, metadata=self._get_metadata())
 
-            logger.info(
+            logger.debug(
                 "Document retrieved from Collection Model",
                 document_id=document_id,
                 source_id=response.ingestion.source_id,
@@ -142,13 +166,27 @@ class CollectionGrpcClient:
             if e.code() == grpc.StatusCode.NOT_FOUND:
                 logger.warning("Document not found in Collection Model", document_id=document_id)
                 raise DocumentNotFoundError(document_id) from e
+
+            # For retryable errors, log and re-raise for tenacity to handle
+            if e.code() in RETRYABLE_STATUS_CODES:
+                logger.warning(
+                    "Retryable gRPC error from Collection Model",
+                    document_id=document_id,
+                    status_code=e.code().name,
+                    details=e.details(),
+                )
+                # Reset stub to force reconnection on retry (ADR-005)
+                self._stub = None
+                self._channel = None
+                raise  # Re-raise for tenacity to retry
+
+            # Non-retryable errors: convert to domain exception
             logger.error(
-                "gRPC call to Collection Model failed",
+                "gRPC call to Collection Model failed (non-retryable)",
                 document_id=document_id,
                 status_code=e.code().name,
                 details=e.details(),
             )
-            # Reset stub to force reconnection on next call (ADR-005)
             self._stub = None
             self._channel = None
             raise CollectionClientError(f"Failed to fetch document {document_id}", cause=e) from e

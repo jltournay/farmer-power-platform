@@ -53,16 +53,16 @@ The RPC is READY TO USE. Plantation Model just needs to call it via DAPR.
 
 ### 4. Definition of Done Checklist
 
-- [ ] **CollectionGrpcClient created** - New client using gRPC via DAPR service invocation
-- [ ] **Singleton channel pattern** - Same pattern as PlantationClient in plantation-mcp
-- [ ] **Retry logic implemented** - Tenacity with 3 attempts, exponential backoff (1-10s)
-- [ ] **Proto-to-Pydantic conversion** - Use existing converters from `fp_common.converters`
-- [ ] **Old CollectionClient removed** - Delete direct MongoDB client
-- [ ] **Settings updated** - Remove `collection_mongodb_uri`, add `collection_app_id`
-- [ ] **QualityEventProcessor updated** - Use new CollectionGrpcClient
-- [ ] **Unit tests pass** - Verify gRPC calls, not MongoDB
+- [x] **CollectionGrpcClient created** - New client using gRPC via DAPR service invocation
+- [x] **Singleton channel pattern** - Same pattern as PlantationClient in plantation-mcp
+- [x] **Retry logic implemented** - Tenacity with 3 attempts, exponential backoff (1-10s)
+- [x] **Proto-to-Pydantic conversion** - Use existing converters from `fp_common.converters`
+- [x] **Old CollectionClient removed** - Delete direct MongoDB client
+- [x] **Settings updated** - Remove `collection_mongodb_uri`, add `collection_app_id`
+- [x] **QualityEventProcessor updated** - Use new CollectionGrpcClient
+- [x] **Unit tests pass** - Verify gRPC calls, not MongoDB
 - [x] **E2E tests pass** - No functional regression (behavior identical)
-- [ ] **Lint passes** - ruff check and format
+- [x] **Lint passes** - ruff check and format
 
 ---
 
