@@ -1,9 +1,10 @@
 """Quality Event Processor - orchestrates quality result event processing.
 
 Story 1.7: Quality Grading Event Subscription
+Story 0.6.13: Migrated from direct MongoDB to gRPC via DAPR (ADR-010/011)
 
 This service processes quality result events from Collection Model:
-1. Fetches the full document from Collection Model
+1. Fetches the full document from Collection Model via gRPC
 2. Loads the GradingModel for grade label lookup
 3. Extracts grade counts dynamically using grading model's grade_labels
 4. Updates FarmerPerformance metrics
@@ -17,12 +18,13 @@ from datetime import datetime
 from typing import Any
 
 import structlog
+from fp_common.models import Document
 from opentelemetry import metrics, trace
 from plantation_model.config import settings
 from plantation_model.domain.models import TrendDirection
-from plantation_model.infrastructure.collection_client import (
-    CollectionClient,
+from plantation_model.infrastructure.collection_grpc_client import (
     CollectionClientError,
+    CollectionGrpcClient,
     DocumentNotFoundError,
 )
 from plantation_model.infrastructure.dapr_client import DaprPubSubClient
@@ -111,11 +113,13 @@ class QualityEventProcessor:
     - Model-Driven: Grade labels come from GradingModel, not hardcoded
     - Atomic Updates: Uses MongoDB $inc for thread-safe counter updates
     - Event Sourcing: Emits events for downstream consumers (Engagement Model)
+
+    Story 0.6.13: Uses gRPC via DAPR instead of direct MongoDB access.
     """
 
     def __init__(
         self,
-        collection_client: CollectionClient,
+        collection_client: CollectionGrpcClient,
         grading_model_repo: GradingModelRepository,
         farmer_performance_repo: FarmerPerformanceRepository,
         farmer_repo: FarmerRepository | None = None,
@@ -126,7 +130,7 @@ class QualityEventProcessor:
         """Initialize the processor with required dependencies.
 
         Args:
-            collection_client: Client for fetching documents from Collection Model.
+            collection_client: gRPC client for fetching documents from Collection Model.
             grading_model_repo: Repository for loading grading models.
             farmer_performance_repo: Repository for updating farmer performance.
             farmer_repo: Repository for farmer validation (Story 0.6.10).
@@ -325,14 +329,17 @@ class QualityEventProcessor:
                     cause=e,
                 ) from e
 
-    async def _fetch_document(self, document_id: str) -> dict[str, Any]:
-        """Fetch quality document from Collection Model."""
+    async def _fetch_document(self, document_id: str) -> Document:
+        """Fetch quality document from Collection Model via gRPC.
+
+        Story 0.6.13: Uses gRPC client instead of direct MongoDB access.
+        """
         with tracer.start_as_current_span("fetch_document"):
             document = await self._collection_client.get_document(document_id)
             logger.debug(
-                "Fetched document from Collection Model",
+                "Fetched document from Collection Model via gRPC",
                 document_id=document_id,
-                source_id=document.get("source_id"),
+                source_id=document.ingestion.source_id,
             )
             return document
 
@@ -469,49 +476,81 @@ class QualityEventProcessor:
                 )
             return model
 
-    def _get_grading_model_id(self, document: dict[str, Any]) -> str | None:
-        """Extract grading model ID from document."""
+    def _get_grading_model_id(self, document: Document) -> str | None:
+        """Extract grading model ID from document.
+
+        Story 0.6.13: Updated to work with Pydantic Document model.
+        """
         # Check extracted_fields first (where DocumentIndex stores it)
-        extracted_fields = document.get("extracted_fields", {})
-        if "grading_model_id" in extracted_fields:
-            return extracted_fields["grading_model_id"]
+        if "grading_model_id" in document.extracted_fields:
+            return str(document.extracted_fields["grading_model_id"])
         # Check linkage_fields (also populated by DocumentIndex)
-        linkage_fields = document.get("linkage_fields", {})
-        if "grading_model_id" in linkage_fields:
-            return linkage_fields["grading_model_id"]
-        # Check top-level (raw document fallback)
-        return document.get("grading_model_id")
+        if "grading_model_id" in document.linkage_fields:
+            return str(document.linkage_fields["grading_model_id"])
+        return None
 
-    def _get_grading_model_version(self, document: dict[str, Any]) -> str | None:
-        """Extract grading model version from document."""
-        # Check extracted_fields first (where DocumentIndex stores it)
-        extracted_fields = document.get("extracted_fields", {})
-        if "grading_model_version" in extracted_fields:
-            return extracted_fields["grading_model_version"]
-        # Check top-level (raw document fallback)
-        return document.get("grading_model_version")
+    def _get_grading_model_version(self, document: Document) -> str | None:
+        """Extract grading model version from document.
 
-    def _get_factory_id(self, document: dict[str, Any]) -> str:
-        """Extract factory ID from document."""
+        Story 0.6.13: Updated to work with Pydantic Document model.
+        """
         # Check extracted_fields first (where DocumentIndex stores it)
-        extracted_fields = document.get("extracted_fields", {})
-        if "factory_id" in extracted_fields:
-            return extracted_fields["factory_id"]
+        if "grading_model_version" in document.extracted_fields:
+            return str(document.extracted_fields["grading_model_version"])
+        return None
+
+    def _get_factory_id(self, document: Document) -> str:
+        """Extract factory ID from document.
+
+        Story 0.6.13: Updated to work with Pydantic Document model.
+        """
+        # Check extracted_fields first (where DocumentIndex stores it)
+        if "factory_id" in document.extracted_fields:
+            return str(document.extracted_fields["factory_id"])
         # Check linkage_fields (also populated by DocumentIndex)
-        linkage_fields = document.get("linkage_fields", {})
-        if "factory_id" in linkage_fields:
-            return linkage_fields["factory_id"]
-        # Check top-level (raw document fallback)
-        return document.get("factory_id", "unknown")
+        if "factory_id" in document.linkage_fields:
+            return str(document.linkage_fields["factory_id"])
+        return "unknown"
 
-    def _get_bag_summary(self, document: dict[str, Any]) -> dict[str, Any]:
-        """Extract bag summary from document."""
-        # Check extracted_fields first (where DocumentIndex stores it)
-        extracted_fields = document.get("extracted_fields", {})
-        if "bag_summary" in extracted_fields:
-            return extracted_fields["bag_summary"]
-        # Check top-level (raw document fallback)
-        return document.get("bag_summary", {})
+    def _get_bag_summary(self, document: Document) -> dict[str, Any]:
+        """Extract bag summary from document.
+
+        Story 0.6.13: Updated to work with Pydantic Document model.
+        Handles stringified dicts from proto map<string, string>.
+        """
+        import ast
+
+        # Maximum size for bag_summary string to prevent DoS via oversized payloads
+        MAX_BAG_SUMMARY_SIZE = 10_000  # 10KB should be plenty for QC data
+
+        # Check extracted_fields (where DocumentIndex stores it)
+        if "bag_summary" in document.extracted_fields:
+            bag_summary = document.extracted_fields["bag_summary"]
+            if isinstance(bag_summary, dict):
+                return bag_summary
+            if isinstance(bag_summary, str):
+                # Defense-in-depth: check size before parsing
+                if len(bag_summary) > MAX_BAG_SUMMARY_SIZE:
+                    logger.warning(
+                        "bag_summary string too large, skipping parse",
+                        size=len(bag_summary),
+                        max_size=MAX_BAG_SUMMARY_SIZE,
+                        document_id=document.document_id,
+                    )
+                    return {}
+                # Proto map<string, string> converts nested dicts to strings
+                # e.g., "{'grade_counts': {'Primary': 5}}" needs parsing
+                try:
+                    parsed = ast.literal_eval(bag_summary)
+                    if isinstance(parsed, dict):
+                        return parsed
+                except (ValueError, SyntaxError):
+                    logger.warning(
+                        "Failed to parse bag_summary string",
+                        bag_summary=bag_summary[:100] if len(bag_summary) > 100 else bag_summary,
+                    )
+            return {}
+        return {}
 
     def _get_total_weight(self, bag_summary: dict[str, Any]) -> float:
         """Extract total weight from bag summary."""

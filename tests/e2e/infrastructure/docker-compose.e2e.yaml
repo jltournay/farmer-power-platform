@@ -140,8 +140,10 @@ services:
     environment:
       PLANTATION_MONGODB_URI: mongodb://mongodb:27017
       PLANTATION_MONGODB_DATABASE: plantation_e2e
-      PLANTATION_COLLECTION_MONGODB_URI: mongodb://mongodb:27017
-      PLANTATION_COLLECTION_MONGODB_DATABASE: collection_e2e
+      # Story 0.6.13: Use gRPC instead of direct MongoDB access
+      # Direct gRPC connection to Collection Model (bypasses DAPR service invocation)
+      PLANTATION_COLLECTION_APP_ID: collection-model
+      PLANTATION_COLLECTION_GRPC_HOST: "collection-model:50051"
       PLANTATION_LOG_LEVEL: DEBUG
       PLANTATION_OTEL_ENABLED: "false"
       PLANTATION_GOOGLE_ELEVATION_API_KEY: mock
@@ -152,6 +154,8 @@ services:
       mongodb:
         condition: service_healthy
       google-elevation-mock:
+        condition: service_healthy
+      collection-model:
         condition: service_healthy
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
