@@ -1,13 +1,15 @@
 """Unit tests for QualityEventProcessor.
 
 Story 1.7: Quality Grading Event Subscription
+Story 0.6.13: Updated to use Pydantic Document model from gRPC client
 """
 
 import datetime as dt
-from datetime import datetime
+from datetime import UTC, datetime
 from unittest.mock import AsyncMock
 
 import pytest
+from fp_common.models import Document, ExtractionMetadata, IngestionMetadata, RawDocumentRef
 from plantation_model.domain.models import (
     FarmerPerformance,
     FarmScale,
@@ -22,7 +24,7 @@ from plantation_model.domain.services.quality_event_processor import (
     QualityEventProcessingError,
     QualityEventProcessor,
 )
-from plantation_model.infrastructure.collection_client import (
+from plantation_model.infrastructure.collection_grpc_client import (
     DocumentNotFoundError,
 )
 
@@ -110,17 +112,37 @@ def sample_farmer_performance() -> FarmerPerformance:
 
 
 @pytest.fixture
-def sample_document() -> dict:
+def sample_document() -> Document:
     """Create a sample quality document for testing.
 
+    Story 0.6.13: Returns Pydantic Document model (from gRPC client).
     NOTE: Document structure matches DocumentIndex model from collection_model.
     Fields are stored in 'extracted_fields' (not 'attributes').
     """
-    return {
-        "document_id": "doc-123",
-        "source_id": "qc-analyzer-result",
-        "farmer_id": "WM-0001",
-        "extracted_fields": {
+    now = datetime(2026, 1, 6, 10, 0, 0, tzinfo=UTC)
+    return Document(
+        document_id="doc-123",
+        raw_document=RawDocumentRef(
+            blob_container="quality-data",
+            blob_path="factory/batch.json",
+            content_hash="sha256:test",
+            size_bytes=1024,
+            stored_at=now,
+        ),
+        extraction=ExtractionMetadata(
+            ai_agent_id="extractor-v1",
+            extraction_timestamp=now,
+            confidence=0.95,
+            validation_passed=True,
+            validation_warnings=[],
+        ),
+        ingestion=IngestionMetadata(
+            ingestion_id="ing-001",
+            source_id="qc-analyzer-result",
+            received_at=now,
+            processed_at=now,
+        ),
+        extracted_fields={
             "grading_model_id": "tbk_kenya_tea_v1",
             "grading_model_version": "1.0.0",
             "factory_id": "factory-001",
@@ -136,12 +158,13 @@ def sample_document() -> dict:
                 },
             },
         },
-        "linkage_fields": {
+        linkage_fields={
             "farmer_id": "WM-0001",
             "factory_id": "factory-001",
             "grading_model_id": "tbk_kenya_tea_v1",
         },
-    }
+        created_at=now,
+    )
 
 
 class TestQualityEventProcessor:
@@ -154,7 +177,7 @@ class TestQualityEventProcessor:
         mock_collection_client: AsyncMock,
         mock_grading_model_repo: AsyncMock,
         mock_farmer_performance_repo: AsyncMock,
-        sample_document: dict,
+        sample_document: Document,
         sample_grading_model: GradingModel,
         sample_farmer_performance: FarmerPerformance,
     ) -> None:
@@ -206,7 +229,7 @@ class TestQualityEventProcessor:
         processor: QualityEventProcessor,
         mock_collection_client: AsyncMock,
         mock_grading_model_repo: AsyncMock,
-        sample_document: dict,
+        sample_document: Document,
     ) -> None:
         """Test error handling when grading model is not found."""
         # Arrange
@@ -265,14 +288,34 @@ class TestQualityEventProcessor:
         mock_collection_client: AsyncMock,
     ) -> None:
         """Test error when document lacks grading_model_id."""
-        # Arrange - document without grading_model_id
-        mock_collection_client.get_document.return_value = {
-            "document_id": "doc-123",
-            "source_id": "qc-analyzer-result",
-            "attributes": {
-                "factory_id": "factory-001",
-            },
-        }
+        # Arrange - document without grading_model_id (Story 0.6.13: Pydantic model)
+        now = datetime(2026, 1, 6, 10, 0, 0, tzinfo=UTC)
+        mock_collection_client.get_document.return_value = Document(
+            document_id="doc-123",
+            raw_document=RawDocumentRef(
+                blob_container="quality-data",
+                blob_path="factory/batch.json",
+                content_hash="sha256:test",
+                size_bytes=1024,
+                stored_at=now,
+            ),
+            extraction=ExtractionMetadata(
+                ai_agent_id="extractor-v1",
+                extraction_timestamp=now,
+                confidence=0.95,
+                validation_passed=True,
+                validation_warnings=[],
+            ),
+            ingestion=IngestionMetadata(
+                ingestion_id="ing-001",
+                source_id="qc-analyzer-result",
+                received_at=now,
+                processed_at=now,
+            ),
+            extracted_fields={"factory_id": "factory-001"},  # Missing grading_model_id
+            linkage_fields={"factory_id": "factory-001"},  # Missing grading_model_id
+            created_at=now,
+        )
 
         # Act & Assert
         with pytest.raises(QualityEventProcessingError) as exc_info:
