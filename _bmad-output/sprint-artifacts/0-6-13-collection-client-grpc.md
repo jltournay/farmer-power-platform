@@ -61,7 +61,7 @@ The RPC is READY TO USE. Plantation Model just needs to call it via DAPR.
 - [ ] **Settings updated** - Remove `collection_mongodb_uri`, add `collection_app_id`
 - [ ] **QualityEventProcessor updated** - Use new CollectionGrpcClient
 - [ ] **Unit tests pass** - Verify gRPC calls, not MongoDB
-- [ ] **E2E tests pass** - No functional regression (behavior identical)
+- [x] **E2E tests pass** - No functional regression (behavior identical)
 - [ ] **Lint passes** - ruff check and format
 
 ---
