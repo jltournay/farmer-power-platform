@@ -5,9 +5,11 @@ from typing import Any
 
 import grpc
 import structlog
+from fp_common.models import CollectionPoint, Factory, Farmer, Region
 from fp_proto.mcp.v1 import mcp_tool_pb2, mcp_tool_pb2_grpc
 from jsonschema import ValidationError as JsonSchemaValidationError, validate
 from opentelemetry import trace
+from pydantic import BaseModel
 
 from plantation_mcp.infrastructure.plantation_client import (
     NotFoundError,
@@ -18,6 +20,41 @@ from plantation_mcp.tools.definitions import TOOL_REGISTRY, list_tools
 
 logger = structlog.get_logger(__name__)
 tracer = trace.get_tracer(__name__)
+
+
+def _serialize_result(result: Any) -> str:
+    """Serialize result to JSON, handling Pydantic models.
+
+    Args:
+        result: The result to serialize (dict, list, or Pydantic model).
+
+    Returns:
+        JSON string representation.
+
+    Note:
+        This is the serialization boundary where Pydantic models
+        are converted to JSON via model_dump().
+    """
+    if isinstance(result, BaseModel):
+        return json.dumps(result.model_dump(mode="json"))
+    if isinstance(result, list):
+        # Handle list of Pydantic models
+        serialized = [item.model_dump(mode="json") if isinstance(item, BaseModel) else item for item in result]
+        return json.dumps(serialized)
+    if isinstance(result, dict):
+        # Handle dict that may contain Pydantic models
+        serialized: dict[str, Any] = {}
+        for key, value in result.items():
+            if isinstance(value, BaseModel):
+                serialized[key] = value.model_dump(mode="json")
+            elif isinstance(value, list):
+                serialized[key] = [
+                    item.model_dump(mode="json") if isinstance(item, BaseModel) else item for item in value
+                ]
+            else:
+                serialized[key] = value
+        return json.dumps(serialized, default=str)
+    return json.dumps(result, default=str)
 
 
 class McpToolServiceServicer(mcp_tool_pb2_grpc.McpToolServiceServicer):
@@ -157,7 +194,7 @@ class McpToolServiceServicer(mcp_tool_pb2_grpc.McpToolServiceServicer):
 
                 return mcp_tool_pb2.ToolCallResponse(
                     success=True,
-                    result_json=json.dumps(result),
+                    result_json=_serialize_result(result),
                 )
 
             except NotFoundError as e:
@@ -201,30 +238,31 @@ class McpToolServiceServicer(mcp_tool_pb2_grpc.McpToolServiceServicer):
                 )
 
     # =========================================================================
-    # Tool Handlers
+    # Tool Handlers - Return Pydantic models or dicts
+    # Serialization to JSON happens at the boundary (_serialize_result)
     # =========================================================================
 
-    async def _handle_get_factory(self, arguments: dict[str, Any]) -> dict[str, Any]:
+    async def _handle_get_factory(self, arguments: dict[str, Any]) -> Factory:
         """Handle get_factory tool call.
 
         Args:
             arguments: Tool arguments with factory_id.
 
         Returns:
-            Factory details dict including quality_thresholds.
+            Factory Pydantic model.
 
         """
         factory_id = arguments["factory_id"]
         return await self._plantation_client.get_factory(factory_id)
 
-    async def _handle_get_farmer(self, arguments: dict[str, Any]) -> dict[str, Any]:
+    async def _handle_get_farmer(self, arguments: dict[str, Any]) -> Farmer:
         """Handle get_farmer tool call.
 
         Args:
             arguments: Tool arguments with farmer_id.
 
         Returns:
-            Farmer details dict.
+            Farmer Pydantic model.
 
         """
         farmer_id = arguments["farmer_id"]
@@ -237,34 +275,34 @@ class McpToolServiceServicer(mcp_tool_pb2_grpc.McpToolServiceServicer):
             arguments: Tool arguments with farmer_id.
 
         Returns:
-            Farmer summary dict with performance metrics.
+            Dict with farmer summary (composite view with nested Pydantic models).
 
         """
         farmer_id = arguments["farmer_id"]
         return await self._plantation_client.get_farmer_summary(farmer_id)
 
-    async def _handle_get_collection_points(self, arguments: dict[str, Any]) -> dict[str, Any]:
+    async def _handle_get_collection_points(self, arguments: dict[str, Any]) -> dict[str, list[CollectionPoint]]:
         """Handle get_collection_points tool call.
 
         Args:
             arguments: Tool arguments with factory_id.
 
         Returns:
-            Dict with list of collection points.
+            Dict with list of CollectionPoint models.
 
         """
         factory_id = arguments["factory_id"]
         collection_points = await self._plantation_client.get_collection_points(factory_id)
         return {"collection_points": collection_points}
 
-    async def _handle_get_farmers_by_collection_point(self, arguments: dict[str, Any]) -> dict[str, Any]:
+    async def _handle_get_farmers_by_collection_point(self, arguments: dict[str, Any]) -> dict[str, list[Farmer]]:
         """Handle get_farmers_by_collection_point tool call.
 
         Args:
             arguments: Tool arguments with collection_point_id.
 
         Returns:
-            Dict with list of farmers.
+            Dict with list of Farmer models.
 
         """
         collection_point_id = arguments["collection_point_id"]
@@ -275,27 +313,27 @@ class McpToolServiceServicer(mcp_tool_pb2_grpc.McpToolServiceServicer):
     # Region Tool Handlers (Story 1.8)
     # =========================================================================
 
-    async def _handle_get_region(self, arguments: dict[str, Any]) -> dict[str, Any]:
+    async def _handle_get_region(self, arguments: dict[str, Any]) -> Region:
         """Handle get_region tool call.
 
         Args:
             arguments: Tool arguments with region_id.
 
         Returns:
-            Region details dict.
+            Region Pydantic model.
 
         """
         region_id = arguments["region_id"]
         return await self._plantation_client.get_region(region_id)
 
-    async def _handle_list_regions(self, arguments: dict[str, Any]) -> dict[str, Any]:
+    async def _handle_list_regions(self, arguments: dict[str, Any]) -> dict[str, list[Region]]:
         """Handle list_regions tool call.
 
         Args:
             arguments: Tool arguments with optional county and altitude_band filters.
 
         Returns:
-            Dict with list of regions.
+            Dict with list of Region models.
 
         """
         county = arguments.get("county")
