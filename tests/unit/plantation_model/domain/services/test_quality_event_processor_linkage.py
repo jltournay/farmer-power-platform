@@ -2,6 +2,7 @@
 
 Story 0.6.10: Linkage Field Validation with Metrics
 Story 0.6.13: Updated to use CollectionGrpcClient returning Pydantic Document models
+Story 0.6.14: Updated to patch module-level publish_event() per ADR-010
 
 Tests verify:
 - AC1: Invalid farmer_id raises exception and increments metric
@@ -139,14 +140,6 @@ def mock_region_repo():
     return repo
 
 
-@pytest.fixture
-def mock_event_publisher():
-    """Mock DAPR pub/sub client."""
-    publisher = MagicMock()
-    publisher.publish_event = AsyncMock(return_value=True)
-    return publisher
-
-
 class TestFarmerIdValidation:
     """AC1: Invalid farmer_id must raise exception and increment metric."""
 
@@ -159,7 +152,6 @@ class TestFarmerIdValidation:
         mock_farmer_repo,
         mock_factory_repo,
         mock_region_repo,
-        mock_event_publisher,
     ):
         """When farmer_id references nonexistent farmer, raise QualityEventProcessingError."""
         # Arrange: farmer_id does not exist in database
@@ -172,7 +164,6 @@ class TestFarmerIdValidation:
             farmer_repo=mock_farmer_repo,
             factory_repo=mock_factory_repo,
             region_repo=mock_region_repo,
-            event_publisher=mock_event_publisher,
         )
 
         # Act & Assert
@@ -197,7 +188,6 @@ class TestFarmerIdValidation:
         mock_farmer_repo,
         mock_factory_repo,
         mock_region_repo,
-        mock_event_publisher,
     ):
         """When farmer_id exists, validation passes and processing continues."""
         # Arrange: farmer exists
@@ -220,7 +210,6 @@ class TestFarmerIdValidation:
             farmer_repo=mock_farmer_repo,
             factory_repo=mock_factory_repo,
             region_repo=mock_region_repo,
-            event_publisher=mock_event_publisher,
         )
 
         # Act
@@ -246,7 +235,6 @@ class TestFactoryIdValidation:
         mock_farmer_repo,
         mock_factory_repo,
         mock_region_repo,
-        mock_event_publisher,
     ):
         """When factory_id references nonexistent factory, raise QualityEventProcessingError."""
         # Arrange: farmer exists
@@ -263,7 +251,6 @@ class TestFactoryIdValidation:
             farmer_repo=mock_farmer_repo,
             factory_repo=mock_factory_repo,
             region_repo=mock_region_repo,
-            event_publisher=mock_event_publisher,
         )
 
         # Act & Assert
@@ -290,7 +277,6 @@ class TestGradingModelIdValidation:
         mock_farmer_repo,
         mock_factory_repo,
         mock_region_repo,
-        mock_event_publisher,
     ):
         """When document is missing grading_model_id, raise QualityEventProcessingError."""
         # Arrange: document has no grading_model_id
@@ -313,7 +299,6 @@ class TestGradingModelIdValidation:
             farmer_repo=mock_farmer_repo,
             factory_repo=mock_factory_repo,
             region_repo=mock_region_repo,
-            event_publisher=mock_event_publisher,
         )
 
         # Act & Assert
@@ -335,7 +320,6 @@ class TestGradingModelIdValidation:
         mock_farmer_repo,
         mock_factory_repo,
         mock_region_repo,
-        mock_event_publisher,
     ):
         """When grading_model_id references nonexistent model, raise exception."""
         # Arrange: grading model does NOT exist
@@ -357,7 +341,6 @@ class TestGradingModelIdValidation:
             farmer_repo=mock_farmer_repo,
             factory_repo=mock_factory_repo,
             region_repo=mock_region_repo,
-            event_publisher=mock_event_publisher,
         )
 
         # Act & Assert
@@ -385,7 +368,6 @@ class TestRegionIdValidation:
         mock_farmer_repo,
         mock_factory_repo,
         mock_region_repo,
-        mock_event_publisher,
     ):
         """When farmer's region_id references nonexistent region, raise exception."""
         # Arrange: farmer exists with a region_id
@@ -405,7 +387,6 @@ class TestRegionIdValidation:
             farmer_repo=mock_farmer_repo,
             factory_repo=mock_factory_repo,
             region_repo=mock_region_repo,
-            event_publisher=mock_event_publisher,
         )
 
         # Act & Assert
@@ -432,7 +413,6 @@ class TestValidEventProcessing:
         mock_farmer_repo,
         mock_factory_repo,
         mock_region_repo,
-        mock_event_publisher,
     ):
         """When all linkage fields are valid, event processes successfully."""
         import datetime as dt
@@ -468,7 +448,6 @@ class TestValidEventProcessing:
             farmer_repo=mock_farmer_repo,
             factory_repo=mock_factory_repo,
             region_repo=mock_region_repo,
-            event_publisher=mock_event_publisher,
         )
 
         # Act
@@ -530,7 +509,6 @@ class TestBackwardCompatibility:
         self,
         mock_collection_client,
         mock_grading_model_repo,
-        mock_event_publisher,
     ):
         """Processor still works when linkage repos are not provided (None)."""
         import datetime as dt
@@ -559,7 +537,6 @@ class TestBackwardCompatibility:
             grading_model_repo=mock_grading_model_repo,
             farmer_performance_repo=mock_farmer_performance_repo,
             # No farmer_repo, factory_repo, region_repo
-            event_publisher=mock_event_publisher,
         )
 
         # Act: should not raise, just log warnings for skipped validations
