@@ -171,7 +171,7 @@ development_status:
   0-75-8-event-flow-subscriber-publisher: done  # github_issue: 103, PR: #104, DAPR pub/sub integration
   0-75-8b-mcp-client-integration-agent-workflows: done  # github_issue: 105, PR: #106, MCP client from fp-common for agents
   0-75-9-pydantic-model-rag-document-storage: done  # github_issue: 107 - RagDocument, RagChunk models
-  0-75-10-grpc-model-rag-document: backlog  # Proto + gRPC service (metadata only)
+  0-75-10-grpc-model-rag-document: in-progress  # github_issue: 117 - Proto + gRPC service (metadata only)
   0-75-10b-basic-pdf-markdown-extraction: backlog  # PyMuPDF, Markdown parsing, async jobs
   0-75-10c-azure-document-intelligence-integration: backlog  # Scanned PDF OCR
   0-75-10d-semantic-chunking: backlog  # Chunk by semantic boundaries

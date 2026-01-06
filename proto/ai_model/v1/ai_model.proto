@@ -171,3 +171,228 @@ message ThresholdConfigRequest {
   // New monthly threshold in USD (0 = disabled, -1 = no change)
   double monthly_threshold_usd = 2;
 }
+
+// ============================================
+// RAG Document Service (Story 0.75.10)
+// Manages RAG knowledge documents with versioning
+// ============================================
+
+// RAGDocumentService provides RAG document management capabilities
+service RAGDocumentService {
+  // CRUD Operations
+  rpc CreateDocument(CreateDocumentRequest) returns (CreateDocumentResponse);
+  rpc GetDocument(GetDocumentRequest) returns (RAGDocument);
+  rpc UpdateDocument(UpdateDocumentRequest) returns (RAGDocument);
+  rpc DeleteDocument(DeleteDocumentRequest) returns (DeleteDocumentResponse);
+
+  // List & Search
+  rpc ListDocuments(ListDocumentsRequest) returns (ListDocumentsResponse);
+  rpc SearchDocuments(SearchDocumentsRequest) returns (SearchDocumentsResponse);
+
+  // Lifecycle Management
+  rpc StageDocument(StageDocumentRequest) returns (RAGDocument);
+  rpc ActivateDocument(ActivateDocumentRequest) returns (RAGDocument);
+  rpc ArchiveDocument(ArchiveDocumentRequest) returns (RAGDocument);
+  rpc RollbackDocument(RollbackDocumentRequest) returns (RAGDocument);
+}
+
+// ============================================
+// RAG Document Messages
+// ============================================
+
+// RAG knowledge document for expert knowledge storage
+// Documents are versioned via document_id + version combination
+message RAGDocument {
+  // Unique document ID (format: {document_id}:v{version}) - MongoDB _id mapping
+  string id = 1;
+  // Stable ID across versions (e.g., "disease-diagnosis-guide")
+  string document_id = 2;
+  // Incrementing version number
+  int32 version = 3;
+  // Document title for display
+  string title = 4;
+  // Knowledge domain: plant_diseases, tea_cultivation, weather_patterns, quality_standards, regional_context
+  string domain = 5;
+  // Extracted/authored markdown text content
+  string content = 6;
+  // Document lifecycle status: draft, staged, active, archived
+  string status = 7;
+  // Document metadata
+  RAGDocumentMetadata metadata = 8;
+  // Original file reference if uploaded as PDF/DOCX
+  SourceFile source_file = 9;
+  // What changed from previous version
+  string change_summary = 10;
+  // Creation timestamp
+  google.protobuf.Timestamp created_at = 11;
+  // Last update timestamp
+  google.protobuf.Timestamp updated_at = 12;
+  // Pinecone namespace (e.g., "knowledge-v12")
+  string pinecone_namespace = 13;
+  // Vector IDs in Pinecone after vectorization
+  repeated string pinecone_ids = 14;
+  // SHA256 hash for change detection
+  string content_hash = 15;
+}
+
+// Metadata for RAG document
+message RAGDocumentMetadata {
+  // Agronomist who created/updated the document
+  string author = 1;
+  // Original source (book, research paper, etc.)
+  string source = 2;
+  // Geographic relevance (e.g., "Kenya", "Rwanda")
+  string region = 3;
+  // Seasonal relevance (e.g., "dry_season", "monsoon")
+  string season = 4;
+  // Searchable tags for filtering
+  repeated string tags = 5;
+}
+
+// Original uploaded file reference for PDF/DOCX uploads
+message SourceFile {
+  // Original filename (e.g., "blister-blight-guide.pdf")
+  string filename = 1;
+  // File type: pdf, docx, md, txt
+  string file_type = 2;
+  // Azure Blob path to original file
+  string blob_path = 3;
+  // File size in bytes
+  int64 file_size_bytes = 4;
+  // Extraction method: manual, text_extraction, azure_doc_intel, vision_llm
+  string extraction_method = 5;
+  // Extraction quality score (0-1)
+  float extraction_confidence = 6;
+  // Number of pages in document
+  int32 page_count = 7;
+}
+
+// ============================================
+// CRUD Request/Response Messages
+// ============================================
+
+message CreateDocumentRequest {
+  // Stable document ID (optional - auto-generated UUID if not provided)
+  string document_id = 1;
+  // Document title for display
+  string title = 2;
+  // Knowledge domain: plant_diseases, tea_cultivation, weather_patterns, quality_standards, regional_context
+  string domain = 3;
+  // Document content (markdown text)
+  string content = 4;
+  // Document metadata
+  RAGDocumentMetadata metadata = 5;
+  // Optional source file reference
+  SourceFile source_file = 6;
+}
+
+message CreateDocumentResponse {
+  // Created document
+  RAGDocument document = 1;
+}
+
+message GetDocumentRequest {
+  // Document ID to retrieve
+  string document_id = 1;
+  // Optional: specific version to retrieve (0 = active version)
+  int32 version = 2;
+}
+
+message UpdateDocumentRequest {
+  // Document ID to update
+  string document_id = 1;
+  // Updated title (empty = no change)
+  string title = 2;
+  // Updated content (empty = no change)
+  string content = 3;
+  // Updated metadata (null = no change)
+  RAGDocumentMetadata metadata = 4;
+  // Summary of what changed
+  string change_summary = 5;
+}
+
+message DeleteDocumentRequest {
+  // Document ID to delete (archives all versions)
+  string document_id = 1;
+}
+
+message DeleteDocumentResponse {
+  // Number of versions archived
+  int32 versions_archived = 1;
+}
+
+// ============================================
+// List & Search Request/Response Messages
+// ============================================
+
+message ListDocumentsRequest {
+  // Page number (1-indexed, default 1)
+  int32 page = 1;
+  // Page size (default 20, max 100)
+  int32 page_size = 2;
+  // Filter by domain
+  string domain = 3;
+  // Filter by status
+  string status = 4;
+  // Filter by author
+  string author = 5;
+}
+
+message ListDocumentsResponse {
+  // Documents for this page
+  repeated RAGDocument documents = 1;
+  // Total count matching filters
+  int32 total_count = 2;
+  // Current page number
+  int32 page = 3;
+  // Page size used
+  int32 page_size = 4;
+}
+
+message SearchDocumentsRequest {
+  // Search query (searches title and content)
+  string query = 1;
+  // Filter by domain
+  string domain = 2;
+  // Filter by status
+  string status = 3;
+  // Max results to return (default 20, max 100)
+  int32 limit = 4;
+}
+
+message SearchDocumentsResponse {
+  // Matching documents
+  repeated RAGDocument documents = 1;
+}
+
+// ============================================
+// Lifecycle Request Messages
+// ============================================
+
+message StageDocumentRequest {
+  // Document ID to stage
+  string document_id = 1;
+  // Version to stage (must be in draft status)
+  int32 version = 2;
+}
+
+message ActivateDocumentRequest {
+  // Document ID to activate
+  string document_id = 1;
+  // Version to activate (must be in staged status)
+  int32 version = 2;
+}
+
+message ArchiveDocumentRequest {
+  // Document ID to archive
+  string document_id = 1;
+  // Version to archive (optional - 0 archives all versions)
+  int32 version = 2;
+}
+
+message RollbackDocumentRequest {
+  // Document ID to rollback
+  string document_id = 1;
+  // Version to rollback to (creates new draft version with content from this version)
+  int32 target_version = 2;
+}

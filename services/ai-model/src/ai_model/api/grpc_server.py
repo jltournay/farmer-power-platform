@@ -1,14 +1,16 @@
 """gRPC server implementation for AI Model service.
 
 Story 0.75.5: Added CostService registration.
+Story 0.75.10: Added RAGDocumentService registration.
 """
 
 import grpc
 import structlog
 from ai_model.api.cost_service import CostServiceServicer
+from ai_model.api.rag_document_service import RAGDocumentServiceServicer
 from ai_model.config import settings
 from ai_model.infrastructure.mongodb import get_database
-from ai_model.infrastructure.repositories import LlmCostEventRepository
+from ai_model.infrastructure.repositories import LlmCostEventRepository, RagDocumentRepository
 from ai_model.llm.budget_monitor import BudgetMonitor
 from fp_proto.ai_model.v1 import ai_model_pb2, ai_model_pb2_grpc
 from grpc_health.v1 import health, health_pb2, health_pb2_grpc
@@ -129,6 +131,13 @@ class GrpcServer:
         ai_model_pb2_grpc.add_CostServiceServicer_to_server(cost_servicer, self._server)
         logger.info("CostService registered")
 
+        # Story 0.75.10: Add RAGDocumentService
+        rag_doc_repository = RagDocumentRepository(db)
+        await rag_doc_repository.ensure_indexes()
+        rag_doc_servicer = RAGDocumentServiceServicer(rag_doc_repository)
+        ai_model_pb2_grpc.add_RAGDocumentServiceServicer_to_server(rag_doc_servicer, self._server)
+        logger.info("RAGDocumentService registered")
+
         # Add health checking service
         self._health_servicer = health.HealthServicer()
         health_pb2_grpc.add_HealthServicer_to_server(self._health_servicer, self._server)
@@ -147,6 +156,7 @@ class GrpcServer:
         service_names = (
             ai_model_pb2.DESCRIPTOR.services_by_name["AiModelService"].full_name,
             ai_model_pb2.DESCRIPTOR.services_by_name["CostService"].full_name,
+            ai_model_pb2.DESCRIPTOR.services_by_name["RAGDocumentService"].full_name,
             health_pb2.DESCRIPTOR.services_by_name["Health"].full_name,
             reflection.SERVICE_NAME,
         )
