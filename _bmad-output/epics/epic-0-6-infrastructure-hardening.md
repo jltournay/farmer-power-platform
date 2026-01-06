@@ -533,6 +533,94 @@ So that invalid events go to DLQ and trigger alerts instead of silent data loss.
 
 ---
 
+## Wave 4 Stories (Type Safety at MCP Boundary)
+
+> **Context:** MCP server infrastructure clients currently return `dict[str, Any]` with manual `_to_dict()`
+> conversion methods. This creates field mapping drift between Proto definitions, Pydantic models,
+> and MCP responses. These stories centralize Proto-to-Pydantic conversion in fp-common and refactor
+> MCP clients to return typed Pydantic models.
+
+### Story 0.6.11: Proto-to-Pydantic Converters in fp-common
+
+**[📄 Story File](../sprint-artifacts/0-6-11-proto-to-pydantic-converters.md)** | Status: To Do
+
+As a **developer maintaining MCP servers**,
+I want Proto-to-Pydantic conversion functions centralized in fp-common,
+So that field mappings are defined once and reused by both services and MCP clients.
+
+**ADR:** ADR-004 - Type Safety Architecture (extension)
+
+**Acceptance Criteria:**
+
+**Given** Plantation proto messages exist
+**When** I check `libs/fp-common/fp_common/converters/`
+**Then** I find `plantation_converters.py` with:
+  - `farmer_from_proto(proto: plantation_pb2.Farmer) -> Farmer`
+  - `factory_from_proto(proto: plantation_pb2.Factory) -> Factory`
+  - `region_from_proto(proto: plantation_pb2.Region) -> Region`
+  - `farmer_summary_from_proto(proto: plantation_pb2.FarmerSummary) -> FarmerSummary`
+  - `collection_point_from_proto(proto: plantation_pb2.CollectionPoint) -> CollectionPoint`
+
+**Given** converters are in fp-common
+**When** MCP client imports them
+**Then** `from fp_common.converters import farmer_from_proto` works
+**And** conversion logic is identical to what's currently in `_farmer_to_dict()`
+
+**Unit Tests Required:**
+- `tests/unit/fp_common/converters/test_plantation_converters.py`
+  - Round-trip: proto → pydantic → model_dump() produces expected dict
+  - Edge cases: optional fields, nested messages, enums
+
+**Story Points:** 3
+
+---
+
+### Story 0.6.12: MCP Clients Return Pydantic Models (Option B)
+
+**[📄 Story File](../sprint-artifacts/0-6-12-mcp-clients-pydantic-models.md)** | Status: To Do
+
+As a **developer consuming MCP server responses**,
+I want MCP infrastructure clients to return Pydantic models instead of dicts,
+So that I have type safety and IDE autocomplete throughout the call chain.
+
+**ADR:** ADR-004 - Type Safety Architecture (extension)
+
+**Acceptance Criteria:**
+
+**Given** `PlantationClient` currently returns `dict[str, Any]`
+**When** I refactor `mcp-servers/plantation-mcp/src/plantation_mcp/infrastructure/plantation_client.py`
+**Then** methods return Pydantic models:
+  - `get_farmer() -> Farmer`
+  - `get_factory() -> Factory`
+  - `get_region() -> Region`
+  - `get_farmer_summary() -> FarmerSummary`
+  - `get_collection_points() -> list[CollectionPoint]`
+**And** manual `_*_to_dict()` methods are removed
+**And** converters from `fp_common.converters` are used instead
+
+**Given** MCP tool handlers receive Pydantic models
+**When** they serialize for JSON response
+**Then** they call `model.model_dump()` at the boundary
+**And** field names match Proto/Pydantic definitions (no drift)
+
+**Given** collection-mcp infrastructure clients exist
+**When** I check `source_config_client.py` and `document_client.py`
+**Then** they return Pydantic models where applicable
+**Or** remain dict-based for dynamic MongoDB documents (acceptable)
+
+**Unit Tests Required:**
+- `tests/unit/plantation_mcp/infrastructure/test_plantation_client.py`
+  - Verify return types are Pydantic models
+  - Verify model_dump() produces expected JSON structure
+
+**E2E Test Impact:**
+- Existing E2E tests should pass unchanged (JSON output identical)
+- Type safety is internal improvement, no API changes
+
+**Story Points:** 5
+
+---
+
 ## Summary
 
 ### Wave 1: Foundation (12 points)
@@ -563,7 +651,15 @@ So that invalid events go to DLQ and trigger alerts instead of silent data loss.
 | 0.6.10 | Linkage Field Validation + Metrics | ADR-008 | 3 | To Do |
 | **Wave 3 Total** | | | **8** | |
 
-### Epic Total: 35 Story Points
+### Wave 4: Type Safety at MCP Boundary (8 points)
+
+| Story | Description | ADR | Points | Status |
+|-------|-------------|-----|--------|--------|
+| 0.6.11 | Proto-to-Pydantic Converters | ADR-004 | 3 | To Do |
+| 0.6.12 | MCP Clients Return Pydantic Models | ADR-004 | 5 | To Do |
+| **Wave 4 Total** | | | **8** | |
+
+### Epic Total: 43 Story Points (Wave 1: 12 + Wave 2: 15 + Wave 3: 8 + Wave 4: 8)
 
 ## Testing Strategy
 
@@ -634,6 +730,15 @@ All stories must pass CI before merge:
 - [ ] CI pipelines green on all PRs
 - [ ] ADR-007, ADR-008 marked as "Implemented"
 
+### Wave 4
+- [ ] Stories 0.6.11-0.6.12 implemented and merged
+- [ ] All unit tests pass
+- [ ] E2E test suite passes (no regressions)
+- [ ] MCP clients return Pydantic models (type-safe)
+- [ ] Manual `_to_dict()` methods removed from plantation_client.py
+- [ ] Proto-to-Pydantic converters centralized in fp-common
+- [ ] CI pipelines green on all PRs
+
 ---
 
 ## Retrospective
@@ -648,6 +753,6 @@ All stories must pass CI before merge:
 
 ---
 
-**Total Story Points:** 35 (Wave 1: 12 + Wave 2: 15 + Wave 3: 8)
+**Total Story Points:** 43 (Wave 1: 12 + Wave 2: 15 + Wave 3: 8 + Wave 4: 8)
 
-**Estimated Duration:** 3 sprints (1 sprint per wave)
+**Estimated Duration:** 4 sprints (1 sprint per wave)
