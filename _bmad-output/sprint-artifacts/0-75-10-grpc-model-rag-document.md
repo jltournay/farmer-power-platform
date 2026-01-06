@@ -1,6 +1,6 @@
 # Story 0.75.10: gRPC Model for RAG Document
 
-**Status:** in-progress
+**Status:** review
 **GitHub Issue:** #117
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
@@ -125,7 +125,7 @@ PYTHONPATH="${PYTHONPATH}:.:services/ai-model/src:libs/fp-common:libs/fp-proto/s
 ```
 **Output:**
 ```
-(paste test summary here - e.g., "15 passed in 2.34s")
+17 passed in 1.67s
 ```
 
 ### 2. E2E Tests (MANDATORY)
@@ -144,15 +144,15 @@ docker compose -f tests/e2e/infrastructure/docker-compose.e2e.yaml down -v
 ```
 **Output:**
 ```
-(paste E2E test output here - story is NOT ready for review without this)
+102 passed, 1 skipped in 125.42s (0:02:05)
 ```
-**E2E passed:** [ ] Yes / [ ] No
+**E2E passed:** [x] Yes / [ ] No
 
 ### 3. Lint Check
 ```bash
 ruff check . && ruff format --check .
 ```
-**Lint passed:** [ ] Yes / [ ] No
+**Lint passed:** [x] Yes / [ ] No
 
 ### 4. CI Verification on Story Branch (MANDATORY)
 
@@ -165,9 +165,9 @@ git push origin feature/0-75-10-grpc-model-rag-document
 # Wait ~30s, then check CI status
 gh run list --branch feature/0-75-10-grpc-model-rag-document --limit 3
 ```
-**CI Run ID:** _______________
-**CI E2E Status:** [ ] Passed / [ ] Failed
-**Verification Date:** _______________
+**CI Run ID:** 20763643374 (CI), 20764006819 (E2E)
+**CI E2E Status:** [x] Passed / [ ] Failed
+**Verification Date:** 2026-01-06
 
 ---
 
@@ -717,7 +717,14 @@ python -m grpc_tools.protoc \
 ### File List
 
 **Created:**
-- (list new files)
+- `services/ai-model/src/ai_model/api/rag_document_service.py` - RAGDocumentServiceServicer implementation
+- `tests/unit/ai_model/test_rag_document_service.py` - 17 unit tests
 
 **Modified:**
-- (list modified files with brief description)
+- `proto/ai_model/v1/ai_model.proto` - Added RAGDocumentService with 10 RPCs
+- `libs/fp-proto/src/fp_proto/ai_model/v1/ai_model_pb2.py` - Regenerated proto stubs
+- `libs/fp-proto/src/fp_proto/ai_model/v1/ai_model_pb2.pyi` - Regenerated type stubs
+- `libs/fp-proto/src/fp_proto/ai_model/v1/ai_model_pb2_grpc.py` - Regenerated gRPC stubs
+- `services/ai-model/src/ai_model/api/grpc_server.py` - Service registration
+- `services/ai-model/src/ai_model/api/__init__.py` - Export RAGDocumentServiceServicer
+- `tests/conftest.py` - Enhanced MockMongoDB with $or, $regex operators and proper sorting
