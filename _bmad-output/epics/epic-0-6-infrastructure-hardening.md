@@ -675,6 +675,59 @@ Collection Model already exposes `GetDocument` via gRPC (proto/collection/v1/col
 
 ---
 
+### Story 0.6.14: Replace Custom DaprPubSubClient with SDK Publishing
+
+**[📄 Story File](../sprint-artifacts/0-6-14-dapr-sdk-publishing.md)** | Status: To Do
+
+As a **platform engineer**,
+I want all DAPR pub/sub publishing to use the official SDK instead of custom httpx-based clients,
+So that the codebase follows ADR-010 patterns consistently for both subscribing AND publishing.
+
+**ADR:** ADR-010 - DAPR Patterns and Configuration Standards
+
+**Context:**
+`plantation_model/infrastructure/dapr_client.py` implements a custom `DaprPubSubClient` using `httpx`
+for HTTP-based publishing. Meanwhile, `events/subscriber.py` correctly uses the SDK's `DaprClient`.
+This inconsistency violates ADR-010 which mandates SDK usage for all pub/sub operations.
+
+**Acceptance Criteria:**
+
+**Given** the custom `DaprPubSubClient` exists in `infrastructure/dapr_client.py`
+**When** I check its implementation
+**Then** it uses `httpx.AsyncClient` for manual HTTP POST to Dapr API
+
+**Given** the migration is complete
+**When** I check `infrastructure/dapr_client.py`
+**Then** the file is deleted (or refactored to wrap SDK)
+
+**Given** `plantation_service.py` publishes `FarmerRegisteredEvent`
+**When** I check the implementation
+**Then** it uses SDK pattern:
+```python
+from dapr.clients import DaprClient
+with DaprClient() as client:
+    client.publish_event(pubsub_name="pubsub", topic_name="farmer-events", ...)
+```
+
+**Given** `quality_event_processor.py` publishes events
+**When** I check the implementation
+**Then** `plantation.quality.graded` uses SDK `publish_event()`
+**And** `plantation.performance_updated` uses SDK `publish_event()`
+**And** no imports from `infrastructure.dapr_client`
+
+**Given** all publishers use SDK
+**When** I run the E2E test suite
+**Then** events are published and received correctly
+**And** no functional regression
+
+**Unit Tests Required:**
+- Update existing tests to mock `DaprClient` instead of `DaprPubSubClient`
+- Verify `publish_event()` called with correct parameters
+
+**Story Points:** 3
+
+---
+
 ## Summary
 
 ### Wave 1: Foundation (12 points)
@@ -705,16 +758,17 @@ Collection Model already exposes `GetDocument` via gRPC (proto/collection/v1/col
 | 0.6.10 | Linkage Field Validation + Metrics | ADR-008 | 3 | To Do |
 | **Wave 3 Total** | | | **8** | |
 
-### Wave 4: Type Safety & Service Boundaries (11 points)
+### Wave 4: Type Safety & Service Boundaries (14 points)
 
 | Story | Description | ADR | Points | Status |
 |-------|-------------|-----|--------|--------|
 | 0.6.11 | Proto-to-Pydantic Converters | ADR-004 | 3 | To Do |
 | 0.6.12 | MCP Clients Return Pydantic Models | ADR-004 | 5 | To Do |
 | 0.6.13 | Replace CollectionClient Direct DB with gRPC | ADR-010/011 | 3 | To Do |
-| **Wave 4 Total** | | | **11** | |
+| 0.6.14 | Replace Custom DaprPubSubClient with SDK | ADR-010 | 3 | To Do |
+| **Wave 4 Total** | | | **14** | |
 
-### Epic Total: 46 Story Points (Wave 1: 12 + Wave 2: 15 + Wave 3: 8 + Wave 4: 11)
+### Epic Total: 49 Story Points (Wave 1: 12 + Wave 2: 15 + Wave 3: 8 + Wave 4: 14)
 
 ## Testing Strategy
 
@@ -810,6 +864,6 @@ All stories must pass CI before merge:
 
 ---
 
-**Total Story Points:** 46 (Wave 1: 12 + Wave 2: 15 + Wave 3: 8 + Wave 4: 11)
+**Total Story Points:** 49 (Wave 1: 12 + Wave 2: 15 + Wave 3: 8 + Wave 4: 14)
 
 **Estimated Duration:** 4 sprints (1 sprint per wave)

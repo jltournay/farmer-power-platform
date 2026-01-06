@@ -110,7 +110,7 @@ development_status:
 
   # Epic 0.6: Infrastructure Hardening (ADR Implementation)
   # Dependencies: Epic 0.4 (E2E Tests). Blocks: All future epics
-  # Implements ADRs: 004-011 (46 story points total, Wave 4 added 2026-01-06)
+  # Implements ADRs: 004-011 (49 story points total, Wave 4 added 2026-01-06)
   epic-0-6: in-progress  # Reopened for Wave 4: Type Safety & Service Boundaries
   0-6-1-shared-pydantic-models: done  # ADR-004, 5 points, github_issue: 41, PR: #42
   0-6-2-shared-logging-module: done  # ADR-009, 3 points, github_issue: 43, PR: #44
@@ -126,6 +126,7 @@ development_status:
   0-6-11-proto-to-pydantic-converters: backlog  # ADR-004, 3 points - Centralize Proto→Pydantic in fp-common
   0-6-12-mcp-clients-pydantic-models: backlog  # ADR-004, 5 points - MCP clients return Pydantic, not dict
   0-6-13-collection-client-grpc: backlog  # ADR-010/011, 3 points - Replace direct MongoDB with gRPC via DAPR
+  0-6-14-dapr-sdk-publishing: backlog  # ADR-010, 3 points - Replace custom DaprPubSubClient with SDK publish_event()
   epic-0-6-retrospective: done  # 2026-01-02: epic-0-6-retro-2026-01-02.md (will need update after Wave 4)
 
   # ═══════════════════════════════════════════════════════════════════════════
