@@ -1,6 +1,6 @@
 # Story 0.6.12: MCP Clients Return Pydantic Models
 
-**Status:** review
+**Status:** done
 **GitHub Issue:** #111
 **Epic:** [Epic 0.6: Infrastructure Hardening](../epics/epic-0-6-infrastructure-hardening.md)
 **ADR:** [ADR-004: Type Safety - Shared Pydantic Models](../architecture/adr/ADR-004-type-safety-shared-pydantic-models.md)

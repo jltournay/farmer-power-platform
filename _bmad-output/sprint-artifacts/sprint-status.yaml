@@ -124,7 +124,7 @@ development_status:
   0-6-10-linkage-field-validation: done  # ADR-008, 3 points, github_issue: 59, prereq: 0.6.5, 0.6.8, code-review: APPROVED
   # Wave 4: Type Safety & Service Boundaries (added 2026-01-06)
   0-6-11-proto-to-pydantic-converters: done  # ADR-004, 3 points, github_issue: 109 - Centralize Proto→Pydantic in fp-common
-  0-6-12-mcp-clients-pydantic-models: review  # ADR-004, 5 points, github_issue: 111 - MCP clients return Pydantic, not dict
+  0-6-12-mcp-clients-pydantic-models: done  # ADR-004, 5 points, github_issue: 111, PR: #112 - MCP clients return Pydantic, not dict
   0-6-13-collection-client-grpc: backlog  # ADR-010/011, 3 points - Replace direct MongoDB with gRPC via DAPR
   0-6-14-dapr-sdk-publishing: backlog  # ADR-010, 3 points - Replace custom DaprPubSubClient with SDK publish_event()
   epic-0-6-retrospective: done  # 2026-01-02: epic-0-6-retro-2026-01-02.md (will need update after Wave 4)
