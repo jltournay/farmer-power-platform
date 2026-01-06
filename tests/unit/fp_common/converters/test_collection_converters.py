@@ -1,17 +1,233 @@
 """Unit tests for collection_converters module.
 
-Tests verify MongoDB dict-to-Pydantic conversion correctness including:
-- Basic field mapping
+Tests verify conversion correctness including:
+- Proto -> Pydantic (document_from_proto) for gRPC clients (Story 0.6.13)
+- MongoDB dict -> Pydantic (document_from_dict) for direct access
 - Nested structure handling
-- Datetime parsing
+- Datetime/Timestamp parsing
 - Optional field defaults
-- Round-trip validation (dict -> pydantic -> model_dump)
+- Round-trip validation
 """
 
 from datetime import UTC, datetime
 
-from fp_common.converters import document_from_dict, search_result_from_dict
+from fp_common.converters import document_from_dict, document_from_proto, search_result_from_dict
 from fp_common.models import Document, SearchResult
+from fp_proto.collection.v1 import collection_pb2
+from google.protobuf.timestamp_pb2 import Timestamp
+
+
+def _datetime_to_timestamp(dt: datetime) -> Timestamp:
+    """Helper to convert datetime to protobuf Timestamp."""
+    ts = Timestamp()
+    ts.FromDatetime(dt)
+    return ts
+
+
+class TestDocumentFromProto:
+    """Tests for document_from_proto converter.
+
+    Story 0.6.13: Proto -> Pydantic conversion for gRPC clients.
+    """
+
+    def test_basic_fields_mapped(self):
+        """Basic fields are correctly mapped from proto."""
+        now = datetime(2026, 1, 6, 10, 0, 0, tzinfo=UTC)
+
+        proto = collection_pb2.Document(
+            document_id="doc-proto-001",
+            raw_document=collection_pb2.RawDocumentRef(
+                blob_container="quality-data",
+                blob_path="factory-001/2026-01-06/batch-001.json",
+                content_hash="sha256:proto123",
+                size_bytes=2048,
+                stored_at=_datetime_to_timestamp(now),
+            ),
+            extraction=collection_pb2.ExtractionMetadata(
+                ai_agent_id="qc-extractor-v2",
+                extraction_timestamp=_datetime_to_timestamp(now),
+                confidence=0.97,
+                validation_passed=True,
+                validation_warnings=["minor"],
+            ),
+            ingestion=collection_pb2.IngestionMetadata(
+                ingestion_id="ing-proto-001",
+                source_id="qc-analyzer-result",
+                received_at=_datetime_to_timestamp(now),
+                processed_at=_datetime_to_timestamp(now),
+            ),
+            extracted_fields={"farmer_id": "WM-0001", "grade": "Primary"},
+            linkage_fields={"farmer_id": "WM-0001"},
+            created_at=_datetime_to_timestamp(now),
+        )
+
+        doc = document_from_proto(proto)
+
+        assert isinstance(doc, Document)
+        assert doc.document_id == "doc-proto-001"
+        assert doc.raw_document.blob_container == "quality-data"
+        assert doc.raw_document.blob_path == "factory-001/2026-01-06/batch-001.json"
+        assert doc.raw_document.content_hash == "sha256:proto123"
+        assert doc.raw_document.size_bytes == 2048
+        assert doc.extraction.ai_agent_id == "qc-extractor-v2"
+        assert doc.extraction.confidence == 0.97
+        assert doc.extraction.validation_passed is True
+        assert doc.extraction.validation_warnings == ["minor"]
+        assert doc.ingestion.source_id == "qc-analyzer-result"
+        assert doc.extracted_fields["farmer_id"] == "WM-0001"
+        assert doc.linkage_fields["farmer_id"] == "WM-0001"
+
+    def test_timestamp_conversion(self):
+        """Proto timestamps are correctly converted to datetime."""
+        specific_time = datetime(2026, 1, 6, 14, 30, 45, tzinfo=UTC)
+
+        proto = collection_pb2.Document(
+            document_id="doc-timestamp-test",
+            raw_document=collection_pb2.RawDocumentRef(
+                blob_container="c",
+                blob_path="p",
+                content_hash="h",
+                size_bytes=100,
+                stored_at=_datetime_to_timestamp(specific_time),
+            ),
+            extraction=collection_pb2.ExtractionMetadata(
+                ai_agent_id="agent",
+                extraction_timestamp=_datetime_to_timestamp(specific_time),
+                confidence=0.9,
+                validation_passed=True,
+            ),
+            ingestion=collection_pb2.IngestionMetadata(
+                ingestion_id="i",
+                source_id="s",
+                received_at=_datetime_to_timestamp(specific_time),
+                processed_at=_datetime_to_timestamp(specific_time),
+            ),
+            created_at=_datetime_to_timestamp(specific_time),
+        )
+
+        doc = document_from_proto(proto)
+
+        assert doc.raw_document.stored_at == specific_time
+        assert doc.extraction.extraction_timestamp == specific_time
+        assert doc.ingestion.received_at == specific_time
+        assert doc.ingestion.processed_at == specific_time
+        assert doc.created_at == specific_time
+
+    def test_empty_timestamps_default_to_now(self):
+        """Empty proto timestamps default to current time."""
+        proto = collection_pb2.Document(
+            document_id="doc-empty-ts",
+            raw_document=collection_pb2.RawDocumentRef(
+                blob_container="c",
+                blob_path="p",
+                content_hash="h",
+                size_bytes=100,
+                # stored_at not set -> defaults to empty Timestamp
+            ),
+            extraction=collection_pb2.ExtractionMetadata(
+                ai_agent_id="agent",
+                # extraction_timestamp not set
+                confidence=0.9,
+                validation_passed=True,
+            ),
+            ingestion=collection_pb2.IngestionMetadata(
+                ingestion_id="i",
+                source_id="s",
+                # received_at and processed_at not set
+            ),
+            # created_at not set
+        )
+
+        doc = document_from_proto(proto)
+
+        # All timestamps should be datetime objects (defaulting to now)
+        assert isinstance(doc.raw_document.stored_at, datetime)
+        assert isinstance(doc.extraction.extraction_timestamp, datetime)
+        assert isinstance(doc.ingestion.received_at, datetime)
+        assert isinstance(doc.ingestion.processed_at, datetime)
+        assert isinstance(doc.created_at, datetime)
+
+    def test_map_fields_converted_to_dict(self):
+        """Proto map<string, string> fields are converted to dict."""
+        now = datetime(2026, 1, 6, 10, 0, 0, tzinfo=UTC)
+
+        proto = collection_pb2.Document(
+            document_id="doc-maps",
+            raw_document=collection_pb2.RawDocumentRef(
+                blob_container="c",
+                blob_path="p",
+                content_hash="h",
+                size_bytes=100,
+                stored_at=_datetime_to_timestamp(now),
+            ),
+            extraction=collection_pb2.ExtractionMetadata(
+                ai_agent_id="a",
+                extraction_timestamp=_datetime_to_timestamp(now),
+                confidence=0.9,
+                validation_passed=True,
+            ),
+            ingestion=collection_pb2.IngestionMetadata(
+                ingestion_id="i",
+                source_id="s",
+                received_at=_datetime_to_timestamp(now),
+                processed_at=_datetime_to_timestamp(now),
+            ),
+            extracted_fields={
+                "farmer_id": "WM-0001",
+                "factory_id": "KEN-FAC-001",
+                "grading_model_id": "tbk-kenya-v1",
+            },
+            linkage_fields={
+                "farmer_id": "WM-0001",
+                "region_id": "nyeri-highland",
+            },
+            created_at=_datetime_to_timestamp(now),
+        )
+
+        doc = document_from_proto(proto)
+
+        assert isinstance(doc.extracted_fields, dict)
+        assert isinstance(doc.linkage_fields, dict)
+        assert doc.extracted_fields["farmer_id"] == "WM-0001"
+        assert doc.extracted_fields["factory_id"] == "KEN-FAC-001"
+        assert doc.extracted_fields["grading_model_id"] == "tbk-kenya-v1"
+        assert doc.linkage_fields["farmer_id"] == "WM-0001"
+        assert doc.linkage_fields["region_id"] == "nyeri-highland"
+
+    def test_validation_warnings_list(self):
+        """Proto repeated string field is converted to list."""
+        now = datetime(2026, 1, 6, 10, 0, 0, tzinfo=UTC)
+
+        proto = collection_pb2.Document(
+            document_id="doc-warnings",
+            raw_document=collection_pb2.RawDocumentRef(
+                blob_container="c",
+                blob_path="p",
+                content_hash="h",
+                size_bytes=100,
+                stored_at=_datetime_to_timestamp(now),
+            ),
+            extraction=collection_pb2.ExtractionMetadata(
+                ai_agent_id="agent",
+                extraction_timestamp=_datetime_to_timestamp(now),
+                confidence=0.75,
+                validation_passed=False,
+                validation_warnings=["warning1", "warning2", "warning3"],
+            ),
+            ingestion=collection_pb2.IngestionMetadata(
+                ingestion_id="i",
+                source_id="s",
+                received_at=_datetime_to_timestamp(now),
+                processed_at=_datetime_to_timestamp(now),
+            ),
+            created_at=_datetime_to_timestamp(now),
+        )
+
+        doc = document_from_proto(proto)
+
+        assert isinstance(doc.extraction.validation_warnings, list)
+        assert doc.extraction.validation_warnings == ["warning1", "warning2", "warning3"]
+        assert doc.extraction.validation_passed is False
 
 
 class TestDocumentFromDict:

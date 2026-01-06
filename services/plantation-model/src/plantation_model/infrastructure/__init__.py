@@ -1,8 +1,8 @@
 """Infrastructure layer - MongoDB, DAPR, OpenTelemetry, external APIs."""
 
-from plantation_model.infrastructure.collection_client import (
-    CollectionClient,
+from plantation_model.infrastructure.collection_grpc_client import (
     CollectionClientError,
+    CollectionGrpcClient,
     DocumentNotFoundError,
 )
 from plantation_model.infrastructure.mongodb import (
@@ -19,16 +19,13 @@ from plantation_model.infrastructure.tracing import (
 )
 
 __all__ = [
-    # Collection client (Story 1.7)
-    "CollectionClient",
     "CollectionClientError",
+    "CollectionGrpcClient",
     "DocumentNotFoundError",
-    # MongoDB
     "check_mongodb_connection",
     "close_mongodb_connection",
     "get_database",
     "get_mongodb_client",
-    # Tracing
     "get_tracer",
     "instrument_fastapi",
     "setup_tracing",

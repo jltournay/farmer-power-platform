@@ -1,7 +1,7 @@
 # Story 0.6.13: Replace CollectionClient Direct DB Access with gRPC
 
-**Status:** ready-for-dev
-**GitHub Issue:** <!-- Auto-created by dev-story workflow -->
+**Status:** in-progress
+**GitHub Issue:** #113
 **Epic:** [Epic 0.6: Infrastructure Hardening](../epics/epic-0-6-infrastructure-hardening.md)
 **ADR:** [ADR-010: DAPR Patterns](../architecture/adr/ADR-010-dapr-patterns-configuration.md), [ADR-011: Service Architecture](../architecture/adr/ADR-011-grpc-fastapi-dapr-architecture.md)
 **Story Points:** 3

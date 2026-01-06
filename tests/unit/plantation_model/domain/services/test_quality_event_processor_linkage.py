@@ -1,6 +1,7 @@
 """Unit tests for QualityEventProcessor linkage field validation.
 
 Story 0.6.10: Linkage Field Validation with Metrics
+Story 0.6.13: Updated to use CollectionGrpcClient returning Pydantic Document models
 
 Tests verify:
 - AC1: Invalid farmer_id raises exception and increments metric
@@ -10,34 +11,81 @@ Tests verify:
 - AC5: Valid events pass through validation and are processed successfully
 """
 
+from datetime import UTC, datetime
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
+from fp_common.models import Document, ExtractionMetadata, IngestionMetadata, RawDocumentRef
 from plantation_model.domain.services.quality_event_processor import (
     QualityEventProcessingError,
     QualityEventProcessor,
 )
 
 
+def _create_mock_document(
+    document_id: str = "doc-123",
+    source_id: str = "src-001",
+    grading_model_id: str | None = "grading-model-001",
+    factory_id: str | None = "factory-001",
+    bag_summary: dict | None = None,
+) -> Document:
+    """Create a mock Document model for testing.
+
+    Story 0.6.13: Tests now use Pydantic Document model instead of dict.
+    """
+    now = datetime(2026, 1, 6, 10, 0, 0, tzinfo=UTC)
+    linkage_fields: dict = {}
+    extracted_fields: dict = {}
+
+    if grading_model_id:
+        linkage_fields["grading_model_id"] = grading_model_id
+    if factory_id:
+        linkage_fields["factory_id"] = factory_id
+
+    if bag_summary:
+        extracted_fields["bag_summary"] = bag_summary
+    else:
+        extracted_fields["bag_summary"] = {
+            "total_weight_kg": 10.5,
+            "primary_percentage": 85.0,
+        }
+
+    return Document(
+        document_id=document_id,
+        raw_document=RawDocumentRef(
+            blob_container="quality-data",
+            blob_path="factory/batch.json",
+            content_hash="sha256:test",
+            size_bytes=1024,
+            stored_at=now,
+        ),
+        extraction=ExtractionMetadata(
+            ai_agent_id="extractor-v1",
+            extraction_timestamp=now,
+            confidence=0.95,
+            validation_passed=True,
+            validation_warnings=[],
+        ),
+        ingestion=IngestionMetadata(
+            ingestion_id="ing-001",
+            source_id=source_id,
+            received_at=now,
+            processed_at=now,
+        ),
+        extracted_fields=extracted_fields,
+        linkage_fields=linkage_fields,
+        created_at=now,
+    )
+
+
 @pytest.fixture
 def mock_collection_client():
-    """Mock Collection client for fetching documents."""
+    """Mock Collection gRPC client for fetching documents.
+
+    Story 0.6.13: Returns Pydantic Document model instead of dict.
+    """
     client = MagicMock()
-    client.get_document = AsyncMock(
-        return_value={
-            "source_id": "src-001",
-            "linkage_fields": {
-                "grading_model_id": "grading-model-001",
-                "factory_id": "factory-001",
-            },
-            "extracted_fields": {
-                "bag_summary": {
-                    "total_weight_kg": 10.5,
-                    "primary_percentage": 85.0,
-                },
-            },
-        }
-    )
+    client.get_document = AsyncMock(return_value=_create_mock_document())
     return client
 
 
@@ -248,14 +296,7 @@ class TestGradingModelIdValidation:
         # Arrange: document has no grading_model_id
         mock_collection_client = MagicMock()
         mock_collection_client.get_document = AsyncMock(
-            return_value={
-                "source_id": "src-001",
-                "linkage_fields": {
-                    "factory_id": "factory-001",
-                    # grading_model_id is missing
-                },
-                "extracted_fields": {},
-            }
+            return_value=_create_mock_document(grading_model_id=None)  # No grading_model_id
         )
 
         # Farmer exists

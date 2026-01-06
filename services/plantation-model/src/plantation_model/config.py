@@ -53,10 +53,11 @@ class Settings(BaseSettings):
     # Google APIs configuration
     google_elevation_api_key: str = ""  # Required for altitude auto-population
 
-    # Collection Model configuration (Story 1.7)
-    # Used to fetch quality documents for event processing
-    collection_mongodb_uri: str = "mongodb://localhost:27017"
-    collection_mongodb_database: str = "collection"
+    # Collection Model configuration (Story 0.6.13)
+    # Used to fetch quality documents for event processing via gRPC
+    # Replaces direct MongoDB access per ADR-010/011
+    collection_app_id: str = "collection-model"  # DAPR app ID for service invocation
+    collection_grpc_host: str = ""  # Direct gRPC host (empty = use DAPR sidecar)
 
 
 # Global settings instance
