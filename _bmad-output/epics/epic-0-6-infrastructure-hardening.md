@@ -587,6 +587,13 @@ So that I have type safety and IDE autocomplete throughout the call chain.
 
 **Acceptance Criteria:**
 
+**Given** Collection proto messages exist (Document, RawDocumentRef, etc.)
+**When** I check `libs/fp-common/fp_common/converters/`
+**Then** I find `collection_converters.py` with:
+  - `document_from_proto(proto: collection_pb2.Document) -> Document`
+  - `raw_document_ref_from_proto(proto: collection_pb2.RawDocumentRef) -> RawDocumentRef`
+**And** converters follow the same pattern as `plantation_converters.py`
+
 **Given** `PlantationClient` currently returns `dict[str, Any]`
 **When** I refactor `mcp-servers/plantation-mcp/src/plantation_mcp/infrastructure/plantation_client.py`
 **Then** methods return Pydantic models:
@@ -596,17 +603,16 @@ So that I have type safety and IDE autocomplete throughout the call chain.
   - `get_farmer_summary() -> FarmerSummary`
   - `get_collection_points() -> list[CollectionPoint]`
 **And** manual `_*_to_dict()` methods are removed
-**And** converters from `fp_common.converters` are used instead
+**And** converters from `fp_common.converters.plantation_converters` are used
+
+**Given** `CollectionClient` (in collection-mcp) currently returns `dict[str, Any]`
+**When** I refactor `mcp-servers/collection-mcp/src/collection_mcp/infrastructure/` clients
+**Then** methods return Pydantic models using `fp_common.converters.collection_converters`
 
 **Given** MCP tool handlers receive Pydantic models
 **When** they serialize for JSON response
 **Then** they call `model.model_dump()` at the boundary
 **And** field names match Proto/Pydantic definitions (no drift)
-
-**Given** collection-mcp infrastructure clients exist
-**When** I check `source_config_client.py` and `document_client.py`
-**Then** they return Pydantic models where applicable
-**Or** remain dict-based for dynamic MongoDB documents (acceptable)
 
 **Unit Tests Required:**
 - `tests/unit/plantation_mcp/infrastructure/test_plantation_client.py`
