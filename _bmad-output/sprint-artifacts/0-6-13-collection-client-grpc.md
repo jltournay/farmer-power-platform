@@ -162,7 +162,7 @@ So that domain boundaries are respected and services communicate through proper 
 - [ ] PR approved and merged (squash)
 - [ ] Local branch cleaned up: `git branch -d feature/0-6-13-collection-client-grpc`
 
-**PR URL:** _______________ (fill in when created)
+**PR URL:** https://github.com/jltournay/farmer-power-platform/pull/114
 
 ---
 
