@@ -151,11 +151,13 @@ class TestQualityEventFlow:
         return repo
 
     @pytest.fixture
-    def mock_event_publisher(self) -> AsyncMock:
-        """Create mock DAPR event publisher."""
-        publisher = AsyncMock()
-        publisher.publish_event = AsyncMock(return_value=True)
-        return publisher
+    def mock_publish_event(self) -> AsyncMock:
+        """Create mock for module-level publish_event function.
+
+        Story 0.6.14: publish_event() is now module-level in events.publisher,
+        not a method on an event_publisher instance.
+        """
+        return AsyncMock(return_value=True)
 
     @pytest.fixture
     def client(
@@ -163,17 +165,17 @@ class TestQualityEventFlow:
         mock_collection_client: AsyncMock,
         mock_grading_model_repo: AsyncMock,
         mock_farmer_performance_repo: AsyncMock,
-        mock_event_publisher: AsyncMock,
+        mock_publish_event: AsyncMock,
     ) -> TestClient:
         """Create test client with mocked dependencies."""
         # Build the QualityEventProcessor with mocks
+        # Story 0.6.14: event_publisher parameter removed - uses module-level publish_event()
         from plantation_model.domain.services.quality_event_processor import QualityEventProcessor
 
         quality_processor = QualityEventProcessor(
             collection_client=mock_collection_client,
             grading_model_repo=mock_grading_model_repo,
             farmer_performance_repo=mock_farmer_performance_repo,
-            event_publisher=mock_event_publisher,
         )
 
         mock_mongodb_client = MagicMock()
@@ -222,9 +224,10 @@ class TestQualityEventFlow:
                 "plantation_model.main.FarmerPerformanceRepository",
                 return_value=mock_farmer_performance_repo,
             ),
+            # Story 0.6.14: Patch module-level publish_event() for event verification
             patch(
-                "plantation_model.main.DaprPubSubClient",
-                return_value=mock_event_publisher,
+                "plantation_model.events.publisher.publish_event",
+                mock_publish_event,
             ),
             patch(
                 "plantation_model.main.QualityEventProcessor",
@@ -262,11 +265,12 @@ class TestQualityEventFlow:
         mock_collection_client: AsyncMock,
         mock_grading_model_repo: AsyncMock,
         mock_farmer_performance_repo: AsyncMock,
-        mock_event_publisher: AsyncMock,
+        mock_publish_event: AsyncMock,
     ) -> None:
         """Test successful quality result event processing.
 
         Task 8.1-8.4: Full event flow from CloudEvent to MongoDB update and event emission.
+        Story 0.6.14: Updated to use mock_publish_event (module-level function).
         """
         # Send CloudEvent to handler
         cloud_event = create_cloud_event_payload()
@@ -287,10 +291,11 @@ class TestQualityEventFlow:
         mock_farmer_performance_repo.increment_today_delivery.assert_called()
 
         # Task 8.4: Verify domain events were published
-        assert mock_event_publisher.publish_event.call_count == 2
+        # Story 0.6.14: publish_event is now module-level, not instance method
+        assert mock_publish_event.call_count == 2
 
         # Check plantation.quality.graded event
-        calls = mock_event_publisher.publish_event.call_args_list
+        calls = mock_publish_event.call_args_list
         quality_graded_call = next(
             (c for c in calls if c.kwargs.get("topic") == "plantation.quality.graded"),
             None,
@@ -383,9 +388,12 @@ class TestQualityEventFlow:
         self,
         client: TestClient,
         mock_farmer_performance_repo: AsyncMock,
-        mock_event_publisher: AsyncMock,
+        mock_publish_event: AsyncMock,
     ) -> None:
-        """Test processing continues but skips update when farmer not found."""
+        """Test processing continues but skips update when farmer not found.
+
+        Story 0.6.14: Updated to use mock_publish_event (module-level function).
+        """
         mock_farmer_performance_repo.get_by_farmer_id.return_value = None
 
         cloud_event = create_cloud_event_payload()
@@ -399,7 +407,7 @@ class TestQualityEventFlow:
         assert response.json()["status"] == "SUCCESS"
 
         # Events should NOT be published when farmer not found
-        mock_event_publisher.publish_event.assert_not_called()
+        mock_publish_event.assert_not_called()
 
 
 @pytest.mark.integration
@@ -408,7 +416,10 @@ class TestQualityEventFlowEdgeCases:
 
     @pytest.fixture
     def mock_dependencies(self) -> dict:
-        """Create all mock dependencies."""
+        """Create all mock dependencies.
+
+        Story 0.6.14: Removed event_publisher - publish_event() is now module-level.
+        """
         collection_client = AsyncMock()
         collection_client.get_document = AsyncMock(return_value=create_sample_document())
         collection_client.close = AsyncMock()
@@ -421,20 +432,17 @@ class TestQualityEventFlowEdgeCases:
         perf_repo.increment_today_delivery = AsyncMock(return_value=create_sample_farmer_performance())
         perf_repo.reset_today = AsyncMock(return_value=create_sample_farmer_performance())
 
-        event_pub = AsyncMock()
-        event_pub.publish_event = AsyncMock(return_value=True)
-
         return {
             "collection_client": collection_client,
             "grading_repo": grading_repo,
             "perf_repo": perf_repo,
-            "event_publisher": event_pub,
         }
 
     def test_date_rollover_resets_today_metrics(self, mock_dependencies: dict) -> None:
         """Test that date rollover triggers today metrics reset.
 
         When processing an event on a new day, today's metrics should reset first.
+        Story 0.6.14: Updated to patch module-level publish_event().
         """
         from plantation_model.domain.services.quality_event_processor import QualityEventProcessor
 
@@ -448,18 +456,23 @@ class TestQualityEventFlowEdgeCases:
             collection_client=mock_dependencies["collection_client"],
             grading_model_repo=mock_dependencies["grading_repo"],
             farmer_performance_repo=mock_dependencies["perf_repo"],
-            event_publisher=mock_dependencies["event_publisher"],
         )
 
         # Run async test
         import asyncio
 
         async def run_test():
-            await processor.process(
-                document_id="doc-123",
-                farmer_id="WM-0001",
-                batch_timestamp=datetime.now(UTC),
-            )
+            # Patch module-level publish_event for event emission
+            with patch(
+                "plantation_model.events.publisher.publish_event",
+                new_callable=AsyncMock,
+                return_value=True,
+            ):
+                await processor.process(
+                    document_id="doc-123",
+                    farmer_id="WM-0001",
+                    batch_timestamp=datetime.now(UTC),
+                )
 
         asyncio.get_event_loop().run_until_complete(run_test())
 
@@ -470,6 +483,7 @@ class TestQualityEventFlowEdgeCases:
         """Test that processor uses versioned grading model lookup.
 
         Task 2: Should use get_by_id_and_version for exact version match.
+        Story 0.6.14: Updated to patch module-level publish_event().
         """
         from plantation_model.domain.services.quality_event_processor import QualityEventProcessor
 
@@ -477,16 +491,21 @@ class TestQualityEventFlowEdgeCases:
             collection_client=mock_dependencies["collection_client"],
             grading_model_repo=mock_dependencies["grading_repo"],
             farmer_performance_repo=mock_dependencies["perf_repo"],
-            event_publisher=mock_dependencies["event_publisher"],
         )
 
         import asyncio
 
         async def run_test():
-            await processor.process(
-                document_id="doc-123",
-                farmer_id="WM-0001",
-            )
+            # Patch module-level publish_event for event emission
+            with patch(
+                "plantation_model.events.publisher.publish_event",
+                new_callable=AsyncMock,
+                return_value=True,
+            ):
+                await processor.process(
+                    document_id="doc-123",
+                    farmer_id="WM-0001",
+                )
 
         asyncio.get_event_loop().run_until_complete(run_test())
 
