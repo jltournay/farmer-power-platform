@@ -169,7 +169,7 @@ So that the codebase follows ADR-010 patterns consistently for both subscribing 
 - [ ] PR approved and merged (squash)
 - [ ] Local branch cleaned up: `git branch -d feature/0-6-14-dapr-sdk-publishing`
 
-**PR URL:** (to be created)
+**PR URL:** https://github.com/jltournay/farmer-power-platform/pull/116
 
 ---
 
