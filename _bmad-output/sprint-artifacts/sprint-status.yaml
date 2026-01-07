@@ -175,7 +175,7 @@ development_status:
   0-75-10b-basic-pdf-markdown-extraction: done # github_issue: 119, PyMuPDF, Markdown parsing, async jobs
   0-75-10c-azure-document-intelligence-integration: done  # Scanned PDF OCR, github_issue: 121, PR: #122
   0-75-10d-semantic-chunking: done  # github_issue: 123, PR: #124 MERGED - CODE REVIEW COMPLETED 2026-01-07
-  0-75-11-cli-rag-document: review  # github_issue: 125, fp-knowledge CLI with job-status
+  0-75-11-cli-rag-document: done  # github_issue: 125, PR: #126 - fp-knowledge CLI with job-status
   0-75-12-rag-embedding-configuration: backlog  # Pinecone Inference (not separate OpenAI)
   0-75-13-rag-vector-storage: backlog  # Pinecone client/repository
   0-75-13b-rag-vectorization-pipeline: backlog  # Orchestrate embed + store, progress tracking

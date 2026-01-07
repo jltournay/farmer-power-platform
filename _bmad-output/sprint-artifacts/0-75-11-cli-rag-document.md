@@ -183,7 +183,7 @@ So that agronomists can upload and version knowledge content.
 
 ### Story Done
 - [x] Create Pull Request: `gh pr create --title "Story 0.75.11: CLI for RAG Document" --base main`
-- [ ] CI passes on PR (including linting)
+- [x] CI passes on PR (Run ID: 20794252249)
 - [x] Code review completed (`/code-review` - this session)
 - [ ] PR approved and merged (squash)
 - [ ] Local branch cleaned up: `git branch -d feature/0-75-11-cli-rag-document`
