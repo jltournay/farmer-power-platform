@@ -95,6 +95,11 @@ class VectorizationPipeline:
         self._settings = settings
 
         # In-memory job tracking (for async mode)
+        # LIMITATION: Jobs are stored in-memory, which means:
+        # 1. Job status is lost on pod restart
+        # 2. With multiple replicas, get_job_status() may miss jobs on other pods
+        # 3. No automatic cleanup - jobs accumulate over time
+        # For production scale, consider migrating to Redis or MongoDB for job storage.
         self._jobs: dict[str, VectorizationResult] = {}
 
     def _generate_namespace(self, document: RagDocument) -> str:
