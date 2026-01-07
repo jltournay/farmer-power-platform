@@ -429,3 +429,4 @@ Claude Opus 4.5 (claude-opus-4-5-20251101)
 - `services/ai-model/src/ai_model/services/__init__.py` - Export EmbeddingService
 - `services/ai-model/src/ai_model/infrastructure/repositories/__init__.py` - Export EmbeddingCostEventRepository
 - `_bmad-output/sprint-artifacts/sprint-status.yaml` - Updated story status
+- `.github/workflows/ci.yaml` - Added pinecone dependency to CI install steps

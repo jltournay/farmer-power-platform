@@ -47,6 +47,8 @@
 | **Market Analysis** | MEDIUM | LOW | LOW | External Starfish API dependency |
 | **AI Model** | MEDIUM | LOW | LOW | LLM non-determinism, prompt sensitivity |
 | **Conversational AI** | LOW | LOW | LOW | Multi-turn dialogue, context management |
+| **RAG Retrieval** | MEDIUM | HIGH | LOW | Deterministic retrieval, vector DB dependency |
+| **RAG Ranking** | HIGH | MEDIUM | LOW | Pure logic, easily unit tested |
 
 ### 2. Communication Pattern Testability
 
@@ -72,7 +74,8 @@
 │  │  • Weather APIs (fixture data)                                       │  │
 │  │  • Africa's Talking SMS/Voice (stub responses)                       │  │
 │  │  • Google Elevation API (fixture data)                               │  │
-│  │  • Pinecone Vector DB (in-memory mock)                               │  │
+│  │  • Pinecone Vector DB (in-memory mock OR sandbox index)              │  │
+│  │  • Pinecone Inference API (mock embedding responses)                 │  │
 │  └──────────────────────────────────────────────────────────────────────┘  │
 │                                                                             │
 │  INTERNAL (REAL FOR INTEGRATION, MOCK FOR UNIT)                            │
@@ -108,6 +111,7 @@
 | R-004 | SEC | Prompt injection vulnerabilities in LLM agents | 2 | 3 | 6 | Input sanitization tests + adversarial testing | Security | Sprint 2 |
 | R-005 | PERF | LLM latency exceeds SLA under load | 2 | 3 | 6 | Load testing with OpenRouter timeout simulation | Platform Team | Sprint 3 |
 | R-006 | BUS | SMS/Voice messages fail to deliver to farmers | 2 | 3 | 6 | Delivery assurance integration tests | Notification Team | Sprint 2 |
+| R-016 | BUS | RAG retrieval returns irrelevant documents | 2 | 3 | 6 | RAG retrieval golden samples (50+ expert-validated) | AI Team | Sprint 2 |
 
 ### Medium-Priority Risks (Score 3-5)
 
@@ -118,7 +122,9 @@
 | R-009 | OPS | Prompt A/B testing produces regressions | 2 | 2 | 4 | A/B test validation framework | AI Team |
 | R-010 | PERF | Parallel analyzer timeout handling | 2 | 2 | 4 | Timeout scenario tests | AI Team |
 | R-011 | BUS | Grading model calculation errors | 2 | 2 | 4 | Property-based testing for grade calculations | Collection Team |
-| R-012 | DATA | RAG knowledge versioning causes retrieval issues | 2 | 2 | 4 | Namespace isolation tests | AI Team |
+| R-012 | DATA | RAG knowledge versioning causes retrieval issues | 2 | 2 | 4 | Namespace isolation tests + RAG golden samples | AI Team |
+| R-017 | BUS | RAG ranking prioritizes wrong documents | 2 | 2 | 4 | RAG ranking golden samples with domain boosting tests | AI Team |
+| R-018 | TECH | Embedding model drift affects retrieval quality | 2 | 2 | 4 | Baseline accuracy samples re-run on model updates | AI Team |
 
 ### Low-Priority Risks (Score 1-2)
 
@@ -278,6 +284,141 @@ P2 (Medium):
 □ Cost tracking per agent/model is accurate
 □ Token usage stays within limits
 ```
+
+---
+
+### RAG Infrastructure (Retrieval & Ranking)
+
+**Test Pyramid Recommendation:**
+
+| Level | Coverage | Tools | Focus |
+|-------|----------|-------|-------|
+| Unit | 30% | pytest, unittest.mock | Embedding generation, vector operations, ranking logic |
+| Integration | 40% | pytest + Pinecone sandbox | End-to-end retrieval with real vectors |
+| Golden Sample | 30% | pytest + seeded vector DB | Accuracy validation for retrieval & ranking |
+
+**Golden Sample Requirements (CRITICAL):**
+
+| Component | Development (Synthetic) | Production (Expert) | Validation Focus |
+|-----------|------------------------|---------------------|------------------|
+| RAG Retrieval | 10 samples | 50+ samples | Query → expected chunks in top-k |
+| RAG Ranking | 10 samples | 30+ samples | Relevance ordering correctness |
+| Domain Boosting | 5 samples | 20+ samples | Cross-domain priority validation |
+| Deduplication | 5 samples | 10+ samples | Near-duplicate removal accuracy |
+
+**RAG vs Agent Golden Samples - Key Differences:**
+
+| Aspect | Agent Golden Samples | RAG Golden Samples |
+|--------|---------------------|-------------------|
+| **What's tested** | LLM output quality | Retrieval/ranking accuracy |
+| **Determinism** | Non-deterministic (LLM variance) | Deterministic (same query → same results) |
+| **Pass criteria** | Semantic similarity to expected | Exact match (document ID in top-k) |
+| **Variance tolerance** | 0.15 confidence tolerance | Zero tolerance (binary: found or not) |
+| **Generation source** | LLM generates input + expected output | Query generated, expected doc IDs known |
+
+**Synthetic RAG Sample Generation:**
+
+Unlike agent samples, RAG samples require a **seeded knowledge base** first:
+
+```python
+# tests/golden/rag/generator.py
+
+class RagRetrievalSample(BaseModel):
+    query: str                           # Natural language query
+    domain_filter: Optional[str]         # e.g., "disease", "weather"
+    expected_doc_ids: list[str]          # Document IDs that MUST appear
+    expected_chunk_ids: list[str]        # Chunk IDs in top-k
+    top_k: int = 5                       # How many results to check
+    min_expected_in_topk: int = 1        # At least N expected docs in top-k
+    metadata: RagSampleMetadata
+
+class RagRankingSample(BaseModel):
+    query: str
+    candidate_doc_ids: list[str]         # Docs to rank (pre-retrieved)
+    expected_order: list[str]            # Expected ranking order
+    domain_boost: Optional[str]          # Domain to boost
+    allow_position_variance: int = 1     # Allow ±1 position variance
+    metadata: RagSampleMetadata
+
+async def generate_rag_retrieval_samples(
+    seed_documents: list[dict],
+    queries_per_doc: int = 3,
+) -> list[RagRetrievalSample]:
+    """
+    Generate synthetic RAG retrieval samples from seeded documents.
+
+    Unlike agent samples, RAG samples are GROUNDED in real documents.
+    The LLM generates queries, but the expected results are deterministic.
+    """
+    samples = []
+
+    for doc in seed_documents:
+        # LLM generates queries that should retrieve this doc
+        prompt = f"""
+        Document ID: {doc['id']}
+        Domain: {doc['domain']}
+        Content: {doc['content'][:500]}...
+
+        Generate {queries_per_doc} natural language questions that a
+        Kenyan tea farmer might ask that should retrieve this document.
+
+        Requirements:
+        - Vary complexity (simple factual, complex analytical)
+        - Use farmer-appropriate language (not technical jargon)
+        - Include at least one Swahili-influenced phrasing
+
+        Return as JSON array of strings.
+        """
+
+        queries = await llm_client.complete(prompt)
+
+        for query in json.loads(queries.content):
+            samples.append(RagRetrievalSample(
+                query=query,
+                expected_doc_ids=[doc['id']],
+                top_k=5,
+                min_expected_in_topk=1,
+                metadata=RagSampleMetadata(
+                    source="llm_generated",
+                    seed_doc_id=doc['id'],
+                    priority="P2",
+                )
+            ))
+
+    return samples
+```
+
+**Key Test Scenarios:**
+
+```
+P0 (Critical):
+□ Known agronomic query returns expected disease document in top-5
+□ Query with domain filter excludes unrelated domain results
+□ Confidence threshold correctly filters results below threshold
+□ Duplicate/near-duplicate chunks are deduplicated in results
+
+P1 (High):
+□ Domain-specific boost ranks disease docs higher for disease queries
+□ Recency weighting ranks newer documents higher (same relevance)
+□ Multi-domain query returns balanced cross-domain results
+□ Empty result handling returns appropriate response (not error)
+
+P2 (Medium):
+□ Large result set pagination works correctly
+□ Metadata filtering (date range, source type) works
+□ Query embedding caching reduces redundant API calls
+```
+
+**CI Gate Thresholds:**
+
+| Sample Type | Dev Gate | Release Gate | Rationale |
+|------------|----------|--------------|-----------|
+| RAG Retrieval (Synthetic) | 85% pass | N/A | Deterministic, higher bar than agents |
+| RAG Retrieval (Expert) | N/A | 95% pass | Production accuracy requirement |
+| RAG Ranking (Synthetic) | 80% pass | N/A | Ordering has some tolerance |
+| RAG Ranking (Expert) | N/A | 90% pass | Domain boost validation |
+
+**Reference:** Stories 0.75.14 (RAG Retrieval Service) and 0.75.15 (RAG Ranking Logic) in Epic 0.75.
 
 ---
 
@@ -626,13 +767,16 @@ golden-sample-tests:
 
 #### Minimum Sample Requirements
 
-| Agent Type | Development (Synthetic) | Production (Expert) |
-|------------|------------------------|---------------------|
+| Component | Development (Synthetic) | Production (Expert) |
+|-----------|------------------------|---------------------|
 | Extractor agents | 10 samples | 100+ samples |
 | Explorer agents | 10 samples | 50+ samples |
 | Generator agents | 10 samples | 20+ samples |
 | Conversational | 10 samples | 30+ samples |
 | Tiered-Vision | 10 samples | 50+ samples |
+| **RAG Retrieval** | 10 samples | 50+ samples |
+| **RAG Ranking** | 10 samples | 30+ samples |
+| **RAG Domain Boosting** | 5 samples | 20+ samples |
 
 ### 4. Directory Structure
 
@@ -659,14 +803,24 @@ tests/
 │   └── test_mongodb_operations.py
 ├── golden/
 │   ├── framework.py
+│   ├── generator.py               # Synthetic sample generator utility
 │   ├── qc-event-extractor/
 │   │   └── samples.json           # 100+ validated samples
 │   ├── quality-triage/
 │   │   └── samples.json           # 100+ validated samples
 │   ├── disease-diagnosis/
 │   │   └── samples.json           # 50+ validated samples
-│   └── action-plan-generator/
-│       └── samples.json           # 20+ validated samples
+│   ├── action-plan-generator/
+│   │   └── samples.json           # 20+ validated samples
+│   └── rag/                       # RAG-specific golden samples
+│       ├── generator.py           # RAG sample generator (seeded docs → queries)
+│       ├── seed_documents.json    # Seeded knowledge base for RAG testing
+│       ├── retrieval/
+│       │   └── samples.json       # 50+ retrieval accuracy samples
+│       ├── ranking/
+│       │   └── samples.json       # 30+ ranking order samples
+│       └── domain-boosting/
+│           └── samples.json       # 20+ domain priority samples
 ├── contracts/
 │   ├── test_event_schemas.py      # DAPR event contract tests
 │   └── test_mcp_contracts.py      # MCP tool contract tests
