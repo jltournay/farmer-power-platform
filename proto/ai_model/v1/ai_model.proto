@@ -194,6 +194,11 @@ service RAGDocumentService {
   rpc ActivateDocument(ActivateDocumentRequest) returns (RAGDocument);
   rpc ArchiveDocument(ArchiveDocumentRequest) returns (RAGDocument);
   rpc RollbackDocument(RollbackDocumentRequest) returns (RAGDocument);
+
+  // Extraction Operations (Story 0.75.10b)
+  rpc ExtractDocument(ExtractDocumentRequest) returns (ExtractDocumentResponse);
+  rpc GetExtractionJob(GetExtractionJobRequest) returns (ExtractionJobResponse);
+  rpc StreamExtractionProgress(StreamExtractionProgressRequest) returns (stream ExtractionProgressEvent);
 }
 
 // ============================================
@@ -395,4 +400,66 @@ message RollbackDocumentRequest {
   string document_id = 1;
   // Version to rollback to (creates new draft version with content from this version)
   int32 target_version = 2;
+}
+
+// ============================================
+// Extraction Request/Response Messages (Story 0.75.10b)
+// ============================================
+
+message ExtractDocumentRequest {
+  // Document ID to extract content from
+  string document_id = 1;
+  // Optional: specific version to extract (0 = latest version)
+  int32 version = 2;
+}
+
+message ExtractDocumentResponse {
+  // Job ID for tracking extraction progress
+  string job_id = 1;
+}
+
+message GetExtractionJobRequest {
+  // Job ID to retrieve status for
+  string job_id = 1;
+}
+
+message ExtractionJobResponse {
+  // Unique job identifier
+  string job_id = 1;
+  // RAG document being extracted
+  string document_id = 2;
+  // Job status: pending, in_progress, completed, failed
+  string status = 3;
+  // Extraction progress (0-100)
+  int32 progress_percent = 4;
+  // Number of pages extracted so far
+  int32 pages_processed = 5;
+  // Total pages in document (0 if unknown)
+  int32 total_pages = 6;
+  // Error details if status is failed
+  string error_message = 7;
+  // Job start timestamp
+  google.protobuf.Timestamp started_at = 8;
+  // Job completion timestamp (if completed or failed)
+  google.protobuf.Timestamp completed_at = 9;
+}
+
+message StreamExtractionProgressRequest {
+  // Job ID to stream progress for
+  string job_id = 1;
+}
+
+message ExtractionProgressEvent {
+  // Unique job identifier
+  string job_id = 1;
+  // Job status: pending, in_progress, completed, failed
+  string status = 2;
+  // Extraction progress (0-100)
+  int32 progress_percent = 3;
+  // Number of pages extracted so far
+  int32 pages_processed = 4;
+  // Total pages in document
+  int32 total_pages = 5;
+  // Error details if status is failed
+  string error_message = 6;
 }

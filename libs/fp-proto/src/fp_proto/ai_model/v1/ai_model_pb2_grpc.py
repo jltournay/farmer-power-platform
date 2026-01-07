@@ -510,6 +510,21 @@ class RAGDocumentServiceStub(object):
                 request_serializer=ai__model_dot_v1_dot_ai__model__pb2.RollbackDocumentRequest.SerializeToString,
                 response_deserializer=ai__model_dot_v1_dot_ai__model__pb2.RAGDocument.FromString,
                 _registered_method=True)
+        self.ExtractDocument = channel.unary_unary(
+                '/farmer_power.ai_model.v1.RAGDocumentService/ExtractDocument',
+                request_serializer=ai__model_dot_v1_dot_ai__model__pb2.ExtractDocumentRequest.SerializeToString,
+                response_deserializer=ai__model_dot_v1_dot_ai__model__pb2.ExtractDocumentResponse.FromString,
+                _registered_method=True)
+        self.GetExtractionJob = channel.unary_unary(
+                '/farmer_power.ai_model.v1.RAGDocumentService/GetExtractionJob',
+                request_serializer=ai__model_dot_v1_dot_ai__model__pb2.GetExtractionJobRequest.SerializeToString,
+                response_deserializer=ai__model_dot_v1_dot_ai__model__pb2.ExtractionJobResponse.FromString,
+                _registered_method=True)
+        self.StreamExtractionProgress = channel.unary_stream(
+                '/farmer_power.ai_model.v1.RAGDocumentService/StreamExtractionProgress',
+                request_serializer=ai__model_dot_v1_dot_ai__model__pb2.StreamExtractionProgressRequest.SerializeToString,
+                response_deserializer=ai__model_dot_v1_dot_ai__model__pb2.ExtractionProgressEvent.FromString,
+                _registered_method=True)
 
 
 class RAGDocumentServiceServicer(object):
@@ -584,6 +599,25 @@ class RAGDocumentServiceServicer(object):
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
+    def ExtractDocument(self, request, context):
+        """Extraction Operations (Story 0.75.10b)
+        """
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def GetExtractionJob(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def StreamExtractionProgress(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
 
 def add_RAGDocumentServiceServicer_to_server(servicer, server):
     rpc_method_handlers = {
@@ -636,6 +670,21 @@ def add_RAGDocumentServiceServicer_to_server(servicer, server):
                     servicer.RollbackDocument,
                     request_deserializer=ai__model_dot_v1_dot_ai__model__pb2.RollbackDocumentRequest.FromString,
                     response_serializer=ai__model_dot_v1_dot_ai__model__pb2.RAGDocument.SerializeToString,
+            ),
+            'ExtractDocument': grpc.unary_unary_rpc_method_handler(
+                    servicer.ExtractDocument,
+                    request_deserializer=ai__model_dot_v1_dot_ai__model__pb2.ExtractDocumentRequest.FromString,
+                    response_serializer=ai__model_dot_v1_dot_ai__model__pb2.ExtractDocumentResponse.SerializeToString,
+            ),
+            'GetExtractionJob': grpc.unary_unary_rpc_method_handler(
+                    servicer.GetExtractionJob,
+                    request_deserializer=ai__model_dot_v1_dot_ai__model__pb2.GetExtractionJobRequest.FromString,
+                    response_serializer=ai__model_dot_v1_dot_ai__model__pb2.ExtractionJobResponse.SerializeToString,
+            ),
+            'StreamExtractionProgress': grpc.unary_stream_rpc_method_handler(
+                    servicer.StreamExtractionProgress,
+                    request_deserializer=ai__model_dot_v1_dot_ai__model__pb2.StreamExtractionProgressRequest.FromString,
+                    response_serializer=ai__model_dot_v1_dot_ai__model__pb2.ExtractionProgressEvent.SerializeToString,
             ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
@@ -914,6 +963,87 @@ class RAGDocumentService(object):
             '/farmer_power.ai_model.v1.RAGDocumentService/RollbackDocument',
             ai__model_dot_v1_dot_ai__model__pb2.RollbackDocumentRequest.SerializeToString,
             ai__model_dot_v1_dot_ai__model__pb2.RAGDocument.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def ExtractDocument(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/farmer_power.ai_model.v1.RAGDocumentService/ExtractDocument',
+            ai__model_dot_v1_dot_ai__model__pb2.ExtractDocumentRequest.SerializeToString,
+            ai__model_dot_v1_dot_ai__model__pb2.ExtractDocumentResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def GetExtractionJob(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/farmer_power.ai_model.v1.RAGDocumentService/GetExtractionJob',
+            ai__model_dot_v1_dot_ai__model__pb2.GetExtractionJobRequest.SerializeToString,
+            ai__model_dot_v1_dot_ai__model__pb2.ExtractionJobResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def StreamExtractionProgress(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_stream(
+            request,
+            target,
+            '/farmer_power.ai_model.v1.RAGDocumentService/StreamExtractionProgress',
+            ai__model_dot_v1_dot_ai__model__pb2.StreamExtractionProgressRequest.SerializeToString,
+            ai__model_dot_v1_dot_ai__model__pb2.ExtractionProgressEvent.FromString,
             options,
             channel_credentials,
             insecure,
