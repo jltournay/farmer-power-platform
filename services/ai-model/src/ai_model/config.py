@@ -172,6 +172,48 @@ class Settings(BaseSettings):
     # If exceeded, chunking fails with an error
     max_chunks_per_document: int = 500
 
+    # ========================================
+    # Pinecone Configuration (Story 0.75.12)
+    # ========================================
+
+    # Pinecone API key (required for embedding and vector operations)
+    pinecone_api_key: SecretStr | None = None
+
+    # Pinecone environment/region (e.g., "us-east-1")
+    pinecone_environment: str = "us-east-1"
+
+    # Pinecone index name for RAG vectors
+    pinecone_index_name: str = "farmer-power-rag"
+
+    # Embedding model to use via Pinecone Inference API
+    # Default: multilingual-e5-large (1024 dimensions, 100+ languages)
+    pinecone_embedding_model: str = "multilingual-e5-large"
+
+    # ========================================
+    # Embedding Batch Configuration (Story 0.75.12)
+    # ========================================
+
+    # Maximum texts per batch for Pinecone Inference API
+    # Pinecone limit is 96 texts per request
+    embedding_batch_size: int = 96
+
+    # Maximum tokens per text for embedding
+    # Texts exceeding this will be truncated at END
+    embedding_max_tokens: int = 1024
+
+    # Retry configuration for embedding API calls
+    embedding_retry_max_attempts: int = 3
+    embedding_retry_backoff_ms: list[int] = [1000, 2000, 4000]
+
+    @property
+    def pinecone_enabled(self) -> bool:
+        """Check if Pinecone is configured and available.
+
+        Pinecone is enabled only when API key is provided.
+        Used to determine whether embedding operations can proceed.
+        """
+        return bool(self.pinecone_api_key and self.pinecone_api_key.get_secret_value())
+
     @property
     def azure_doc_intel_enabled(self) -> bool:
         """Check if Azure Document Intelligence is configured and available.

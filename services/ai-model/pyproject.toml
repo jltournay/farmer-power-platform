@@ -34,6 +34,7 @@ langchain-openai = "^0.3"  # Story 0.75.5: OpenRouter via OpenAI-compatible API
 pymupdf = "^1.26.0"  # Story 0.75.10b: PDF text extraction for RAG documents
 azure-storage-blob = "^12.0.0"  # Story 0.75.10b: Azure Blob storage for source files
 azure-ai-documentintelligence = "^1.0.0"  # Story 0.75.10c: OCR for scanned PDFs
+pinecone = "^5.0.0"  # Story 0.75.12: Pinecone Inference for RAG embeddings
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.0.0"

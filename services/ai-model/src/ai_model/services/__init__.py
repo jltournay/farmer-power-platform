@@ -3,6 +3,7 @@
 Story 0.75.4: Cache services for agent configs and prompts (ADR-013).
 Story 0.75.10b: Document extraction service and workflow.
 Story 0.75.10d: Semantic chunking service and workflow.
+Story 0.75.12: Embedding service using Pinecone Inference API.
 """
 
 from ai_model.services.agent_config_cache import AgentConfigCache
@@ -17,6 +18,12 @@ from ai_model.services.document_extractor import (
     ExtractionError,
     ExtractionResult,
     PasswordProtectedError,
+)
+from ai_model.services.embedding_service import (
+    EmbeddingBatchError,
+    EmbeddingService,
+    EmbeddingServiceError,
+    PineconeNotConfiguredError,
 )
 from ai_model.services.extraction_workflow import (
     DocumentNotFoundError,
@@ -35,12 +42,16 @@ __all__ = [
     "CorruptedFileError",
     "DocumentExtractor",
     "DocumentNotFoundError",
+    "EmbeddingBatchError",
+    "EmbeddingService",
+    "EmbeddingServiceError",
     "ExtractionError",
     "ExtractionResult",
     "ExtractionWorkflow",
     "ExtractionWorkflowError",
     "NoSourceFileError",
     "PasswordProtectedError",
+    "PineconeNotConfiguredError",
     "PromptCache",
     "SemanticChunker",
     "TooManyChunksError",
