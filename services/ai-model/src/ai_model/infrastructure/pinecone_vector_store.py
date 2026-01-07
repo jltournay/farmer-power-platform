@@ -13,6 +13,7 @@ Story 0.75.13: RAG Vector Storage (Pinecone Repository)
 """
 
 import asyncio
+import logging
 from typing import Any
 
 import structlog
@@ -30,6 +31,7 @@ from ai_model.domain.vector_store import (
 from pinecone import Pinecone
 from pinecone.exceptions import NotFoundException, PineconeException
 from tenacity import (
+    before_sleep_log,
     retry,
     retry_if_exception_type,
     stop_after_attempt,
@@ -89,7 +91,8 @@ class PineconeVectorStore:
         """
         self._settings = settings
         self._client: Pinecone | None = None
-        self._index: Any | None = None  # Pinecone Index type
+        # Note: Using Any because Pinecone SDK doesn't export Index type directly
+        self._index: Any | None = None
         self._index_validated: bool = False
 
     def _get_client(self) -> Pinecone:
@@ -223,6 +226,7 @@ class PineconeVectorStore:
         stop=stop_after_attempt(3),
         wait=wait_exponential(multiplier=1, min=1, max=10),
         retry=retry_if_exception_type(RETRYABLE_EXCEPTIONS),
+        before_sleep=before_sleep_log(logger, logging.WARNING),
         reraise=True,
     )
     async def _upsert_batch(
@@ -305,6 +309,7 @@ class PineconeVectorStore:
         stop=stop_after_attempt(3),
         wait=wait_exponential(multiplier=1, min=1, max=10),
         retry=retry_if_exception_type(RETRYABLE_EXCEPTIONS),
+        before_sleep=before_sleep_log(logger, logging.WARNING),
         reraise=True,
     )
     async def _query_with_retry(
@@ -430,6 +435,7 @@ class PineconeVectorStore:
         stop=stop_after_attempt(3),
         wait=wait_exponential(multiplier=1, min=1, max=10),
         retry=retry_if_exception_type(RETRYABLE_EXCEPTIONS),
+        before_sleep=before_sleep_log(logger, logging.WARNING),
         reraise=True,
     )
     async def _delete_batch(
@@ -489,6 +495,7 @@ class PineconeVectorStore:
         stop=stop_after_attempt(3),
         wait=wait_exponential(multiplier=1, min=1, max=10),
         retry=retry_if_exception_type(RETRYABLE_EXCEPTIONS),
+        before_sleep=before_sleep_log(logger, logging.WARNING),
         reraise=True,
     )
     async def _delete_all_with_retry(self, namespace: str) -> None:
@@ -522,6 +529,12 @@ class PineconeVectorStore:
         """
         await self._validate_index_exists()
 
+        if namespace:
+            logger.debug(
+                "get_stats namespace parameter ignored - Pinecone API returns all namespaces",
+                namespace=namespace,
+            )
+
         stats = await self._get_stats_with_retry()
 
         logger.debug(
@@ -536,6 +549,7 @@ class PineconeVectorStore:
         stop=stop_after_attempt(3),
         wait=wait_exponential(multiplier=1, min=1, max=10),
         retry=retry_if_exception_type(RETRYABLE_EXCEPTIONS),
+        before_sleep=before_sleep_log(logger, logging.WARNING),
         reraise=True,
     )
     async def _get_stats_with_retry(self) -> IndexStats:
