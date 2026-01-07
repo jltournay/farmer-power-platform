@@ -167,8 +167,8 @@ So that agronomists can upload and version knowledge content.
 **All story development MUST use feature branches.** Direct pushes to main are blocked.
 
 ### Story Start
-- [ ] GitHub Issue exists or created: `gh issue create --title "Story 0.75.11: CLI for RAG Document"`
-- [ ] Feature branch created from main:
+- [x] GitHub Issue exists or created: #125
+- [x] Feature branch created from main:
   ```bash
   git checkout main && git pull origin main
   git checkout -b feature/0-75-11-cli-rag-document
@@ -177,14 +177,14 @@ So that agronomists can upload and version knowledge content.
 **Branch name:** `feature/0-75-11-cli-rag-document`
 
 ### During Development
-- [ ] All commits reference GitHub issue: `Relates to #XX`
-- [ ] Commits are atomic by type (production, test - not mixed)
-- [ ] Push to feature branch: `git push -u origin feature/0-75-11-cli-rag-document`
+- [x] All commits reference GitHub issue: `Relates to #125`
+- [x] Commits are atomic by type (production, test - not mixed)
+- [x] Push to feature branch: `git push -u origin feature/0-75-11-cli-rag-document`
 
 ### Story Done
 - [ ] Create Pull Request: `gh pr create --title "Story 0.75.11: CLI for RAG Document" --base main`
 - [ ] CI passes on PR (including linting)
-- [ ] Code review completed (`/code-review` or human review)
+- [x] Code review completed (`/code-review` - this session)
 - [ ] PR approved and merged (squash)
 - [ ] Local branch cleaned up: `git branch -d feature/0-75-11-cli-rag-document`
 
@@ -663,3 +663,75 @@ N/A
 **Modified:**
 - `_bmad-output/sprint-artifacts/sprint-status.yaml` - Updated story status to in-progress
 - `.github/workflows/ci.yaml` - Added scripts/knowledge-config/src to PYTHONPATH
+
+---
+
+## Code Review Evidence (MANDATORY)
+
+**Review Date:** 2026-01-07
+**Reviewer:** Claude Opus 4.5 (via /code-review workflow)
+**Review Outcome:** CHANGES REQUESTED then APPROVED
+
+### Issues Found and Fixed
+
+| ID | Severity | Issue | File | Status |
+|----|----------|-------|------|--------|
+| CRIT-1 | HIGH | gRPC Client Missing Retry Logic (ADR-005 Violation) | `client.py` | FIXED |
+| MED-1 | MEDIUM | Story Git Workflow checkboxes unchecked | Story file | FIXED |
+| MED-2 | MEDIUM | gRPC Channel Keepalive Not Configured | `client.py` | FIXED |
+| MED-3 | MEDIUM | Test fixtures temp files not cleaned up | `conftest.py` | FIXED |
+| LOW-1 | LOW | Story E2E section format | Story file | N/A (valid justification) |
+| LOW-2 | LOW | Unused Any import | `models.py` | N/A (actually used) |
+| LOW-3 | LOW | Line length style | `client.py` | N/A (passes ruff) |
+
+### Fixes Applied
+
+1. **CRIT-1: Added tenacity retry logic to gRPC client**
+   - Added `tenacity` import with retry decorator pattern
+   - Created `_grpc_retry()` decorator with exponential backoff
+   - Applied `@_grpc_retry()` to all 14 gRPC methods
+   - Added `tenacity>=8.2.0` to dependencies
+
+2. **MED-2: Added gRPC channel keepalive configuration**
+   - Configured keepalive_time_ms: 30000 (30 seconds)
+   - Configured keepalive_timeout_ms: 10000 (10 seconds)
+   - Added keepalive_permit_without_calls: True
+   - Added http2.min_time_between_pings_ms: 30000
+
+3. **MED-3: Fixed test fixture temp file cleanup**
+   - Replaced `tempfile.NamedTemporaryFile(delete=False)` with pytest `tmp_path`
+   - Updated `sample_yaml_file`, `invalid_yaml_file`, `malformed_yaml_file` fixtures
+   - Automatic cleanup now handled by pytest
+
+4. **MED-1: Updated Git Workflow checkboxes**
+   - Checked: GitHub Issue #125 exists
+   - Checked: Feature branch created
+   - Checked: Commits reference issue
+   - Checked: Code review completed
+
+### Verification
+
+```bash
+# Lint check
+ruff check scripts/knowledge-config/ tests/unit/scripts/knowledge_config/
+# All checks passed!
+
+# Format check
+ruff format --check scripts/knowledge-config/ tests/unit/scripts/knowledge_config/
+# 12 files already formatted
+
+# Unit tests
+pytest tests/unit/scripts/knowledge_config/ -v
+# ======================== 73 passed in 0.50s =========================
+```
+
+### Final AC Validation
+
+| AC | Status | Notes |
+|----|--------|-------|
+| AC1-AC10 | PASS | All commands implemented |
+| AC11 | PASS | gRPC client with retry + keepalive |
+| AC12 | PASS | 73 tests (exceeds minimum 20) |
+| AC13 | PASS | CI Run ID 20793116998 passed |
+
+**Code Review Status:** APPROVED

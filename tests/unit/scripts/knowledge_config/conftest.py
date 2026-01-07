@@ -1,6 +1,5 @@
 """Test fixtures for fp-knowledge CLI tests."""
 
-import tempfile
 from pathlib import Path
 from unittest.mock import AsyncMock, MagicMock
 
@@ -130,8 +129,11 @@ def sample_extraction_job() -> ExtractionJobResult:
 
 
 @pytest.fixture
-def sample_yaml_file(sample_document_input: RagDocumentInput) -> Path:
-    """Create a temporary YAML file for testing."""
+def sample_yaml_file(tmp_path: Path, sample_document_input: RagDocumentInput) -> Path:
+    """Create a temporary YAML file for testing.
+
+    Uses pytest's tmp_path fixture for automatic cleanup.
+    """
     # Note: content uses folded style (>) to avoid multiline indentation issues
     yaml_content = f"""document_id: {sample_document_input.document_id}
 title: {sample_document_input.title}
@@ -148,28 +150,34 @@ metadata:
     - blister-blight
     - tea
 """
-    with tempfile.NamedTemporaryFile(mode="w", suffix=".yaml", delete=False) as f:
-        f.write(yaml_content)
-        return Path(f.name)
+    yaml_file = tmp_path / "sample_document.yaml"
+    yaml_file.write_text(yaml_content)
+    return yaml_file
 
 
 @pytest.fixture
-def invalid_yaml_file() -> Path:
-    """Create an invalid YAML file for testing."""
+def invalid_yaml_file(tmp_path: Path) -> Path:
+    """Create an invalid YAML file for testing.
+
+    Uses pytest's tmp_path fixture for automatic cleanup.
+    """
     yaml_content = """document_id: test
 # Missing required fields
 """
-    with tempfile.NamedTemporaryFile(mode="w", suffix=".yaml", delete=False) as f:
-        f.write(yaml_content)
-        return Path(f.name)
+    yaml_file = tmp_path / "invalid_document.yaml"
+    yaml_file.write_text(yaml_content)
+    return yaml_file
 
 
 @pytest.fixture
-def malformed_yaml_file() -> Path:
-    """Create a malformed YAML file for testing."""
+def malformed_yaml_file(tmp_path: Path) -> Path:
+    """Create a malformed YAML file for testing.
+
+    Uses pytest's tmp_path fixture for automatic cleanup.
+    """
     yaml_content = """invalid: yaml: structure:
   - [broken
 """
-    with tempfile.NamedTemporaryFile(mode="w", suffix=".yaml", delete=False) as f:
-        f.write(yaml_content)
-        return Path(f.name)
+    yaml_file = tmp_path / "malformed_document.yaml"
+    yaml_file.write_text(yaml_content)
+    return yaml_file

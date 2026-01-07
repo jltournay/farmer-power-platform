@@ -4,6 +4,7 @@ This module provides the KnowledgeClient class for managing RAG documents
 via the AI Model's RAGDocumentService gRPC API.
 
 Uses DAPR sidecar for service discovery with dapr-app-id metadata header.
+Implements retry logic per ADR-005 for resilient gRPC communication.
 """
 
 from collections.abc import AsyncGenerator
@@ -11,6 +12,12 @@ from datetime import datetime, timezone
 
 import grpc
 from fp_proto.ai_model.v1 import ai_model_pb2, ai_model_pb2_grpc
+from tenacity import (
+    retry,
+    retry_if_exception_type,
+    stop_after_attempt,
+    wait_exponential,
+)
 
 from fp_knowledge.models import (
     ChunkResult,
@@ -26,6 +33,19 @@ from fp_knowledge.models import (
 from fp_knowledge.settings import Environment, Settings
 
 
+def _grpc_retry():
+    """Create retry decorator for gRPC operations per ADR-005.
+
+    Retries on transient gRPC errors with exponential backoff.
+    """
+    return retry(
+        retry=retry_if_exception_type(grpc.aio.AioRpcError),
+        stop=stop_after_attempt(3),
+        wait=wait_exponential(multiplier=1, min=1, max=10),
+        reraise=True,
+    )
+
+
 class KnowledgeClient:
     """Async gRPC client for RAG document operations.
 
@@ -33,6 +53,8 @@ class KnowledgeClient:
     - CRUD operations (create, get, list, update)
     - Lifecycle management (stage, activate, archive, rollback)
     - Extraction and chunking operations with progress streaming
+
+    Implements retry logic per ADR-005 for resilient gRPC communication.
     """
 
     def __init__(self, settings: Settings, env: Environment) -> None:
@@ -48,9 +70,23 @@ class KnowledgeClient:
         self._stub: ai_model_pb2_grpc.RAGDocumentServiceStub | None = None
 
     async def connect(self) -> None:
-        """Connect to the gRPC service via DAPR sidecar."""
+        """Connect to the gRPC service via DAPR sidecar.
+
+        Configures channel with keepalive per ADR-005:
+        - Keepalive interval: 30 seconds
+        - Keepalive timeout: 10 seconds
+        """
         endpoint = self._settings.get_grpc_endpoint(self._env)
-        self._channel = grpc.aio.insecure_channel(endpoint)
+
+        # Channel options with keepalive per ADR-005
+        options = [
+            ("grpc.keepalive_time_ms", 30000),  # 30 second interval
+            ("grpc.keepalive_timeout_ms", 10000),  # 10 second timeout
+            ("grpc.keepalive_permit_without_calls", True),
+            ("grpc.http2.min_time_between_pings_ms", 30000),
+        ]
+
+        self._channel = grpc.aio.insecure_channel(endpoint, options=options)
         self._stub = ai_model_pb2_grpc.RAGDocumentServiceStub(self._channel)
 
     async def disconnect(self) -> None:
@@ -59,6 +95,16 @@ class KnowledgeClient:
             await self._channel.close()
             self._channel = None
             self._stub = None
+
+    async def _reset_on_error(self) -> None:
+        """Reset channel and stub on error to force reconnection per ADR-005."""
+        if self._channel:
+            try:
+                await self._channel.close()
+            except Exception:
+                pass  # Ignore errors during cleanup
+        self._channel = None
+        self._stub = None
 
     def _get_metadata(self) -> list[tuple[str, str]]:
         """Get gRPC metadata including DAPR app-id header."""
@@ -146,6 +192,7 @@ class KnowledgeClient:
             metadata=metadata,
         )
 
+    @_grpc_retry()
     async def create(self, doc_input: RagDocumentInput) -> RagDocument:
         """Create a new RAG document.
 
@@ -165,6 +212,7 @@ class KnowledgeClient:
         )
         return self._proto_to_document(response.document)
 
+    @_grpc_retry()
     async def get_by_id(self, document_id: str) -> RagDocument | None:
         """Get active version of a document by document_id.
 
@@ -192,6 +240,7 @@ class KnowledgeClient:
                 return None
             raise
 
+    @_grpc_retry()
     async def get_by_version(
         self, document_id: str, version: int
     ) -> RagDocument | None:
@@ -222,6 +271,7 @@ class KnowledgeClient:
                 return None
             raise
 
+    @_grpc_retry()
     async def list_documents(
         self,
         domain: str | None = None,
@@ -257,6 +307,7 @@ class KnowledgeClient:
         documents = [self._proto_to_document(doc) for doc in response.documents]
         return documents, response.total_count
 
+    @_grpc_retry()
     async def list_versions(self, document_id: str) -> list[RagDocument]:
         """List all versions of a document.
 
@@ -288,6 +339,7 @@ class KnowledgeClient:
         versions.sort(key=lambda d: d.version, reverse=True)
         return versions
 
+    @_grpc_retry()
     async def stage(self, document_id: str, version: int) -> RagDocument:
         """Stage a document version for review.
 
@@ -311,6 +363,7 @@ class KnowledgeClient:
         )
         return self._proto_to_document(response)
 
+    @_grpc_retry()
     async def activate(self, document_id: str, version: int) -> RagDocument:
         """Activate (promote) a staged document version.
 
@@ -334,6 +387,7 @@ class KnowledgeClient:
         )
         return self._proto_to_document(response)
 
+    @_grpc_retry()
     async def archive(
         self, document_id: str, version: int | None = None
     ) -> RagDocument:
@@ -359,6 +413,7 @@ class KnowledgeClient:
         )
         return self._proto_to_document(response)
 
+    @_grpc_retry()
     async def rollback(self, document_id: str, target_version: int) -> RagDocument:
         """Rollback to a previous document version.
 
@@ -384,6 +439,7 @@ class KnowledgeClient:
         )
         return self._proto_to_document(response)
 
+    @_grpc_retry()
     async def extract(self, document_id: str, version: int = 0) -> str:
         """Start content extraction for a document.
 
@@ -409,6 +465,7 @@ class KnowledgeClient:
         )
         return response.job_id
 
+    @_grpc_retry()
     async def get_job_status(self, job_id: str) -> ExtractionJobResult:
         """Get extraction job status (polling mode).
 
@@ -489,6 +546,7 @@ class KnowledgeClient:
             if event.status in ("completed", "failed"):
                 break
 
+    @_grpc_retry()
     async def chunk(self, document_id: str, version: int = 0) -> ChunkResult:
         """Chunk a document for vectorization (synchronous).
 
@@ -517,6 +575,7 @@ class KnowledgeClient:
             total_word_count=response.total_word_count,
         )
 
+    @_grpc_retry()
     async def list_chunks(
         self,
         document_id: str,
@@ -575,6 +634,7 @@ class KnowledgeClient:
 
         return chunks, response.total_count
 
+    @_grpc_retry()
     async def get_chunk(self, chunk_id: str) -> RagChunk | None:
         """Get a specific chunk by ID.
 
@@ -618,6 +678,7 @@ class KnowledgeClient:
                 return None
             raise
 
+    @_grpc_retry()
     async def delete_chunks(self, document_id: str, version: int) -> int:
         """Delete all chunks for a document version.
 

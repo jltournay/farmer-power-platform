@@ -11,6 +11,7 @@ dependencies = [
     "pydantic-settings>=2.0.0",
     "grpcio>=1.62.0",
     "grpcio-tools>=1.62.0",
+    "tenacity>=8.2.0",
     "fp-proto",
 ]
 
