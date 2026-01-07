@@ -111,6 +111,41 @@ class TestRagChunkRepositoryInit:
         assert RagChunkRepository.COLLECTION_NAME == "rag_chunks"
 
 
+class TestRagChunkRepositoryGetById:
+    """Tests for get_by_id method."""
+
+    @pytest.mark.asyncio
+    async def test_get_by_id_returns_chunk(self, repository, mock_db, sample_chunk):
+        """Test get_by_id returns chunk when found."""
+        doc = {"_id": sample_chunk.chunk_id, **sample_chunk.model_dump()}
+        mock_db["rag_chunks"].find_one = AsyncMock(return_value=doc)
+
+        chunk = await repository.get_by_id(sample_chunk.chunk_id)
+
+        assert chunk is not None
+        assert chunk.chunk_id == sample_chunk.chunk_id
+        assert chunk.content == sample_chunk.content
+        mock_db["rag_chunks"].find_one.assert_called_once_with({"_id": sample_chunk.chunk_id})
+
+    @pytest.mark.asyncio
+    async def test_get_by_id_returns_none_when_not_found(self, repository, mock_db):
+        """Test get_by_id returns None when chunk not found."""
+        mock_db["rag_chunks"].find_one = AsyncMock(return_value=None)
+
+        chunk = await repository.get_by_id("nonexistent-chunk-id")
+
+        assert chunk is None
+
+    @pytest.mark.asyncio
+    async def test_get_by_id_uses_correct_filter(self, repository, mock_db):
+        """Test get_by_id uses _id filter for MongoDB lookup."""
+        mock_db["rag_chunks"].find_one = AsyncMock(return_value=None)
+
+        await repository.get_by_id("my-chunk-123")
+
+        mock_db["rag_chunks"].find_one.assert_called_once_with({"_id": "my-chunk-123"})
+
+
 class TestRagChunkRepositoryGetByDocument:
     """Tests for get_by_document method."""
 

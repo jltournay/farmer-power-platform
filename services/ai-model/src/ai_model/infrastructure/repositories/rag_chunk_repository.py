@@ -6,14 +6,13 @@ in the ai_model.rag_chunks MongoDB collection.
 Story 0.75.10d: Semantic Chunking
 """
 
-import logging
-
+import structlog
 from ai_model.domain.rag_document import RagChunk
 from ai_model.infrastructure.repositories.base import BaseRepository
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from pymongo import ASCENDING
 
-logger = logging.getLogger(__name__)
+logger = structlog.get_logger(__name__)
 
 
 class RagChunkRepository(BaseRepository[RagChunk]):
@@ -35,6 +34,24 @@ class RagChunkRepository(BaseRepository[RagChunk]):
             db: MongoDB database instance (should be ai_model database).
         """
         super().__init__(db, self.COLLECTION_NAME, RagChunk)
+
+    async def get_by_id(self, chunk_id: str) -> RagChunk | None:
+        """Get a chunk by its chunk_id.
+
+        Override of base class method because RagChunk uses chunk_id
+        as the identifier instead of the standard id field.
+
+        Args:
+            chunk_id: The chunk identifier.
+
+        Returns:
+            The chunk if found, None otherwise.
+        """
+        doc = await self._collection.find_one({"_id": chunk_id})
+        if doc is None:
+            return None
+        doc.pop("_id", None)
+        return RagChunk.model_validate(doc)
 
     async def get_by_document(
         self,

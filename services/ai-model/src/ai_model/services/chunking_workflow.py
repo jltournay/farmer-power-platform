@@ -18,6 +18,8 @@ from ai_model.domain.rag_document import RagChunk, RagDocument
 from ai_model.services.semantic_chunker import ChunkResult, SemanticChunker
 
 if TYPE_CHECKING:
+    from collections.abc import Callable
+
     from ai_model.infrastructure.repositories import RagChunkRepository
 
 logger = structlog.get_logger(__name__)
@@ -70,7 +72,7 @@ class ChunkingWorkflow:
     async def chunk_document(
         self,
         document: RagDocument,
-        progress_callback: callable | None = None,
+        progress_callback: Callable[[int, int], None] | None = None,
     ) -> list[RagChunk]:
         """Chunk a document's content and store in MongoDB.
 
