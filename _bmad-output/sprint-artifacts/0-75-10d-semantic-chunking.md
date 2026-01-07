@@ -1,6 +1,6 @@
 # Story 0.75.10d: Semantic Chunking
 
-**Status:** done
+**Status:** review
 **GitHub Issue:** #123
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
@@ -822,10 +822,17 @@ Claude Opus 4.5 (claude-opus-4-5-20251101)
 
 ## Code Review
 
+> **⚠️ POST-MERGE ADVERSARIAL CODE REVIEW PENDING**
+> The section below was a SELF-REVIEW by the implementing agent.
+> A proper adversarial `/code-review` workflow must be run in the next session.
+> PR #124 was merged WITHOUT proper code review gate - any issues found will require follow-up fixes.
+
+### Self-Review (NOT Adversarial Review)
+
 **Review Date:** 2026-01-07
 **Reviewer Model:** Claude Opus 4.5 (claude-opus-4-5-20251101)
 
-### Review Outcome: APPROVED (with fixes applied)
+### Self-Review Outcome: APPROVED (with fixes applied)
 
 ### Issues Found and Fixed
 
