@@ -443,3 +443,483 @@ class CostService(object):
             timeout,
             metadata,
             _registered_method=True)
+
+
+class RAGDocumentServiceStub(object):
+    """============================================
+    RAG Document Service (Story 0.75.10)
+    Manages RAG knowledge documents with versioning
+    ============================================
+
+    RAGDocumentService provides RAG document management capabilities
+    """
+
+    def __init__(self, channel):
+        """Constructor.
+
+        Args:
+            channel: A grpc.Channel.
+        """
+        self.CreateDocument = channel.unary_unary(
+                '/farmer_power.ai_model.v1.RAGDocumentService/CreateDocument',
+                request_serializer=ai__model_dot_v1_dot_ai__model__pb2.CreateDocumentRequest.SerializeToString,
+                response_deserializer=ai__model_dot_v1_dot_ai__model__pb2.CreateDocumentResponse.FromString,
+                _registered_method=True)
+        self.GetDocument = channel.unary_unary(
+                '/farmer_power.ai_model.v1.RAGDocumentService/GetDocument',
+                request_serializer=ai__model_dot_v1_dot_ai__model__pb2.GetDocumentRequest.SerializeToString,
+                response_deserializer=ai__model_dot_v1_dot_ai__model__pb2.RAGDocument.FromString,
+                _registered_method=True)
+        self.UpdateDocument = channel.unary_unary(
+                '/farmer_power.ai_model.v1.RAGDocumentService/UpdateDocument',
+                request_serializer=ai__model_dot_v1_dot_ai__model__pb2.UpdateDocumentRequest.SerializeToString,
+                response_deserializer=ai__model_dot_v1_dot_ai__model__pb2.RAGDocument.FromString,
+                _registered_method=True)
+        self.DeleteDocument = channel.unary_unary(
+                '/farmer_power.ai_model.v1.RAGDocumentService/DeleteDocument',
+                request_serializer=ai__model_dot_v1_dot_ai__model__pb2.DeleteDocumentRequest.SerializeToString,
+                response_deserializer=ai__model_dot_v1_dot_ai__model__pb2.DeleteDocumentResponse.FromString,
+                _registered_method=True)
+        self.ListDocuments = channel.unary_unary(
+                '/farmer_power.ai_model.v1.RAGDocumentService/ListDocuments',
+                request_serializer=ai__model_dot_v1_dot_ai__model__pb2.ListDocumentsRequest.SerializeToString,
+                response_deserializer=ai__model_dot_v1_dot_ai__model__pb2.ListDocumentsResponse.FromString,
+                _registered_method=True)
+        self.SearchDocuments = channel.unary_unary(
+                '/farmer_power.ai_model.v1.RAGDocumentService/SearchDocuments',
+                request_serializer=ai__model_dot_v1_dot_ai__model__pb2.SearchDocumentsRequest.SerializeToString,
+                response_deserializer=ai__model_dot_v1_dot_ai__model__pb2.SearchDocumentsResponse.FromString,
+                _registered_method=True)
+        self.StageDocument = channel.unary_unary(
+                '/farmer_power.ai_model.v1.RAGDocumentService/StageDocument',
+                request_serializer=ai__model_dot_v1_dot_ai__model__pb2.StageDocumentRequest.SerializeToString,
+                response_deserializer=ai__model_dot_v1_dot_ai__model__pb2.RAGDocument.FromString,
+                _registered_method=True)
+        self.ActivateDocument = channel.unary_unary(
+                '/farmer_power.ai_model.v1.RAGDocumentService/ActivateDocument',
+                request_serializer=ai__model_dot_v1_dot_ai__model__pb2.ActivateDocumentRequest.SerializeToString,
+                response_deserializer=ai__model_dot_v1_dot_ai__model__pb2.RAGDocument.FromString,
+                _registered_method=True)
+        self.ArchiveDocument = channel.unary_unary(
+                '/farmer_power.ai_model.v1.RAGDocumentService/ArchiveDocument',
+                request_serializer=ai__model_dot_v1_dot_ai__model__pb2.ArchiveDocumentRequest.SerializeToString,
+                response_deserializer=ai__model_dot_v1_dot_ai__model__pb2.RAGDocument.FromString,
+                _registered_method=True)
+        self.RollbackDocument = channel.unary_unary(
+                '/farmer_power.ai_model.v1.RAGDocumentService/RollbackDocument',
+                request_serializer=ai__model_dot_v1_dot_ai__model__pb2.RollbackDocumentRequest.SerializeToString,
+                response_deserializer=ai__model_dot_v1_dot_ai__model__pb2.RAGDocument.FromString,
+                _registered_method=True)
+
+
+class RAGDocumentServiceServicer(object):
+    """============================================
+    RAG Document Service (Story 0.75.10)
+    Manages RAG knowledge documents with versioning
+    ============================================
+
+    RAGDocumentService provides RAG document management capabilities
+    """
+
+    def CreateDocument(self, request, context):
+        """CRUD Operations
+        """
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def GetDocument(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def UpdateDocument(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def DeleteDocument(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def ListDocuments(self, request, context):
+        """List & Search
+        """
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def SearchDocuments(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def StageDocument(self, request, context):
+        """Lifecycle Management
+        """
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def ActivateDocument(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def ArchiveDocument(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def RollbackDocument(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+
+def add_RAGDocumentServiceServicer_to_server(servicer, server):
+    rpc_method_handlers = {
+            'CreateDocument': grpc.unary_unary_rpc_method_handler(
+                    servicer.CreateDocument,
+                    request_deserializer=ai__model_dot_v1_dot_ai__model__pb2.CreateDocumentRequest.FromString,
+                    response_serializer=ai__model_dot_v1_dot_ai__model__pb2.CreateDocumentResponse.SerializeToString,
+            ),
+            'GetDocument': grpc.unary_unary_rpc_method_handler(
+                    servicer.GetDocument,
+                    request_deserializer=ai__model_dot_v1_dot_ai__model__pb2.GetDocumentRequest.FromString,
+                    response_serializer=ai__model_dot_v1_dot_ai__model__pb2.RAGDocument.SerializeToString,
+            ),
+            'UpdateDocument': grpc.unary_unary_rpc_method_handler(
+                    servicer.UpdateDocument,
+                    request_deserializer=ai__model_dot_v1_dot_ai__model__pb2.UpdateDocumentRequest.FromString,
+                    response_serializer=ai__model_dot_v1_dot_ai__model__pb2.RAGDocument.SerializeToString,
+            ),
+            'DeleteDocument': grpc.unary_unary_rpc_method_handler(
+                    servicer.DeleteDocument,
+                    request_deserializer=ai__model_dot_v1_dot_ai__model__pb2.DeleteDocumentRequest.FromString,
+                    response_serializer=ai__model_dot_v1_dot_ai__model__pb2.DeleteDocumentResponse.SerializeToString,
+            ),
+            'ListDocuments': grpc.unary_unary_rpc_method_handler(
+                    servicer.ListDocuments,
+                    request_deserializer=ai__model_dot_v1_dot_ai__model__pb2.ListDocumentsRequest.FromString,
+                    response_serializer=ai__model_dot_v1_dot_ai__model__pb2.ListDocumentsResponse.SerializeToString,
+            ),
+            'SearchDocuments': grpc.unary_unary_rpc_method_handler(
+                    servicer.SearchDocuments,
+                    request_deserializer=ai__model_dot_v1_dot_ai__model__pb2.SearchDocumentsRequest.FromString,
+                    response_serializer=ai__model_dot_v1_dot_ai__model__pb2.SearchDocumentsResponse.SerializeToString,
+            ),
+            'StageDocument': grpc.unary_unary_rpc_method_handler(
+                    servicer.StageDocument,
+                    request_deserializer=ai__model_dot_v1_dot_ai__model__pb2.StageDocumentRequest.FromString,
+                    response_serializer=ai__model_dot_v1_dot_ai__model__pb2.RAGDocument.SerializeToString,
+            ),
+            'ActivateDocument': grpc.unary_unary_rpc_method_handler(
+                    servicer.ActivateDocument,
+                    request_deserializer=ai__model_dot_v1_dot_ai__model__pb2.ActivateDocumentRequest.FromString,
+                    response_serializer=ai__model_dot_v1_dot_ai__model__pb2.RAGDocument.SerializeToString,
+            ),
+            'ArchiveDocument': grpc.unary_unary_rpc_method_handler(
+                    servicer.ArchiveDocument,
+                    request_deserializer=ai__model_dot_v1_dot_ai__model__pb2.ArchiveDocumentRequest.FromString,
+                    response_serializer=ai__model_dot_v1_dot_ai__model__pb2.RAGDocument.SerializeToString,
+            ),
+            'RollbackDocument': grpc.unary_unary_rpc_method_handler(
+                    servicer.RollbackDocument,
+                    request_deserializer=ai__model_dot_v1_dot_ai__model__pb2.RollbackDocumentRequest.FromString,
+                    response_serializer=ai__model_dot_v1_dot_ai__model__pb2.RAGDocument.SerializeToString,
+            ),
+    }
+    generic_handler = grpc.method_handlers_generic_handler(
+            'farmer_power.ai_model.v1.RAGDocumentService', rpc_method_handlers)
+    server.add_generic_rpc_handlers((generic_handler,))
+    server.add_registered_method_handlers('farmer_power.ai_model.v1.RAGDocumentService', rpc_method_handlers)
+
+
+ # This class is part of an EXPERIMENTAL API.
+class RAGDocumentService(object):
+    """============================================
+    RAG Document Service (Story 0.75.10)
+    Manages RAG knowledge documents with versioning
+    ============================================
+
+    RAGDocumentService provides RAG document management capabilities
+    """
+
+    @staticmethod
+    def CreateDocument(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/farmer_power.ai_model.v1.RAGDocumentService/CreateDocument',
+            ai__model_dot_v1_dot_ai__model__pb2.CreateDocumentRequest.SerializeToString,
+            ai__model_dot_v1_dot_ai__model__pb2.CreateDocumentResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def GetDocument(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/farmer_power.ai_model.v1.RAGDocumentService/GetDocument',
+            ai__model_dot_v1_dot_ai__model__pb2.GetDocumentRequest.SerializeToString,
+            ai__model_dot_v1_dot_ai__model__pb2.RAGDocument.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def UpdateDocument(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/farmer_power.ai_model.v1.RAGDocumentService/UpdateDocument',
+            ai__model_dot_v1_dot_ai__model__pb2.UpdateDocumentRequest.SerializeToString,
+            ai__model_dot_v1_dot_ai__model__pb2.RAGDocument.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def DeleteDocument(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/farmer_power.ai_model.v1.RAGDocumentService/DeleteDocument',
+            ai__model_dot_v1_dot_ai__model__pb2.DeleteDocumentRequest.SerializeToString,
+            ai__model_dot_v1_dot_ai__model__pb2.DeleteDocumentResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def ListDocuments(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/farmer_power.ai_model.v1.RAGDocumentService/ListDocuments',
+            ai__model_dot_v1_dot_ai__model__pb2.ListDocumentsRequest.SerializeToString,
+            ai__model_dot_v1_dot_ai__model__pb2.ListDocumentsResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def SearchDocuments(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/farmer_power.ai_model.v1.RAGDocumentService/SearchDocuments',
+            ai__model_dot_v1_dot_ai__model__pb2.SearchDocumentsRequest.SerializeToString,
+            ai__model_dot_v1_dot_ai__model__pb2.SearchDocumentsResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def StageDocument(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/farmer_power.ai_model.v1.RAGDocumentService/StageDocument',
+            ai__model_dot_v1_dot_ai__model__pb2.StageDocumentRequest.SerializeToString,
+            ai__model_dot_v1_dot_ai__model__pb2.RAGDocument.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def ActivateDocument(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/farmer_power.ai_model.v1.RAGDocumentService/ActivateDocument',
+            ai__model_dot_v1_dot_ai__model__pb2.ActivateDocumentRequest.SerializeToString,
+            ai__model_dot_v1_dot_ai__model__pb2.RAGDocument.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def ArchiveDocument(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/farmer_power.ai_model.v1.RAGDocumentService/ArchiveDocument',
+            ai__model_dot_v1_dot_ai__model__pb2.ArchiveDocumentRequest.SerializeToString,
+            ai__model_dot_v1_dot_ai__model__pb2.RAGDocument.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def RollbackDocument(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/farmer_power.ai_model.v1.RAGDocumentService/RollbackDocument',
+            ai__model_dot_v1_dot_ai__model__pb2.RollbackDocumentRequest.SerializeToString,
+            ai__model_dot_v1_dot_ai__model__pb2.RAGDocument.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)

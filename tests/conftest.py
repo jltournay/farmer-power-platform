@@ -369,7 +369,25 @@ class MockMongoCollection:
 
     def _match_filter(self, doc: dict[str, Any], filter: dict[str, Any]) -> bool:
         """Check if document matches filter including operators."""
+        import re
+
         for key, value in filter.items():
+            # Handle $or operator
+            if key == "$or":
+                if not isinstance(value, list):
+                    return False
+                if not any(self._match_filter(doc, sub_filter) for sub_filter in value):
+                    return False
+                continue
+
+            # Handle $and operator
+            if key == "$and":
+                if not isinstance(value, list):
+                    return False
+                if not all(self._match_filter(doc, sub_filter) for sub_filter in value):
+                    return False
+                continue
+
             if isinstance(value, dict):
                 # Handle MongoDB operators
                 for op, op_value in value.items():
@@ -390,6 +408,15 @@ class MockMongoCollection:
                             return False
                     elif op == "$in" and doc.get(key) not in op_value:
                         return False
+                    elif op == "$regex":
+                        # Handle regex matching
+                        doc_value = doc.get(key, "")
+                        if doc_value is None:
+                            return False
+                        options = value.get("$options", "")
+                        flags = re.IGNORECASE if "i" in options else 0
+                        if not re.search(op_value, str(doc_value), flags):
+                            return False
             else:
                 if doc.get(key) != value:
                     return False
@@ -547,8 +574,27 @@ class MockMongoCursor:
         return MockMongoCursor(self._documents[:n])
 
     def sort(self, key_or_list: Any, direction: int = 1) -> MockMongoCursor:
-        """Mock sort - returns self for chaining."""
-        return self
+        """Mock sort - actually sorts documents."""
+        if isinstance(key_or_list, str):
+            # Simple case: sort by single key
+            sorted_docs = sorted(
+                self._documents,
+                key=lambda d: d.get(key_or_list, ""),
+                reverse=(direction == -1),
+            )
+        elif isinstance(key_or_list, list):
+            # Complex case: sort by multiple keys
+            # Process in reverse order for stable multi-key sorting
+            sorted_docs = self._documents
+            for key, dir_ in reversed(key_or_list):
+                sorted_docs = sorted(
+                    sorted_docs,
+                    key=lambda d, k=key: d.get(k, ""),
+                    reverse=(dir_ == -1),
+                )
+        else:
+            sorted_docs = self._documents
+        return MockMongoCursor(sorted_docs)
 
 
 class MockAggregationCursor:
