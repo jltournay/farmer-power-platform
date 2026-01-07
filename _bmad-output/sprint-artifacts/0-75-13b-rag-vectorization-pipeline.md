@@ -1,6 +1,6 @@
 # Story 0.75.13b: RAG Vectorization Pipeline (Orchestration)
 
-**Status:** in-progress
+**Status:** review
 **GitHub Issue:** #131
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
@@ -139,7 +139,7 @@ So that document chunks become searchable after ingestion.
 - [ ] PR approved and merged (squash)
 - [ ] Local branch cleaned up: `git branch -d feature/0-75-13b-rag-vectorization-pipeline`
 
-**PR URL:** _______________ (fill in when created)
+**PR URL:** https://github.com/jltournay/farmer-power-platform/pull/132
 
 ---
 
