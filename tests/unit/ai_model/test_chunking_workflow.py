@@ -235,6 +235,31 @@ This is detailed content for section number {i}. It describes important informat
         assert "exceeds maximum of 2" in str(exc_info.value)
 
 
+class TestChunkingWorkflowGetChunkById:
+    """Tests for get_chunk_by_id method."""
+
+    @pytest.mark.asyncio
+    async def test_get_chunk_by_id_returns_chunk(self, workflow, mock_chunk_repo):
+        """Test get_chunk_by_id returns chunk when found."""
+        expected_chunk = MagicMock()
+        mock_chunk_repo.get_by_id = AsyncMock(return_value=expected_chunk)
+
+        result = await workflow.get_chunk_by_id("test-doc-v1-chunk-0")
+
+        assert result == expected_chunk
+        mock_chunk_repo.get_by_id.assert_called_once_with("test-doc-v1-chunk-0")
+
+    @pytest.mark.asyncio
+    async def test_get_chunk_by_id_returns_none_when_not_found(self, workflow, mock_chunk_repo):
+        """Test get_chunk_by_id returns None when chunk not found."""
+        mock_chunk_repo.get_by_id = AsyncMock(return_value=None)
+
+        result = await workflow.get_chunk_by_id("nonexistent-chunk")
+
+        assert result is None
+        mock_chunk_repo.get_by_id.assert_called_once_with("nonexistent-chunk")
+
+
 class TestChunkingWorkflowGetChunks:
     """Tests for get_chunks method."""
 

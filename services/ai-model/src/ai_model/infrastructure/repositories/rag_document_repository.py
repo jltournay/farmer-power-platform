@@ -178,6 +178,82 @@ class RagDocumentRepository(BaseRepository[RagDocument]):
 
         return documents
 
+    async def list_with_pagination(
+        self,
+        filters: dict | None = None,
+        skip: int = 0,
+        limit: int = 20,
+    ) -> tuple[list[RagDocument], int]:
+        """List documents with pagination and filtering.
+
+        Args:
+            filters: Optional MongoDB filter query (domain, status, author, etc.).
+            skip: Number of documents to skip (for pagination).
+            limit: Maximum number of documents to return.
+
+        Returns:
+            Tuple of (documents, total_count).
+        """
+        query = filters or {}
+
+        # Get total count
+        total_count = await self._collection.count_documents(query)
+
+        # Execute query with pagination
+        cursor = self._collection.find(query).skip(skip).limit(limit)
+        docs = await cursor.to_list(length=limit)
+
+        # Convert to models
+        documents = []
+        for doc in docs:
+            doc.pop("_id", None)
+            documents.append(RagDocument.model_validate(doc))
+
+        return documents, total_count
+
+    async def search(
+        self,
+        query_text: str,
+        filters: dict | None = None,
+        limit: int = 20,
+    ) -> list[RagDocument]:
+        """Search documents by title and content using regex.
+
+        Uses MongoDB $regex for MVP (no text index required).
+
+        Args:
+            query_text: Text to search for in title and content.
+            filters: Optional additional filters (domain, status).
+            limit: Maximum number of results.
+
+        Returns:
+            List of matching documents.
+        """
+        # Build regex search query
+        regex_filter = {
+            "$or": [
+                {"title": {"$regex": query_text, "$options": "i"}},
+                {"content": {"$regex": query_text, "$options": "i"}},
+            ]
+        }
+
+        # Combine with additional filters
+        filter_query = {**regex_filter}
+        if filters:
+            filter_query.update(filters)
+
+        # Execute search
+        cursor = self._collection.find(filter_query).limit(limit)
+        docs = await cursor.to_list(length=limit)
+
+        # Convert to models
+        documents = []
+        for doc in docs:
+            doc.pop("_id", None)
+            documents.append(RagDocument.model_validate(doc))
+
+        return documents
+
     async def ensure_indexes(self) -> None:
         """Create indexes for the rag_documents collection.
 

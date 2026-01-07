@@ -187,6 +187,17 @@ class ChunkingWorkflow:
 
         return chunks
 
+    async def get_chunk_by_id(self, chunk_id: str) -> RagChunk | None:
+        """Get a single chunk by its ID.
+
+        Args:
+            chunk_id: The unique chunk identifier.
+
+        Returns:
+            The chunk if found, None otherwise.
+        """
+        return await self._chunk_repo.get_by_id(chunk_id)
+
     async def get_chunks(
         self,
         document_id: str,

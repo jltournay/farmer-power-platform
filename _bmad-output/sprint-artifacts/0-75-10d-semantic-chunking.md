@@ -1,6 +1,6 @@
 # Story 0.75.10d: Semantic Chunking
 
-**Status:** review
+**Status:** done
 **GitHub Issue:** #123
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
@@ -875,3 +875,98 @@ ruff format --check . - 471 files already formatted
 | AC10 | PASS | 59 total unit tests (56 original + 3 new) |
 | AC11 | PASS | E2E integration verified (102 passed) |
 | AC12 | PASS | CI Run ID 20776398489 green |
+
+---
+
+## Code Review (MANDATORY - Post-Merge)
+
+**Review Date:** 2026-01-07
+**Reviewer:** Claude Opus 4.5 (Code Review Agent)
+**Review Type:** Post-Merge (PR #124 already merged)
+
+### Review Outcome: ✅ **APPROVED with Notes**
+
+The implementation is well-structured with good test coverage (56 new tests) and passes all E2E scenarios. Since the PR is already merged, the following findings are documented as **tech debt** for future improvements.
+
+### Findings Summary
+
+| ID | Severity | Status | Description |
+|----|----------|--------|-------------|
+| M1 | Medium | Tech Debt | Service layer accesses `_chunk_repo` directly |
+| M2 | Medium | Tech Debt | Direct `_collection` access in ListDocuments/SearchDocuments |
+| M3 | Medium | Tech Debt | Duplicated workflow availability checks |
+| L1 | Low | Tech Debt | Missing type annotation for progress_callback |
+| L2 | Low | Tech Debt | Hardcoded poll_interval |
+| L3 | Low | Tech Debt | Index lifecycle not documented |
+
+### Finding Details
+
+#### [M1] Service Accesses Workflow's Private Repository
+
+**Location:** `rag_document_service.py:1320`
+```python
+chunk = await self._chunking_workflow._chunk_repo.get_by_id(request.chunk_id)
+```
+
+**Issue:** Accesses `_chunk_repo` (private attribute) directly instead of through a workflow method.
+
+**Future Fix:** Add `get_chunk_by_id()` method to `ChunkingWorkflow` class.
+
+---
+
+#### [M2] Direct Collection Access Bypasses Repository Pattern
+
+**Location:** `rag_document_service.py:440-442, 510-511`
+```python
+cursor = self._repository._collection.find(query).skip(skip).limit(page_size)
+```
+
+**Issue:** `ListDocuments` and `SearchDocuments` access `_collection` directly.
+
+**Future Fix:** Add `list_with_pagination()` and `search()` methods to repository.
+
+---
+
+#### [M3] Duplicated Workflow Availability Checks
+
+**Location:** 5 locations in `rag_document_service.py`
+
+**Issue:** Identical check pattern repeated:
+```python
+if not hasattr(self, "_chunking_workflow") or self._chunking_workflow is None:
+    await context.abort(grpc.StatusCode.UNAVAILABLE, "...")
+```
+
+**Future Fix:** Extract to helper method.
+
+---
+
+#### [L1-L3] Low Severity Items
+
+- **L1:** Add `Callable[[int, int], None] | None` type hint for `progress_callback`
+- **L2:** Move `poll_interval = 0.5` to settings
+- **L3:** Document when `ensure_indexes()` should be called
+
+### Architecture Compliance
+
+| Rule | Status |
+|------|--------|
+| All I/O async | ✅ PASS |
+| Repository pattern | ⚠️ Mostly (see M1, M2) |
+| Pydantic 2.0 | ✅ PASS |
+| Proto alignment | ✅ PASS |
+
+### Test Coverage
+
+| Component | Tests | Status |
+|-----------|-------|--------|
+| SemanticChunker | 24 | ✅ Good |
+| RagChunkRepository | 19 | ✅ Good |
+| ChunkingWorkflow | 16 | ✅ Good |
+| **Total** | **59** | **Exceeds AC10** |
+
+### Recommendation
+
+**✅ APPROVED** - The code is functional, well-tested, and meets all acceptance criteria. The identified issues are minor architectural improvements that can be addressed in future stories or a dedicated tech debt sprint.
+
+**No blocking issues.** Story can proceed to `done` status.

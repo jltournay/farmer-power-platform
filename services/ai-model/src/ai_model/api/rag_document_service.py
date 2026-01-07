@@ -436,17 +436,15 @@ class RAGDocumentServiceServicer(ai_model_pb2_grpc.RAGDocumentServiceServicer):
             if request.author:
                 query["metadata.author"] = request.author
 
-            # Execute query with pagination
-            cursor = self._repository._collection.find(query).skip(skip).limit(page_size)
-            docs = await cursor.to_list(length=page_size)
-            total_count = await self._repository._collection.count_documents(query)
+            # Execute query with pagination (using repository method)
+            documents, total_count = await self._repository.list_with_pagination(
+                filters=query,
+                skip=skip,
+                limit=page_size,
+            )
 
             # Convert to proto
-            proto_docs = []
-            for doc in docs:
-                doc.pop("_id", None)
-                pydantic_doc = RagDocument.model_validate(doc)
-                proto_docs.append(_pydantic_to_proto(pydantic_doc))
+            proto_docs = [_pydantic_to_proto(doc) for doc in documents]
 
             logger.debug(
                 "ListDocuments completed",
@@ -492,30 +490,24 @@ class RAGDocumentServiceServicer(ai_model_pb2_grpc.RAGDocumentServiceServicer):
                 )
                 return ai_model_pb2.SearchDocumentsResponse()
 
-            # Build search filter using $regex
-            filter_query: dict = {
-                "$or": [
-                    {"title": {"$regex": request.query, "$options": "i"}},
-                    {"content": {"$regex": request.query, "$options": "i"}},
-                ]
-            }
+            # Build additional filters
+            filters: dict = {}
             if request.domain:
-                filter_query["domain"] = request.domain
+                filters["domain"] = request.domain
             if request.status:
-                filter_query["status"] = request.status
+                filters["status"] = request.status
 
             limit = min(MAX_PAGE_SIZE, request.limit or DEFAULT_PAGE_SIZE)
 
-            # Execute search
-            cursor = self._repository._collection.find(filter_query).limit(limit)
-            docs = await cursor.to_list(length=limit)
+            # Execute search (using repository method)
+            documents = await self._repository.search(
+                query_text=request.query,
+                filters=filters if filters else None,
+                limit=limit,
+            )
 
             # Convert to proto
-            proto_docs = []
-            for doc in docs:
-                doc.pop("_id", None)
-                pydantic_doc = RagDocument.model_validate(doc)
-                proto_docs.append(_pydantic_to_proto(pydantic_doc))
+            proto_docs = [_pydantic_to_proto(doc) for doc in documents]
 
             logger.debug(
                 "SearchDocuments completed",
@@ -1091,6 +1083,23 @@ class RAGDocumentServiceServicer(ai_model_pb2_grpc.RAGDocumentServiceServicer):
         """
         self._chunking_workflow = workflow
 
+    async def _require_chunking_workflow(self, context: grpc.aio.ServicerContext) -> bool:
+        """Check if chunking workflow is available.
+
+        Args:
+            context: gRPC context for error reporting.
+
+        Returns:
+            True if workflow is available, False if aborted.
+        """
+        if not hasattr(self, "_chunking_workflow") or self._chunking_workflow is None:
+            await context.abort(
+                grpc.StatusCode.UNAVAILABLE,
+                "Chunking service not configured",
+            )
+            return False
+        return True
+
     # ========================================
     # Chunking Operations (Story 0.75.10d)
     # ========================================
@@ -1121,11 +1130,7 @@ class RAGDocumentServiceServicer(ai_model_pb2_grpc.RAGDocumentServiceServicer):
                 return ai_model_pb2.ChunkDocumentResponse()
 
             # Check if chunking workflow is available
-            if not hasattr(self, "_chunking_workflow") or self._chunking_workflow is None:
-                await context.abort(
-                    grpc.StatusCode.UNAVAILABLE,
-                    "Chunking service not configured",
-                )
+            if not await self._require_chunking_workflow(context):
                 return ai_model_pb2.ChunkDocumentResponse()
 
             # Get the document
@@ -1220,11 +1225,7 @@ class RAGDocumentServiceServicer(ai_model_pb2_grpc.RAGDocumentServiceServicer):
                 return ai_model_pb2.ListChunksResponse()
 
             # Check if chunking workflow is available
-            if not hasattr(self, "_chunking_workflow") or self._chunking_workflow is None:
-                await context.abort(
-                    grpc.StatusCode.UNAVAILABLE,
-                    "Chunking service not configured",
-                )
+            if not await self._require_chunking_workflow(context):
                 return ai_model_pb2.ListChunksResponse()
 
             # Pagination
@@ -1309,15 +1310,11 @@ class RAGDocumentServiceServicer(ai_model_pb2_grpc.RAGDocumentServiceServicer):
                 return ai_model_pb2.RagChunk()
 
             # Check if chunking workflow is available
-            if not hasattr(self, "_chunking_workflow") or self._chunking_workflow is None:
-                await context.abort(
-                    grpc.StatusCode.UNAVAILABLE,
-                    "Chunking service not configured",
-                )
+            if not await self._require_chunking_workflow(context):
                 return ai_model_pb2.RagChunk()
 
-            # Get chunk from repository
-            chunk = await self._chunking_workflow._chunk_repo.get_by_id(request.chunk_id)
+            # Get chunk via workflow (proper encapsulation)
+            chunk = await self._chunking_workflow.get_chunk_by_id(request.chunk_id)
 
             if chunk is None:
                 await context.abort(
@@ -1381,11 +1378,7 @@ class RAGDocumentServiceServicer(ai_model_pb2_grpc.RAGDocumentServiceServicer):
                 return ai_model_pb2.DeleteChunksResponse()
 
             # Check if chunking workflow is available
-            if not hasattr(self, "_chunking_workflow") or self._chunking_workflow is None:
-                await context.abort(
-                    grpc.StatusCode.UNAVAILABLE,
-                    "Chunking service not configured",
-                )
+            if not await self._require_chunking_workflow(context):
                 return ai_model_pb2.DeleteChunksResponse()
 
             # Delete chunks
