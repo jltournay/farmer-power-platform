@@ -4,11 +4,13 @@ This module defines the Pydantic models for tracking extraction job progress.
 Jobs are stored in the ai_model.extraction_jobs MongoDB collection.
 
 Story 0.75.10b: Basic PDF/Markdown Extraction
+Story 0.75.10c: Azure Document Intelligence Integration
 """
 
 from datetime import UTC, datetime
 from enum import Enum
 
+from ai_model.domain.rag_document import ExtractionMethod
 from pydantic import BaseModel, Field
 
 
@@ -63,6 +65,10 @@ class ExtractionJob(BaseModel):
         default=None,
         description="Error details if status is failed",
     )
+    extraction_method: ExtractionMethod | None = Field(
+        default=None,
+        description="Method used for extraction (text_extraction, azure_doc_intel, etc.)",
+    )
     started_at: datetime = Field(
         default_factory=lambda: datetime.now(UTC),
         description="Job creation timestamp",
@@ -83,6 +89,7 @@ class ExtractionJob(BaseModel):
                 "pages_processed": 9,
                 "total_pages": 20,
                 "error_message": None,
+                "extraction_method": "azure_doc_intel",
                 "started_at": "2026-01-07T10:00:00Z",
                 "completed_at": None,
             }

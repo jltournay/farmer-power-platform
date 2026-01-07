@@ -4,12 +4,14 @@ This module provides the ExtractionJobRepository class for managing extraction j
 in the ai_model.extraction_jobs MongoDB collection.
 
 Story 0.75.10b: Basic PDF/Markdown Extraction
+Story 0.75.10c: Azure Document Intelligence Integration
 """
 
 import logging
 from datetime import UTC, datetime
 
 from ai_model.domain.extraction_job import ExtractionJob, ExtractionJobStatus
+from ai_model.domain.rag_document import ExtractionMethod
 from ai_model.infrastructure.repositories.base import BaseRepository
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from pymongo import ASCENDING, DESCENDING
@@ -153,6 +155,7 @@ class ExtractionJobRepository(BaseRepository[ExtractionJob]):
         job_id: str,
         pages_processed: int,
         total_pages: int,
+        extraction_method: ExtractionMethod | None = None,
     ) -> ExtractionJob | None:
         """Mark a job as completed successfully.
 
@@ -160,18 +163,21 @@ class ExtractionJobRepository(BaseRepository[ExtractionJob]):
             job_id: The job identifier.
             pages_processed: Final count of pages extracted.
             total_pages: Total pages in document.
+            extraction_method: Method used for extraction (text_extraction, azure_doc_intel, etc.).
 
         Returns:
             The updated job if found, None otherwise.
         """
         now = datetime.now(UTC)
-        updates = {
+        updates: dict = {
             "status": ExtractionJobStatus.COMPLETED.value,
             "progress_percent": 100,
             "pages_processed": pages_processed,
             "total_pages": total_pages,
             "completed_at": now,
         }
+        if extraction_method is not None:
+            updates["extraction_method"] = extraction_method.value
 
         result = await self._collection.find_one_and_update(
             {"job_id": job_id},

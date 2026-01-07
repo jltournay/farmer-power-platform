@@ -2,19 +2,30 @@
 
 This module provides extraction logic for PDF, Markdown, and plain text files.
 PDF extraction uses PyMuPDF (synchronous library) wrapped in async via thread pool.
+For scanned/image-based PDFs, Azure Document Intelligence OCR is used when available.
 
 Story 0.75.10b: Basic PDF/Markdown Extraction
+Story 0.75.10c: Azure Document Intelligence Integration
 """
+
+from __future__ import annotations
 
 import asyncio
 from collections.abc import Callable
 from concurrent.futures import ThreadPoolExecutor
-from dataclasses import dataclass
+from dataclasses import dataclass, field
+from typing import TYPE_CHECKING
 
 import pymupdf
 import structlog
-from ai_model.config import settings
+from ai_model.config import Settings, settings
 from ai_model.domain.rag_document import ExtractionMethod, FileType
+from ai_model.services.scan_detection import detect_scanned_pdf
+
+if TYPE_CHECKING:
+    from ai_model.infrastructure.azure_doc_intel_client import (
+        AzureDocumentIntelligenceClient,
+    )
 
 logger = structlog.get_logger(__name__)
 
@@ -49,12 +60,14 @@ class ExtractionResult:
         page_count: Number of pages extracted (1 for non-PDF files).
         extraction_method: Method used for extraction.
         confidence: Quality score 0.0-1.0 based on content density.
+        warnings: List of warning messages (e.g., fallback scenarios).
     """
 
     content: str
     page_count: int
     extraction_method: ExtractionMethod
     confidence: float
+    warnings: list[str] = field(default_factory=list)
 
 
 # Type alias for progress callback
@@ -66,16 +79,46 @@ class DocumentExtractor:
 
     Supports:
     - PDF files (digital/text-based via PyMuPDF)
+    - PDF files (scanned/image-based via Azure Document Intelligence)
     - Markdown files (pass-through with structure preservation)
     - Plain text files (simple extraction)
 
-    For scanned/image-based PDFs, see Story 0.75.10c (Azure Document Intelligence).
+    Scanned PDF Detection (Story 0.75.10c):
+    - Digital PDFs (text-rich) use PyMuPDF for fast, free extraction
+    - Scanned PDFs are detected via dual-signal detection:
+      - Signal 1: Low text content (< 150 chars/page avg)
+      - Signal 2: Full-page image (> 80% of page area, >50% of pages)
+    - Scanned PDFs route to Azure Document Intelligence if configured
+    - Falls back to PyMuPDF with warning if Azure DI unavailable
 
     Usage:
+        # Basic usage (no Azure DI)
         extractor = DocumentExtractor()
         file_type = extractor.detect_file_type("guide.pdf", content)
         result = await extractor.extract(content, file_type)
+
+        # With Azure DI for scanned PDFs
+        extractor = DocumentExtractor(
+            azure_di_client=AzureDocumentIntelligenceClient(settings),
+            settings=settings,
+        )
+        result = await extractor.extract(content, file_type)
     """
+
+    def __init__(
+        self,
+        azure_di_client: AzureDocumentIntelligenceClient | None = None,
+        settings: Settings | None = None,
+    ) -> None:
+        """Initialize the document extractor.
+
+        Args:
+            azure_di_client: Optional Azure DI client for OCR extraction.
+                            If None, scanned PDFs fall back to PyMuPDF.
+            settings: Optional settings instance. Uses global settings if None.
+        """
+        self._azure_di_client = azure_di_client
+        self._settings = settings or Settings()
 
     def detect_file_type(self, filename: str, content: bytes) -> FileType:
         """Detect file type from extension and magic bytes.
@@ -111,6 +154,8 @@ class DocumentExtractor:
         content: bytes,
         file_type: FileType,
         progress_callback: ProgressCallback | None = None,
+        document_id: str = "",
+        job_id: str = "",
     ) -> ExtractionResult:
         """Extract text content from file bytes.
 
@@ -119,6 +164,8 @@ class DocumentExtractor:
             file_type: Type of file being extracted.
             progress_callback: Optional callback for progress updates.
                               Called with (percent, pages_done, total_pages).
+            document_id: Optional document ID for cost tracking (Azure DI).
+            job_id: Optional job ID for cost tracking (Azure DI).
 
         Returns:
             ExtractionResult with extracted content and metadata.
@@ -129,13 +176,99 @@ class DocumentExtractor:
             ExtractionError: For other extraction failures.
         """
         if file_type == FileType.PDF:
-            return await self._extract_pdf(content, progress_callback)
+            return await self._extract_pdf(content, progress_callback, document_id, job_id)
         elif file_type == FileType.MD:
             return self._extract_markdown(content)
         else:
             return self._extract_text(content)
 
     async def _extract_pdf(
+        self,
+        content: bytes,
+        progress_callback: ProgressCallback | None = None,
+        document_id: str = "",
+        job_id: str = "",
+    ) -> ExtractionResult:
+        """Extract text from PDF using appropriate method.
+
+        For digital PDFs (text-rich): Uses PyMuPDF (fast, free).
+        For scanned PDFs (image-based): Routes to Azure DI if available.
+
+        Scanned PDF detection uses dual signals:
+        - Signal 1: Low text content (< 150 chars/page avg)
+        - Signal 2: Full-page image (> 80% of page area, >50% of pages)
+
+        Args:
+            content: PDF file content as bytes.
+            progress_callback: Optional callback for progress updates.
+            document_id: Optional document ID for cost tracking.
+            job_id: Optional job ID for cost tracking.
+
+        Returns:
+            ExtractionResult with extracted markdown content.
+
+        Raises:
+            PasswordProtectedError: If PDF requires password.
+            CorruptedFileError: If PDF cannot be opened/parsed.
+        """
+        # Step 1: Detect if PDF is scanned (dual-signal detection)
+        detection = detect_scanned_pdf(content)
+        logger.info(
+            "PDF scan detection complete",
+            is_scanned=detection.is_scanned,
+            reason=detection.reason,
+            confidence=detection.confidence,
+            signals=detection.detection_signals,
+        )
+
+        # Step 2: Digital PDF - use PyMuPDF only
+        if not detection.is_scanned:
+            return await self._extract_pdf_with_pymupdf(content, progress_callback)
+
+        # Step 3: Scanned PDF - try Azure DI if available
+        if not self._is_azure_di_available():
+            # Azure DI not configured - fallback to PyMuPDF with warning
+            logger.warning(
+                "Azure DI not available for scanned PDF",
+                reason=detection.reason,
+            )
+            result = await self._extract_pdf_with_pymupdf(content, progress_callback)
+            result.warnings.append(f"{detection.reason}, but Azure DI not configured - extraction quality may be poor")
+            return result
+
+        # Step 4: Call Azure DI for OCR
+        try:
+            azure_result = await self._azure_di_client.analyze_pdf(
+                content=content,
+                progress_callback=progress_callback,
+                document_id=document_id,
+                job_id=job_id,
+            )
+            return ExtractionResult(
+                content=azure_result.markdown_content,
+                page_count=azure_result.page_count,
+                extraction_method=ExtractionMethod.AZURE_DOC_INTEL,
+                confidence=azure_result.confidence,
+            )
+        except Exception as e:
+            # Azure DI failed - fallback to PyMuPDF result
+            logger.error(
+                "Azure DI failed, falling back to PyMuPDF",
+                error=str(e),
+            )
+            result = await self._extract_pdf_with_pymupdf(content, progress_callback)
+            result.warnings.append(f"Azure DI failed: {e}, using PyMuPDF fallback")
+            return result
+
+    def _is_azure_di_available(self) -> bool:
+        """Check if Azure DI is configured and client is available.
+
+        Returns:
+            True if Azure DI client is provided and settings enable it.
+        """
+        return self._azure_di_client is not None and self._settings.azure_doc_intel_enabled
+
+    async def _extract_pdf_with_pymupdf(
         self,
         content: bytes,
         progress_callback: ProgressCallback | None = None,
