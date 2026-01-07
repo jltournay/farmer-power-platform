@@ -5,6 +5,7 @@ and RAG document storage.
 
 Story 0.75.5: Added LlmCostEvent and related cost models.
 Story 0.75.9: Added RagDocument, RagChunk, and related RAG models.
+Story 0.75.12: Added Embedding domain models.
 """
 
 from ai_model.domain.agent_config import (
@@ -35,6 +36,13 @@ from ai_model.domain.cost_event import (
     LlmCostEvent,
     ModelCost,
 )
+from ai_model.domain.embedding import (
+    EmbeddingCostEvent,
+    EmbeddingInputType,
+    EmbeddingRequest,
+    EmbeddingResult,
+    EmbeddingUsage,
+)
 from ai_model.domain.prompt import (
     Prompt,
     PromptABTest,
@@ -63,6 +71,11 @@ __all__ = [
     "ConversationalConfig",
     "CostSummary",
     "DailyCostSummary",
+    "EmbeddingCostEvent",
+    "EmbeddingInputType",
+    "EmbeddingRequest",
+    "EmbeddingResult",
+    "EmbeddingUsage",
     "ErrorHandlingConfig",
     "ExplorerConfig",
     "ExtractionMethod",

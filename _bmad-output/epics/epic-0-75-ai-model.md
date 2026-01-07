@@ -557,18 +557,73 @@ As a **developer**,
 I want a retrieval service for RAG queries,
 So that agents can find relevant knowledge.
 
+**Prerequisites:**
+- Story 0.75.12 (Embedding Service) complete
+- Story 0.75.13 (Pinecone Repository) complete
+- Pinecone credentials in `.env` (PINECONE_API_KEY, PINECONE_INDEX_NAME)
+
 **Scope:**
 - Similarity search with configurable top-k
 - Confidence threshold filtering
 - Multi-domain queries
-- Query embedding generation
-- Synthetic sample generator utility (`tests/golden/generator.py`)
-- Golden sample test suite (synthetic samples, minimum 10):
-  - Test that known queries return expected document chunks
-  - Test confidence threshold filtering
-  - Test multi-domain retrieval accuracy
+- Query embedding generation (using EmbeddingService from 0.75.12)
 
-**Reusable:** The synthetic sample generator utility created here is reused by Stories 0.75.15, 0.75.17, 0.75.19, 0.75.20, 0.75.21, and 0.75.22.
+**Golden Sample Test Suite (MANDATORY):**
+
+The dev agent implementing this story will:
+
+1. **Create seed documents** (`tests/golden/rag/seed_documents.json`):
+   - Write 5+ realistic tea farming documents directly (no external LLM call needed - dev agent generates content)
+   - Include at least 2 domains: disease, weather
+   - Each document 200-500 words with realistic agronomic content
+
+2. **Create golden samples** (`tests/golden/rag/retrieval/samples.json`):
+   - Write 2-3 queries per seed document directly (dev agent generates queries)
+   - Minimum 10 samples total
+
+3. **Create test suite** (`tests/golden/rag/retrieval/test_retrieval_golden.py`):
+   - Test that known queries return expected document chunks
+   - Test confidence threshold filtering
+   - Test multi-domain retrieval accuracy
+   - Achieve ≥85% retrieval accuracy
+
+**Test Isolation (CRITICAL):**
+
+Each test suite must be **self-contained** - no dependency on other test suites having run first.
+
+```python
+# tests/golden/rag/retrieval/conftest.py
+@pytest.fixture(scope="module")
+def seeded_pinecone(pinecone_client, embedding_service):
+    """Setup: Upload seeds to Pinecone. Teardown: Delete them."""
+    namespace = "golden-retrieval"  # Unique namespace for this test suite
+
+    # Setup: Load seeds and upload to Pinecone
+    seeds = load_seed_documents("tests/golden/rag/seed_documents.json")
+    vectors = embed_and_upload(seeds, namespace)
+
+    yield namespace
+
+    # Teardown: Clean up vectors
+    pinecone_client.delete(namespace=namespace, delete_all=True)
+```
+
+**Why self-contained?**
+- CI runs test suites independently (no guaranteed order)
+- Parallel test execution must not interfere
+- Each run starts with clean state
+
+**Directory Structure:**
+```
+tests/golden/rag/
+├── seed_documents.json          # Created in this story, reused by 0.75.15+
+├── retrieval/
+│   ├── conftest.py              # Setup/teardown fixtures
+│   ├── samples.json             # Queries + expected results
+│   └── test_retrieval_golden.py # Golden sample tests
+```
+
+**Reusable:** The seed documents JSON file is reused by Stories 0.75.15, 0.75.17, 0.75.19, 0.75.20, 0.75.21, and 0.75.22 (each with its own namespace and setup/teardown).
 
 ---
 
@@ -580,15 +635,78 @@ As a **developer**,
 I want ranking logic for RAG results,
 So that the most relevant documents are prioritized.
 
+**Prerequisites:**
+- Story 0.75.14 (RAG Retrieval Service) complete
+- Seed documents file exists (`tests/golden/rag/seed_documents.json` created by 0.75.14)
+
 **Scope:**
 - Re-ranking based on relevance scores
 - Domain-specific boosting
 - Recency weighting (optional)
 - Result deduplication
-- Golden sample test suite (synthetic samples, minimum 10):
-  - Test that most relevant document ranks first
-  - Test domain-specific boosting effects
-  - Test deduplication removes near-duplicates
+
+**Golden Sample Test Suite (MANDATORY):**
+
+The dev agent implementing this story will:
+
+1. **Reuse seed documents file from Story 0.75.14**:
+   - DO NOT create new seed documents
+   - Read from existing `tests/golden/rag/seed_documents.json`
+   - Test suite uploads seeds to its OWN namespace (see Test Isolation below)
+
+2. **Create ranking samples** (`tests/golden/rag/ranking/samples.json`):
+   - Write queries that test ranking behavior directly (dev agent generates queries)
+   - Include queries where domain boosting should affect results
+   - Include queries to test deduplication
+   - Minimum 10 samples total
+
+3. **Create test suite** (`tests/golden/rag/ranking/test_ranking_golden.py`):
+   - Test that most relevant document ranks first
+   - Test domain-specific boosting effects
+   - Test deduplication removes near-duplicates
+   - Achieve ≥90% ranking accuracy
+
+**Test Isolation (CRITICAL):**
+
+This test suite must be **self-contained** - it uploads seeds itself, does not depend on Story 0.75.14 tests having run.
+
+```python
+# tests/golden/rag/ranking/conftest.py
+@pytest.fixture(scope="module")
+def seeded_pinecone(pinecone_client, embedding_service):
+    """Setup: Upload seeds to Pinecone. Teardown: Delete them."""
+    namespace = "golden-ranking"  # DIFFERENT namespace from retrieval tests
+
+    # Setup: Load same seeds, upload to OUR namespace
+    seeds = load_seed_documents("tests/golden/rag/seed_documents.json")
+    vectors = embed_and_upload(seeds, namespace)
+
+    yield namespace
+
+    # Teardown: Clean up vectors
+    pinecone_client.delete(namespace=namespace, delete_all=True)
+```
+
+**Why separate namespaces?**
+- `golden-retrieval` (Story 0.75.14) and `golden-ranking` (this story) are isolated
+- Tests can run in parallel without interference
+- Each test suite manages its own Pinecone state
+
+**Directory Structure:**
+```
+tests/golden/rag/
+├── seed_documents.json          # REUSED from Story 0.75.14 (do not modify)
+├── retrieval/                   # Created by Story 0.75.14
+│   ├── conftest.py              # namespace: golden-retrieval
+│   ├── samples.json
+│   └── test_retrieval_golden.py
+├── ranking/                     # Created in THIS story
+│   ├── conftest.py              # namespace: golden-ranking
+│   ├── samples.json             # Ranking-specific queries
+│   └── test_ranking_golden.py   # Ranking golden sample tests
+```
+
+**Why reuse seed documents file?** Same seed documents ensure consistent test data. Each test suite uploads independently to its own namespace, so there's no runtime dependency between test suites.
 
 ---
 

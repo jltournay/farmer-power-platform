@@ -3,7 +3,7 @@
 Story 0.75.5: Added LLM Gateway configuration.
 """
 
-from pydantic import SecretStr
+from pydantic import Field, SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -171,6 +171,62 @@ class Settings(BaseSettings):
     # Maximum chunks per document (safety limit to prevent runaway chunking)
     # If exceeded, chunking fails with an error
     max_chunks_per_document: int = 500
+
+    # ========================================
+    # Pinecone Configuration (Story 0.75.12)
+    # ========================================
+    # Note: validation_alias allows reading from PINECONE_* (without prefix)
+    # for consistency with other external service credentials (OpenRouter, Azure)
+
+    # Pinecone API key (required for embedding and vector operations)
+    pinecone_api_key: SecretStr | None = Field(
+        default=None,
+        validation_alias="PINECONE_API_KEY",
+    )
+
+    # Pinecone environment/region (e.g., "us-east-1")
+    pinecone_environment: str = Field(
+        default="us-east-1",
+        validation_alias="PINECONE_ENVIRONMENT",
+    )
+
+    # Pinecone index name for RAG vectors
+    pinecone_index_name: str = Field(
+        default="farmer-power-rag",
+        validation_alias="PINECONE_INDEX_NAME",
+    )
+
+    # Embedding model to use via Pinecone Inference API
+    # Default: multilingual-e5-large (1024 dimensions, 100+ languages)
+    pinecone_embedding_model: str = Field(
+        default="multilingual-e5-large",
+        validation_alias="PINECONE_EMBEDDING_MODEL",
+    )
+
+    # ========================================
+    # Embedding Batch Configuration (Story 0.75.12)
+    # ========================================
+
+    # Maximum texts per batch for Pinecone Inference API
+    # Pinecone limit is 96 texts per request
+    embedding_batch_size: int = 96
+
+    # Maximum tokens per text for embedding
+    # Texts exceeding this will be truncated at END
+    embedding_max_tokens: int = 1024
+
+    # Retry configuration for embedding API calls
+    # Uses exponential backoff (1s min, 10s max) with tenacity
+    embedding_retry_max_attempts: int = 3
+
+    @property
+    def pinecone_enabled(self) -> bool:
+        """Check if Pinecone is configured and available.
+
+        Pinecone is enabled only when API key is provided.
+        Used to determine whether embedding operations can proceed.
+        """
+        return bool(self.pinecone_api_key and self.pinecone_api_key.get_secret_value())
 
     @property
     def azure_doc_intel_enabled(self) -> bool:
