@@ -191,18 +191,37 @@ class ExtractionWorkflow:
                 file_size=len(content),
             )
 
-            # Create progress callback that updates job repository
-            async def update_progress(percent: int, pages_done: int, total: int) -> None:
-                # Use sync wrapper since callback is called from sync context
-                pass
+            # Create progress callback that updates job repository from sync context
+            # Uses asyncio.run_coroutine_threadsafe to schedule async updates
+            loop = asyncio.get_event_loop()
 
-            # For PDF extraction, we'll update progress synchronously within the extractor
-            # and then update the job after completion
+            def sync_progress_callback(percent: int, pages_done: int, total: int) -> None:
+                """Sync callback that schedules async job update."""
+                try:
+                    future = asyncio.run_coroutine_threadsafe(
+                        self._job_repo.update_progress(
+                            job_id=job_id,
+                            progress_percent=percent,
+                            pages_processed=pages_done,
+                            total_pages=total,
+                        ),
+                        loop,
+                    )
+                    # Wait for the update with a short timeout
+                    future.result(timeout=5.0)
+                except Exception as e:
+                    logger.warning(
+                        "Failed to update job progress",
+                        job_id=job_id,
+                        percent=percent,
+                        error=str(e),
+                    )
+
             try:
                 result = await self._extractor.extract(
                     content,
                     file_type,
-                    progress_callback=None,  # Progress logged but not persisted per-page
+                    progress_callback=sync_progress_callback,
                 )
             except PasswordProtectedError as e:
                 await self._job_repo.mark_failed(job_id, str(e))

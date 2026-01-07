@@ -217,6 +217,12 @@ class TestPDFExtraction:
         assert result.page_count == 10
         # Progress is logged at 10% intervals
         # With 10 pages, we expect callbacks at 10%, 20%, ... 100%
+        assert len(progress_calls) > 0, "Progress callback should have been called"
+        # Verify callback received correct total pages
+        assert all(total == 10 for _, _, total in progress_calls)
+        # Verify we got the 100% callback (final page)
+        percentages = [p for p, _, _ in progress_calls]
+        assert 100 in percentages, "Should have received 100% progress callback"
 
     @pytest.mark.asyncio
     async def test_extract_corrupted_pdf_raises_error(self):
@@ -226,6 +232,30 @@ class TestPDFExtraction:
 
         with pytest.raises(CorruptedFileError):
             await extractor.extract(corrupted_content, FileType.PDF)
+
+    @pytest.mark.asyncio
+    async def test_extract_password_protected_pdf_raises_error(self):
+        """Password-protected PDF raises PasswordProtectedError."""
+        import pymupdf
+        from ai_model.services.document_extractor import PasswordProtectedError
+
+        # Create a password-protected PDF using PyMuPDF
+        doc = pymupdf.open()
+        page = doc.new_page()
+        page.insert_text((50, 50), "Secret content")
+
+        # Encrypt with password
+        pdf_bytes = doc.tobytes(
+            encryption=pymupdf.PDF_ENCRYPT_AES_256,
+            user_pw="user123",
+            owner_pw="owner456",
+        )
+        doc.close()
+
+        extractor = DocumentExtractor()
+
+        with pytest.raises(PasswordProtectedError):
+            await extractor.extract(pdf_bytes, FileType.PDF)
 
 
 # ============================================

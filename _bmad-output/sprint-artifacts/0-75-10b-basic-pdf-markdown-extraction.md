@@ -108,8 +108,8 @@ So that digital PDF and Markdown content can be extracted and stored.
 **All story development MUST use feature branches.** Direct pushes to main are blocked.
 
 ### Story Start
-- [ ] GitHub Issue exists or created: `gh issue create --title "Story 0.75.10b: Basic PDF/Markdown Extraction"`
-- [ ] Feature branch created from main:
+- [x] GitHub Issue exists or created: #119
+- [x] Feature branch created from main:
   ```bash
   git checkout main && git pull origin main
   git checkout -b feature/0-75-10b-basic-pdf-markdown-extraction
@@ -118,14 +118,14 @@ So that digital PDF and Markdown content can be extracted and stored.
 **Branch name:** `feature/0-75-10b-basic-pdf-markdown-extraction`
 
 ### During Development
-- [ ] All commits reference GitHub issue: `Relates to #XX`
-- [ ] Commits are atomic by type (production, test, seed - not mixed)
-- [ ] Push to feature branch: `git push -u origin feature/0-75-10b-basic-pdf-markdown-extraction`
+- [x] All commits reference GitHub issue: `Relates to #119`
+- [x] Commits are atomic by type (production, test, seed - not mixed)
+- [x] Push to feature branch: `git push -u origin feature/0-75-10b-basic-pdf-markdown-extraction`
 
 ### Story Done
 - [ ] Create Pull Request: `gh pr create --title "Story 0.75.10b: Basic PDF/Markdown Extraction" --base main`
 - [ ] CI passes on PR (including E2E tests)
-- [ ] Code review completed (`/code-review` or human review)
+- [x] Code review completed (`/code-review` or human review)
 - [ ] PR approved and merged (squash)
 - [ ] Local branch cleaned up: `git branch -d feature/0-75-10b-basic-pdf-markdown-extraction`
 
@@ -741,16 +741,38 @@ class Settings(BaseSettings):
 
 ### Agent Model Used
 
-{{agent_model_name_version}}
+Claude Opus 4.5 (claude-opus-4-5-20251101)
 
 ### Debug Log References
 
 ### Completion Notes List
 
+1. **AC1 MIME Type Clarification**: The AC states "identifies file type from uploaded file extension and MIME type". Implementation uses **magic bytes** (e.g., `%PDF` header) + extension fallback instead of MIME type parameter. Rationale: Magic bytes are more reliable than client-provided MIME types which can be incorrect. This approach detects PDFs even with wrong extensions.
+
+2. **FastAPI Version Bump**: `fastapi` was bumped from `^0.109.0` to `^0.115.0` during `poetry lock`. This was a side-effect of adding new dependencies (pymupdf, azure-storage-blob) and is not directly related to story scope. CI passes with new version.
+
+3. **StreamExtractionProgress Real-time Updates**: Code review identified that `progress_callback` was not wired to update job repository. Fixed by using `asyncio.run_coroutine_threadsafe()` to schedule async MongoDB updates from sync extraction thread.
+
 ### File List
 
 **Created:**
-- (list new files)
+- `services/ai-model/src/ai_model/domain/extraction_job.py` - ExtractionJob Pydantic model and ExtractionJobStatus enum
+- `services/ai-model/src/ai_model/infrastructure/blob_storage.py` - Azure Blob Storage async client
+- `services/ai-model/src/ai_model/infrastructure/repositories/extraction_job_repository.py` - MongoDB repository for extraction jobs
+- `services/ai-model/src/ai_model/services/document_extractor.py` - PDF/Markdown/Text extraction using PyMuPDF
+- `services/ai-model/src/ai_model/services/extraction_workflow.py` - Async extraction workflow orchestration
+- `tests/unit/ai_model/test_document_extractor.py` - 16 unit tests for document extraction
+- `tests/unit/ai_model/test_extraction_job.py` - 12 unit tests for job tracking
 
 **Modified:**
-- (list modified files with brief description)
+- `proto/ai_model/v1/ai_model.proto` - Added ExtractDocument, GetExtractionJob, StreamExtractionProgress RPCs
+- `libs/fp-proto/src/fp_proto/ai_model/v1/ai_model_pb2.py` - Regenerated proto stubs
+- `libs/fp-proto/src/fp_proto/ai_model/v1/ai_model_pb2.pyi` - Regenerated type stubs
+- `libs/fp-proto/src/fp_proto/ai_model/v1/ai_model_pb2_grpc.py` - Regenerated gRPC stubs
+- `services/ai-model/pyproject.toml` - Added pymupdf, azure-storage-blob dependencies
+- `services/ai-model/poetry.lock` - Updated lockfile
+- `services/ai-model/src/ai_model/config.py` - Added Azure Blob and extraction settings
+- `services/ai-model/src/ai_model/api/rag_document_service.py` - Implemented extraction RPCs
+- `services/ai-model/src/ai_model/infrastructure/repositories/__init__.py` - Exported ExtractionJobRepository
+- `services/ai-model/src/ai_model/services/__init__.py` - Exported extraction classes
+- `.github/workflows/ci.yaml` - Added pymupdf to CI dependencies

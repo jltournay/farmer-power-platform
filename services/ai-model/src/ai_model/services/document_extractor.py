@@ -231,6 +231,10 @@ class DocumentExtractor:
                 doc.close()
                 if isinstance(e, (PasswordProtectedError, CorruptedFileError)):
                     raise
+                # Check if error indicates password protection
+                error_msg = str(e).lower()
+                if "password" in error_msg or "encrypted" in error_msg:
+                    raise PasswordProtectedError("PDF is password-protected")
                 raise CorruptedFileError(f"Error during PDF extraction: {e}")
 
         text, page_count, confidence = await loop.run_in_executor(_executor, _sync_extract)
