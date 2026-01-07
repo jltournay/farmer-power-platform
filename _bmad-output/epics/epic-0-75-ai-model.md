@@ -577,31 +577,53 @@ The dev agent implementing this story will:
    - Include at least 2 domains: disease, weather
    - Each document 200-500 words with realistic agronomic content
 
-2. **Upload seeds to Pinecone**:
-   - Embed documents using EmbeddingService
-   - Upsert to Pinecone namespace `golden-samples`
-
-3. **Create golden samples** (`tests/golden/rag/retrieval/samples.json`):
+2. **Create golden samples** (`tests/golden/rag/retrieval/samples.json`):
    - Write 2-3 queries per seed document directly (dev agent generates queries)
-   - Validate each query retrieves expected document from Pinecone
    - Minimum 10 samples total
 
-4. **Create test suite** (`tests/golden/rag/retrieval/test_retrieval_golden.py`):
+3. **Create test suite** (`tests/golden/rag/retrieval/test_retrieval_golden.py`):
    - Test that known queries return expected document chunks
    - Test confidence threshold filtering
    - Test multi-domain retrieval accuracy
    - Achieve ≥85% retrieval accuracy
+
+**Test Isolation (CRITICAL):**
+
+Each test suite must be **self-contained** - no dependency on other test suites having run first.
+
+```python
+# tests/golden/rag/retrieval/conftest.py
+@pytest.fixture(scope="module")
+def seeded_pinecone(pinecone_client, embedding_service):
+    """Setup: Upload seeds to Pinecone. Teardown: Delete them."""
+    namespace = "golden-retrieval"  # Unique namespace for this test suite
+
+    # Setup: Load seeds and upload to Pinecone
+    seeds = load_seed_documents("tests/golden/rag/seed_documents.json")
+    vectors = embed_and_upload(seeds, namespace)
+
+    yield namespace
+
+    # Teardown: Clean up vectors
+    pinecone_client.delete(namespace=namespace, delete_all=True)
+```
+
+**Why self-contained?**
+- CI runs test suites independently (no guaranteed order)
+- Parallel test execution must not interfere
+- Each run starts with clean state
 
 **Directory Structure:**
 ```
 tests/golden/rag/
 ├── seed_documents.json          # Created in this story, reused by 0.75.15+
 ├── retrieval/
+│   ├── conftest.py              # Setup/teardown fixtures
 │   ├── samples.json             # Queries + expected results
 │   └── test_retrieval_golden.py # Golden sample tests
 ```
 
-**Reusable:** The seed documents created here are reused by Stories 0.75.15, 0.75.17, 0.75.19, 0.75.20, 0.75.21, and 0.75.22.
+**Reusable:** The seed documents JSON file is reused by Stories 0.75.15, 0.75.17, 0.75.19, 0.75.20, 0.75.21, and 0.75.22 (each with its own namespace and setup/teardown).
 
 ---
 
@@ -615,7 +637,7 @@ So that the most relevant documents are prioritized.
 
 **Prerequisites:**
 - Story 0.75.14 (RAG Retrieval Service) complete
-- Seed documents already in Pinecone (uploaded by Story 0.75.14)
+- Seed documents file exists (`tests/golden/rag/seed_documents.json` created by 0.75.14)
 
 **Scope:**
 - Re-ranking based on relevance scores
@@ -627,10 +649,10 @@ So that the most relevant documents are prioritized.
 
 The dev agent implementing this story will:
 
-1. **Reuse seed documents from Story 0.75.14**:
+1. **Reuse seed documents file from Story 0.75.14**:
    - DO NOT create new seed documents
-   - Use existing `tests/golden/rag/seed_documents.json`
-   - Seeds are already uploaded to Pinecone namespace `golden-samples`
+   - Read from existing `tests/golden/rag/seed_documents.json`
+   - Test suite uploads seeds to its OWN namespace (see Test Isolation below)
 
 2. **Create ranking samples** (`tests/golden/rag/ranking/samples.json`):
    - Write queries that test ranking behavior directly (dev agent generates queries)
@@ -644,19 +666,47 @@ The dev agent implementing this story will:
    - Test deduplication removes near-duplicates
    - Achieve ≥90% ranking accuracy
 
+**Test Isolation (CRITICAL):**
+
+This test suite must be **self-contained** - it uploads seeds itself, does not depend on Story 0.75.14 tests having run.
+
+```python
+# tests/golden/rag/ranking/conftest.py
+@pytest.fixture(scope="module")
+def seeded_pinecone(pinecone_client, embedding_service):
+    """Setup: Upload seeds to Pinecone. Teardown: Delete them."""
+    namespace = "golden-ranking"  # DIFFERENT namespace from retrieval tests
+
+    # Setup: Load same seeds, upload to OUR namespace
+    seeds = load_seed_documents("tests/golden/rag/seed_documents.json")
+    vectors = embed_and_upload(seeds, namespace)
+
+    yield namespace
+
+    # Teardown: Clean up vectors
+    pinecone_client.delete(namespace=namespace, delete_all=True)
+```
+
+**Why separate namespaces?**
+- `golden-retrieval` (Story 0.75.14) and `golden-ranking` (this story) are isolated
+- Tests can run in parallel without interference
+- Each test suite manages its own Pinecone state
+
 **Directory Structure:**
 ```
 tests/golden/rag/
 ├── seed_documents.json          # REUSED from Story 0.75.14 (do not modify)
 ├── retrieval/                   # Created by Story 0.75.14
+│   ├── conftest.py              # namespace: golden-retrieval
 │   ├── samples.json
 │   └── test_retrieval_golden.py
 ├── ranking/                     # Created in THIS story
+│   ├── conftest.py              # namespace: golden-ranking
 │   ├── samples.json             # Ranking-specific queries
 │   └── test_ranking_golden.py   # Ranking golden sample tests
 ```
 
-**Why reuse seed documents?** Same seed documents ensure consistent test data across retrieval and ranking tests. Creating new documents would require re-uploading to Pinecone and could introduce inconsistencies.
+**Why reuse seed documents file?** Same seed documents ensure consistent test data. Each test suite uploads independently to its own namespace, so there's no runtime dependency between test suites.
 
 ---
 
