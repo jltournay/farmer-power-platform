@@ -237,21 +237,30 @@ class EmbeddingService:
         Returns:
             Tuple of (result dict with embeddings and tokens, retry count).
         """
-        retry_count = 0
+        # Track retries via mutable container (incremented before each retry)
+        retry_state = {"count": 0}
+
+        def _before_retry(retry_state_inner: Any) -> None:
+            """Callback invoked before each retry attempt."""
+            retry_state["count"] += 1
+            logger.debug(
+                "Retrying embed batch",
+                batch_index=batch_index,
+                attempt=retry_state["count"],
+            )
 
         @retry(
             stop=stop_after_attempt(self._settings.embedding_retry_max_attempts),
             wait=wait_exponential(multiplier=1, min=1, max=10),
             retry=retry_if_exception_type((ConnectionError, TimeoutError, OSError)),
+            before_sleep=_before_retry,
             reraise=True,
         )
         async def _do_embed() -> dict[str, Any]:
-            nonlocal retry_count
-
             client = self._get_client()
 
             # Run Pinecone embed in a thread pool since it's synchronous
-            loop = asyncio.get_event_loop()
+            loop = asyncio.get_running_loop()
             result = await loop.run_in_executor(
                 None,
                 lambda: client.inference.embed(
@@ -279,16 +288,12 @@ class EmbeddingService:
 
         try:
             result = await _do_embed()
-            return result, retry_count
+            return result, retry_state["count"]
         except Exception as e:
-            # Count retries from tenacity statistics if available
-            if hasattr(_do_embed, "retry"):
-                stats = _do_embed.retry.statistics  # type: ignore[attr-defined]
-                retry_count = stats.get("attempt_number", 1) - 1
             logger.warning(
                 "Embed batch failed after retries",
                 batch_index=batch_index,
-                retry_count=retry_count,
+                retry_count=retry_state["count"],
                 error=str(e),
             )
             raise

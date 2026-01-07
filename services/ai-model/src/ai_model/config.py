@@ -216,8 +216,8 @@ class Settings(BaseSettings):
     embedding_max_tokens: int = 1024
 
     # Retry configuration for embedding API calls
+    # Uses exponential backoff (1s min, 10s max) with tenacity
     embedding_retry_max_attempts: int = 3
-    embedding_retry_backoff_ms: list[int] = [1000, 2000, 4000]
 
     @property
     def pinecone_enabled(self) -> bool:

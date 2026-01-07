@@ -36,6 +36,13 @@ from ai_model.domain.cost_event import (
     LlmCostEvent,
     ModelCost,
 )
+from ai_model.domain.embedding import (
+    EmbeddingCostEvent,
+    EmbeddingInputType,
+    EmbeddingRequest,
+    EmbeddingResult,
+    EmbeddingUsage,
+)
 from ai_model.domain.prompt import (
     Prompt,
     PromptABTest,
@@ -52,13 +59,6 @@ from ai_model.domain.rag_document import (
     RAGDocumentMetadata,
     RagDocumentStatus,
     SourceFile,
-)
-from ai_model.domain.embedding import (
-    EmbeddingCostEvent,
-    EmbeddingInputType,
-    EmbeddingRequest,
-    EmbeddingResult,
-    EmbeddingUsage,
 )
 
 __all__ = [

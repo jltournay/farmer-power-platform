@@ -49,7 +49,6 @@ def mock_pinecone_settings() -> Settings:
         pinecone_embedding_model="multilingual-e5-large",
         embedding_batch_size=96,
         embedding_retry_max_attempts=3,
-        embedding_retry_backoff_ms=[100, 200, 400],
     )
     return settings
 
