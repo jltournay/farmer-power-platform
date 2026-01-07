@@ -1,6 +1,6 @@
 /# Story 0.75.13: RAG Vector Storage (Pinecone Repository)
 
-**Status:** in-progress
+**Status:** review
 **GitHub Issue:** #129
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
@@ -106,13 +106,13 @@ So that embeddings can be stored and queried efficiently for knowledge retrieval
 - [x] Push to feature branch: `git push -u origin feature/0-75-13-rag-vector-storage`
 
 ### Story Done
-- [ ] Create Pull Request: `gh pr create --title "Story 0.75.13: RAG Vector Storage (Pinecone Repository)" --base main`
-- [ ] CI passes on PR (including lint and unit tests)
+- [x] Create Pull Request: `gh pr create --title "Story 0.75.13: RAG Vector Storage (Pinecone Repository)" --base main`
+- [x] CI passes on PR (including lint and unit tests)
 - [ ] Code review completed (`/code-review` or human review)
 - [ ] PR approved and merged (squash)
 - [ ] Local branch cleaned up: `git branch -d feature/0-75-13-rag-vector-storage`
 
-**PR URL:** _______________ (fill in when created)
+**PR URL:** https://github.com/jltournay/farmer-power-platform/pull/130
 
 ---
 
