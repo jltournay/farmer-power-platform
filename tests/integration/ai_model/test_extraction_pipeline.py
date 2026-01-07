@@ -15,6 +15,8 @@ import pytest
 
 # Skip entire module if pymupdf is not available
 pymupdf = pytest.importorskip("pymupdf", reason="pymupdf required for extraction tests")
+
+# ruff: noqa: E402
 from ai_model.domain.extraction_job import ExtractionJob, ExtractionJobStatus
 from ai_model.domain.rag_document import (
     FileType,
