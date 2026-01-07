@@ -1,6 +1,7 @@
 """Unit tests for DocumentExtractor service.
 
 Story 0.75.10b: Basic PDF/Markdown Extraction
+Story 0.75.10c: Azure Document Intelligence Integration
 
 Tests cover:
 - File type detection (magic bytes and extension)
@@ -9,9 +10,13 @@ Tests cover:
 - Plain text extraction
 - Error handling for corrupted/password-protected files
 - Confidence calculation
+- Integration tests for Azure DI extraction flow (0.75.10c)
 """
 
+from unittest.mock import AsyncMock, MagicMock
+
 import pytest
+from ai_model.config import Settings
 from ai_model.domain.rag_document import ExtractionMethod, FileType
 from ai_model.services.document_extractor import (
     CorruptedFileError,
@@ -344,3 +349,187 @@ class TestConfidenceCalculation:
         result = await extractor.extract(pdf_content, FileType.PDF)
 
         assert result.confidence <= 1.0
+
+
+# ============================================
+# Integration Tests (Story 0.75.10c)
+# ============================================
+
+
+class TestAzureDIIntegration:
+    """Integration tests for Azure DI extraction flow.
+
+    Story 0.75.10c: Azure Document Intelligence Integration
+
+    These tests verify the full extraction flow with mocked Azure DI responses,
+    ensuring proper routing between PyMuPDF and Azure DI based on PDF characteristics.
+    """
+
+    @pytest.mark.asyncio
+    async def test_full_extraction_flow_digital_pdf_bypasses_azure_di(self):
+        """Digital PDF bypasses Azure DI and uses PyMuPDF directly.
+
+        Even when Azure DI is configured, digital PDFs (high confidence)
+        should not trigger Azure DI calls.
+        """
+        # Create mock Azure DI client (should NOT be called)
+        mock_azure_client = MagicMock()
+        mock_azure_client.analyze_pdf = AsyncMock()
+
+        # Create settings with Azure DI enabled
+        settings = Settings()
+        settings.azure_doc_intel_endpoint = "https://test.cognitiveservices.azure.com"
+        settings.azure_doc_intel_key = MagicMock()
+        settings.azure_doc_intel_key.get_secret_value = MagicMock(return_value="test-key")
+
+        extractor = DocumentExtractor(
+            azure_di_client=mock_azure_client,
+            settings=settings,
+        )
+
+        # Create text-rich digital PDF (should NOT trigger Azure DI)
+        pdf_content = create_text_rich_pdf(pages=3)
+
+        result = await extractor.extract(pdf_content, FileType.PDF)
+
+        # Verify Azure DI was NOT called
+        mock_azure_client.analyze_pdf.assert_not_called()
+
+        # Verify PyMuPDF was used
+        assert result.extraction_method == ExtractionMethod.TEXT_EXTRACTION
+        assert result.page_count == 3
+        assert result.confidence > 0.5  # High confidence for digital PDF
+
+    @pytest.mark.asyncio
+    async def test_full_extraction_flow_scanned_pdf_uses_azure_di(self):
+        """Scanned PDF routes to Azure DI when configured.
+
+        Low-confidence PDFs (scanned/image-based) should trigger Azure DI
+        when the client is available and configured.
+        """
+        # Create mock Azure DI client
+        mock_azure_client = MagicMock()
+        mock_azure_client.analyze_pdf = AsyncMock(
+            return_value=MagicMock(
+                markdown_content="# OCR Extracted Title\n\nExtracted text from scanned document.",
+                page_count=5,
+                confidence=0.92,
+                paragraphs_count=10,
+                tables_count=0,
+            )
+        )
+
+        # Create settings with Azure DI enabled
+        settings = Settings()
+        settings.azure_doc_intel_endpoint = "https://test.cognitiveservices.azure.com"
+        settings.azure_doc_intel_key = MagicMock()
+        settings.azure_doc_intel_key.get_secret_value = MagicMock(return_value="test-key")
+
+        extractor = DocumentExtractor(
+            azure_di_client=mock_azure_client,
+            settings=settings,
+        )
+
+        # Create empty PDF to trigger scanned detection
+        pdf_content = create_empty_pdf()
+
+        result = await extractor.extract(pdf_content, FileType.PDF)
+
+        # Verify Azure DI was called
+        mock_azure_client.analyze_pdf.assert_called_once()
+
+        # Verify result uses Azure DI extraction method
+        assert result.extraction_method == ExtractionMethod.AZURE_DOC_INTEL
+        assert result.page_count == 5
+        assert result.confidence == 0.92
+        assert "OCR Extracted Title" in result.content
+
+    @pytest.mark.asyncio
+    async def test_full_extraction_flow_scanned_pdf_fallback_on_error(self):
+        """Scanned PDF falls back to PyMuPDF when Azure DI fails.
+
+        If Azure DI raises an error, the extractor should gracefully
+        fall back to PyMuPDF and include a warning.
+        """
+        # Create mock Azure DI client that fails
+        mock_azure_client = MagicMock()
+        mock_azure_client.analyze_pdf = AsyncMock(side_effect=RuntimeError("Azure service unavailable"))
+
+        # Create settings with Azure DI enabled
+        settings = Settings()
+        settings.azure_doc_intel_endpoint = "https://test.cognitiveservices.azure.com"
+        settings.azure_doc_intel_key = MagicMock()
+        settings.azure_doc_intel_key.get_secret_value = MagicMock(return_value="test-key")
+
+        extractor = DocumentExtractor(
+            azure_di_client=mock_azure_client,
+            settings=settings,
+        )
+
+        # Create empty PDF to trigger scanned detection
+        pdf_content = create_empty_pdf()
+
+        result = await extractor.extract(pdf_content, FileType.PDF)
+
+        # Verify Azure DI was attempted
+        mock_azure_client.analyze_pdf.assert_called_once()
+
+        # Verify fallback to PyMuPDF
+        assert result.extraction_method == ExtractionMethod.TEXT_EXTRACTION
+
+        # Verify warning was added
+        assert len(result.warnings) > 0
+        assert "Azure DI failed" in result.warnings[0]
+
+    @pytest.mark.asyncio
+    async def test_full_extraction_flow_with_progress_callback(self):
+        """Progress callback is invoked correctly during Azure DI extraction."""
+        progress_calls = []
+
+        def progress_callback(percent, pages_done, total):
+            progress_calls.append((percent, pages_done, total))
+
+        # Create mock Azure DI client that calls progress callback
+        async def mock_analyze_pdf(content, progress_callback=None, **kwargs):
+            # Simulate progress updates during analysis
+            if progress_callback:
+                progress_callback(50, 2, 5)
+                progress_callback(100, 5, 5)
+            return MagicMock(
+                markdown_content="# Title\n\nContent",
+                page_count=5,
+                confidence=0.95,
+                paragraphs_count=3,
+                tables_count=0,
+            )
+
+        mock_azure_client = MagicMock()
+        mock_azure_client.analyze_pdf = mock_analyze_pdf
+
+        # Create settings with Azure DI enabled
+        settings = Settings()
+        settings.azure_doc_intel_endpoint = "https://test.cognitiveservices.azure.com"
+        settings.azure_doc_intel_key = MagicMock()
+        settings.azure_doc_intel_key.get_secret_value = MagicMock(return_value="test-key")
+
+        extractor = DocumentExtractor(
+            azure_di_client=mock_azure_client,
+            settings=settings,
+        )
+
+        # Create empty PDF to trigger scanned detection
+        pdf_content = create_empty_pdf()
+
+        result = await extractor.extract(
+            pdf_content,
+            FileType.PDF,
+            progress_callback=progress_callback,
+        )
+
+        # Verify progress callbacks were received
+        assert len(progress_calls) == 2
+        assert progress_calls[0] == (50, 2, 5)
+        assert progress_calls[1] == (100, 5, 5)
+
+        # Verify extraction completed
+        assert result.extraction_method == ExtractionMethod.AZURE_DOC_INTEL

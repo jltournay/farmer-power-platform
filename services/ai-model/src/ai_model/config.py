@@ -131,6 +131,39 @@ class Settings(BaseSettings):
     # Thread pool size for PDF extraction (PyMuPDF is synchronous)
     extraction_max_workers: int = 4
 
+    # ========================================
+    # Azure Document Intelligence (Story 0.75.10c)
+    # ========================================
+
+    # Azure Document Intelligence endpoint URL
+    # Format: https://<resource-name>.cognitiveservices.azure.com/
+    azure_doc_intel_endpoint: str = ""
+
+    # Azure Document Intelligence API key
+    azure_doc_intel_key: SecretStr | None = None
+
+    # Azure DI model ID for layout analysis (default: prebuilt-layout)
+    # Options: prebuilt-layout (best for general docs), prebuilt-read (text only)
+    azure_doc_intel_model: str = "prebuilt-layout"
+
+    # Timeout in seconds for Azure DI operations (async polling)
+    azure_doc_intel_timeout: int = 300
+
+    # Cost tracking: estimated cost per page in USD
+    azure_doc_intel_cost_per_page: float = 0.01
+
+    @property
+    def azure_doc_intel_enabled(self) -> bool:
+        """Check if Azure Document Intelligence is configured and available.
+
+        Azure DI is enabled only when both endpoint and key are provided.
+        Used to determine whether to route scanned PDFs to Azure DI or
+        fall back to PyMuPDF with a warning.
+        """
+        return bool(
+            self.azure_doc_intel_endpoint and self.azure_doc_intel_key and self.azure_doc_intel_key.get_secret_value()
+        )
+
 
 # Global settings instance
 settings = Settings()

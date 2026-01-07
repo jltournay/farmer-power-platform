@@ -5,23 +5,33 @@ async document extraction jobs, tracking progress and updating document
 metadata upon completion.
 
 Story 0.75.10b: Basic PDF/Markdown Extraction
+Story 0.75.10c: Azure Document Intelligence Integration
 """
+
+from __future__ import annotations
 
 import asyncio
 import uuid
 from datetime import UTC, datetime
+from typing import TYPE_CHECKING
 
 import structlog
+from ai_model.config import Settings
 from ai_model.domain.extraction_job import ExtractionJob, ExtractionJobStatus
-from ai_model.domain.rag_document import RagDocument
+from ai_model.domain.rag_document import RagDocument  # noqa: TC002
 from ai_model.infrastructure.blob_storage import BlobNotFoundError, BlobStorageClient
-from ai_model.infrastructure.repositories import ExtractionJobRepository, RagDocumentRepository
+from ai_model.infrastructure.repositories import ExtractionJobRepository, RagDocumentRepository  # noqa: TC002
 from ai_model.services.document_extractor import (
     CorruptedFileError,
     DocumentExtractor,
     ExtractionError,
     PasswordProtectedError,
 )
+
+if TYPE_CHECKING:
+    from ai_model.infrastructure.azure_doc_intel_client import (
+        AzureDocumentIntelligenceClient,
+    )
 
 logger = structlog.get_logger(__name__)
 
@@ -51,12 +61,19 @@ class ExtractionWorkflow:
     - RagDocumentRepository: Get document and update extraction metadata
     - ExtractionJobRepository: Track job progress
     - BlobStorageClient: Download source files
-    - DocumentExtractor: Perform extraction
+    - DocumentExtractor: Perform extraction (with optional Azure DI for scanned PDFs)
 
     Usage:
-        workflow = ExtractionWorkflow(doc_repo, job_repo, blob_client, extractor)
+        # Basic usage (no Azure DI)
+        workflow = ExtractionWorkflow(doc_repo, job_repo, blob_client)
         job_id = await workflow.start_extraction(document_id)
-        # Job runs in background, query job_repo for status
+
+        # With Azure DI for scanned PDFs (Story 0.75.10c)
+        workflow = ExtractionWorkflow(
+            doc_repo, job_repo, blob_client,
+            settings=settings,  # Will create Azure DI client if configured
+        )
+        job_id = await workflow.start_extraction(document_id)
     """
 
     def __init__(
@@ -64,7 +81,8 @@ class ExtractionWorkflow:
         document_repository: RagDocumentRepository,
         job_repository: ExtractionJobRepository,
         blob_client: BlobStorageClient,
-        extractor: DocumentExtractor,
+        extractor: DocumentExtractor | None = None,
+        settings: Settings | None = None,
     ) -> None:
         """Initialize the extraction workflow.
 
@@ -72,13 +90,39 @@ class ExtractionWorkflow:
             document_repository: Repository for RAG documents.
             job_repository: Repository for extraction jobs.
             blob_client: Client for Azure Blob storage.
-            extractor: Document content extractor.
+            extractor: Optional document content extractor.
+                      If None, creates one with Azure DI if configured.
+            settings: Optional settings for Azure DI configuration.
         """
         self._doc_repo = document_repository
         self._job_repo = job_repository
         self._blob_client = blob_client
-        self._extractor = extractor
+        self._settings = settings or Settings()
         self._active_tasks: dict[str, asyncio.Task] = {}
+
+        # Create extractor with Azure DI client if configured
+        if extractor is not None:
+            self._extractor = extractor
+        else:
+            azure_di_client: AzureDocumentIntelligenceClient | None = None
+            if self._settings.azure_doc_intel_enabled:
+                try:
+                    from ai_model.infrastructure.azure_doc_intel_client import (
+                        AzureDocumentIntelligenceClient,
+                    )
+
+                    azure_di_client = AzureDocumentIntelligenceClient(self._settings)
+                    logger.info("Azure DI client initialized for extraction workflow")
+                except Exception as e:
+                    logger.warning(
+                        "Failed to initialize Azure DI client",
+                        error=str(e),
+                    )
+
+            self._extractor = DocumentExtractor(
+                azure_di_client=azure_di_client,
+                settings=self._settings,
+            )
 
     async def start_extraction(self, document_id: str, version: int | None = None) -> str:
         """Start an async extraction job for a document.
@@ -222,6 +266,8 @@ class ExtractionWorkflow:
                     content,
                     file_type,
                     progress_callback=sync_progress_callback,
+                    document_id=document.document_id,
+                    job_id=job_id,
                 )
             except PasswordProtectedError as e:
                 await self._job_repo.mark_failed(job_id, str(e))
@@ -262,12 +308,23 @@ class ExtractionWorkflow:
                 },
             )
 
-            # Mark job as completed
+            # Mark job as completed with extraction method
             await self._job_repo.mark_completed(
                 job_id,
                 pages_processed=result.page_count,
                 total_pages=result.page_count,
+                extraction_method=result.extraction_method,
             )
+
+            # Log any warnings (e.g., fallback scenarios)
+            if result.warnings:
+                for warning in result.warnings:
+                    logger.warning(
+                        "Extraction warning",
+                        job_id=job_id,
+                        document_id=document.document_id,
+                        warning=warning,
+                    )
 
             logger.info(
                 "Extraction completed",
