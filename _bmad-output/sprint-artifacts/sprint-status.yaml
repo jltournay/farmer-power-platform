@@ -173,7 +173,7 @@ development_status:
   0-75-9-pydantic-model-rag-document-storage: done  # github_issue: 107 - RagDocument, RagChunk models
   0-75-10-grpc-model-rag-document: done  # github_issue: 117, PR: #118 - Proto + gRPC service (metadata only)
   0-75-10b-basic-pdf-markdown-extraction: review  # github_issue: 119, PyMuPDF, Markdown parsing, async jobs
-  0-75-10c-azure-document-intelligence-integration: done  # Scanned PDF OCR, github_issue: 121
+  0-75-10c-azure-document-intelligence-integration: done  # Scanned PDF OCR, github_issue: 121, PR: #122
   0-75-10d-semantic-chunking: backlog  # Chunk by semantic boundaries
   0-75-11-cli-rag-document: backlog  # fp-knowledge CLI with job-status
   0-75-12-rag-embedding-configuration: backlog  # Pinecone Inference (not separate OpenAI)
