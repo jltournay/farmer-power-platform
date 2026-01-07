@@ -11,8 +11,10 @@ import asyncio
 from datetime import UTC, datetime
 from unittest.mock import AsyncMock, MagicMock
 
-import pymupdf
 import pytest
+
+# Skip entire module if pymupdf is not available
+pymupdf = pytest.importorskip("pymupdf", reason="pymupdf required for extraction tests")
 from ai_model.domain.extraction_job import ExtractionJob, ExtractionJobStatus
 from ai_model.domain.rag_document import (
     FileType,
@@ -51,7 +53,9 @@ class TestExtractionPipelineIntegration:
         db = MagicMock()
         # Mock extraction_jobs collection
         jobs_collection = MagicMock()
-        db.__getitem__ = MagicMock(side_effect=lambda name: jobs_collection if name == "extraction_jobs" else MagicMock())
+        db.__getitem__ = MagicMock(
+            side_effect=lambda name: jobs_collection if name == "extraction_jobs" else MagicMock()
+        )
         return db
 
     @pytest.fixture
