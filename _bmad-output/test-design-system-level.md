@@ -533,21 +533,22 @@ RAG stories require Pinecone access for:
 
 **Environment Variables (from `services/ai-model/src/ai_model/config.py`):**
 
+Note: Pinecone settings use `validation_alias` to read directly from `PINECONE_*` environment variables (no `AI_MODEL_` prefix), consistent with other external service credentials (OpenRouter, Azure).
+
 | Setting | Environment Variable | Required | Default |
 |---------|---------------------|----------|---------|
-| `pinecone_api_key` | `AI_MODEL_PINECONE_API_KEY` | **Yes** | None |
-| `pinecone_environment` | `AI_MODEL_PINECONE_ENVIRONMENT` | No | `us-east-1` |
-| `pinecone_index_name` | `AI_MODEL_PINECONE_INDEX_NAME` | No | `farmer-power-rag` |
-| `pinecone_embedding_model` | `AI_MODEL_PINECONE_EMBEDDING_MODEL` | No | `multilingual-e5-large` |
+| `pinecone_api_key` | `PINECONE_API_KEY` | **Yes** | None |
+| `pinecone_environment` | `PINECONE_ENVIRONMENT` | No | `us-east-1` |
+| `pinecone_index_name` | `PINECONE_INDEX_NAME` | No | `farmer-power-rag` |
+| `pinecone_embedding_model` | `PINECONE_EMBEDDING_MODEL` | No | `multilingual-e5-large` |
 
 **Developer Setup (Before Story 0.75.12):**
 
 1. Obtain Pinecone API key from https://www.pinecone.io/ (free tier available)
 2. Add to `.env`:
    ```bash
-   AI_MODEL_PINECONE_API_KEY=pc-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-   AI_MODEL_PINECONE_ENVIRONMENT=us-east-1
-   AI_MODEL_PINECONE_INDEX_NAME=farmer-power-dev
+   PINECONE_API_KEY=pc-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+   PINECONE_INDEX_NAME=farmer-power-dev
    ```
 3. Verify connection: `python -c "from ai_model.config import settings; print(settings.pinecone_enabled)"`
 

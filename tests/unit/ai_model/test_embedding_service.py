@@ -55,9 +55,20 @@ def mock_pinecone_settings() -> Settings:
 
 
 @pytest.fixture
-def mock_pinecone_settings_disabled() -> Settings:
-    """Create settings without Pinecone configured."""
+def mock_pinecone_settings_disabled(monkeypatch) -> Settings:
+    """Create settings without Pinecone configured.
+
+    Uses monkeypatch to unset PINECONE_API_KEY from environment
+    and _env_file=None to disable .env file reading since
+    validation_alias would otherwise read from .env file.
+    """
+    # Unset the environment variable to ensure Settings doesn't read from env
+    monkeypatch.delenv("PINECONE_API_KEY", raising=False)
+    monkeypatch.delenv("AI_MODEL_PINECONE_API_KEY", raising=False)
+
+    # Disable .env file reading by passing _env_file=None
     settings = Settings(
+        _env_file=None,  # Disable .env file reading for this test
         pinecone_api_key=None,  # Not configured
         pinecone_environment="us-east-1",
         pinecone_index_name="test-index",

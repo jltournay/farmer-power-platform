@@ -3,7 +3,7 @@
 Story 0.75.5: Added LLM Gateway configuration.
 """
 
-from pydantic import SecretStr
+from pydantic import Field, SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -175,19 +175,33 @@ class Settings(BaseSettings):
     # ========================================
     # Pinecone Configuration (Story 0.75.12)
     # ========================================
+    # Note: validation_alias allows reading from PINECONE_* (without prefix)
+    # for consistency with other external service credentials (OpenRouter, Azure)
 
     # Pinecone API key (required for embedding and vector operations)
-    pinecone_api_key: SecretStr | None = None
+    pinecone_api_key: SecretStr | None = Field(
+        default=None,
+        validation_alias="PINECONE_API_KEY",
+    )
 
     # Pinecone environment/region (e.g., "us-east-1")
-    pinecone_environment: str = "us-east-1"
+    pinecone_environment: str = Field(
+        default="us-east-1",
+        validation_alias="PINECONE_ENVIRONMENT",
+    )
 
     # Pinecone index name for RAG vectors
-    pinecone_index_name: str = "farmer-power-rag"
+    pinecone_index_name: str = Field(
+        default="farmer-power-rag",
+        validation_alias="PINECONE_INDEX_NAME",
+    )
 
     # Embedding model to use via Pinecone Inference API
     # Default: multilingual-e5-large (1024 dimensions, 100+ languages)
-    pinecone_embedding_model: str = "multilingual-e5-large"
+    pinecone_embedding_model: str = Field(
+        default="multilingual-e5-large",
+        validation_alias="PINECONE_EMBEDDING_MODEL",
+    )
 
     # ========================================
     # Embedding Batch Configuration (Story 0.75.12)
