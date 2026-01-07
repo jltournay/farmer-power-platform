@@ -219,6 +219,14 @@ class Settings(BaseSettings):
     # Uses exponential backoff (1s min, 10s max) with tenacity
     embedding_retry_max_attempts: int = 3
 
+    # ========================================
+    # Vectorization Pipeline Configuration (Story 0.75.13b)
+    # ========================================
+
+    # Number of chunks to process per batch in vectorization pipeline
+    # Balances memory usage with throughput
+    vectorization_batch_size: int = 50
+
     @property
     def pinecone_enabled(self) -> bool:
         """Check if Pinecone is configured and available.

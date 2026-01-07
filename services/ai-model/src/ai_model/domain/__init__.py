@@ -7,6 +7,7 @@ Story 0.75.5: Added LlmCostEvent and related cost models.
 Story 0.75.9: Added RagDocument, RagChunk, and related RAG models.
 Story 0.75.12: Added Embedding domain models.
 Story 0.75.13: Added Vector store domain models.
+Story 0.75.13b: Added Vectorization pipeline domain models.
 """
 
 from ai_model.domain.agent_config import (
@@ -71,6 +72,13 @@ from ai_model.domain.vector_store import (
     VectorMetadata,
     VectorUpsertRequest,
 )
+from ai_model.domain.vectorization import (
+    FailedChunk,
+    VectorizationJob,
+    VectorizationJobStatus,
+    VectorizationProgress,
+    VectorizationResult,
+)
 
 __all__ = [
     "VECTOR_DIMENSIONS",
@@ -92,6 +100,7 @@ __all__ = [
     "ExplorerConfig",
     "ExtractionMethod",
     "ExtractorConfig",
+    "FailedChunk",
     "FileType",
     "GeneratorConfig",
     "IndexStats",
@@ -123,4 +132,8 @@ __all__ = [
     "UpsertResult",
     "VectorMetadata",
     "VectorUpsertRequest",
+    "VectorizationJob",
+    "VectorizationJobStatus",
+    "VectorizationProgress",
+    "VectorizationResult",
 ]
