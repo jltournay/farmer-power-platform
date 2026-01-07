@@ -40,13 +40,21 @@ from pydantic import SecretStr
 
 
 @pytest.fixture
-def mock_pinecone_settings() -> Settings:
-    """Create settings with Pinecone configured."""
+def mock_pinecone_settings(monkeypatch) -> Settings:
+    """Create settings with Pinecone configured.
+
+    Uses monkeypatch to set environment variables because pydantic-settings
+    with validation_alias reads from environment first, overriding explicit
+    constructor values.
+    """
+    # Set environment variables that validation_alias will read
+    monkeypatch.setenv("PINECONE_API_KEY", "test-pinecone-api-key")
+    monkeypatch.setenv("PINECONE_ENVIRONMENT", "us-east-1")
+    monkeypatch.setenv("PINECONE_INDEX_NAME", "test-index")
+    monkeypatch.setenv("PINECONE_EMBEDDING_MODEL", "multilingual-e5-large")
+
     settings = Settings(
-        pinecone_api_key=SecretStr("test-pinecone-api-key"),
-        pinecone_environment="us-east-1",
-        pinecone_index_name="test-index",
-        pinecone_embedding_model="multilingual-e5-large",
+        _env_file=None,  # Disable .env file reading for test isolation
         embedding_batch_size=96,
         embedding_retry_max_attempts=3,
     )
