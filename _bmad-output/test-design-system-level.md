@@ -318,7 +318,41 @@ P2 (Medium):
 
 **Synthetic RAG Sample Generation:**
 
-Unlike agent samples, RAG samples require a **seeded knowledge base** first:
+Unlike agent samples, RAG samples require a **seeded knowledge base** first.
+
+**Who Creates Seed Documents?**
+
+The **developer implementing Story 0.75.14 (RAG Retrieval)** creates the seed documents as part of the story tasks. These are test fixtures, not production content.
+
+| Source | When to Use | Example |
+|--------|-------------|---------|
+| LLM-generated synthetic | Development (default) | Prompt: "Generate 5 realistic tea disease documents" |
+| Extracted from arch docs | If relevant content exists | `_bmad-output/architecture/*.md` |
+| Real agronomist content | Production validation (Epic 5+) | Actual PDFs from agronomists |
+
+**Note:** Synthetic seed documents are sufficient for RAG infrastructure testing (Stories 0.75.14-15). Real agronomist content is required only for production accuracy validation in later epics.
+
+**Example Seed Document Structure:**
+
+```json
+// tests/golden/rag/seed_documents.json
+[
+  {
+    "id": "disease-001",
+    "domain": "disease",
+    "title": "Blister Blight in Tea",
+    "content": "Blister blight (Exobasidium vexans) is a fungal disease..."
+  },
+  {
+    "id": "weather-001",
+    "domain": "weather",
+    "title": "Frost Damage Prevention",
+    "content": "Tea plants are susceptible to frost damage when..."
+  }
+]
+```
+
+**RAG Sample Generator Code:**
 
 ```python
 # tests/golden/rag/generator.py
