@@ -184,7 +184,9 @@ git push origin feature/0-75-10b-basic-pdf-markdown-extraction
 gh run list --branch feature/0-75-10b-basic-pdf-markdown-extraction --limit 3
 ```
 **CI Run ID:** 20771944546
-**CI E2E Status:** [x] Passed / [ ] Failed
+**CI Status:** [x] Passed / [ ] Failed
+**E2E CI Run ID:** 20772247721
+**E2E CI Status:** [x] Passed / [ ] Failed
 **Verification Date:** 2026-01-07
 
 ---
