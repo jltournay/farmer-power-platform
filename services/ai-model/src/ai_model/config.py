@@ -152,6 +152,26 @@ class Settings(BaseSettings):
     # Cost tracking: estimated cost per page in USD
     azure_doc_intel_cost_per_page: float = 0.01
 
+    # ========================================
+    # Semantic Chunking Configuration (Story 0.75.10d)
+    # ========================================
+
+    # Target chunk size in characters for semantic splitting
+    # Chunks may be smaller at section boundaries, but won't exceed this
+    chunk_size: int = 1000
+
+    # Overlap between consecutive chunks to maintain context
+    # Applied when splitting large sections at paragraph boundaries
+    chunk_overlap: int = 200
+
+    # Minimum viable chunk size - chunks smaller than this are merged
+    # or skipped to avoid low-quality fragments
+    min_chunk_size: int = 100
+
+    # Maximum chunks per document (safety limit to prevent runaway chunking)
+    # If exceeded, chunking fails with an error
+    max_chunks_per_document: int = 500
+
     @property
     def azure_doc_intel_enabled(self) -> bool:
         """Check if Azure Document Intelligence is configured and available.

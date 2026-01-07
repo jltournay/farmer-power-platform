@@ -171,6 +171,7 @@ class RagChunk(BaseModel):
         description="Heading this chunk belongs to",
     )
     word_count: int = Field(ge=0, description="Word count for statistics")
+    char_count: int = Field(ge=0, description="Character count for statistics")
     created_at: datetime = Field(
         default_factory=lambda: datetime.now(UTC),
         description="Creation timestamp",
@@ -190,6 +191,7 @@ class RagChunk(BaseModel):
                 "content": "# Blister Blight\n\nBlister blight is caused by...",
                 "section_title": "Blister Blight",
                 "word_count": 150,
+                "char_count": 850,
                 "created_at": "2026-01-05T10:00:00Z",
                 "pinecone_id": "disease-diagnosis-guide-0",
             }

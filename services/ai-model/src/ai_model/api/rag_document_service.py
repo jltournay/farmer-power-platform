@@ -1080,3 +1080,334 @@ class RAGDocumentServiceServicer(ai_model_pb2_grpc.RAGDocumentServiceServicer):
             workflow: ExtractionWorkflow instance.
         """
         self._extraction_workflow = workflow
+
+    def set_chunking_workflow(self, workflow) -> None:
+        """Set the chunking workflow service.
+
+        Called during service initialization to inject the workflow.
+
+        Args:
+            workflow: ChunkingWorkflow instance.
+        """
+        self._chunking_workflow = workflow
+
+    # ========================================
+    # Chunking Operations (Story 0.75.10d)
+    # ========================================
+
+    async def ChunkDocument(
+        self,
+        request: ai_model_pb2.ChunkDocumentRequest,
+        context: grpc.aio.ServicerContext,
+    ) -> ai_model_pb2.ChunkDocumentResponse:
+        """Chunk a document's content into semantic chunks.
+
+        Creates chunks from extracted document content, splitting on
+        headings and paragraphs for optimal vectorization.
+
+        Args:
+            request: ChunkDocumentRequest with document_id and optional version.
+            context: gRPC context.
+
+        Returns:
+            ChunkDocumentResponse with chunking statistics.
+        """
+        try:
+            if not request.document_id:
+                await context.abort(
+                    grpc.StatusCode.INVALID_ARGUMENT,
+                    "document_id is required",
+                )
+                return ai_model_pb2.ChunkDocumentResponse()
+
+            # Check if chunking workflow is available
+            if not hasattr(self, "_chunking_workflow") or self._chunking_workflow is None:
+                await context.abort(
+                    grpc.StatusCode.UNAVAILABLE,
+                    "Chunking service not configured",
+                )
+                return ai_model_pb2.ChunkDocumentResponse()
+
+            # Get the document
+            if request.version > 0:
+                doc = await self._repository.get_by_version(request.document_id, request.version)
+            else:
+                # Get latest non-archived version
+                versions = await self._repository.list_versions(request.document_id, include_archived=False)
+                doc = versions[0] if versions else None
+
+            if doc is None:
+                await context.abort(
+                    grpc.StatusCode.NOT_FOUND,
+                    f"Document not found: {request.document_id}"
+                    + (f" version {request.version}" if request.version > 0 else ""),
+                )
+                return ai_model_pb2.ChunkDocumentResponse()
+
+            # Check if document has content
+            if not doc.content or not doc.content.strip():
+                await context.abort(
+                    grpc.StatusCode.FAILED_PRECONDITION,
+                    "Document has no content to chunk. Run ExtractDocument first.",
+                )
+                return ai_model_pb2.ChunkDocumentResponse()
+
+            # Import chunking errors
+            from ai_model.services import TooManyChunksError
+
+            # Perform chunking
+            try:
+                chunks = await self._chunking_workflow.chunk_document(doc)
+            except TooManyChunksError as e:
+                await context.abort(grpc.StatusCode.RESOURCE_EXHAUSTED, str(e))
+                raise
+
+            # Calculate statistics
+            total_char_count = sum(c.char_count for c in chunks)
+            total_word_count = sum(c.word_count for c in chunks)
+
+            logger.info(
+                "Document chunked",
+                document_id=request.document_id,
+                version=doc.version,
+                chunks_created=len(chunks),
+                total_char_count=total_char_count,
+                total_word_count=total_word_count,
+            )
+
+            return ai_model_pb2.ChunkDocumentResponse(
+                chunks_created=len(chunks),
+                total_char_count=total_char_count,
+                total_word_count=total_word_count,
+            )
+
+        except Exception as e:
+            logger.error(
+                "ChunkDocument failed",
+                error=str(e),
+                document_id=request.document_id,
+            )
+            await context.abort(grpc.StatusCode.INTERNAL, str(e))
+            raise
+
+    async def ListChunks(
+        self,
+        request: ai_model_pb2.ListChunksRequest,
+        context: grpc.aio.ServicerContext,
+    ) -> ai_model_pb2.ListChunksResponse:
+        """List chunks for a document version with pagination.
+
+        Args:
+            request: ListChunksRequest with document_id, version, and pagination params.
+            context: gRPC context.
+
+        Returns:
+            ListChunksResponse with chunks and pagination info.
+        """
+        try:
+            if not request.document_id:
+                await context.abort(
+                    grpc.StatusCode.INVALID_ARGUMENT,
+                    "document_id is required",
+                )
+                return ai_model_pb2.ListChunksResponse()
+
+            if request.version <= 0:
+                await context.abort(
+                    grpc.StatusCode.INVALID_ARGUMENT,
+                    "version is required (must be > 0)",
+                )
+                return ai_model_pb2.ListChunksResponse()
+
+            # Check if chunking workflow is available
+            if not hasattr(self, "_chunking_workflow") or self._chunking_workflow is None:
+                await context.abort(
+                    grpc.StatusCode.UNAVAILABLE,
+                    "Chunking service not configured",
+                )
+                return ai_model_pb2.ListChunksResponse()
+
+            # Pagination
+            page = max(1, request.page or 1)
+            page_size = min(100, request.page_size or 50)
+
+            # Get all chunks (workflow handles ordering)
+            all_chunks = await self._chunking_workflow.get_chunks(
+                request.document_id,
+                request.version,
+            )
+
+            # Apply pagination
+            total_count = len(all_chunks)
+            start = (page - 1) * page_size
+            end = start + page_size
+            page_chunks = all_chunks[start:end]
+
+            # Convert to proto
+            proto_chunks = []
+            for chunk in page_chunks:
+                proto_chunk = ai_model_pb2.RagChunk(
+                    chunk_id=chunk.chunk_id,
+                    document_id=chunk.document_id,
+                    document_version=chunk.document_version,
+                    chunk_index=chunk.chunk_index,
+                    content=chunk.content,
+                    section_title=chunk.section_title or "",
+                    word_count=chunk.word_count,
+                    char_count=chunk.char_count,
+                    pinecone_id=chunk.pinecone_id or "",
+                )
+                proto_chunk.created_at.FromDatetime(chunk.created_at)
+                proto_chunks.append(proto_chunk)
+
+            logger.debug(
+                "ListChunks completed",
+                document_id=request.document_id,
+                version=request.version,
+                page=page,
+                page_size=page_size,
+                returned=len(proto_chunks),
+                total_count=total_count,
+            )
+
+            return ai_model_pb2.ListChunksResponse(
+                chunks=proto_chunks,
+                total_count=total_count,
+                page=page,
+                page_size=page_size,
+            )
+
+        except Exception as e:
+            logger.error(
+                "ListChunks failed",
+                error=str(e),
+                document_id=request.document_id,
+            )
+            await context.abort(grpc.StatusCode.INTERNAL, str(e))
+            raise
+
+    async def GetChunk(
+        self,
+        request: ai_model_pb2.GetChunkRequest,
+        context: grpc.aio.ServicerContext,
+    ) -> ai_model_pb2.RagChunk:
+        """Get a specific chunk by ID.
+
+        Args:
+            request: GetChunkRequest with chunk_id.
+            context: gRPC context.
+
+        Returns:
+            RagChunk.
+        """
+        try:
+            if not request.chunk_id:
+                await context.abort(
+                    grpc.StatusCode.INVALID_ARGUMENT,
+                    "chunk_id is required",
+                )
+                return ai_model_pb2.RagChunk()
+
+            # Check if chunking workflow is available
+            if not hasattr(self, "_chunking_workflow") or self._chunking_workflow is None:
+                await context.abort(
+                    grpc.StatusCode.UNAVAILABLE,
+                    "Chunking service not configured",
+                )
+                return ai_model_pb2.RagChunk()
+
+            # Get chunk from repository
+            chunk = await self._chunking_workflow._chunk_repo.get_by_id(request.chunk_id)
+
+            if chunk is None:
+                await context.abort(
+                    grpc.StatusCode.NOT_FOUND,
+                    f"Chunk not found: {request.chunk_id}",
+                )
+                return ai_model_pb2.RagChunk()
+
+            # Convert to proto
+            proto_chunk = ai_model_pb2.RagChunk(
+                chunk_id=chunk.chunk_id,
+                document_id=chunk.document_id,
+                document_version=chunk.document_version,
+                chunk_index=chunk.chunk_index,
+                content=chunk.content,
+                section_title=chunk.section_title or "",
+                word_count=chunk.word_count,
+                char_count=chunk.char_count,
+                pinecone_id=chunk.pinecone_id or "",
+            )
+            proto_chunk.created_at.FromDatetime(chunk.created_at)
+
+            return proto_chunk
+
+        except Exception as e:
+            logger.error(
+                "GetChunk failed",
+                error=str(e),
+                chunk_id=request.chunk_id,
+            )
+            await context.abort(grpc.StatusCode.INTERNAL, str(e))
+            raise
+
+    async def DeleteChunks(
+        self,
+        request: ai_model_pb2.DeleteChunksRequest,
+        context: grpc.aio.ServicerContext,
+    ) -> ai_model_pb2.DeleteChunksResponse:
+        """Delete all chunks for a document version.
+
+        Args:
+            request: DeleteChunksRequest with document_id and version.
+            context: gRPC context.
+
+        Returns:
+            DeleteChunksResponse with count of deleted chunks.
+        """
+        try:
+            if not request.document_id:
+                await context.abort(
+                    grpc.StatusCode.INVALID_ARGUMENT,
+                    "document_id is required",
+                )
+                return ai_model_pb2.DeleteChunksResponse()
+
+            if request.version <= 0:
+                await context.abort(
+                    grpc.StatusCode.INVALID_ARGUMENT,
+                    "version is required (must be > 0)",
+                )
+                return ai_model_pb2.DeleteChunksResponse()
+
+            # Check if chunking workflow is available
+            if not hasattr(self, "_chunking_workflow") or self._chunking_workflow is None:
+                await context.abort(
+                    grpc.StatusCode.UNAVAILABLE,
+                    "Chunking service not configured",
+                )
+                return ai_model_pb2.DeleteChunksResponse()
+
+            # Delete chunks
+            deleted_count = await self._chunking_workflow.delete_chunks(
+                request.document_id,
+                request.version,
+            )
+
+            logger.info(
+                "Chunks deleted",
+                document_id=request.document_id,
+                version=request.version,
+                chunks_deleted=deleted_count,
+            )
+
+            return ai_model_pb2.DeleteChunksResponse(chunks_deleted=deleted_count)
+
+        except Exception as e:
+            logger.error(
+                "DeleteChunks failed",
+                error=str(e),
+                document_id=request.document_id,
+            )
+            await context.abort(grpc.StatusCode.INTERNAL, str(e))
+            raise

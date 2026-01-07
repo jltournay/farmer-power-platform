@@ -199,6 +199,12 @@ service RAGDocumentService {
   rpc ExtractDocument(ExtractDocumentRequest) returns (ExtractDocumentResponse);
   rpc GetExtractionJob(GetExtractionJobRequest) returns (ExtractionJobResponse);
   rpc StreamExtractionProgress(StreamExtractionProgressRequest) returns (stream ExtractionProgressEvent);
+
+  // Chunking Operations (Story 0.75.10d)
+  rpc ChunkDocument(ChunkDocumentRequest) returns (ChunkDocumentResponse);
+  rpc ListChunks(ListChunksRequest) returns (ListChunksResponse);
+  rpc GetChunk(GetChunkRequest) returns (RagChunk);
+  rpc DeleteChunks(DeleteChunksRequest) returns (DeleteChunksResponse);
 }
 
 // ============================================
@@ -462,4 +468,87 @@ message ExtractionProgressEvent {
   int32 total_pages = 5;
   // Error details if status is failed
   string error_message = 6;
+}
+
+// ============================================
+// Chunking Request/Response Messages (Story 0.75.10d)
+// ============================================
+
+// Individual chunk of a RAG document for vectorization
+message RagChunk {
+  // Unique chunk identifier (format: {document_id}-v{version}-chunk-{index})
+  string chunk_id = 1;
+  // Parent document ID
+  string document_id = 2;
+  // Parent document version
+  int32 document_version = 3;
+  // Position in document (0-indexed)
+  int32 chunk_index = 4;
+  // Chunk text content
+  string content = 5;
+  // Heading this chunk belongs to (null if no heading)
+  string section_title = 6;
+  // Word count for statistics
+  int32 word_count = 7;
+  // Character count for statistics
+  int32 char_count = 8;
+  // Creation timestamp
+  google.protobuf.Timestamp created_at = 9;
+  // Vector ID in Pinecone after vectorization (null if not vectorized)
+  string pinecone_id = 10;
+}
+
+message ChunkDocumentRequest {
+  // Document ID to chunk
+  string document_id = 1;
+  // Optional: specific version to chunk (0 = latest version)
+  int32 version = 2;
+}
+
+message ChunkDocumentResponse {
+  // Number of chunks created
+  int32 chunks_created = 1;
+  // Total character count of all chunks
+  int32 total_char_count = 2;
+  // Total word count of all chunks
+  int32 total_word_count = 3;
+}
+
+message ListChunksRequest {
+  // Document ID to list chunks for
+  string document_id = 1;
+  // Document version to list chunks for
+  int32 version = 2;
+  // Page number (1-indexed, default 1)
+  int32 page = 3;
+  // Page size (default 50, max 100)
+  int32 page_size = 4;
+}
+
+message ListChunksResponse {
+  // Chunks for this page
+  repeated RagChunk chunks = 1;
+  // Total count of chunks for this document version
+  int32 total_count = 2;
+  // Current page number
+  int32 page = 3;
+  // Page size used
+  int32 page_size = 4;
+}
+
+message GetChunkRequest {
+  // Chunk ID to retrieve
+  string chunk_id = 1;
+}
+
+message DeleteChunksRequest {
+  // Document ID to delete chunks for
+  string document_id = 1;
+  // Document version to delete chunks for
+  int32 version = 2;
+}
+
+message DeleteChunksResponse {
+  // Number of chunks deleted
+  int32 chunks_deleted = 1;
 }

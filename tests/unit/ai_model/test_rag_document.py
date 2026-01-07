@@ -198,6 +198,7 @@ class TestRagChunk:
             chunk_index=0,
             content="Blister blight is caused by the fungus...",
             word_count=25,
+            char_count=150,
         )
         assert chunk.chunk_id == "doc-v1-chunk-0"
         assert chunk.document_id == "disease-guide"
@@ -217,6 +218,7 @@ class TestRagChunk:
             content="Blister blight content...",
             section_title="Blister Blight",
             word_count=50,
+            char_count=250,
             created_at=now,
             pinecone_id="disease-guide-0",
         )
@@ -234,6 +236,7 @@ class TestRagChunk:
                 chunk_index=0,
                 content="Content",
                 word_count=1,
+                char_count=7,
             )
         assert "document_version" in str(exc_info.value)
 
@@ -247,6 +250,7 @@ class TestRagChunk:
                 chunk_index=-1,
                 content="Content",
                 word_count=1,
+                char_count=7,
             )
         assert "chunk_index" in str(exc_info.value)
 
