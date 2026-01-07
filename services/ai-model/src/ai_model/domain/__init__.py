@@ -6,6 +6,7 @@ and RAG document storage.
 Story 0.75.5: Added LlmCostEvent and related cost models.
 Story 0.75.9: Added RagDocument, RagChunk, and related RAG models.
 Story 0.75.12: Added Embedding domain models.
+Story 0.75.13: Added Vector store domain models.
 """
 
 from ai_model.domain.agent_config import (
@@ -60,8 +61,19 @@ from ai_model.domain.rag_document import (
     RagDocumentStatus,
     SourceFile,
 )
+from ai_model.domain.vector_store import (
+    VECTOR_DIMENSIONS,
+    IndexStats,
+    NamespaceStats,
+    QueryMatch,
+    QueryResult,
+    UpsertResult,
+    VectorMetadata,
+    VectorUpsertRequest,
+)
 
 __all__ = [
+    "VECTOR_DIMENSIONS",
     "AgentConfig",
     "AgentConfigBase",
     "AgentConfigMetadata",
@@ -82,18 +94,22 @@ __all__ = [
     "ExtractorConfig",
     "FileType",
     "GeneratorConfig",
+    "IndexStats",
     "InputConfig",
     "KnowledgeDomain",
     "LLMConfig",
     "LlmCostEvent",
     "MCPSourceConfig",
     "ModelCost",
+    "NamespaceStats",
     "OutputConfig",
     "Prompt",
     "PromptABTest",
     "PromptContent",
     "PromptMetadata",
     "PromptStatus",
+    "QueryMatch",
+    "QueryResult",
     "RAGConfig",
     "RAGDocumentMetadata",
     "RagChunk",
@@ -104,4 +120,7 @@ __all__ = [
     "TieredVisionConfig",
     "TieredVisionLLMConfig",
     "TieredVisionRoutingConfig",
+    "UpsertResult",
+    "VectorMetadata",
+    "VectorUpsertRequest",
 ]

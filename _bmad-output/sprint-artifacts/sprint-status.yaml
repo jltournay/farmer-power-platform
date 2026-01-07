@@ -177,7 +177,7 @@ development_status:
   0-75-10d-semantic-chunking: done  # github_issue: 123, PR: #124 MERGED - CODE REVIEW COMPLETED 2026-01-07
   0-75-11-cli-rag-document: done  # github_issue: 125, PR: #126 - fp-knowledge CLI with job-status
   0-75-12-rag-embedding-configuration: done  # github_issue: 127, PR: #128 - CODE REVIEW COMPLETED 2026-01-07
-  0-75-13-rag-vector-storage: backlog  # Pinecone client/repository
+  0-75-13-rag-vector-storage: done  # github_issue: 129, PR: #130 - Pinecone client/repository
   0-75-13b-rag-vectorization-pipeline: backlog  # Orchestrate embed + store, progress tracking
   0-75-14-rag-retrieval-service: backlog  # Similarity search, synthetic sample generator
   0-75-15-rag-ranking-logic: backlog  # Re-ranking, domain boosting, golden samples
