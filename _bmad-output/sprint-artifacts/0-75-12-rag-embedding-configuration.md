@@ -1,6 +1,6 @@
 # Story 0.75.12: RAG Embedding Configuration (Pinecone Inference)
 
-**Status:** in-progress
+**Status:** review
 **GitHub Issue:** #127
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
@@ -135,7 +135,7 @@ So that documents are automatically vectorized when stored in Pinecone with a si
 - [ ] PR approved and merged (squash)
 - [ ] Local branch cleaned up: `git branch -d feature/0-75-12-rag-embedding-configuration`
 
-**PR URL:** _______________ (fill in when created)
+**PR URL:** https://github.com/jltournay/farmer-power-platform/pull/128
 
 ---
 
