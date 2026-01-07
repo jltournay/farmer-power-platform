@@ -865,3 +865,218 @@ class RAGDocumentServiceServicer(ai_model_pb2_grpc.RAGDocumentServiceServicer):
             )
             await context.abort(grpc.StatusCode.INTERNAL, str(e))
             raise
+
+    # ========================================
+    # Extraction Operations (Story 0.75.10b)
+    # ========================================
+
+    async def ExtractDocument(
+        self,
+        request: ai_model_pb2.ExtractDocumentRequest,
+        context: grpc.aio.ServicerContext,
+    ) -> ai_model_pb2.ExtractDocumentResponse:
+        """Start async extraction for a document.
+
+        Downloads source file from blob storage and extracts text content.
+        Returns immediately with a job_id for tracking progress.
+
+        Args:
+            request: ExtractDocumentRequest with document_id and optional version.
+            context: gRPC context.
+
+        Returns:
+            ExtractDocumentResponse with job_id.
+        """
+        try:
+            if not request.document_id:
+                await context.abort(
+                    grpc.StatusCode.INVALID_ARGUMENT,
+                    "document_id is required",
+                )
+                return ai_model_pb2.ExtractDocumentResponse()
+
+            # Import here to avoid circular import
+            from ai_model.services import (
+                DocumentNotFoundError,
+                NoSourceFileError,
+            )
+
+            # Check if workflow is available
+            if not hasattr(self, "_extraction_workflow") or self._extraction_workflow is None:
+                await context.abort(
+                    grpc.StatusCode.UNAVAILABLE,
+                    "Extraction service not configured",
+                )
+                return ai_model_pb2.ExtractDocumentResponse()
+
+            # Start extraction
+            job_id = await self._extraction_workflow.start_extraction(
+                request.document_id,
+                version=request.version if request.version > 0 else None,
+            )
+
+            logger.info(
+                "Extraction started",
+                document_id=request.document_id,
+                version=request.version,
+                job_id=job_id,
+            )
+
+            return ai_model_pb2.ExtractDocumentResponse(job_id=job_id)
+
+        except DocumentNotFoundError as e:
+            await context.abort(grpc.StatusCode.NOT_FOUND, str(e))
+            raise
+        except NoSourceFileError as e:
+            await context.abort(grpc.StatusCode.FAILED_PRECONDITION, str(e))
+            raise
+        except Exception as e:
+            logger.error(
+                "ExtractDocument failed",
+                error=str(e),
+                document_id=request.document_id,
+            )
+            await context.abort(grpc.StatusCode.INTERNAL, str(e))
+            raise
+
+    async def GetExtractionJob(
+        self,
+        request: ai_model_pb2.GetExtractionJobRequest,
+        context: grpc.aio.ServicerContext,
+    ) -> ai_model_pb2.ExtractionJobResponse:
+        """Get extraction job status.
+
+        One-shot status check for an extraction job.
+
+        Args:
+            request: GetExtractionJobRequest with job_id.
+            context: gRPC context.
+
+        Returns:
+            ExtractionJobResponse with job details.
+        """
+        try:
+            if not request.job_id:
+                await context.abort(
+                    grpc.StatusCode.INVALID_ARGUMENT,
+                    "job_id is required",
+                )
+                return ai_model_pb2.ExtractionJobResponse()
+
+            # Check if workflow is available
+            if not hasattr(self, "_extraction_workflow") or self._extraction_workflow is None:
+                await context.abort(
+                    grpc.StatusCode.UNAVAILABLE,
+                    "Extraction service not configured",
+                )
+                return ai_model_pb2.ExtractionJobResponse()
+
+            job = await self._extraction_workflow.get_job(request.job_id)
+
+            if job is None:
+                await context.abort(
+                    grpc.StatusCode.NOT_FOUND,
+                    f"Extraction job not found: {request.job_id}",
+                )
+                return ai_model_pb2.ExtractionJobResponse()
+
+            response = ai_model_pb2.ExtractionJobResponse(
+                job_id=job.job_id,
+                document_id=job.document_id,
+                status=job.status.value,
+                progress_percent=job.progress_percent,
+                pages_processed=job.pages_processed,
+                total_pages=job.total_pages,
+                error_message=job.error_message or "",
+            )
+
+            # Set timestamps
+            response.started_at.FromDatetime(job.started_at)
+            if job.completed_at:
+                response.completed_at.FromDatetime(job.completed_at)
+
+            return response
+
+        except Exception as e:
+            logger.error(
+                "GetExtractionJob failed",
+                error=str(e),
+                job_id=request.job_id,
+            )
+            await context.abort(grpc.StatusCode.INTERNAL, str(e))
+            raise
+
+    async def StreamExtractionProgress(
+        self,
+        request: ai_model_pb2.StreamExtractionProgressRequest,
+        context: grpc.aio.ServicerContext,
+    ):
+        """Stream extraction progress events.
+
+        Server-streaming RPC that yields progress events until job completes.
+
+        Args:
+            request: StreamExtractionProgressRequest with job_id.
+            context: gRPC context.
+
+        Yields:
+            ExtractionProgressEvent with current progress.
+        """
+        import asyncio
+
+        from ai_model.domain.extraction_job import ExtractionJobStatus
+
+        if not request.job_id:
+            await context.abort(
+                grpc.StatusCode.INVALID_ARGUMENT,
+                "job_id is required",
+            )
+            return
+
+        # Check if workflow is available
+        if not hasattr(self, "_extraction_workflow") or self._extraction_workflow is None:
+            await context.abort(
+                grpc.StatusCode.UNAVAILABLE,
+                "Extraction service not configured",
+            )
+            return
+
+        job_id = request.job_id
+        poll_interval = 0.5  # seconds
+
+        while not context.cancelled():
+            job = await self._extraction_workflow.get_job(job_id)
+
+            if job is None:
+                await context.abort(
+                    grpc.StatusCode.NOT_FOUND,
+                    f"Extraction job not found: {job_id}",
+                )
+                return
+
+            # Yield progress event
+            yield ai_model_pb2.ExtractionProgressEvent(
+                job_id=job.job_id,
+                status=job.status.value,
+                progress_percent=job.progress_percent,
+                pages_processed=job.pages_processed,
+                total_pages=job.total_pages,
+                error_message=job.error_message or "",
+            )
+
+            # Check if job is complete
+            if job.status in (ExtractionJobStatus.COMPLETED, ExtractionJobStatus.FAILED):
+                return
+
+            # Wait before next poll
+            await asyncio.sleep(poll_interval)
+
+    def set_extraction_workflow(self, workflow) -> None:
+        """Set the extraction workflow service.
+
+        Called during service initialization to inject the workflow.
+
+        Args:
+            workflow: ExtractionWorkflow instance.
+        """
+        self._extraction_workflow = workflow

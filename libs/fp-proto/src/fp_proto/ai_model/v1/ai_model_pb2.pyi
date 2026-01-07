@@ -369,3 +369,67 @@ class RollbackDocumentRequest(_message.Message):
     document_id: str
     target_version: int
     def __init__(self, document_id: _Optional[str] = ..., target_version: _Optional[int] = ...) -> None: ...
+
+class ExtractDocumentRequest(_message.Message):
+    __slots__ = ("document_id", "version")
+    DOCUMENT_ID_FIELD_NUMBER: _ClassVar[int]
+    VERSION_FIELD_NUMBER: _ClassVar[int]
+    document_id: str
+    version: int
+    def __init__(self, document_id: _Optional[str] = ..., version: _Optional[int] = ...) -> None: ...
+
+class ExtractDocumentResponse(_message.Message):
+    __slots__ = ("job_id",)
+    JOB_ID_FIELD_NUMBER: _ClassVar[int]
+    job_id: str
+    def __init__(self, job_id: _Optional[str] = ...) -> None: ...
+
+class GetExtractionJobRequest(_message.Message):
+    __slots__ = ("job_id",)
+    JOB_ID_FIELD_NUMBER: _ClassVar[int]
+    job_id: str
+    def __init__(self, job_id: _Optional[str] = ...) -> None: ...
+
+class ExtractionJobResponse(_message.Message):
+    __slots__ = ("job_id", "document_id", "status", "progress_percent", "pages_processed", "total_pages", "error_message", "started_at", "completed_at")
+    JOB_ID_FIELD_NUMBER: _ClassVar[int]
+    DOCUMENT_ID_FIELD_NUMBER: _ClassVar[int]
+    STATUS_FIELD_NUMBER: _ClassVar[int]
+    PROGRESS_PERCENT_FIELD_NUMBER: _ClassVar[int]
+    PAGES_PROCESSED_FIELD_NUMBER: _ClassVar[int]
+    TOTAL_PAGES_FIELD_NUMBER: _ClassVar[int]
+    ERROR_MESSAGE_FIELD_NUMBER: _ClassVar[int]
+    STARTED_AT_FIELD_NUMBER: _ClassVar[int]
+    COMPLETED_AT_FIELD_NUMBER: _ClassVar[int]
+    job_id: str
+    document_id: str
+    status: str
+    progress_percent: int
+    pages_processed: int
+    total_pages: int
+    error_message: str
+    started_at: _timestamp_pb2.Timestamp
+    completed_at: _timestamp_pb2.Timestamp
+    def __init__(self, job_id: _Optional[str] = ..., document_id: _Optional[str] = ..., status: _Optional[str] = ..., progress_percent: _Optional[int] = ..., pages_processed: _Optional[int] = ..., total_pages: _Optional[int] = ..., error_message: _Optional[str] = ..., started_at: _Optional[_Union[datetime.datetime, _timestamp_pb2.Timestamp, _Mapping]] = ..., completed_at: _Optional[_Union[datetime.datetime, _timestamp_pb2.Timestamp, _Mapping]] = ...) -> None: ...
+
+class StreamExtractionProgressRequest(_message.Message):
+    __slots__ = ("job_id",)
+    JOB_ID_FIELD_NUMBER: _ClassVar[int]
+    job_id: str
+    def __init__(self, job_id: _Optional[str] = ...) -> None: ...
+
+class ExtractionProgressEvent(_message.Message):
+    __slots__ = ("job_id", "status", "progress_percent", "pages_processed", "total_pages", "error_message")
+    JOB_ID_FIELD_NUMBER: _ClassVar[int]
+    STATUS_FIELD_NUMBER: _ClassVar[int]
+    PROGRESS_PERCENT_FIELD_NUMBER: _ClassVar[int]
+    PAGES_PROCESSED_FIELD_NUMBER: _ClassVar[int]
+    TOTAL_PAGES_FIELD_NUMBER: _ClassVar[int]
+    ERROR_MESSAGE_FIELD_NUMBER: _ClassVar[int]
+    job_id: str
+    status: str
+    progress_percent: int
+    pages_processed: int
+    total_pages: int
+    error_message: str
+    def __init__(self, job_id: _Optional[str] = ..., status: _Optional[str] = ..., progress_percent: _Optional[int] = ..., pages_processed: _Optional[int] = ..., total_pages: _Optional[int] = ..., error_message: _Optional[str] = ...) -> None: ...

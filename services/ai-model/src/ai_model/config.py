@@ -114,6 +114,23 @@ class Settings(BaseSettings):
     # After this duration, tools are re-discovered from MCP servers
     mcp_tool_cache_ttl_seconds: int = 300  # 5 minutes
 
+    # ========================================
+    # Azure Blob Storage Configuration (Story 0.75.10b)
+    # ========================================
+
+    # Azure Blob Storage connection string for RAG document source files
+    azure_storage_connection_string: str = ""
+
+    # Container name for RAG document files
+    azure_storage_container: str = "rag-documents"
+
+    # ========================================
+    # Extraction Configuration (Story 0.75.10b)
+    # ========================================
+
+    # Thread pool size for PDF extraction (PyMuPDF is synchronous)
+    extraction_max_workers: int = 4
+
 
 # Global settings instance
 settings = Settings()
