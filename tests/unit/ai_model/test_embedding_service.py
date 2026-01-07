@@ -32,7 +32,6 @@ from ai_model.services.embedding_service import (
     EmbeddingService,
     PineconeNotConfiguredError,
 )
-from pydantic import SecretStr
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # FIXTURES
