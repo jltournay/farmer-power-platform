@@ -433,3 +433,89 @@ class ExtractionProgressEvent(_message.Message):
     total_pages: int
     error_message: str
     def __init__(self, job_id: _Optional[str] = ..., status: _Optional[str] = ..., progress_percent: _Optional[int] = ..., pages_processed: _Optional[int] = ..., total_pages: _Optional[int] = ..., error_message: _Optional[str] = ...) -> None: ...
+
+class RagChunk(_message.Message):
+    __slots__ = ("chunk_id", "document_id", "document_version", "chunk_index", "content", "section_title", "word_count", "char_count", "created_at", "pinecone_id")
+    CHUNK_ID_FIELD_NUMBER: _ClassVar[int]
+    DOCUMENT_ID_FIELD_NUMBER: _ClassVar[int]
+    DOCUMENT_VERSION_FIELD_NUMBER: _ClassVar[int]
+    CHUNK_INDEX_FIELD_NUMBER: _ClassVar[int]
+    CONTENT_FIELD_NUMBER: _ClassVar[int]
+    SECTION_TITLE_FIELD_NUMBER: _ClassVar[int]
+    WORD_COUNT_FIELD_NUMBER: _ClassVar[int]
+    CHAR_COUNT_FIELD_NUMBER: _ClassVar[int]
+    CREATED_AT_FIELD_NUMBER: _ClassVar[int]
+    PINECONE_ID_FIELD_NUMBER: _ClassVar[int]
+    chunk_id: str
+    document_id: str
+    document_version: int
+    chunk_index: int
+    content: str
+    section_title: str
+    word_count: int
+    char_count: int
+    created_at: _timestamp_pb2.Timestamp
+    pinecone_id: str
+    def __init__(self, chunk_id: _Optional[str] = ..., document_id: _Optional[str] = ..., document_version: _Optional[int] = ..., chunk_index: _Optional[int] = ..., content: _Optional[str] = ..., section_title: _Optional[str] = ..., word_count: _Optional[int] = ..., char_count: _Optional[int] = ..., created_at: _Optional[_Union[datetime.datetime, _timestamp_pb2.Timestamp, _Mapping]] = ..., pinecone_id: _Optional[str] = ...) -> None: ...
+
+class ChunkDocumentRequest(_message.Message):
+    __slots__ = ("document_id", "version")
+    DOCUMENT_ID_FIELD_NUMBER: _ClassVar[int]
+    VERSION_FIELD_NUMBER: _ClassVar[int]
+    document_id: str
+    version: int
+    def __init__(self, document_id: _Optional[str] = ..., version: _Optional[int] = ...) -> None: ...
+
+class ChunkDocumentResponse(_message.Message):
+    __slots__ = ("chunks_created", "total_char_count", "total_word_count")
+    CHUNKS_CREATED_FIELD_NUMBER: _ClassVar[int]
+    TOTAL_CHAR_COUNT_FIELD_NUMBER: _ClassVar[int]
+    TOTAL_WORD_COUNT_FIELD_NUMBER: _ClassVar[int]
+    chunks_created: int
+    total_char_count: int
+    total_word_count: int
+    def __init__(self, chunks_created: _Optional[int] = ..., total_char_count: _Optional[int] = ..., total_word_count: _Optional[int] = ...) -> None: ...
+
+class ListChunksRequest(_message.Message):
+    __slots__ = ("document_id", "version", "page", "page_size")
+    DOCUMENT_ID_FIELD_NUMBER: _ClassVar[int]
+    VERSION_FIELD_NUMBER: _ClassVar[int]
+    PAGE_FIELD_NUMBER: _ClassVar[int]
+    PAGE_SIZE_FIELD_NUMBER: _ClassVar[int]
+    document_id: str
+    version: int
+    page: int
+    page_size: int
+    def __init__(self, document_id: _Optional[str] = ..., version: _Optional[int] = ..., page: _Optional[int] = ..., page_size: _Optional[int] = ...) -> None: ...
+
+class ListChunksResponse(_message.Message):
+    __slots__ = ("chunks", "total_count", "page", "page_size")
+    CHUNKS_FIELD_NUMBER: _ClassVar[int]
+    TOTAL_COUNT_FIELD_NUMBER: _ClassVar[int]
+    PAGE_FIELD_NUMBER: _ClassVar[int]
+    PAGE_SIZE_FIELD_NUMBER: _ClassVar[int]
+    chunks: _containers.RepeatedCompositeFieldContainer[RagChunk]
+    total_count: int
+    page: int
+    page_size: int
+    def __init__(self, chunks: _Optional[_Iterable[_Union[RagChunk, _Mapping]]] = ..., total_count: _Optional[int] = ..., page: _Optional[int] = ..., page_size: _Optional[int] = ...) -> None: ...
+
+class GetChunkRequest(_message.Message):
+    __slots__ = ("chunk_id",)
+    CHUNK_ID_FIELD_NUMBER: _ClassVar[int]
+    chunk_id: str
+    def __init__(self, chunk_id: _Optional[str] = ...) -> None: ...
+
+class DeleteChunksRequest(_message.Message):
+    __slots__ = ("document_id", "version")
+    DOCUMENT_ID_FIELD_NUMBER: _ClassVar[int]
+    VERSION_FIELD_NUMBER: _ClassVar[int]
+    document_id: str
+    version: int
+    def __init__(self, document_id: _Optional[str] = ..., version: _Optional[int] = ...) -> None: ...
+
+class DeleteChunksResponse(_message.Message):
+    __slots__ = ("chunks_deleted",)
+    CHUNKS_DELETED_FIELD_NUMBER: _ClassVar[int]
+    chunks_deleted: int
+    def __init__(self, chunks_deleted: _Optional[int] = ...) -> None: ...

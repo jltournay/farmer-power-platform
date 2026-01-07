@@ -525,6 +525,26 @@ class RAGDocumentServiceStub(object):
                 request_serializer=ai__model_dot_v1_dot_ai__model__pb2.StreamExtractionProgressRequest.SerializeToString,
                 response_deserializer=ai__model_dot_v1_dot_ai__model__pb2.ExtractionProgressEvent.FromString,
                 _registered_method=True)
+        self.ChunkDocument = channel.unary_unary(
+                '/farmer_power.ai_model.v1.RAGDocumentService/ChunkDocument',
+                request_serializer=ai__model_dot_v1_dot_ai__model__pb2.ChunkDocumentRequest.SerializeToString,
+                response_deserializer=ai__model_dot_v1_dot_ai__model__pb2.ChunkDocumentResponse.FromString,
+                _registered_method=True)
+        self.ListChunks = channel.unary_unary(
+                '/farmer_power.ai_model.v1.RAGDocumentService/ListChunks',
+                request_serializer=ai__model_dot_v1_dot_ai__model__pb2.ListChunksRequest.SerializeToString,
+                response_deserializer=ai__model_dot_v1_dot_ai__model__pb2.ListChunksResponse.FromString,
+                _registered_method=True)
+        self.GetChunk = channel.unary_unary(
+                '/farmer_power.ai_model.v1.RAGDocumentService/GetChunk',
+                request_serializer=ai__model_dot_v1_dot_ai__model__pb2.GetChunkRequest.SerializeToString,
+                response_deserializer=ai__model_dot_v1_dot_ai__model__pb2.RagChunk.FromString,
+                _registered_method=True)
+        self.DeleteChunks = channel.unary_unary(
+                '/farmer_power.ai_model.v1.RAGDocumentService/DeleteChunks',
+                request_serializer=ai__model_dot_v1_dot_ai__model__pb2.DeleteChunksRequest.SerializeToString,
+                response_deserializer=ai__model_dot_v1_dot_ai__model__pb2.DeleteChunksResponse.FromString,
+                _registered_method=True)
 
 
 class RAGDocumentServiceServicer(object):
@@ -618,6 +638,31 @@ class RAGDocumentServiceServicer(object):
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
+    def ChunkDocument(self, request, context):
+        """Chunking Operations (Story 0.75.10d)
+        """
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def ListChunks(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def GetChunk(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def DeleteChunks(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
 
 def add_RAGDocumentServiceServicer_to_server(servicer, server):
     rpc_method_handlers = {
@@ -685,6 +730,26 @@ def add_RAGDocumentServiceServicer_to_server(servicer, server):
                     servicer.StreamExtractionProgress,
                     request_deserializer=ai__model_dot_v1_dot_ai__model__pb2.StreamExtractionProgressRequest.FromString,
                     response_serializer=ai__model_dot_v1_dot_ai__model__pb2.ExtractionProgressEvent.SerializeToString,
+            ),
+            'ChunkDocument': grpc.unary_unary_rpc_method_handler(
+                    servicer.ChunkDocument,
+                    request_deserializer=ai__model_dot_v1_dot_ai__model__pb2.ChunkDocumentRequest.FromString,
+                    response_serializer=ai__model_dot_v1_dot_ai__model__pb2.ChunkDocumentResponse.SerializeToString,
+            ),
+            'ListChunks': grpc.unary_unary_rpc_method_handler(
+                    servicer.ListChunks,
+                    request_deserializer=ai__model_dot_v1_dot_ai__model__pb2.ListChunksRequest.FromString,
+                    response_serializer=ai__model_dot_v1_dot_ai__model__pb2.ListChunksResponse.SerializeToString,
+            ),
+            'GetChunk': grpc.unary_unary_rpc_method_handler(
+                    servicer.GetChunk,
+                    request_deserializer=ai__model_dot_v1_dot_ai__model__pb2.GetChunkRequest.FromString,
+                    response_serializer=ai__model_dot_v1_dot_ai__model__pb2.RagChunk.SerializeToString,
+            ),
+            'DeleteChunks': grpc.unary_unary_rpc_method_handler(
+                    servicer.DeleteChunks,
+                    request_deserializer=ai__model_dot_v1_dot_ai__model__pb2.DeleteChunksRequest.FromString,
+                    response_serializer=ai__model_dot_v1_dot_ai__model__pb2.DeleteChunksResponse.SerializeToString,
             ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
@@ -1044,6 +1109,114 @@ class RAGDocumentService(object):
             '/farmer_power.ai_model.v1.RAGDocumentService/StreamExtractionProgress',
             ai__model_dot_v1_dot_ai__model__pb2.StreamExtractionProgressRequest.SerializeToString,
             ai__model_dot_v1_dot_ai__model__pb2.ExtractionProgressEvent.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def ChunkDocument(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/farmer_power.ai_model.v1.RAGDocumentService/ChunkDocument',
+            ai__model_dot_v1_dot_ai__model__pb2.ChunkDocumentRequest.SerializeToString,
+            ai__model_dot_v1_dot_ai__model__pb2.ChunkDocumentResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def ListChunks(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/farmer_power.ai_model.v1.RAGDocumentService/ListChunks',
+            ai__model_dot_v1_dot_ai__model__pb2.ListChunksRequest.SerializeToString,
+            ai__model_dot_v1_dot_ai__model__pb2.ListChunksResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def GetChunk(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/farmer_power.ai_model.v1.RAGDocumentService/GetChunk',
+            ai__model_dot_v1_dot_ai__model__pb2.GetChunkRequest.SerializeToString,
+            ai__model_dot_v1_dot_ai__model__pb2.RagChunk.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def DeleteChunks(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/farmer_power.ai_model.v1.RAGDocumentService/DeleteChunks',
+            ai__model_dot_v1_dot_ai__model__pb2.DeleteChunksRequest.SerializeToString,
+            ai__model_dot_v1_dot_ai__model__pb2.DeleteChunksResponse.FromString,
             options,
             channel_credentials,
             insecure,

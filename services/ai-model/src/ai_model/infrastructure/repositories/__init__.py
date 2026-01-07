@@ -5,6 +5,7 @@ This module exports all repository classes for data persistence.
 Story 0.75.5: Added LlmCostEventRepository.
 Story 0.75.9: Added RagDocumentRepository.
 Story 0.75.10b: Added ExtractionJobRepository.
+Story 0.75.10d: Added RagChunkRepository.
 """
 
 from ai_model.infrastructure.repositories.agent_config_repository import (
@@ -18,6 +19,9 @@ from ai_model.infrastructure.repositories.extraction_job_repository import (
     ExtractionJobRepository,
 )
 from ai_model.infrastructure.repositories.prompt_repository import PromptRepository
+from ai_model.infrastructure.repositories.rag_chunk_repository import (
+    RagChunkRepository,
+)
 from ai_model.infrastructure.repositories.rag_document_repository import (
     RagDocumentRepository,
 )
@@ -28,5 +32,6 @@ __all__ = [
     "ExtractionJobRepository",
     "LlmCostEventRepository",
     "PromptRepository",
+    "RagChunkRepository",
     "RagDocumentRepository",
 ]
