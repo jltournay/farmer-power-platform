@@ -1,6 +1,6 @@
 # Story 0.75.11: CLI for RAG Document
 
-**Status:** in-progress
+**Status:** review
 **GitHub Issue:** #125
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
@@ -156,11 +156,11 @@ So that agronomists can upload and version knowledge content.
   - [x] Test list command (4 tests)
   - [x] Test get/versions/promote/rollback commands (additional tests)
 
-- [ ] **Task 18: CI Verification** (AC: #13)
+- [x] **Task 18: CI Verification** (AC: #13)
   - [x] Run lint checks: `ruff check . && ruff format --check .`
   - [x] Run unit tests locally
-  - [ ] Push to feature branch and verify CI passes
-  - [ ] Trigger E2E CI workflow (optional for CLI - no Docker services)
+  - [x] Push to feature branch and verify CI passes (Run ID: 20793116998)
+  - [x] E2E CI workflow: N/A for CLI stories (no Docker services modified)
 
 ## Git Workflow (MANDATORY)
 
@@ -238,9 +238,9 @@ git push origin feature/0-75-11-cli-rag-document
 # Wait ~30s, then check CI status
 gh run list --branch feature/0-75-11-cli-rag-document --limit 3
 ```
-**CI Run ID:** _______________
-**CI Status:** [ ] Passed / [ ] Failed
-**Verification Date:** _______________
+**CI Run ID:** 20793116998
+**CI Status:** [x] Passed / [ ] Failed
+**Verification Date:** 2026-01-07
 
 ---
 
@@ -662,3 +662,4 @@ N/A
 
 **Modified:**
 - `_bmad-output/sprint-artifacts/sprint-status.yaml` - Updated story status to in-progress
+- `.github/workflows/ci.yaml` - Added scripts/knowledge-config/src to PYTHONPATH
