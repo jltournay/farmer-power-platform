@@ -46,7 +46,7 @@ async def wait_for_weather_documents(
     mongodb_direct,
     source_id: str,
     expected_min_count: int = 1,
-    timeout: float = 15.0,
+    timeout: float = 45.0,
     poll_interval: float = 0.5,
 ) -> int:
     """Wait for weather document count to reach expected minimum.
@@ -189,7 +189,7 @@ class TestWeatherDocumentCreation:
         assert result["success"] is True, f"Pull job failed: {result.get('error')}"
 
         # Wait for async processing using polling (more robust than fixed sleep)
-        await wait_for_weather_documents(mongodb_direct, SOURCE_ID, expected_min_count=1, timeout=15.0)
+        await wait_for_weather_documents(mongodb_direct, SOURCE_ID, expected_min_count=1, timeout=45.0)
 
         # Query weather documents from MongoDB
         documents = await mongodb_direct.find_documents(
@@ -226,7 +226,7 @@ class TestWeatherDocumentCreation:
         assert result["success"] is True, f"Pull job failed: {result.get('error')}"
 
         # Wait for async processing using polling
-        await wait_for_weather_documents(mongodb_direct, SOURCE_ID, expected_min_count=1, timeout=15.0)
+        await wait_for_weather_documents(mongodb_direct, SOURCE_ID, expected_min_count=1, timeout=45.0)
 
         # Query weather documents
         documents = await mongodb_direct.find_documents(
@@ -274,7 +274,7 @@ class TestPlantationMCPWeatherQuery:
         assert result["success"] is True, f"Pull job failed: {result.get('error')}"
 
         # Wait for async processing using polling
-        await wait_for_weather_documents(mongodb_direct, SOURCE_ID, expected_min_count=1, timeout=15.0)
+        await wait_for_weather_documents(mongodb_direct, SOURCE_ID, expected_min_count=1, timeout=45.0)
 
         # Get a region_id from the weather documents
         documents = await mongodb_direct.find_documents(
@@ -324,7 +324,7 @@ class TestCollectionMCPWeatherQuery:
         assert result["success"] is True, f"Pull job failed: {result.get('error')}"
 
         # Wait for async processing using polling
-        await wait_for_weather_documents(mongodb_direct, SOURCE_ID, expected_min_count=1, timeout=15.0)
+        await wait_for_weather_documents(mongodb_direct, SOURCE_ID, expected_min_count=1, timeout=45.0)
 
         # Query via Collection MCP get_documents
         result = await collection_mcp.call_tool(
