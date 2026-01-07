@@ -123,13 +123,13 @@ So that digital PDF and Markdown content can be extracted and stored.
 - [x] Push to feature branch: `git push -u origin feature/0-75-10b-basic-pdf-markdown-extraction`
 
 ### Story Done
-- [ ] Create Pull Request: `gh pr create --title "Story 0.75.10b: Basic PDF/Markdown Extraction" --base main`
-- [ ] CI passes on PR (including E2E tests)
+- [x] Create Pull Request: `gh pr create --title "Story 0.75.10b: Basic PDF/Markdown Extraction" --base main`
+- [x] CI passes on PR (including E2E tests)
 - [x] Code review completed (`/code-review` or human review)
 - [ ] PR approved and merged (squash)
 - [ ] Local branch cleaned up: `git branch -d feature/0-75-10b-basic-pdf-markdown-extraction`
 
-**PR URL:** _______________ (fill in when created)
+**PR URL:** https://github.com/jltournay/farmer-power-platform/pull/120
 
 ---
 
