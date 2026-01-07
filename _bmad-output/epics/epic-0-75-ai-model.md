@@ -557,18 +557,51 @@ As a **developer**,
 I want a retrieval service for RAG queries,
 So that agents can find relevant knowledge.
 
+**Prerequisites:**
+- Story 0.75.12 (Embedding Service) complete
+- Story 0.75.13 (Pinecone Repository) complete
+- Pinecone credentials in `.env` (PINECONE_API_KEY, PINECONE_INDEX_NAME)
+
 **Scope:**
 - Similarity search with configurable top-k
 - Confidence threshold filtering
 - Multi-domain queries
-- Query embedding generation
-- Synthetic sample generator utility (`tests/golden/generator.py`)
-- Golden sample test suite (synthetic samples, minimum 10):
-  - Test that known queries return expected document chunks
-  - Test confidence threshold filtering
-  - Test multi-domain retrieval accuracy
+- Query embedding generation (using EmbeddingService from 0.75.12)
 
-**Reusable:** The synthetic sample generator utility created here is reused by Stories 0.75.15, 0.75.17, 0.75.19, 0.75.20, 0.75.21, and 0.75.22.
+**Golden Sample Test Suite (MANDATORY):**
+
+The dev agent implementing this story will:
+
+1. **Create seed documents** (`tests/golden/rag/seed_documents.json`):
+   - Write 5+ realistic tea farming documents directly (no external LLM call needed - dev agent generates content)
+   - Include at least 2 domains: disease, weather
+   - Each document 200-500 words with realistic agronomic content
+
+2. **Upload seeds to Pinecone**:
+   - Embed documents using EmbeddingService
+   - Upsert to Pinecone namespace `golden-samples`
+
+3. **Create golden samples** (`tests/golden/rag/retrieval/samples.json`):
+   - Write 2-3 queries per seed document directly (dev agent generates queries)
+   - Validate each query retrieves expected document from Pinecone
+   - Minimum 10 samples total
+
+4. **Create test suite** (`tests/golden/rag/retrieval/test_retrieval_golden.py`):
+   - Test that known queries return expected document chunks
+   - Test confidence threshold filtering
+   - Test multi-domain retrieval accuracy
+   - Achieve ≥85% retrieval accuracy
+
+**Directory Structure:**
+```
+tests/golden/rag/
+├── seed_documents.json          # Created in this story, reused by 0.75.15+
+├── retrieval/
+│   ├── samples.json             # Queries + expected results
+│   └── test_retrieval_golden.py # Golden sample tests
+```
+
+**Reusable:** The seed documents created here are reused by Stories 0.75.15, 0.75.17, 0.75.19, 0.75.20, 0.75.21, and 0.75.22.
 
 ---
 
@@ -580,15 +613,50 @@ As a **developer**,
 I want ranking logic for RAG results,
 So that the most relevant documents are prioritized.
 
+**Prerequisites:**
+- Story 0.75.14 (RAG Retrieval Service) complete
+- Seed documents already in Pinecone (uploaded by Story 0.75.14)
+
 **Scope:**
 - Re-ranking based on relevance scores
 - Domain-specific boosting
 - Recency weighting (optional)
 - Result deduplication
-- Golden sample test suite (synthetic samples, minimum 10):
-  - Test that most relevant document ranks first
-  - Test domain-specific boosting effects
-  - Test deduplication removes near-duplicates
+
+**Golden Sample Test Suite (MANDATORY):**
+
+The dev agent implementing this story will:
+
+1. **Reuse seed documents from Story 0.75.14**:
+   - DO NOT create new seed documents
+   - Use existing `tests/golden/rag/seed_documents.json`
+   - Seeds are already uploaded to Pinecone namespace `golden-samples`
+
+2. **Create ranking samples** (`tests/golden/rag/ranking/samples.json`):
+   - Write queries that test ranking behavior directly (dev agent generates queries)
+   - Include queries where domain boosting should affect results
+   - Include queries to test deduplication
+   - Minimum 10 samples total
+
+3. **Create test suite** (`tests/golden/rag/ranking/test_ranking_golden.py`):
+   - Test that most relevant document ranks first
+   - Test domain-specific boosting effects
+   - Test deduplication removes near-duplicates
+   - Achieve ≥90% ranking accuracy
+
+**Directory Structure:**
+```
+tests/golden/rag/
+├── seed_documents.json          # REUSED from Story 0.75.14 (do not modify)
+├── retrieval/                   # Created by Story 0.75.14
+│   ├── samples.json
+│   └── test_retrieval_golden.py
+├── ranking/                     # Created in THIS story
+│   ├── samples.json             # Ranking-specific queries
+│   └── test_ranking_golden.py   # Ranking golden sample tests
+```
+
+**Why reuse seed documents?** Same seed documents ensure consistent test data across retrieval and ranking tests. Creating new documents would require re-uploading to Pinecone and could introduce inconsistencies.
 
 ---
 
