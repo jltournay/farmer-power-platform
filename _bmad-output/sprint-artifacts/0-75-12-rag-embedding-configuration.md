@@ -1,6 +1,6 @@
 # Story 0.75.12: RAG Embedding Configuration (Pinecone Inference)
 
-**Status:** review
+**Status:** done
 **GitHub Issue:** #127
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
@@ -428,5 +428,37 @@ Claude Opus 4.5 (claude-opus-4-5-20251101)
 - `services/ai-model/src/ai_model/config.py` - Added Pinecone configuration settings
 - `services/ai-model/src/ai_model/services/__init__.py` - Export EmbeddingService
 - `services/ai-model/src/ai_model/infrastructure/repositories/__init__.py` - Export EmbeddingCostEventRepository
+- `services/ai-model/src/ai_model/domain/__init__.py` - Export embedding domain models (code review fix)
 - `_bmad-output/sprint-artifacts/sprint-status.yaml` - Updated story status
 - `.github/workflows/ci.yaml` - Added pinecone dependency to CI install steps
+
+---
+
+## Code Review Record
+
+### Review Date
+2026-01-07
+
+### Reviewer Model
+Claude Opus 4.5 (claude-opus-4-5-20251101) - Adversarial Code Review
+
+### Review Outcome
+**APPROVED** (after fixes)
+
+### Issues Found and Resolved
+
+| # | Severity | Issue | Fix |
+|---|----------|-------|-----|
+| 1 | HIGH | Missing domain model exports in `domain/__init__.py` | Added exports for EmbeddingInputType, EmbeddingRequest, EmbeddingResult, EmbeddingUsage, EmbeddingCostEvent |
+| 2 | MEDIUM | Deprecated `asyncio.get_event_loop()` in Python 3.12+ | Replaced with `asyncio.get_running_loop()` |
+| 3 | MEDIUM | `embedding_retry_backoff_ms` config defined but never used | Removed unused config field |
+| 4 | LOW | Fragile retry count tracking using tenacity internals | Implemented using `before_sleep` callback with mutable state |
+
+### CI Verification
+- **Initial CI Run:** 20795611565 (Passed - before review)
+- **Post-Fix CI Run 1:** 20796119429 (Failed - test fixture issue)
+- **Post-Fix CI Run 2:** 20796432142 (Passed - all issues resolved)
+
+### Commits for Code Review Fixes
+- `e0bc7dd` - fix: Address code review findings for Story 0.75.12
+- `f168f4c` - fix: Use monkeypatch for Pinecone env vars in test fixture
