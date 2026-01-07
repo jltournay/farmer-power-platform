@@ -520,6 +520,77 @@ P2 (Medium):
 
 ## Test Infrastructure Requirements
 
+### 0. RAG Testing Prerequisites (Stories 0.75.12-0.75.15)
+
+RAG golden sample generation is a **task within each RAG story**, not a separate operation. The developer implementing the story generates samples as part of the story deliverables.
+
+**Infrastructure Dependencies:**
+
+RAG stories require Pinecone access for:
+1. Storing seed documents as vectors (test fixtures)
+2. Executing retrieval queries to validate samples
+3. Generating golden samples with actual Pinecone responses
+
+**Environment Variables (from `services/ai-model/src/ai_model/config.py`):**
+
+| Setting | Environment Variable | Required | Default |
+|---------|---------------------|----------|---------|
+| `pinecone_api_key` | `AI_MODEL_PINECONE_API_KEY` | **Yes** | None |
+| `pinecone_environment` | `AI_MODEL_PINECONE_ENVIRONMENT` | No | `us-east-1` |
+| `pinecone_index_name` | `AI_MODEL_PINECONE_INDEX_NAME` | No | `farmer-power-rag` |
+| `pinecone_embedding_model` | `AI_MODEL_PINECONE_EMBEDDING_MODEL` | No | `multilingual-e5-large` |
+
+**Developer Setup (Before Story 0.75.12):**
+
+1. Obtain Pinecone API key from https://www.pinecone.io/ (free tier available)
+2. Add to `.env`:
+   ```bash
+   AI_MODEL_PINECONE_API_KEY=pc-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+   AI_MODEL_PINECONE_ENVIRONMENT=us-east-1
+   AI_MODEL_PINECONE_INDEX_NAME=farmer-power-dev
+   ```
+3. Verify connection: `python -c "from ai_model.config import settings; print(settings.pinecone_enabled)"`
+
+**Golden Sample Generation Workflow (Per Story):**
+
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│           RAG STORY IMPLEMENTATION (Single PR)                       │
+├─────────────────────────────────────────────────────────────────────┤
+│                                                                      │
+│  Story Tasks Include:                                                │
+│  ┌────────────────────────────────────────────────────────────────┐ │
+│  │  1. Implement production code (retrieval/ranking service)       │ │
+│  │  2. Create seed_documents.json (5+ test documents)              │ │
+│  │  3. Upload seed docs to Pinecone test namespace                 │ │
+│  │  4. Generate synthetic samples using LLM + real Pinecone        │ │
+│  │  5. Commit samples.json (10+ samples)                           │ │
+│  │  6. Write golden sample test suite                              │ │
+│  │  7. Achieve ≥85% pass rate on synthetic samples                 │ │
+│  └────────────────────────────────────────────────────────────────┘ │
+│                                                                      │
+│  ARTIFACTS COMMITTED IN PR:                                          │
+│  • Production code                                                   │
+│  • tests/golden/rag/seed_documents.json                             │
+│  • tests/golden/rag/generator.py                                     │
+│  • tests/golden/rag/{component}/samples.json  ← Generated output    │
+│  • tests/golden/rag/{component}/test_golden.py                       │
+│                                                                      │
+└─────────────────────────────────────────────────────────────────────┘
+```
+
+**CI Configuration:**
+
+| Environment | Pinecone Access | Purpose |
+|-------------|-----------------|---------|
+| Local Dev | Real (via `.env`) | Generate samples, validate retrieval |
+| CI Unit Tests | Uses committed `samples.json` | Fast, deterministic regression |
+| CI Integration | Real (via `secrets.PINECONE_API_KEY`) | Optional: validate actual behavior |
+
+**Note:** CI runs tests against **committed samples.json** - it does NOT regenerate samples on each run.
+
+---
+
 ### 1. pytest Configuration
 
 ```python

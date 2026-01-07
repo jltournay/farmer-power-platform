@@ -103,11 +103,11 @@ So that documents are automatically vectorized when stored in Pinecone with a si
   - [x] Test domain models (11 tests)
   - [x] Test repository (3 tests)
 
-- [ ] **Task 8: CI Verification** (AC: #11)
+- [x] **Task 8: CI Verification** (AC: #11) ✅
   - [x] Run lint checks: `ruff check . && ruff format --check .` ✅
   - [x] Run unit tests locally with mocked Pinecone ✅ (34 passed)
-  - [ ] Push to feature branch and verify CI passes
-  - [ ] E2E CI: N/A (embedding service doesn't modify Docker services)
+  - [x] Push to feature branch and verify CI passes ✅ (Run ID: 20795611565)
+  - [x] E2E CI: N/A (embedding service doesn't modify Docker services)
 
 ## Git Workflow (MANDATORY)
 
@@ -174,9 +174,9 @@ git push origin feature/0-75-12-rag-embedding-configuration
 # Wait ~30s, then check CI status
 gh run list --branch feature/0-75-12-rag-embedding-configuration --limit 3
 ```
-**CI Run ID:** _______________
-**CI Status:** [ ] Passed / [ ] Failed
-**Verification Date:** _______________
+**CI Run ID:** 20795611565
+**CI Status:** [x] Passed / [ ] Failed
+**Verification Date:** 2026-01-07
 
 ---
 
