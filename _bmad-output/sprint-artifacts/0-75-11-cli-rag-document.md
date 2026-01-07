@@ -182,13 +182,13 @@ So that agronomists can upload and version knowledge content.
 - [x] Push to feature branch: `git push -u origin feature/0-75-11-cli-rag-document`
 
 ### Story Done
-- [ ] Create Pull Request: `gh pr create --title "Story 0.75.11: CLI for RAG Document" --base main`
+- [x] Create Pull Request: `gh pr create --title "Story 0.75.11: CLI for RAG Document" --base main`
 - [ ] CI passes on PR (including linting)
 - [x] Code review completed (`/code-review` - this session)
 - [ ] PR approved and merged (squash)
 - [ ] Local branch cleaned up: `git branch -d feature/0-75-11-cli-rag-document`
 
-**PR URL:** _______________ (fill in when created)
+**PR URL:** https://github.com/jltournay/farmer-power-platform/pull/126
 
 ---
 
