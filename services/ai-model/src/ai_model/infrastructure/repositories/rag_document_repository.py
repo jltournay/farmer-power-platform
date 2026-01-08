@@ -211,6 +211,31 @@ class RagDocumentRepository(BaseRepository[RagDocument]):
 
         return documents, total_count
 
+    async def replace(self, document: RagDocument) -> RagDocument | None:
+        """Replace a RAG document with new values.
+
+        Replaces the entire document in MongoDB with the provided document model.
+        Use this for full document updates (e.g., after vectorization).
+
+        Args:
+            document: The updated document (must have id field).
+
+        Returns:
+            The updated document if found, None otherwise.
+        """
+        doc = document.model_dump()
+        doc["_id"] = document.id
+
+        result = await self._collection.find_one_and_replace(
+            {"_id": document.id},
+            doc,
+            return_document=True,
+        )
+        if result is None:
+            return None
+        result.pop("_id", None)
+        return RagDocument.model_validate(result)
+
     async def search(
         self,
         query_text: str,

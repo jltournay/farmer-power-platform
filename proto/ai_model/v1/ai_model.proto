@@ -205,6 +205,10 @@ service RAGDocumentService {
   rpc ListChunks(ListChunksRequest) returns (ListChunksResponse);
   rpc GetChunk(GetChunkRequest) returns (RagChunk);
   rpc DeleteChunks(DeleteChunksRequest) returns (DeleteChunksResponse);
+
+  // Vectorization Operations (Story 0.75.13b)
+  rpc VectorizeDocument(VectorizeDocumentRequest) returns (VectorizeDocumentResponse);
+  rpc GetVectorizationJob(GetVectorizationJobRequest) returns (VectorizationJobResponse);
 }
 
 // ============================================
@@ -551,4 +555,68 @@ message DeleteChunksRequest {
 message DeleteChunksResponse {
   // Number of chunks deleted
   int32 chunks_deleted = 1;
+}
+
+// ============================================
+// Vectorization Messages (Story 0.75.13b)
+// ============================================
+
+message VectorizeDocumentRequest {
+  // Document ID to vectorize
+  string document_id = 1;
+  // Document version to vectorize (0 = latest)
+  int32 version = 2;
+  // Optional: Run async and return job_id immediately
+  bool async = 3;
+}
+
+message VectorizeDocumentResponse {
+  // Job ID for tracking (always set)
+  string job_id = 1;
+  // Final status (set only for sync mode)
+  string status = 2;
+  // Pinecone namespace where vectors were stored
+  string namespace = 3;
+  // Number of chunks vectorized
+  int32 chunks_total = 4;
+  // Number of chunks successfully embedded
+  int32 chunks_embedded = 5;
+  // Number of chunks successfully stored in Pinecone
+  int32 chunks_stored = 6;
+  // Number of chunks that failed
+  int32 failed_count = 7;
+  // SHA256 content hash of vectorized content
+  string content_hash = 8;
+  // Error message if status is failed/partial
+  string error_message = 9;
+}
+
+message GetVectorizationJobRequest {
+  // Job ID to retrieve status for
+  string job_id = 1;
+}
+
+message VectorizationJobResponse {
+  // Job ID
+  string job_id = 1;
+  // Current status: pending, in_progress, completed, failed, partial
+  string status = 2;
+  // Document ID being vectorized
+  string document_id = 3;
+  // Document version being vectorized
+  int32 document_version = 4;
+  // Pinecone namespace
+  string namespace = 5;
+  // Progress metrics
+  int32 chunks_total = 6;
+  int32 chunks_embedded = 7;
+  int32 chunks_stored = 8;
+  int32 failed_count = 9;
+  // SHA256 content hash (set on completion)
+  string content_hash = 10;
+  // Error message if failed
+  string error_message = 11;
+  // Timestamps
+  google.protobuf.Timestamp started_at = 12;
+  google.protobuf.Timestamp completed_at = 13;
 }

@@ -519,3 +519,70 @@ class DeleteChunksResponse(_message.Message):
     CHUNKS_DELETED_FIELD_NUMBER: _ClassVar[int]
     chunks_deleted: int
     def __init__(self, chunks_deleted: _Optional[int] = ...) -> None: ...
+
+class VectorizeDocumentRequest(_message.Message):
+    __slots__ = ("document_id", "version")
+    DOCUMENT_ID_FIELD_NUMBER: _ClassVar[int]
+    VERSION_FIELD_NUMBER: _ClassVar[int]
+    ASYNC_FIELD_NUMBER: _ClassVar[int]
+    document_id: str
+    version: int
+    def __init__(self, document_id: _Optional[str] = ..., version: _Optional[int] = ..., **kwargs) -> None: ...
+
+class VectorizeDocumentResponse(_message.Message):
+    __slots__ = ("job_id", "status", "namespace", "chunks_total", "chunks_embedded", "chunks_stored", "failed_count", "content_hash", "error_message")
+    JOB_ID_FIELD_NUMBER: _ClassVar[int]
+    STATUS_FIELD_NUMBER: _ClassVar[int]
+    NAMESPACE_FIELD_NUMBER: _ClassVar[int]
+    CHUNKS_TOTAL_FIELD_NUMBER: _ClassVar[int]
+    CHUNKS_EMBEDDED_FIELD_NUMBER: _ClassVar[int]
+    CHUNKS_STORED_FIELD_NUMBER: _ClassVar[int]
+    FAILED_COUNT_FIELD_NUMBER: _ClassVar[int]
+    CONTENT_HASH_FIELD_NUMBER: _ClassVar[int]
+    ERROR_MESSAGE_FIELD_NUMBER: _ClassVar[int]
+    job_id: str
+    status: str
+    namespace: str
+    chunks_total: int
+    chunks_embedded: int
+    chunks_stored: int
+    failed_count: int
+    content_hash: str
+    error_message: str
+    def __init__(self, job_id: _Optional[str] = ..., status: _Optional[str] = ..., namespace: _Optional[str] = ..., chunks_total: _Optional[int] = ..., chunks_embedded: _Optional[int] = ..., chunks_stored: _Optional[int] = ..., failed_count: _Optional[int] = ..., content_hash: _Optional[str] = ..., error_message: _Optional[str] = ...) -> None: ...
+
+class GetVectorizationJobRequest(_message.Message):
+    __slots__ = ("job_id",)
+    JOB_ID_FIELD_NUMBER: _ClassVar[int]
+    job_id: str
+    def __init__(self, job_id: _Optional[str] = ...) -> None: ...
+
+class VectorizationJobResponse(_message.Message):
+    __slots__ = ("job_id", "status", "document_id", "document_version", "namespace", "chunks_total", "chunks_embedded", "chunks_stored", "failed_count", "content_hash", "error_message", "started_at", "completed_at")
+    JOB_ID_FIELD_NUMBER: _ClassVar[int]
+    STATUS_FIELD_NUMBER: _ClassVar[int]
+    DOCUMENT_ID_FIELD_NUMBER: _ClassVar[int]
+    DOCUMENT_VERSION_FIELD_NUMBER: _ClassVar[int]
+    NAMESPACE_FIELD_NUMBER: _ClassVar[int]
+    CHUNKS_TOTAL_FIELD_NUMBER: _ClassVar[int]
+    CHUNKS_EMBEDDED_FIELD_NUMBER: _ClassVar[int]
+    CHUNKS_STORED_FIELD_NUMBER: _ClassVar[int]
+    FAILED_COUNT_FIELD_NUMBER: _ClassVar[int]
+    CONTENT_HASH_FIELD_NUMBER: _ClassVar[int]
+    ERROR_MESSAGE_FIELD_NUMBER: _ClassVar[int]
+    STARTED_AT_FIELD_NUMBER: _ClassVar[int]
+    COMPLETED_AT_FIELD_NUMBER: _ClassVar[int]
+    job_id: str
+    status: str
+    document_id: str
+    document_version: int
+    namespace: str
+    chunks_total: int
+    chunks_embedded: int
+    chunks_stored: int
+    failed_count: int
+    content_hash: str
+    error_message: str
+    started_at: _timestamp_pb2.Timestamp
+    completed_at: _timestamp_pb2.Timestamp
+    def __init__(self, job_id: _Optional[str] = ..., status: _Optional[str] = ..., document_id: _Optional[str] = ..., document_version: _Optional[int] = ..., namespace: _Optional[str] = ..., chunks_total: _Optional[int] = ..., chunks_embedded: _Optional[int] = ..., chunks_stored: _Optional[int] = ..., failed_count: _Optional[int] = ..., content_hash: _Optional[str] = ..., error_message: _Optional[str] = ..., started_at: _Optional[_Union[datetime.datetime, _timestamp_pb2.Timestamp, _Mapping]] = ..., completed_at: _Optional[_Union[datetime.datetime, _timestamp_pb2.Timestamp, _Mapping]] = ...) -> None: ...

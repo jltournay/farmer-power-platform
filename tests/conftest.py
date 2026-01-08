@@ -462,6 +462,22 @@ class MockMongoCollection:
                 return doc.copy()
         return None
 
+    async def find_one_and_replace(
+        self,
+        filter: dict[str, Any],
+        replacement: dict[str, Any],
+        return_document: bool = False,
+    ) -> dict[str, Any] | None:
+        """Mock find_one_and_replace operation."""
+        for doc_id, doc in self._documents.items():
+            if self._match_filter(doc, filter):
+                # Replace entire document (keep _id)
+                self._documents[doc_id] = {**replacement, "_id": doc_id}
+                if return_document:
+                    return self._documents[doc_id].copy()
+                return doc.copy()
+        return None
+
     async def update_one(
         self,
         filter: dict[str, Any],
