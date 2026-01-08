@@ -1,6 +1,6 @@
 # Story 0.75.13c: RAG Vectorization gRPC Wiring
 
-**Status:** in-progress
+**Status:** review
 **GitHub Issue:** #133
 
 ## Story
@@ -426,10 +426,16 @@ All checks passed!
 ### 4. CI Verification on Story Branch (MANDATORY)
 
 ```bash
-gh workflow run e2e.yaml --ref feature/0-75-13c-rag-vectorization-grpc-wiring
+gh workflow run "E2E Tests" --ref feature/0-75-13c-rag-vectorization-grpc-wiring
 ```
-**CI Run ID:** (to be filled after push)
-**CI E2E Status:** [ ] Passed / [ ] Failed
+**CI Run ID:** 20811284238
+**CI E2E Status:** [x] Passed / [ ] Failed
+
+**CI E2E Run Details:**
+- Workflow: E2E Tests
+- Branch: feature/0-75-13c-rag-vectorization-grpc-wiring
+- Result: SUCCESS
+- URL: https://github.com/jltournay/farmer-power-platform/actions/runs/20811284238
 
 ---
 
