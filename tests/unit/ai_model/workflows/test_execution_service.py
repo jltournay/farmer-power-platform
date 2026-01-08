@@ -17,14 +17,6 @@ from ai_model.workflows.execution_service import (
 
 
 @pytest.fixture
-def mock_mongodb_client() -> MagicMock:
-    """Create a mock MongoDB client."""
-    client = MagicMock()
-    client.__getitem__ = MagicMock(return_value=MagicMock())
-    return client
-
-
-@pytest.fixture
 def mock_llm_gateway() -> MagicMock:
     """Create a mock LLM gateway."""
     gateway = MagicMock()
@@ -49,17 +41,17 @@ def mock_ranking_service() -> MagicMock:
 
 @pytest.fixture
 def execution_service(
-    mock_mongodb_client: MagicMock,
     mock_llm_gateway: MagicMock,
     mock_ranking_service: MagicMock,
 ) -> WorkflowExecutionService:
-    """Create a WorkflowExecutionService instance."""
-    return WorkflowExecutionService(
-        mongodb_client=mock_mongodb_client,
-        mongodb_database="test_db",
-        llm_gateway=mock_llm_gateway,
-        ranking_service=mock_ranking_service,
-    )
+    """Create a WorkflowExecutionService instance with mocked MongoClient."""
+    with patch("ai_model.workflows.execution_service.MongoClient"):
+        return WorkflowExecutionService(
+            mongodb_uri="mongodb://localhost:27017",
+            mongodb_database="test_db",
+            llm_gateway=mock_llm_gateway,
+            ranking_service=mock_ranking_service,
+        )
 
 
 class TestWorkflowExecutionService:
@@ -67,18 +59,18 @@ class TestWorkflowExecutionService:
 
     def test_initialization(
         self,
-        mock_mongodb_client: MagicMock,
         mock_llm_gateway: MagicMock,
     ) -> None:
         """Test service initialization."""
-        service = WorkflowExecutionService(
-            mongodb_client=mock_mongodb_client,
-            mongodb_database="test_db",
-            llm_gateway=mock_llm_gateway,
-        )
+        with patch("ai_model.workflows.execution_service.MongoClient"):
+            service = WorkflowExecutionService(
+                mongodb_uri="mongodb://localhost:27017",
+                mongodb_database="test_db",
+                llm_gateway=mock_llm_gateway,
+            )
 
-        assert service._mongodb_database == "test_db"
-        assert service._llm_gateway is mock_llm_gateway
+            assert service._mongodb_database == "test_db"
+            assert service._llm_gateway is mock_llm_gateway
 
     def test_create_workflow_extractor(
         self,

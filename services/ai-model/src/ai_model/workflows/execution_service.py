@@ -17,7 +17,7 @@ from ai_model.workflows.explorer import ExplorerWorkflow
 from ai_model.workflows.extractor import ExtractorWorkflow
 from ai_model.workflows.generator import GeneratorWorkflow
 from ai_model.workflows.tiered_vision import TieredVisionWorkflow
-from motor.motor_asyncio import AsyncIOMotorClient
+from pymongo import MongoClient
 
 logger = structlog.get_logger(__name__)
 
@@ -43,14 +43,18 @@ class WorkflowExecutionService:
 
     This service provides:
     - Workflow factory by agent type
-    - MongoDB checkpointer integration
+    - MongoDB checkpointer integration (using PyMongo for langgraph compatibility)
     - Unified execution interface
     - Proper state initialization
+
+    Note:
+        langgraph-checkpoint-mongodb requires PyMongo (sync), not Motor (async).
+        This service creates its own PyMongo client for checkpointing.
 
     Usage:
         ```python
         service = WorkflowExecutionService(
-            mongodb_client=motor_client,
+            mongodb_uri="mongodb://localhost:27017",
             mongodb_database="ai_model",
             llm_gateway=llm_gateway,
             ranking_service=ranking_service,
@@ -67,7 +71,7 @@ class WorkflowExecutionService:
 
     def __init__(
         self,
-        mongodb_client: AsyncIOMotorClient,  # type: ignore[type-arg]
+        mongodb_uri: str,
         mongodb_database: str,
         llm_gateway: Any,  # LLMGateway
         ranking_service: Any | None = None,  # RankingService
@@ -77,14 +81,15 @@ class WorkflowExecutionService:
         """Initialize the workflow execution service.
 
         Args:
-            mongodb_client: Motor MongoDB client.
+            mongodb_uri: MongoDB connection string.
             mongodb_database: Database name for checkpoints.
             llm_gateway: LLM gateway for all workflows.
             ranking_service: Optional ranking service for RAG workflows.
             mcp_integration: Optional MCP integration for context.
             checkpoint_ttl_seconds: TTL for checkpoints (default 30 min).
         """
-        self._mongodb_client = mongodb_client
+        # Create PyMongo client for checkpointer (langgraph requires sync client)
+        self._pymongo_client: MongoClient[Any] = MongoClient(mongodb_uri)
         self._mongodb_database = mongodb_database
         self._llm_gateway = llm_gateway
         self._ranking_service = ranking_service
@@ -92,11 +97,14 @@ class WorkflowExecutionService:
         self._checkpoint_ttl_seconds = checkpoint_ttl_seconds
         self._checkpointer: Any | None = None
 
-    async def _get_checkpointer(self) -> Any:
-        """Get or create the MongoDB checkpointer."""
+    def _get_checkpointer(self) -> Any:
+        """Get or create the MongoDB checkpointer.
+
+        Note: This is sync because langgraph-checkpoint-mongodb uses PyMongo (sync).
+        """
         if self._checkpointer is None:
-            self._checkpointer = await create_mongodb_checkpointer(
-                client=self._mongodb_client,
+            self._checkpointer = create_mongodb_checkpointer(
+                client=self._pymongo_client,
                 database=self._mongodb_database,
                 ttl_seconds=self._checkpoint_ttl_seconds,
             )
@@ -205,8 +213,8 @@ class WorkflowExecutionService:
         )
 
         try:
-            # Get checkpointer if needed
-            checkpointer = await self._get_checkpointer() if use_checkpointer else None
+            # Get checkpointer if needed (sync - langgraph uses PyMongo)
+            checkpointer = self._get_checkpointer() if use_checkpointer else None
 
             # Create workflow
             workflow = self._create_workflow(
