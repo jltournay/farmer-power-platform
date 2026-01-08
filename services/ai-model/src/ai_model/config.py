@@ -203,6 +203,12 @@ class Settings(BaseSettings):
         validation_alias="PINECONE_EMBEDDING_MODEL",
     )
 
+    # Reranker model to use via Pinecone Inference API (Story 0.75.15)
+    pinecone_rerank_model: str = Field(
+        default="pinecone-rerank-v0",
+        validation_alias="PINECONE_RERANK_MODEL",
+    )
+
     # ========================================
     # Embedding Batch Configuration (Story 0.75.12)
     # ========================================
