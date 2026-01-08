@@ -247,6 +247,7 @@ ignore = [
     "RUF059", # Unused unpacked variables (common in test assertions)
     "ERA001", # Allow explanatory comments that look like code
     "TC001",  # Test imports don't need type-checking blocks
+    "TC002",  # Test imports don't need type-checking blocks (used at runtime in tests)
     "TC003",  # Test imports don't need type-checking blocks
     "F841",   # Unused variables in tests (result = await ...)
     "B017",   # Blind exception assertions acceptable in tests
