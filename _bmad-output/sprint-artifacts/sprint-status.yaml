@@ -181,7 +181,7 @@ development_status:
   0-75-13b-rag-vectorization-pipeline: done  # github_issue: 131, PR: #132, CODE REVIEW COMPLETED 2026-01-07
   0-75-13c-rag-vectorization-grpc-wiring: done  # github_issue: 133, PR: #134, CODE REVIEW COMPLETED 2026-01-08
   0-75-13d-vectorization-job-persistence: done  # github_issue: 135, CODE REVIEW COMPLETED 2026-01-08
-  0-75-14-rag-retrieval-service: ready-for-dev  # Similarity search, synthetic sample generator
+  0-75-14-rag-retrieval-service: in-progress  # Similarity search, synthetic sample generator
   0-75-15-rag-ranking-logic: backlog  # Re-ranking, domain boosting, golden samples
   0-75-16-langgraph-sdk-integration-base-workflows: backlog  # Saga, checkpointing, async risk
   0-75-17-extractor-agent-implementation: backlog  # LangChain linear workflow, golden samples
