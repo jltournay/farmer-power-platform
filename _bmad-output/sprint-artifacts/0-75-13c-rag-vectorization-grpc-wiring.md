@@ -155,11 +155,39 @@ Story 0.75.13b created the `VectorizationPipeline` orchestration class and proto
     - [x] Cleanup fixture: delete namespace vectors after test via `vector_store.delete_all(namespace)`
     - [x] Ensure test doesn't pollute production namespaces
 
-- [x] **Task 8: CI Verification** (AC: #8)
+- [ ] **Task 8: CI Verification** (AC: #8) - **BLOCKED: E2E tests failing**
   - [x] Run lint checks: `ruff check . && ruff format --check .`
-  - [x] Run unit tests locally
-  - [x] Run E2E tests with `--build` flag
+  - [x] Run unit tests locally (27 passed)
+  - [ ] Run E2E tests with `--build` flag - **FAILING**
   - [ ] Push and verify CI passes
+
+## Remaining Work (Session 2)
+
+**E2E tests are failing with 4 errors. Fixes required:**
+
+### Issue 1: ChunkingWorkflow not wired
+- **Error:** `"Chunking service not configured"` when calling `ChunkDocument`
+- **File:** `services/ai-model/src/ai_model/api/grpc_server.py`
+- **Fix:** Wire `ChunkingWorkflow` independently of Pinecone configuration. Chunking should work even without vectorization.
+
+### Issue 2: VectorizeDocument checks pipeline before document
+- **Error:** Returns `UNAVAILABLE` instead of `NOT_FOUND` for non-existent documents
+- **File:** `services/ai-model/src/ai_model/api/rag_document_service.py`
+- **Fix:** In `VectorizeDocument`, check if document exists BEFORE checking if pipeline is configured.
+
+### Issue 3: Docker env_file fixed but needs rebuild
+- **Error:** Pinecone env vars were empty in container
+- **File:** `tests/e2e/infrastructure/docker-compose.e2e.yaml`
+- **Fix:** Already fixed - removed explicit env overrides. Need to rebuild containers.
+
+### Commands to continue:
+```bash
+# 1. Fix grpc_server.py to wire ChunkingWorkflow
+# 2. Fix rag_document_service.py error order
+# 3. Rebuild and test
+docker compose -f tests/e2e/infrastructure/docker-compose.e2e.yaml up -d --build
+PYTHONPATH="${PYTHONPATH}:.:libs/fp-proto/src" pytest tests/e2e/scenarios/test_09_rag_vectorization.py -v
+```
 
 ## Git Workflow (MANDATORY)
 
@@ -343,17 +371,18 @@ tests/unit/ai_model/test_rag_document_service.py::test_set_vectorization_pipelin
 
 ```bash
 docker compose -f tests/e2e/infrastructure/docker-compose.e2e.yaml up -d --build
-PYTHONPATH="${PYTHONPATH}:.:libs/fp-proto/src" pytest tests/e2e/scenarios/ -v
+PYTHONPATH="${PYTHONPATH}:.:libs/fp-proto/src" pytest tests/e2e/scenarios/test_09_rag_vectorization.py -v
 docker compose -f tests/e2e/infrastructure/docker-compose.e2e.yaml down -v
 ```
-**Output:**
+**Output (Session 1 - FAILING):**
 ```
-tests/e2e/scenarios/test_09_rag_vectorization.py::TestRAGVectorization::test_vectorization_e2e_flow SKIPPED [ 82%]
-tests/e2e/scenarios/test_09_rag_vectorization.py::TestRAGVectorization::test_vectorization_async_mode SKIPPED [ 83%]
-tests/e2e/scenarios/test_09_rag_vectorization.py::TestRAGVectorization::test_vectorization_without_pinecone_returns_error PASSED [ 83%]
-================== 96 passed, 10 skipped in 119.26s (0:01:59) ==================
+test_vectorization_e2e_flow FAILED - "Chunking service not configured"
+test_vectorization_async_mode FAILED - "Chunking service not configured"
+test_vectorize_document_not_found FAILED - Expected NOT_FOUND, got UNAVAILABLE
+test_get_vectorization_job_not_found FAILED - Expected NOT_FOUND, got UNAVAILABLE
+============================== 4 failed in 0.88s ===============================
 ```
-**E2E passed:** [x] Yes / [ ] No
+**E2E passed:** [ ] Yes / [x] No - See "Remaining Work (Session 2)" section above
 
 ### 3. Lint Check
 ```bash

@@ -7,20 +7,15 @@ Test Flow:
 2. Stage the document
 3. Chunk the document (generates semantic chunks)
 4. Vectorize the document (generates embeddings, stores in Pinecone)
-5. Verify vectorization completed successfully
+5. Verify vectorization completed successfully OR returns appropriate error
 
 Prerequisites:
     - docker compose -f tests/e2e/infrastructure/docker-compose.e2e.yaml up -d --build
-    - PINECONE_API_KEY and PINECONE_INDEX_NAME environment variables set
     - Wait for all services to be healthy before running tests
 
-Test Isolation:
-    Each test uses a unique namespace in Pinecone (e2e-{uuid}) to prevent pollution.
-    Cleanup fixture deletes vectors after test completion.
-
-Note:
-    If Pinecone credentials are not configured, vectorization tests are skipped.
-    The ai-model service gracefully handles missing Pinecone configuration.
+Behavior:
+    - If PINECONE_API_KEY is configured: Full vectorization flow is tested
+    - If PINECONE_API_KEY is NOT configured: Verifies graceful error handling
 """
 
 import contextlib
@@ -82,12 +77,9 @@ particularly in high-altitude tea-growing regions with cool, humid climates.
 
 
 @pytest.fixture
-def pinecone_configured():
-    """Check if Pinecone is configured for E2E tests."""
-    api_key = os.environ.get("PINECONE_API_KEY", "")
-    if not api_key:
-        pytest.skip("PINECONE_API_KEY not configured - skipping vectorization test")
-    return True
+def pinecone_is_configured():
+    """Check if Pinecone is configured (returns bool, does NOT skip)."""
+    return bool(os.environ.get("PINECONE_API_KEY", ""))
 
 
 @pytest.fixture
@@ -191,14 +183,16 @@ class TestRAGVectorization:
 
     def test_vectorization_e2e_flow(
         self,
-        pinecone_configured,
+        pinecone_is_configured,
         e2e_test_id,
         rag_document_stub,
     ):
         """
         Test complete vectorization flow: Create -> Stage -> Chunk -> Vectorize.
 
-        AC7: E2E Test for vectorization flow with test isolation.
+        AC7: E2E Test for vectorization flow.
+        - If Pinecone configured: Verifies full flow completes successfully
+        - If Pinecone NOT configured: Verifies appropriate UNAVAILABLE error
         """
         document_id = f"test-doc-{e2e_test_id}"
 
@@ -224,58 +218,69 @@ class TestRAGVectorization:
             assert chunk_response.chunks_created > 0
             print(f"[3/4] Chunked document: {chunk_response.chunks_created} chunks created")
 
-            # Step 4: Vectorize document (sync mode - wait for completion)
-            vectorize_response = vectorize_document(
-                rag_document_stub,
-                document_id,
-                version=1,
-                async_mode=False,
-            )
+            # Step 4: Vectorize document
+            if pinecone_is_configured:
+                # Full flow - expect success
+                vectorize_response = vectorize_document(
+                    rag_document_stub,
+                    document_id,
+                    version=1,
+                    async_mode=False,
+                )
 
-            # Verify vectorization completed
-            assert vectorize_response.job_id, "Expected job_id in response"
-            assert vectorize_response.status in (
-                "completed",
-                "partial",
-            ), f"Expected completed/partial, got {vectorize_response.status}"
-            assert vectorize_response.chunks_stored > 0, "Expected chunks to be stored"
+                # Verify vectorization completed
+                assert vectorize_response.job_id, "Expected job_id in response"
+                assert vectorize_response.status in (
+                    "completed",
+                    "partial",
+                ), f"Expected completed/partial, got {vectorize_response.status}"
+                assert vectorize_response.chunks_stored > 0, "Expected chunks to be stored"
 
-            print(
-                f"[4/4] Vectorized document: "
-                f"{vectorize_response.chunks_stored}/{vectorize_response.chunks_total} chunks stored"
-            )
-            print(f"      Namespace: {vectorize_response.namespace}")
-            print(f"      Content hash: {vectorize_response.content_hash}")
+                print(
+                    f"[4/4] Vectorized document: "
+                    f"{vectorize_response.chunks_stored}/{vectorize_response.chunks_total} "
+                    f"chunks stored"
+                )
+                print(f"      Namespace: {vectorize_response.namespace}")
+                print(f"      Content hash: {vectorize_response.content_hash}")
+            else:
+                # No Pinecone - expect UNAVAILABLE error
+                print("[4/4] Pinecone not configured - testing error handling...")
+                with pytest.raises(grpc.RpcError) as exc_info:
+                    vectorize_document(rag_document_stub, document_id, version=1)
 
-            if vectorize_response.failed_count > 0:
-                print(f"      Warning: {vectorize_response.failed_count} chunks failed")
+                assert exc_info.value.code() == grpc.StatusCode.UNAVAILABLE, (
+                    f"Expected UNAVAILABLE, got {exc_info.value.code()}"
+                )
+                error_details = exc_info.value.details().lower()
+                assert "pinecone" in error_details or "not configured" in error_details, (
+                    f"Expected error about Pinecone not configured, got: {exc_info.value.details()}"
+                )
+                print(f"      Correctly returned UNAVAILABLE: {exc_info.value.details()}")
 
         finally:
-            # Cleanup: Delete document (also cleans up chunks in MongoDB)
-            # Note: Pinecone vectors remain (namespace-based cleanup would require
-            # direct Pinecone client, which is out of scope for this test)
-            try:
+            # Cleanup: Delete document
+            with contextlib.suppress(grpc.RpcError):
                 delete_document(rag_document_stub, document_id)
                 print(f"[Cleanup] Deleted document: {document_id}")
-            except grpc.RpcError as e:
-                print(f"[Cleanup] Warning: Failed to delete document: {e.details()}")
 
     def test_vectorization_async_mode(
         self,
-        pinecone_configured,
+        pinecone_is_configured,
         e2e_test_id,
         rag_document_stub,
     ):
         """
         Test async vectorization returns job_id immediately.
 
-        The async mode allows clients to poll for job status without blocking.
+        - If Pinecone configured: Verifies async mode works with polling
+        - If Pinecone NOT configured: Verifies appropriate UNAVAILABLE error
         """
         document_id = f"test-async-{e2e_test_id}"
 
         try:
-            # Create and stage document
-            doc = create_test_document(
+            # Create, stage, and chunk document
+            create_test_document(
                 rag_document_stub,
                 document_id,
                 TEST_DOCUMENT_CONTENT,
@@ -283,78 +288,82 @@ class TestRAGVectorization:
             stage_document(rag_document_stub, document_id, 1)
             chunk_document(rag_document_stub, document_id, 1)
 
-            # Vectorize in async mode
-            vectorize_response = vectorize_document(
-                rag_document_stub,
-                document_id,
-                version=1,
-                async_mode=True,
-            )
+            if pinecone_is_configured:
+                # Full async flow
+                vectorize_response = vectorize_document(
+                    rag_document_stub,
+                    document_id,
+                    version=1,
+                    async_mode=True,
+                )
 
-            # Should return immediately with job_id and pending status
-            assert vectorize_response.job_id, "Expected job_id in async response"
-            assert vectorize_response.status == "pending", (
-                f"Expected pending status in async mode, got {vectorize_response.status}"
-            )
+                # Should return immediately with job_id and pending status
+                assert vectorize_response.job_id, "Expected job_id in async response"
+                assert vectorize_response.status == "pending", (
+                    f"Expected pending status in async mode, got {vectorize_response.status}"
+                )
 
-            print(f"Async vectorization started: job_id={vectorize_response.job_id}")
+                print(f"Async vectorization started: job_id={vectorize_response.job_id}")
 
-            # Poll for job completion
-            import time
+                # Poll for job completion
+                import time
 
-            max_attempts = 30
-            for attempt in range(max_attempts):
-                job_status = get_vectorization_job(rag_document_stub, vectorize_response.job_id)
-                if job_status.status in ("completed", "partial", "failed"):
-                    print(
-                        f"Job completed after {attempt + 1} polls: "
-                        f"status={job_status.status}, "
-                        f"chunks_stored={job_status.chunks_stored}"
+                max_attempts = 30
+                for attempt in range(max_attempts):
+                    job_status = get_vectorization_job(
+                        rag_document_stub, vectorize_response.job_id
                     )
-                    assert job_status.status in ("completed", "partial")
-                    break
-                time.sleep(1)
+                    if job_status.status in ("completed", "partial", "failed"):
+                        print(
+                            f"Job completed after {attempt + 1} polls: "
+                            f"status={job_status.status}, "
+                            f"chunks_stored={job_status.chunks_stored}"
+                        )
+                        assert job_status.status in ("completed", "partial")
+                        break
+                    time.sleep(1)
+                else:
+                    pytest.fail(f"Vectorization job did not complete within {max_attempts}s")
             else:
-                pytest.fail(f"Vectorization job did not complete within {max_attempts}s")
+                # No Pinecone - expect UNAVAILABLE error
+                print("Pinecone not configured - testing async error handling...")
+                with pytest.raises(grpc.RpcError) as exc_info:
+                    vectorize_document(
+                        rag_document_stub, document_id, version=1, async_mode=True
+                    )
+
+                assert exc_info.value.code() == grpc.StatusCode.UNAVAILABLE
+                print(f"Correctly returned UNAVAILABLE: {exc_info.value.details()}")
 
         finally:
             with contextlib.suppress(grpc.RpcError):
                 delete_document(rag_document_stub, document_id)
 
-    def test_vectorization_without_pinecone_returns_error(
+    def test_vectorize_document_not_found(
         self,
         e2e_test_id,
         rag_document_stub,
     ):
-        """
-        Test that vectorization gracefully fails when Pinecone is not configured.
+        """Test that vectorizing a non-existent document returns NOT_FOUND."""
+        document_id = f"non-existent-{e2e_test_id}"
 
-        Note: This test only runs if PINECONE_API_KEY is NOT set.
-        When Pinecone IS configured, the test is skipped.
-        """
-        # Skip if Pinecone is configured (the other tests cover that case)
-        if os.environ.get("PINECONE_API_KEY"):
-            pytest.skip("Pinecone is configured - testing error path skipped")
+        with pytest.raises(grpc.RpcError) as exc_info:
+            vectorize_document(rag_document_stub, document_id, version=1)
 
-        document_id = f"test-no-pinecone-{e2e_test_id}"
+        assert exc_info.value.code() == grpc.StatusCode.NOT_FOUND, (
+            f"Expected NOT_FOUND, got {exc_info.value.code()}"
+        )
+        print(f"Correctly returned NOT_FOUND for non-existent document")
 
-        try:
-            # Create document
-            doc = create_test_document(
-                rag_document_stub,
-                document_id,
-                "Test content for error path.",
-            )
+    def test_get_vectorization_job_not_found(
+        self,
+        rag_document_stub,
+    ):
+        """Test that getting a non-existent job returns NOT_FOUND."""
+        with pytest.raises(grpc.RpcError) as exc_info:
+            get_vectorization_job(rag_document_stub, "non-existent-job-id")
 
-            # Try to vectorize - should fail with UNAVAILABLE
-            with pytest.raises(grpc.RpcError) as exc_info:
-                vectorize_document(rag_document_stub, document_id, version=1)
-
-            # Verify appropriate error
-            assert exc_info.value.code() == grpc.StatusCode.UNAVAILABLE
-            assert "not configured" in exc_info.value.details().lower()
-            print("Correctly returned UNAVAILABLE when Pinecone not configured")
-
-        finally:
-            with contextlib.suppress(grpc.RpcError):
-                delete_document(rag_document_stub, document_id)
+        assert exc_info.value.code() == grpc.StatusCode.NOT_FOUND, (
+            f"Expected NOT_FOUND, got {exc_info.value.code()}"
+        )
+        print("Correctly returned NOT_FOUND for non-existent job")

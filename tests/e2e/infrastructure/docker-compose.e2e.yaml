@@ -99,16 +99,15 @@ services:
     container_name: e2e-ai-model
     ports:
       - "8090:50051"
+    env_file:
+      - ../../../.env
     environment:
       AI_MODEL_MONGODB_URI: mongodb://mongodb:27017
       AI_MODEL_MONGODB_DATABASE: ai_model_e2e
       AI_MODEL_LOG_LEVEL: DEBUG
       AI_MODEL_OTEL_ENABLED: "false"
-      # Pinecone credentials (required for vectorization E2E tests)
-      # Set via .env.e2e or CI secrets
-      PINECONE_API_KEY: ${PINECONE_API_KEY:-}
-      PINECONE_INDEX_NAME: ${PINECONE_INDEX_NAME:-farmer-power-rag-e2e}
-      PINECONE_ENVIRONMENT: ${PINECONE_ENVIRONMENT:-us-east-1}
+      # Pinecone credentials loaded from .env file via env_file directive
+      # PINECONE_API_KEY, PINECONE_INDEX_NAME are set in .env
       # OpenRouter not configured - LLM-dependent tests will be skipped
     depends_on:
       mongodb:
