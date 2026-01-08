@@ -651,9 +651,10 @@ class TestJobStatus:
         result = await pipeline.get_job_status("unknown-job")
         assert result is None
 
-    def test_create_job(self, pipeline):
+    @pytest.mark.asyncio
+    async def test_create_job(self, pipeline):
         """Test creating a new job for tracking."""
-        job = pipeline.create_job("disease-guide", 2)
+        job = await pipeline.create_job("disease-guide", 2)
 
         assert job.document_id == "disease-guide"
         assert job.document_version == 2

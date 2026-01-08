@@ -3,6 +3,7 @@
 Story 0.75.5: Added CostService registration.
 Story 0.75.10: Added RAGDocumentService registration.
 Story 0.75.13c: Added VectorizationPipeline wiring for RAGDocumentService.
+Story 0.75.13d: Added VectorizationJobRepository for persistent job tracking.
 """
 
 import grpc
@@ -13,6 +14,7 @@ from ai_model.config import settings
 from ai_model.infrastructure.mongodb import get_database
 from ai_model.infrastructure.repositories import (
     LlmCostEventRepository,
+    MongoDBVectorizationJobRepository,
     RagChunkRepository,
     RagDocumentRepository,
 )
@@ -156,6 +158,17 @@ class GrpcServer:
         )
         logger.info("ChunkingWorkflow initialized for RAGDocumentService")
 
+        # Story 0.75.13d: Create VectorizationJobRepository for persistent job tracking
+        vectorization_job_repository = MongoDBVectorizationJobRepository(
+            db=db,
+            ttl_hours=settings.vectorization_job_ttl_hours,
+        )
+        await vectorization_job_repository.ensure_indexes()
+        logger.info(
+            "VectorizationJobRepository initialized",
+            ttl_hours=settings.vectorization_job_ttl_hours,
+        )
+
         # Story 0.75.13c: Create VectorizationPipeline for RAGDocumentService
         # Only create if Pinecone is configured
         vectorization_pipeline = None
@@ -168,14 +181,16 @@ class GrpcServer:
             embedding_service = EmbeddingService(settings=settings)
             vector_store = PineconeVectorStore(settings=settings)
 
+            # Story 0.75.13d: Add job_repository for persistent job tracking
             vectorization_pipeline = VectorizationPipeline(
                 chunk_repository=rag_chunk_repository,
                 document_repository=rag_doc_repository,
                 embedding_service=embedding_service,
                 vector_store=vector_store,
                 settings=settings,
+                job_repository=vectorization_job_repository,
             )
-            logger.info("VectorizationPipeline initialized for RAGDocumentService")
+            logger.info("VectorizationPipeline initialized with persistent job tracking")
         else:
             logger.warning(
                 "Pinecone not configured - VectorizationPipeline disabled. "
