@@ -4,13 +4,19 @@ This module implements the RAGDocumentService gRPC API for RAG document manageme
 Documents are versioned with lifecycle status: draft → staged → active → archived.
 
 Story 0.75.10: gRPC Model for RAG Document
+Story 0.75.13c: Added VectorizeDocument and GetVectorizationJob RPCs
 """
 
 import uuid
 from datetime import UTC, datetime
+from typing import TYPE_CHECKING
 
 import grpc
 import structlog
+from ai_model.domain.exceptions import (
+    DocumentNotFoundError,
+    InvalidDocumentStatusError,
+)
 from ai_model.domain.rag_document import (
     ExtractionMethod,
     FileType,
@@ -23,6 +29,10 @@ from ai_model.domain.rag_document import (
 from ai_model.infrastructure.repositories import RagDocumentRepository
 from fp_proto.ai_model.v1 import ai_model_pb2, ai_model_pb2_grpc
 from google.protobuf import timestamp_pb2
+
+# Lazy import type for VectorizationPipeline to avoid circular imports
+if TYPE_CHECKING:
+    from ai_model.services.vectorization_pipeline import VectorizationPipeline
 
 logger = structlog.get_logger(__name__)
 
@@ -123,15 +133,23 @@ class RAGDocumentServiceServicer(ai_model_pb2_grpc.RAGDocumentServiceServicer):
     - CRUD operations (CreateDocument, GetDocument, UpdateDocument, DeleteDocument)
     - Listing and search (ListDocuments, SearchDocuments)
     - Lifecycle management (StageDocument, ActivateDocument, ArchiveDocument, RollbackDocument)
+    - Vectorization operations (VectorizeDocument, GetVectorizationJob) - Story 0.75.13c
     """
 
-    def __init__(self, repository: RagDocumentRepository) -> None:
+    def __init__(
+        self,
+        repository: RagDocumentRepository,
+        vectorization_pipeline: "VectorizationPipeline | None" = None,
+    ) -> None:
         """Initialize the RAGDocumentService.
 
         Args:
             repository: Repository for RAG document persistence.
+            vectorization_pipeline: Optional pipeline for vectorization operations.
+                                    Story 0.75.13c: Added for VectorizeDocument/GetVectorizationJob.
         """
         self._repository = repository
+        self._vectorization_pipeline = vectorization_pipeline
         logger.info("RAGDocumentService initialized")
 
     async def CreateDocument(
@@ -1401,6 +1419,253 @@ class RAGDocumentServiceServicer(ai_model_pb2_grpc.RAGDocumentServiceServicer):
                 "DeleteChunks failed",
                 error=str(e),
                 document_id=request.document_id,
+            )
+            await context.abort(grpc.StatusCode.INTERNAL, str(e))
+            raise
+
+    # ========================================
+    # Vectorization Operations (Story 0.75.13c)
+    # ========================================
+
+    def set_vectorization_pipeline(self, pipeline: "VectorizationPipeline") -> None:
+        """Set the vectorization pipeline service.
+
+        Called during service initialization to inject the pipeline.
+
+        Args:
+            pipeline: VectorizationPipeline instance.
+        """
+        self._vectorization_pipeline = pipeline
+
+    async def _require_vectorization_pipeline(self, context: grpc.aio.ServicerContext) -> bool:
+        """Check if vectorization pipeline is available.
+
+        Args:
+            context: gRPC context for error reporting.
+
+        Returns:
+            True if pipeline is available, False if aborted.
+        """
+        if self._vectorization_pipeline is None:
+            await context.abort(
+                grpc.StatusCode.UNAVAILABLE,
+                "Vectorization service not configured",
+            )
+            return False
+        return True
+
+    async def VectorizeDocument(
+        self,
+        request: ai_model_pb2.VectorizeDocumentRequest,
+        context: grpc.aio.ServicerContext,
+    ) -> ai_model_pb2.VectorizeDocumentResponse:
+        """Vectorize a document by generating embeddings and storing in Pinecone.
+
+        In sync mode (async=False), blocks until vectorization completes.
+        In async mode (async=True), returns immediately with job_id for polling.
+
+        Args:
+            request: VectorizeDocumentRequest with document_id, version, and async flag.
+            context: gRPC context.
+
+        Returns:
+            VectorizeDocumentResponse with job_id and (in sync mode) vectorization results.
+        """
+        try:
+            if not request.document_id:
+                await context.abort(
+                    grpc.StatusCode.INVALID_ARGUMENT,
+                    "document_id is required",
+                )
+                return ai_model_pb2.VectorizeDocumentResponse()
+
+            # Check if vectorization pipeline is available
+            if not await self._require_vectorization_pipeline(context):
+                return ai_model_pb2.VectorizeDocumentResponse()
+
+            # Determine version to vectorize (0 = get latest active or staged)
+            version = request.version
+            if version <= 0:
+                # Get the active version, or if none, the latest staged version
+                doc = await self._repository.get_active(request.document_id)
+                if doc is None:
+                    # Try latest staged version
+                    versions = await self._repository.list_versions(request.document_id, include_archived=False)
+                    staged_versions = [v for v in versions if v.status == RagDocumentStatus.STAGED]
+                    if staged_versions:
+                        doc = staged_versions[0]  # Highest version first
+
+                if doc is None:
+                    await context.abort(
+                        grpc.StatusCode.NOT_FOUND,
+                        f"No active or staged version found for document: {request.document_id}",
+                    )
+                    return ai_model_pb2.VectorizeDocumentResponse()
+                version = doc.version
+
+            # Async mode: create job and return immediately
+            # Note: 'async' is a Python reserved word, access via getattr
+            is_async = getattr(request, "async", False)
+            if is_async:
+                job = self._vectorization_pipeline.create_job(
+                    document_id=request.document_id,
+                    document_version=version,
+                )
+
+                logger.info(
+                    "Vectorization job created (async mode)",
+                    job_id=job.job_id,
+                    document_id=request.document_id,
+                    version=version,
+                )
+
+                # Schedule async execution (fire-and-forget via asyncio.create_task)
+                import asyncio
+
+                # Store task reference to prevent garbage collection
+                # In production, consider a task manager for proper lifecycle management
+                task = asyncio.create_task(
+                    self._vectorization_pipeline.vectorize_document(
+                        document_id=request.document_id,
+                        document_version=version,
+                        request_id=job.job_id,
+                    )
+                )
+                # Log if task fails (fire-and-forget pattern)
+                task.add_done_callback(
+                    lambda t: logger.error("Background vectorization failed", error=str(t.exception()))
+                    if t.exception()
+                    else None
+                )
+
+                return ai_model_pb2.VectorizeDocumentResponse(
+                    job_id=job.job_id,
+                    status=job.status.value,
+                )
+
+            # Sync mode: block until complete
+            try:
+                result = await self._vectorization_pipeline.vectorize_document(
+                    document_id=request.document_id,
+                    document_version=version,
+                )
+            except DocumentNotFoundError as e:
+                await context.abort(grpc.StatusCode.NOT_FOUND, str(e))
+                raise
+            except InvalidDocumentStatusError as e:
+                await context.abort(grpc.StatusCode.FAILED_PRECONDITION, str(e))
+                raise
+
+            logger.info(
+                "Vectorization completed (sync mode)",
+                job_id=result.job_id,
+                document_id=request.document_id,
+                version=version,
+                status=result.status.value,
+                chunks_stored=result.progress.chunks_stored,
+            )
+
+            # Build error message from failed chunks if any
+            error_message = ""
+            if result.failed_chunks:
+                errors = [f"chunk {fc.chunk_index}: {fc.error_message}" for fc in result.failed_chunks[:3]]
+                error_message = "; ".join(errors)
+                if len(result.failed_chunks) > 3:
+                    error_message += f" ... and {len(result.failed_chunks) - 3} more"
+
+            return ai_model_pb2.VectorizeDocumentResponse(
+                job_id=result.job_id,
+                status=result.status.value,
+                namespace=result.namespace or "",
+                chunks_total=result.progress.chunks_total,
+                chunks_embedded=result.progress.chunks_embedded,
+                chunks_stored=result.progress.chunks_stored,
+                failed_count=result.progress.failed_count,
+                content_hash=result.content_hash or "",
+                error_message=error_message,
+            )
+
+        except Exception as e:
+            logger.error(
+                "VectorizeDocument failed",
+                error=str(e),
+                document_id=request.document_id,
+            )
+            await context.abort(grpc.StatusCode.INTERNAL, str(e))
+            raise
+
+    async def GetVectorizationJob(
+        self,
+        request: ai_model_pb2.GetVectorizationJobRequest,
+        context: grpc.aio.ServicerContext,
+    ) -> ai_model_pb2.VectorizationJobResponse:
+        """Get vectorization job status.
+
+        Used to poll for job completion in async mode.
+
+        Args:
+            request: GetVectorizationJobRequest with job_id.
+            context: gRPC context.
+
+        Returns:
+            VectorizationJobResponse with job details.
+        """
+        try:
+            if not request.job_id:
+                await context.abort(
+                    grpc.StatusCode.INVALID_ARGUMENT,
+                    "job_id is required",
+                )
+                return ai_model_pb2.VectorizationJobResponse()
+
+            # Check if vectorization pipeline is available
+            if not await self._require_vectorization_pipeline(context):
+                return ai_model_pb2.VectorizationJobResponse()
+
+            # Get job status
+            result = await self._vectorization_pipeline.get_job_status(request.job_id)
+
+            if result is None:
+                await context.abort(
+                    grpc.StatusCode.NOT_FOUND,
+                    f"Vectorization job not found: {request.job_id}",
+                )
+                return ai_model_pb2.VectorizationJobResponse()
+
+            # Build error message from failed chunks if any
+            error_message = ""
+            if result.failed_chunks:
+                errors = [f"chunk {fc.chunk_index}: {fc.error_message}" for fc in result.failed_chunks[:3]]
+                error_message = "; ".join(errors)
+                if len(result.failed_chunks) > 3:
+                    error_message += f" ... and {len(result.failed_chunks) - 3} more"
+
+            response = ai_model_pb2.VectorizationJobResponse(
+                job_id=result.job_id,
+                status=result.status.value,
+                document_id=result.document_id,
+                document_version=result.document_version,
+                namespace=result.namespace or "",
+                chunks_total=result.progress.chunks_total,
+                chunks_embedded=result.progress.chunks_embedded,
+                chunks_stored=result.progress.chunks_stored,
+                failed_count=result.progress.failed_count,
+                content_hash=result.content_hash or "",
+                error_message=error_message,
+            )
+
+            # Set timestamps
+            response.started_at.FromDatetime(result.started_at)
+            if result.completed_at:
+                response.completed_at.FromDatetime(result.completed_at)
+
+            return response
+
+        except Exception as e:
+            logger.error(
+                "GetVectorizationJob failed",
+                error=str(e),
+                job_id=request.job_id,
             )
             await context.abort(grpc.StatusCode.INTERNAL, str(e))
             raise

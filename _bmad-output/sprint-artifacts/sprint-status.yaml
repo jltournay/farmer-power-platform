@@ -113,7 +113,7 @@ development_status:
   # Implements ADRs: 004-011 (49 story points total, Wave 4 added 2026-01-06)
   epic-0-6: in-progress  # Reopened for Wave 4: Type Safety & Service Boundaries
   0-6-1-shared-pydantic-models: done  # ADR-004, 5 points, github_issue: 41, PR: #42
-  0-6-2-shared-logging-module: done  # ADR-009, 3why the  points, github_issue: 43, PR: #44
+  0-6-2-shared-logging-module: done  # ADR-009, 3why the /sm points, github_issue: 43, PR: #44
   0-6-3-grpc-retry-ai-model-client: done  # ADR-005, 2 points, github_issue: 45
   0-6-4-grpc-retry-iteration-resolver: done # ADR-005, 2 points, github_issue: 47
   0-6-5-plantation-streaming-subscriptions: done  # ADR-010/011, 5 points, github_issue: 49, PR: #50
@@ -179,7 +179,7 @@ development_status:
   0-75-12-rag-embedding-configuration: done  # github_issue: 127, PR: #128 - CODE REVIEW COMPLETED 2026-01-07
   0-75-13-rag-vector-storage: done  # github_issue: 129, PR: #130 - Pinecone client/repository
   0-75-13b-rag-vectorization-pipeline: done  # github_issue: 131, PR: #132, CODE REVIEW COMPLETED 2026-01-07
-  0-75-13c-rag-vectorization-grpc-wiring: backlog  # gRPC wiring for VectorizationPipeline (Task 6b from 0.75.13b)
+  0-75-13c-rag-vectorization-grpc-wiring: in-progress  # github_issue: 133, gRPC wiring for VectorizationPipeline (Task 6b from 0.75.13b)
   0-75-14-rag-retrieval-service: backlog  # Similarity search, synthetic sample generator
   0-75-15-rag-ranking-logic: backlog  # Re-ranking, domain boosting, golden samples
   0-75-16-langgraph-sdk-integration-base-workflows: backlog  # Saga, checkpointing, async risk

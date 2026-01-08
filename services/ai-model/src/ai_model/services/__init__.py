@@ -7,6 +7,11 @@ Story 0.75.12: Embedding service using Pinecone Inference API.
 Story 0.75.13b: Vectorization pipeline orchestrating embed + store.
 """
 
+from ai_model.domain.exceptions import (
+    DocumentNotFoundError as VectorizationDocumentNotFoundError,
+    InvalidDocumentStatusError,
+    VectorizationError as VectorizationPipelineError,
+)
 from ai_model.services.agent_config_cache import AgentConfigCache
 from ai_model.services.chunking_workflow import (
     ChunkingError,
@@ -34,12 +39,7 @@ from ai_model.services.extraction_workflow import (
 )
 from ai_model.services.prompt_cache import PromptCache
 from ai_model.services.semantic_chunker import ChunkResult, SemanticChunker
-from ai_model.services.vectorization_pipeline import (
-    DocumentNotFoundError as VectorizationDocumentNotFoundError,
-    InvalidDocumentStatusError,
-    VectorizationPipeline,
-    VectorizationPipelineError,
-)
+from ai_model.services.vectorization_pipeline import VectorizationPipeline
 
 __all__ = [
     "AgentConfigCache",

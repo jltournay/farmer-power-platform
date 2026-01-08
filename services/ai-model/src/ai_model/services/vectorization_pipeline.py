@@ -22,6 +22,10 @@ from datetime import UTC, datetime
 
 import structlog
 from ai_model.config import Settings
+from ai_model.domain.exceptions import (
+    DocumentNotFoundError,
+    InvalidDocumentStatusError,
+)
 from ai_model.domain.rag_document import RagChunk, RagDocument, RagDocumentStatus
 from ai_model.domain.vector_store import VectorMetadata, VectorUpsertRequest
 from ai_model.domain.vectorization import (
@@ -39,22 +43,14 @@ from ai_model.services.embedding_service import EmbeddingService
 logger = structlog.get_logger(__name__)
 
 
-class VectorizationPipelineError(Exception):
-    """Base exception for vectorization pipeline errors."""
-
-    pass
-
-
-class DocumentNotFoundError(VectorizationPipelineError):
-    """Raised when the document to vectorize is not found."""
-
-    pass
-
-
-class InvalidDocumentStatusError(VectorizationPipelineError):
-    """Raised when document has invalid status for vectorization."""
-
-    pass
+# Note: Exception classes are imported from ai_model.domain.exceptions
+# to avoid circular imports when used from rag_document_service.py
+# Re-exported here for backwards compatibility with existing imports.
+__all__ = [
+    "DocumentNotFoundError",
+    "InvalidDocumentStatusError",
+    "VectorizationPipeline",
+]
 
 
 class VectorizationPipeline:

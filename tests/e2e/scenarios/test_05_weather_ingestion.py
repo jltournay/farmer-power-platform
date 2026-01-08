@@ -2,6 +2,12 @@
 
 Story 0.4.6: Validates weather data ingestion via scheduled pull with mock AI extraction.
 
+SKIPPED (Story 0.75.13c): This test requires AI agent functionality (mock-weather-extractor)
+that is not available in the real ai-model service. The real ai-model only provides
+RAG document management and vectorization. AI agent tests will be re-enabled in
+Story 0.75.18 (E2E: Weather Observation Extraction Flow) when the Extractor agent
+is implemented.
+
 Acceptance Criteria:
 1. AC1: Mock AI Extractor Deployment - Mock AI server responds deterministically
 2. AC2: Weather Pull Job Trigger - Pull job fetches real data from Open-Meteo API
@@ -28,6 +34,10 @@ import time
 
 import grpc
 import pytest
+
+# Story 0.75.13c: Skip entire module - requires AI agent (mock-weather-extractor)
+# not available in real ai-model service. Re-enable in Story 0.75.18.
+pytestmark = pytest.mark.skip(reason="Requires AI agent functionality - Story 0.75.18 will re-enable")
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # TEST CONSTANTS

@@ -2,6 +2,7 @@
 
 Story 0.75.5: Added CostService registration.
 Story 0.75.10: Added RAGDocumentService registration.
+Story 0.75.13c: Added VectorizationPipeline wiring for RAGDocumentService.
 """
 
 import grpc
@@ -10,7 +11,11 @@ from ai_model.api.cost_service import CostServiceServicer
 from ai_model.api.rag_document_service import RAGDocumentServiceServicer
 from ai_model.config import settings
 from ai_model.infrastructure.mongodb import get_database
-from ai_model.infrastructure.repositories import LlmCostEventRepository, RagDocumentRepository
+from ai_model.infrastructure.repositories import (
+    LlmCostEventRepository,
+    RagChunkRepository,
+    RagDocumentRepository,
+)
 from ai_model.llm.budget_monitor import BudgetMonitor
 from fp_proto.ai_model.v1 import ai_model_pb2, ai_model_pb2_grpc
 from grpc_health.v1 import health, health_pb2, health_pb2_grpc
@@ -134,7 +139,40 @@ class GrpcServer:
         # Story 0.75.10: Add RAGDocumentService
         rag_doc_repository = RagDocumentRepository(db)
         await rag_doc_repository.ensure_indexes()
-        rag_doc_servicer = RAGDocumentServiceServicer(rag_doc_repository)
+
+        # Story 0.75.13c: Create VectorizationPipeline for RAGDocumentService
+        # Only create if Pinecone is configured
+        vectorization_pipeline = None
+        if settings.pinecone_enabled:
+            # Import pipeline dependencies
+            from ai_model.infrastructure.pinecone_vector_store import PineconeVectorStore
+            from ai_model.services.embedding_service import EmbeddingService
+            from ai_model.services.vectorization_pipeline import VectorizationPipeline
+
+            rag_chunk_repository = RagChunkRepository(db)
+            await rag_chunk_repository.ensure_indexes()
+
+            embedding_service = EmbeddingService(settings=settings)
+            vector_store = PineconeVectorStore(settings=settings)
+
+            vectorization_pipeline = VectorizationPipeline(
+                chunk_repository=rag_chunk_repository,
+                document_repository=rag_doc_repository,
+                embedding_service=embedding_service,
+                vector_store=vector_store,
+                settings=settings,
+            )
+            logger.info("VectorizationPipeline initialized for RAGDocumentService")
+        else:
+            logger.warning(
+                "Pinecone not configured - VectorizationPipeline disabled. "
+                "Set PINECONE_API_KEY to enable vectorization."
+            )
+
+        rag_doc_servicer = RAGDocumentServiceServicer(
+            rag_doc_repository,
+            vectorization_pipeline=vectorization_pipeline,
+        )
         ai_model_pb2_grpc.add_RAGDocumentServiceServicer_to_server(rag_doc_servicer, self._server)
         logger.info("RAGDocumentService registered")
 

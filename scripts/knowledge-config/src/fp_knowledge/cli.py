@@ -14,7 +14,12 @@ from rich.progress import BarColumn, Progress, SpinnerColumn, TextColumn
 from rich.table import Table
 
 from fp_knowledge.client import KnowledgeClient
-from fp_knowledge.models import DocumentStatus, JobStatus, KnowledgeDomain
+from fp_knowledge.models import (
+    DocumentStatus,
+    JobStatus,
+    KnowledgeDomain,
+    VectorizationJobStatus,
+)
 from fp_knowledge.settings import Environment, get_settings
 from fp_knowledge.validator import validate_document_yaml
 
@@ -882,6 +887,294 @@ def job_status(
         raise
     except Exception as e:
         _print_error(f"Error tracking job: {e}")
+        raise typer.Exit(code=1)
+
+
+# ========================================
+# Vectorization Commands (Story 0.75.13c)
+# ========================================
+
+
+def _vectorization_status_style(status: VectorizationJobStatus | str) -> str:
+    """Get Rich style for vectorization job status."""
+    status_val = status.value if isinstance(status, VectorizationJobStatus) else status
+    return {
+        "completed": "[green]● completed[/green]",
+        "in_progress": "[yellow]○ in_progress[/yellow]",
+        "pending": "[dim]○ pending[/dim]",
+        "failed": "[red]✗ failed[/red]",
+        "partial": "[yellow]⚠ partial[/yellow]",
+    }.get(status_val, status_val)
+
+
+@app.command()
+def vectorize(
+    document_id: str = typer.Option(
+        ...,
+        "--document-id",
+        "-d",
+        help="The document ID to vectorize",
+    ),
+    env: str = typer.Option(
+        ...,
+        "--env",
+        "-e",
+        help="Target environment (dev, staging, prod)",
+    ),
+    version: int = typer.Option(
+        0,
+        "--version",
+        "-V",
+        help="Specific version to vectorize (0 = latest active/staged)",
+    ),
+    async_mode: bool = typer.Option(
+        False,
+        "--async",
+        help="Return immediately with job_id instead of waiting for completion",
+    ),
+    verbose: bool = typer.Option(
+        False,
+        "--verbose",
+        "-v",
+        help="Show detailed output",
+    ),
+    quiet: bool = typer.Option(
+        False,
+        "--quiet",
+        "-q",
+        help="Minimal output (errors only)",
+    ),
+) -> None:
+    """Vectorize a document by generating embeddings and storing in Pinecone.
+
+    Generates embeddings for document chunks and stores them in the
+    Pinecone vector database for similarity search.
+
+    Examples:
+        fp-knowledge vectorize --document-id blister-blight-guide --env dev
+        fp-knowledge vectorize --document-id blister-blight-guide --env dev --version 2
+        fp-knowledge vectorize --document-id blister-blight-guide --env dev --async
+    """
+    environment = _validate_environment(env)
+
+    async def run_vectorize() -> None:
+        settings = get_settings()
+        client = KnowledgeClient(settings, environment)
+        try:
+            await client.connect()
+
+            if not quiet:
+                console.print(
+                    f"[dim]Vectorizing document {document_id}"
+                    + (f" v{version}" if version > 0 else "")
+                    + f" in {environment}...[/dim]"
+                )
+
+            result = await client.vectorize(
+                document_id=document_id,
+                version=version,
+                async_mode=async_mode,
+            )
+
+            if async_mode:
+                # Async mode - just print job_id and exit
+                if not quiet:
+                    console.print("[green]✓ Vectorization started[/green]")
+                    console.print(f"  [dim]job_id:[/dim] {result.job_id}")
+                    console.print(f"  [dim]status:[/dim] {result.status.value}")
+                    console.print()
+                    console.print(
+                        f"Track progress with: [cyan]fp-knowledge vectorize-status "
+                        f"--job-id {result.job_id} --env {environment}[/cyan]"
+                    )
+            else:
+                # Sync mode - show full results
+                if result.status == VectorizationJobStatus.COMPLETED:
+                    console.print("[green]✓ Vectorization completed[/green]")
+                elif result.status == VectorizationJobStatus.PARTIAL:
+                    msg = "[yellow]⚠ Vectorization completed with errors[/yellow]"
+                    console.print(msg)
+                else:
+                    console.print("[red]✗ Vectorization failed[/red]")
+                    if result.error_message:
+                        _print_error(result.error_message)
+                    raise typer.Exit(code=1)
+
+                console.print(f"  [dim]job_id:[/dim] {result.job_id}")
+                console.print(f"  [dim]namespace:[/dim] {result.namespace or '-'}")
+                console.print(f"  [dim]chunks_total:[/dim] {result.chunks_total}")
+                chunks_emb = result.chunks_embedded
+                console.print(f"  [dim]chunks_embedded:[/dim] {chunks_emb}")
+                console.print(f"  [dim]chunks_stored:[/dim] {result.chunks_stored}")
+                if result.failed_count > 0:
+                    failed = result.failed_count
+                    console.print(f"  [yellow]failed_count:[/yellow] {failed}")
+                if verbose:
+                    chash = result.content_hash or "-"
+                    console.print(f"  [dim]content_hash:[/dim] {chash}")
+
+        finally:
+            await client.disconnect()
+
+    try:
+        asyncio.run(run_vectorize())
+    except typer.Exit:
+        raise
+    except Exception as e:
+        _print_error(f"Vectorization failed: {e}")
+        raise typer.Exit(code=1)
+
+
+@app.command("vectorize-status")
+def vectorize_status(
+    job_id: str = typer.Option(
+        ...,
+        "--job-id",
+        "-j",
+        help="The vectorization job ID to check",
+    ),
+    env: str = typer.Option(
+        ...,
+        "--env",
+        "-e",
+        help="Target environment (dev, staging, prod)",
+    ),
+    watch: bool = typer.Option(
+        False,
+        "--watch",
+        "-w",
+        help="Poll for updates until job completes",
+    ),
+    verbose: bool = typer.Option(
+        False,
+        "--verbose",
+        "-v",
+        help="Show detailed output",
+    ),
+) -> None:
+    """Get vectorization job status.
+
+    Check the status of a vectorization job, optionally watching for completion.
+
+    Examples:
+        fp-knowledge vectorize-status --job-id abc-123 --env dev
+        fp-knowledge vectorize-status --job-id abc-123 --env dev --watch
+    """
+    environment = _validate_environment(env)
+
+    async def run_status() -> None:
+        settings = get_settings()
+        client = KnowledgeClient(settings, environment)
+        try:
+            await client.connect()
+
+            if watch:
+                # Watch mode - poll until complete
+                with Progress(
+                    SpinnerColumn(),
+                    TextColumn("[progress.description]{task.description}"),
+                    BarColumn(),
+                    TextColumn("[progress.percentage]{task.percentage:>3.0f}%"),
+                    TextColumn("| {task.fields[chunks]}"),
+                    console=console,
+                ) as progress:
+                    task = progress.add_task(
+                        "Vectorizing...",
+                        total=100,
+                        chunks="0/? chunks",
+                    )
+
+                    while True:
+                        result = await client.get_vectorization_job_status(job_id)
+
+                        if result is None:
+                            progress.update(task, completed=0)
+                            _print_error(f"Job not found: {job_id}")
+                            raise typer.Exit(code=1)
+
+                        # Calculate progress percentage
+                        if result.chunks_total > 0:
+                            pct = (result.chunks_stored / result.chunks_total) * 100
+                        else:
+                            pct = 0
+
+                        stored = result.chunks_stored
+                        total = result.chunks_total
+                        chunks_text = f"{stored}/{total} chunks"
+                        progress.update(task, completed=pct, chunks=chunks_text)
+
+                        if result.status in (
+                            VectorizationJobStatus.COMPLETED,
+                            VectorizationJobStatus.PARTIAL,
+                        ):
+                            progress.update(task, completed=100)
+                            console.print()
+                            console.print(
+                                f"[green]✓ Vectorization complete[/green] "
+                                f"({stored} chunks stored)"
+                            )
+                            if result.failed_count > 0:
+                                fc = result.failed_count
+                                console.print(
+                                    f"  [yellow]Warning: {fc} chunks failed[/yellow]"
+                                )
+                            break
+                        elif result.status == VectorizationJobStatus.FAILED:
+                            progress.update(task, completed=0)
+                            _print_error(result.error_message or "Unknown error")
+                            raise typer.Exit(code=1)
+
+                        await asyncio.sleep(settings.poll_interval)
+            else:
+                # One-shot status check
+                result = await client.get_vectorization_job_status(job_id)
+
+                if result is None:
+                    _print_error(f"Job not found: {job_id}")
+                    raise typer.Exit(code=1)
+
+                table = Table(title=f"Vectorization Job: {job_id}")
+                table.add_column("Field", style="cyan")
+                table.add_column("Value", style="white")
+
+                table.add_row("Status", _vectorization_status_style(result.status))
+                table.add_row("Document ID", result.document_id)
+                table.add_row("Document Version", str(result.document_version))
+                table.add_row("Namespace", result.namespace or "-")
+                table.add_row("Chunks Total", str(result.chunks_total))
+                table.add_row("Chunks Embedded", str(result.chunks_embedded))
+                table.add_row("Chunks Stored", str(result.chunks_stored))
+                if result.failed_count > 0:
+                    fc = result.failed_count
+                    table.add_row("Failed Count", f"[yellow]{fc}[/yellow]")
+
+                if verbose:
+                    table.add_row("Content Hash", result.content_hash or "-")
+                    if result.started_at:
+                        table.add_row(
+                            "Started At",
+                            result.started_at.strftime("%Y-%m-%d %H:%M:%S"),
+                        )
+                    if result.completed_at:
+                        table.add_row(
+                            "Completed At",
+                            result.completed_at.strftime("%Y-%m-%d %H:%M:%S"),
+                        )
+
+                if result.error_message:
+                    table.add_row("Error", f"[red]{result.error_message}[/red]")
+
+                console.print(table)
+
+        finally:
+            await client.disconnect()
+
+    try:
+        asyncio.run(run_status())
+    except typer.Exit:
+        raise
+    except Exception as e:
+        _print_error(f"Error getting job status: {e}")
         raise typer.Exit(code=1)
 
 

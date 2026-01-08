@@ -1,11 +1,13 @@
 """Unit tests for RAGDocumentServiceServicer.
 
 Story 0.75.10: gRPC Model for RAG Document
+Story 0.75.13c: VectorizeDocument and GetVectorizationJob RPCs
 
 Tests cover:
 - CRUD operations (CreateDocument, GetDocument, UpdateDocument, DeleteDocument)
 - Listing and search (ListDocuments, SearchDocuments)
 - Lifecycle management (StageDocument, ActivateDocument, ArchiveDocument, RollbackDocument)
+- Vectorization operations (VectorizeDocument, GetVectorizationJob)
 """
 
 from datetime import UTC, datetime
@@ -524,3 +526,306 @@ async def test_get_document_not_found(service, mock_context):
     mock_context.abort.assert_called_once()
     call_args = mock_context.abort.call_args
     assert call_args[0][0] == grpc.StatusCode.NOT_FOUND
+
+
+# ============================================
+# Vectorization Tests (Story 0.75.13c) - 10 tests
+# ============================================
+
+
+@pytest.fixture
+def mock_vectorization_pipeline():
+    """Create a mock VectorizationPipeline.
+
+    Uses mock objects that mirror the VectorizationJobResult structure
+    to avoid import issues with the ai_model.services module.
+    """
+    from dataclasses import dataclass
+    from enum import Enum
+
+    # Local mock of VectorizationJobStatus to avoid importing from services
+    class MockJobStatus(str, Enum):
+        PENDING = "pending"
+        IN_PROGRESS = "in_progress"
+        COMPLETED = "completed"
+        FAILED = "failed"
+        PARTIAL = "partial"
+
+    @dataclass
+    class MockProgress:
+        chunks_total: int = 0
+        chunks_embedded: int = 0
+        chunks_stored: int = 0
+        failed_count: int = 0
+
+    @dataclass
+    class MockJobResult:
+        job_id: str
+        document_id: str
+        document_version: int
+        status: MockJobStatus
+        progress: MockProgress
+        namespace: str | None
+        content_hash: str | None
+        started_at: datetime
+        completed_at: datetime | None
+        failed_chunks: list
+
+    pipeline = MagicMock()
+
+    # Default result for successful vectorization
+    pipeline.vectorize_document = AsyncMock(
+        return_value=MockJobResult(
+            job_id="job-123",
+            document_id="disease-guide",
+            document_version=1,
+            status=MockJobStatus.COMPLETED,
+            progress=MockProgress(
+                chunks_total=10,
+                chunks_embedded=10,
+                chunks_stored=10,
+                failed_count=0,
+            ),
+            namespace="disease-guide-v1",
+            content_hash="abc123",
+            started_at=datetime.now(UTC),
+            completed_at=datetime.now(UTC),
+            failed_chunks=[],
+        )
+    )
+
+    pipeline.create_job = MagicMock(
+        return_value=MockJobResult(
+            job_id="job-456",
+            document_id="disease-guide",
+            document_version=1,
+            status=MockJobStatus.PENDING,
+            progress=MockProgress(),
+            namespace=None,
+            content_hash=None,
+            started_at=datetime.now(UTC),
+            completed_at=None,
+            failed_chunks=[],
+        )
+    )
+
+    pipeline.get_job_status = AsyncMock(return_value=None)
+
+    return pipeline
+
+
+@pytest.fixture
+def service_with_pipeline(mock_repository, mock_vectorization_pipeline):
+    """Create RAGDocumentServiceServicer with vectorization pipeline."""
+    return RAGDocumentServiceServicer(mock_repository, mock_vectorization_pipeline)
+
+
+@pytest.mark.asyncio
+async def test_vectorize_document_sync_mode_success(
+    service_with_pipeline, mock_repository, mock_context, sample_document
+):
+    """Test successful document vectorization in sync mode."""
+    # Setup: Create active document
+    sample_document.status = RagDocumentStatus.ACTIVE
+    await mock_repository.create(sample_document)
+
+    request = ai_model_pb2.VectorizeDocumentRequest(
+        document_id="disease-guide",
+        version=1,
+    )
+    # async_ field defaults to False (sync mode)
+
+    response = await service_with_pipeline.VectorizeDocument(request, mock_context)
+
+    assert response.job_id == "job-123"
+    assert response.status == "completed"
+    assert response.namespace == "disease-guide-v1"
+    assert response.chunks_total == 10
+    assert response.chunks_embedded == 10
+    assert response.chunks_stored == 10
+    assert response.failed_count == 0
+    mock_context.abort.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_vectorize_document_async_mode(service_with_pipeline, mock_repository, mock_context, sample_document):
+    """Test document vectorization in async mode returns immediately."""
+    # Setup: Create active document
+    sample_document.status = RagDocumentStatus.ACTIVE
+    await mock_repository.create(sample_document)
+
+    request = ai_model_pb2.VectorizeDocumentRequest(
+        document_id="disease-guide",
+        version=1,
+    )
+    # Set async mode via setattr (protobuf reserved word handling)
+    setattr(request, "async", True)
+
+    response = await service_with_pipeline.VectorizeDocument(request, mock_context)
+
+    assert response.job_id == "job-456"
+    assert response.status == "pending"
+    # Async mode doesn't include full results
+    mock_context.abort.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_vectorize_document_missing_document_id(service_with_pipeline, mock_context):
+    """Test vectorization fails with missing document_id."""
+    request = ai_model_pb2.VectorizeDocumentRequest(document_id="")
+
+    await service_with_pipeline.VectorizeDocument(request, mock_context)
+
+    mock_context.abort.assert_called_once()
+    call_args = mock_context.abort.call_args
+    assert call_args[0][0] == grpc.StatusCode.INVALID_ARGUMENT
+    assert "document_id is required" in call_args[0][1]
+
+
+@pytest.mark.asyncio
+async def test_vectorize_document_no_pipeline_configured(service, mock_context, sample_document):
+    """Test vectorization fails when pipeline not configured."""
+    # service has no vectorization pipeline
+
+    request = ai_model_pb2.VectorizeDocumentRequest(document_id="disease-guide", version=1)
+
+    await service.VectorizeDocument(request, mock_context)
+
+    mock_context.abort.assert_called_once()
+    call_args = mock_context.abort.call_args
+    assert call_args[0][0] == grpc.StatusCode.UNAVAILABLE
+    assert "Vectorization service not configured" in call_args[0][1]
+
+
+@pytest.mark.asyncio
+async def test_vectorize_document_version_0_finds_active(
+    service_with_pipeline, mock_repository, mock_context, sample_document
+):
+    """Test vectorization with version=0 finds active document."""
+    # Setup: Create active document
+    sample_document.status = RagDocumentStatus.ACTIVE
+    await mock_repository.create(sample_document)
+
+    request = ai_model_pb2.VectorizeDocumentRequest(
+        document_id="disease-guide",
+        version=0,  # Should find active version
+    )
+
+    response = await service_with_pipeline.VectorizeDocument(request, mock_context)
+
+    assert response.job_id == "job-123"
+    mock_context.abort.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_get_vectorization_job_success(service_with_pipeline, mock_context, mock_vectorization_pipeline):
+    """Test getting vectorization job status."""
+    from dataclasses import dataclass
+    from enum import Enum
+
+    # Local mock classes to avoid importing from services
+    class MockJobStatus(str, Enum):
+        COMPLETED = "completed"
+
+    @dataclass
+    class MockProgress:
+        chunks_total: int = 0
+        chunks_embedded: int = 0
+        chunks_stored: int = 0
+        failed_count: int = 0
+
+    @dataclass
+    class MockJobResult:
+        job_id: str
+        document_id: str
+        document_version: int
+        status: MockJobStatus
+        progress: MockProgress
+        namespace: str | None
+        content_hash: str | None
+        started_at: datetime
+        completed_at: datetime | None
+        failed_chunks: list
+
+    # Setup mock to return job status
+    mock_vectorization_pipeline.get_job_status = AsyncMock(
+        return_value=MockJobResult(
+            job_id="job-123",
+            document_id="disease-guide",
+            document_version=1,
+            status=MockJobStatus.COMPLETED,
+            progress=MockProgress(
+                chunks_total=10,
+                chunks_embedded=10,
+                chunks_stored=10,
+                failed_count=0,
+            ),
+            namespace="disease-guide-v1",
+            content_hash="abc123",
+            started_at=datetime.now(UTC),
+            completed_at=datetime.now(UTC),
+            failed_chunks=[],
+        )
+    )
+
+    request = ai_model_pb2.GetVectorizationJobRequest(job_id="job-123")
+
+    response = await service_with_pipeline.GetVectorizationJob(request, mock_context)
+
+    assert response.job_id == "job-123"
+    assert response.status == "completed"
+    assert response.document_id == "disease-guide"
+    assert response.document_version == 1
+    assert response.namespace == "disease-guide-v1"
+    mock_context.abort.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_get_vectorization_job_missing_job_id(service_with_pipeline, mock_context):
+    """Test get vectorization job fails with missing job_id."""
+    request = ai_model_pb2.GetVectorizationJobRequest(job_id="")
+
+    await service_with_pipeline.GetVectorizationJob(request, mock_context)
+
+    mock_context.abort.assert_called_once()
+    call_args = mock_context.abort.call_args
+    assert call_args[0][0] == grpc.StatusCode.INVALID_ARGUMENT
+    assert "job_id is required" in call_args[0][1]
+
+
+@pytest.mark.asyncio
+async def test_get_vectorization_job_not_found(service_with_pipeline, mock_context, mock_vectorization_pipeline):
+    """Test get vectorization job returns NOT_FOUND for unknown job."""
+    mock_vectorization_pipeline.get_job_status = AsyncMock(return_value=None)
+
+    request = ai_model_pb2.GetVectorizationJobRequest(job_id="non-existent-job")
+
+    await service_with_pipeline.GetVectorizationJob(request, mock_context)
+
+    mock_context.abort.assert_called_once()
+    call_args = mock_context.abort.call_args
+    assert call_args[0][0] == grpc.StatusCode.NOT_FOUND
+    assert "not found" in call_args[0][1]
+
+
+@pytest.mark.asyncio
+async def test_get_vectorization_job_no_pipeline_configured(service, mock_context):
+    """Test get vectorization job fails when pipeline not configured."""
+    request = ai_model_pb2.GetVectorizationJobRequest(job_id="job-123")
+
+    await service.GetVectorizationJob(request, mock_context)
+
+    mock_context.abort.assert_called_once()
+    call_args = mock_context.abort.call_args
+    assert call_args[0][0] == grpc.StatusCode.UNAVAILABLE
+    assert "Vectorization service not configured" in call_args[0][1]
+
+
+@pytest.mark.asyncio
+async def test_set_vectorization_pipeline(service, mock_vectorization_pipeline):
+    """Test that vectorization pipeline can be set via setter method."""
+    assert service._vectorization_pipeline is None
+
+    service.set_vectorization_pipeline(mock_vectorization_pipeline)
+
+    assert service._vectorization_pipeline is mock_vectorization_pipeline
