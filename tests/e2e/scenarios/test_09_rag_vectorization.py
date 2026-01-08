@@ -82,27 +82,13 @@ particularly in high-altitude tea-growing regions with cool, humid climates.
 def pinecone_is_configured():
     """Check if Pinecone is configured (returns bool, does NOT skip).
 
-    Checks both local environment AND the project's .env file that Docker uses.
-    This ensures the test's expectation matches the Docker container's config.
+    Story 0.75.13c: Docker-compose reads PINECONE_API_KEY from shell environment.
+    For local testing with Pinecone, run: source .env && docker compose ...
+    For CI, GitHub Actions sets env vars from secrets.
+
+    This fixture checks ONLY the shell environment to match Docker's behavior.
     """
-    # First check local environment
-    if os.environ.get("PINECONE_API_KEY"):
-        return True
-
-    # Also check .env file that docker-compose uses (Story 0.75.13c fix)
-    from pathlib import Path
-
-    env_file = Path(__file__).parent.parent.parent.parent / ".env"
-    if env_file.exists():
-        with env_file.open() as f:
-            for line in f:
-                line = line.strip()
-                if line.startswith("PINECONE_API_KEY=") and not line.startswith("#"):
-                    # Extract value after '=' and check it's not empty
-                    value = line.split("=", 1)[1].strip().strip('"').strip("'")
-                    if value:
-                        return True
-    return False
+    return bool(os.environ.get("PINECONE_API_KEY"))
 
 
 @pytest.fixture
