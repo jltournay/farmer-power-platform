@@ -146,12 +146,12 @@ Vector similarity (Stage 1) retrieves candidates efficiently but may miss nuance
   - [x] Capture output in "Local Test Run Evidence" section
   - [x] Tear down infrastructure
 
-- [ ] **Task 7: CI Verification** (AC: #11)
+- [x] **Task 7: CI Verification** (AC: #11)
   - [x] Run lint: `ruff check . && ruff format --check .`
   - [x] Run unit tests locally
-  - [ ] Push and verify CI passes
-  - [ ] Trigger E2E CI workflow
-  - [ ] Verify E2E CI passes before code review
+  - [x] Push and verify CI passes (Run ID: 20821822152)
+  - [x] Trigger E2E CI workflow (Run ID: 20822123430)
+  - [x] Verify E2E CI passes before code review
 
 ## Git Workflow (MANDATORY)
 
@@ -269,11 +269,11 @@ git push origin feature/0-75-15-rag-ranking-logic
 # Wait ~30s, then check CI status
 gh run list --branch feature/0-75-15-rag-ranking-logic --limit 3
 ```
-**CI Run ID:** _______________
-**CI Status:** [ ] Passed / [ ] Failed
-**E2E CI Run ID:** _______________
-**E2E CI Status:** [ ] Passed / [ ] Failed
-**Verification Date:** _______________
+**CI Run ID:** 20821822152
+**CI Status:** [x] Passed / [ ] Failed
+**E2E CI Run ID:** 20822123430
+**E2E CI Status:** [x] Passed / [ ] Failed
+**Verification Date:** 2026-01-08
 
 ---
 
