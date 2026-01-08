@@ -1,6 +1,6 @@
 # Story 0.75.13d: Vectorization Job Persistence
 
-**Status:** review
+**Status:** done
 **GitHub Issue:** #135
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
@@ -357,7 +357,7 @@ Claude Opus 4.5 (claude-opus-4-5-20251101)
 ### Completion Notes List
 
 - All 9 acceptance criteria met
-- 21 unit tests created and passing
+- 27 unit tests created and passing (increased from 21 after code review)
 - 99 E2E tests passing (8 skipped as expected)
 - CI and E2E CI both passing
 
@@ -374,3 +374,56 @@ Claude Opus 4.5 (claude-opus-4-5-20251101)
 - `services/ai-model/src/ai_model/services/vectorization_pipeline.py` - Repository integration
 - `services/ai-model/src/ai_model/api/grpc_server.py` - Wired repository
 - `tests/unit/ai_model/test_vectorization_pipeline.py` - Fixed async test
+
+---
+
+## Senior Developer Review (AI)
+
+**Reviewer:** Claude Opus 4.5 (code-review workflow)
+**Date:** 2026-01-08
+**Outcome:** ✅ APPROVED (after fixes)
+
+### Review Summary
+
+| Severity | Found | Fixed |
+|----------|-------|-------|
+| HIGH | 2 | 2 |
+| MEDIUM | 2 | 2 |
+| LOW | 1 | 1 |
+
+### Issues Found and Fixed
+
+| # | Severity | Issue | File | Fix Applied |
+|---|----------|-------|------|-------------|
+| 1 | HIGH | `created_at` overwritten on update | `vectorization_job_repository.py:223` | Added `find_one()` to preserve original `created_at` |
+| 2 | HIGH | Missing test for repository error path | `test_vectorization_job_repository.py` | Added `TestPipelineErrorHandling` test class |
+| 3 | MEDIUM | Hardcoded limit of 100 in list operations | `vectorization_job_repository.py:253,276` | Made configurable via `list_limit` constructor param |
+| 4 | MEDIUM | Silent failure on persist doesn't surface clearly | `vectorization_pipeline.py:376-385` | Changed to `logger.warning` with more context and `exc_info=True` |
+| 5 | LOW | Index direction mismatch | `vectorization_job_repository.py:168-171` | Changed to `DESCENDING` to match query sort direction |
+
+### Test Evidence After Fixes
+
+```
+27 passed in 1.75s
+
+New tests added:
+- test_update_preserves_created_at
+- test_update_uses_new_created_at_for_new_documents
+- test_list_limit_is_configurable
+- test_default_list_limit_is_100
+- test_create_job_continues_on_repository_failure
+- test_get_job_status_continues_on_repository_failure
+```
+
+### Acceptance Criteria Verification
+
+All 9 ACs verified:
+- ✅ AC1: Repository Pattern - All CRUD methods implemented
+- ✅ AC2: MongoDB Implementation - Indexes including TTL
+- ✅ AC3: Settings Configuration - `vectorization_job_ttl_hours`
+- ✅ AC4: Pipeline Integration - Repository injection works
+- ✅ AC5: Graceful Fallback - In-memory when None
+- ✅ AC6: CLI Works - Verified via E2E
+- ✅ AC7: Unit Tests - 27 tests (exceeds minimum 8)
+- ✅ AC8: E2E Regression - 99 passed, 8 skipped
+- ✅ AC9: CI Passes - CI + E2E CI green

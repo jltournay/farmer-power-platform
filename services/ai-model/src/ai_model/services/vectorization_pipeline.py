@@ -377,11 +377,16 @@ class VectorizationPipeline:
             try:
                 await self._job_repository.update(result)
             except Exception as e:
-                # Log but don't fail - in-memory cache still has the result
-                logger.error(
-                    "Failed to persist job result to repository",
+                # Log warning - in-memory cache still has the result, but
+                # job status will be lost on pod restart
+                logger.warning(
+                    "Failed to persist job result to repository - "
+                    "job status will be lost on pod restart",
                     job_id=job_id,
+                    document_id=document_id,
+                    status=status.value,
                     error=str(e),
+                    exc_info=True,
                 )
 
         logger.info(
@@ -579,11 +584,15 @@ class VectorizationPipeline:
             try:
                 await self._job_repository.create(pending_result)
             except Exception as e:
-                # Log but don't fail - in-memory cache still has the job
-                logger.error(
-                    "Failed to persist new job to repository",
+                # Log warning - in-memory cache still has the job, but
+                # job status will be lost on pod restart
+                logger.warning(
+                    "Failed to persist new job to repository - "
+                    "job status will be lost on pod restart",
                     job_id=job_id,
+                    document_id=document_id,
                     error=str(e),
+                    exc_info=True,
                 )
 
         return VectorizationJob(

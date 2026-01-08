@@ -13,7 +13,7 @@ import structlog
 from ai_model.domain.vectorization import VectorizationJobStatus, VectorizationResult
 from ai_model.domain.vectorization_job_document import VectorizationJobDocument
 from motor.motor_asyncio import AsyncIOMotorDatabase
-from pymongo import ASCENDING
+from pymongo import ASCENDING, DESCENDING
 
 logger = structlog.get_logger(__name__)
 
@@ -100,11 +100,13 @@ class MongoDBVectorizationJobRepository(VectorizationJobRepository):
     """
 
     COLLECTION_NAME = "vectorization_jobs"
+    DEFAULT_LIST_LIMIT = 100
 
     def __init__(
         self,
         db: AsyncIOMotorDatabase,
         ttl_hours: int = 24,
+        list_limit: int = DEFAULT_LIST_LIMIT,
     ) -> None:
         """Initialize the repository.
 
@@ -112,10 +114,13 @@ class MongoDBVectorizationJobRepository(VectorizationJobRepository):
             db: MongoDB database instance (should be ai_model database).
             ttl_hours: Hours after completion to automatically delete jobs.
                        Default: 24 hours. Set to 0 to disable TTL.
+            list_limit: Maximum number of jobs returned by list operations.
+                       Default: 100. Prevents unbounded result sets.
         """
         self._db = db
         self._collection = db[self.COLLECTION_NAME]
         self._ttl_hours = ttl_hours
+        self._list_limit = list_limit
         self._indexes_ensured = False
 
     async def ensure_indexes(self) -> None:
@@ -164,9 +169,9 @@ class MongoDBVectorizationJobRepository(VectorizationJobRepository):
                 },
             )
 
-        # Compound index for ordering queries
+        # Compound index for ordering queries (DESCENDING matches sort direction)
         await self._collection.create_index(
-            [("document_id", ASCENDING), ("created_at", ASCENDING)],
+            [("document_id", ASCENDING), ("created_at", DESCENDING)],
             name="idx_document_id_created_at",
         )
 
@@ -217,13 +222,26 @@ class MongoDBVectorizationJobRepository(VectorizationJobRepository):
     async def update(self, result: VectorizationResult) -> None:
         """Update an existing job.
 
+        Preserves the original created_at timestamp if the document exists.
+
         Args:
             result: The updated job result.
         """
+        # Preserve original created_at if document exists
+        existing = await self._collection.find_one(
+            {"_id": result.job_id},
+            projection={"created_at": 1},
+        )
+        original_created_at = existing.get("created_at") if existing else None
+
         doc = VectorizationJobDocument.from_result(result)
         doc_dict = doc.model_dump()
         doc_dict["_id"] = doc.job_id
         doc_dict["updated_at"] = datetime.now(UTC)
+
+        # Preserve original created_at, or use current time for new documents
+        if original_created_at is not None:
+            doc_dict["created_at"] = original_created_at
 
         await self._collection.replace_one(
             {"_id": doc.job_id},
@@ -248,9 +266,10 @@ class MongoDBVectorizationJobRepository(VectorizationJobRepository):
 
         Returns:
             List of job results for the document, sorted by created_at descending.
+            Limited to `list_limit` results (default: 100).
         """
         cursor = self._collection.find({"document_id": document_id}).sort("created_at", -1)
-        docs = await cursor.to_list(length=100)  # Limit to 100 jobs per document
+        docs = await cursor.to_list(length=self._list_limit)
 
         results = []
         for mongo_doc in docs:
@@ -270,10 +289,11 @@ class MongoDBVectorizationJobRepository(VectorizationJobRepository):
             status: The status to filter by.
 
         Returns:
-            List of job results with the specified status.
+            List of job results with the specified status, sorted by created_at descending.
+            Limited to `list_limit` results (default: 100).
         """
         cursor = self._collection.find({"status": status.value}).sort("created_at", -1)
-        docs = await cursor.to_list(length=100)  # Limit to 100 jobs
+        docs = await cursor.to_list(length=self._list_limit)
 
         results = []
         for mongo_doc in docs:

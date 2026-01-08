@@ -236,6 +236,8 @@ class TestRepositoryCRUD:
     @pytest.mark.asyncio
     async def test_update_replaces_document(self, repository, mock_mongodb_collection, sample_result):
         """Test update() replaces document in MongoDB."""
+        # Mock find_one for created_at preservation check
+        mock_mongodb_collection.find_one = AsyncMock(return_value=None)
         mock_mongodb_collection.replace_one = AsyncMock(return_value=MagicMock())
 
         await repository.update(sample_result)
@@ -244,6 +246,39 @@ class TestRepositoryCRUD:
         call_args = mock_mongodb_collection.replace_one.call_args
         assert call_args[0][0] == {"_id": "test-job-123"}
         assert call_args[1]["upsert"] is True
+
+    @pytest.mark.asyncio
+    async def test_update_preserves_created_at(self, repository, mock_mongodb_collection, sample_result):
+        """Test update() preserves original created_at timestamp."""
+        original_created_at = datetime(2026, 1, 1, 0, 0, 0, tzinfo=UTC)
+
+        # Mock find_one to return existing document with original created_at
+        mock_mongodb_collection.find_one = AsyncMock(
+            return_value={"created_at": original_created_at}
+        )
+        mock_mongodb_collection.replace_one = AsyncMock(return_value=MagicMock())
+
+        await repository.update(sample_result)
+
+        # Verify the replaced document has original created_at preserved
+        call_args = mock_mongodb_collection.replace_one.call_args[0][1]
+        assert call_args["created_at"] == original_created_at
+
+    @pytest.mark.asyncio
+    async def test_update_uses_new_created_at_for_new_documents(
+        self, repository, mock_mongodb_collection, sample_result
+    ):
+        """Test update() uses new created_at when document doesn't exist."""
+        # Mock find_one to return None (document doesn't exist)
+        mock_mongodb_collection.find_one = AsyncMock(return_value=None)
+        mock_mongodb_collection.replace_one = AsyncMock(return_value=MagicMock())
+
+        await repository.update(sample_result)
+
+        # Verify created_at is set (should be close to now)
+        call_args = mock_mongodb_collection.replace_one.call_args[0][1]
+        assert "created_at" in call_args
+        assert isinstance(call_args["created_at"], datetime)
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -514,3 +549,105 @@ class TestConfiguration:
         monkeypatch.setenv("AI_MODEL_VECTORIZATION_JOB_TTL_HOURS", "48")
         settings = Settings(_env_file=None)
         assert settings.vectorization_job_ttl_hours == 48
+
+    def test_list_limit_is_configurable(self, mock_database):
+        """Test list_limit can be configured in repository constructor."""
+        repo = MongoDBVectorizationJobRepository(
+            db=mock_database,
+            ttl_hours=24,
+            list_limit=50,
+        )
+        assert repo._list_limit == 50
+
+    def test_default_list_limit_is_100(self, mock_database):
+        """Test default list_limit is 100."""
+        repo = MongoDBVectorizationJobRepository(db=mock_database)
+        assert repo._list_limit == 100
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# PIPELINE ERROR HANDLING TESTS
+# ═══════════════════════════════════════════════════════════════════════════════
+
+
+class TestPipelineErrorHandling:
+    """Tests for pipeline error handling when repository operations fail."""
+
+    @pytest.fixture
+    def mock_settings(self, monkeypatch) -> Settings:
+        """Create settings for pipeline tests."""
+        monkeypatch.setenv("PINECONE_API_KEY", "test-pinecone-api-key")
+        monkeypatch.setenv("PINECONE_INDEX_NAME", "test-index")
+        return Settings(_env_file=None, vectorization_batch_size=10)
+
+    @pytest.fixture
+    def failing_job_repository(self) -> AsyncMock:
+        """Create mock repository that fails on persist operations."""
+        repo = AsyncMock(spec=VectorizationJobRepository)
+        repo.create = AsyncMock(side_effect=Exception("MongoDB connection failed"))
+        repo.update = AsyncMock(side_effect=Exception("MongoDB connection failed"))
+        repo.get = AsyncMock(return_value=None)
+        return repo
+
+    @pytest.mark.asyncio
+    async def test_create_job_continues_on_repository_failure(
+        self,
+        mock_settings,
+        failing_job_repository,
+    ):
+        """Test create_job() continues when repository.create() fails."""
+        from ai_model.services.vectorization_pipeline import VectorizationPipeline
+
+        with patch("ai_model.services.vectorization_pipeline.logger") as mock_logger:
+            pipeline = VectorizationPipeline(
+                chunk_repository=AsyncMock(),
+                document_repository=AsyncMock(),
+                embedding_service=AsyncMock(),
+                vector_store=AsyncMock(),
+                settings=mock_settings,
+                job_repository=failing_job_repository,
+            )
+
+            # Should not raise, should return job
+            job = await pipeline.create_job("test-doc", 1)
+
+            assert job is not None
+            assert job.document_id == "test-doc"
+
+            # Should have logged warning about persistence failure
+            mock_logger.warning.assert_called()
+            warning_call = str(mock_logger.warning.call_args)
+            assert "persist" in warning_call.lower() or "repository" in warning_call.lower()
+
+    @pytest.mark.asyncio
+    async def test_get_job_status_continues_on_repository_failure(
+        self,
+        mock_settings,
+        failing_job_repository,
+    ):
+        """Test get_job_status() returns None when repository.get() fails."""
+        from ai_model.services.vectorization_pipeline import VectorizationPipeline
+
+        failing_job_repository.get = AsyncMock(
+            side_effect=Exception("MongoDB connection failed")
+        )
+
+        with patch("ai_model.services.vectorization_pipeline.logger") as mock_logger:
+            pipeline = VectorizationPipeline(
+                chunk_repository=AsyncMock(),
+                document_repository=AsyncMock(),
+                embedding_service=AsyncMock(),
+                vector_store=AsyncMock(),
+                settings=mock_settings,
+                job_repository=failing_job_repository,
+            )
+
+            # Should not raise, should return None (not in cache, repo failed)
+            result = await pipeline.get_job_status("unknown-job")
+
+            assert result is None
+
+            # Should have logged error about repository failure
+            mock_logger.error.assert_called()
+            error_call = str(mock_logger.error.call_args)
+            assert "repository" in error_call.lower() or "job" in error_call.lower()
