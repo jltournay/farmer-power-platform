@@ -38,6 +38,9 @@ from ai_model.domain.vectorization import (
 from ai_model.infrastructure.pinecone_vector_store import PineconeVectorStore
 from ai_model.infrastructure.repositories.rag_chunk_repository import RagChunkRepository
 from ai_model.infrastructure.repositories.rag_document_repository import RagDocumentRepository
+from ai_model.infrastructure.repositories.vectorization_job_repository import (
+    VectorizationJobRepository,
+)
 from ai_model.services.embedding_service import EmbeddingService
 
 logger = structlog.get_logger(__name__)
@@ -69,6 +72,7 @@ class VectorizationPipeline:
         embedding_service: EmbeddingService,
         vector_store: PineconeVectorStore,
         settings: Settings,
+        job_repository: VectorizationJobRepository | None = None,
     ) -> None:
         """Initialize the vectorization pipeline.
 
@@ -78,20 +82,28 @@ class VectorizationPipeline:
             embedding_service: Service for generating embeddings.
             vector_store: Store for persisting vectors to Pinecone.
             settings: Service configuration (batch size, etc.).
+            job_repository: Optional repository for persisting job status.
+                           If None, falls back to in-memory storage.
         """
         self._chunk_repo = chunk_repository
         self._document_repo = document_repository
         self._embedding_service = embedding_service
         self._vector_store = vector_store
         self._settings = settings
+        self._job_repository = job_repository
 
-        # In-memory job tracking (for async mode)
-        # LIMITATION: Jobs are stored in-memory, which means:
-        # 1. Job status is lost on pod restart
-        # 2. With multiple replicas, get_job_status() may miss jobs on other pods
-        # 3. No automatic cleanup - jobs accumulate over time
-        # For production scale, consider migrating to Redis or MongoDB for job storage.
+        # In-memory job tracking (fallback when job_repository is None)
+        # Story 0.75.13d: When job_repository is provided, this is still used
+        # as a local cache for backwards compatibility and performance.
         self._jobs: dict[str, VectorizationResult] = {}
+
+        # Log warning if using in-memory mode
+        if self._job_repository is None:
+            logger.warning(
+                "VectorizationPipeline initialized without job repository - "
+                "using in-memory job tracking. Job status will be lost on pod restart. "
+                "For production, provide a VectorizationJobRepository instance."
+            )
 
     def _generate_namespace(self, document: RagDocument) -> str:
         """Generate Pinecone namespace based on document status.
@@ -357,8 +369,24 @@ class VectorizationPipeline:
             completed_at=completed_at,
         )
 
-        # Store for async retrieval
+        # Store for async retrieval (both in-memory cache and repository)
         self._jobs[job_id] = result
+
+        # Persist to repository if available (Story 0.75.13d)
+        if self._job_repository is not None:
+            try:
+                await self._job_repository.update(result)
+            except Exception as e:
+                # Log warning - in-memory cache still has the result, but
+                # job status will be lost on pod restart
+                logger.warning(
+                    "Failed to persist job result to repository - job status will be lost on pod restart",
+                    job_id=job_id,
+                    document_id=document_id,
+                    status=status.value,
+                    error=str(e),
+                    exc_info=True,
+                )
 
         logger.info(
             "Document vectorization completed",
@@ -482,6 +510,9 @@ class VectorizationPipeline:
         """Get the status of a vectorization job.
 
         Used for async mode to poll job completion.
+        Checks in-memory cache first, then repository if available.
+
+        Story 0.75.13d: Now supports persistent job storage via repository.
 
         Args:
             job_id: The job ID to query.
@@ -489,9 +520,28 @@ class VectorizationPipeline:
         Returns:
             VectorizationResult if found, None otherwise.
         """
-        return self._jobs.get(job_id)
+        # Check in-memory cache first (fast path)
+        if job_id in self._jobs:
+            return self._jobs[job_id]
 
-    def create_job(
+        # Check repository if available (Story 0.75.13d)
+        if self._job_repository is not None:
+            try:
+                result = await self._job_repository.get(job_id)
+                if result is not None:
+                    # Cache locally for future lookups
+                    self._jobs[job_id] = result
+                    return result
+            except Exception as e:
+                logger.error(
+                    "Failed to get job from repository",
+                    job_id=job_id,
+                    error=str(e),
+                )
+
+        return None
+
+    async def create_job(
         self,
         document_id: str,
         document_version: int,
@@ -501,6 +551,8 @@ class VectorizationPipeline:
         Used for async mode to return a job_id immediately before
         processing starts. Job is stored in self._jobs so it can be
         polled via get_job_status() before completion.
+
+        Story 0.75.13d: Now persists to repository if available.
 
         Args:
             document_id: Document to vectorize.
@@ -522,7 +574,24 @@ class VectorizationPipeline:
             chunks_total=0,
             chunks_stored=0,
         )
+
+        # Store in-memory cache
         self._jobs[job_id] = pending_result
+
+        # Persist to repository if available (Story 0.75.13d)
+        if self._job_repository is not None:
+            try:
+                await self._job_repository.create(pending_result)
+            except Exception as e:
+                # Log warning - in-memory cache still has the job, but
+                # job status will be lost on pod restart
+                logger.warning(
+                    "Failed to persist new job to repository - job status will be lost on pod restart",
+                    job_id=job_id,
+                    document_id=document_id,
+                    error=str(e),
+                    exc_info=True,
+                )
 
         return VectorizationJob(
             job_id=job_id,

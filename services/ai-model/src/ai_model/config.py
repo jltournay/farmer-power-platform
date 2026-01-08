@@ -227,6 +227,15 @@ class Settings(BaseSettings):
     # Balances memory usage with throughput
     vectorization_batch_size: int = 50
 
+    # ========================================
+    # Vectorization Job Persistence Configuration (Story 0.75.13d)
+    # ========================================
+
+    # TTL in hours for completed vectorization jobs in MongoDB
+    # Jobs with status completed/partial/failed will be automatically deleted
+    # after this many hours from completion. Set to 0 to disable TTL.
+    vectorization_job_ttl_hours: int = 24
+
     @property
     def pinecone_enabled(self) -> bool:
         """Check if Pinecone is configured and available.
