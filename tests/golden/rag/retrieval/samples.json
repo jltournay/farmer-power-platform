@@ -1,0 +1,149 @@
+{
+  "description": "Golden samples for RAG retrieval service accuracy testing",
+  "version": "1.0.0",
+  "created": "2026-01-08",
+  "target_accuracy": 0.85,
+  "namespace": "golden-retrieval",
+  "samples": [
+    {
+      "id": "query-001",
+      "query": "How to identify blister blight disease in tea?",
+      "expected_documents": ["blister-blight-guide"],
+      "expected_domain": "plant_diseases",
+      "description": "Direct disease identification query"
+    },
+    {
+      "id": "query-002",
+      "query": "What are the symptoms of blister blight?",
+      "expected_documents": ["blister-blight-guide"],
+      "expected_domain": "plant_diseases",
+      "description": "Symptom-focused disease query"
+    },
+    {
+      "id": "query-003",
+      "query": "How to control red spider mites on tea plants?",
+      "expected_documents": ["red-spider-mite-control"],
+      "expected_domain": "plant_diseases",
+      "description": "Pest control query"
+    },
+    {
+      "id": "query-004",
+      "query": "What is integrated pest management for mites?",
+      "expected_documents": ["red-spider-mite-control"],
+      "expected_domain": "plant_diseases",
+      "description": "IPM-focused query"
+    },
+    {
+      "id": "query-005",
+      "query": "How to pluck tea leaves correctly?",
+      "expected_documents": ["tea-plucking-standards"],
+      "expected_domain": "tea_cultivation",
+      "description": "Tea harvesting technique query"
+    },
+    {
+      "id": "query-006",
+      "query": "What is fine plucking versus coarse plucking?",
+      "expected_documents": ["tea-plucking-standards"],
+      "expected_domain": "tea_cultivation",
+      "description": "Plucking standards comparison query"
+    },
+    {
+      "id": "query-007",
+      "query": "When should I apply nitrogen fertilizer to tea?",
+      "expected_documents": ["nitrogen-fertilizer-guide"],
+      "expected_domain": "tea_cultivation",
+      "description": "Fertilizer timing query"
+    },
+    {
+      "id": "query-008",
+      "query": "How much nitrogen does tea need per year?",
+      "expected_documents": ["nitrogen-fertilizer-guide"],
+      "expected_domain": "tea_cultivation",
+      "description": "Fertilizer rate query"
+    },
+    {
+      "id": "query-009",
+      "query": "How to protect tea from frost damage?",
+      "expected_documents": ["frost-damage-prevention"],
+      "expected_domain": "weather_patterns",
+      "description": "Frost protection query"
+    },
+    {
+      "id": "query-010",
+      "query": "What causes frost damage to tea plants?",
+      "expected_documents": ["frost-damage-prevention"],
+      "expected_domain": "weather_patterns",
+      "description": "Frost damage causes query"
+    },
+    {
+      "id": "query-011",
+      "query": "How does rainfall affect tea yields?",
+      "expected_documents": ["rainfall-yield-correlation"],
+      "expected_domain": "weather_patterns",
+      "description": "Rainfall-yield correlation query"
+    },
+    {
+      "id": "query-012",
+      "query": "What are the KTDA tea grading standards?",
+      "expected_documents": ["ktda-grading-standards"],
+      "expected_domain": "quality_standards",
+      "description": "Grading standards query"
+    },
+    {
+      "id": "query-013",
+      "query": "What is BP1 tea grade?",
+      "expected_documents": ["ktda-grading-standards"],
+      "expected_domain": "quality_standards",
+      "description": "Specific grade definition query"
+    },
+    {
+      "id": "query-014",
+      "query": "What tea varieties grow best in Nandi?",
+      "expected_documents": ["nandi-regional-guide"],
+      "expected_domain": "regional_context",
+      "description": "Regional variety recommendation query"
+    },
+    {
+      "id": "query-015",
+      "query": "What is the climate like for tea growing in Nandi County?",
+      "expected_documents": ["nandi-regional-guide"],
+      "expected_domain": "regional_context",
+      "description": "Regional climate query"
+    },
+    {
+      "id": "query-016",
+      "query": "Tea plant diseases caused by fungus",
+      "expected_documents": ["blister-blight-guide"],
+      "expected_domain": "plant_diseases",
+      "description": "General fungal disease query"
+    },
+    {
+      "id": "query-017",
+      "query": "How to improve tea quality?",
+      "expected_documents": ["tea-plucking-standards", "ktda-grading-standards"],
+      "expected_domain": null,
+      "description": "Cross-domain quality improvement query"
+    },
+    {
+      "id": "query-018",
+      "query": "Drought stress symptoms in tea",
+      "expected_documents": ["rainfall-yield-correlation"],
+      "expected_domain": "weather_patterns",
+      "description": "Water stress query"
+    },
+    {
+      "id": "query-019",
+      "query": "Best practices for highland tea farming",
+      "expected_documents": ["nandi-regional-guide", "frost-damage-prevention"],
+      "expected_domain": null,
+      "description": "Highland farming cross-domain query"
+    },
+    {
+      "id": "query-020",
+      "query": "How to recover tea plants after frost?",
+      "expected_documents": ["frost-damage-prevention"],
+      "expected_domain": "weather_patterns",
+      "description": "Frost recovery query"
+    }
+  ]
+}
