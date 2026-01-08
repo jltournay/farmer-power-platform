@@ -516,7 +516,7 @@ So that embeddings can be stored and queried efficiently.
 
 ### Story 0.75.13b: RAG Vectorization Pipeline (Orchestration)
 
-**Story File:** Not yet created | Status: Backlog
+**Story File:** `_bmad-output/sprint-artifacts/0-75-13b-rag-vectorization-pipeline.md` | Status: Done
 
 As a **developer**,
 I want a vectorization pipeline that coordinates embedding generation and vector storage,
@@ -546,6 +546,30 @@ So that document chunks become searchable after ingestion.
 **Trigger:** Called when document is promoted from `staged` to `active` status.
 
 **Why separate from 0.75.13?** Separation of concerns — 0.75.13 is the Pinecone client (reusable), 0.75.13b is the business workflow (specific to document lifecycle).
+
+---
+
+### Story 0.75.13c: RAG Vectorization gRPC Wiring
+
+**Story File:** `_bmad-output/sprint-artifacts/0-75-13c-rag-vectorization-grpc-wiring.md` | Status: Backlog
+
+As a **developer using the RAG API**,
+I want the VectorizationPipeline exposed via gRPC endpoints,
+So that documents can be vectorized through the standard API and CLI.
+
+**Context:** Story 0.75.13b created the `VectorizationPipeline` class but deferred gRPC wiring (Task 6b). This story completes the integration.
+
+**Scope:**
+- Extend `RAGDocumentServiceServicer` to accept all dependencies (repositories, workflows, pipeline)
+- Wire dependencies in `grpc_server.py` (create EmbeddingService, PineconeVectorStore, VectorizationPipeline)
+- Implement `VectorizeDocument` RPC (sync and async modes)
+- Implement `GetVectorizationJob` RPC (status polling)
+- CLI integration: `fp-knowledge vectorize`, `fp-knowledge job-status`
+- Unit tests and E2E test for vectorization flow
+
+**Dependencies:** Story 0.75.13b (VectorizationPipeline class)
+
+**Enables:** Story 0.75.14 (RAG Retrieval can query vectorized content)
 
 ---
 
@@ -891,29 +915,30 @@ So that images can be analyzed with cost optimization.
 
 | #    | Story                                                    | Type           | Status  |
 |------|----------------------------------------------------------|----------------|---------|
-| 1    | AI Model Setup                                           | Infrastructure | Backlog |
-| 2    | Pydantic Model for Prompt + Mongo Repository             | Data Model     | Backlog |
-| 3    | Pydantic Model for Agent Configuration + Mongo Repository| Data Model     | Backlog |
-| 4    | Source Cache for Agent Types and Prompt Config           | Infrastructure | Backlog |
-| 5    | OpenRouter LLM Gateway with Cost Observability           | Infrastructure | Backlog |
-| 6    | CLI to Manage Prompt Type Configuration                  | Tooling        | Backlog |
-| 7    | CLI to Manage Agent Configuration                        | Tooling        | Backlog |
-| 8    | Event Flow, Subscriber, and Publisher                    | Infrastructure | Backlog |
-| 8b   | MCP Client Integration for Agent Workflows               | Infrastructure | Backlog |
-| 9    | Pydantic Model for RAG Document Storage                  | Data Model     | Backlog |
-| 10   | gRPC Model for RAG Document                              | API            | Backlog |
-| 10b  | Basic PDF/Markdown Extraction                            | RAG            | Backlog |
-| 10c  | Azure Document Intelligence Integration                  | RAG            | Backlog |
-| 10d  | Semantic Chunking                                        | RAG            | Backlog |
-| 11   | CLI for RAG Document                                     | Tooling        | Backlog |
-| 12   | RAG Embedding Configuration (Pinecone Inference)         | RAG            | Backlog |
-| 13   | RAG Vector Storage (Pinecone Repository)                 | RAG            | Backlog |
-| 13b  | RAG Vectorization Pipeline (Orchestration)               | RAG            | Backlog |
+| 1    | AI Model Setup                                           | Infrastructure | Done    |
+| 2    | Pydantic Model for Prompt + Mongo Repository             | Data Model     | Done    |
+| 3    | Pydantic Model for Agent Configuration + Mongo Repository| Data Model     | Done    |
+| 4    | Source Cache for Agent Types and Prompt Config           | Infrastructure | Done    |
+| 5    | OpenRouter LLM Gateway with Cost Observability           | Infrastructure | Done    |
+| 6    | CLI to Manage Prompt Type Configuration                  | Tooling        | Done    |
+| 7    | CLI to Manage Agent Configuration                        | Tooling        | Done    |
+| 8    | Event Flow, Subscriber, and Publisher                    | Infrastructure | Done    |
+| 8b   | MCP Client Integration for Agent Workflows               | Infrastructure | Done    |
+| 9    | Pydantic Model for RAG Document Storage                  | Data Model     | Done    |
+| 10   | gRPC Model for RAG Document                              | API            | Done    |
+| 10b  | Basic PDF/Markdown Extraction                            | RAG            | Done    |
+| 10c  | Azure Document Intelligence Integration                  | RAG            | Done    |
+| 10d  | Semantic Chunking                                        | RAG            | Done    |
+| 11   | CLI for RAG Document                                     | Tooling        | Done    |
+| 12   | RAG Embedding Configuration (Pinecone Inference)         | RAG            | Done    |
+| 13   | RAG Vector Storage (Pinecone Repository)                 | RAG            | Done    |
+| 13b  | RAG Vectorization Pipeline (Orchestration)               | RAG            | Done    |
+| 13c  | RAG Vectorization gRPC Wiring                            | RAG            | Backlog |
 | 14   | RAG Retrieval Service                                    | RAG            | Backlog |
 | 15   | RAG Ranking Logic                                        | RAG            | Backlog |
 | 16   | LangGraph SDK Integration & Base Workflows               | Framework      | Backlog |
 | 17   | Extractor Agent Implementation                           | Agent          | Backlog |
-| 18   | E2E: Weather Observation Extraction Flow                 | Validation     | Backlog |
+| 18   | E2E: Weather Observation Extraction Flow                 | Validation     | Blocked |
 | 19   | Explorer Agent Implementation                            | Agent          | Backlog |
 | 20   | Generator Agent Implementation                           | Agent          | Backlog |
 | 21   | Conversational Agent Implementation                      | Agent          | Backlog |
@@ -962,4 +987,4 @@ So that images can be analyzed with cost optimization.
 
 ---
 
-_Last Updated: 2026-01-04_
+_Last Updated: 2026-01-08_
