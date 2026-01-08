@@ -1,0 +1,123 @@
+{
+  "description": "Golden samples for RAG ranking accuracy testing. These queries validate that ranking improves result ordering, domain boosting works correctly, and deduplication removes near-duplicates.",
+  "version": "1.0.0",
+  "created": "2026-01-08",
+  "namespace": "golden-ranking",
+  "samples": [
+    {
+      "id": "rank-001",
+      "query": "How to treat blister blight disease on tea plants?",
+      "expected_top_result": "blister-blight-guide",
+      "expected_in_top_3": ["blister-blight-guide"],
+      "domain_filter": ["plant_diseases"],
+      "domain_boosts": {},
+      "description": "Specific disease query should rank disease guide highest"
+    },
+    {
+      "id": "rank-002",
+      "query": "What causes red spider mite infestations?",
+      "expected_top_result": "red-spider-mite-control",
+      "expected_in_top_3": ["red-spider-mite-control"],
+      "domain_filter": ["plant_diseases"],
+      "domain_boosts": {},
+      "description": "Pest control query should find mite management guide"
+    },
+    {
+      "id": "rank-003",
+      "query": "Best practices for tea plucking two leaves and bud",
+      "expected_top_result": "tea-plucking-standards",
+      "expected_in_top_3": ["tea-plucking-standards"],
+      "domain_filter": ["tea_cultivation"],
+      "domain_boosts": {},
+      "description": "Plucking technique query should rank standards guide highest"
+    },
+    {
+      "id": "rank-004",
+      "query": "How much nitrogen fertilizer should I apply to tea?",
+      "expected_top_result": "nitrogen-fertilizer-guide",
+      "expected_in_top_3": ["nitrogen-fertilizer-guide"],
+      "domain_filter": ["tea_cultivation"],
+      "domain_boosts": {},
+      "description": "Fertilizer application query should find nitrogen guide"
+    },
+    {
+      "id": "rank-005",
+      "query": "How to protect tea from frost damage in highlands",
+      "expected_top_result": "frost-damage-prevention",
+      "expected_in_top_3": ["frost-damage-prevention"],
+      "domain_filter": ["weather_patterns"],
+      "domain_boosts": {},
+      "description": "Frost protection query should rank weather guide highest"
+    },
+    {
+      "id": "rank-006",
+      "query": "Rainfall impact on tea yield prediction",
+      "expected_top_result": "rainfall-yield-correlation",
+      "expected_in_top_3": ["rainfall-yield-correlation"],
+      "domain_filter": ["weather_patterns"],
+      "domain_boosts": {},
+      "description": "Rainfall-yield query should find correlation guide"
+    },
+    {
+      "id": "rank-007",
+      "query": "KTDA tea grading system BP1 PF1",
+      "expected_top_result": "ktda-grading-standards",
+      "expected_in_top_3": ["ktda-grading-standards"],
+      "domain_filter": ["quality_standards"],
+      "domain_boosts": {},
+      "description": "Grading query with specific terms should rank standards highest"
+    },
+    {
+      "id": "rank-008",
+      "query": "Tea growing conditions in Nandi County Kenya",
+      "expected_top_result": "nandi-regional-guide",
+      "expected_in_top_3": ["nandi-regional-guide"],
+      "domain_filter": ["regional_context"],
+      "domain_boosts": {},
+      "description": "Regional query should find Nandi guide"
+    },
+    {
+      "id": "rank-009",
+      "query": "Why are my tea leaves turning yellow and have reduced growth?",
+      "expected_top_result": "nitrogen-fertilizer-guide",
+      "expected_in_top_3": ["nitrogen-fertilizer-guide", "blister-blight-guide"],
+      "domain_filter": [],
+      "domain_boosts": {"tea_cultivation": 1.2},
+      "description": "Cross-domain query with cultivation boost should prioritize fertilizer guide"
+    },
+    {
+      "id": "rank-010",
+      "query": "Managing tea during dry season drought stress",
+      "expected_top_result": "rainfall-yield-correlation",
+      "expected_in_top_3": ["rainfall-yield-correlation", "red-spider-mite-control"],
+      "domain_filter": [],
+      "domain_boosts": {"weather_patterns": 1.3},
+      "description": "Drought query with weather boost should prioritize rainfall guide"
+    },
+    {
+      "id": "rank-011",
+      "query": "Fungal diseases affecting young tea shoots",
+      "expected_top_result": "blister-blight-guide",
+      "expected_in_top_3": ["blister-blight-guide"],
+      "domain_filter": ["plant_diseases"],
+      "domain_boosts": {"plant_diseases": 1.5},
+      "description": "Fungal disease query with high boost should strongly rank disease guide"
+    },
+    {
+      "id": "rank-012",
+      "query": "Tea quality and harvest timing rounds",
+      "expected_top_result": "tea-plucking-standards",
+      "expected_in_top_3": ["tea-plucking-standards", "ktda-grading-standards"],
+      "domain_filter": [],
+      "domain_boosts": {},
+      "description": "Quality-harvest query should find plucking and grading guides"
+    }
+  ],
+  "accuracy_threshold": 0.90,
+  "notes": [
+    "Tests use same seed_documents.json as retrieval tests",
+    "namespace is 'golden-ranking' to isolate from retrieval tests",
+    "expected_top_result validates ranking improves ordering",
+    "expected_in_top_3 validates relevant docs are not missed"
+  ]
+}
