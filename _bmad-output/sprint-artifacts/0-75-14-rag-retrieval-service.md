@@ -148,14 +148,14 @@ The retrieval service orchestrates these components to provide a high-level API 
 - [x] Push to feature branch: `git push -u origin feature/0-75-14-rag-retrieval-service`
 
 ### Story Done
-- [ ] Create Pull Request: `gh pr create --title "Story 0.75.14: RAG Retrieval Service" --base main`
+- [x] Create Pull Request: `gh pr create --title "Story 0.75.14: RAG Retrieval Service" --base main`
 - [x] CI passes on PR (Run ID: 20818631209)
 - [x] E2E CI passes on PR (Run ID: 20818896808)
-- [ ] Code review completed (`/code-review` or human review)
+- [x] Code review completed (`/code-review` - AI review, 2 issues fixed)
 - [ ] PR approved and merged (squash)
 - [ ] Local branch cleaned up: `git branch -d feature/0-75-14-rag-retrieval-service`
 
-**PR URL:** _______________ (fill in when created)
+**PR URL:** https://github.com/jltournay/farmer-power-platform/pull/138
 
 ---
 
