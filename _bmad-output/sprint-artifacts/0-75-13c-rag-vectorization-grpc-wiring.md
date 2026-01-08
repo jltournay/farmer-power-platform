@@ -428,14 +428,19 @@ All checks passed!
 ```bash
 gh workflow run "E2E Tests" --ref feature/0-75-13c-rag-vectorization-grpc-wiring
 ```
-**CI Run ID:** 20811284238
+**CI Run ID:** 20811735509
 **CI E2E Status:** [x] Passed / [ ] Failed
 
 **CI E2E Run Details:**
 - Workflow: E2E Tests
 - Branch: feature/0-75-13c-rag-vectorization-grpc-wiring
-- Result: SUCCESS
-- URL: https://github.com/jltournay/farmer-power-platform/actions/runs/20811284238
+- Result: SUCCESS (99 passed, 8 skipped)
+- URL: https://github.com/jltournay/farmer-power-platform/actions/runs/20811735509
+- RAG Vectorization Tests:
+  - test_vectorization_e2e_flow: PASSED
+  - test_vectorization_async_mode: PASSED
+  - test_vectorize_document_not_found: PASSED
+  - test_get_vectorization_job_not_found: PASSED
 
 ---
 
