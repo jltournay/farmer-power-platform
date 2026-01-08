@@ -251,7 +251,8 @@ class PineconeVectorStore:
             {
                 "id": v.id,
                 "values": v.values,
-                "metadata": v.metadata.model_dump() if v.metadata else {},
+                # exclude_none=True: Pinecone rejects null metadata values (Story 0.75.13c fix)
+                "metadata": v.metadata.model_dump(exclude_none=True) if v.metadata else {},
             }
             for v in batch
         ]

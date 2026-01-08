@@ -18,6 +18,10 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 from ai_model.config import Settings
+from ai_model.domain.exceptions import (
+    DocumentNotFoundError,
+    InvalidDocumentStatusError,
+)
 from ai_model.domain.rag_document import (
     KnowledgeDomain,
     RagChunk,
@@ -36,11 +40,7 @@ from ai_model.infrastructure.pinecone_vector_store import PineconeVectorStore
 from ai_model.infrastructure.repositories.rag_chunk_repository import RagChunkRepository
 from ai_model.infrastructure.repositories.rag_document_repository import RagDocumentRepository
 from ai_model.services.embedding_service import EmbeddingService
-from ai_model.services.vectorization_pipeline import (
-    DocumentNotFoundError,
-    InvalidDocumentStatusError,
-    VectorizationPipeline,
-)
+from ai_model.services.vectorization_pipeline import VectorizationPipeline
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # FIXTURES

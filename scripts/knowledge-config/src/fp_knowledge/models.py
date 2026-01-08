@@ -162,6 +162,16 @@ class JobStatus(str, Enum):
     FAILED = "failed"
 
 
+class VectorizationJobStatus(str, Enum):
+    """Vectorization job status (Story 0.75.13c)."""
+
+    PENDING = "pending"
+    IN_PROGRESS = "in_progress"
+    COMPLETED = "completed"
+    FAILED = "failed"
+    PARTIAL = "partial"  # Some chunks succeeded, some failed
+
+
 class ExtractionJobResult(BaseModel):
     """Result of an extraction job query."""
 
@@ -224,3 +234,47 @@ class OperationResult(BaseModel):
     message: str | None = Field(default=None, description="Success/info message")
     error: str | None = Field(default=None, description="Error message if failed")
     data: dict[str, Any] | None = Field(default=None, description="Additional data")
+
+
+class VectorizationResult(BaseModel):
+    """Result of vectorization operation (Story 0.75.13c)."""
+
+    job_id: str = Field(description="Unique job identifier")
+    status: VectorizationJobStatus = Field(description="Job status")
+    namespace: str | None = Field(default=None, description="Pinecone namespace")
+    chunks_total: int = Field(default=0, description="Total chunks to process")
+    chunks_embedded: int = Field(
+        default=0, description="Chunks with embeddings generated"
+    )
+    chunks_stored: int = Field(default=0, description="Chunks stored in Pinecone")
+    failed_count: int = Field(default=0, description="Number of failed chunks")
+    content_hash: str | None = Field(
+        default=None, description="Content hash for change detection"
+    )
+    error_message: str | None = Field(
+        default=None, description="Error details if failed"
+    )
+
+
+class VectorizationJobResult(BaseModel):
+    """Full result of a vectorization job query (Story 0.75.13c)."""
+
+    job_id: str = Field(description="Unique job identifier")
+    status: VectorizationJobStatus = Field(description="Job status")
+    document_id: str = Field(description="RAG document being vectorized")
+    document_version: int = Field(description="Document version")
+    namespace: str | None = Field(default=None, description="Pinecone namespace")
+    chunks_total: int = Field(default=0, description="Total chunks to process")
+    chunks_embedded: int = Field(
+        default=0, description="Chunks with embeddings generated"
+    )
+    chunks_stored: int = Field(default=0, description="Chunks stored in Pinecone")
+    failed_count: int = Field(default=0, description="Number of failed chunks")
+    content_hash: str | None = Field(
+        default=None, description="Content hash for change detection"
+    )
+    error_message: str | None = Field(
+        default=None, description="Error details if failed"
+    )
+    started_at: datetime | None = Field(default=None, description="Job start time")
+    completed_at: datetime | None = Field(default=None, description="Job end time")

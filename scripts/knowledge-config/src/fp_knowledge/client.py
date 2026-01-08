@@ -29,6 +29,9 @@ from fp_knowledge.models import (
     RagDocument,
     RagDocumentInput,
     SourceFileInfo,
+    VectorizationJobResult,
+    VectorizationJobStatus,
+    VectorizationResult,
 )
 from fp_knowledge.settings import Environment, Settings
 
@@ -701,3 +704,109 @@ class KnowledgeClient:
             timeout=self._settings.grpc_timeout,
         )
         return response.chunks_deleted
+
+    # ========================================
+    # Vectorization Operations (Story 0.75.13c)
+    # ========================================
+
+    @_grpc_retry()
+    async def vectorize(
+        self,
+        document_id: str,
+        version: int = 0,
+        async_mode: bool = False,
+    ) -> VectorizationResult:
+        """Vectorize a document by generating embeddings and storing in Pinecone.
+
+        Args:
+            document_id: The document identifier.
+            version: The version to vectorize (0 = latest active/staged).
+            async_mode: If True, returns immediately with job_id for polling.
+
+        Returns:
+            VectorizationResult with job status and statistics.
+        """
+        stub = self._ensure_connected()
+        # Note: async_ is a reserved word in protobuf Python generation
+        # The field is accessed via async_ in the generated code
+        request = ai_model_pb2.VectorizeDocumentRequest(
+            document_id=document_id,
+            version=version,
+        )
+        # Set async field via setattr to handle reserved word
+        setattr(request, "async", async_mode)
+
+        response = await stub.VectorizeDocument(
+            request,
+            metadata=self._get_metadata(),
+            timeout=self._settings.grpc_timeout * 3,  # Longer timeout for vectorization
+        )
+
+        return VectorizationResult(
+            job_id=response.job_id,
+            status=VectorizationJobStatus(response.status),
+            namespace=response.namespace or None,
+            chunks_total=response.chunks_total,
+            chunks_embedded=response.chunks_embedded,
+            chunks_stored=response.chunks_stored,
+            failed_count=response.failed_count,
+            content_hash=response.content_hash or None,
+            error_message=response.error_message or None,
+        )
+
+    @_grpc_retry()
+    async def get_vectorization_job_status(
+        self, job_id: str
+    ) -> VectorizationJobResult | None:
+        """Get vectorization job status.
+
+        Args:
+            job_id: The job identifier.
+
+        Returns:
+            VectorizationJobResult with current status, or None if not found.
+        """
+        stub = self._ensure_connected()
+        request = ai_model_pb2.GetVectorizationJobRequest(job_id=job_id)
+
+        try:
+            response = await stub.GetVectorizationJob(
+                request,
+                metadata=self._get_metadata(),
+                timeout=self._settings.grpc_timeout,
+            )
+        except grpc.aio.AioRpcError as e:
+            if e.code() == grpc.StatusCode.NOT_FOUND:
+                return None
+            raise
+
+        # Convert timestamps
+        started_at = None
+        if response.started_at.seconds:
+            started_at = datetime.fromtimestamp(
+                response.started_at.seconds + response.started_at.nanos / 1e9,
+                tz=timezone.utc,
+            )
+
+        completed_at = None
+        if response.completed_at.seconds:
+            completed_at = datetime.fromtimestamp(
+                response.completed_at.seconds + response.completed_at.nanos / 1e9,
+                tz=timezone.utc,
+            )
+
+        return VectorizationJobResult(
+            job_id=response.job_id,
+            status=VectorizationJobStatus(response.status),
+            document_id=response.document_id,
+            document_version=response.document_version,
+            namespace=response.namespace or None,
+            chunks_total=response.chunks_total,
+            chunks_embedded=response.chunks_embedded,
+            chunks_stored=response.chunks_stored,
+            failed_count=response.failed_count,
+            content_hash=response.content_hash or None,
+            error_message=response.error_message or None,
+            started_at=started_at,
+            completed_at=completed_at,
+        )

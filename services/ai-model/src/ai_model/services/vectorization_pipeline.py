@@ -22,6 +22,10 @@ from datetime import UTC, datetime
 
 import structlog
 from ai_model.config import Settings
+from ai_model.domain.exceptions import (
+    DocumentNotFoundError,
+    InvalidDocumentStatusError,
+)
 from ai_model.domain.rag_document import RagChunk, RagDocument, RagDocumentStatus
 from ai_model.domain.vector_store import VectorMetadata, VectorUpsertRequest
 from ai_model.domain.vectorization import (
@@ -39,22 +43,9 @@ from ai_model.services.embedding_service import EmbeddingService
 logger = structlog.get_logger(__name__)
 
 
-class VectorizationPipelineError(Exception):
-    """Base exception for vectorization pipeline errors."""
-
-    pass
-
-
-class DocumentNotFoundError(VectorizationPipelineError):
-    """Raised when the document to vectorize is not found."""
-
-    pass
-
-
-class InvalidDocumentStatusError(VectorizationPipelineError):
-    """Raised when document has invalid status for vectorization."""
-
-    pass
+__all__ = [
+    "VectorizationPipeline",
+]
 
 
 class VectorizationPipeline:
@@ -508,7 +499,8 @@ class VectorizationPipeline:
         """Create a new vectorization job (for tracking purposes).
 
         Used for async mode to return a job_id immediately before
-        processing starts.
+        processing starts. Job is stored in self._jobs so it can be
+        polled via get_job_status() before completion.
 
         Args:
             document_id: Document to vectorize.
@@ -518,6 +510,20 @@ class VectorizationPipeline:
             VectorizationJob with pending status.
         """
         job_id = str(uuid.uuid4())
+
+        # Story 0.75.13c: Store PENDING result immediately so async jobs can be polled
+        # before vectorization completes
+        pending_result = VectorizationResult(
+            job_id=job_id,
+            status=VectorizationJobStatus.PENDING,
+            document_id=document_id,
+            document_version=document_version,
+            namespace="",  # Not known until vectorization starts
+            chunks_total=0,
+            chunks_stored=0,
+        )
+        self._jobs[job_id] = pending_result
+
         return VectorizationJob(
             job_id=job_id,
             status=VectorizationJobStatus.PENDING,

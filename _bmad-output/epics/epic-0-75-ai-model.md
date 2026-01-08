@@ -573,6 +573,41 @@ So that documents can be vectorized through the standard API and CLI.
 
 ---
 
+### Story 0.75.13d: Vectorization Job Persistence (Redis/MongoDB)
+
+**Story File:** Not yet created | Status: Backlog
+
+As a **platform operator**,
+I want vectorization job status persisted to Redis or MongoDB,
+So that job tracking survives pod restarts and works across multiple replicas.
+
+**Context:** Story 0.75.13c implemented in-memory job tracking (`self._jobs: dict[str, VectorizationResult]`) which has the following production limitations documented in `vectorization_pipeline.py`:
+1. Job status is lost on pod restart
+2. With multiple replicas, `get_job_status()` may miss jobs on other pods
+3. No automatic cleanup - jobs accumulate over time
+
+**Scope:**
+- Migrate job storage from in-memory dict to Redis (preferred) or MongoDB
+- Implement `VectorizationJobRepository` with CRUD operations
+- Job TTL configuration (default: 24 hours) for automatic cleanup
+- Update `VectorizationPipeline` to use repository instead of in-memory dict
+- Update gRPC `GetVectorizationJob` to query from persistent storage
+- Support job listing/filtering (e.g., by status, document_id)
+
+**Acceptance Criteria:**
+1. Job status survives AI Model pod restart
+2. Job status queryable from any replica in multi-replica deployment
+3. Jobs automatically expire after configurable TTL
+4. CLI `fp-knowledge job-status` works across pod restarts
+5. Unit tests for repository operations
+6. Integration test for job persistence across restarts (if feasible)
+
+**Dependencies:** Story 0.75.13c (Vectorization gRPC Wiring)
+
+**Note:** This is a production hardening story. The in-memory implementation from 0.75.13c is sufficient for single-replica development environments.
+
+---
+
 ### Story 0.75.14: RAG Retrieval Service
 
 **Story File:** Not yet created | Status: Backlog
@@ -933,7 +968,8 @@ So that images can be analyzed with cost optimization.
 | 12   | RAG Embedding Configuration (Pinecone Inference)         | RAG            | Done    |
 | 13   | RAG Vector Storage (Pinecone Repository)                 | RAG            | Done    |
 | 13b  | RAG Vectorization Pipeline (Orchestration)               | RAG            | Done    |
-| 13c  | RAG Vectorization gRPC Wiring                            | RAG            | Backlog |
+| 13c  | RAG Vectorization gRPC Wiring                            | RAG            | Review  |
+| 13d  | Vectorization Job Persistence (Redis/MongoDB)            | RAG            | Backlog |
 | 14   | RAG Retrieval Service                                    | RAG            | Backlog |
 | 15   | RAG Ranking Logic                                        | RAG            | Backlog |
 | 16   | LangGraph SDK Integration & Base Workflows               | Framework      | Backlog |
