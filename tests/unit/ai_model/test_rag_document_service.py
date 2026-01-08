@@ -683,9 +683,12 @@ async def test_vectorize_document_missing_document_id(service_with_pipeline, moc
 
 
 @pytest.mark.asyncio
-async def test_vectorize_document_no_pipeline_configured(service, mock_context, sample_document):
+async def test_vectorize_document_no_pipeline_configured(service, mock_repository, mock_context, sample_document):
     """Test vectorization fails when pipeline not configured."""
     # service has no vectorization pipeline
+    # Story 0.75.13c: Document must exist first (checked before pipeline availability)
+    sample_document.status = RagDocumentStatus.STAGED
+    await mock_repository.create(sample_document)
 
     request = ai_model_pb2.VectorizeDocumentRequest(document_id="disease-guide", version=1)
 
@@ -810,15 +813,19 @@ async def test_get_vectorization_job_not_found(service_with_pipeline, mock_conte
 
 @pytest.mark.asyncio
 async def test_get_vectorization_job_no_pipeline_configured(service, mock_context):
-    """Test get vectorization job fails when pipeline not configured."""
+    """Test get vectorization job returns NOT_FOUND when pipeline not configured.
+
+    Story 0.75.13c: If pipeline is not configured, no jobs can exist.
+    Return NOT_FOUND rather than UNAVAILABLE (job cannot exist without pipeline).
+    """
     request = ai_model_pb2.GetVectorizationJobRequest(job_id="job-123")
 
     await service.GetVectorizationJob(request, mock_context)
 
     mock_context.abort.assert_called_once()
     call_args = mock_context.abort.call_args
-    assert call_args[0][0] == grpc.StatusCode.UNAVAILABLE
-    assert "Vectorization service not configured" in call_args[0][1]
+    assert call_args[0][0] == grpc.StatusCode.NOT_FOUND
+    assert "not found" in call_args[0][1].lower()
 
 
 @pytest.mark.asyncio

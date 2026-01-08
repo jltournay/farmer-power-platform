@@ -1630,8 +1630,13 @@ class RAGDocumentServiceServicer(ai_model_pb2_grpc.RAGDocumentServiceServicer):
                 )
                 return ai_model_pb2.VectorizationJobResponse()
 
-            # Check if vectorization pipeline is available
-            if not await self._require_vectorization_pipeline(context):
+            # Story 0.75.13c: If pipeline is not configured, no jobs can exist
+            # Return NOT_FOUND rather than UNAVAILABLE (job cannot exist without pipeline)
+            if self._vectorization_pipeline is None:
+                await context.abort(
+                    grpc.StatusCode.NOT_FOUND,
+                    f"Vectorization job not found: {request.job_id}",
+                )
                 return ai_model_pb2.VectorizationJobResponse()
 
             # Get job status
