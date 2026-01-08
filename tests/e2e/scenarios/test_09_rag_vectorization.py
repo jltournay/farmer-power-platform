@@ -26,6 +26,8 @@ import grpc
 import pytest
 from fp_proto.ai_model.v1 import ai_model_pb2, ai_model_pb2_grpc
 
+pytestmark = pytest.mark.e2e  # Mark all tests in this module for E2E CI
+
 # ═══════════════════════════════════════════════════════════════════════════════
 # TEST CONSTANTS
 # ═══════════════════════════════════════════════════════════════════════════════
