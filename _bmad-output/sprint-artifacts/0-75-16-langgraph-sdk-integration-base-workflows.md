@@ -1,6 +1,6 @@
 # Story 0.75.16: LangGraph SDK Integration & Base Workflows
 
-**Status:** review
+**Status:** done
 **GitHub Issue:** #141
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
@@ -841,26 +841,27 @@ Claude Opus 4.5 (Adversarial Code Review)
 | 1 | Type mismatch: `WorkflowExecutionService` accepted `AsyncIOMotorClient` but `create_mongodb_checkpointer` requires sync `MongoClient` | CRITICAL | `execution_service.py` | ✅ Fixed: Changed to accept `mongodb_uri` string, create `MongoClient` internally |
 | 2 | `await` on sync function: `await create_mongodb_checkpointer(...)` but function is sync | CRITICAL | `execution_service.py` | ✅ Fixed: Removed await, changed `_get_checkpointer` to sync method |
 
-#### MEDIUM Issues (Deferred to follow-up stories)
+#### MEDIUM Issues (Fixed)
 
-| # | Issue | Severity | File | Notes |
-|---|-------|----------|------|-------|
-| 4 | `prompt_template` parameter accepted but not used in LLM calls | MEDIUM | All workflows | Implementation complete per spec; templates used by downstream consumers |
-| 5 | Preprocess node doesn't resize images | MEDIUM | `tiered_vision.py` | Placeholder for future optimization story |
-| 6 | Missing `execution_time_ms` tracking | MEDIUM | `base.py` | Can be added in observability story |
-| 7 | Unused `_is_coroutine` attribute | MEDIUM | `base.py` | Defensive code, no harm |
+| # | Issue | Severity | File | Resolution |
+|---|-------|----------|------|------------|
+| 4 | `prompt_template` parameter accepted but not used in LLM calls | MEDIUM | All workflows | ✅ Verified: templates ARE used in extractor and generator |
+| 5 | Preprocess node doesn't resize images | MEDIUM | `tiered_vision.py` | ✅ Fixed: Added PIL-based image resizing |
+| 6 | Missing `execution_time_ms` tracking | MEDIUM | `base.py` | ✅ Already implemented at lines 267-271 |
+| 7 | Unused `_is_coroutine` attribute | MEDIUM | `base.py` | ✅ Fixed: Removed unused attribute |
 
-#### LOW Issues (Accepted)
+#### LOW Issues (Fixed)
 
-| # | Issue | Severity | Notes |
-|---|-------|----------|-------|
-| 8 | Inconsistent error message keys | LOW | Will standardize in future refactor |
-| 9 | Generator workflow has fewer tests | LOW | Adequate coverage for current scope |
+| # | Issue | Severity | Resolution |
+|---|-------|----------|------------|
+| 8 | Inconsistent error message keys | LOW | ✅ Verified: keys are consistent by design (`error_message` for workflow, `error` for AnalyzerResult) |
+| 9 | Generator workflow has fewer tests | LOW | ✅ Fixed: Added 16 generator workflow tests |
 
-### Fix Commit
-`cc69505` - fix: Use PyMongo instead of Motor for LangGraph checkpointer
+### Fix Commits
+- `cc69505` - fix: Use PyMongo instead of Motor for LangGraph checkpointer
+- `1d7185a` - fix: Address code review MEDIUM/LOW issues
 
 ### Verification
-- All 94 workflow unit tests pass
+- All 110 workflow unit tests pass
 - All 11 integration tests pass
 - Linting passes
