@@ -532,6 +532,11 @@ def promote(
         "-e",
         help="Target environment (dev, staging, prod)",
     ),
+    vectorize_flag: bool = typer.Option(
+        False,
+        "--vectorize",
+        help="Trigger vectorization after chunking (requires Pinecone)",
+    ),
     async_mode: bool = typer.Option(
         False,
         "--async",
@@ -555,9 +560,12 @@ def promote(
     Archives the current active version (if exists) and activates the staged version.
     Triggers chunking workflow for the promoted document.
 
+    With --vectorize, also generates embeddings and stores vectors in Pinecone.
+
     Examples:
         fp-knowledge promote --document-id blister-blight-guide --env dev
         fp-knowledge promote --document-id blister-blight-guide --env dev --async
+        fp-knowledge promote --document-id blister-blight-guide --env dev --vectorize
     """
     environment = _validate_environment(env)
 
@@ -596,6 +604,48 @@ def promote(
                 console.print(
                     f"  [dim]Total words:[/dim] {chunk_result.total_word_count}"
                 )
+
+            # Optionally trigger vectorization
+            if vectorize_flag:
+                if not quiet:
+                    console.print("[dim]Starting vectorization...[/dim]")
+                try:
+                    vec_result = await client.vectorize(
+                        document_id=document_id,
+                        version=activated_doc.version,
+                        async_mode=async_mode,
+                    )
+                    if async_mode:
+                        if not quiet:
+                            job_id = vec_result.job_id
+                            console.print(
+                                f"  [dim]Vectorization job started:[/dim] {job_id}"
+                            )
+                            console.print(
+                                f"  Track: [cyan]fp-knowledge vectorize-status "
+                                f"--job-id {job_id} --env {environment}[/cyan]"
+                            )
+                    else:
+                        if vec_result.status == VectorizationJobStatus.COMPLETED:
+                            stored = vec_result.chunks_stored
+                            console.print(
+                                f"  [green]✓ Vectorization complete:[/green] "
+                                f"{stored} chunks stored"
+                            )
+                        elif vec_result.status == VectorizationJobStatus.PARTIAL:
+                            stored = vec_result.chunks_stored
+                            failed = vec_result.failed_count
+                            console.print(
+                                f"  [yellow]⚠ Vectorization partial:[/yellow] "
+                                f"{stored} stored, {failed} failed"
+                            )
+                        else:
+                            console.print("  [red]✗ Vectorization failed[/red]")
+                except Exception as vec_err:
+                    # Don't fail the whole promote if vectorization fails
+                    console.print(
+                        f"  [yellow]⚠ Vectorization skipped:[/yellow] {vec_err}"
+                    )
         finally:
             await client.disconnect()
 

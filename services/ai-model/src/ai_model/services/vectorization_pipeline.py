@@ -43,12 +43,7 @@ from ai_model.services.embedding_service import EmbeddingService
 logger = structlog.get_logger(__name__)
 
 
-# Note: Exception classes are imported from ai_model.domain.exceptions
-# to avoid circular imports when used from rag_document_service.py
-# Re-exported here for backwards compatibility with existing imports.
 __all__ = [
-    "DocumentNotFoundError",
-    "InvalidDocumentStatusError",
     "VectorizationPipeline",
 ]
 
