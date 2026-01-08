@@ -1,0 +1,111 @@
+{
+  "description": "Seed documents for RAG golden sample testing. These documents represent realistic tea farming knowledge content used to validate retrieval accuracy.",
+  "version": "1.0.0",
+  "created": "2026-01-08",
+  "documents": [
+    {
+      "document_id": "blister-blight-guide",
+      "title": "Blister Blight Disease Guide",
+      "domain": "plant_diseases",
+      "content": "# Blister Blight Disease Guide\n\n## Overview\n\nBlister blight (Exobasidium vexans) is one of the most serious fungal diseases affecting tea plants in East Africa. The disease primarily attacks young, actively growing tea leaves and shoots, causing significant yield losses if not properly managed.\n\n## Symptoms\n\nThe disease manifests as small, translucent spots on young leaves that enlarge into circular or irregular blister-like lesions. These blisters appear pale green to white on the upper leaf surface and have a velvety white appearance on the underside due to fungal spore production. Severely infected leaves become distorted, curl, and may fall prematurely.\n\n## Favorable Conditions\n\nBlister blight thrives in cool, humid conditions with temperatures between 15-20 degrees Celsius. The disease is most severe during the rainy season when relative humidity exceeds 80%. Morning mist and fog provide ideal conditions for spore germination and infection.\n\n## Management Strategies\n\n1. **Cultural Control**: Maintain proper plucking rounds to remove susceptible young shoots. Ensure good drainage and air circulation through proper spacing and pruning.\n\n2. **Chemical Control**: Apply copper-based fungicides preventively before rainy periods. Systemic fungicides may be used during active outbreaks following label recommendations.\n\n3. **Resistant Varieties**: Consider planting blister blight tolerant clones in highly susceptible areas.\n\n## Impact on Tea Quality\n\nInfected leaves produce bitter, astringent tea with poor liquor color. Severe infections can reduce yields by 30-50% during peak disease periods.",
+      "metadata": {
+        "author": "Dr. Wanjiku Mwangi",
+        "source": "Kenya Tea Research Foundation",
+        "region": "Kenya",
+        "season": null,
+        "tags": ["fungal", "disease", "blister-blight", "treatment", "prevention"]
+      }
+    },
+    {
+      "document_id": "red-spider-mite-control",
+      "title": "Red Spider Mite Management",
+      "domain": "plant_diseases",
+      "content": "# Red Spider Mite Management\n\n## Identification\n\nRed spider mites (Oligonychus coffeae) are tiny arachnids that feed on tea leaves by piercing cells and sucking out contents. Adult mites are reddish-brown and barely visible to the naked eye. They produce fine silk webbing on leaf undersides.\n\n## Damage Symptoms\n\nInitial damage appears as bronzing or russeting on the upper leaf surface. Heavily infested leaves turn brown, become brittle, and may drop. The damage is most visible on mature leaves but affects overall plant vigor.\n\n## Population Dynamics\n\nMite populations explode during hot, dry weather. Peak infestations occur during drought stress when natural predators are reduced. A single female can produce 50-100 eggs, with populations doubling every 3-5 days under favorable conditions.\n\n## Integrated Pest Management\n\n1. **Monitoring**: Regular scouting using hand lens to detect early infestations. Economic threshold is 3-5 mites per leaf.\n\n2. **Biological Control**: Encourage predatory mites (Amblyseius species) by avoiding broad-spectrum pesticides. Maintain natural vegetation borders.\n\n3. **Cultural Practices**: Proper irrigation during dry periods reduces plant stress. Adequate shade can reduce mite populations.\n\n4. **Chemical Control**: Use acaricides only when thresholds are exceeded. Rotate chemical classes to prevent resistance. Apply during cooler parts of the day.\n\n## Economic Impact\n\nUncontrolled mite infestations can reduce green leaf yields by 20-40% and significantly degrade made tea quality.",
+      "metadata": {
+        "author": "Dr. James Ochieng",
+        "source": "Tea Research Institute of Kenya",
+        "region": "Kenya",
+        "season": "dry_season",
+        "tags": ["pest", "mite", "spider-mite", "IPM", "biological-control"]
+      }
+    },
+    {
+      "document_id": "tea-plucking-standards",
+      "title": "Tea Plucking Standards and Techniques",
+      "domain": "tea_cultivation",
+      "content": "# Tea Plucking Standards and Techniques\n\n## Importance of Proper Plucking\n\nThe quality of made tea is fundamentally determined by the standard of plucking. Correct plucking ensures optimal balance between yield and quality while maintaining bush health and longevity.\n\n## Plucking Standards\n\n### Fine Plucking\nHarvest only the bud and two leaves (two-and-a-bud). This produces the highest quality tea but lowest yield. Recommended for premium CTC and orthodox production.\n\n### Coarse Plucking\nIncludes three or more leaves plus the bud. Higher yield but reduced quality. Acceptable only during peak flush periods when labor is limited.\n\n### Standard Plucking\nThe practical compromise harvesting the bud and two leaves with occasional three leaves. Maintains quality while achieving reasonable yields.\n\n## Plucking Technique\n\n1. Identify the plucking table - the uniform height of mature foliage\n2. Locate shoots extending above the table\n3. Break the stem cleanly between thumb and forefinger\n4. Place leaves gently into basket without crushing\n5. Avoid pulling or tearing which damages the bush\n\n## Plucking Rounds\n\nMaintain consistent plucking intervals based on growth rate:\n- Rainy season: 7-10 day rounds\n- Dry season: 10-14 day rounds\n- Cold weather: 14-21 day rounds\n\nShorter rounds produce finer tea; longer rounds increase coarse leaf percentage.\n\n## Common Mistakes to Avoid\n\n- Plucking below the table (damages bush frame)\n- Including fish leaves (reduces quality)\n- Crushing or compacting leaves in basket\n- Irregular plucking rounds allowing shoots to over-mature",
+      "metadata": {
+        "author": "Samuel Kipkorir",
+        "source": "KTDA Training Manual",
+        "region": "Kenya",
+        "season": null,
+        "tags": ["harvesting", "plucking", "quality", "technique", "standards"]
+      }
+    },
+    {
+      "document_id": "nitrogen-fertilizer-guide",
+      "title": "Nitrogen Fertilizer Application Guide",
+      "domain": "tea_cultivation",
+      "content": "# Nitrogen Fertilizer Application Guide\n\n## Role of Nitrogen in Tea\n\nNitrogen is the most critical nutrient for tea production. It promotes vegetative growth, increases leaf protein content, and directly influences yield. Tea plants require 200-300 kg N/ha/year for optimal production.\n\n## Application Timing\n\n### Split Applications\nDivide annual nitrogen into 3-4 applications aligned with rainfall patterns:\n\n1. **First Application** (January-February): 25% of annual dose before long rains\n2. **Second Application** (April-May): 35% during peak growing season\n3. **Third Application** (August-September): 25% before short rains\n4. **Fourth Application** (November): 15% if conditions permit\n\n### Weather Considerations\n- Apply when soil is moist but not waterlogged\n- Avoid application before heavy rainfall (leaching risk)\n- Do not apply during drought (poor uptake)\n\n## Fertilizer Sources\n\n| Source | N Content | Notes |\n|--------|-----------|-------|\n| Urea | 46% | Most economical, requires moist conditions |\n| CAN | 26% | More stable, good for dry conditions |\n| NPK 26:5:5 | 26% | Supplies additional P and K |\n| Ammonium Sulphate | 21% | Supplies sulfur, acidifies soil |\n\n## Application Method\n\nBroadcast fertilizer evenly around the drip line of bushes, avoiding contact with stems. Maintain 15-20 cm distance from bush collar. Apply in the morning when dew is present or before expected rainfall.\n\n## Signs of Deficiency\n\n- Pale green to yellow leaves\n- Reduced shoot growth\n- Smaller leaves than normal\n- Poor recovery after pruning\n\n## Over-application Risks\n\n- Increased pest and disease susceptibility\n- Reduced quality (excess chlorophyll)\n- Environmental pollution from runoff\n- Soil acidification over time",
+      "metadata": {
+        "author": "Dr. Peter Wachira",
+        "source": "Kenya Tea Development Agency",
+        "region": "Kenya",
+        "season": null,
+        "tags": ["fertilizer", "nitrogen", "nutrition", "application", "yield"]
+      }
+    },
+    {
+      "document_id": "frost-damage-prevention",
+      "title": "Frost Damage Prevention and Recovery",
+      "domain": "weather_patterns",
+      "content": "# Frost Damage Prevention and Recovery\n\n## Understanding Frost Risk\n\nTea plantations at elevations above 1800 meters are susceptible to frost damage during cold dry seasons. Frost occurs when ground-level temperatures drop below 0 degrees Celsius, typically during clear, calm nights between June and August.\n\n## Types of Frost\n\n### Radiation Frost\nMost common type caused by heat loss from ground on clear nights. Cold air pools in low-lying areas. Damage is localized and predictable.\n\n### Advection Frost\nCaused by cold air masses moving into the region. More widespread but less common. Difficult to protect against.\n\n## Damage Symptoms\n\nFrost-damaged leaves initially appear water-soaked and dark green. Within 24-48 hours, affected tissue turns brown or black. Buds and young shoots are most vulnerable. Severe frost can kill entire branches.\n\n## Prevention Methods\n\n### Site Selection\n- Avoid frost pockets and valley bottoms\n- Plant on slopes where cold air drains away\n- Establish windbreaks on cold air entry points\n\n### Active Protection\n- **Irrigation**: Sprinkler irrigation releases latent heat as water freezes\n- **Smoke/Fog**: Reduces radiation heat loss (limited effectiveness)\n- **Fans**: Circulate warmer air from above inversions\n\n### Passive Protection\n- Maintain good nutrition for cold tolerance\n- Avoid late pruning that stimulates tender growth\n- Mulching helps moderate soil temperature\n\n## Recovery After Frost\n\n1. Wait 7-10 days to assess full extent of damage\n2. Prune below damaged tissue to healthy wood\n3. Apply balanced fertilizer to promote recovery\n4. Resume normal plucking when new growth matures\n5. Monitor for secondary pest and disease problems\n\n## Economic Impact\n\nSevere frost events can destroy 30-50% of annual yield. Recovery typically takes 2-3 months.",
+      "metadata": {
+        "author": "Dr. Mary Njeri",
+        "source": "Kenya Meteorological Department",
+        "region": "Kenya",
+        "season": "cold_dry",
+        "tags": ["frost", "weather", "damage", "prevention", "recovery", "highland"]
+      }
+    },
+    {
+      "document_id": "rainfall-yield-correlation",
+      "title": "Rainfall Patterns and Tea Yields",
+      "domain": "weather_patterns",
+      "content": "# Rainfall Patterns and Tea Yields\n\n## Introduction\n\nTea production is intimately linked to rainfall patterns. Understanding this relationship helps farmers plan operations and predict yields. Kenya's bimodal rainfall creates two peak production seasons.\n\n## Rainfall Requirements\n\nTea requires 1200-1400mm of well-distributed annual rainfall. Minimum monthly requirement is 100mm during growing season. Drought stress begins when soil moisture falls below field capacity for more than 2 weeks.\n\n## Seasonal Patterns in Kenya\n\n### Long Rains (March-May)\n- Peak production period (40-45% of annual crop)\n- Flush growth accelerates with rising temperatures\n- Plucking rounds shorten to 7-8 days\n- Quality can be lower due to rapid growth\n\n### Short Rains (October-December)\n- Secondary peak (25-30% of annual crop)\n- Generally higher quality due to slower growth\n- More consistent weather conditions\n- Labor planning critical for harvesting\n\n### Dry Seasons\n- January-February: Hot dry season, reduced yields\n- June-September: Cold dry season, lowest production\n- Yields may drop 50-70% compared to peak periods\n\n## Yield Prediction\n\nRainfall 2-4 weeks before harvest correlates strongly with green leaf production:\n\n| Rainfall (mm/week) | Expected Yield Impact |\n|-------------------|----------------------|\n| < 20 | 30-40% below normal |\n| 20-35 | 10-20% below normal |\n| 35-50 | Normal production |\n| 50-75 | 10-20% above normal |\n| > 75 | Quality concerns, normal yield |\n\n## Water Stress Indicators\n\n- Wilting of young shoots by mid-morning\n- Reduced internode length\n- Leaf curling and bronzing\n- Delayed bud break after plucking\n\n## Management Responses\n\n1. Extend plucking rounds during dry spells\n2. Reduce fertilizer rates when water limited\n3. Apply mulch to conserve soil moisture\n4. Consider supplementary irrigation if available",
+      "metadata": {
+        "author": "Dr. John Kamau",
+        "source": "Kenya Tea Board Research Division",
+        "region": "Kenya",
+        "season": null,
+        "tags": ["rainfall", "weather", "yield", "prediction", "drought", "irrigation"]
+      }
+    },
+    {
+      "document_id": "ktda-grading-standards",
+      "title": "KTDA Tea Grading Standards",
+      "domain": "quality_standards",
+      "content": "# KTDA Tea Grading Standards\n\n## Overview\n\nKenya Tea Development Agency (KTDA) uses a standardized grading system for CTC (Cut, Tear, Curl) teas. Grades are based on particle size and leaf quality, directly affecting market prices.\n\n## Main Grade Categories\n\n### Primary Grades (Highest Value)\n\n**PF1 (Pekoe Fannings 1)**\n- Smallest particles from CTC processing\n- Well-twisted, uniform appearance\n- Strong, brisk liquor\n- Command premium prices\n\n**BP1 (Broken Pekoe 1)**\n- Slightly larger than PF1\n- Clean, well-made appearance\n- Good cup quality\n- Major export grade\n\n### Secondary Grades\n\n**PD (Pekoe Dust)**\n- Fine particles below PF1\n- Good strength but lighter body\n- Domestic market preference\n\n**D1 (Dust 1)**\n- Finest particles\n- Quick brewing, strong cup\n- Tea bag manufacture\n\n### Lower Grades\n\n**Fannings**\n- Larger flat particles\n- Lighter liquor color\n- Blending component\n\n**BMF (Broken Mixed Fannings)**\n- Variable particle size\n- Lower quality indicator\n- Price discounted significantly\n\n## Quality Assessment Criteria\n\n| Factor | Weight | Description |\n|--------|--------|-------------|\n| Appearance | 30% | Evenness, color, twist |\n| Liquor | 40% | Brightness, strength, briskness |\n| Infused Leaf | 15% | Color, evenness |\n| Aroma | 15% | Fresh, characteristic |\n\n## Factors Affecting Grade\n\n1. **Plucking Standard**: Fine plucking yields higher grades\n2. **Processing**: Proper withering and fermentation critical\n3. **Sorting**: Clean separation of particle sizes\n4. **Storage**: Proper moisture control prevents deterioration\n\n## Price Differentials\n\nTypical price differences between grades:\n- BP1 commands 10-15% premium over PF1\n- Secondary grades 20-40% below primary\n- BMF may be 50%+ discount to BP1",
+      "metadata": {
+        "author": "KTDA Quality Department",
+        "source": "Kenya Tea Development Agency",
+        "region": "Kenya",
+        "season": null,
+        "tags": ["grading", "quality", "CTC", "standards", "KTDA", "prices"]
+      }
+    },
+    {
+      "document_id": "nandi-regional-guide",
+      "title": "Nandi County Tea Growing Guide",
+      "domain": "regional_context",
+      "content": "# Nandi County Tea Growing Guide\n\n## Geographic Overview\n\nNandi County in western Kenya is one of the most productive tea-growing regions in the country. Elevations range from 1500m to 2500m above sea level, with the best tea growing at 1800-2200m.\n\n## Climate Characteristics\n\n### Temperature\n- Mean annual: 16-22 degrees Celsius\n- Diurnal range: 10-15 degrees\n- Frost risk above 2000m (June-August)\n\n### Rainfall\n- Annual: 1400-1800mm\n- Distribution: Bimodal with peaks in April-May and October-November\n- Dry spell: June-September\n\n## Soil Types\n\nPredominantly Nitisols (red volcanic soils):\n- Deep, well-drained profiles\n- pH 4.5-5.5 (naturally acidic)\n- Good water retention\n- High phosphorus fixation\n\n## Recommended Varieties\n\n| Clone | Characteristics | Suitability |\n|-------|----------------|-------------|\n| TRFK 6/8 | High yield, blister blight tolerant | All elevations |\n| TRFK 303/577 | Drought tolerant, good quality | Lower elevations |\n| TRFK 31/8 | Cold tolerant, high quality | Higher elevations |\n| EPK TN14-3 | Fast establishment, early yield | New plantings |\n\n## Regional Best Practices\n\n1. **Plucking Schedule**: 7-day rounds during rains, 14-day in dry season\n2. **Fertilizer Rates**: 200-250 kg N/ha/year split in 3 applications\n3. **Shade Trees**: Grevillea robusta at 12x12m spacing\n4. **Pruning Cycle**: 4-year rotation, avoid cold season pruning\n\n## Common Challenges\n\n- Soil erosion on steep slopes (contour planting required)\n- Labor shortage during peak harvest\n- Frost damage in upper zones\n- Hailstorm damage (October-November)\n\n## Support Services\n\n- KTDA factory locations: Nandi Hills, Chebut, Kaptumo, Chemomi\n- Agricultural extension offices in every sub-county\n- Input stockists: Kapsabet, Nandi Hills towns",
+      "metadata": {
+        "author": "Nandi County Agriculture Office",
+        "source": "County Government of Nandi",
+        "region": "Kenya",
+        "season": null,
+        "tags": ["Nandi", "regional", "climate", "varieties", "best-practices"]
+      }
+    }
+  ]
+}
