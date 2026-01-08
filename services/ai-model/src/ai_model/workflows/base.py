@@ -367,7 +367,6 @@ def create_node_wrapper(
     """
     from collections.abc import Callable
     from functools import wraps
-    from inspect import iscoroutinefunction
 
     node_tracer = trace.get_tracer(__name__)
     node_duration_histogram = meter.create_histogram(
@@ -441,8 +440,6 @@ def create_node_wrapper(
                     )
                     raise
 
-        # Preserve the async nature flag for inspection
-        wrapper._is_coroutine = iscoroutinefunction(func)
         return wrapper
 
     return decorator

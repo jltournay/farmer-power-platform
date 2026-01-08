@@ -38,6 +38,7 @@ pymupdf = "^1.26.0"  # Story 0.75.10b: PDF text extraction for RAG documents
 azure-storage-blob = "^12.0.0"  # Story 0.75.10b: Azure Blob storage for source files
 azure-ai-documentintelligence = "^1.0.0"  # Story 0.75.10c: OCR for scanned PDFs
 pinecone = "^5.0.0"  # Story 0.75.12: Pinecone Inference for RAG embeddings
+Pillow = "^11.0.0"  # Story 0.75.16: Image resizing for tiered-vision thumbnail preprocessing
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.0.0"

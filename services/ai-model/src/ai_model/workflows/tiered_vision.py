@@ -6,6 +6,8 @@ preprocess → screen → (conditional) → diagnose → output
 Story 0.75.16: LangGraph SDK Integration & Base Workflows
 """
 
+import base64
+import io
 import json
 from typing import Any, Literal
 
@@ -18,6 +20,7 @@ from ai_model.workflows.states.tiered_vision import (
 )
 from langchain_core.messages import HumanMessage, SystemMessage
 from langgraph.graph import END, START, StateGraph
+from PIL import Image
 
 logger = structlog.get_logger(__name__)
 
@@ -137,6 +140,8 @@ class TieredVisionWorkflow(WorkflowBuilder[TieredVisionState]):
     async def _preprocess_node(self, state: TieredVisionState) -> dict[str, Any]:
         """Preprocess image for Tier 1 screening.
 
+        Resizes image to thumbnail size for cost-efficient Tier 1 screening.
+
         Args:
             state: Current workflow state.
 
@@ -152,23 +157,46 @@ class TieredVisionWorkflow(WorkflowBuilder[TieredVisionState]):
             }
 
         try:
-            # For now, pass through the image data
-            # In production, this would resize to thumbnail
-            # using PIL or similar library
+            # Decode base64 image data
+            image_bytes = base64.b64decode(image_data)
 
-            # Simulate thumbnail creation
-            thumbnail_data = image_data  # In production: resize to 512x512
+            # Open image with PIL
+            image = Image.open(io.BytesIO(image_bytes))
+            original_dimensions = image.size  # (width, height)
+
+            # Resize to thumbnail maintaining aspect ratio
+            image.thumbnail(
+                (DEFAULT_THUMBNAIL_WIDTH, DEFAULT_THUMBNAIL_HEIGHT),
+                Image.Resampling.LANCZOS,
+            )
+            thumbnail_dimensions = image.size
+
+            # Re-encode to base64
+            buffer = io.BytesIO()
+            # Preserve original format or default to JPEG
+            img_format = image.format or "JPEG"
+            if img_format.upper() == "PNG":
+                image.save(buffer, format="PNG")
+            else:
+                # Convert to RGB for JPEG (removes alpha channel)
+                if image.mode in ("RGBA", "LA", "P"):
+                    image = image.convert("RGB")
+                image.save(buffer, format="JPEG", quality=85)
+
+            buffer.seek(0)
+            thumbnail_data = base64.b64encode(buffer.getvalue()).decode("utf-8")
 
             logger.debug(
                 "Image preprocessed",
                 agent_id=state.get("agent_id"),
-                has_thumbnail=bool(thumbnail_data),
+                original_dimensions=original_dimensions,
+                thumbnail_dimensions=thumbnail_dimensions,
             )
 
             return {
                 "thumbnail_data": thumbnail_data,
-                "original_dimensions": (0, 0),  # Would be extracted from image
-                "thumbnail_dimensions": (DEFAULT_THUMBNAIL_WIDTH, DEFAULT_THUMBNAIL_HEIGHT),
+                "original_dimensions": original_dimensions,
+                "thumbnail_dimensions": thumbnail_dimensions,
             }
 
         except Exception as e:
