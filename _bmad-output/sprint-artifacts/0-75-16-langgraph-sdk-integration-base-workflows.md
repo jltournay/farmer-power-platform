@@ -363,11 +363,11 @@ git push origin feature/0-75-16-langgraph-sdk-integration
 # Wait ~30s, then check CI status
 gh run list --branch feature/0-75-16-langgraph-sdk-integration --limit 3
 ```
-**CI Run ID:** _______________
-**CI Status:** [ ] Passed / [ ] Failed
-**E2E CI Run ID:** _______________
-**E2E CI Status:** [ ] Passed / [ ] Failed
-**Verification Date:** _______________
+**CI Run ID:** 20826185354
+**CI Status:** [x] Passed / [ ] Failed
+**E2E CI Run ID:** 20826459474
+**E2E CI Status:** [x] Passed / [ ] Failed
+**Verification Date:** 2026-01-08
 
 ---
 
