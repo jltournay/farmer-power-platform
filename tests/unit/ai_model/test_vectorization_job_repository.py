@@ -253,9 +253,7 @@ class TestRepositoryCRUD:
         original_created_at = datetime(2026, 1, 1, 0, 0, 0, tzinfo=UTC)
 
         # Mock find_one to return existing document with original created_at
-        mock_mongodb_collection.find_one = AsyncMock(
-            return_value={"created_at": original_created_at}
-        )
+        mock_mongodb_collection.find_one = AsyncMock(return_value={"created_at": original_created_at})
         mock_mongodb_collection.replace_one = AsyncMock(return_value=MagicMock())
 
         await repository.update(sample_result)
@@ -628,9 +626,7 @@ class TestPipelineErrorHandling:
         """Test get_job_status() returns None when repository.get() fails."""
         from ai_model.services.vectorization_pipeline import VectorizationPipeline
 
-        failing_job_repository.get = AsyncMock(
-            side_effect=Exception("MongoDB connection failed")
-        )
+        failing_job_repository.get = AsyncMock(side_effect=Exception("MongoDB connection failed"))
 
         with patch("ai_model.services.vectorization_pipeline.logger") as mock_logger:
             pipeline = VectorizationPipeline(

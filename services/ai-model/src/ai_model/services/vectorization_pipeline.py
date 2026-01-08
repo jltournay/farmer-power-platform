@@ -380,8 +380,7 @@ class VectorizationPipeline:
                 # Log warning - in-memory cache still has the result, but
                 # job status will be lost on pod restart
                 logger.warning(
-                    "Failed to persist job result to repository - "
-                    "job status will be lost on pod restart",
+                    "Failed to persist job result to repository - job status will be lost on pod restart",
                     job_id=job_id,
                     document_id=document_id,
                     status=status.value,
@@ -587,8 +586,7 @@ class VectorizationPipeline:
                 # Log warning - in-memory cache still has the job, but
                 # job status will be lost on pod restart
                 logger.warning(
-                    "Failed to persist new job to repository - "
-                    "job status will be lost on pod restart",
+                    "Failed to persist new job to repository - job status will be lost on pod restart",
                     job_id=job_id,
                     document_id=document_id,
                     error=str(e),
