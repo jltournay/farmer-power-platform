@@ -78,8 +78,29 @@ particularly in high-altitude tea-growing regions with cool, humid climates.
 
 @pytest.fixture
 def pinecone_is_configured():
-    """Check if Pinecone is configured (returns bool, does NOT skip)."""
-    return bool(os.environ.get("PINECONE_API_KEY", ""))
+    """Check if Pinecone is configured (returns bool, does NOT skip).
+
+    Checks both local environment AND the project's .env file that Docker uses.
+    This ensures the test's expectation matches the Docker container's config.
+    """
+    # First check local environment
+    if os.environ.get("PINECONE_API_KEY"):
+        return True
+
+    # Also check .env file that docker-compose uses (Story 0.75.13c fix)
+    from pathlib import Path
+
+    env_file = Path(__file__).parent.parent.parent.parent / ".env"
+    if env_file.exists():
+        with env_file.open() as f:
+            for line in f:
+                line = line.strip()
+                if line.startswith("PINECONE_API_KEY=") and not line.startswith("#"):
+                    # Extract value after '=' and check it's not empty
+                    value = line.split("=", 1)[1].strip().strip('"').strip("'")
+                    if value:
+                        return True
+    return False
 
 
 @pytest.fixture
@@ -310,9 +331,7 @@ class TestRAGVectorization:
 
                 max_attempts = 30
                 for attempt in range(max_attempts):
-                    job_status = get_vectorization_job(
-                        rag_document_stub, vectorize_response.job_id
-                    )
+                    job_status = get_vectorization_job(rag_document_stub, vectorize_response.job_id)
                     if job_status.status in ("completed", "partial", "failed"):
                         print(
                             f"Job completed after {attempt + 1} polls: "
@@ -328,9 +347,7 @@ class TestRAGVectorization:
                 # No Pinecone - expect UNAVAILABLE error
                 print("Pinecone not configured - testing async error handling...")
                 with pytest.raises(grpc.RpcError) as exc_info:
-                    vectorize_document(
-                        rag_document_stub, document_id, version=1, async_mode=True
-                    )
+                    vectorize_document(rag_document_stub, document_id, version=1, async_mode=True)
 
                 assert exc_info.value.code() == grpc.StatusCode.UNAVAILABLE
                 print(f"Correctly returned UNAVAILABLE: {exc_info.value.details()}")
@@ -350,10 +367,8 @@ class TestRAGVectorization:
         with pytest.raises(grpc.RpcError) as exc_info:
             vectorize_document(rag_document_stub, document_id, version=1)
 
-        assert exc_info.value.code() == grpc.StatusCode.NOT_FOUND, (
-            f"Expected NOT_FOUND, got {exc_info.value.code()}"
-        )
-        print(f"Correctly returned NOT_FOUND for non-existent document")
+        assert exc_info.value.code() == grpc.StatusCode.NOT_FOUND, f"Expected NOT_FOUND, got {exc_info.value.code()}"
+        print("Correctly returned NOT_FOUND for non-existent document")
 
     def test_get_vectorization_job_not_found(
         self,
@@ -363,7 +378,5 @@ class TestRAGVectorization:
         with pytest.raises(grpc.RpcError) as exc_info:
             get_vectorization_job(rag_document_stub, "non-existent-job-id")
 
-        assert exc_info.value.code() == grpc.StatusCode.NOT_FOUND, (
-            f"Expected NOT_FOUND, got {exc_info.value.code()}"
-        )
+        assert exc_info.value.code() == grpc.StatusCode.NOT_FOUND, f"Expected NOT_FOUND, got {exc_info.value.code()}"
         print("Correctly returned NOT_FOUND for non-existent job")

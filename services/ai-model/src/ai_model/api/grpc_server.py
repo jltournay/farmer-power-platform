@@ -140,6 +140,22 @@ class GrpcServer:
         rag_doc_repository = RagDocumentRepository(db)
         await rag_doc_repository.ensure_indexes()
 
+        # Story 0.75.13c: Create shared dependencies for RAG workflows
+        # RagChunkRepository is needed by both ChunkingWorkflow and VectorizationPipeline
+        rag_chunk_repository = RagChunkRepository(db)
+        await rag_chunk_repository.ensure_indexes()
+
+        # Story 0.75.13c: Create ChunkingWorkflow (INDEPENDENT of Pinecone)
+        # Chunking uses MongoDB only, not Pinecone
+        # ChunkingWorkflow creates SemanticChunker internally using settings
+        from ai_model.services.chunking_workflow import ChunkingWorkflow
+
+        chunking_workflow = ChunkingWorkflow(
+            chunk_repository=rag_chunk_repository,
+            settings=settings,
+        )
+        logger.info("ChunkingWorkflow initialized for RAGDocumentService")
+
         # Story 0.75.13c: Create VectorizationPipeline for RAGDocumentService
         # Only create if Pinecone is configured
         vectorization_pipeline = None
@@ -148,9 +164,6 @@ class GrpcServer:
             from ai_model.infrastructure.pinecone_vector_store import PineconeVectorStore
             from ai_model.services.embedding_service import EmbeddingService
             from ai_model.services.vectorization_pipeline import VectorizationPipeline
-
-            rag_chunk_repository = RagChunkRepository(db)
-            await rag_chunk_repository.ensure_indexes()
 
             embedding_service = EmbeddingService(settings=settings)
             vector_store = PineconeVectorStore(settings=settings)
@@ -173,6 +186,9 @@ class GrpcServer:
             rag_doc_repository,
             vectorization_pipeline=vectorization_pipeline,
         )
+        # Wire chunking workflow (independent of vectorization)
+        rag_doc_servicer.set_chunking_workflow(chunking_workflow)
+
         ai_model_pb2_grpc.add_RAGDocumentServiceServicer_to_server(rag_doc_servicer, self._server)
         logger.info("RAGDocumentService registered")
 

@@ -1000,8 +1000,9 @@ class RAGDocumentServiceServicer(ai_model_pb2_grpc.RAGDocumentServiceServicer):
                 error_message=job.error_message or "",
             )
 
-            # Set timestamps
-            response.started_at.FromDatetime(job.started_at)
+            # Set timestamps (defensive None check)
+            if job.started_at:
+                response.started_at.FromDatetime(job.started_at)
             if job.completed_at:
                 response.completed_at.FromDatetime(job.completed_at)
 
@@ -1479,10 +1480,8 @@ class RAGDocumentServiceServicer(ai_model_pb2_grpc.RAGDocumentServiceServicer):
                 )
                 return ai_model_pb2.VectorizeDocumentResponse()
 
-            # Check if vectorization pipeline is available
-            if not await self._require_vectorization_pipeline(context):
-                return ai_model_pb2.VectorizeDocumentResponse()
-
+            # Story 0.75.13c FIX: Check document existence BEFORE pipeline availability
+            # This ensures NOT_FOUND is returned for missing documents, not UNAVAILABLE
             # Determine version to vectorize (0 = get latest active or staged)
             version = request.version
             if version <= 0:
@@ -1502,6 +1501,19 @@ class RAGDocumentServiceServicer(ai_model_pb2_grpc.RAGDocumentServiceServicer):
                     )
                     return ai_model_pb2.VectorizeDocumentResponse()
                 version = doc.version
+            else:
+                # Specific version requested - verify it exists
+                doc = await self._repository.get_by_version(request.document_id, version)
+                if doc is None:
+                    await context.abort(
+                        grpc.StatusCode.NOT_FOUND,
+                        f"Document not found: {request.document_id} version {version}",
+                    )
+                    return ai_model_pb2.VectorizeDocumentResponse()
+
+            # Check if vectorization pipeline is available (after document existence check)
+            if not await self._require_vectorization_pipeline(context):
+                return ai_model_pb2.VectorizeDocumentResponse()
 
             # Async mode: create job and return immediately
             # Note: 'async' is a Python reserved word, access via getattr
@@ -1654,8 +1666,9 @@ class RAGDocumentServiceServicer(ai_model_pb2_grpc.RAGDocumentServiceServicer):
                 error_message=error_message,
             )
 
-            # Set timestamps
-            response.started_at.FromDatetime(result.started_at)
+            # Set timestamps (may be None for pending jobs - Story 0.75.13c)
+            if result.started_at:
+                response.started_at.FromDatetime(result.started_at)
             if result.completed_at:
                 response.completed_at.FromDatetime(result.completed_at)
 
