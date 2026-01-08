@@ -1,6 +1,6 @@
 # Story 0.75.15: RAG Ranking Logic
 
-**Status:** in-progress
+**Status:** done
 **GitHub Issue:** #139
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
@@ -158,8 +158,8 @@ Vector similarity (Stage 1) retrieves candidates efficiently but may miss nuance
 **All story development MUST use feature branches.** Direct pushes to main are blocked.
 
 ### Story Start
-- [ ] GitHub Issue exists or created: `gh issue create --title "Story 0.75.15: RAG Ranking Logic"`
-- [ ] Feature branch created from main:
+- [x] GitHub Issue exists or created: `gh issue create --title "Story 0.75.15: RAG Ranking Logic"`
+- [x] Feature branch created from main:
   ```bash
   git checkout main && git pull origin main
   git checkout -b feature/0-75-15-rag-ranking-logic
@@ -168,14 +168,14 @@ Vector similarity (Stage 1) retrieves candidates efficiently but may miss nuance
 **Branch name:** `feature/0-75-15-rag-ranking-logic`
 
 ### During Development
-- [ ] All commits reference GitHub issue: `Relates to #XX`
-- [ ] Commits are atomic by type (production, test, seed - not mixed)
-- [ ] Push to feature branch: `git push -u origin feature/0-75-15-rag-ranking-logic`
+- [x] All commits reference GitHub issue: `Relates to #139`
+- [x] Commits are atomic by type (production, test, seed - not mixed)
+- [x] Push to feature branch: `git push -u origin feature/0-75-15-rag-ranking-logic`
 
 ### Story Done
 - [ ] Create Pull Request: `gh pr create --title "Story 0.75.15: RAG Ranking Logic" --base main`
 - [ ] CI passes on PR (including E2E tests)
-- [ ] Code review completed (`/code-review` or human review)
+- [x] Code review completed (`/code-review` or human review)
 - [ ] PR approved and merged (squash)
 - [ ] Local branch cleaned up: `git branch -d feature/0-75-15-rag-ranking-logic`
 
@@ -507,6 +507,30 @@ tests/unit/ai_model/
 - [Web: Pinecone Rerankers Guide](https://www.pinecone.io/learn/series/rag/rerankers/)
 - [Web: Pinecone Rerank API](https://docs.pinecone.io/guides/search/rerank-results)
 
+## Code Review Record
+
+**Review Date:** 2026-01-08
+**Reviewer:** Claude Opus 4.5 (code-review workflow)
+
+### Review Outcome: ✅ APPROVED (after fixes)
+
+### Issues Found and Fixed
+
+| ID | Severity | Issue | File | Resolution |
+|----|----------|-------|------|------------|
+| M1 | Medium | Missing type hint on `deduplicate_matches` return | `deduplication.py:53-56` | ✅ Fixed - Added `RankedMatch` type hints |
+| M2 | Medium | `rerank_score` docstring says 0-1 but can exceed 1.0 | `ranking.py:72,103` | ✅ Fixed - Updated docstring |
+| M3 | Medium | Reranker model not configurable from Settings | `config.py`, `ranking_service.py` | ✅ Fixed - Added `pinecone_rerank_model` setting |
+| L1 | Low | Untyped `deduplicated` variable | `deduplication.py:82` | ✅ Fixed - Added type annotation |
+| L2 | Low | Git Workflow checkboxes unchecked | Story file | ✅ Fixed - Checked appropriate boxes |
+
+### Test Verification After Fixes
+- Unit tests: 26 passed
+- Golden sample tests: 13 passed
+- Lint: All checks passed
+
+---
+
 ## Dev Agent Record
 
 ### Agent Model Used
@@ -536,4 +560,10 @@ Claude Opus 4.5 (claude-opus-4-5-20251101)
 
 **Modified:**
 - `_bmad-output/sprint-artifacts/sprint-status.yaml` - Story status updated to in-progress
-- `_bmad-output/sprint-artifacts/0-75-15-rag-ranking-logic.md` - Updated with test evidence
+- `_bmad-output/sprint-artifacts/0-75-15-rag-ranking-logic.md` - Updated with test evidence and code review record
+- `services/ai-model/src/ai_model/config.py` - Added `pinecone_rerank_model` setting (code review fix M3)
+- `services/ai-model/src/ai_model/domain/ranking.py` - Fixed `rerank_score` docstring (code review fix M2)
+- `services/ai-model/src/ai_model/services/deduplication.py` - Added type hints (code review fix M1, L1)
+- `services/ai-model/src/ai_model/services/ranking_service.py` - Use settings for rerank model default (code review fix M3)
+- `tests/unit/ai_model/test_ranking_service.py` - Added mock setting for `pinecone_rerank_model`
+- `tests/golden/rag/ranking/conftest.py` - Added mock setting for `pinecone_rerank_model`

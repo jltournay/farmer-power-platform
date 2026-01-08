@@ -116,6 +116,10 @@ class RankingService:
         """
         config = config or RankingConfig()
 
+        # Use settings.pinecone_rerank_model as system default if config uses the default
+        if config.rerank_model == "pinecone-rerank-v0" and self._settings.pinecone_rerank_model:
+            config = config.model_copy(update={"rerank_model": self._settings.pinecone_rerank_model})
+
         logger.info(
             "Starting ranking",
             query_length=len(query),

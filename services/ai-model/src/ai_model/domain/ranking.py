@@ -69,7 +69,7 @@ class RankedMatch(BaseModel):
         chunk_id: Unique chunk identifier (MongoDB _id).
         content: Full chunk text content.
         score: Original retrieval similarity score (0-1).
-        rerank_score: Score from reranker (0-1, higher is more relevant).
+        rerank_score: Score from reranker (higher is more relevant, may exceed 1.0 after boosting).
         document_id: Parent document ID for attribution.
         title: Document title for display.
         domain: Knowledge domain of the chunk.
@@ -100,7 +100,7 @@ class RankedMatch(BaseModel):
     rerank_score: float = Field(
         ...,
         ge=0.0,
-        description="Score from reranker (higher is more relevant)",
+        description="Score from reranker (higher is more relevant, may exceed 1.0 after boosting)",
     )
     document_id: str = Field(
         ...,

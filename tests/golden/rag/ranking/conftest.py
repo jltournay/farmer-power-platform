@@ -63,6 +63,7 @@ def mock_settings() -> MagicMock:
     settings.pinecone_enabled = True
     settings.pinecone_api_key = MagicMock()
     settings.pinecone_api_key.get_secret_value.return_value = "test-api-key"
+    settings.pinecone_rerank_model = "pinecone-rerank-v0"
     return settings
 
 

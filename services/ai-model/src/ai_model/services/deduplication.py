@@ -6,7 +6,14 @@ chunks from retrieval results using Jaccard similarity on word tokens.
 Story 0.75.15: RAG Ranking Logic
 """
 
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
 import structlog
+
+if TYPE_CHECKING:
+    from ai_model.domain.ranking import RankedMatch
 
 logger = structlog.get_logger(__name__)
 
@@ -51,9 +58,9 @@ def calculate_jaccard_similarity(text_a: str, text_b: str) -> float:
 
 
 def deduplicate_matches(
-    matches: list,
+    matches: list[RankedMatch],
     threshold: float = 0.9,
-) -> tuple[list, int]:
+) -> tuple[list[RankedMatch], int]:
     """Remove near-duplicate matches based on content similarity.
 
     Compares each match's content with all preceding matches. If the
@@ -79,7 +86,7 @@ def deduplicate_matches(
         # No deduplication if threshold is 0 or negative
         return list(matches), 0
 
-    deduplicated: list = []
+    deduplicated: list[RankedMatch] = []
     removed_count = 0
 
     for match in matches:
