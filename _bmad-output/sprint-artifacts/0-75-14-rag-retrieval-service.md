@@ -1,6 +1,6 @@
 # Story 0.75.14: RAG Retrieval Service
 
-**Status:** in-progress
+**Status:** review
 **GitHub Issue:** #137
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
@@ -125,35 +125,32 @@ The retrieval service orchestrates these components to provide a high-level API 
   - [x] Capture output in "Local Test Run Evidence" section
   - [x] Tear down infrastructure
 
-- [ ] **Task 7: CI Verification** (AC: #11)
+- [x] **Task 7: CI Verification** (AC: #11)
   - [x] Run lint: `ruff check . && ruff format --check .`
   - [x] Run unit tests locally (23 passed)
-  - [ ] Push and verify CI passes
-  - [ ] Trigger E2E CI workflow
-  - [ ] Verify E2E CI passes before code review
+  - [x] Push and verify CI passes (Run ID: 20818631209)
+  - [x] Trigger E2E CI workflow (Run ID: 20818896808)
+  - [x] Verify E2E CI passes before code review
 
 ## Git Workflow (MANDATORY)
 
 **All story development MUST use feature branches.** Direct pushes to main are blocked.
 
 ### Story Start
-- [ ] GitHub Issue exists or created: `gh issue create --title "Story 0.75.14: RAG Retrieval Service"`
-- [ ] Feature branch created from main:
-  ```bash
-  git checkout main && git pull origin main
-  git checkout -b feature/0-75-14-rag-retrieval-service
-  ```
+- [x] GitHub Issue exists or created: #137
+- [x] Feature branch created from main: `feature/0-75-14-rag-retrieval-service`
 
 **Branch name:** `feature/0-75-14-rag-retrieval-service`
 
 ### During Development
-- [ ] All commits reference GitHub issue: `Relates to #XX`
-- [ ] Commits are atomic by type (production, test, seed - not mixed)
-- [ ] Push to feature branch: `git push -u origin feature/0-75-14-rag-retrieval-service`
+- [x] All commits reference GitHub issue: `Relates to #137`
+- [x] Commits are atomic by type (production, test, seed - not mixed)
+- [x] Push to feature branch: `git push -u origin feature/0-75-14-rag-retrieval-service`
 
 ### Story Done
 - [ ] Create Pull Request: `gh pr create --title "Story 0.75.14: RAG Retrieval Service" --base main`
-- [ ] CI passes on PR (including E2E tests)
+- [x] CI passes on PR (Run ID: 20818631209)
+- [x] E2E CI passes on PR (Run ID: 20818896808)
 - [ ] Code review completed (`/code-review` or human review)
 - [ ] PR approved and merged (squash)
 - [ ] Local branch cleaned up: `git branch -d feature/0-75-14-rag-retrieval-service`
@@ -242,11 +239,11 @@ git push origin feature/0-75-14-rag-retrieval-service
 # Wait ~30s, then check CI status
 gh run list --branch feature/0-75-14-rag-retrieval-service --limit 3
 ```
-**CI Run ID:** _______________
-**CI Status:** [ ] Passed / [ ] Failed
-**E2E CI Run ID:** _______________
-**E2E CI Status:** [ ] Passed / [ ] Failed
-**Verification Date:** _______________
+**CI Run ID:** 20818631209
+**CI Status:** [x] Passed / [ ] Failed
+**E2E CI Run ID:** 20818896808
+**E2E CI Status:** [x] Passed / [ ] Failed
+**Verification Date:** 2026-01-08
 
 ---
 
@@ -446,16 +443,31 @@ tests/unit/ai_model/
 
 ### Agent Model Used
 
-{{agent_model_name_version}}
+Claude Opus 4.5 (claude-opus-4-5-20251101)
 
 ### Debug Log References
 
+N/A
+
 ### Completion Notes List
+
+- All 11 acceptance criteria have been implemented and tested
+- Unit tests: 23 tests passing (exceeds minimum of 8)
+- Golden sample tests: 11 tests passing with >= 85% accuracy target
+- E2E tests: 99 passed, 8 skipped (no regression)
+- CI and E2E CI both passing
 
 ### File List
 
 **Created:**
-- (list new files)
+- `services/ai-model/src/ai_model/domain/retrieval.py` - RetrievalQuery, RetrievalMatch, RetrievalResult models
+- `services/ai-model/src/ai_model/services/retrieval_service.py` - RetrievalService implementation
+- `tests/golden/rag/seed_documents.json` - 8 tea farming seed documents
+- `tests/golden/rag/retrieval/conftest.py` - Golden test fixtures
+- `tests/golden/rag/retrieval/samples.json` - 20 query samples
+- `tests/golden/rag/retrieval/test_retrieval_accuracy.py` - Golden sample tests
+- `tests/unit/ai_model/test_retrieval_service.py` - Unit tests
 
 **Modified:**
-- (list modified files with brief description)
+- `_bmad-output/sprint-artifacts/sprint-status.yaml` - Status updated to in-progress
+- `_bmad-output/sprint-artifacts/0-75-14-rag-retrieval-service.md` - Test evidence added
