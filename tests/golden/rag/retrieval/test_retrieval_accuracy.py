@@ -98,7 +98,7 @@ class TestRetrievalAccuracy:
         retrieval_service: Any,
     ) -> None:
         """Test queries across multiple domains return diverse results."""
-        # Query without domain restriction
+        # Query without domain restriction - should search all domains
         result = await retrieval_service.retrieve(
             query="tea quality improvement",
             top_k=10,
@@ -107,9 +107,11 @@ class TestRetrievalAccuracy:
         # Should get results from multiple domains
         domains_found = {match.domain for match in result.matches}
 
-        # Expect at least 2 different domains for a broad query
-        # (This depends on the mock data distribution)
-        assert len(domains_found) >= 1, f"Expected multiple domains, found: {domains_found}"
+        # With 8 seed documents across 5 domains and top_k=10,
+        # we should get results from at least 2 different domains
+        assert len(domains_found) >= 2, (
+            f"Expected results from multiple domains for cross-domain query, but only found: {domains_found}"
+        )
 
     async def test_empty_query_returns_empty_results(
         self,

@@ -24,12 +24,6 @@ from ai_model.services.embedding_service import (
 logger = structlog.get_logger(__name__)
 
 
-class RetrievalServiceError(Exception):
-    """Base exception for retrieval service errors."""
-
-    pass
-
-
 class RetrievalService:
     """Retrieval service for RAG knowledge queries.
 
