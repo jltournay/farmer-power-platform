@@ -173,13 +173,13 @@ Vector similarity (Stage 1) retrieves candidates efficiently but may miss nuance
 - [x] Push to feature branch: `git push -u origin feature/0-75-15-rag-ranking-logic`
 
 ### Story Done
-- [ ] Create Pull Request: `gh pr create --title "Story 0.75.15: RAG Ranking Logic" --base main`
+- [x] Create Pull Request: `gh pr create --title "Story 0.75.15: RAG Ranking Logic" --base main`
 - [ ] CI passes on PR (including E2E tests)
 - [x] Code review completed (`/code-review` or human review)
 - [ ] PR approved and merged (squash)
 - [ ] Local branch cleaned up: `git branch -d feature/0-75-15-rag-ranking-logic`
 
-**PR URL:** _______________ (fill in when created)
+**PR URL:** https://github.com/jltournay/farmer-power-platform/pull/140
 
 ---
 
