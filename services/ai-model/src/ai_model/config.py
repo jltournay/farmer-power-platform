@@ -242,6 +242,60 @@ class Settings(BaseSettings):
     # after this many hours from completion. Set to 0 to disable TTL.
     vectorization_job_ttl_hours: int = 24
 
+    # ========================================
+    # LangGraph Workflow Configuration (Story 0.75.16)
+    # ========================================
+
+    # Default checkpoint TTL for conversational workflows (seconds)
+    # Checkpoints older than this are automatically cleaned up via MongoDB TTL
+    langgraph_checkpoint_ttl_seconds: int = 1800  # 30 minutes
+
+    # Default timeout for parallel workflow branches (e.g., Explorer saga)
+    langgraph_branch_timeout_seconds: int = 30
+
+    # Maximum recursion depth for workflow execution (prevents infinite loops)
+    langgraph_recursion_limit: int = 25
+
+    # ========================================
+    # LangSmith Configuration (Story 0.75.16)
+    # ========================================
+    # LangSmith provides tracing and observability for LangGraph workflows.
+    # Only enable in development/evaluation environments - NOT production.
+    # Note: validation_alias allows reading from LANGCHAIN_* (standard env vars)
+
+    # Enable LangSmith tracing (dev/eval only, NOT production)
+    langsmith_enabled: bool = Field(
+        default=False,
+        validation_alias="LANGCHAIN_TRACING_V2",
+    )
+
+    # LangSmith API key (required if enabled)
+    langsmith_api_key: SecretStr | None = Field(
+        default=None,
+        validation_alias="LANGCHAIN_API_KEY",
+    )
+
+    # LangSmith endpoint URL (default: LangSmith Cloud)
+    langsmith_endpoint: str = Field(
+        default="https://api.smith.langchain.com",
+        validation_alias="LANGCHAIN_ENDPOINT",
+    )
+
+    # Project name for LangSmith traces
+    langsmith_project: str = Field(
+        default="farmer-power-dev",
+        validation_alias="LANGCHAIN_PROJECT",
+    )
+
+    @property
+    def langsmith_configured(self) -> bool:
+        """Check if LangSmith is properly configured.
+
+        LangSmith is configured only when enabled AND API key is provided.
+        Should only be enabled in development/evaluation environments.
+        """
+        return bool(self.langsmith_enabled and self.langsmith_api_key and self.langsmith_api_key.get_secret_value())
+
     @property
     def pinecone_enabled(self) -> bool:
         """Check if Pinecone is configured and available.
