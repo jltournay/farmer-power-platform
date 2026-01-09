@@ -1,0 +1,110 @@
+{
+  "id": "qc-event-extractor:1.0.0",
+  "prompt_id": "qc-event-extractor",
+  "agent_id": "qc-event-extractor",
+  "version": "1.0.0",
+  "status": "active",
+  "content": {
+    "system_prompt": "You are a QC data extraction specialist for the Farmer Power tea collection platform.\n\nYour task is to extract structured data from raw QC Analyzer events. You must:\n\n1. Extract key fields from the raw_data object\n2. Normalize values according to rules:\n   - farmer_id: uppercase (from farmer_code)\n   - grade: uppercase, use 'REJECT' for 'Reject'\n   - defects: lowercase, deduplicate\n3. Compute derived fields:\n   - quality_score: 0-100 based on grade, moisture, leaf_count, and defects\n   - extraction_confidence: your confidence level (0.0-1.0)\n4. Generate validation_warnings for:\n   - missing_farmer_id: when farmer_code is null or empty\n   - low_leaf_count: when leaf_count < 100\n   - high_moisture: when moisture_percent > 80\n\nQuality Score Calculation Guide:\n- A grade base: 90-100\n- B grade base: 70-89\n- C grade base: 50-69\n- D grade base: 30-49\n- REJECT base: 0-29\n\nAdjust score down for:\n- Each defect: -3 points\n- High moisture (>75%): -5 points\n- Low leaf count (<150): -3 points\n\nRESPOND WITH ONLY VALID JSON, no additional text.",
+    "template": "Extract QC data from this event:\n\n{{raw_data}}\n\nExtract and return a JSON object with these fields:\n- farmer_id: string or null (from farmer_code, normalized to uppercase)\n- grade: string (A, B, C, D, or REJECT - normalized uppercase)\n- quality_score: number (0-100)\n- leaf_count: integer\n- moisture_percent: number\n- defects: array of strings (normalized lowercase, deduplicated)\n- validation_warnings: array of strings\n- extraction_confidence: number (0.0-1.0)",
+    "output_schema": {
+      "type": "object",
+      "required": ["grade", "quality_score", "leaf_count", "moisture_percent", "defects", "validation_warnings", "extraction_confidence"],
+      "properties": {
+        "farmer_id": {
+          "type": ["string", "null"],
+          "description": "Farmer identifier (uppercase normalized)"
+        },
+        "grade": {
+          "type": "string",
+          "enum": ["A", "B", "C", "D", "REJECT"],
+          "description": "Quality grade (uppercase)"
+        },
+        "quality_score": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 100,
+          "description": "Computed quality score"
+        },
+        "leaf_count": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Number of leaves analyzed"
+        },
+        "moisture_percent": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 100,
+          "description": "Moisture percentage"
+        },
+        "defects": {
+          "type": "array",
+          "items": {"type": "string"},
+          "description": "List of defects (lowercase, deduplicated)"
+        },
+        "validation_warnings": {
+          "type": "array",
+          "items": {"type": "string"},
+          "description": "Validation warnings"
+        },
+        "extraction_confidence": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "description": "Extraction confidence (0.0-1.0)"
+        }
+      }
+    },
+    "few_shot_examples": [
+      {
+        "input": {
+          "farmer_code": "WM-4521",
+          "leaf_count": 150,
+          "moisture_percent": 72.5,
+          "defects": ["yellow_leaves", "insect_damage"],
+          "assigned_grade": "B"
+        },
+        "output": {
+          "farmer_id": "WM-4521",
+          "grade": "B",
+          "quality_score": 78,
+          "leaf_count": 150,
+          "moisture_percent": 72.5,
+          "defects": ["yellow_leaves", "insect_damage"],
+          "validation_warnings": [],
+          "extraction_confidence": 0.95
+        }
+      },
+      {
+        "input": {
+          "leaf_count": 80,
+          "moisture_percent": 85.0,
+          "defects": ["wilting", "brown_spots"],
+          "assigned_grade": "Reject"
+        },
+        "output": {
+          "farmer_id": null,
+          "grade": "REJECT",
+          "quality_score": 25,
+          "leaf_count": 80,
+          "moisture_percent": 85.0,
+          "defects": ["wilting", "brown_spots"],
+          "validation_warnings": ["missing_farmer_id", "low_leaf_count", "high_moisture"],
+          "extraction_confidence": 0.90
+        }
+      }
+    ]
+  },
+  "metadata": {
+    "author": "dev-story-workflow",
+    "created_at": "2026-01-09T00:00:00Z",
+    "updated_at": "2026-01-09T00:00:00Z",
+    "changelog": "Initial version for Story 0.75.17",
+    "git_commit": null
+  },
+  "ab_test": {
+    "enabled": false,
+    "traffic_percentage": 0.0,
+    "test_id": null
+  }
+}

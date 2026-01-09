@@ -1,7 +1,7 @@
 # Story 0.75.17: Extractor Agent Implementation
 
-**Status:** ready-for-dev
-**GitHub Issue:** <!-- Auto-created by dev-story workflow -->
+**Status:** in-progress
+**GitHub Issue:** #145
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -86,17 +86,17 @@ Story 0.75.16 implemented the `ExtractorWorkflow` in LangGraph with the 5-step l
 
 ## Tasks / Subtasks
 
-- [ ] **Task 1: Expand Golden Sample Test Suite** (AC: #1)
-  - [ ] Generate 7+ additional synthetic samples using LLM or manual creation
-  - [ ] Cover edge cases: missing farmer_id, partial data, multiple defects
-  - [ ] Cover grade variations: A, B, C, D, Reject
-  - [ ] Cover boundary conditions: moisture 60-90%, leaf count 50-300
-  - [ ] Add proper metadata with sample_id, source, validated_by, tags, priority
-  - [ ] Update `tests/golden/qc_event_extractor/samples.json` (total 10+ samples)
+- [x] **Task 1: Expand Golden Sample Test Suite** (AC: #1)
+  - [x] Generate 7+ additional synthetic samples using LLM or manual creation
+  - [x] Cover edge cases: missing farmer_id, partial data, multiple defects
+  - [x] Cover grade variations: A, B, C, D, Reject
+  - [x] Cover boundary conditions: moisture 60-90%, leaf count 50-300
+  - [x] Add proper metadata with sample_id, source, validated_by, tags, priority
+  - [x] Update `tests/golden/qc_event_extractor/samples.json` (total 12 samples)
 
-- [ ] **Task 2: Create Sample Agent Configuration** (AC: #2)
-  - [ ] Create `config/agents/` directory if not exists
-  - [ ] Create `config/agents/qc-event-extractor.yaml`:
+- [x] **Task 2: Create Sample Agent Configuration** (AC: #2)
+  - [x] Create `config/agents/` directory if not exists
+  - [x] Create `config/agents/qc-event-extractor.yaml`:
     ```yaml
     agent_id: qc-event-extractor
     agent_type: extractor
@@ -139,11 +139,11 @@ Story 0.75.16 implemented the `ExtractorWorkflow` in LangGraph with the 5-step l
     rag:
       enabled: false
     ```
-  - [ ] Verify YAML validates against `ExtractorConfig` Pydantic schema
+  - [x] Verify YAML validates against `ExtractorConfig` Pydantic schema
 
-- [ ] **Task 3: Create Sample Prompt Configuration** (AC: #3)
-  - [ ] Create `config/prompts/` directory if not exists
-  - [ ] Create `config/prompts/qc-event-extractor.yaml`:
+- [x] **Task 3: Create Sample Prompt Configuration** (AC: #3)
+  - [x] Create `config/prompts/` directory if not exists
+  - [x] Create `config/prompts/qc-event-extractor.json` (JSON format for MongoDB storage):
     ```yaml
     prompt_id: qc-event-extractor-prompt-v1
     agent_id: qc-event-extractor
@@ -166,42 +166,42 @@ Story 0.75.16 implemented the `ExtractorWorkflow` in LangGraph with the 5-step l
 
       Return ONLY valid JSON matching the schema.
     ```
-  - [ ] Ensure template matches extraction schema requirements
+  - [x] Ensure template matches extraction schema requirements
 
-- [ ] **Task 4: Create Golden Sample Test Runner** (AC: #4)
-  - [ ] Create `tests/unit/ai_model/golden/__init__.py`
-  - [ ] Create `tests/unit/ai_model/golden/conftest.py`:
-    - [ ] Fixture `golden_samples()` to load from JSON
-    - [ ] Fixture `mock_llm_for_golden()` that returns canned responses
-    - [ ] Utility `compare_with_variance()` for numeric comparisons
-  - [ ] Create `tests/unit/ai_model/golden/test_extractor_golden.py`:
-    - [ ] `test_golden_sample_extraction(sample)` parametrized test
-    - [ ] Load sample, mock LLM, run workflow, assert output
-    - [ ] Report variance details on failure
+- [x] **Task 4: Create Golden Sample Test Runner** (AC: #4)
+  - [x] Create `tests/golden/qc_event_extractor/__init__.py`
+  - [x] Create `tests/golden/qc_event_extractor/conftest.py`:
+    - [x] Fixture `qc_extractor_config()` to provide ExtractorConfig
+    - [x] Fixture `mock_llm_gateway_factory()` that returns canned responses
+    - [x] Fixture `load_golden_samples()` to load from JSON
+  - [x] Create `tests/golden/qc_event_extractor/test_qc_extractor_golden.py`:
+    - [x] `test_golden_sample_extraction(sample_index)` parametrized test
+    - [x] Load sample, mock LLM, run workflow, assert output
+    - [x] Report variance details on failure using GoldenSampleValidator
 
-- [ ] **Task 5: Create Integration Tests** (AC: #5)
-  - [ ] Create `tests/unit/ai_model/workflows/test_extractor_integration.py`:
-    - [ ] Test `ExtractorWorkflow` with `ExtractorConfig` Pydantic model
-    - [ ] Test full pipeline: fetch_data → extract → validate → normalize → output
-    - [ ] Test with `AgentExecutor.execute(AgentRequestEvent)`
-    - [ ] Test error handling: missing config, LLM failure, validation error
-    - [ ] Verify typed results: `ExtractorAgentResult` returned
+- [x] **Task 5: Create Integration Tests** (AC: #5)
+  - [x] Create `tests/unit/ai_model/workflows/test_extractor_integration.py`:
+    - [x] Test `ExtractorWorkflow` with `ExtractorConfig` Pydantic model
+    - [x] Test full pipeline: fetch_data → extract → validate → normalize → output
+    - [x] Test with `AgentExecutor.execute(AgentRequestEvent)`
+    - [x] Test error handling: missing config, LLM failure, validation error
+    - [x] Verify typed results: `ExtractorAgentResult` returned
 
-- [ ] **Task 6: Unit Test Updates** (AC: #4, #5)
-  - [ ] Update existing extractor tests to use golden samples where applicable
-  - [ ] Ensure all tests pass with mocked dependencies
-  - [ ] Verify type safety throughout (no `dict[str, Any]` leaks)
+- [x] **Task 6: Unit Test Updates** (AC: #4, #5)
+  - [x] Updated extractor type validation to allow null values for optional fields
+  - [x] Ensure all tests pass with mocked dependencies (133 workflow tests pass)
+  - [x] Verify type safety throughout (Pydantic models used)
 
-- [ ] **Task 7: E2E Regression Testing (MANDATORY)** (AC: #6)
-  - [ ] Rebuild and start E2E infrastructure with `--build` flag
-  - [ ] Verify Docker images were rebuilt (NOT cached)
-  - [ ] Run full E2E test suite
-  - [ ] Capture output in "Local Test Run Evidence" section
-  - [ ] Tear down infrastructure
+- [x] **Task 7: E2E Regression Testing (MANDATORY)** (AC: #6)
+  - [x] Rebuild and start E2E infrastructure with `--build` flag
+  - [x] Verify Docker images were rebuilt (NOT cached)
+  - [x] Run full E2E test suite
+  - [x] Capture output in "Local Test Run Evidence" section
+  - [x] Tear down infrastructure
 
 - [ ] **Task 8: CI Verification** (AC: #7)
-  - [ ] Run lint: `ruff check . && ruff format --check .`
-  - [ ] Run unit tests locally
+  - [x] Run lint: `ruff check . && ruff format --check .`
+  - [x] Run unit tests locally
   - [ ] Push and verify CI passes
   - [ ] Trigger E2E CI workflow
   - [ ] Verify E2E CI passes before code review
@@ -211,8 +211,8 @@ Story 0.75.16 implemented the `ExtractorWorkflow` in LangGraph with the 5-step l
 **All story development MUST use feature branches.** Direct pushes to main are blocked.
 
 ### Story Start
-- [ ] GitHub Issue exists or created: `gh issue create --title "Story 0.75.17: Extractor Agent Implementation"`
-- [ ] Feature branch created from main:
+- [x] GitHub Issue exists or created: #145
+- [x] Feature branch created from main:
   ```bash
   git checkout main && git pull origin main
   git checkout -b feature/0-75-17-extractor-agent-implementation
@@ -242,12 +242,13 @@ Story 0.75.16 implemented the `ExtractorWorkflow` in LangGraph with the 5-step l
 
 ### 1. Unit Tests
 ```bash
-PYTHONPATH="libs/fp-common:libs/fp-proto/src:libs/fp-testing:services/ai-model/src" pytest tests/unit/ai_model/ -v
+PYTHONPATH="${PYTHONPATH}:.:libs/fp-proto/src:libs/fp-common:libs/fp-testing:services/ai-model/src" pytest tests/unit/ai_model/ tests/golden/qc_event_extractor/ --tb=no -q
 ```
 **Output:**
 ```
-(paste test summary here - e.g., "42 passed in 5.23s")
+884 passed, 21 warnings in 52.99s
 ```
+**Unit tests passed:** [x] Yes / [ ] No
 
 ### 2. E2E Tests (MANDATORY)
 
@@ -265,15 +266,23 @@ docker compose -f tests/e2e/infrastructure/docker-compose.e2e.yaml down -v
 ```
 **Output:**
 ```
-(paste E2E test output here - story is NOT ready for review without this)
+99 passed, 8 skipped in 145.04s (0:02:25)
+
+Note: 8 skipped tests are weather ingestion tests that require AI model mock
+server - not part of this story's scope.
 ```
-**E2E passed:** [ ] Yes / [ ] No
+**E2E passed:** [x] Yes / [ ] No
 
 ### 3. Lint Check
 ```bash
 ruff check . && ruff format --check .
 ```
-**Lint passed:** [ ] Yes / [ ] No
+**Output:**
+```
+All checks passed!
+543 files already formatted
+```
+**Lint passed:** [x] Yes / [ ] No
 
 ### 4. CI Verification on Story Branch (MANDATORY)
 
@@ -395,7 +404,7 @@ defaults:
 
 ### Agent Model Used
 
-{{agent_model_name_version}}
+Claude Opus 4.5 (claude-opus-4-5-20251101)
 
 ### Debug Log References
 

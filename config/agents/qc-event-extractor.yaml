@@ -1,0 +1,151 @@
+# QC Event Extractor Agent Configuration
+# Story 0.75.17: Extractor Agent Implementation
+#
+# This agent extracts structured QC data from QC Analyzer events.
+# It processes END_BAG events and extracts farmer_id, grade, quality_score, and defects.
+#
+# See: _bmad-output/architecture/ai-model-architecture/key-decisions.md
+
+id: "qc-event-extractor:1.0.0"
+agent_id: "qc-event-extractor"
+version: "1.0.0"
+type: extractor
+status: active
+description: "Extracts structured quality control data from QC Analyzer END_BAG events"
+
+# Input contract
+input:
+  event: "collection.document.received"
+  schema:
+    type: object
+    required:
+      - raw_data
+    properties:
+      source:
+        type: string
+        description: "Source system (e.g., 'qc-analyzer')"
+      event_type:
+        type: string
+        description: "Event type (e.g., 'END_BAG')"
+      timestamp:
+        type: string
+        format: date-time
+      raw_data:
+        type: object
+        properties:
+          farmer_code:
+            type: string
+            description: "Farmer identifier code"
+          leaf_count:
+            type: integer
+            minimum: 0
+          moisture_percent:
+            type: number
+            minimum: 0
+            maximum: 100
+          defects:
+            type: array
+            items:
+              type: string
+          assigned_grade:
+            type: string
+            enum: ["A", "B", "C", "D", "Reject"]
+      image_url:
+        type: string
+        format: uri
+
+# Output contract
+output:
+  event: "ai.extraction.complete"
+  schema:
+    type: object
+    required:
+      - grade
+      - quality_score
+    properties:
+      farmer_id:
+        type: string
+        nullable: true
+        description: "Normalized farmer ID (uppercase)"
+      grade:
+        type: string
+        enum: ["A", "B", "C", "D", "REJECT"]
+        description: "Quality grade (uppercase normalized)"
+      quality_score:
+        type: number
+        minimum: 0
+        maximum: 100
+        description: "Computed quality score 0-100"
+      leaf_count:
+        type: integer
+        minimum: 0
+      moisture_percent:
+        type: number
+      defects:
+        type: array
+        items:
+          type: string
+        description: "Normalized and deduplicated defect list (lowercase)"
+      validation_warnings:
+        type: array
+        items:
+          type: string
+        description: "Non-blocking warnings (e.g., missing_farmer_id)"
+      extraction_confidence:
+        type: number
+        minimum: 0
+        maximum: 1
+        description: "LLM confidence in extraction accuracy"
+
+# LLM configuration
+llm:
+  model: "anthropic/claude-3-haiku"
+  temperature: 0.1
+  max_tokens: 500
+
+# Extraction schema - defines required/optional fields and types
+extraction_schema:
+  required_fields:
+    - grade
+    - quality_score
+    - leaf_count
+    - moisture_percent
+    - extraction_confidence
+  optional_fields:
+    - farmer_id
+    - defects
+    - validation_warnings
+  field_types:
+    farmer_id: string
+    grade: string
+    quality_score: number
+    leaf_count: integer
+    moisture_percent: number
+    defects: array
+    validation_warnings: array
+    extraction_confidence: number
+
+# Normalization rules - applied after extraction
+normalization_rules:
+  - field: farmer_id
+    transform: uppercase
+  - field: grade
+    transform: uppercase
+  # Note: defects lowercase and deduplication handled in prompt
+
+# MCP sources - data retrieval tools (not used for basic extraction)
+mcp_sources: []
+
+# Error handling
+error_handling:
+  max_attempts: 3
+  backoff_ms: [100, 500, 2000]
+  on_failure: publish_error_event
+  dead_letter_topic: null
+
+# Metadata
+metadata:
+  author: "dev-story-workflow"
+  created_at: "2026-01-09T00:00:00Z"
+  updated_at: "2026-01-09T00:00:00Z"
+  git_commit: null

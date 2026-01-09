@@ -393,7 +393,16 @@ Rules:
 
         Returns:
             True if valid, False otherwise.
+
+        Note:
+            None values are allowed for all types. This allows optional fields
+            to return null when the value is missing/unknown, which is valid
+            JSON representation for "no value".
         """
+        # None is valid for all types (represents missing/unknown value)
+        if value is None:
+            return True
+
         type_map = {
             "string": str,
             "int": int,

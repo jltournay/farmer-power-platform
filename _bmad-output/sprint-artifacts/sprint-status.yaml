@@ -185,7 +185,7 @@ development_status:
   0-75-15-rag-ranking-logic: done  # github_issue: 139, Re-ranking, domain boosting, golden samples, CODE REVIEW COMPLETED 2026-01-08
   0-75-16-langgraph-sdk-integration-base-workflows: done  # github_issue: 141, LangGraph workflows, saga pattern, checkpointing
   0-75-16b-event-subscriber-workflow-wiring: done  # github_issue: 143, Wire subscriber to WorkflowExecutionService, CODE REVIEW COMPLETED 2026-01-09
-  0-75-17-extractor-agent-implementation: ready-for-dev  # github_issue: TBD, Sample extractor config, golden samples
+  0-75-17-extractor-agent-implementation: in-progress  # github_issue: 145, Sample extractor config, golden samples
   0-75-18-e2e-weather-observation-extraction-flow: blocked  # Blocked by: 2-12, 2-13 - E2E validation gate
   0-75-19-explorer-agent-implementation: backlog  # LangGraph + RAG, golden samples
   0-75-20-generator-agent-implementation: backlog  # LangGraph + RAG, multi-format, golden samples
