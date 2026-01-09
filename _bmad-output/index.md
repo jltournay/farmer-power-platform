@@ -163,6 +163,7 @@ Product Brief → Architecture → ADRs → Epics → Stories → Test Design �
 | ADR-011 | gRPC/FastAPI/DAPR Service Architecture | Stories 0.6.5, 0.6.6 |
 | ADR-012 | BFF Service Composition and API Design | Stories 0.5.4a, 0.5.4b |
 | ADR-013 | AI Model Configuration Cache with Change Streams | Story 0.75.x (AI Model Foundation) |
+| ADR-014 | MongoDB Async Driver Migration (Motor → PyMongo Async) | Phase 0-7 (Migration) |
 
 ---
 
