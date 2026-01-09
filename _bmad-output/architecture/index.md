@@ -24,6 +24,7 @@ date: '2025-12-16'](#stepscompleted-1-inputdocuments-bmad-outputanalysisproduct-
     - [ADR-011: gRPC/FastAPI/DAPR Service Architecture](./adr/ADR-011-grpc-fastapi-dapr-architecture.md)
     - [ADR-012: BFF Service Composition and API Design](./adr/ADR-012-bff-service-composition-api-design.md)
     - [ADR-013: AI Model Configuration Cache with Change Streams](./adr/ADR-013-ai-model-configuration-cache.md)
+    - [ADR-014: MongoDB Async Driver Migration (Motor → PyMongo Async)](./adr/ADR-014-mongodb-async-driver-migration.md)
   - [Source of Truth Declaration](./source-of-truth-declaration.md)
     - [Platform Model Overview (9 Models)](./source-of-truth-declaration.md#platform-model-overview-9-models)
   - [Collection Model Architecture](./collection-model-architecture.md)

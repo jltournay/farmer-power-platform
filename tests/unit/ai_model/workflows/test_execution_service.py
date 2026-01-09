@@ -3,6 +3,7 @@
 Tests WorkflowExecutionService factory and execution methods.
 
 Story 0.75.16: LangGraph SDK Integration & Base Workflows
+ADR-014: Updated tests - checkpointing disabled during Motor → PyMongo migration
 """
 
 import json
@@ -163,14 +164,16 @@ def execution_service(
     mock_llm_gateway: MagicMock,
     mock_ranking_service: MagicMock,
 ) -> WorkflowExecutionService:
-    """Create a WorkflowExecutionService instance with mocked MongoClient."""
-    with patch("ai_model.workflows.execution_service.MongoClient"):
-        return WorkflowExecutionService(
-            mongodb_uri="mongodb://localhost:27017",
-            mongodb_database="test_db",
-            llm_gateway=mock_llm_gateway,
-            ranking_service=mock_ranking_service,
-        )
+    """Create a WorkflowExecutionService instance.
+
+    ADR-014: No MongoClient patch needed - checkpointing disabled during migration.
+    """
+    return WorkflowExecutionService(
+        mongodb_uri="mongodb://localhost:27017",
+        mongodb_database="test_db",
+        llm_gateway=mock_llm_gateway,
+        ranking_service=mock_ranking_service,
+    )
 
 
 class TestWorkflowExecutionService:
@@ -180,16 +183,19 @@ class TestWorkflowExecutionService:
         self,
         mock_llm_gateway: MagicMock,
     ) -> None:
-        """Test service initialization."""
-        with patch("ai_model.workflows.execution_service.MongoClient"):
-            service = WorkflowExecutionService(
-                mongodb_uri="mongodb://localhost:27017",
-                mongodb_database="test_db",
-                llm_gateway=mock_llm_gateway,
-            )
+        """Test service initialization.
 
-            assert service._mongodb_database == "test_db"
-            assert service._llm_gateway is mock_llm_gateway
+        ADR-014: No MongoClient patch needed - checkpointing disabled during migration.
+        """
+        service = WorkflowExecutionService(
+            mongodb_uri="mongodb://localhost:27017",
+            mongodb_database="test_db",
+            llm_gateway=mock_llm_gateway,
+        )
+
+        # ADR-014: _mongodb_database no longer stored during migration
+        assert service._llm_gateway is mock_llm_gateway
+        assert service._checkpointer is None  # ADR-014: Always None during migration
 
     def test_create_workflow_extractor(
         self,

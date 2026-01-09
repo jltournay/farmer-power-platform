@@ -5,6 +5,7 @@ with proper initialization, checkpointing, and error handling.
 
 Story 0.75.16: LangGraph SDK Integration & Base Workflows
 Story 0.75.16b: Refactored to accept Pydantic AgentConfig models for type safety
+ADR-014: Checkpointing temporarily disabled during Motor → PyMongo Async migration
 """
 
 import uuid
@@ -20,14 +21,12 @@ from ai_model.domain.agent_config import (
     GeneratorConfig,
     TieredVisionConfig,
 )
-from ai_model.workflows.checkpointer import create_mongodb_checkpointer
 from ai_model.workflows.conversational import ConversationalWorkflow
 from ai_model.workflows.explorer import ExplorerWorkflow
 from ai_model.workflows.extractor import ExtractorWorkflow
 from ai_model.workflows.generator import GeneratorWorkflow
 from ai_model.workflows.tiered_vision import TieredVisionWorkflow
 from pydantic import TypeAdapter
-from pymongo import MongoClient
 
 logger = structlog.get_logger(__name__)
 
@@ -95,36 +94,30 @@ class WorkflowExecutionService:
         """Initialize the workflow execution service.
 
         Args:
-            mongodb_uri: MongoDB connection string.
-            mongodb_database: Database name for checkpoints.
+            mongodb_uri: MongoDB connection string (unused - ADR-014).
+            mongodb_database: Database name for checkpoints (unused - ADR-014).
             llm_gateway: LLM gateway for all workflows.
             ranking_service: Optional ranking service for RAG workflows.
             mcp_integration: Optional MCP integration for context.
             tool_provider: Optional AgentToolProvider for resolving agent tools.
-            checkpoint_ttl_seconds: TTL for checkpoints (default 30 min).
+            checkpoint_ttl_seconds: TTL for checkpoints (unused - ADR-014).
         """
-        # Create PyMongo client for checkpointer (langgraph requires sync client)
-        self._pymongo_client: MongoClient[Any] = MongoClient(mongodb_uri)
-        self._mongodb_database = mongodb_database
+        # ADR-014: Checkpointing disabled during Motor → PyMongo Async migration
+        # MongoDB client and checkpointer params ignored until migration complete
+        del mongodb_uri, mongodb_database, checkpoint_ttl_seconds  # Unused during ADR-014
         self._llm_gateway = llm_gateway
         self._ranking_service = ranking_service
         self._mcp_integration = mcp_integration
         self._tool_provider = tool_provider
-        self._checkpoint_ttl_seconds = checkpoint_ttl_seconds
         self._checkpointer: Any | None = None
 
     def _get_checkpointer(self) -> Any:
         """Get or create the MongoDB checkpointer.
 
-        Note: This is sync because langgraph-checkpoint-mongodb uses PyMongo (sync).
+        ADR-014: Checkpointing disabled during Motor → PyMongo Async migration.
+        Always returns None. Will be re-enabled with AsyncMongoDBSaver after migration.
         """
-        if self._checkpointer is None:
-            self._checkpointer = create_mongodb_checkpointer(
-                client=self._pymongo_client,
-                database=self._mongodb_database,
-                ttl_seconds=self._checkpoint_ttl_seconds,
-            )
-        return self._checkpointer
+        return None
 
     def _create_workflow(
         self,
@@ -222,20 +215,30 @@ class WorkflowExecutionService:
 
         Note:
             Story 0.75.16b: agent_config MUST be a typed Pydantic model for type safety.
+            ADR-014: Checkpointing temporarily disabled during Motor → PyMongo migration.
         """
         correlation_id = correlation_id or str(uuid.uuid4())
+
+        # ADR-014: Warn if checkpointing requested but disabled
+        if use_checkpointer:
+            logger.warning(
+                "Checkpointing requested but disabled (ADR-014: Motor → PyMongo migration)",
+                agent_type=str(agent_type),
+                agent_id=agent_id,
+                correlation_id=correlation_id,
+            )
 
         logger.info(
             "Executing workflow",
             agent_type=str(agent_type),
             agent_id=agent_id,
             correlation_id=correlation_id,
-            use_checkpointer=use_checkpointer,
+            use_checkpointer=False,  # ADR-014: Always False during migration
         )
 
         try:
-            # Get checkpointer if needed (sync - langgraph uses PyMongo)
-            checkpointer = self._get_checkpointer() if use_checkpointer else None
+            # ADR-014: Checkpointing disabled, always None
+            checkpointer = None
 
             # Create workflow
             workflow = self._create_workflow(
