@@ -1,7 +1,7 @@
   # Story 2-12: Collection → AI Model Event-Driven Communication
 
 **Epic:** Epic 2 - Quality Data Ingestion
-**Status:** in-progress
+**Status:** review
 **Blocks:** Story 0.75.18 (E2E Weather Observation Extraction Flow)
 **GitHub Issue:** #81
 **Story Points:** 5
@@ -81,83 +81,83 @@ else:
 
 ## Tasks / Subtasks
 
-- [ ] **Task 1: Import Shared Event Models** (AC: #1)
-  - [ ] Add imports from `fp_common.events.ai_model_events`: `AgentRequestEvent`, `AgentCompletedEvent`, `AgentFailedEvent`, `EntityLinkage`
-  - [ ] Add imports from `fp_common.models.domain_events`: `AIModelEventTopic`
-  - [ ] Remove any duplicate event model definitions in Collection Model
+- [x] **Task 1: Import Shared Event Models** (AC: #1) ✅
+  - [x] Add imports from `fp_common.events.ai_model_events`: `AgentRequestEvent`, `AgentCompletedEvent`, `AgentFailedEvent`, `EntityLinkage`
+  - [x] Add imports from `fp_common.models.domain_events`: `AIModelEventTopic`
+  - [x] Remove any duplicate event model definitions in Collection Model
 
-- [ ] **Task 2: Implement Path A - AI Extraction Flow** (AC: #2)
-  - [ ] Update `json_extraction.py` to check `source_config.ai_extraction.enabled` and `agent_id`
-  - [ ] Store document with `extraction.status = "pending"` and empty `extracted_fields`
-  - [ ] Build `AgentRequestEvent` with `request_id` = `document_id` (correlation key)
-  - [ ] Set `agent_id` from source config
-  - [ ] Set `linkage` with `EntityLinkage` (farmer_id, region_id, etc.)
-  - [ ] Set `input_data` with document content
-  - [ ] Set `source` = `"collection-model"`
-  - [ ] Publish event to `ai.agent.requested` topic via DAPR pub/sub
+- [x] **Task 2: Implement Path A - AI Extraction Flow** (AC: #2) ✅
+  - [x] Update `json_extraction.py` to check `source_config.ai_extraction.enabled` and `agent_id`
+  - [x] Store document with `extraction.status = "pending"` and empty `extracted_fields`
+  - [x] Build `AgentRequestEvent` with `request_id` = `document_id` (correlation key)
+  - [x] Set `agent_id` from source config
+  - [x] Set `linkage` with `EntityLinkage` (farmer_id, region_id, etc.)
+  - [x] Set `input_data` with document content
+  - [x] Set `source` = `"collection-model"`
+  - [x] Publish event to `ai.agent.requested` topic via DAPR pub/sub
 
-- [ ] **Task 3: Implement Path B - Direct Storage Flow** (AC: #2)
-  - [ ] Store document with `extraction.status = "complete"` immediately
-  - [ ] Populate `extracted_fields` from input data or transformation rules
-  - [ ] Set `extraction.ai_agent_id = null` and `extraction.confidence = 1.0`
-  - [ ] Publish success event if configured in `source_config.events.on_success`
-  - [ ] Ensure NO `AgentRequestEvent` is published
+- [x] **Task 3: Implement Path B - Direct Storage Flow** (AC: #2) ✅
+  - [x] Store document with `extraction.status = "complete"` immediately
+  - [x] Populate `extracted_fields` from input data or transformation rules
+  - [x] Set `extraction.ai_agent_id = null` and `extraction.confidence = 1.0`
+  - [x] Publish success event if configured in `source_config.events.on_success`
+  - [x] Ensure NO `AgentRequestEvent` is published
 
-- [ ] **Task 4: Implement Event Subscription Handlers** (AC: #3)
-  - [ ] Register subscriptions for `ai.agent.{agent_id}.completed` and `.failed` topics
-  - [ ] Use `AIModelEventTopic.agent_completed_topic(agent_id)` helper for topic names
-  - [ ] Implement `_handle_extraction_completed()`:
-    - [ ] Find document by `event.request_id` (= document_id)
-    - [ ] Update `extraction.status = "complete"`
-    - [ ] Copy `extracted_fields` from `event.result`
-    - [ ] Set `ai_agent_id`, `validation_passed`, `validation_warnings`
-    - [ ] Save document
-    - [ ] Call `_emit_success_event(document, source_config)`
-  - [ ] Implement `_handle_extraction_failed()`:
-    - [ ] Find document by `event.request_id`
-    - [ ] Update `extraction.status = "failed"`
-    - [ ] Store `error_message` and `error_type`
-    - [ ] Save document and log for monitoring
-  - [ ] Follow dead letter queue pattern (ADR-006)
+- [x] **Task 4: Implement Event Subscription Handlers** (AC: #3) ✅
+  - [x] Register subscriptions for `ai.agent.{agent_id}.completed` and `.failed` topics
+  - [x] Use `AIModelEventTopic.agent_completed_topic(agent_id)` helper for topic names
+  - [x] Implement `_handle_extraction_completed()`:
+    - [x] Find document by `event.request_id` (= document_id)
+    - [x] Update `extraction.status = "complete"`
+    - [x] Copy `extracted_fields` from `event.result`
+    - [x] Set `ai_agent_id`, `validation_passed`, `validation_warnings`
+    - [x] Save document
+    - [x] Call `_emit_success_event(document, source_config)`
+  - [x] Implement `_handle_extraction_failed()`:
+    - [x] Find document by `event.request_id`
+    - [x] Update `extraction.status = "failed"`
+    - [x] Store `error_message` and `error_type`
+    - [x] Save document and log for monitoring
+  - [x] Follow dead letter queue pattern (ADR-006)
 
-- [ ] **Task 5: Publish Document Ready Event** (AC: #4)
-  - [ ] Ensure success event published after Path A completion (in handler)
-  - [ ] Ensure success event published after Path B direct storage
-  - [ ] Use topic from `source_config.events.on_success.topic`
-  - [ ] Include payload: `document_id`, `source_id`, `farmer_id`, `region_id`, `extracted_fields`
-  - [ ] Reuse existing `DaprEventPublisher.publish_success()` method
+- [x] **Task 5: Publish Document Ready Event** (AC: #4) ✅
+  - [x] Ensure success event published after Path A completion (in handler)
+  - [x] Ensure success event published after Path B direct storage
+  - [x] Use topic from `source_config.events.on_success.topic`
+  - [x] Include payload: `document_id`, `source_id`, `farmer_id`, `region_id`, `extracted_fields`
+  - [x] Reuse existing `DaprEventPublisher.publish_success()` method
 
-- [ ] **Task 6: Remove Synchronous gRPC Extraction** (AC: #5)
-  - [ ] Remove or deprecate `AiModelClient.extract()` method
-  - [ ] Remove sync gRPC call in `json_extraction.py` (line ~314)
-  - [ ] Retain MCP query methods if needed for other use cases
-  - [ ] Update any imports/references
+- [x] **Task 6: Remove Synchronous gRPC Extraction** (AC: #5) ✅
+  - [x] Remove or deprecate `AiModelClient.extract()` method
+  - [x] Remove sync gRPC call in `json_extraction.py` (line ~314)
+  - [x] Retain MCP query methods if needed for other use cases
+  - [x] Update any imports/references
 
-- [ ] **Task 7: Unit Tests** (AC: #6)
-  - [ ] Test Path A: `ai_extraction.enabled=true` triggers `AgentRequestEvent`
-  - [ ] Test Path A: document stored with `status="pending"` before publishing
-  - [ ] Test Path A: `AgentCompletedEvent` handler updates document correctly
-  - [ ] Test Path A: `AgentFailedEvent` handler marks document as failed
-  - [ ] Test Path A: `request_id` equals `document_id` for correlation
-  - [ ] Test Path B: `ai_extraction.enabled=false` stores directly
-  - [ ] Test Path B: document stored with `status="complete"` immediately
-  - [ ] Test Path B: NO `AgentRequestEvent` published
-  - [ ] Test Path B: success event published if configured
-  - [ ] Use mock event bus for all tests
+- [x] **Task 7: Unit Tests** (AC: #6) ✅
+  - [x] Test Path A: `ai_extraction.enabled=true` triggers `AgentRequestEvent`
+  - [x] Test Path A: document stored with `status="pending"` before publishing
+  - [x] Test Path A: `AgentCompletedEvent` handler updates document correctly
+  - [x] Test Path A: `AgentFailedEvent` handler marks document as failed
+  - [x] Test Path A: `request_id` equals `document_id` for correlation
+  - [x] Test Path B: `ai_extraction.enabled=false` stores directly
+  - [x] Test Path B: document stored with `status="complete"` immediately
+  - [x] Test Path B: NO `AgentRequestEvent` published
+  - [x] Test Path B: success event published if configured
+  - [x] Use mock event bus for all tests
 
-- [ ] **Task 8: E2E Regression Testing (MANDATORY)** (AC: #7)
-  - [ ] Rebuild and start E2E infrastructure with `--build` flag
-  - [ ] Verify Docker images were rebuilt (NOT cached)
-  - [ ] Run full E2E test suite
-  - [ ] Capture output in "Local Test Run Evidence" section
-  - [ ] Tear down infrastructure
+- [x] **Task 8: E2E Regression Testing (MANDATORY)** (AC: #7) ✅
+  - [x] Rebuild and start E2E infrastructure with `--build` flag
+  - [x] Verify Docker images were rebuilt (NOT cached)
+  - [x] Run full E2E test suite
+  - [x] Capture output in "Local Test Run Evidence" section
+  - [x] Tear down infrastructure
 
-- [ ] **Task 9: CI Verification** (AC: #8)
-  - [ ] Run lint: `ruff check . && ruff format --check .`
-  - [ ] Run unit tests locally
-  - [ ] Push and verify CI passes
-  - [ ] Trigger E2E CI workflow: `gh workflow run e2e.yaml --ref <branch>`
-  - [ ] Verify E2E CI passes before code review
+- [x] **Task 9: CI Verification** (AC: #8) ✅
+  - [x] Run lint: `ruff check . && ruff format --check .`
+  - [x] Run unit tests locally
+  - [x] Push and verify CI passes
+  - [x] Trigger E2E CI workflow: `gh workflow run e2e.yaml --ref <branch>`
+  - [x] Verify E2E CI passes before code review
 
 ---
 
