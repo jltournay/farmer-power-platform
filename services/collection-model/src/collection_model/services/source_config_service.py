@@ -130,6 +130,46 @@ class SourceConfigService(MongoChangeStreamCache[SourceConfig]):
                 return config
         return None
 
+    async def get_config_by_agent_id(self, agent_id: str) -> SourceConfig | None:
+        """Find source config matching the given AI agent ID.
+
+        Story 2-12: Used to correlate AI Model responses back to source configs.
+
+        Args:
+            agent_id: AI Model agent configuration ID.
+
+        Returns:
+            Matching source config or None if not found.
+        """
+        configs = await self.get_all()
+        for config in configs.values():
+            config_agent_id = config.transformation.get_ai_agent_id()
+            if config_agent_id == agent_id:
+                logger.debug(
+                    "Found source config for agent_id",
+                    agent_id=agent_id,
+                    source_id=config.source_id,
+                )
+                return config
+        return None
+
+    async def get_all_agent_ids(self) -> set[str]:
+        """Get all AI agent IDs from enabled source configs.
+
+        Story 2-12: Used during startup to register subscriptions.
+
+        Returns:
+            Set of unique agent_id values from enabled source configs.
+        """
+        configs = await self.get_all()
+        agent_ids = set()
+        for config in configs.values():
+            agent_id = config.transformation.get_ai_agent_id()
+            if agent_id:
+                agent_ids.add(agent_id)
+        logger.debug("Found agent IDs in source configs", agent_ids=agent_ids)
+        return agent_ids
+
     async def get_all_configs(self) -> list[SourceConfig]:
         """Get all enabled source configs as a list.
 

@@ -182,9 +182,13 @@ class TestJsonExtractionProcessor:
 
     @pytest.fixture
     def mock_event_publisher(self) -> MagicMock:
-        """Create mock event publisher."""
+        """Create mock event publisher.
+
+        Story 2-12: Now includes publish() method for AgentRequestEvent publishing.
+        """
         publisher = MagicMock()
         publisher.publish_success = AsyncMock(return_value=True)
+        publisher.publish = AsyncMock(return_value=True)  # For AgentRequestEvent
         return publisher
 
     @pytest.fixture
@@ -246,7 +250,14 @@ class TestJsonExtractionProcessor:
         sample_job: IngestionJob,
         sample_source_config: SourceConfig,
     ) -> None:
-        """Test successful JSON processing."""
+        """Test successful JSON processing.
+
+        Story 2-12: When ai_agent_id is set (Path A), processing is async:
+        - Document stored with status="pending"
+        - AgentRequestEvent published
+        - Returns pending_extraction=True
+        - Success event is emitted later via subscriber handlers
+        """
         processor = JsonExtractionProcessor()
         processor.set_dependencies(
             blob_client=mock_blob_client,
@@ -261,13 +272,19 @@ class TestJsonExtractionProcessor:
         assert result.success is True
         assert result.document_id is not None
         assert result.error_message is None
+        # Story 2-12: Path A returns pending_extraction=True
+        assert result.pending_extraction is True
 
-        # Verify all steps were called
+        # Verify steps were called (Path A flow)
         mock_blob_client.download_blob.assert_called_once()
         mock_raw_store.store_raw_document.assert_called_once()
-        mock_ai_client.extract.assert_called_once()
+        # Path A: AI extract NOT called synchronously
+        mock_ai_client.extract.assert_not_called()
         mock_doc_repo.save.assert_called_once()
-        mock_event_publisher.publish_success.assert_called_once()
+        # Path A: publish() called for AgentRequestEvent
+        mock_event_publisher.publish.assert_called_once()
+        # Path A: publish_success NOT called - happens async in subscriber
+        mock_event_publisher.publish_success.assert_not_called()
 
     @pytest.mark.asyncio
     async def test_process_invalid_json(

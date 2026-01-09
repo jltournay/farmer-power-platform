@@ -30,6 +30,7 @@ class ProcessorResult(BaseModel):
         error_message: Error description if processing failed.
         error_type: Classification of the error for retry logic.
         is_duplicate: True if document was detected as duplicate and skipped.
+        pending_extraction: True if extraction is pending async AI completion (Story 2-12).
     """
 
     success: bool
@@ -38,6 +39,7 @@ class ProcessorResult(BaseModel):
     error_message: str | None = None
     error_type: str | None = None  # "extraction", "storage", "validation", "config"
     is_duplicate: bool = False
+    pending_extraction: bool = False  # Story 2-12: True when awaiting async AI result
 
 
 class ProcessorNotFoundError(Exception):
