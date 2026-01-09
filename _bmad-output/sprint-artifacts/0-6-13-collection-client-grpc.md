@@ -1,6 +1,6 @@
 # Story 0.6.13: Replace CollectionClient Direct DB Access with gRPC
 
-**Status:** review
+**Status:** done
 **GitHub Issue:** #113
 **Epic:** [Epic 0.6: Infrastructure Hardening](../epics/epic-0-6-infrastructure-hardening.md)
 **ADR:** [ADR-010: DAPR Patterns](../architecture/adr/ADR-010-dapr-patterns-configuration.md), [ADR-011: Service Architecture](../architecture/adr/ADR-011-grpc-fastapi-dapr-architecture.md)
@@ -156,11 +156,11 @@ So that domain boundaries are respected and services communicate through proper 
 - [x] Push to feature branch: `git push -u origin feature/0-6-13-collection-client-grpc`
 
 ### Story Done
-- [ ] Create Pull Request: `gh pr create --title "Story 0.6.13: Replace CollectionClient Direct DB with gRPC" --base main`
-- [ ] CI passes on PR (including E2E tests)
-- [ ] Code review completed (`/code-review` or human review)
-- [ ] PR approved and merged (squash)
-- [ ] Local branch cleaned up: `git branch -d feature/0-6-13-collection-client-grpc`
+- [x] Create Pull Request: `gh pr create --title "Story 0.6.13: Replace CollectionClient Direct DB with gRPC" --base main`
+- [x] CI passes on PR (including E2E tests)
+- [x] Code review completed (`/code-review` or human review)
+- [x] PR approved and merged (squash) - Merged 2026-01-06
+- [x] Local branch cleaned up: `git branch -d feature/0-6-13-collection-client-grpc`
 
 **PR URL:** https://github.com/jltournay/farmer-power-platform/pull/114
 

@@ -165,9 +165,9 @@ So that the codebase follows ADR-010 patterns consistently for both subscribing 
 ### Story Done
 - [x] Create Pull Request: `gh pr create --title "Story 0.6.14: Replace Custom DaprPubSubClient with SDK Publishing" --base main`
 - [x] CI passes on PR (including E2E tests)
-- [ ] Code review completed (`/code-review` or human review)
-- [ ] PR approved and merged (squash)
-- [ ] Local branch cleaned up: `git branch -d feature/0-6-14-dapr-sdk-publishing`
+- [x] Code review completed (`/code-review` or human review) - Code Review #1 & #2 APPROVED
+- [x] PR approved and merged (squash) - Merged 2026-01-06
+- [x] Local branch cleaned up: `git branch -d feature/0-6-14-dapr-sdk-publishing`
 
 **PR URL:** https://github.com/jltournay/farmer-power-platform/pull/116
 
