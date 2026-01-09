@@ -12,6 +12,7 @@ Architecture (ADR-011):
 Story 0.75.4: Added cache warming and change streams for AgentConfig and Prompt.
 Story 0.75.8: Added DAPR streaming subscriptions and DLQ handling.
 Story 0.75.8b: Added MCP integration for agent workflows.
+Story 0.75.16b: Wired AgentExecutor and WorkflowExecutionService for event processing.
 """
 
 import asyncio
@@ -23,9 +24,11 @@ import structlog
 from ai_model.api import health
 from ai_model.api.grpc_server import start_grpc_server, stop_grpc_server
 from ai_model.config import settings
+from ai_model.events.publisher import EventPublisher
 from ai_model.events.subscriber import (
     run_streaming_subscriptions,
     set_agent_config_cache,
+    set_agent_executor,
     set_main_event_loop,
 )
 from ai_model.infrastructure.mongodb import (
@@ -43,7 +46,8 @@ from ai_model.infrastructure.tracing import (
 from ai_model.llm import LLMGateway, RateLimiter
 from ai_model.llm.budget_monitor import BudgetMonitor
 from ai_model.mcp import AgentToolProvider, McpIntegration
-from ai_model.services import AgentConfigCache, PromptCache
+from ai_model.services import AgentConfigCache, AgentExecutor, PromptCache
+from ai_model.workflows.execution_service import WorkflowExecutionService
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fp_common.events import (
@@ -235,6 +239,36 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
             # Store in app.state for dependency injection
             app.state.llm_gateway = llm_gateway
             app.state.budget_monitor = budget_monitor
+
+            # Story 0.75.16b: Initialize WorkflowExecutionService
+            workflow_service = WorkflowExecutionService(
+                mongodb_uri=settings.mongodb_uri,
+                mongodb_database=settings.mongodb_database,
+                llm_gateway=llm_gateway,
+                ranking_service=None,  # TODO: Wire ranking service in Story 0.75.15
+                mcp_integration=mcp_integration,
+                tool_provider=tool_provider,  # Story 0.75.16b: Wire AgentToolProvider
+            )
+
+            # Story 0.75.16b: Create EventPublisher for agent result events
+            event_publisher = EventPublisher()
+
+            # Story 0.75.16b: Create AgentExecutor and wire to subscriber
+            agent_executor = AgentExecutor(
+                agent_config_cache=agent_config_cache,
+                prompt_cache=prompt_cache,
+                workflow_service=workflow_service,
+                event_publisher=event_publisher,
+            )
+            set_agent_executor(agent_executor)
+
+            # Store in app.state for dependency injection
+            app.state.workflow_service = workflow_service
+            app.state.event_publisher = event_publisher
+            app.state.agent_executor = agent_executor
+
+            logger.info("AgentExecutor wired to subscriber")
+
         else:
             logger.warning("OpenRouter API key not configured, LLM Gateway not initialized")
 

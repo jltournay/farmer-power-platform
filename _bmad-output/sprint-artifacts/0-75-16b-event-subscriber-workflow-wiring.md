@@ -1,7 +1,7 @@
 # Story 0.75.16b: Event Subscriber Workflow Wiring
 
-**Status:** ready-for-dev
-**GitHub Issue:** <!-- Auto-created by dev-story workflow -->
+**Status:** in-progress
+**GitHub Issue:** #143
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 

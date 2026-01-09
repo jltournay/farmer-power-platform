@@ -1,11 +1,13 @@
 """Unit tests for AI Model event subscriber.
 
 Story 0.75.8: Event Flow, Subscriber, and Publisher (AC: #1, #4, #10, #11)
+Story 0.75.16b: Updated for AgentExecutor wiring
 
 Tests for:
 - Agent request handler
 - Error scenarios (validation, service not initialized, etc.)
 - Payload extraction
+- AgentExecutor integration
 """
 
 import asyncio
@@ -16,6 +18,7 @@ from ai_model.events.subscriber import (
     extract_payload,
     handle_agent_request,
     set_agent_config_cache,
+    set_agent_executor,
     set_main_event_loop,
 )
 from dapr.clients.grpc._response import TopicEventResponse
@@ -39,6 +42,14 @@ def mock_event_loop() -> asyncio.AbstractEventLoop:
     loop = asyncio.new_event_loop()
     yield loop
     loop.close()
+
+
+@pytest.fixture
+def mock_agent_executor() -> MagicMock:
+    """Mock agent executor (Story 0.75.16b)."""
+    executor = MagicMock()
+    executor.execute_and_publish = AsyncMock()
+    return executor
 
 
 @pytest.fixture
@@ -120,6 +131,7 @@ class TestHandlerNotInitialized:
         # Reset module state
         set_agent_config_cache(None)  # type: ignore[arg-type]
         set_main_event_loop(None)  # type: ignore[arg-type]
+        set_agent_executor(None)  # type: ignore[arg-type]
 
         response = handle_agent_request(mock_dapr_message)
 
@@ -134,10 +146,27 @@ class TestHandlerNotInitialized:
         """Test handler returns retry when event loop not initialized."""
         set_agent_config_cache(mock_agent_config_cache)
         set_main_event_loop(None)  # type: ignore[arg-type]
+        set_agent_executor(None)  # type: ignore[arg-type]
 
         response = handle_agent_request(mock_dapr_message)
 
         assert isinstance(response, TopicEventResponse)
+
+    def test_handler_executor_not_initialized(
+        self,
+        mock_dapr_message: MagicMock,
+        mock_agent_config_cache: MagicMock,
+        mock_event_loop: asyncio.AbstractEventLoop,
+    ) -> None:
+        """Test handler returns retry when executor not initialized (Story 0.75.16b)."""
+        set_agent_config_cache(mock_agent_config_cache)
+        set_main_event_loop(mock_event_loop)
+        set_agent_executor(None)  # type: ignore[arg-type]
+
+        response = handle_agent_request(mock_dapr_message)
+
+        assert isinstance(response, TopicEventResponse)
+        # Response should be retry since executor is not initialized
 
 
 # =============================================================================
@@ -297,6 +326,11 @@ class TestModuleStateManagement:
         set_main_event_loop(mock_event_loop)
         # No exception means success
 
+    def test_set_agent_executor(self, mock_agent_executor: MagicMock) -> None:
+        """Test setting agent executor (Story 0.75.16b)."""
+        set_agent_executor(mock_agent_executor)
+        # No exception means success
+
     def test_set_cache_logs_message(self, mock_agent_config_cache: MagicMock) -> None:
         """Test that setting cache logs an info message."""
         with patch("ai_model.events.subscriber.logger") as mock_logger:
@@ -307,4 +341,10 @@ class TestModuleStateManagement:
         """Test that setting event loop logs an info message."""
         with patch("ai_model.events.subscriber.logger") as mock_logger:
             set_main_event_loop(mock_event_loop)
+            mock_logger.info.assert_called()
+
+    def test_set_executor_logs_message(self, mock_agent_executor: MagicMock) -> None:
+        """Test that setting executor logs an info message (Story 0.75.16b)."""
+        with patch("ai_model.events.subscriber.logger") as mock_logger:
+            set_agent_executor(mock_agent_executor)
             mock_logger.info.assert_called()

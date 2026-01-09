@@ -1,6 +1,7 @@
 """DAPR streaming subscription handlers for AI Model.
 
 Story 0.75.8: Event Flow, Subscriber, and Publisher (AC: #1, #4, #10)
+Story 0.75.16b: Wired to AgentExecutor for actual workflow execution
 
 This module implements DAPR SDK streaming subscriptions per ADR-010/ADR-011.
 Key Pattern:
@@ -22,14 +23,14 @@ from typing import TYPE_CHECKING
 
 import structlog
 from ai_model.config import settings
-from ai_model.events.models import AgentRequestEvent
 from dapr.clients import DaprClient
 from dapr.clients.grpc._response import TopicEventResponse
+from fp_common.events import AgentRequestEvent
 from opentelemetry import metrics, trace
 from pydantic import ValidationError
 
 if TYPE_CHECKING:
-    from ai_model.services import AgentConfigCache
+    from ai_model.services import AgentConfigCache, AgentExecutor
 
 logger = structlog.get_logger(__name__)
 tracer = trace.get_tracer(__name__)
@@ -63,6 +64,7 @@ dlq_counter = meter.create_counter(
 # =============================================================================
 
 _agent_config_cache: "AgentConfigCache | None" = None
+_agent_executor: "AgentExecutor | None" = None
 _main_event_loop: asyncio.AbstractEventLoop | None = None
 
 
@@ -71,6 +73,16 @@ def set_agent_config_cache(cache: "AgentConfigCache") -> None:
     global _agent_config_cache
     _agent_config_cache = cache
     logger.info("Agent config cache set for streaming subscriptions")
+
+
+def set_agent_executor(executor: "AgentExecutor") -> None:
+    """Set the agent executor (called during service startup).
+
+    Story 0.75.16b: Wire subscriber to AgentExecutor.
+    """
+    global _agent_executor
+    _agent_executor = executor
+    logger.info("Agent executor set for streaming subscriptions")
 
 
 def set_main_event_loop(loop: asyncio.AbstractEventLoop) -> None:
@@ -118,25 +130,33 @@ def extract_payload(raw_data) -> dict:
 
 
 # =============================================================================
-# Placeholder Agent Executor (until Stories 0.75.17-22)
+# Agent Execution (Story 0.75.16b - wired to AgentExecutor)
 # =============================================================================
 
 
-async def execute_agent_placeholder(event: AgentRequestEvent) -> dict:
-    """Placeholder agent executor - returns mock result.
+async def execute_agent(event: AgentRequestEvent) -> None:
+    """Execute agent workflow via AgentExecutor.
 
-    TODO: Replace with actual agent execution in Stories 0.75.17-22
+    Story 0.75.16b: Replaced placeholder with actual AgentExecutor call.
+
+    Args:
+        event: The validated agent request event.
+
+    Raises:
+        RuntimeError: If AgentExecutor is not initialized.
     """
+    if _agent_executor is None:
+        raise RuntimeError("AgentExecutor not initialized - call set_agent_executor() first")
+
     logger.info(
-        "Agent execution placeholder invoked",
+        "Executing agent workflow",
         request_id=event.request_id,
         agent_id=event.agent_id,
+        source=event.source,
     )
-    return {
-        "status": "placeholder",
-        "message": f"Agent {event.agent_id} execution not yet implemented",
-        "request_id": event.request_id,
-    }
+
+    # Execute and publish result (AgentExecutor handles publishing)
+    await _agent_executor.execute_and_publish(event)
 
 
 # =============================================================================
@@ -207,6 +227,13 @@ def handle_agent_request(message) -> TopicEventResponse:
             event_processing_counter.add(1, {"topic": "agent_request", "status": "retry"})
             return TopicEventResponse("retry")
 
+        # Check agent executor initialization (Story 0.75.16b)
+        if _agent_executor is None:
+            logger.error("Agent executor not initialized - will retry")
+            span.set_attribute("error", "executor_not_initialized")
+            event_processing_counter.add(1, {"topic": "agent_request", "status": "retry"})
+            return TopicEventResponse("retry")
+
         # Verify agent_id exists in cache
         try:
             future = asyncio.run_coroutine_threadsafe(
@@ -239,10 +266,10 @@ def handle_agent_request(message) -> TopicEventResponse:
             event_processing_counter.add(1, {"topic": "agent_request", "status": "retry"})
             return TopicEventResponse("retry")
 
-        # Execute agent placeholder (actual execution in Stories 0.75.17-22)
+        # Execute agent workflow (Story 0.75.16b - wired to AgentExecutor)
         try:
             future = asyncio.run_coroutine_threadsafe(
-                execute_agent_placeholder(event_data),
+                execute_agent(event_data),
                 _main_event_loop,
             )
             future.result(timeout=settings.event_handler_execution_timeout_s)

@@ -530,9 +530,73 @@ class ExplorerWorkflow(WorkflowBuilder[ExplorerState]):
         mcp_sources: list[dict[str, Any]],
         input_data: dict[str, Any],
     ) -> dict[str, Any]:
-        """Fetch context from MCP servers."""
-        # Placeholder - actual implementation depends on MCP integration
-        return {}
+        """Fetch context from MCP servers.
+
+        Story 0.75.16b: Implemented actual MCP tool calls.
+
+        Args:
+            mcp_sources: List of MCP source configurations from agent config.
+            input_data: Input data to pass to MCP tools.
+
+        Returns:
+            Dictionary with context from each MCP tool call.
+        """
+        if not self._mcp_integration or not mcp_sources:
+            return {}
+
+        context: dict[str, Any] = {}
+
+        for source in mcp_sources:
+            server = source.get("server", "")
+            tool_name = source.get("tool", "")
+            arg_mapping = source.get("arg_mapping", {})
+
+            if not server or not tool_name:
+                logger.warning("Invalid MCP source config", source=source)
+                continue
+
+            try:
+                # Get the tool from the integration
+                tool = self._mcp_integration.get_tool(server, tool_name)
+
+                # Build tool arguments from input data using arg_mapping
+                tool_args = {}
+                for arg_name, input_key in arg_mapping.items():
+                    if input_key in input_data:
+                        tool_args[arg_name] = input_data[input_key]
+
+                # Invoke the tool
+                result = await tool.ainvoke(tool_args)
+
+                # Store result under server.tool key
+                key = f"{server}.{tool_name}"
+                context[key] = result
+
+                logger.debug(
+                    "MCP tool call succeeded",
+                    server=server,
+                    tool=tool_name,
+                    result_type=type(result).__name__,
+                )
+
+            except ValueError as e:
+                # Server not registered or tool not found
+                logger.warning(
+                    "MCP tool not available",
+                    server=server,
+                    tool=tool_name,
+                    error=str(e),
+                )
+            except Exception as e:
+                # Tool invocation failed
+                logger.warning(
+                    "MCP tool call failed",
+                    server=server,
+                    tool=tool_name,
+                    error=str(e),
+                )
+
+        return context
 
     def _build_analysis_query(self, input_data: dict[str, Any]) -> str:
         """Build analysis query from input data."""
