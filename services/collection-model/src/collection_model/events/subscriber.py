@@ -520,6 +520,10 @@ async def _process_agent_completed_async(event: AgentCompletedEvent) -> bool:
         return True
 
     # Update document with extraction results
+    # NOTE: Currently only ExtractorAgentResult is supported. If AI Model adds
+    # new result types (e.g., ClassifierAgentResult), add handling here.
+    # The isinstance check ensures forward compatibility - unknown result types
+    # will not crash, but won't extract fields either.
     if isinstance(event.result, ExtractorAgentResult):
         document.extracted_fields = event.result.extracted_fields
         document.extraction.confidence = 1.0  # AI extraction confidence
@@ -527,6 +531,18 @@ async def _process_agent_completed_async(event: AgentCompletedEvent) -> bool:
         document.extraction.validation_warnings = event.result.validation_warnings
 
         # Update linkage_fields based on extracted_fields
+    else:
+        # Log warning for unknown result types (forward compatibility)
+        logger.warning(
+            "Unknown AgentResult type - extraction fields not updated",
+            request_id=event.request_id,
+            result_type=event.result.result_type
+            if hasattr(event.result, "result_type")
+            else type(event.result).__name__,
+        )
+
+    if isinstance(event.result, ExtractorAgentResult):
+        # Update linkage_fields based on extracted_fields (only for ExtractorAgentResult)
         transformation = config.transformation
         extract_field_names = transformation.extract_fields or []
         field_mappings = transformation.field_mappings or {}

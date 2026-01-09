@@ -7,6 +7,17 @@ all LLM operations go through AI Model.
 Architecture Decision: All inter-service communication uses gRPC via DAPR
 (see infrastructure-decisions.md).
 
+Story 2-12 DEPRECATION NOTICE:
+-----------------------------
+The synchronous `extract()` method is DEPRECATED as of Story 2-12.
+Collection Model now uses event-driven async communication:
+- Publishes AgentRequestEvent to ai.agent.requested topic
+- Receives AgentCompletedEvent/AgentFailedEvent via subscriber handlers
+See: events/subscriber.py for the new event-driven pattern.
+
+The `extract()` method is retained for backwards compatibility but will
+be removed in a future version. New code should NOT use this method.
+
 DAPR gRPC Proxying Pattern (Story 0.4.6 fix):
 --------------------------------------------
 To invoke gRPC services (like AI Model) via DAPR, we use native gRPC
@@ -30,6 +41,7 @@ This ensures auto-recovery from transient failures without pod restart.
 """
 
 import json
+import warnings
 from typing import Any
 
 import grpc
@@ -198,6 +210,13 @@ class AiModelClient:
     async def extract(self, request: ExtractionRequest) -> ExtractionResponse:
         """Call AI Model to extract structured data from raw content.
 
+        .. deprecated:: Story 2-12
+            This synchronous gRPC method is deprecated. Use event-driven
+            communication instead:
+            1. Publish AgentRequestEvent to ai.agent.requested topic
+            2. Subscribe to AgentCompletedEvent/AgentFailedEvent
+            See: events/subscriber.py for the new pattern.
+
         Uses DAPR gRPC Service Invocation to call AI Model's Extract method.
         Includes retry logic per ADR-005: 3 attempts with exponential backoff.
 
@@ -211,6 +230,13 @@ class AiModelClient:
             ExtractionError: If extraction fails after all retries.
             ServiceUnavailableError: If service is unavailable after all retries.
         """
+        warnings.warn(
+            "AiModelClient.extract() is deprecated as of Story 2-12. "
+            "Use event-driven communication via AgentRequestEvent instead. "
+            "See events/subscriber.py for the new pattern.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
         try:
             return await self._extract_with_retry(request)
         except grpc.aio.AioRpcError as e:
