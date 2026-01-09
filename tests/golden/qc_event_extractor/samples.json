@@ -2,13 +2,13 @@
   "agent_name": "qc_event_extractor",
   "agent_type": "extractor",
   "version": "1.0.0",
-  "created_at": "2025-12-23T00:00:00Z",
+  "created_at": "2026-01-09T00:00:00Z",
   "samples": [
     {
       "input": {
         "source": "qc-analyzer",
         "event_type": "END_BAG",
-        "timestamp": "2025-12-23T10:30:00Z",
+        "timestamp": "2026-01-09T10:30:00Z",
         "raw_data": {
           "farmer_code": "WM-4521",
           "leaf_count": 150,
@@ -39,7 +39,7 @@
         "description": "Standard B-grade extraction with defects",
         "source": "manual",
         "validated_by": "Agronomist Jane",
-        "validated_at": "2025-12-20T00:00:00Z",
+        "validated_at": "2026-01-09T00:00:00Z",
         "tags": ["standard", "b-grade", "defects"],
         "priority": "P0"
       }
@@ -48,7 +48,7 @@
       "input": {
         "source": "qc-analyzer",
         "event_type": "END_BAG",
-        "timestamp": "2025-12-23T11:00:00Z",
+        "timestamp": "2026-01-09T11:00:00Z",
         "raw_data": {
           "farmer_code": "WM-1234",
           "leaf_count": 200,
@@ -79,7 +79,7 @@
         "description": "High quality A-grade extraction - no defects",
         "source": "manual",
         "validated_by": "Agronomist Jane",
-        "validated_at": "2025-12-20T00:00:00Z",
+        "validated_at": "2026-01-09T00:00:00Z",
         "tags": ["premium", "a-grade", "no-defects"],
         "priority": "P0"
       }
@@ -88,7 +88,7 @@
       "input": {
         "source": "qc-analyzer",
         "event_type": "END_BAG",
-        "timestamp": "2025-12-23T12:00:00Z",
+        "timestamp": "2026-01-09T12:00:00Z",
         "raw_data": {
           "leaf_count": 80,
           "moisture_percent": 85.0,
@@ -99,7 +99,7 @@
       },
       "expected_output": {
         "farmer_id": null,
-        "grade": "Reject",
+        "grade": "REJECT",
         "quality_score": 25.0,
         "leaf_count": 80,
         "moisture_percent": 85.0,
@@ -118,8 +118,367 @@
         "description": "Rejected quality with missing farmer ID - should store with warning",
         "source": "manual",
         "validated_by": "Agronomist Jane",
-        "validated_at": "2025-12-20T00:00:00Z",
+        "validated_at": "2026-01-09T00:00:00Z",
         "tags": ["rejection", "missing-farmer", "warning"],
+        "priority": "P0"
+      }
+    },
+    {
+      "input": {
+        "source": "qc-analyzer",
+        "event_type": "END_BAG",
+        "timestamp": "2026-01-09T13:00:00Z",
+        "raw_data": {
+          "farmer_code": "TK-9876",
+          "leaf_count": 175,
+          "moisture_percent": 70.5,
+          "defects": ["slight_yellowing"],
+          "assigned_grade": "C"
+        },
+        "image_url": "https://storage.example.com/images/bag-12348.jpg"
+      },
+      "expected_output": {
+        "farmer_id": "TK-9876",
+        "grade": "C",
+        "quality_score": 65.0,
+        "leaf_count": 175,
+        "moisture_percent": 70.5,
+        "defects": ["slight_yellowing"],
+        "validation_warnings": [],
+        "extraction_confidence": 0.92
+      },
+      "acceptable_variance": {
+        "quality_score": 5.0,
+        "extraction_confidence": 0.1
+      },
+      "metadata": {
+        "sample_id": "GS-qc-004",
+        "agent_name": "qc_event_extractor",
+        "agent_type": "extractor",
+        "description": "C-grade with minor defects",
+        "source": "synthetic",
+        "validated_by": "QA Team",
+        "validated_at": "2026-01-09T00:00:00Z",
+        "tags": ["c-grade", "minor-defects"],
+        "priority": "P1"
+      }
+    },
+    {
+      "input": {
+        "source": "qc-analyzer",
+        "event_type": "END_BAG",
+        "timestamp": "2026-01-09T14:00:00Z",
+        "raw_data": {
+          "farmer_code": "NK-5555",
+          "leaf_count": 120,
+          "moisture_percent": 75.0,
+          "defects": ["brown_spots", "torn_leaves"],
+          "assigned_grade": "D"
+        },
+        "image_url": "https://storage.example.com/images/bag-12349.jpg"
+      },
+      "expected_output": {
+        "farmer_id": "NK-5555",
+        "grade": "D",
+        "quality_score": 45.0,
+        "leaf_count": 120,
+        "moisture_percent": 75.0,
+        "defects": ["brown_spots", "torn_leaves"],
+        "validation_warnings": [],
+        "extraction_confidence": 0.88
+      },
+      "acceptable_variance": {
+        "quality_score": 5.0,
+        "extraction_confidence": 0.1
+      },
+      "metadata": {
+        "sample_id": "GS-qc-005",
+        "agent_name": "qc_event_extractor",
+        "agent_type": "extractor",
+        "description": "D-grade with multiple defects",
+        "source": "synthetic",
+        "validated_by": "QA Team",
+        "validated_at": "2026-01-09T00:00:00Z",
+        "tags": ["d-grade", "multiple-defects"],
+        "priority": "P1"
+      }
+    },
+    {
+      "input": {
+        "source": "qc-analyzer",
+        "event_type": "END_BAG",
+        "timestamp": "2026-01-09T15:00:00Z",
+        "raw_data": {
+          "farmer_code": "km-3210",
+          "leaf_count": 50,
+          "moisture_percent": 90.0,
+          "defects": ["severe_wilting", "mold", "pest_infestation", "rot"],
+          "assigned_grade": "Reject"
+        },
+        "image_url": "https://storage.example.com/images/bag-12350.jpg"
+      },
+      "expected_output": {
+        "farmer_id": "KM-3210",
+        "grade": "REJECT",
+        "quality_score": 10.0,
+        "leaf_count": 50,
+        "moisture_percent": 90.0,
+        "defects": ["severe_wilting", "mold", "pest_infestation", "rot"],
+        "validation_warnings": [],
+        "extraction_confidence": 0.95
+      },
+      "acceptable_variance": {
+        "quality_score": 5.0,
+        "extraction_confidence": 0.1
+      },
+      "metadata": {
+        "sample_id": "GS-qc-006",
+        "agent_name": "qc_event_extractor",
+        "agent_type": "extractor",
+        "description": "Severe rejection with multiple critical defects and extreme moisture",
+        "source": "synthetic",
+        "validated_by": "QA Team",
+        "validated_at": "2026-01-09T00:00:00Z",
+        "tags": ["rejection", "severe-defects", "high-moisture"],
+        "priority": "P0"
+      }
+    },
+    {
+      "input": {
+        "source": "qc-analyzer",
+        "event_type": "END_BAG",
+        "timestamp": "2026-01-09T16:00:00Z",
+        "raw_data": {
+          "farmer_code": "EK-7777",
+          "leaf_count": 300,
+          "moisture_percent": 60.0,
+          "defects": [],
+          "assigned_grade": "A"
+        },
+        "image_url": "https://storage.example.com/images/bag-12351.jpg"
+      },
+      "expected_output": {
+        "farmer_id": "EK-7777",
+        "grade": "A",
+        "quality_score": 98.0,
+        "leaf_count": 300,
+        "moisture_percent": 60.0,
+        "defects": [],
+        "validation_warnings": [],
+        "extraction_confidence": 0.99
+      },
+      "acceptable_variance": {
+        "quality_score": 2.0,
+        "extraction_confidence": 0.05
+      },
+      "metadata": {
+        "sample_id": "GS-qc-007",
+        "agent_name": "qc_event_extractor",
+        "agent_type": "extractor",
+        "description": "Premium A-grade with high leaf count and optimal moisture (boundary conditions)",
+        "source": "synthetic",
+        "validated_by": "QA Team",
+        "validated_at": "2026-01-09T00:00:00Z",
+        "tags": ["premium", "a-grade", "boundary-high-count", "boundary-low-moisture"],
+        "priority": "P0"
+      }
+    },
+    {
+      "input": {
+        "source": "qc-analyzer",
+        "event_type": "END_BAG",
+        "timestamp": "2026-01-09T17:00:00Z",
+        "raw_data": {
+          "farmer_code": "",
+          "leaf_count": 160,
+          "moisture_percent": 72.0,
+          "defects": ["yellow_leaves"],
+          "assigned_grade": "B"
+        },
+        "image_url": "https://storage.example.com/images/bag-12352.jpg"
+      },
+      "expected_output": {
+        "farmer_id": null,
+        "grade": "B",
+        "quality_score": 75.0,
+        "leaf_count": 160,
+        "moisture_percent": 72.0,
+        "defects": ["yellow_leaves"],
+        "validation_warnings": ["missing_farmer_id"],
+        "extraction_confidence": 0.90
+      },
+      "acceptable_variance": {
+        "quality_score": 5.0,
+        "extraction_confidence": 0.1
+      },
+      "metadata": {
+        "sample_id": "GS-qc-008",
+        "agent_name": "qc_event_extractor",
+        "agent_type": "extractor",
+        "description": "Empty string farmer_code - should treat as missing and add warning",
+        "source": "synthetic",
+        "validated_by": "QA Team",
+        "validated_at": "2026-01-09T00:00:00Z",
+        "tags": ["edge-case", "empty-farmer-id", "warning"],
+        "priority": "P1"
+      }
+    },
+    {
+      "input": {
+        "source": "qc-analyzer",
+        "event_type": "END_BAG",
+        "timestamp": "2026-01-09T18:00:00Z",
+        "raw_data": {
+          "farmer_code": "NR-2468",
+          "leaf_count": 180,
+          "moisture_percent": 69.0,
+          "defects": ["insect_damage", "insect_damage", "yellow_leaves"],
+          "assigned_grade": "B"
+        },
+        "image_url": "https://storage.example.com/images/bag-12353.jpg"
+      },
+      "expected_output": {
+        "farmer_id": "NR-2468",
+        "grade": "B",
+        "quality_score": 72.0,
+        "leaf_count": 180,
+        "moisture_percent": 69.0,
+        "defects": ["insect_damage", "yellow_leaves"],
+        "validation_warnings": [],
+        "extraction_confidence": 0.91
+      },
+      "acceptable_variance": {
+        "quality_score": 5.0,
+        "extraction_confidence": 0.1
+      },
+      "metadata": {
+        "sample_id": "GS-qc-009",
+        "agent_name": "qc_event_extractor",
+        "agent_type": "extractor",
+        "description": "Duplicate defects in input - should deduplicate",
+        "source": "synthetic",
+        "validated_by": "QA Team",
+        "validated_at": "2026-01-09T00:00:00Z",
+        "tags": ["edge-case", "duplicate-defects", "normalization"],
+        "priority": "P1"
+      }
+    },
+    {
+      "input": {
+        "source": "qc-analyzer",
+        "event_type": "END_BAG",
+        "timestamp": "2026-01-09T19:00:00Z",
+        "raw_data": {
+          "farmer_code": "pk-1357",
+          "leaf_count": 95,
+          "moisture_percent": 78.5,
+          "defects": ["Brown Spots", "YELLOW_LEAVES", "Insect Damage"],
+          "assigned_grade": "c"
+        },
+        "image_url": "https://storage.example.com/images/bag-12354.jpg"
+      },
+      "expected_output": {
+        "farmer_id": "PK-1357",
+        "grade": "C",
+        "quality_score": 58.0,
+        "leaf_count": 95,
+        "moisture_percent": 78.5,
+        "defects": ["brown_spots", "yellow_leaves", "insect_damage"],
+        "validation_warnings": [],
+        "extraction_confidence": 0.89
+      },
+      "acceptable_variance": {
+        "quality_score": 5.0,
+        "extraction_confidence": 0.1
+      },
+      "metadata": {
+        "sample_id": "GS-qc-010",
+        "agent_name": "qc_event_extractor",
+        "agent_type": "extractor",
+        "description": "Mixed case input - farmer_id and grade should be normalized to uppercase",
+        "source": "synthetic",
+        "validated_by": "QA Team",
+        "validated_at": "2026-01-09T00:00:00Z",
+        "tags": ["edge-case", "mixed-case", "normalization"],
+        "priority": "P1"
+      }
+    },
+    {
+      "input": {
+        "source": "qc-analyzer",
+        "event_type": "END_BAG",
+        "timestamp": "2026-01-09T20:00:00Z",
+        "raw_data": {
+          "farmer_code": "MK-8642",
+          "leaf_count": 140,
+          "moisture_percent": 74.0,
+          "assigned_grade": "B"
+        },
+        "image_url": "https://storage.example.com/images/bag-12355.jpg"
+      },
+      "expected_output": {
+        "farmer_id": "MK-8642",
+        "grade": "B",
+        "quality_score": 76.0,
+        "leaf_count": 140,
+        "moisture_percent": 74.0,
+        "defects": [],
+        "validation_warnings": [],
+        "extraction_confidence": 0.94
+      },
+      "acceptable_variance": {
+        "quality_score": 5.0,
+        "extraction_confidence": 0.1
+      },
+      "metadata": {
+        "sample_id": "GS-qc-011",
+        "agent_name": "qc_event_extractor",
+        "agent_type": "extractor",
+        "description": "Missing defects field in input - should default to empty array",
+        "source": "synthetic",
+        "validated_by": "QA Team",
+        "validated_at": "2026-01-09T00:00:00Z",
+        "tags": ["edge-case", "missing-field", "defaults"],
+        "priority": "P1"
+      }
+    },
+    {
+      "input": {
+        "source": "qc-analyzer",
+        "event_type": "END_BAG",
+        "timestamp": "2026-01-09T21:00:00Z",
+        "raw_data": {
+          "farmer_code": "SK-9999",
+          "leaf_count": 60,
+          "moisture_percent": 88.0,
+          "defects": [],
+          "assigned_grade": "Reject"
+        },
+        "image_url": "https://storage.example.com/images/bag-12356.jpg"
+      },
+      "expected_output": {
+        "farmer_id": "SK-9999",
+        "grade": "REJECT",
+        "quality_score": 30.0,
+        "leaf_count": 60,
+        "moisture_percent": 88.0,
+        "defects": [],
+        "validation_warnings": ["low_leaf_count", "high_moisture"],
+        "extraction_confidence": 0.92
+      },
+      "acceptable_variance": {
+        "quality_score": 5.0,
+        "extraction_confidence": 0.1
+      },
+      "metadata": {
+        "sample_id": "GS-qc-012",
+        "agent_name": "qc_event_extractor",
+        "agent_type": "extractor",
+        "description": "Rejection due to quantity/moisture (no defects but boundary conditions)",
+        "source": "synthetic",
+        "validated_by": "QA Team",
+        "validated_at": "2026-01-09T00:00:00Z",
+        "tags": ["rejection", "boundary-low-count", "boundary-high-moisture", "no-defects"],
         "priority": "P0"
       }
     }
