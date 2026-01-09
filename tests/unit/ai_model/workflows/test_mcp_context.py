@@ -229,9 +229,7 @@ class TestExplorerWorkflowMcpContext:
         bad_tool.ainvoke = AsyncMock(side_effect=Exception("Failed"))
 
         mock_provider = MagicMock()
-        mock_provider.get_tool = MagicMock(
-            side_effect=lambda server, tool: good_tool if server == "good" else bad_tool
-        )
+        mock_provider.get_tool = MagicMock(side_effect=lambda server, tool: good_tool if server == "good" else bad_tool)
 
         workflow = ExplorerWorkflow(
             llm_gateway=mock_llm_gateway,
