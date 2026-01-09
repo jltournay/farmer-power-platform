@@ -199,12 +199,12 @@ Story 0.75.16 implemented the `ExtractorWorkflow` in LangGraph with the 5-step l
   - [x] Capture output in "Local Test Run Evidence" section
   - [x] Tear down infrastructure
 
-- [ ] **Task 8: CI Verification** (AC: #7)
+- [x] **Task 8: CI Verification** (AC: #7)
   - [x] Run lint: `ruff check . && ruff format --check .`
   - [x] Run unit tests locally
-  - [ ] Push and verify CI passes
-  - [ ] Trigger E2E CI workflow
-  - [ ] Verify E2E CI passes before code review
+  - [x] Push and verify CI passes (Run ID: 20863226859)
+  - [x] Trigger E2E CI workflow (Run ID: 20863256424)
+  - [x] Verify E2E CI passes before code review
 
 ## Git Workflow (MANDATORY)
 
@@ -221,9 +221,9 @@ Story 0.75.16 implemented the `ExtractorWorkflow` in LangGraph with the 5-step l
 **Branch name:** `feature/0-75-17-extractor-agent-implementation`
 
 ### During Development
-- [ ] All commits reference GitHub issue: `Relates to #XX`
-- [ ] Commits are atomic by type (production, test, seed - not mixed)
-- [ ] Push to feature branch: `git push -u origin feature/0-75-17-extractor-agent-implementation`
+- [x] All commits reference GitHub issue: `Relates to #145`
+- [x] Commits are atomic by type (production, test, seed - not mixed)
+- [x] Push to feature branch: `git push -u origin feature/0-75-17-extractor-agent-implementation`
 
 ### Story Done
 - [ ] Create Pull Request: `gh pr create --title "Story 0.75.17: Extractor Agent Implementation" --base main`
@@ -295,9 +295,11 @@ git push origin feature/0-75-17-extractor-agent-implementation
 # Wait ~30s, then check CI status
 gh run list --branch feature/0-75-17-extractor-agent-implementation --limit 3
 ```
-**CI Run ID:** _______________
-**CI E2E Status:** [ ] Passed / [ ] Failed
-**Verification Date:** _______________
+**CI Run ID:** 20863226859
+**CI E2E Run ID:** 20863256424
+**CI Status:** [x] Passed / [ ] Failed
+**CI E2E Status:** [x] Passed / [ ] Failed
+**Verification Date:** 2026-01-09
 
 ---
 
