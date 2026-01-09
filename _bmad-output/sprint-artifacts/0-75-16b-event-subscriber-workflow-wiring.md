@@ -1,6 +1,6 @@
 # Story 0.75.16b: Event Subscriber Workflow Wiring
 
-**Status:** in-progress
+**Status:** review
 **GitHub Issue:** #143
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
@@ -452,11 +452,20 @@ This is **framework infrastructure** that benefits ALL agent types. The Extracto
 
 ### 1. Unit Tests
 ```bash
-PYTHONPATH="libs/fp-common:libs/fp-proto/src:services/ai-model/src" pytest tests/unit/ai_model/events/ -v
+PYTHONPATH="libs/fp-common:libs/fp-proto/src:libs/fp-testing:services/ai-model/src:services/collection-model/src:mcp-servers/collection-mcp/src" pytest tests/unit/ai_model/ -v
 ```
 **Output:**
 ```
-(paste test summary here - e.g., "15 passed in 2.5s")
+tests/unit/ai_model/services/test_agent_executor.py::TestAgentExecutorExecute::test_execute_success PASSED
+tests/unit/ai_model/services/test_agent_executor.py::TestAgentExecutorExecute::test_execute_config_not_found PASSED
+tests/unit/ai_model/services/test_agent_executor.py::TestAgentExecutorExecute::test_execute_workflow_failure PASSED
+tests/unit/ai_model/services/test_agent_executor.py::TestAgentExecutorExecuteAndPublish::test_execute_and_publish_success PASSED
+tests/unit/ai_model/services/test_agent_executor.py::TestAgentExecutorExecuteAndPublish::test_execute_and_publish_failure PASSED
+tests/unit/ai_model/services/test_agent_executor.py::TestAgentExecutorResultBuilding::test_build_extractor_result PASSED
+tests/unit/ai_model/services/test_agent_executor.py::TestAgentExecutorResultBuilding::test_execution_time_tracked PASSED
+tests/unit/ai_model/services/test_agent_executor.py::TestAgentExecutorResultBuilding::test_cost_tracked_when_present PASSED
+tests/unit/ai_model/events/test_subscriber.py (21 passed)
+======================== 835 passed, 17 warnings in 16.61s ====================
 ```
 
 ### 2. E2E Tests (MANDATORY)
@@ -468,22 +477,23 @@ PYTHONPATH="libs/fp-common:libs/fp-proto/src:services/ai-model/src" pytest tests
 docker compose -f tests/e2e/infrastructure/docker-compose.e2e.yaml up -d --build
 
 # Wait for services, then run tests
-PYTHONPATH="${PYTHONPATH}:.:libs/fp-proto/src" pytest tests/e2e/scenarios/ -v
+PYTHONPATH="${PYTHONPATH}:.:libs/fp-proto/src:libs/fp-common" pytest tests/e2e/scenarios/ -v
 
 # Tear down
 docker compose -f tests/e2e/infrastructure/docker-compose.e2e.yaml down -v
 ```
 **Output:**
 ```
-(paste E2E test output here - story is NOT ready for review without this)
+================== 99 passed, 8 skipped in 122.21s (0:02:02) ===================
 ```
-**E2E passed:** [ ] Yes / [ ] No
+**E2E passed:** [x] Yes / [ ] No
 
 ### 3. Lint Check
 ```bash
 ruff check . && ruff format --check .
 ```
-**Lint passed:** [ ] Yes / [ ] No
+**Output:** All checks passed! 538 files already formatted
+**Lint passed:** [x] Yes / [ ] No
 
 ### 4. CI Verification on Story Branch (MANDATORY)
 
@@ -496,11 +506,11 @@ git push origin feature/0-75-16b-event-subscriber-workflow-wiring
 # Wait ~30s, then check CI status
 gh run list --branch feature/0-75-16b-event-subscriber-workflow-wiring --limit 3
 ```
-**CI Run ID:** _______________
-**CI Status:** [ ] Passed / [ ] Failed
-**E2E CI Run ID:** _______________
-**E2E CI Status:** [ ] Passed / [ ] Failed
-**Verification Date:** _______________
+**CI Run ID:** 20853003458
+**CI Status:** [x] Passed / [ ] Failed
+**E2E CI Run ID:** 20853243396
+**E2E CI Status:** [x] Passed / [ ] Failed
+**Verification Date:** 2026-01-09
 
 ---
 
@@ -656,16 +666,39 @@ services/ai-model/src/ai_model/
 
 ### Agent Model Used
 
-{{agent_model_name_version}}
+Claude Opus 4.5 (claude-opus-4-5-20251101)
 
 ### Debug Log References
 
+N/A
+
 ### Completion Notes List
+
+- Moved AI event models to fp-common for cross-service sharing
+- Added AIModelEventTopic enum with static methods for dynamic topic names
+- Created AgentExecutor orchestrator with execute() and execute_and_publish() methods
+- Refactored WorkflowExecutionService.execute() to accept Pydantic AgentConfig models
+- Updated subscriber to wire to AgentExecutor instead of placeholder
+- Implemented MCP context fetching in explorer.py and generator.py
+- Wired AgentToolProvider to WorkflowExecutionService
+- All 835 unit tests pass, 99 E2E tests pass
 
 ### File List
 
 **Created:**
-- (list new files)
+- libs/fp-common/fp_common/events/ai_model_events.py - Shared AI event models
+- services/ai-model/src/ai_model/services/agent_executor.py - Workflow execution orchestrator
+- tests/unit/ai_model/services/__init__.py - Test package init
+- tests/unit/ai_model/services/test_agent_executor.py - Unit tests for AgentExecutor
 
 **Modified:**
-- (list modified files with brief description)
+- libs/fp-common/fp_common/events/__init__.py - Export new AI event models
+- libs/fp-common/fp_common/models/domain_events.py - Add AIModelEventTopic enum
+- services/ai-model/src/ai_model/events/models.py - Re-export from fp_common for backwards compat
+- services/ai-model/src/ai_model/events/subscriber.py - Wire to AgentExecutor, add set_agent_executor()
+- services/ai-model/src/ai_model/main.py - Wire WorkflowExecutionService, EventPublisher, AgentExecutor
+- services/ai-model/src/ai_model/services/__init__.py - Export AgentExecutor
+- services/ai-model/src/ai_model/workflows/execution_service.py - Accept AgentConfig Pydantic model
+- services/ai-model/src/ai_model/workflows/explorer.py - Implement _fetch_mcp_context()
+- services/ai-model/src/ai_model/workflows/generator.py - Implement _fetch_mcp_context()
+- tests/unit/ai_model/events/test_subscriber.py - Tests for set_agent_executor()
