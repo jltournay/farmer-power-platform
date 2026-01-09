@@ -840,19 +840,22 @@ As a **developer**,
 I want end-to-end validation of the weather extraction flow,
 So that the AI Model integration is proven before building more agents.
 
-**Scope (Revised 2026-01-05):**
-1. AI Model Docker image builds and runs in E2E infrastructure
-2. Create weather-extractor agent configuration (YAML)
-3. Create weather-extractor prompt
-4. Replace AI mock container with real AI Model container in E2E infrastructure
-5. E2E test: weather observation → AI extraction → plantation update
+**Scope (Revised 2026-01-09):**
+1. Create weather-extractor agent configuration (YAML), inject to MongoDB via `fp-agent-config`
+2. Create working prompt (YAML), inject to MongoDB via `fp-prompt-config`
+3. Adapt agent_id in collection model source config (YAML), inject to MongoDB via `fp-source-config`
+4. Rewrite E2E test tests/e2e/scenarios/test_05_weather_ingestion.py to work with real AI Model container (same scope as existing mock test, but with real prompt and real LLM call)
 
 **Out of Scope (moved to Epic 2):**
 - Collection Model async event refactor → Story 2-12 (GitHub #81)
 - Thumbnail generation → Story 2-13 (GitHub #88)
 
 **Acceptance Criteria:**
-- AI Model Docker image builds successfully in CI
+- Use Agent Extraction and real LLM call (openrouter.ai)
+- Working extractor agent configuration in MongoDB
+- Working prompt configuration in MongoDB
+- Working collection model source configuration in MongoDB
+- E2E test passes with real AI Model container
 - AI Model container starts and passes health checks in E2E infrastructure
 - E2E test passes with real AI Model container (not mock)
 - Weather data extracted and stored correctly
