@@ -11,6 +11,8 @@ Story 0.75.16: LangGraph SDK Integration & Base Workflows
 from datetime import datetime
 from typing import Any, Literal, TypedDict
 
+from ai_model.domain.agent_config import ConversationalConfig
+
 
 class MessageTurn(TypedDict):
     """Single turn in conversation history."""
@@ -87,7 +89,7 @@ class ConversationalState(TypedDict, total=False):
     user_message: str
     session_id: str
     agent_id: str
-    agent_config: dict[str, Any]
+    agent_config: ConversationalConfig
     correlation_id: str
 
     # Session State

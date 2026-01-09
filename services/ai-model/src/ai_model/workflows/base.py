@@ -13,6 +13,7 @@ from datetime import UTC, datetime
 from typing import Any, Generic, TypeVar
 
 import structlog
+from ai_model.domain.agent_config import AgentConfig
 from langgraph.checkpoint.base import BaseCheckpointSaver
 from langgraph.graph import StateGraph
 from langgraph.graph.state import CompiledStateGraph
@@ -183,7 +184,7 @@ class WorkflowBuilder(ABC, Generic[StateT]):
         self,
         input_data: dict[str, Any],
         agent_id: str,
-        agent_config: dict[str, Any],
+        agent_config: AgentConfig,
         correlation_id: str,
         **kwargs: Any,
     ) -> StateT:
@@ -195,7 +196,7 @@ class WorkflowBuilder(ABC, Generic[StateT]):
         Args:
             input_data: Input data for the workflow.
             agent_id: ID of the agent executing the workflow.
-            agent_config: Agent configuration.
+            agent_config: Agent configuration (typed Pydantic model).
             correlation_id: Correlation ID for tracing.
             **kwargs: Additional state fields.
 

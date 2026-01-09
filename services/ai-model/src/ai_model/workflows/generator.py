@@ -92,7 +92,7 @@ class GeneratorWorkflow(WorkflowBuilder[GeneratorState]):
         Returns:
             State update with MCP context.
         """
-        agent_config = state.get("agent_config", {})
+        agent_config = state["agent_config"]
         input_data = state.get("input_data", {})
 
         result: dict[str, Any] = {}
@@ -100,7 +100,7 @@ class GeneratorWorkflow(WorkflowBuilder[GeneratorState]):
         # Fetch MCP context if integration available
         if self._mcp_integration:
             try:
-                mcp_sources = agent_config.get("mcp_sources", [])
+                mcp_sources = agent_config.mcp_sources
                 mcp_context = await self._fetch_mcp_context(mcp_sources, input_data)
                 result["mcp_context"] = mcp_context
             except Exception as e:
@@ -123,23 +123,23 @@ class GeneratorWorkflow(WorkflowBuilder[GeneratorState]):
         Returns:
             State update with RAG context.
         """
-        agent_config = state.get("agent_config", {})
+        agent_config = state["agent_config"]
         input_data = state.get("input_data", {})
 
-        rag_config = agent_config.get("rag", {})
+        rag_config = agent_config.rag
 
-        if not rag_config.get("enabled", True) or not self._ranking_service:
+        if not rag_config.enabled or not self._ranking_service:
             return {"rag_context": [], "rag_query": ""}
 
         try:
             # Build query from input or template
-            query_template = rag_config.get("query_template")
+            query_template = rag_config.query_template
             if query_template:
                 query = self._render_template(query_template, input_data)
             else:
                 query = self._build_generation_query(input_data)
 
-            domains = rag_config.get("knowledge_domains", [])
+            domains = rag_config.knowledge_domains
 
             ranking_result = await self._ranking_service.rank(
                 query=query,
@@ -192,13 +192,13 @@ class GeneratorWorkflow(WorkflowBuilder[GeneratorState]):
         Returns:
             State update with raw generation.
         """
-        agent_config = state.get("agent_config", {})
+        agent_config = state["agent_config"]
         input_data = state.get("input_data", {})
         mcp_context = state.get("mcp_context", {})
         rag_context = state.get("rag_context", [])
         prompt_template = state.get("prompt_template", "")
         output_format: Literal["json", "markdown", "text"] = state.get("output_format", "markdown")
-        llm_config = agent_config.get("llm", {})
+        llm_config = agent_config.llm
 
         # Build generation prompt
         system_prompt = self._build_generation_system_prompt(output_format)
@@ -217,12 +217,12 @@ class GeneratorWorkflow(WorkflowBuilder[GeneratorState]):
 
             result = await self._llm_gateway.complete(
                 messages=messages,
-                model=llm_config.get("model", "anthropic/claude-3-5-sonnet"),
+                model=llm_config.model,
                 agent_id=state.get("agent_id", ""),
                 agent_type="generator",
                 request_id=state.get("correlation_id"),
-                temperature=llm_config.get("temperature", 0.5),
-                max_tokens=llm_config.get("max_tokens", 3000),
+                temperature=llm_config.temperature,
+                max_tokens=llm_config.max_tokens,
             )
 
             tokens_used = result.get("tokens_in", 0) + result.get("tokens_out", 0)

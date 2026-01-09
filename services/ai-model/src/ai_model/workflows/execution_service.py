@@ -191,7 +191,7 @@ class WorkflowExecutionService:
         self,
         agent_type: AgentType | str,
         agent_id: str,
-        agent_config: AgentConfig | dict[str, Any],
+        agent_config: AgentConfig,
         input_data: dict[str, Any],
         correlation_id: str | None = None,
         prompt_template: str = "",
@@ -204,7 +204,7 @@ class WorkflowExecutionService:
         Args:
             agent_type: Type of workflow to execute.
             agent_id: ID of the agent being executed.
-            agent_config: Agent configuration (Pydantic model or dict for backwards compat).
+            agent_config: Agent configuration (typed Pydantic model).
             input_data: Input data for the workflow.
             correlation_id: Optional correlation ID for tracing.
             prompt_template: Optional prompt template.
@@ -219,28 +219,9 @@ class WorkflowExecutionService:
             WorkflowExecutionError: If execution fails.
 
         Note:
-            Story 0.75.16b: agent_config now accepts Pydantic models for type safety.
-            Dict is still supported for backwards compatibility.
+            Story 0.75.16b: agent_config MUST be a typed Pydantic model for type safety.
         """
         correlation_id = correlation_id or str(uuid.uuid4())
-
-        # Normalize agent_config to Pydantic model for type safety
-        # Then convert to dict for workflow consumption (workflows use dict.get())
-        if isinstance(agent_config, dict):
-            try:
-                agent_config_model = _agent_config_adapter.validate_python(agent_config)
-            except Exception as e:
-                raise WorkflowExecutionError(
-                    f"Invalid agent configuration: {e}",
-                    agent_type=str(agent_type),
-                    agent_id=agent_id,
-                    cause=e,
-                ) from e
-        else:
-            agent_config_model = agent_config
-
-        # Convert to dict for workflow internal use
-        agent_config_dict = agent_config_model.model_dump()
 
         logger.info(
             "Executing workflow",
@@ -262,11 +243,11 @@ class WorkflowExecutionService:
             )
 
             # Initialize state with workflow-specific fields
-            # Note: Use agent_config_dict for workflow internal state (dict.get() pattern)
+            # Note: Pass Pydantic model directly for type safety
             initial_state = workflow.initialize_state(
                 input_data=input_data,
                 agent_id=agent_id,
-                agent_config=agent_config_dict,
+                agent_config=agent_config,
                 correlation_id=correlation_id,
                 prompt_template=prompt_template,
                 **self._get_type_specific_state(agent_type, session_id, kwargs),
@@ -349,7 +330,7 @@ class WorkflowExecutionService:
     async def execute_extractor(
         self,
         agent_id: str,
-        agent_config: ExtractorConfig | dict[str, Any],
+        agent_config: ExtractorConfig,
         input_data: dict[str, Any],
         prompt_template: str = "",
         correlation_id: str | None = None,
@@ -378,7 +359,7 @@ class WorkflowExecutionService:
     async def execute_explorer(
         self,
         agent_id: str,
-        agent_config: ExplorerConfig | dict[str, Any],
+        agent_config: ExplorerConfig,
         input_data: dict[str, Any],
         prompt_template: str = "",
         correlation_id: str | None = None,
@@ -407,7 +388,7 @@ class WorkflowExecutionService:
     async def execute_generator(
         self,
         agent_id: str,
-        agent_config: GeneratorConfig | dict[str, Any],
+        agent_config: GeneratorConfig,
         input_data: dict[str, Any],
         output_format: str = "markdown",
         prompt_template: str = "",
@@ -439,7 +420,7 @@ class WorkflowExecutionService:
     async def execute_conversational(
         self,
         agent_id: str,
-        agent_config: ConversationalConfig | dict[str, Any],
+        agent_config: ConversationalConfig,
         user_message: str,
         session_id: str | None = None,
         conversation_history: list[dict[str, Any]] | None = None,
@@ -473,7 +454,7 @@ class WorkflowExecutionService:
     async def execute_tiered_vision(
         self,
         agent_id: str,
-        agent_config: TieredVisionConfig | dict[str, Any],
+        agent_config: TieredVisionConfig,
         image_data: str,
         image_mime_type: str = "image/jpeg",
         correlation_id: str | None = None,

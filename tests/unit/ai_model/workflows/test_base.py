@@ -10,6 +10,13 @@ from typing import Any
 from unittest.mock import MagicMock
 
 import pytest
+from ai_model.domain.agent_config import (
+    AgentConfigMetadata,
+    ExtractorConfig,
+    InputConfig,
+    LLMConfig,
+    OutputConfig,
+)
 from ai_model.workflows.base import (
     WorkflowBuilder,
     WorkflowError,
@@ -17,6 +24,21 @@ from ai_model.workflows.base import (
 )
 from ai_model.workflows.states.extractor import ExtractorState
 from langgraph.graph import END, START, StateGraph
+
+
+def _make_extractor_config() -> ExtractorConfig:
+    """Create a minimal ExtractorConfig for testing."""
+    return ExtractorConfig(
+        id="test-extractor:1.0.0",
+        agent_id="test-extractor",
+        version="1.0.0",
+        description="Test extractor",
+        input=InputConfig(event="test.input", schema={"type": "object"}),
+        output=OutputConfig(event="test.output", schema={"type": "object"}),
+        llm=LLMConfig(model="test"),
+        metadata=AgentConfigMetadata(author="test"),
+        extraction_schema={"type": "object"},
+    )
 
 
 class ConcreteWorkflow(WorkflowBuilder[ExtractorState]):
@@ -72,7 +94,7 @@ class TestWorkflowBuilder:
         state = workflow.initialize_state(
             input_data={"doc_id": "123"},
             agent_id="test-agent",
-            agent_config={"llm": {"model": "test"}},
+            agent_config=_make_extractor_config(),
             correlation_id="corr-123",
             prompt_template="Test template",
         )
@@ -90,7 +112,7 @@ class TestWorkflowBuilder:
         state = workflow.initialize_state(
             input_data={},
             agent_id="test",
-            agent_config={},
+            agent_config=_make_extractor_config(),
             correlation_id="123",
             custom_field="custom_value",
         )
@@ -105,7 +127,7 @@ class TestWorkflowBuilder:
         initial_state: ExtractorState = {
             "input_data": {"doc_id": "123"},
             "agent_id": "test-agent",
-            "agent_config": {},
+            "agent_config": _make_extractor_config(),
             "correlation_id": "corr-123",
         }
 
@@ -124,7 +146,7 @@ class TestWorkflowBuilder:
         initial_state: ExtractorState = {
             "input_data": {},
             "agent_id": "test",
-            "agent_config": {},
+            "agent_config": _make_extractor_config(),
             "correlation_id": "123",
         }
 
@@ -252,7 +274,7 @@ class TestExecutionMetrics:
         initial_state: ExtractorState = {
             "input_data": {},
             "agent_id": "test",
-            "agent_config": {},
+            "agent_config": _make_extractor_config(),
             "correlation_id": "123",
         }
 
@@ -270,7 +292,7 @@ class TestExecutionMetrics:
         initial_state: ExtractorState = {
             "input_data": {},
             "agent_id": "test",
-            "agent_config": {},
+            "agent_config": _make_extractor_config(),
             "correlation_id": "123",
             "started_at": datetime.now(UTC),
         }

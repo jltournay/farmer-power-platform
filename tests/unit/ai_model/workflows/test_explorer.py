@@ -9,6 +9,14 @@ import json
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
+from ai_model.domain.agent_config import (
+    AgentConfigMetadata,
+    ExplorerConfig,
+    InputConfig,
+    LLMConfig,
+    OutputConfig,
+    RAGConfig,
+)
 from ai_model.workflows.explorer import (
     DEFAULT_BRANCH_TIMEOUT,
     ExplorerWorkflow,
@@ -41,6 +49,22 @@ def explorer_workflow(
     return ExplorerWorkflow(
         llm_gateway=mock_llm_gateway,
         ranking_service=mock_ranking_service,
+    )
+
+
+@pytest.fixture
+def explorer_config() -> ExplorerConfig:
+    """Create a test ExplorerConfig."""
+    return ExplorerConfig(
+        id="test-explorer:1.0.0",
+        agent_id="test-explorer",
+        version="1.0.0",
+        description="Test explorer agent",
+        input=InputConfig(event="test.input", schema={"type": "object"}),
+        output=OutputConfig(event="test.output", schema={"type": "object"}),
+        llm=LLMConfig(model="test", temperature=0.3),
+        metadata=AgentConfigMetadata(author="test"),
+        rag=RAGConfig(enabled=True, knowledge_domains=["test"]),
     )
 
 
@@ -114,6 +138,7 @@ class TestTriageNode:
     async def test_triage_high_confidence_single_route(
         self,
         workflow: ExplorerWorkflow,
+        explorer_config: ExplorerConfig,
         mock_llm_gateway: MagicMock,
     ) -> None:
         """Test triage with high confidence routes to single."""
@@ -133,7 +158,7 @@ class TestTriageNode:
         state: ExplorerState = {
             "input_data": {"symptoms": "yellow leaves"},
             "agent_id": "disease-diagnosis",
-            "agent_config": {"llm": {"model": "test"}},
+            "agent_config": explorer_config,
             "correlation_id": "123",
         }
 
@@ -148,6 +173,7 @@ class TestTriageNode:
     async def test_triage_low_confidence_parallel_route(
         self,
         workflow: ExplorerWorkflow,
+        explorer_config: ExplorerConfig,
         mock_llm_gateway: MagicMock,
     ) -> None:
         """Test triage with low confidence routes to parallel."""
@@ -167,7 +193,7 @@ class TestTriageNode:
         state: ExplorerState = {
             "input_data": {"symptoms": "unclear symptoms"},
             "agent_id": "disease-diagnosis",
-            "agent_config": {"llm": {"model": "test"}},
+            "agent_config": explorer_config,
             "correlation_id": "123",
         }
 
@@ -193,6 +219,7 @@ class TestAnalyzerExecution:
     async def test_run_analyzer_success(
         self,
         workflow: ExplorerWorkflow,
+        explorer_config: ExplorerConfig,
         mock_llm_gateway: MagicMock,
     ) -> None:
         """Test successful analyzer execution."""
@@ -212,7 +239,7 @@ class TestAnalyzerExecution:
         state: ExplorerState = {
             "input_data": {"symptoms": "white powder"},
             "agent_id": "test",
-            "agent_config": {"llm": {"model": "test"}},
+            "agent_config": explorer_config,
             "correlation_id": "123",
             "mcp_context": {},
             "rag_context": [],
@@ -228,6 +255,7 @@ class TestAnalyzerExecution:
     async def test_run_analyzer_failure(
         self,
         workflow: ExplorerWorkflow,
+        explorer_config: ExplorerConfig,
         mock_llm_gateway: MagicMock,
     ) -> None:
         """Test analyzer execution failure."""
@@ -236,7 +264,7 @@ class TestAnalyzerExecution:
         state: ExplorerState = {
             "input_data": {},
             "agent_id": "test",
-            "agent_config": {"llm": {"model": "test"}},
+            "agent_config": explorer_config,
             "correlation_id": "123",
             "mcp_context": {},
             "rag_context": [],

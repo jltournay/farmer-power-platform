@@ -136,13 +136,13 @@ class ConversationalWorkflow(WorkflowBuilder[ConversationalState]):
         Returns:
             State update with session configuration.
         """
-        agent_config = state.get("agent_config", {})
-        state_config = agent_config.get("state", {})
+        agent_config = state["agent_config"]
+        state_config = agent_config.state
 
         # Get session configuration
-        max_turns = state_config.get("max_turns", DEFAULT_MAX_TURNS)
-        session_ttl_minutes = state_config.get("session_ttl_minutes", DEFAULT_SESSION_TTL_MINUTES)
-        context_window = state_config.get("context_window", DEFAULT_CONTEXT_WINDOW)
+        max_turns = state_config.max_turns if state_config else DEFAULT_MAX_TURNS
+        session_ttl_minutes = state_config.session_ttl_minutes if state_config else DEFAULT_SESSION_TTL_MINUTES
+        context_window = state_config.context_window if state_config else DEFAULT_CONTEXT_WINDOW
 
         # Initialize or load history
         history = state.get("conversation_history", [])
@@ -203,14 +203,14 @@ class ConversationalWorkflow(WorkflowBuilder[ConversationalState]):
             State update with intent classification.
         """
         user_message = state.get("user_message", "")
-        agent_config = state.get("agent_config", {})
+        agent_config = state["agent_config"]
 
         # Check for session end
         if state.get("should_end_session"):
             return {}
 
         # Get intent model (fast model like Haiku)
-        intent_model = agent_config.get("intent_model", "anthropic/claude-3-haiku")
+        intent_model = agent_config.intent_model or "anthropic/claude-3-haiku"
 
         system_prompt = self._build_intent_system_prompt()
         user_prompt = f"User message: {user_message}"
@@ -281,12 +281,12 @@ class ConversationalWorkflow(WorkflowBuilder[ConversationalState]):
             State update with RAG context.
         """
         user_message = state.get("user_message", "")
-        agent_config = state.get("agent_config", {})
+        agent_config = state["agent_config"]
         entities = state.get("entities", {})
 
-        rag_config = agent_config.get("rag", {})
+        rag_config = agent_config.rag
 
-        if not rag_config.get("enabled", True) or not self._ranking_service:
+        if not rag_config.enabled or not self._ranking_service:
             return {"rag_context": []}
 
         try:
@@ -297,7 +297,7 @@ class ConversationalWorkflow(WorkflowBuilder[ConversationalState]):
                     query_parts.append(entity_value)
 
             query = " ".join(query_parts)
-            domains = rag_config.get("knowledge_domains", [])
+            domains = rag_config.knowledge_domains
 
             ranking_result = await self._ranking_service.rank(
                 query=query,
@@ -348,15 +348,15 @@ class ConversationalWorkflow(WorkflowBuilder[ConversationalState]):
             State update with response.
         """
         user_message = state.get("user_message", "")
-        agent_config = state.get("agent_config", {})
+        agent_config = state["agent_config"]
         conversation_history = state.get("conversation_history", [])
         context_window = state.get("context_window", DEFAULT_CONTEXT_WINDOW)
         rag_context = state.get("rag_context", [])
         intent = state.get("intent", "unknown")
 
         # Get response model (capable model like Sonnet)
-        response_model = agent_config.get("response_model", "anthropic/claude-3-5-sonnet")
-        llm_config = agent_config.get("llm", {})
+        response_model = agent_config.response_model or "anthropic/claude-3-5-sonnet"
+        llm_config = agent_config.llm
 
         # Build conversation context (sliding window)
         recent_history = conversation_history[-context_window:] if conversation_history else []
@@ -381,8 +381,8 @@ class ConversationalWorkflow(WorkflowBuilder[ConversationalState]):
                 agent_id=state.get("agent_id", ""),
                 agent_type="conversational",
                 request_id=state.get("correlation_id"),
-                temperature=llm_config.get("temperature", 0.4),
-                max_tokens=llm_config.get("max_tokens", 1000),
+                temperature=llm_config.temperature,
+                max_tokens=llm_config.max_tokens,
             )
 
             response_text = result.get("content", "")

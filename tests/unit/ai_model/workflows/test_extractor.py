@@ -9,6 +9,13 @@ import json
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
+from ai_model.domain.agent_config import (
+    AgentConfigMetadata,
+    ExtractorConfig,
+    InputConfig,
+    LLMConfig,
+    OutputConfig,
+)
 from ai_model.workflows.extractor import ExtractorWorkflow
 from ai_model.workflows.states.extractor import ExtractorState
 
@@ -34,6 +41,25 @@ def extractor_workflow(mock_llm_gateway: MagicMock) -> ExtractorWorkflow:
     return ExtractorWorkflow(llm_gateway=mock_llm_gateway)
 
 
+@pytest.fixture
+def extractor_config() -> ExtractorConfig:
+    """Create a test ExtractorConfig."""
+    return ExtractorConfig(
+        id="test-extractor:1.0.0",
+        agent_id="test-extractor",
+        version="1.0.0",
+        description="Test extractor agent",
+        input=InputConfig(event="test.input", schema={"type": "object"}),
+        output=OutputConfig(event="test.output", schema={"type": "object"}),
+        llm=LLMConfig(model="anthropic/claude-3-5-sonnet", temperature=0.1),
+        metadata=AgentConfigMetadata(author="test"),
+        extraction_schema={
+            "required_fields": ["farmer_id", "grade"],
+            "optional_fields": ["notes"],
+        },
+    )
+
+
 class TestExtractorWorkflow:
     """Tests for ExtractorWorkflow."""
 
@@ -51,19 +77,14 @@ class TestExtractorWorkflow:
     async def test_execute_successful_extraction(
         self,
         extractor_workflow: ExtractorWorkflow,
+        extractor_config: ExtractorConfig,
         mock_llm_gateway: MagicMock,
     ) -> None:
         """Test successful extraction flow."""
         initial_state: ExtractorState = {
             "input_data": {"doc_id": "123", "content": "Test document content"},
             "agent_id": "qc-extractor",
-            "agent_config": {
-                "llm": {"model": "anthropic/claude-3-5-sonnet", "temperature": 0.1},
-                "extraction_schema": {
-                    "required_fields": ["farmer_id", "grade"],
-                    "optional_fields": ["notes"],
-                },
-            },
+            "agent_config": extractor_config,
             "prompt_template": "Extract from: {{content}}",
             "correlation_id": "corr-123",
         }
@@ -79,6 +100,7 @@ class TestExtractorWorkflow:
     async def test_execute_with_validation_errors(
         self,
         extractor_workflow: ExtractorWorkflow,
+        extractor_config: ExtractorConfig,
         mock_llm_gateway: MagicMock,
     ) -> None:
         """Test extraction with validation errors."""
@@ -93,11 +115,7 @@ class TestExtractorWorkflow:
         initial_state: ExtractorState = {
             "input_data": {"content": "test"},
             "agent_id": "test-extractor",
-            "agent_config": {
-                "extraction_schema": {
-                    "required_fields": ["farmer_id", "grade"],
-                },
-            },
+            "agent_config": extractor_config,
             "correlation_id": "corr-123",
         }
 
@@ -111,12 +129,13 @@ class TestExtractorWorkflow:
     async def test_execute_with_empty_input(
         self,
         extractor_workflow: ExtractorWorkflow,
+        extractor_config: ExtractorConfig,
     ) -> None:
         """Test extraction with empty input data."""
         initial_state: ExtractorState = {
             "input_data": {},
             "agent_id": "test-extractor",
-            "agent_config": {},
+            "agent_config": extractor_config,
             "correlation_id": "corr-123",
         }
 

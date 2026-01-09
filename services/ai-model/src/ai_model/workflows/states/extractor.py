@@ -9,6 +9,8 @@ Story 0.75.16: LangGraph SDK Integration & Base Workflows
 from datetime import datetime
 from typing import Any, TypedDict
 
+from ai_model.domain.agent_config import ExtractorConfig
+
 
 class ExtractorState(TypedDict, total=False):
     """State for Extractor workflow.
@@ -49,7 +51,7 @@ class ExtractorState(TypedDict, total=False):
     # Input
     input_data: dict[str, Any]
     agent_id: str
-    agent_config: dict[str, Any]
+    agent_config: ExtractorConfig
     prompt_template: str
     correlation_id: str
 

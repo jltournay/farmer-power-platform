@@ -136,7 +136,7 @@ class ExplorerWorkflow(WorkflowBuilder[ExplorerState]):
         Returns:
             State update with MCP and RAG context.
         """
-        agent_config = state.get("agent_config", {})
+        agent_config = state["agent_config"]
         input_data = state.get("input_data", {})
 
         result: dict[str, Any] = {
@@ -146,7 +146,7 @@ class ExplorerWorkflow(WorkflowBuilder[ExplorerState]):
         # Fetch MCP context if integration available
         if self._mcp_integration:
             try:
-                mcp_sources = agent_config.get("mcp_sources", [])
+                mcp_sources = agent_config.mcp_sources
                 mcp_context = await self._fetch_mcp_context(mcp_sources, input_data)
                 result["mcp_context"] = mcp_context
             except Exception as e:
@@ -160,11 +160,11 @@ class ExplorerWorkflow(WorkflowBuilder[ExplorerState]):
         # Fetch RAG context if ranking service available
         if self._ranking_service:
             try:
-                rag_config = agent_config.get("rag", {})
-                if rag_config.get("enabled", True):
+                rag_config = agent_config.rag
+                if rag_config.enabled:
                     # Build query from input data
                     query = self._build_analysis_query(input_data)
-                    domains = rag_config.get("knowledge_domains", [])
+                    domains = rag_config.knowledge_domains
 
                     ranking_result = await self._ranking_service.rank(
                         query=query,
@@ -204,11 +204,11 @@ class ExplorerWorkflow(WorkflowBuilder[ExplorerState]):
         Returns:
             State update with triage results and routing decision.
         """
-        agent_config = state.get("agent_config", {})
+        agent_config = state["agent_config"]
         input_data = state.get("input_data", {})
         mcp_context = state.get("mcp_context", {})
         rag_context = state.get("rag_context", [])
-        llm_config = agent_config.get("llm", {})
+        llm_config = agent_config.llm
 
         # Build triage prompt
         system_prompt = self._build_triage_system_prompt()
@@ -222,7 +222,7 @@ class ExplorerWorkflow(WorkflowBuilder[ExplorerState]):
 
             result = await self._llm_gateway.complete(
                 messages=messages,
-                model=llm_config.get("model", "anthropic/claude-3-5-sonnet"),
+                model=llm_config.model,
                 agent_id=state.get("agent_id", ""),
                 agent_type="explorer",
                 request_id=state.get("correlation_id"),
@@ -378,11 +378,11 @@ class ExplorerWorkflow(WorkflowBuilder[ExplorerState]):
         Returns:
             AnalyzerResult with findings.
         """
-        agent_config = state.get("agent_config", {})
+        agent_config = state["agent_config"]
         input_data = state.get("input_data", {})
         mcp_context = state.get("mcp_context", {})
         rag_context = state.get("rag_context", [])
-        llm_config = agent_config.get("llm", {})
+        llm_config = agent_config.llm
 
         system_prompt = self._build_analyzer_system_prompt(analyzer_id)
         user_prompt = self._build_analyzer_user_prompt(
@@ -400,12 +400,12 @@ class ExplorerWorkflow(WorkflowBuilder[ExplorerState]):
 
             result = await self._llm_gateway.complete(
                 messages=messages,
-                model=llm_config.get("model", "anthropic/claude-3-5-sonnet"),
+                model=llm_config.model,
                 agent_id=state.get("agent_id", ""),
                 agent_type="explorer",
                 request_id=state.get("correlation_id"),
-                temperature=llm_config.get("temperature", 0.3),
-                max_tokens=llm_config.get("max_tokens", 2000),
+                temperature=llm_config.temperature,
+                max_tokens=llm_config.max_tokens,
             )
 
             # Parse analyzer response

@@ -11,6 +11,8 @@ Story 0.75.16: LangGraph SDK Integration & Base Workflows
 from datetime import datetime
 from typing import Any, Literal, TypedDict
 
+from ai_model.domain.agent_config import GeneratorConfig
+
 
 class GeneratorState(TypedDict, total=False):
     """State for Generator workflow.
@@ -65,7 +67,7 @@ class GeneratorState(TypedDict, total=False):
     # Input
     input_data: dict[str, Any]
     agent_id: str
-    agent_config: dict[str, Any]
+    agent_config: GeneratorConfig
     prompt_template: str
     correlation_id: str
     output_format: Literal["json", "markdown", "text"]
