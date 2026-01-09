@@ -89,7 +89,7 @@ development_status:
   2-9-collection-model-mcp-server: done  # github_issue: 23
   2-10-collection-model-repository-refactoring: done  # github_issue: 35 - Tech debt: Pydantic models + repository pattern
   2-11-source-config-cli-schema-alignment: done  # github_issue: 36 - Tech debt: CLI writes nested schema, Collection Model expects flat
-  2-12-collection-ai-model-event-driven-communication: ready-for-dev  # github_issue: 81 - Blocks: 0.75.18
+  2-12-collection-ai-model-event-driven-communication: in-progress  # github_issue: 81 - Blocks: 0.75.18
   2-13-thumbnail-generation-tiered-vision: backlog  # github_issue: 88 - Blocks: 0.75.22
   epic-2-retrospective: done
 

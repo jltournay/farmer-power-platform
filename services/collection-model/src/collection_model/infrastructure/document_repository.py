@@ -187,3 +187,84 @@ class DocumentRepository:
         """
         collection = self.db[collection_name]
         return await collection.count_documents({"ingestion.source_id": source_id})
+
+    async def update(
+        self,
+        document: DocumentIndex,
+        collection_name: str,
+    ) -> bool:
+        """Update an existing document in the collection.
+
+        Story 2-12: Used to update document status and extracted_fields
+        after AI Model returns the extraction result.
+
+        Args:
+            document: The document with updated fields.
+            collection_name: The collection containing the document.
+
+        Returns:
+            True if document was updated, False if not found.
+
+        Raises:
+            StorageError: If update fails.
+        """
+        collection = self.db[collection_name]
+
+        try:
+            result = await collection.replace_one(
+                {"document_id": document.document_id},
+                document.model_dump(),
+            )
+
+            if result.matched_count == 0:
+                logger.warning(
+                    "Document not found for update",
+                    document_id=document.document_id,
+                    collection=collection_name,
+                )
+                return False
+
+            logger.info(
+                "Document updated",
+                document_id=document.document_id,
+                collection=collection_name,
+                modified_count=result.modified_count,
+            )
+            return True
+
+        except Exception as e:
+            logger.exception(
+                "Failed to update document",
+                document_id=document.document_id,
+                collection=collection_name,
+                error=str(e),
+            )
+            raise StorageError(f"Failed to update document: {e}") from e
+
+    async def find_pending_by_request_id(
+        self,
+        request_id: str,
+        collection_name: str,
+    ) -> DocumentIndex | None:
+        """Find a pending document by request_id (which equals document_id).
+
+        Story 2-12: Used to correlate AI Model response back to the
+        original pending document.
+
+        Args:
+            request_id: The request_id from AgentCompletedEvent (equals document_id).
+            collection_name: The collection to search in.
+
+        Returns:
+            DocumentIndex if found and pending, None otherwise.
+        """
+        collection = self.db[collection_name]
+        doc = await collection.find_one(
+            {
+                "document_id": request_id,
+                "extraction.status": "pending",
+            }
+        )
+        if doc:
+            return DocumentIndex.model_validate(doc)
+        return None

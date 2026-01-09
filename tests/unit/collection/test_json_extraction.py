@@ -62,9 +62,13 @@ class TestJsonExtractionProcessorDeduplication:
 
     @pytest.fixture
     def mock_event_publisher(self) -> MagicMock:
-        """Create mock event publisher."""
+        """Create mock event publisher.
+
+        Story 2-12: Now includes publish() method for AgentRequestEvent publishing.
+        """
         publisher = MagicMock()
         publisher.publish_success = AsyncMock(return_value=True)
+        publisher.publish = AsyncMock(return_value=True)  # For AgentRequestEvent
         return publisher
 
     @pytest.fixture

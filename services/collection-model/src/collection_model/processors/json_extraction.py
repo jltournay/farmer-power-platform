@@ -3,6 +3,15 @@
 This module provides the JsonExtractionProcessor class which handles
 JSON file ingestion. It is FULLY GENERIC - no hardcoded collection names,
 event topics, or business logic.
+
+Story 2-12: Collection → AI Model Event-Driven Communication
+-------------------------------------------------------------
+This processor now supports TWO extraction paths:
+- Path A (AI Extraction): When source_config.transformation.ai_agent_id is set,
+  document is stored with status="pending" and an AgentRequestEvent is published.
+  The result arrives asynchronously via AgentCompletedEvent/AgentFailedEvent.
+- Path B (Direct Extraction): When ai_agent_id is not set, extraction is done
+  synchronously from JSON fields, stored with status="complete".
 """
 
 from datetime import UTC, datetime
@@ -18,21 +27,21 @@ from collection_model.domain.document_index import (
 from collection_model.domain.exceptions import (
     ConfigurationError,
     DuplicateDocumentError,
-    ExtractionError,
     StorageError,
     ValidationError,
 )
 from collection_model.domain.ingestion_job import IngestionJob
-from collection_model.infrastructure.ai_model_client import (
-    AiModelClient,
-    ExtractionRequest,
-)
 from collection_model.infrastructure.blob_storage import BlobStorageClient
 from collection_model.infrastructure.dapr_event_publisher import DaprEventPublisher
 from collection_model.infrastructure.document_repository import DocumentRepository
 from collection_model.infrastructure.raw_document_store import RawDocumentStore
 from collection_model.infrastructure.storage_metrics import StorageMetrics
 from collection_model.processors.base import ContentProcessor, ProcessorResult
+from fp_common.events.ai_model_events import (
+    AgentRequestEvent,
+    EntityLinkage,
+)
+from fp_common.models.domain_events import AIModelEventTopic
 from fp_common.models.source_config import SourceConfig
 
 logger = structlog.get_logger(__name__)
@@ -46,19 +55,28 @@ class JsonExtractionProcessor(ContentProcessor):
     - NO hardcoded event topics (uses source_config.events.on_success.topic)
     - NO business logic (stores extracted_fields AS-IS from AI Model)
 
-    Processing pipeline:
+    Story 2-12: Event-Driven Processing Pipeline
+    ---------------------------------------------
+    Path A (AI Extraction - when ai_agent_id is set):
     1. Download blob from Azure Blob Storage
     2. Store raw document with content hash
-    3. Call AI Model via DAPR Service Invocation for extraction
-    4. Store extracted data to collection from config
-    5. Emit domain event to topic from config
+    3. Store document index with status="pending" and empty extracted_fields
+    4. Publish AgentRequestEvent to ai.agent.requested topic
+    5. (Async) Receive AgentCompletedEvent/AgentFailedEvent via subscriber
+    6. (Async) Update document with result, emit success event
+
+    Path B (Direct Extraction - when ai_agent_id is NOT set):
+    1. Download blob from Azure Blob Storage
+    2. Store raw document with content hash
+    3. Extract fields directly from JSON
+    4. Store document index with status="complete"
+    5. Emit success event to topic from config
     """
 
     def __init__(
         self,
         blob_client: BlobStorageClient | None = None,
         raw_document_store: RawDocumentStore | None = None,
-        ai_model_client: AiModelClient | None = None,
         document_repository: DocumentRepository | None = None,
         event_publisher: DaprEventPublisher | None = None,
     ) -> None:
@@ -67,13 +85,11 @@ class JsonExtractionProcessor(ContentProcessor):
         Args:
             blob_client: Azure Blob Storage client.
             raw_document_store: Raw document storage.
-            ai_model_client: AI Model DAPR client.
             document_repository: Generic document repository.
             event_publisher: DAPR event publisher.
         """
         self._blob_client = blob_client
         self._raw_store = raw_document_store
-        self._ai_client = ai_model_client
         self._doc_repo = document_repository
         self._event_publisher = event_publisher
 
@@ -86,8 +102,9 @@ class JsonExtractionProcessor(ContentProcessor):
     ) -> ProcessorResult:
         """Process a JSON ingestion job.
 
-        Fully config-driven pipeline - all storage and event settings
-        are read from source_config.
+        Story 2-12: Implements two extraction paths:
+        - Path A (AI): Store pending → publish event → async result
+        - Path B (Direct): Extract from JSON → store complete → emit event
 
         Args:
             job: The queued ingestion job.
@@ -98,6 +115,8 @@ class JsonExtractionProcessor(ContentProcessor):
         """
         source_id = source_config.source_id or job.source_id
         is_pull_mode = job.is_pull_mode
+        transformation = source_config.transformation
+        ai_agent_id = transformation.get_ai_agent_id()
 
         logger.info(
             "Processing JSON content",
@@ -105,6 +124,8 @@ class JsonExtractionProcessor(ContentProcessor):
             source_id=source_id,
             blob_path=job.blob_path if not is_pull_mode else None,
             is_pull_mode=is_pull_mode,
+            ai_agent_id=ai_agent_id,
+            extraction_path="A" if ai_agent_id else "B",
         )
 
         try:
@@ -124,41 +145,26 @@ class JsonExtractionProcessor(ContentProcessor):
                 job=job,
             )
 
-            # Step 4: Call AI Model for extraction
-            extraction_result = await self._call_ai_model(
-                raw_content=raw_json,
-                source_config=source_config,
-            )
-
-            # Step 5: Create document index
-            document = self._create_document_index(
-                raw_doc=raw_doc,
-                extraction_result=extraction_result,
-                job=job,
-                source_config=source_config,
-            )
-
-            # Step 6: Store to config-driven collection
-            await self._store_document(document, source_config)
-
-            # Step 7: Emit config-driven event
-            await self._emit_success_event(document, source_config)
-
-            logger.info(
-                "JSON processing completed",
-                ingestion_id=job.ingestion_id,
-                document_id=document.document_id,
-                source_id=source_id,
-            )
-
-            # Record storage metrics
-            StorageMetrics.record_stored(source_id, len(content))
-
-            return ProcessorResult(
-                success=True,
-                document_id=document.document_id,
-                extracted_data=extraction_result.get("extracted_fields", {}),
-            )
+            # Step 4: Extract based on path
+            if ai_agent_id:
+                # Path A: AI Extraction (async event-driven)
+                return await self._process_path_a(
+                    raw_doc=raw_doc,
+                    raw_json=raw_json,
+                    job=job,
+                    source_config=source_config,
+                    ai_agent_id=ai_agent_id,
+                    content_length=len(content),
+                )
+            else:
+                # Path B: Direct Extraction (synchronous)
+                return await self._process_path_b(
+                    raw_doc=raw_doc,
+                    raw_json=raw_json,
+                    job=job,
+                    source_config=source_config,
+                    content_length=len(content),
+                )
 
         except DuplicateDocumentError as e:
             # Duplicate is actually a success case - we skip processing
@@ -201,19 +207,6 @@ class JsonExtractionProcessor(ContentProcessor):
                 error_type="config",
             )
 
-        except ExtractionError as e:
-            logger.error(
-                "AI Model extraction failed",
-                ingestion_id=job.ingestion_id,
-                source_id=source_id,
-                error=str(e),
-            )
-            return ProcessorResult(
-                success=False,
-                error_message=str(e),
-                error_type="extraction",
-            )
-
         except StorageError as e:
             logger.error(
                 "Storage operation failed",
@@ -239,6 +232,209 @@ class JsonExtractionProcessor(ContentProcessor):
                 error_message=str(e),
                 error_type="unknown",
             )
+
+    async def _process_path_a(
+        self,
+        raw_doc: dict[str, Any],
+        raw_json: str,
+        job: IngestionJob,
+        source_config: SourceConfig,
+        ai_agent_id: str,
+        content_length: int,
+    ) -> ProcessorResult:
+        """Path A: AI Extraction via async events.
+
+        Story 2-12: Stores document with status="pending", publishes
+        AgentRequestEvent, and returns. Result arrives via subscriber.
+
+        Args:
+            raw_doc: Raw document reference.
+            raw_json: Validated JSON content string.
+            job: Ingestion job.
+            source_config: Source configuration.
+            ai_agent_id: AI agent to use for extraction.
+            content_length: Size of content for metrics.
+
+        Returns:
+            ProcessorResult indicating async processing initiated.
+        """
+        import json
+
+        source_id = source_config.source_id or job.source_id
+
+        # Parse JSON to get extracted_fields for linkage (empty for now)
+        json_data = json.loads(raw_json)
+
+        # Create document with status="pending" and empty extracted_fields
+        extraction_result = {
+            "extracted_fields": {},  # Will be filled by AI Model
+            "confidence": 0.0,
+            "validation_passed": False,
+            "validation_warnings": [],
+            "status": "pending",
+        }
+
+        document = self._create_document_index(
+            raw_doc=raw_doc,
+            extraction_result=extraction_result,
+            job=job,
+            source_config=source_config,
+        )
+
+        # Store document to get document_id for correlation
+        await self._store_document(document, source_config)
+
+        logger.info(
+            "Document stored with pending status",
+            document_id=document.document_id,
+            source_id=source_id,
+            ai_agent_id=ai_agent_id,
+        )
+
+        # Build EntityLinkage from job linkage or extracted fields
+        linkage_data = job.linkage or {}
+        # Merge any linkage fields from JSON itself
+        for field in source_config.transformation.extract_fields or []:
+            if field in json_data and field not in linkage_data:
+                linkage_data[field] = json_data[field]
+
+        # Create EntityLinkage with available fields
+        # EntityLinkage requires at least one field - use source_id as region_id fallback
+        # when no explicit entity linkage is available
+        has_linkage = any(
+            [
+                linkage_data.get("farmer_id"),
+                linkage_data.get("region_id"),
+                linkage_data.get("group_id"),
+                linkage_data.get("collection_point_id"),
+                linkage_data.get("factory_id"),
+            ]
+        )
+
+        if not has_linkage:
+            # Use source_id as region_id for routing when no explicit linkage exists
+            linkage_data["region_id"] = source_id
+
+        entity_linkage = EntityLinkage(
+            farmer_id=linkage_data.get("farmer_id"),
+            region_id=linkage_data.get("region_id"),
+            group_id=linkage_data.get("group_id"),
+            collection_point_id=linkage_data.get("collection_point_id"),
+            factory_id=linkage_data.get("factory_id"),
+        )
+
+        # Build AgentRequestEvent with request_id = document_id
+        agent_request = AgentRequestEvent(
+            request_id=document.document_id,  # Use document_id for correlation
+            agent_id=ai_agent_id,
+            linkage=entity_linkage,
+            input_data={
+                "raw_content": raw_json,
+                "content_type": "application/json",
+                "source_id": source_id,
+            },
+            source="collection-model",
+        )
+
+        # Publish AgentRequestEvent to ai.agent.requested topic
+        published = await self._publish_agent_request(agent_request)
+
+        if not published:
+            logger.error(
+                "Failed to publish AgentRequestEvent",
+                document_id=document.document_id,
+                agent_id=ai_agent_id,
+            )
+            # Update document status to failed
+            document.extraction.status = "failed"
+            document.extraction.error_type = "event_publish"
+            document.extraction.error_message = "Failed to publish agent request event"
+            await self._update_document(document, source_config)
+            return ProcessorResult(
+                success=False,
+                document_id=document.document_id,
+                error_message="Failed to publish agent request event",
+                error_type="event_publish",
+            )
+
+        logger.info(
+            "AgentRequestEvent published - awaiting async result",
+            document_id=document.document_id,
+            agent_id=ai_agent_id,
+            request_id=document.document_id,
+        )
+
+        # Record storage metrics
+        StorageMetrics.record_stored(source_id, content_length)
+
+        # Return success - extraction will complete asynchronously
+        return ProcessorResult(
+            success=True,
+            document_id=document.document_id,
+            extracted_data={},  # Empty until AI completes
+            pending_extraction=True,  # Indicate async processing
+        )
+
+    async def _process_path_b(
+        self,
+        raw_doc: dict[str, Any],
+        raw_json: str,
+        job: IngestionJob,
+        source_config: SourceConfig,
+        content_length: int,
+    ) -> ProcessorResult:
+        """Path B: Direct extraction without AI.
+
+        Extracts fields directly from JSON, stores with status="complete",
+        and emits success event synchronously.
+
+        Args:
+            raw_doc: Raw document reference.
+            raw_json: Validated JSON content string.
+            job: Ingestion job.
+            source_config: Source configuration.
+            content_length: Size of content for metrics.
+
+        Returns:
+            ProcessorResult with extracted data.
+        """
+        source_id = source_config.source_id or job.source_id
+
+        # Direct extraction from JSON
+        extraction_result = await self._extract_direct(
+            raw_content=raw_json,
+            source_config=source_config,
+        )
+
+        # Create document index with status="complete"
+        document = self._create_document_index(
+            raw_doc=raw_doc,
+            extraction_result=extraction_result,
+            job=job,
+            source_config=source_config,
+        )
+
+        # Store to config-driven collection
+        await self._store_document(document, source_config)
+
+        # Emit success event
+        await self._emit_success_event(document, source_config)
+
+        logger.info(
+            "JSON processing completed (Path B - direct extraction)",
+            ingestion_id=job.ingestion_id,
+            document_id=document.document_id,
+            source_id=source_id,
+        )
+
+        # Record storage metrics
+        StorageMetrics.record_stored(source_id, content_length)
+
+        return ProcessorResult(
+            success=True,
+            document_id=document.document_id,
+            extracted_data=extraction_result.get("extracted_fields", {}),
+        )
 
     def supports_content_type(self, content_type: str) -> bool:
         """Check if processor supports the given content type.
@@ -299,71 +495,58 @@ class JsonExtractionProcessor(ContentProcessor):
             "stored_at": raw_doc.stored_at,
         }
 
-    async def _call_ai_model(
+    async def _extract_direct(
         self,
         raw_content: str,
         source_config: SourceConfig,
     ) -> dict[str, Any]:
-        """Call AI Model for structured extraction or extract directly if no AI agent."""
+        """Path B: Direct JSON extraction without AI.
+
+        Story 2-12: This is the synchronous extraction path used when
+        ai_agent_id is not set in source config.
+
+        Args:
+            raw_content: Validated JSON content string.
+            source_config: Source configuration with extract_fields.
+
+        Returns:
+            Extraction result dict with status="complete".
+        """
         import json
 
-        # Get AI agent ID from config using typed access
         transformation = source_config.transformation
-        ai_agent_id = transformation.get_ai_agent_id()
 
-        if not ai_agent_id:
-            # Direct JSON extraction without AI - extract fields directly from JSON
-            # This path is used when ai_agent_id is null in source config (Story 0.4.5)
-            try:
-                json_data = json.loads(raw_content)
-            except json.JSONDecodeError as e:
-                raise ConfigurationError(f"Failed to parse JSON for direct extraction: {e}") from e
+        try:
+            json_data = json.loads(raw_content)
+        except json.JSONDecodeError as e:
+            raise ConfigurationError(f"Failed to parse JSON for direct extraction: {e}") from e
 
-            extract_fields = transformation.extract_fields
-            extracted = {}
-            missing_fields = []
-            for field in extract_fields:
-                if field in json_data:
-                    extracted[field] = json_data[field]
-                else:
-                    missing_fields.append(field)
+        extract_fields = transformation.extract_fields
+        extracted = {}
+        missing_fields = []
+        for field in extract_fields:
+            if field in json_data:
+                extracted[field] = json_data[field]
+            else:
+                missing_fields.append(field)
 
-            # Log warning for missing fields (observability)
-            if missing_fields:
-                logger.warning(
-                    "Direct extraction: configured fields not found in JSON",
-                    missing_fields=missing_fields,
-                    available_fields=list(json_data.keys()),
-                    source_id=source_config.source_id,
-                )
-
-            return {
-                "extracted_fields": extracted,
-                # Confidence is 1.0 because direct extraction is deterministic -
-                # the field either exists and is extracted exactly, or it doesn't.
-                # This differs from AI extraction which has probabilistic confidence.
-                "confidence": 1.0,
-                "validation_passed": True,
-                "validation_warnings": [f"Missing field: {f}" for f in missing_fields],
-            }
-
-        if not self._ai_client:
-            raise ConfigurationError("AI Model client not configured")
-
-        request = ExtractionRequest(
-            raw_content=raw_content,
-            ai_agent_id=ai_agent_id,
-            source_config=source_config,
-            content_type="application/json",
-        )
-
-        response = await self._ai_client.extract(request)
+        # Log warning for missing fields (observability)
+        if missing_fields:
+            logger.warning(
+                "Direct extraction: configured fields not found in JSON",
+                missing_fields=missing_fields,
+                available_fields=list(json_data.keys()),
+                source_id=source_config.source_id,
+            )
 
         return {
-            "extracted_fields": response.extracted_fields,
-            "confidence": response.confidence,
-            "validation_passed": response.validation_passed,
-            "validation_warnings": response.validation_warnings,
+            "extracted_fields": extracted,
+            # Confidence is 1.0 because direct extraction is deterministic -
+            # the field either exists and is extracted exactly, or it doesn't.
+            "confidence": 1.0,
+            "validation_passed": True,
+            "validation_warnings": [f"Missing field: {f}" for f in missing_fields],
+            "status": "complete",  # Direct extraction is synchronous
         }
 
     def _create_document_index(
@@ -374,6 +557,11 @@ class JsonExtractionProcessor(ContentProcessor):
         source_config: SourceConfig,
     ) -> DocumentIndex:
         """Create a document index from extraction results.
+
+        Story 2-12: Now handles status field for async extraction tracking.
+        - status="pending": Awaiting AI Model result (Path A)
+        - status="complete": Extraction finished (Path B or after AI completes)
+        - status="failed": Extraction failed
 
         For pull mode jobs with linkage, the linkage fields from iteration
         are merged into the extracted_fields before building linkage_fields.
@@ -392,9 +580,12 @@ class JsonExtractionProcessor(ContentProcessor):
         extraction = ExtractionMetadata(
             ai_agent_id=ai_agent_id,
             extraction_timestamp=datetime.now(UTC),
+            status=extraction_result.get("status", "complete"),
             confidence=extraction_result.get("confidence", 1.0),
             validation_passed=extraction_result.get("validation_passed", True),
             validation_warnings=extraction_result.get("validation_warnings", []),
+            error_type=extraction_result.get("error_type"),
+            error_message=extraction_result.get("error_message"),
         )
 
         ingestion = IngestionMetadata(
@@ -463,3 +654,65 @@ class JsonExtractionProcessor(ContentProcessor):
             document_id=document.document_id,
             success=result,
         )
+
+    async def _publish_agent_request(
+        self,
+        agent_request: AgentRequestEvent,
+    ) -> bool:
+        """Publish AgentRequestEvent to ai.agent.requested topic.
+
+        Story 2-12: Used in Path A to trigger AI Model extraction asynchronously.
+
+        Args:
+            agent_request: The agent request event to publish.
+
+        Returns:
+            True if published successfully, False otherwise.
+        """
+        if not self._event_publisher:
+            logger.warning(
+                "Event publisher not configured, cannot publish agent request",
+                request_id=agent_request.request_id,
+                agent_id=agent_request.agent_id,
+            )
+            return False
+
+        topic = AIModelEventTopic.AGENT_REQUESTED
+
+        # Convert Pydantic model to dict for publishing
+        payload = agent_request.model_dump(mode="json")
+
+        logger.debug(
+            "Publishing AgentRequestEvent",
+            topic=topic,
+            request_id=agent_request.request_id,
+            agent_id=agent_request.agent_id,
+        )
+
+        return await self._event_publisher.publish(
+            topic=topic,
+            payload=payload,
+            source_id=agent_request.input_data.get("source_id", "collection-model"),
+        )
+
+    async def _update_document(
+        self,
+        document: DocumentIndex,
+        source_config: SourceConfig,
+    ) -> None:
+        """Update an existing document in the collection.
+
+        Story 2-12: Used to update document status after AI Model responds.
+
+        Args:
+            document: The document to update.
+            source_config: Source configuration with collection name.
+        """
+        if not self._doc_repo:
+            raise ConfigurationError("Document repository not configured")
+
+        collection_name = source_config.storage.index_collection
+        if not collection_name:
+            raise ConfigurationError("No index_collection in storage config")
+
+        await self._doc_repo.update(document, collection_name)

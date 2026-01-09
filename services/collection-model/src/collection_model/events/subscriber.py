@@ -1,6 +1,7 @@
 """DAPR streaming subscription handlers for Collection Model.
 
 Story 0.6.6: Collection Model Streaming Subscriptions
+Story 2-12: AI Model Event-Driven Communication
 
 This module implements DAPR SDK streaming subscriptions per ADR-010/ADR-011.
 Replaces the FastAPI HTTP callback handlers with outbound streaming.
@@ -15,20 +16,34 @@ CRITICAL: Event Loop Handling
 - DAPR streaming handlers run in a separate thread
 - Motor (MongoDB async driver) is bound to the main event loop
 - Use `asyncio.run_coroutine_threadsafe()` to schedule on main loop
+
+Story 2-12 Additions:
+- handle_agent_completed_event: Handles AgentCompletedEvent from AI Model
+- handle_agent_failed_event: Handles AgentFailedEvent from AI Model
+- set_ai_event_handlers: Sets up document repository and event publisher for AI events
 """
 
 import asyncio
 import json
 import time
+from datetime import UTC, datetime
 from typing import TYPE_CHECKING
 
 import structlog
 from dapr.clients import DaprClient
 from dapr.clients.grpc._response import TopicEventResponse
+from fp_common.events.ai_model_events import (
+    AgentCompletedEvent,
+    AgentFailedEvent,
+    ExtractorAgentResult,
+)
+from fp_common.models.domain_events import AIModelEventTopic
 from opentelemetry import metrics, trace
 from pydantic import BaseModel, Field, ValidationError
 
 if TYPE_CHECKING:
+    from collection_model.infrastructure.dapr_event_publisher import DaprEventPublisher
+    from collection_model.infrastructure.document_repository import DocumentRepository
     from collection_model.infrastructure.ingestion_queue import IngestionQueue
     from collection_model.infrastructure.metrics import EventMetrics
     from collection_model.services.source_config_service import SourceConfigService
@@ -79,6 +94,11 @@ _ingestion_queue: "IngestionQueue | None" = None
 _event_metrics: "EventMetrics | None" = None
 _main_event_loop: asyncio.AbstractEventLoop | None = None
 
+# Story 2-12: AI Model event handler dependencies
+_document_repository: "DocumentRepository | None" = None
+_event_publisher: "DaprEventPublisher | None" = None
+_registered_agent_ids: set[str] = set()  # Track which agent topics we've subscribed to
+
 
 def set_blob_processor(
     source_config_service: "SourceConfigService",
@@ -109,6 +129,41 @@ def set_main_event_loop(loop: asyncio.AbstractEventLoop) -> None:
     global _main_event_loop
     _main_event_loop = loop
     logger.info("Main event loop set for streaming subscriptions")
+
+
+def set_ai_event_handlers(
+    document_repository: "DocumentRepository",
+    event_publisher: "DaprEventPublisher",
+    source_config_service: "SourceConfigService",
+) -> None:
+    """Set AI Model event handler dependencies (called during service startup).
+
+    Story 2-12: These dependencies are used by the AgentCompleted/Failed handlers
+    to update documents and emit success events.
+
+    Args:
+        document_repository: Repository for updating documents.
+        event_publisher: Publisher for emitting success events.
+        source_config_service: Service for looking up source configs.
+    """
+    global _document_repository, _event_publisher, _source_config_service
+    _document_repository = document_repository
+    _event_publisher = event_publisher
+    _source_config_service = source_config_service
+    logger.info("AI Model event handler dependencies set")
+
+
+def register_agent_id(agent_id: str) -> None:
+    """Register an agent_id for subscription.
+
+    Story 2-12: Called during startup to register which agent topics to subscribe to.
+
+    Args:
+        agent_id: The agent configuration ID.
+    """
+    global _registered_agent_ids
+    _registered_agent_ids.add(agent_id)
+    logger.info("Registered agent for subscription", agent_id=agent_id)
 
 
 # =============================================================================
@@ -405,6 +460,366 @@ def handle_blob_event(message) -> TopicEventResponse:
 
 
 # =============================================================================
+# Story 2-12: AI Model Event Handlers
+# =============================================================================
+
+
+async def _process_agent_completed_async(event: AgentCompletedEvent) -> bool:
+    """Process AgentCompletedEvent asynchronously.
+
+    Story 2-12: Updates the pending document with extraction results
+    and emits the success event.
+
+    Args:
+        event: The AgentCompletedEvent from AI Model.
+
+    Returns:
+        True if processed successfully, False otherwise.
+
+    Raises:
+        ConnectionError: On transient database errors.
+        ValueError: On permanent errors (document not found, etc.).
+    """
+    if _document_repository is None or _event_publisher is None or _source_config_service is None:
+        raise ConnectionError("AI event handler services not initialized")
+
+    logger.info(
+        "Processing AgentCompletedEvent",
+        request_id=event.request_id,
+        agent_id=event.agent_id,
+        result_type=event.result.result_type,
+    )
+
+    # Look up source config by agent_id to get collection name
+    config = await _source_config_service.get_config_by_agent_id(event.agent_id)
+    if config is None:
+        logger.error(
+            "No source config found for agent_id",
+            agent_id=event.agent_id,
+            request_id=event.request_id,
+        )
+        raise ValueError(f"No source config for agent_id: {event.agent_id}")
+
+    collection_name = config.storage.index_collection
+    if not collection_name:
+        raise ValueError(f"No index_collection in source config for agent: {event.agent_id}")
+
+    # Find the pending document by request_id (which equals document_id)
+    document = await _document_repository.find_pending_by_request_id(
+        request_id=event.request_id,
+        collection_name=collection_name,
+    )
+
+    if document is None:
+        logger.warning(
+            "Pending document not found for request_id - may already be processed",
+            request_id=event.request_id,
+            collection_name=collection_name,
+        )
+        # Not an error - document may have already been processed (idempotency)
+        return True
+
+    # Update document with extraction results
+    if isinstance(event.result, ExtractorAgentResult):
+        document.extracted_fields = event.result.extracted_fields
+        document.extraction.confidence = 1.0  # AI extraction confidence
+        document.extraction.validation_passed = len(event.result.validation_errors) == 0
+        document.extraction.validation_warnings = event.result.validation_warnings
+
+        # Update linkage_fields based on extracted_fields
+        transformation = config.transformation
+        extract_field_names = transformation.extract_fields or []
+        field_mappings = transformation.field_mappings or {}
+        for field_name in extract_field_names:
+            if field_name in document.extracted_fields:
+                mapped_name = field_mappings.get(field_name, field_name)
+                document.linkage_fields[mapped_name] = document.extracted_fields[field_name]
+
+    document.extraction.status = "complete"
+    document.extraction.extraction_timestamp = datetime.now(UTC)
+
+    # Save updated document
+    updated = await _document_repository.update(document, collection_name)
+    if not updated:
+        logger.error(
+            "Failed to update document",
+            document_id=document.document_id,
+            collection_name=collection_name,
+        )
+        raise ConnectionError(f"Failed to update document: {document.document_id}")
+
+    logger.info(
+        "Document updated with extraction results",
+        document_id=document.document_id,
+        status="complete",
+        field_count=len(document.extracted_fields),
+    )
+
+    # Emit success event (Story 2-12 AC5)
+    result = await _event_publisher.publish_success(config, document)
+    logger.info(
+        "Success event published",
+        document_id=document.document_id,
+        published=result,
+    )
+
+    return True
+
+
+async def _process_agent_failed_async(event: AgentFailedEvent) -> bool:
+    """Process AgentFailedEvent asynchronously.
+
+    Story 2-12: Updates the pending document with failure status.
+
+    Args:
+        event: The AgentFailedEvent from AI Model.
+
+    Returns:
+        True if processed successfully, False otherwise.
+
+    Raises:
+        ConnectionError: On transient database errors.
+        ValueError: On permanent errors.
+    """
+    if _document_repository is None or _source_config_service is None:
+        raise ConnectionError("AI event handler services not initialized")
+
+    logger.info(
+        "Processing AgentFailedEvent",
+        request_id=event.request_id,
+        agent_id=event.agent_id,
+        error_type=event.error_type,
+        error_message=event.error_message,
+    )
+
+    # Look up source config by agent_id to get collection name
+    config = await _source_config_service.get_config_by_agent_id(event.agent_id)
+    if config is None:
+        logger.error(
+            "No source config found for agent_id",
+            agent_id=event.agent_id,
+            request_id=event.request_id,
+        )
+        raise ValueError(f"No source config for agent_id: {event.agent_id}")
+
+    collection_name = config.storage.index_collection
+    if not collection_name:
+        raise ValueError(f"No index_collection in source config for agent: {event.agent_id}")
+
+    # Find the pending document by request_id
+    document = await _document_repository.find_pending_by_request_id(
+        request_id=event.request_id,
+        collection_name=collection_name,
+    )
+
+    if document is None:
+        logger.warning(
+            "Pending document not found for request_id",
+            request_id=event.request_id,
+            collection_name=collection_name,
+        )
+        return True
+
+    # Update document with failure status
+    document.extraction.status = "failed"
+    document.extraction.error_type = event.error_type
+    document.extraction.error_message = event.error_message
+    document.extraction.extraction_timestamp = datetime.now(UTC)
+
+    # Save updated document
+    updated = await _document_repository.update(document, collection_name)
+    if not updated:
+        logger.error(
+            "Failed to update document with failure status",
+            document_id=document.document_id,
+            collection_name=collection_name,
+        )
+        raise ConnectionError(f"Failed to update document: {document.document_id}")
+
+    logger.warning(
+        "Document marked as failed",
+        document_id=document.document_id,
+        error_type=event.error_type,
+        error_message=event.error_message,
+    )
+
+    return True
+
+
+def handle_agent_completed_event(message) -> TopicEventResponse:
+    """Handle AgentCompletedEvent via DAPR streaming subscription.
+
+    Story 2-12: Receives extraction results from AI Model and updates
+    the pending document.
+
+    Args:
+        message: DAPR subscription message.
+
+    Returns:
+        TopicEventResponse indicating success, retry, or drop.
+    """
+    with tracer.start_as_current_span("handle_agent_completed_event") as span:
+        try:
+            raw_data = message.data()
+            if isinstance(raw_data, str):
+                data = json.loads(raw_data)
+            elif isinstance(raw_data, bytes):
+                data = json.loads(raw_data.decode("utf-8"))
+            else:
+                data = raw_data
+
+            # Parse the event
+            event = AgentCompletedEvent.model_validate(data)
+            span.set_attribute("event.request_id", event.request_id)
+            span.set_attribute("event.agent_id", event.agent_id)
+
+        except Exception as e:
+            logger.error("Failed to parse AgentCompletedEvent", error=str(e))
+            span.set_attribute("error", "parse_failed")
+            event_processing_counter.add(1, {"topic": "agent_completed", "status": "drop"})
+            return TopicEventResponse("drop")
+
+        # Check service initialization
+        if _document_repository is None or _main_event_loop is None:
+            logger.error("AI event handler services not initialized - will retry")
+            span.set_attribute("error", "services_not_initialized")
+            event_processing_counter.add(1, {"topic": "agent_completed", "status": "retry"})
+            return TopicEventResponse("retry")
+
+        try:
+            # Process on MAIN event loop
+            future = asyncio.run_coroutine_threadsafe(
+                _process_agent_completed_async(event),
+                _main_event_loop,
+            )
+            future.result(timeout=60)  # 60 second timeout for AI result processing
+
+            logger.info(
+                "AgentCompletedEvent processed successfully",
+                request_id=event.request_id,
+                agent_id=event.agent_id,
+            )
+            span.set_attribute("processing.success", True)
+            event_processing_counter.add(1, {"topic": "agent_completed", "status": "success"})
+            return TopicEventResponse("success")
+
+        except ValueError as e:
+            logger.warning(
+                "Permanent error processing AgentCompletedEvent",
+                error=str(e),
+                request_id=event.request_id,
+            )
+            event_processing_counter.add(1, {"topic": "agent_completed", "status": "drop"})
+            return TopicEventResponse("drop")
+
+        except (ConnectionError, TimeoutError) as e:
+            logger.warning(
+                "Transient error processing AgentCompletedEvent, will retry",
+                error=str(e),
+                request_id=event.request_id,
+            )
+            span.set_attribute("error", str(e))
+            event_processing_counter.add(1, {"topic": "agent_completed", "status": "retry"})
+            return TopicEventResponse("retry")
+
+        except Exception as e:
+            logger.exception(
+                "Unexpected error processing AgentCompletedEvent",
+                request_id=event.request_id,
+            )
+            span.set_attribute("error", str(e))
+            event_processing_counter.add(1, {"topic": "agent_completed", "status": "retry"})
+            return TopicEventResponse("retry")
+
+
+def handle_agent_failed_event(message) -> TopicEventResponse:
+    """Handle AgentFailedEvent via DAPR streaming subscription.
+
+    Story 2-12: Receives failure notification from AI Model and updates
+    the pending document.
+
+    Args:
+        message: DAPR subscription message.
+
+    Returns:
+        TopicEventResponse indicating success, retry, or drop.
+    """
+    with tracer.start_as_current_span("handle_agent_failed_event") as span:
+        try:
+            raw_data = message.data()
+            if isinstance(raw_data, str):
+                data = json.loads(raw_data)
+            elif isinstance(raw_data, bytes):
+                data = json.loads(raw_data.decode("utf-8"))
+            else:
+                data = raw_data
+
+            # Parse the event
+            event = AgentFailedEvent.model_validate(data)
+            span.set_attribute("event.request_id", event.request_id)
+            span.set_attribute("event.agent_id", event.agent_id)
+            span.set_attribute("event.error_type", event.error_type)
+
+        except Exception as e:
+            logger.error("Failed to parse AgentFailedEvent", error=str(e))
+            span.set_attribute("error", "parse_failed")
+            event_processing_counter.add(1, {"topic": "agent_failed", "status": "drop"})
+            return TopicEventResponse("drop")
+
+        # Check service initialization
+        if _document_repository is None or _main_event_loop is None:
+            logger.error("AI event handler services not initialized - will retry")
+            span.set_attribute("error", "services_not_initialized")
+            event_processing_counter.add(1, {"topic": "agent_failed", "status": "retry"})
+            return TopicEventResponse("retry")
+
+        try:
+            # Process on MAIN event loop
+            future = asyncio.run_coroutine_threadsafe(
+                _process_agent_failed_async(event),
+                _main_event_loop,
+            )
+            future.result(timeout=30)
+
+            logger.info(
+                "AgentFailedEvent processed successfully",
+                request_id=event.request_id,
+                agent_id=event.agent_id,
+            )
+            span.set_attribute("processing.success", True)
+            event_processing_counter.add(1, {"topic": "agent_failed", "status": "success"})
+            return TopicEventResponse("success")
+
+        except ValueError as e:
+            logger.warning(
+                "Permanent error processing AgentFailedEvent",
+                error=str(e),
+                request_id=event.request_id,
+            )
+            event_processing_counter.add(1, {"topic": "agent_failed", "status": "drop"})
+            return TopicEventResponse("drop")
+
+        except (ConnectionError, TimeoutError) as e:
+            logger.warning(
+                "Transient error processing AgentFailedEvent, will retry",
+                error=str(e),
+                request_id=event.request_id,
+            )
+            span.set_attribute("error", str(e))
+            event_processing_counter.add(1, {"topic": "agent_failed", "status": "retry"})
+            return TopicEventResponse("retry")
+
+        except Exception as e:
+            logger.exception(
+                "Unexpected error processing AgentFailedEvent",
+                request_id=event.request_id,
+            )
+            span.set_attribute("error", str(e))
+            event_processing_counter.add(1, {"topic": "agent_failed", "status": "retry"})
+            return TopicEventResponse("retry")
+
+
+# =============================================================================
 # Subscription Startup (ADR-010 Pattern)
 # =============================================================================
 
@@ -418,6 +833,9 @@ def run_streaming_subscriptions() -> None:
     - Infinite loop keeps client alive until shutdown
 
     Called from a daemon thread in main.py.
+
+    Story 2-12: Also subscribes to AI Model completion/failure topics
+    for each registered agent_id.
     """
     from collection_model.config import settings
 
@@ -447,9 +865,43 @@ def run_streaming_subscriptions() -> None:
             dlq="events.dlq",
         )
 
+        # Story 2-12: Subscribe to AI Model completion/failure topics for each registered agent
+        for agent_id in _registered_agent_ids:
+            completed_topic = AIModelEventTopic.agent_completed_topic(agent_id)
+            failed_topic = AIModelEventTopic.agent_failed_topic(agent_id)
+
+            # Subscribe to completed events
+            completed_close = client.subscribe_with_handler(
+                pubsub_name="pubsub",
+                topic=completed_topic,
+                handler_fn=handle_agent_completed_event,
+                dead_letter_topic="events.dlq",
+            )
+            close_fns.append(completed_close)
+            logger.info(
+                "AI Agent completion subscription established",
+                topic=completed_topic,
+                agent_id=agent_id,
+            )
+
+            # Subscribe to failed events
+            failed_close = client.subscribe_with_handler(
+                pubsub_name="pubsub",
+                topic=failed_topic,
+                handler_fn=handle_agent_failed_event,
+                dead_letter_topic="events.dlq",
+            )
+            close_fns.append(failed_close)
+            logger.info(
+                "AI Agent failure subscription established",
+                topic=failed_topic,
+                agent_id=agent_id,
+            )
+
         logger.info(
             "All subscriptions started - keeping alive",
             subscription_count=len(close_fns),
+            registered_agents=len(_registered_agent_ids),
         )
 
         # Keep subscriptions alive - client must not be garbage collected

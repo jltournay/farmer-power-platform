@@ -39,16 +39,25 @@ class ExtractionMetadata(BaseModel):
     Attributes:
         ai_agent_id: AI Model agent ID used for extraction.
         extraction_timestamp: When extraction was performed.
+        status: Extraction status (pending, complete, failed).
         confidence: Confidence score of the extraction.
         validation_passed: Whether extraction passed validation.
         validation_warnings: List of validation warnings.
+        error_type: Error category if extraction failed.
+        error_message: Error details if extraction failed.
     """
 
     ai_agent_id: str
     extraction_timestamp: datetime
+    status: str = Field(
+        default="complete",
+        description="Extraction status: pending (awaiting AI), complete, or failed",
+    )
     confidence: float = Field(ge=0.0, le=1.0)
     validation_passed: bool = True
     validation_warnings: list[str] = Field(default_factory=list)
+    error_type: str | None = Field(default=None, description="Error category if failed")
+    error_message: str | None = Field(default=None, description="Error details if failed")
 
 
 class IngestionMetadata(BaseModel):
