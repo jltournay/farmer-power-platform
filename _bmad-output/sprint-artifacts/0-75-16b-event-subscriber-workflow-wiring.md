@@ -218,9 +218,9 @@ This is **framework infrastructure** that benefits ALL agent types. The Extracto
 
 ## Tasks / Subtasks
 
-- [ ] **Task 0: Move AI Event Models to fp-common** (AC: #1)
-  - [ ] **CRITICAL:** Event models must be shared so ALL client models (Collection, Farm, etc.) can subscribe to AI results
-  - [ ] Create `libs/fp-common/fp_common/events/ai_model_events.py`:
+- [x] **Task 0: Move AI Event Models to fp-common** (AC: #1)
+  - [x] **CRITICAL:** Event models must be shared so ALL client models (Collection, Farm, etc.) can subscribe to AI results
+  - [x] Create `libs/fp-common/fp_common/events/ai_model_events.py`:
     - Move `EntityLinkage` from `ai_model/events/models.py`
     - Move `AgentRequestEvent` from `ai_model/events/models.py`
       - **ADD `source_service: str | None = None`** field for observability (e.g., "collection-model", "farm-model")
@@ -228,8 +228,8 @@ This is **framework infrastructure** that benefits ALL agent types. The Extracto
     - Move `AgentFailedEvent` from `ai_model/events/models.py`
     - Move `AgentResult` discriminated union (all 5 typed results)
     - Move `CostRecordedEvent` from `ai_model/events/models.py`
-  - [ ] Update `libs/fp-common/fp_common/events/__init__.py` to export new models
-  - [ ] Add `AIModelEventTopic` enum to `libs/fp-common/fp_common/models/domain_events.py`:
+  - [x] Update `libs/fp-common/fp_common/events/__init__.py` to export new models
+  - [x] Add `AIModelEventTopic` enum to `libs/fp-common/fp_common/models/domain_events.py`:
     ```python
     class AIModelEventTopic(StrEnum):
         """Valid DAPR Pub/Sub topics for AI Model events.
@@ -258,62 +258,62 @@ This is **framework infrastructure** that benefits ALL agent types. The Extracto
             """Get the failed topic for a specific agent."""
             return f"ai.agent.{agent_id}.failed"
     ```
-  - [ ] Update AI Model to import from `fp_common.events.ai_model_events`:
+  - [x] Update AI Model to import from `fp_common.events.ai_model_events`:
     - Update `ai_model/events/models.py` → re-export from fp_common (backwards compat)
     - Update `ai_model/events/publisher.py` imports
     - Update `ai_model/events/subscriber.py` imports
-  - [ ] Update all unit tests to use new import paths
-  - [ ] Verify Collection Model can now import: `from fp_common.events.ai_model_events import AgentCompletedEvent`
+  - [x] Update all unit tests to use new import paths
+  - [x] Verify Collection Model can now import: `from fp_common.events.ai_model_events import AgentCompletedEvent`
 
-- [ ] **Task 1: Refactor WorkflowExecutionService for Type Safety** (AC: #1)
-  - [ ] **Use EXISTING event models** - do NOT create new `WorkflowResult`:
+- [x] **Task 1: Refactor WorkflowExecutionService for Type Safety** (AC: #1)
+  - [x] **Use EXISTING event models** - do NOT create new `WorkflowResult`:
     - Workflows return `AgentResult` (discriminated union from `events/models.py`)
     - `AgentExecutor` constructs `AgentCompletedEvent` / `AgentFailedEvent` with `linkage`
-  - [ ] Update `WorkflowExecutionService.execute()`:
+  - [x] Update `WorkflowExecutionService.execute()`:
     - Change `agent_config: dict[str, Any]` → `agent_config: AgentConfig`
     - Change return type `dict[str, Any]` → `AgentResult`
-  - [ ] Update convenience methods to return typed results:
+  - [x] Update convenience methods to return typed results:
     - `execute_extractor()` → `ExtractorAgentResult`
     - `execute_explorer()` → `ExplorerAgentResult`
     - `execute_generator()` → `GeneratorAgentResult`
     - `execute_conversational()` → `ConversationalAgentResult`
     - `execute_tiered_vision()` → `TieredVisionAgentResult`
-  - [ ] Update workflow builders `__init__` to accept typed config (e.g., `ExtractorConfig`)
-  - [ ] Update state TypedDicts to type `agent_config` field:
+  - [x] Update workflow builders `__init__` to accept typed config (e.g., `ExtractorConfig`)
+  - [x] Update state TypedDicts to type `agent_config` field:
     - `ExtractorState`: `agent_config: ExtractorConfig`
     - `ExplorerState`: `agent_config: ExplorerConfig`
     - `GeneratorState`: `agent_config: GeneratorConfig`
     - `ConversationalState`: `agent_config: ConversationalConfig`
     - `TieredVisionState`: `agent_config: TieredVisionConfig`
-  - [ ] Refactor `extractor.py` - replace all `.get()` with attribute access, return `ExtractorAgentResult`
-  - [ ] Refactor `explorer.py` - replace all `.get()` with attribute access, return `ExplorerAgentResult`
-  - [ ] Refactor `generator.py` - replace all `.get()` with attribute access, return `GeneratorAgentResult`
-  - [ ] Refactor `conversational.py` - replace all `.get()` with attribute access, return `ConversationalAgentResult`
-  - [ ] Refactor `tiered_vision.py` - replace all `.get()` with attribute access, return `TieredVisionAgentResult`
-  - [ ] Update all existing unit tests to pass Pydantic models instead of dicts
-  - [ ] Verify type checking passes: `pyright services/ai-model/`
+  - [x] Refactor `extractor.py` - replace all `.get()` with attribute access, return `ExtractorAgentResult`
+  - [x] Refactor `explorer.py` - replace all `.get()` with attribute access, return `ExplorerAgentResult`
+  - [x] Refactor `generator.py` - replace all `.get()` with attribute access, return `GeneratorAgentResult`
+  - [x] Refactor `conversational.py` - replace all `.get()` with attribute access, return `ConversationalAgentResult`
+  - [x] Refactor `tiered_vision.py` - replace all `.get()` with attribute access, return `TieredVisionAgentResult`
+  - [x] Update all existing unit tests to pass Pydantic models instead of dicts
+  - [x] Verify type checking passes: `pyright services/ai-model/`
 
-- [ ] **Task 2: Create AgentExecutor** (AC: #2)
-  - [ ] Create `services/ai-model/src/ai_model/events/agent_executor.py`
-  - [ ] Implement `AgentExecutor` class with constructor injection
-  - [ ] Implement `async execute(event: AgentRequestEvent) -> None`
-  - [ ] Pass `AgentConfig` Pydantic model directly to `workflow_service.execute()` (NO `.model_dump()`)
-  - [ ] Handle `WorkflowResult.success` → `publish_agent_completed()`
-  - [ ] Handle `not WorkflowResult.success` → `publish_agent_failed()`
-  - [ ] Handle missing config/prompt errors gracefully
-  - [ ] Add structured logging with correlation_id
+- [x] **Task 2: Create AgentExecutor** (AC: #2)
+  - [x] Create `services/ai-model/src/ai_model/events/agent_executor.py`
+  - [x] Implement `AgentExecutor` class with constructor injection
+  - [x] Implement `async execute(event: AgentRequestEvent) -> None`
+  - [x] Pass `AgentConfig` Pydantic model directly to `workflow_service.execute()` (NO `.model_dump()`)
+  - [x] Handle `WorkflowResult.success` → `publish_agent_completed()`
+  - [x] Handle `not WorkflowResult.success` → `publish_agent_failed()`
+  - [x] Handle missing config/prompt errors gracefully
+  - [x] Add structured logging with correlation_id
 
-- [ ] **Task 3: Update Subscriber** (AC: #3)
-  - [ ] Add module-level `_agent_executor: AgentExecutor | None = None`
-  - [ ] Add `set_agent_executor(executor: AgentExecutor)` function
-  - [ ] Replace `execute_agent_placeholder()` call with `_agent_executor.execute()`
-  - [ ] Remove `execute_agent_placeholder()` function
-  - [ ] Add check: if `_agent_executor is None` → log error and skip
+- [x] **Task 3: Update Subscriber** (AC: #3)
+  - [x] Add module-level `_agent_executor: AgentExecutor | None = None`
+  - [x] Add `set_agent_executor(executor: AgentExecutor)` function
+  - [x] Replace `execute_agent_placeholder()` call with `_agent_executor.execute()`
+  - [x] Remove `execute_agent_placeholder()` function
+  - [x] Add check: if `_agent_executor is None` → log error and skip
 
-- [ ] **Task 4: Wire Dependencies in main.py** (AC: #4, #6)
-  - [ ] Import `AgentExecutor` and `set_agent_executor`
-  - [ ] Create `PromptCache` instance with MongoDB client
-  - [ ] **Wire RAG services chain** (for Explorer, Generator, Conversational, TieredVision - NOT Extractor):
+- [x] **Task 4: Wire Dependencies in main.py** (AC: #4, #6)
+  - [x] Import `AgentExecutor` and `set_agent_executor`
+  - [x] Create `PromptCache` instance with MongoDB client
+  - [x] **Wire RAG services chain** (for Explorer, Generator, Conversational, TieredVision - NOT Extractor):
     ```python
     # RAG chain: RetrievalService → RankingService → WorkflowExecutionService
     # Note: Extractor workflow does NOT use RAG
@@ -333,16 +333,16 @@ This is **framework infrastructure** that benefits ALL agent types. The Extracto
     else:
         ranking_service = None  # Workflows degrade gracefully
     ```
-  - [ ] Create `WorkflowExecutionService` instance with:
+  - [x] Create `WorkflowExecutionService` instance with:
     - `llm_gateway` from `app.state.llm_gateway`
     - `ranking_service` for RAG-enabled workflows (can be None)
     - `mcp_integration` from `app.state.mcp_integration`
     - `tool_provider` from `app.state.tool_provider`
-  - [ ] Get `EventPublisher` instance (already created in 0.75.8)
-  - [ ] Create `AgentExecutor` with all dependencies
-  - [ ] Call `set_agent_executor(agent_executor)` at startup
-  - [ ] Ensure proper async initialization order
-  - [ ] **Initialization dependency order:**
+  - [x] Get `EventPublisher` instance (already created in 0.75.8)
+  - [x] Create `AgentExecutor` with all dependencies
+  - [x] Call `set_agent_executor(agent_executor)` at startup
+  - [x] Ensure proper async initialization order
+  - [x] **Initialization dependency order:**
     ```
     1. MongoDB client
     2. Repositories (rag_chunk, rag_document)
@@ -359,62 +359,62 @@ This is **framework infrastructure** that benefits ALL agent types. The Extracto
     13. set_agent_executor()
     ```
 
-- [ ] **Task 5: Implement MCP Context Fetching** (AC: #5)
-  - [ ] Update `ExplorerWorkflow.__init__()` to accept `tool_provider: AgentToolProvider`
-  - [ ] Update `GeneratorWorkflow.__init__()` to accept `tool_provider: AgentToolProvider`
-  - [ ] Implement `ExplorerWorkflow._fetch_mcp_context()`:
+- [x] **Task 5: Implement MCP Context Fetching** (AC: #5)
+  - [x] Update `ExplorerWorkflow.__init__()` to accept `tool_provider: AgentToolProvider`
+  - [x] Update `GeneratorWorkflow.__init__()` to accept `tool_provider: AgentToolProvider`
+  - [x] Implement `ExplorerWorkflow._fetch_mcp_context()`:
     - Iterate over `mcp_sources` from agent config
     - Use `tool_provider` to get tools and invoke them
     - Return aggregated context dict
     - Handle errors gracefully (log warning, return partial context)
-  - [ ] Implement `GeneratorWorkflow._fetch_mcp_context()` (same pattern)
-  - [ ] Update `WorkflowExecutionService._create_workflow()`:
+  - [x] Implement `GeneratorWorkflow._fetch_mcp_context()` (same pattern)
+  - [x] Update `WorkflowExecutionService._create_workflow()`:
     - Pass `tool_provider` to `ExplorerWorkflow`
     - Pass `tool_provider` to `GeneratorWorkflow`
 
-- [ ] **Task 6: Wire AgentToolProvider to WorkflowExecutionService** (AC: #6)
-  - [ ] Update `WorkflowExecutionService.__init__()` to accept `tool_provider: AgentToolProvider`
-  - [ ] Store `self._tool_provider = tool_provider`
-  - [ ] Update `_create_workflow()` to pass `tool_provider` to Explorer and Generator
-  - [ ] Update docstrings to document the new parameter
+- [x] **Task 6: Wire AgentToolProvider to WorkflowExecutionService** (AC: #6)
+  - [x] Update `WorkflowExecutionService.__init__()` to accept `tool_provider: AgentToolProvider`
+  - [x] Store `self._tool_provider = tool_provider`
+  - [x] Update `_create_workflow()` to pass `tool_provider` to Explorer and Generator
+  - [x] Update docstrings to document the new parameter
 
-- [ ] **Task 7: Unit Tests for AgentExecutor** (AC: #7)
-  - [ ] Create `tests/unit/ai_model/events/test_agent_executor.py`
-  - [ ] Test: successful execution publishes completed event
-  - [ ] Test: workflow failure publishes failed event
-  - [ ] Test: missing agent config → error handling
-  - [ ] Test: missing prompt → error handling
-  - [ ] Test: LLM error propagates correctly
-  - [ ] Test: Pydantic models flow through entire pipeline (no dict conversion)
-  - [ ] Mock all dependencies (workflow service, publisher, caches)
+- [x] **Task 7: Unit Tests for AgentExecutor** (AC: #7)
+  - [x] Create `tests/unit/ai_model/services/test_agent_executor.py`
+  - [x] Test: successful execution publishes completed event
+  - [x] Test: workflow failure publishes failed event
+  - [x] Test: missing agent config → error handling
+  - [x] Test: missing prompt → error handling
+  - [x] Test: LLM error propagates correctly
+  - [x] Test: Pydantic models flow through entire pipeline (no dict conversion)
+  - [x] Mock all dependencies (workflow service, publisher, caches)
 
-- [ ] **Task 8: Unit Tests for MCP Context Fetching** (AC: #7)
-  - [ ] Create `tests/unit/ai_model/workflows/test_mcp_context.py`
-  - [ ] Test: successful MCP tool invocation returns context
-  - [ ] Test: MCP server unavailable → returns empty context (graceful)
-  - [ ] Test: partial tool failure → returns partial context
-  - [ ] Test: no mcp_sources configured → returns empty context
-  - [ ] Mock `AgentToolProvider` and `GrpcMcpTool`
+- [x] **Task 8: Unit Tests for MCP Context Fetching** (AC: #7)
+  - [x] Create `tests/unit/ai_model/workflows/test_mcp_context.py`
+  - [x] Test: successful MCP tool invocation returns context
+  - [x] Test: MCP server unavailable → returns empty context (graceful)
+  - [x] Test: partial tool failure → returns partial context
+  - [x] Test: no mcp_sources configured → returns empty context
+  - [x] Mock `AgentToolProvider` and `GrpcMcpTool`
 
-- [ ] **Task 9: Subscriber Integration Tests** (AC: #7)
-  - [ ] Create `tests/unit/ai_model/events/test_subscriber_integration.py`
-  - [ ] Test: full flow from event → executor → workflow → publisher
-  - [ ] Test: executor not set → graceful error handling
-  - [ ] Test: event validation errors handled
+- [x] **Task 9: Subscriber Integration Tests** (AC: #7)
+  - [x] Added to `tests/unit/ai_model/events/test_subscriber.py` (TestSubscriberIntegration class)
+  - [x] Test: full flow from event → executor → workflow → publisher
+  - [x] Test: executor not set → graceful error handling
+  - [x] Test: event validation errors handled
 
-- [ ] **Task 10: E2E Regression Testing (MANDATORY)** (AC: #8)
-  - [ ] Rebuild and start E2E infrastructure with `--build` flag
-  - [ ] Verify Docker images were rebuilt (NOT cached)
-  - [ ] Run full E2E test suite
-  - [ ] Capture output in "Local Test Run Evidence" section
-  - [ ] Tear down infrastructure
+- [x] **Task 10: E2E Regression Testing (MANDATORY)** (AC: #8)
+  - [x] Rebuild and start E2E infrastructure with `--build` flag
+  - [x] Verify Docker images were rebuilt (NOT cached)
+  - [x] Run full E2E test suite
+  - [x] Capture output in "Local Test Run Evidence" section
+  - [x] Tear down infrastructure
 
-- [ ] **Task 11: CI Verification** (AC: #9)
-  - [ ] Run lint: `ruff check . && ruff format --check .`
-  - [ ] Run unit tests locally
-  - [ ] Push and verify CI passes
-  - [ ] Trigger E2E CI workflow
-  - [ ] Verify E2E CI passes before code review
+- [x] **Task 11: CI Verification** (AC: #9)
+  - [x] Run lint: `ruff check . && ruff format --check .`
+  - [x] Run unit tests locally
+  - [x] Push and verify CI passes
+  - [x] Trigger E2E CI workflow
+  - [x] Verify E2E CI passes before code review
 
 ## Git Workflow (MANDATORY)
 
@@ -686,19 +686,40 @@ N/A
 ### File List
 
 **Created:**
-- libs/fp-common/fp_common/events/ai_model_events.py - Shared AI event models
-- services/ai-model/src/ai_model/services/agent_executor.py - Workflow execution orchestrator
-- tests/unit/ai_model/services/__init__.py - Test package init
-- tests/unit/ai_model/services/test_agent_executor.py - Unit tests for AgentExecutor
+- `libs/fp-common/fp_common/events/ai_model_events.py` - Shared AI event models
+- `services/ai-model/src/ai_model/services/agent_executor.py` - Workflow execution orchestrator
+- `tests/unit/ai_model/services/__init__.py` - Test package init
+- `tests/unit/ai_model/services/test_agent_executor.py` - Unit tests for AgentExecutor
+- `tests/unit/ai_model/workflows/test_mcp_context.py` - Unit tests for MCP context fetching (Code Review fix)
 
-**Modified:**
-- libs/fp-common/fp_common/events/__init__.py - Export new AI event models
-- libs/fp-common/fp_common/models/domain_events.py - Add AIModelEventTopic enum
-- services/ai-model/src/ai_model/events/models.py - Re-export from fp_common for backwards compat
-- services/ai-model/src/ai_model/events/subscriber.py - Wire to AgentExecutor, add set_agent_executor()
-- services/ai-model/src/ai_model/main.py - Wire WorkflowExecutionService, EventPublisher, AgentExecutor
-- services/ai-model/src/ai_model/services/__init__.py - Export AgentExecutor
-- services/ai-model/src/ai_model/workflows/execution_service.py - Accept AgentConfig Pydantic model
-- services/ai-model/src/ai_model/workflows/explorer.py - Implement _fetch_mcp_context()
-- services/ai-model/src/ai_model/workflows/generator.py - Implement _fetch_mcp_context()
-- tests/unit/ai_model/events/test_subscriber.py - Tests for set_agent_executor()
+**Modified (Production Code):**
+- `libs/fp-common/fp_common/events/__init__.py` - Export new AI event models
+- `libs/fp-common/fp_common/models/domain_events.py` - Add AIModelEventTopic enum
+- `services/ai-model/src/ai_model/events/models.py` - Re-export from fp_common for backwards compat
+- `services/ai-model/src/ai_model/events/subscriber.py` - Wire to AgentExecutor, add set_agent_executor()
+- `services/ai-model/src/ai_model/main.py` - Wire WorkflowExecutionService, EventPublisher, AgentExecutor
+- `services/ai-model/src/ai_model/services/__init__.py` - Export AgentExecutor
+- `services/ai-model/src/ai_model/workflows/execution_service.py` - Accept AgentConfig, wire tool_provider
+- `services/ai-model/src/ai_model/workflows/explorer.py` - Add tool_provider param, implement _fetch_mcp_context()
+- `services/ai-model/src/ai_model/workflows/generator.py` - Add tool_provider param, implement _fetch_mcp_context()
+- `services/ai-model/src/ai_model/workflows/base.py` - Type safety updates
+- `services/ai-model/src/ai_model/workflows/conversational.py` - Pydantic attribute access
+- `services/ai-model/src/ai_model/workflows/extractor.py` - Pydantic attribute access
+- `services/ai-model/src/ai_model/workflows/tiered_vision.py` - Pydantic attribute access
+
+**Modified (Workflow State TypedDicts):**
+- `services/ai-model/src/ai_model/workflows/states/conversational.py` - Type agent_config field
+- `services/ai-model/src/ai_model/workflows/states/explorer.py` - Type agent_config field
+- `services/ai-model/src/ai_model/workflows/states/extractor.py` - Type agent_config field
+- `services/ai-model/src/ai_model/workflows/states/generator.py` - Type agent_config field
+- `services/ai-model/src/ai_model/workflows/states/tiered_vision.py` - Type agent_config field
+
+**Modified (Tests):**
+- `tests/unit/ai_model/events/test_subscriber.py` - Tests for set_agent_executor(), integration tests
+- `tests/unit/ai_model/workflows/test_base.py` - Updated for type safety
+- `tests/unit/ai_model/workflows/test_execution_service.py` - Updated for Pydantic models
+- `tests/unit/ai_model/workflows/test_explorer.py` - Updated for type safety
+- `tests/unit/ai_model/workflows/test_extractor.py` - Updated for type safety
+- `tests/unit/ai_model/workflows/test_generator.py` - Updated for type safety
+- `tests/unit/ai_model/workflows/test_states.py` - Updated for typed state dicts
+- `tests/unit/bff/test_farmer_routes.py` - Minor test fix

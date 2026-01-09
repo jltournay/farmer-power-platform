@@ -50,6 +50,7 @@ class ExplorerWorkflow(WorkflowBuilder[ExplorerState]):
         llm_gateway: Any,  # LLMGateway
         ranking_service: Any | None = None,  # RankingService
         mcp_integration: Any | None = None,  # MCPIntegration
+        tool_provider: Any | None = None,  # AgentToolProvider (Story 0.75.16b)
         checkpointer: Any | None = None,
         branch_timeout_seconds: int = DEFAULT_BRANCH_TIMEOUT,
     ) -> None:
@@ -59,6 +60,7 @@ class ExplorerWorkflow(WorkflowBuilder[ExplorerState]):
             llm_gateway: LLM gateway for making LLM calls.
             ranking_service: Optional ranking service for RAG.
             mcp_integration: Optional MCP integration for context.
+            tool_provider: Optional AgentToolProvider for MCP tool resolution (Story 0.75.16b).
             checkpointer: Optional checkpointer for state persistence.
             branch_timeout_seconds: Timeout for parallel analyzer branches.
         """
@@ -66,6 +68,7 @@ class ExplorerWorkflow(WorkflowBuilder[ExplorerState]):
         self._llm_gateway = llm_gateway
         self._ranking_service = ranking_service
         self._mcp_integration = mcp_integration
+        self._tool_provider = tool_provider
         self._branch_timeout_seconds = branch_timeout_seconds
 
     def _get_state_schema(self) -> type[ExplorerState]:
@@ -532,7 +535,7 @@ class ExplorerWorkflow(WorkflowBuilder[ExplorerState]):
     ) -> dict[str, Any]:
         """Fetch context from MCP servers.
 
-        Story 0.75.16b: Implemented actual MCP tool calls.
+        Story 0.75.16b: Implemented actual MCP tool calls via AgentToolProvider.
 
         Args:
             mcp_sources: List of MCP source configurations from agent config.
@@ -541,7 +544,9 @@ class ExplorerWorkflow(WorkflowBuilder[ExplorerState]):
         Returns:
             Dictionary with context from each MCP tool call.
         """
-        if not self._mcp_integration or not mcp_sources:
+        # Prefer tool_provider (Story 0.75.16b), fallback to mcp_integration
+        tool_source = self._tool_provider or self._mcp_integration
+        if not tool_source or not mcp_sources:
             return {}
 
         context: dict[str, Any] = {}
@@ -556,8 +561,8 @@ class ExplorerWorkflow(WorkflowBuilder[ExplorerState]):
                 continue
 
             try:
-                # Get the tool from the integration
-                tool = self._mcp_integration.get_tool(server, tool_name)
+                # Get the tool from tool_provider or mcp_integration
+                tool = tool_source.get_tool(server, tool_name)
 
                 # Build tool arguments from input data using arg_mapping
                 tool_args = {}

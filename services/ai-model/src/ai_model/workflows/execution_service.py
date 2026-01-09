@@ -163,6 +163,7 @@ class WorkflowExecutionService:
                 llm_gateway=self._llm_gateway,
                 ranking_service=self._ranking_service,
                 mcp_integration=self._mcp_integration,
+                tool_provider=self._tool_provider,  # Story 0.75.16b: Wire AgentToolProvider
                 checkpointer=cp,
             )
         elif agent_type == AgentType.GENERATOR:
@@ -170,6 +171,7 @@ class WorkflowExecutionService:
                 llm_gateway=self._llm_gateway,
                 ranking_service=self._ranking_service,
                 mcp_integration=self._mcp_integration,
+                tool_provider=self._tool_provider,  # Story 0.75.16b: Wire AgentToolProvider
                 checkpointer=cp,
             )
         elif agent_type == AgentType.CONVERSATIONAL:
