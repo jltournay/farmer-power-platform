@@ -1,6 +1,6 @@
 # Story 0.75.17: Extractor Agent Implementation
 
-**Status:** review
+**Status:** done
 **GitHub Issue:** #145
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
