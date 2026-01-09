@@ -1,8 +1,7 @@
-# Story 2-12: Collection → AI Model Event-Driven Communication
+  # Story 2-12: Collection → AI Model Event-Driven Communication
 
 **Epic:** Epic 2 - Quality Data Ingestion
-**Status:** Blocked
-**Blocked By:** Story 0.75.16b (Event Subscriber Workflow Wiring)
+**Status:** ready-for-dev
 **Blocks:** Story 0.75.18 (E2E Weather Observation Extraction Flow)
 **GitHub Issue:** #81
 **Story Points:** 5
@@ -54,8 +53,9 @@ else:
 **Key Design Decisions:**
 - **Shared Event Models:** Event models are in `fp_common.events.ai_model_events` (Story 0.75.16b)
 - **Dynamic Topic Names:** AI Model publishes to `ai.agent.{agent_id}.completed` - Collection subscribes using the `agent_id` it sent
-- **Correlation:** `request_id` = `document_id` (no separate mapping needed)
-- **Source Service:** `source="collection-model"` for observability
+- **Correlation Strategy (Option A):** `request_id` = `document_id` - Collection stores document first, then uses document ID as request_id. When AI Model responds, Collection looks up document by `event.request_id`
+- **EntityLinkage:** Contains Plantation Model entities (`farmer_id`, `region_id`, etc.) for result routing - NOT `document_id`
+- **Source Field:** `source="collection-model"` is REQUIRED in AgentRequestEvent
 
 ---
 
@@ -67,7 +67,8 @@ else:
   - `AgentCompletedEvent` - for handling successful results
   - `AgentFailedEvent` - for handling failures
   - `EntityLinkage` - for linking to Plantation Model entities (farmer, region, etc.)
-  - `AIModelEventTopic` - for topic name helpers
+- [ ] Import topic helpers from `fp_common.models.domain_events`:
+  - `AIModelEventTopic` - for topic name helpers (StrEnum with static methods)
 - [ ] NO duplicate event model definitions in Collection Model
 
 ### AC-2: Conditional AI Extraction Based on Source Config
@@ -147,7 +148,7 @@ else:
 - [ ] No synchronous gRPC calls for extraction workflow
 - [ ] MCP query methods retained if needed for other use cases
 
-### AC-5: Unit Tests Updated
+### AC-6: Unit Tests Updated
 - [ ] **Path A tests (AI extraction):**
   - Test: source config with `ai_extraction.enabled=true` triggers AgentRequestEvent
   - Test: document stored with `status="pending"` before publishing
@@ -161,27 +162,25 @@ else:
   - Test: success event published if configured
 - [ ] Mock event bus used for unit testing
 
-### AC-6: E2E Test Marked as xfail
-- [ ] `tests/e2e/scenarios/test_05_weather_ingestion.py` marked with `@pytest.mark.xfail(reason="Replaced by Story 0.75.18 real AI integration")`
-- [ ] xfail reason clearly documents the planned replacement
-- [ ] Test remains in codebase for reference until 0.75.18 rewrites it
-
 ---
 
 ## Technical Notes
 
 ### Event Models (from fp_common - Story 0.75.16b)
 
-All event models are shared via `fp_common.events.ai_model_events`. **DO NOT duplicate these in Collection Model.**
+All event models are shared via `fp_common`. **DO NOT duplicate these in Collection Model.**
 
 ```python
+# Event payload models
 from fp_common.events.ai_model_events import (
     AgentRequestEvent,
     AgentCompletedEvent,
     AgentFailedEvent,
     EntityLinkage,
-    AIModelEventTopic,
 )
+
+# Topic name helpers (StrEnum)
+from fp_common.models.domain_events import AIModelEventTopic
 ```
 
 **EntityLinkage** - Links to Plantation Model entities (NOT Collection entities):
@@ -197,41 +196,56 @@ class EntityLinkage(BaseModel):
 
 **IMPORTANT:** `EntityLinkage` does NOT include `document_id`. Collection Model uses `request_id` to correlate responses back to documents.
 
+### Correlation Strategy (Option A: request_id = document_id)
+
+```
+1. Collection stores document → gets document_id
+2. Collection publishes AgentRequestEvent with request_id = document_id
+3. AI Model processes and responds with same request_id
+4. Collection receives response, looks up document: document_repo.get_by_id(event.request_id)
+```
+
+**Why this works:**
+- No separate correlation table needed
+- Direct document lookup by ID (fast)
+- EntityLinkage carries Plantation entities for result routing (farmer_id, region_id, etc.)
+- request_id carries the document correlation
+
 **AgentRequestEvent** - Published by Collection to request AI processing:
 ```python
 class AgentRequestEvent(BaseModel):
     """Event for requesting agent execution."""
-    request_id: str                      # UUID for correlation
+    request_id: str                      # Use document_id as correlation key
     agent_id: str                        # e.g., "qc-event-extractor"
-    linkage: EntityLinkage               # Links to Collection entities
+    linkage: EntityLinkage               # Links to Plantation Model entities
     input_data: dict[str, Any]           # Data for the agent
-    source_service: str | None = None    # "collection-model" (observability)
+    source: str                          # REQUIRED: "collection-model"
+    source_service: str | None = None    # Optional: explicit service name
 ```
 
 **AgentCompletedEvent** - Received by Collection on success:
 ```python
 class AgentCompletedEvent(BaseModel):
     """Event published when agent execution succeeds."""
-    request_id: str                      # Correlates to original request
+    request_id: str                      # Correlates to original request (= document_id)
     agent_id: str
     linkage: EntityLinkage               # SAME linkage from request (passthrough)
     result: AgentResult                  # Discriminated union of typed results
     execution_time_ms: int
     model_used: str
-    timestamp: datetime = Field(default_factory=datetime.utcnow)
+    cost_usd: Decimal | None = None      # Total cost in USD
 ```
 
 **AgentFailedEvent** - Received by Collection on failure:
 ```python
 class AgentFailedEvent(BaseModel):
     """Event published when agent execution fails."""
-    request_id: str                      # Correlates to original request
+    request_id: str                      # Correlates to original request (= document_id)
     agent_id: str
     linkage: EntityLinkage               # SAME linkage from request (passthrough)
-    error_type: str                      # Exception class name
+    error_type: str                      # Error category (validation, llm_error, timeout, etc.)
     error_message: str
     retry_count: int = 0
-    timestamp: datetime = Field(default_factory=datetime.utcnow)
 ```
 
 ### Topic Names
@@ -253,25 +267,27 @@ class AgentFailedEvent(BaseModel):
 from fp_common.events.ai_model_events import (
     AgentRequestEvent,
     EntityLinkage,
-    AIModelEventTopic,
 )
-import uuid
+from fp_common.models.domain_events import AIModelEventTopic
 
-async def request_extraction(document: Document) -> None:
-    """Publish agent request after document storage."""
+async def request_extraction(document: Document, source_config: SourceConfig) -> None:
+    """Publish agent request after document storage.
+
+    IMPORTANT: request_id = document_id for correlation (Option A).
+    When AI Model responds, Collection uses request_id to find the document.
+    """
     event = AgentRequestEvent(
-        request_id=str(uuid.uuid4()),
-        agent_id="qc-event-extractor",
+        request_id=str(document.id),  # Use document_id as correlation key
+        agent_id=source_config.ai_extraction.agent_id,
         linkage=EntityLinkage(
-            plantation_id=document.plantation_id,
-            document_id=str(document.id),
-            source_id=document.source_id,
+            farmer_id=document.farmer_id,      # From document metadata
+            region_id=document.region_id,      # Optional: for weather data
         ),
         input_data={
             "text": document.raw_text,
             "image_url": document.thumbnail_url,
         },
-        source_service="collection-model",
+        source="collection-model",  # REQUIRED field
     )
 
     await dapr_client.publish_event(
@@ -283,44 +299,76 @@ async def request_extraction(document: Document) -> None:
 
 ### Subscription Example (Collection Model)
 
+**Note:** The `agent_id` comes from source config. Collection Model subscribes to result topics
+for each agent_id used across all source configs.
+
 ```python
 from fp_common.events.ai_model_events import (
     AgentCompletedEvent,
     AgentFailedEvent,
-    AIModelEventTopic,
 )
+from fp_common.models.domain_events import AIModelEventTopic
 
-# Subscribe to specific agent results
-AGENT_ID = "qc-event-extractor"
+# Dynamic subscription based on source configs
+# Each source_config.ai_extraction.agent_id needs subscriptions
+# Example: if source configs use "weather-extractor" and "qc-event-extractor",
+# subscribe to both: ai.agent.weather-extractor.completed, ai.agent.qc-event-extractor.completed
 
-@app.subscribe(
-    pubsub="pubsub",
-    topic=AIModelEventTopic.agent_completed_topic(AGENT_ID),
-)
-async def handle_extraction_completed(event_data: dict) -> None:
-    """Handle successful extraction result."""
+def register_agent_subscriptions(app, source_config_cache: SourceConfigCache):
+    """Register subscriptions for all agent_ids in source configs."""
+    agent_ids = source_config_cache.get_all_agent_ids()  # e.g., ["weather-extractor"]
+
+    for agent_id in agent_ids:
+        # Register completed handler
+        @app.subscribe(
+            pubsub="pubsub",
+            topic=AIModelEventTopic.agent_completed_topic(agent_id),
+        )
+        async def handle_completed(event_data: dict) -> None:
+            await _handle_extraction_completed(event_data)
+
+        # Register failed handler
+        @app.subscribe(
+            pubsub="pubsub",
+            topic=AIModelEventTopic.agent_failed_topic(agent_id),
+        )
+        async def handle_failed(event_data: dict) -> None:
+            await _handle_extraction_failed(event_data)
+
+
+async def _handle_extraction_completed(event_data: dict) -> None:
+    """Handle successful extraction result.
+
+    IMPORTANT: request_id = document_id (Option A correlation).
+    """
     event = AgentCompletedEvent.model_validate(event_data)
 
-    # Use linkage to find the document
-    document = await document_repo.get(event.linkage.document_id)
+    # Use request_id to find document (request_id = document_id)
+    document = await document_repo.get_by_id(event.request_id)
 
     # Update document with extracted fields
-    document.extracted_data = event.result.model_dump()
-    document.extraction_status = "completed"
+    document.extraction.status = "complete"
+    document.extraction.extracted_fields = event.result.extracted_fields
+    document.extraction.ai_agent_id = event.agent_id
+    document.extraction.validation_passed = len(event.result.validation_errors) == 0
     await document_repo.save(document)
 
+    # Publish success event for downstream services
+    await _emit_success_event(document)
 
-@app.subscribe(
-    pubsub="pubsub",
-    topic=AIModelEventTopic.agent_failed_topic(AGENT_ID),
-)
-async def handle_extraction_failed(event_data: dict) -> None:
-    """Handle extraction failure."""
+
+async def _handle_extraction_failed(event_data: dict) -> None:
+    """Handle extraction failure.
+
+    IMPORTANT: request_id = document_id (Option A correlation).
+    """
     event = AgentFailedEvent.model_validate(event_data)
 
-    document = await document_repo.get(event.linkage.document_id)
-    document.extraction_status = "failed"
-    document.extraction_error = event.error_message
+    # Use request_id to find document (request_id = document_id)
+    document = await document_repo.get_by_id(event.request_id)
+    document.extraction.status = "failed"
+    document.extraction.error_message = event.error_message
+    document.extraction.error_type = event.error_type
     await document_repo.save(document)
 ```
 
@@ -391,7 +439,7 @@ async def handle_extraction_failed(event_data: dict) -> None:
        │<────────────────────│                      │
        │                     │                      │
        │ 7. Update document  │                      │
-       │   using linkage.document_id                │
+       │   using request_id (= document_id)         │
        │─────────────────────│                      │
        │                     │                      │
 ```
@@ -409,12 +457,12 @@ async def handle_extraction_failed(event_data: dict) -> None:
 ## Anti-Patterns to AVOID
 
 1. **DO NOT duplicate event models** - Import from `fp_common.events.ai_model_events`
-2. **DO NOT hardcode topic names** - Use `AIModelEventTopic` helpers
-3. **DO NOT ignore linkage** - It's the key for correlating responses to documents
+2. **DO NOT hardcode topic names** - Use `AIModelEventTopic` from `fp_common.models.domain_events`
+3. **DO NOT use random UUIDs for request_id** - Use `document_id` as `request_id` for correlation
 4. **DO NOT use synchronous waits** - Event-driven means fire-and-forget publishing
 5. **DO NOT forget failure handling** - Subscribe to both `.completed` AND `.failed` topics
 
 ---
 
 _Created: 2026-01-05_
-_Last Updated: 2026-01-09_
+_Last Updated: 2026-01-09_ (Fixed: status, AC numbering, EntityLinkage fields, correlation strategy, AIModelEventTopic import path, removed AC-7)
