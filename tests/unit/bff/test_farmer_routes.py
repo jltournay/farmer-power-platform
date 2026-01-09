@@ -168,7 +168,8 @@ class TestListFarmersEndpoint:
     ):
         """Test that endpoint requires authentication."""
         response = bff_client.get("/api/farmers?factory_id=KEN-FAC-001")
-        assert response.status_code == 403  # HTTPBearer returns 403 for missing credentials
+        # HTTPBearer returns 401 (Py3.12) or 403 (Py3.11) for missing credentials
+        assert response.status_code in (401, 403)
 
     def test_list_farmers_requires_permission(
         self,
@@ -364,7 +365,8 @@ class TestGetFarmerEndpoint:
     ):
         """Test that endpoint requires authentication."""
         response = bff_client.get("/api/farmers/WM-0001")
-        assert response.status_code == 403  # HTTPBearer returns 403 for missing credentials
+        # HTTPBearer returns 401 (Py3.12) or 403 (Py3.11) for missing credentials
+        assert response.status_code in (401, 403)
 
     def test_get_farmer_requires_permission(
         self,
