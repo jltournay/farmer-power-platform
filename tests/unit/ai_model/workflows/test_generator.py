@@ -9,6 +9,14 @@ import json
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
+from ai_model.domain.agent_config import (
+    AgentConfigMetadata,
+    GeneratorConfig,
+    InputConfig,
+    LLMConfig,
+    OutputConfig,
+    RAGConfig,
+)
 from ai_model.workflows.generator import GeneratorWorkflow
 from ai_model.workflows.states.generator import GeneratorState
 
@@ -60,6 +68,38 @@ def generator_workflow_with_rag(
     )
 
 
+@pytest.fixture
+def generator_config() -> GeneratorConfig:
+    """Create a test GeneratorConfig."""
+    return GeneratorConfig(
+        id="test-generator:1.0.0",
+        agent_id="test-generator",
+        version="1.0.0",
+        description="Test generator agent",
+        input=InputConfig(event="test.input", schema={"type": "object"}),
+        output=OutputConfig(event="test.output", schema={"type": "object"}),
+        llm=LLMConfig(model="anthropic/claude-3-5-sonnet", temperature=0.5),
+        metadata=AgentConfigMetadata(author="test"),
+        rag=RAGConfig(enabled=True, knowledge_domains=["tea"]),
+    )
+
+
+@pytest.fixture
+def generator_config_rag_disabled() -> GeneratorConfig:
+    """Create a test GeneratorConfig with RAG disabled."""
+    return GeneratorConfig(
+        id="test-generator:1.0.0",
+        agent_id="test-generator",
+        version="1.0.0",
+        description="Test generator agent",
+        input=InputConfig(event="test.input", schema={"type": "object"}),
+        output=OutputConfig(event="test.output", schema={"type": "object"}),
+        llm=LLMConfig(model="anthropic/claude-3-5-sonnet", temperature=0.5),
+        metadata=AgentConfigMetadata(author="test"),
+        rag=RAGConfig(enabled=False, knowledge_domains=[]),
+    )
+
+
 class TestGeneratorWorkflow:
     """Tests for GeneratorWorkflow."""
 
@@ -82,15 +122,14 @@ class TestGeneratorWorkflow:
     async def test_execute_markdown_generation(
         self,
         generator_workflow: GeneratorWorkflow,
+        generator_config: GeneratorConfig,
         mock_llm_gateway: MagicMock,
     ) -> None:
         """Test successful markdown generation."""
         initial_state: GeneratorState = {
             "input_data": {"topic": "tea cultivation", "request": "create weekly plan"},
             "agent_id": "weekly-plan-generator",
-            "agent_config": {
-                "llm": {"model": "anthropic/claude-3-5-sonnet", "temperature": 0.5},
-            },
+            "agent_config": generator_config,
             "prompt_template": "Generate a {{topic}} plan",
             "correlation_id": "corr-456",
             "output_format": "markdown",
@@ -107,6 +146,7 @@ class TestGeneratorWorkflow:
     async def test_execute_json_generation(
         self,
         generator_workflow: GeneratorWorkflow,
+        generator_config: GeneratorConfig,
         mock_llm_gateway: MagicMock,
     ) -> None:
         """Test successful JSON generation."""
@@ -120,7 +160,7 @@ class TestGeneratorWorkflow:
         initial_state: GeneratorState = {
             "input_data": {"topic": "tea"},
             "agent_id": "json-generator",
-            "agent_config": {"llm": {}},
+            "agent_config": generator_config,
             "prompt_template": "",
             "correlation_id": "corr-789",
             "output_format": "json",
@@ -136,6 +176,7 @@ class TestGeneratorWorkflow:
     async def test_execute_text_generation(
         self,
         generator_workflow: GeneratorWorkflow,
+        generator_config: GeneratorConfig,
         mock_llm_gateway: MagicMock,
     ) -> None:
         """Test successful text generation."""
@@ -149,7 +190,7 @@ class TestGeneratorWorkflow:
         initial_state: GeneratorState = {
             "input_data": {"message": "greet"},
             "agent_id": "text-generator",
-            "agent_config": {"llm": {}},
+            "agent_config": generator_config,
             "prompt_template": "",
             "correlation_id": "corr-text",
             "output_format": "text",
@@ -165,6 +206,7 @@ class TestGeneratorWorkflow:
     async def test_execute_with_rag_context(
         self,
         generator_workflow_with_rag: GeneratorWorkflow,
+        generator_config: GeneratorConfig,
         mock_llm_gateway: MagicMock,
         mock_ranking_service: MagicMock,
     ) -> None:
@@ -172,13 +214,7 @@ class TestGeneratorWorkflow:
         initial_state: GeneratorState = {
             "input_data": {"topic": "pest control"},
             "agent_id": "rag-generator",
-            "agent_config": {
-                "llm": {},
-                "rag": {
-                    "enabled": True,
-                    "knowledge_domains": ["agriculture"],
-                },
-            },
+            "agent_config": generator_config,
             "prompt_template": "",
             "correlation_id": "corr-rag",
             "output_format": "markdown",
@@ -194,16 +230,14 @@ class TestGeneratorWorkflow:
     async def test_execute_with_rag_disabled(
         self,
         generator_workflow_with_rag: GeneratorWorkflow,
+        generator_config_rag_disabled: GeneratorConfig,
         mock_ranking_service: MagicMock,
     ) -> None:
         """Test generation with RAG explicitly disabled."""
         initial_state: GeneratorState = {
             "input_data": {"topic": "simple"},
             "agent_id": "no-rag",
-            "agent_config": {
-                "llm": {},
-                "rag": {"enabled": False},
-            },
+            "agent_config": generator_config_rag_disabled,
             "prompt_template": "",
             "correlation_id": "corr-no-rag",
             "output_format": "text",
@@ -219,6 +253,7 @@ class TestGeneratorWorkflow:
     async def test_execute_llm_failure(
         self,
         generator_workflow: GeneratorWorkflow,
+        generator_config: GeneratorConfig,
         mock_llm_gateway: MagicMock,
     ) -> None:
         """Test handling of LLM failure."""
@@ -227,7 +262,7 @@ class TestGeneratorWorkflow:
         initial_state: GeneratorState = {
             "input_data": {"topic": "test"},
             "agent_id": "fail-test",
-            "agent_config": {"llm": {}},
+            "agent_config": generator_config,
             "prompt_template": "",
             "correlation_id": "corr-fail",
             "output_format": "markdown",

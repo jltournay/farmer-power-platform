@@ -7,6 +7,13 @@ Story 0.75.16: LangGraph SDK Integration & Base Workflows
 
 from datetime import UTC, datetime
 
+from ai_model.domain.agent_config import (
+    AgentConfigMetadata,
+    ExtractorConfig,
+    InputConfig,
+    LLMConfig,
+    OutputConfig,
+)
 from ai_model.workflows.states import (
     ConversationalState,
     ExplorerState,
@@ -19,6 +26,21 @@ from ai_model.workflows.states.explorer import AnalyzerResult
 from ai_model.workflows.states.tiered_vision import DiagnoseResult, ScreenResult
 
 
+def _make_extractor_config() -> ExtractorConfig:
+    """Create a minimal ExtractorConfig for testing."""
+    return ExtractorConfig(
+        id="test-extractor:1.0.0",
+        agent_id="test-extractor",
+        version="1.0.0",
+        description="Test extractor",
+        input=InputConfig(event="test.input", schema={"type": "object"}),
+        output=OutputConfig(event="test.output", schema={"type": "object"}),
+        llm=LLMConfig(model="test"),
+        metadata=AgentConfigMetadata(author="test"),
+        extraction_schema={"type": "object"},
+    )
+
+
 class TestExtractorState:
     """Tests for ExtractorState TypedDict."""
 
@@ -27,7 +49,7 @@ class TestExtractorState:
         state: ExtractorState = {
             "input_data": {"doc_id": "123"},
             "agent_id": "test-extractor",
-            "agent_config": {},
+            "agent_config": _make_extractor_config(),
             "correlation_id": "corr-123",
         }
 
@@ -40,7 +62,7 @@ class TestExtractorState:
         state: ExtractorState = {
             "input_data": {"doc_id": "123", "content": "test"},
             "agent_id": "test-extractor",
-            "agent_config": {"llm": {"model": "test"}},
+            "agent_config": _make_extractor_config(),
             "prompt_template": "Extract from {{content}}",
             "correlation_id": "corr-123",
             "raw_extraction": {"field1": "value1"},

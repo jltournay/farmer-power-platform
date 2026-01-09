@@ -50,6 +50,7 @@ class ExplorerWorkflow(WorkflowBuilder[ExplorerState]):
         llm_gateway: Any,  # LLMGateway
         ranking_service: Any | None = None,  # RankingService
         mcp_integration: Any | None = None,  # MCPIntegration
+        tool_provider: Any | None = None,  # AgentToolProvider (Story 0.75.16b)
         checkpointer: Any | None = None,
         branch_timeout_seconds: int = DEFAULT_BRANCH_TIMEOUT,
     ) -> None:
@@ -59,6 +60,7 @@ class ExplorerWorkflow(WorkflowBuilder[ExplorerState]):
             llm_gateway: LLM gateway for making LLM calls.
             ranking_service: Optional ranking service for RAG.
             mcp_integration: Optional MCP integration for context.
+            tool_provider: Optional AgentToolProvider for MCP tool resolution (Story 0.75.16b).
             checkpointer: Optional checkpointer for state persistence.
             branch_timeout_seconds: Timeout for parallel analyzer branches.
         """
@@ -66,6 +68,7 @@ class ExplorerWorkflow(WorkflowBuilder[ExplorerState]):
         self._llm_gateway = llm_gateway
         self._ranking_service = ranking_service
         self._mcp_integration = mcp_integration
+        self._tool_provider = tool_provider
         self._branch_timeout_seconds = branch_timeout_seconds
 
     def _get_state_schema(self) -> type[ExplorerState]:
@@ -136,7 +139,7 @@ class ExplorerWorkflow(WorkflowBuilder[ExplorerState]):
         Returns:
             State update with MCP and RAG context.
         """
-        agent_config = state.get("agent_config", {})
+        agent_config = state["agent_config"]
         input_data = state.get("input_data", {})
 
         result: dict[str, Any] = {
@@ -146,7 +149,7 @@ class ExplorerWorkflow(WorkflowBuilder[ExplorerState]):
         # Fetch MCP context if integration available
         if self._mcp_integration:
             try:
-                mcp_sources = agent_config.get("mcp_sources", [])
+                mcp_sources = agent_config.mcp_sources
                 mcp_context = await self._fetch_mcp_context(mcp_sources, input_data)
                 result["mcp_context"] = mcp_context
             except Exception as e:
@@ -160,11 +163,11 @@ class ExplorerWorkflow(WorkflowBuilder[ExplorerState]):
         # Fetch RAG context if ranking service available
         if self._ranking_service:
             try:
-                rag_config = agent_config.get("rag", {})
-                if rag_config.get("enabled", True):
+                rag_config = agent_config.rag
+                if rag_config.enabled:
                     # Build query from input data
                     query = self._build_analysis_query(input_data)
-                    domains = rag_config.get("knowledge_domains", [])
+                    domains = rag_config.knowledge_domains
 
                     ranking_result = await self._ranking_service.rank(
                         query=query,
@@ -204,11 +207,11 @@ class ExplorerWorkflow(WorkflowBuilder[ExplorerState]):
         Returns:
             State update with triage results and routing decision.
         """
-        agent_config = state.get("agent_config", {})
+        agent_config = state["agent_config"]
         input_data = state.get("input_data", {})
         mcp_context = state.get("mcp_context", {})
         rag_context = state.get("rag_context", [])
-        llm_config = agent_config.get("llm", {})
+        llm_config = agent_config.llm
 
         # Build triage prompt
         system_prompt = self._build_triage_system_prompt()
@@ -222,7 +225,7 @@ class ExplorerWorkflow(WorkflowBuilder[ExplorerState]):
 
             result = await self._llm_gateway.complete(
                 messages=messages,
-                model=llm_config.get("model", "anthropic/claude-3-5-sonnet"),
+                model=llm_config.model,
                 agent_id=state.get("agent_id", ""),
                 agent_type="explorer",
                 request_id=state.get("correlation_id"),
@@ -378,11 +381,11 @@ class ExplorerWorkflow(WorkflowBuilder[ExplorerState]):
         Returns:
             AnalyzerResult with findings.
         """
-        agent_config = state.get("agent_config", {})
+        agent_config = state["agent_config"]
         input_data = state.get("input_data", {})
         mcp_context = state.get("mcp_context", {})
         rag_context = state.get("rag_context", [])
-        llm_config = agent_config.get("llm", {})
+        llm_config = agent_config.llm
 
         system_prompt = self._build_analyzer_system_prompt(analyzer_id)
         user_prompt = self._build_analyzer_user_prompt(
@@ -400,12 +403,12 @@ class ExplorerWorkflow(WorkflowBuilder[ExplorerState]):
 
             result = await self._llm_gateway.complete(
                 messages=messages,
-                model=llm_config.get("model", "anthropic/claude-3-5-sonnet"),
+                model=llm_config.model,
                 agent_id=state.get("agent_id", ""),
                 agent_type="explorer",
                 request_id=state.get("correlation_id"),
-                temperature=llm_config.get("temperature", 0.3),
-                max_tokens=llm_config.get("max_tokens", 2000),
+                temperature=llm_config.temperature,
+                max_tokens=llm_config.max_tokens,
             )
 
             # Parse analyzer response
@@ -530,9 +533,75 @@ class ExplorerWorkflow(WorkflowBuilder[ExplorerState]):
         mcp_sources: list[dict[str, Any]],
         input_data: dict[str, Any],
     ) -> dict[str, Any]:
-        """Fetch context from MCP servers."""
-        # Placeholder - actual implementation depends on MCP integration
-        return {}
+        """Fetch context from MCP servers.
+
+        Story 0.75.16b: Implemented actual MCP tool calls via AgentToolProvider.
+
+        Args:
+            mcp_sources: List of MCP source configurations from agent config.
+            input_data: Input data to pass to MCP tools.
+
+        Returns:
+            Dictionary with context from each MCP tool call.
+        """
+        # Prefer tool_provider (Story 0.75.16b), fallback to mcp_integration
+        tool_source = self._tool_provider or self._mcp_integration
+        if not tool_source or not mcp_sources:
+            return {}
+
+        context: dict[str, Any] = {}
+
+        for source in mcp_sources:
+            server = source.get("server", "")
+            tool_name = source.get("tool", "")
+            arg_mapping = source.get("arg_mapping", {})
+
+            if not server or not tool_name:
+                logger.warning("Invalid MCP source config", source=source)
+                continue
+
+            try:
+                # Get the tool from tool_provider or mcp_integration
+                tool = tool_source.get_tool(server, tool_name)
+
+                # Build tool arguments from input data using arg_mapping
+                tool_args = {}
+                for arg_name, input_key in arg_mapping.items():
+                    if input_key in input_data:
+                        tool_args[arg_name] = input_data[input_key]
+
+                # Invoke the tool
+                result = await tool.ainvoke(tool_args)
+
+                # Store result under server.tool key
+                key = f"{server}.{tool_name}"
+                context[key] = result
+
+                logger.debug(
+                    "MCP tool call succeeded",
+                    server=server,
+                    tool=tool_name,
+                    result_type=type(result).__name__,
+                )
+
+            except ValueError as e:
+                # Server not registered or tool not found
+                logger.warning(
+                    "MCP tool not available",
+                    server=server,
+                    tool=tool_name,
+                    error=str(e),
+                )
+            except Exception as e:
+                # Tool invocation failed
+                logger.warning(
+                    "MCP tool call failed",
+                    server=server,
+                    tool=tool_name,
+                    error=str(e),
+                )
+
+        return context
 
     def _build_analysis_query(self, input_data: dict[str, Any]) -> str:
         """Build analysis query from input data."""

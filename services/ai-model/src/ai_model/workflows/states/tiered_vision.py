@@ -12,6 +12,8 @@ Story 0.75.16: LangGraph SDK Integration & Base Workflows
 from datetime import datetime
 from typing import Any, Literal, TypedDict
 
+from ai_model.domain.agent_config import TieredVisionConfig
+
 
 class ScreenResult(TypedDict):
     """Tier 1 screening result."""
@@ -101,7 +103,7 @@ class TieredVisionState(TypedDict, total=False):
     image_url: str | None
     image_mime_type: str
     agent_id: str
-    agent_config: dict[str, Any]
+    agent_config: TieredVisionConfig
     correlation_id: str
 
     # Preprocessing

@@ -40,6 +40,7 @@ class GeneratorWorkflow(WorkflowBuilder[GeneratorState]):
         llm_gateway: Any,  # LLMGateway
         ranking_service: Any | None = None,  # RankingService
         mcp_integration: Any | None = None,  # MCPIntegration
+        tool_provider: Any | None = None,  # AgentToolProvider (Story 0.75.16b)
         checkpointer: Any | None = None,
     ) -> None:
         """Initialize the generator workflow.
@@ -48,12 +49,14 @@ class GeneratorWorkflow(WorkflowBuilder[GeneratorState]):
             llm_gateway: LLM gateway for making LLM calls.
             ranking_service: Optional ranking service for RAG.
             mcp_integration: Optional MCP integration for context.
+            tool_provider: Optional AgentToolProvider for MCP tool resolution (Story 0.75.16b).
             checkpointer: Optional checkpointer for state persistence.
         """
         super().__init__(checkpointer=checkpointer)
         self._llm_gateway = llm_gateway
         self._ranking_service = ranking_service
         self._mcp_integration = mcp_integration
+        self._tool_provider = tool_provider
 
     def _get_state_schema(self) -> type[GeneratorState]:
         """Return the GeneratorState schema."""
@@ -92,7 +95,7 @@ class GeneratorWorkflow(WorkflowBuilder[GeneratorState]):
         Returns:
             State update with MCP context.
         """
-        agent_config = state.get("agent_config", {})
+        agent_config = state["agent_config"]
         input_data = state.get("input_data", {})
 
         result: dict[str, Any] = {}
@@ -100,7 +103,7 @@ class GeneratorWorkflow(WorkflowBuilder[GeneratorState]):
         # Fetch MCP context if integration available
         if self._mcp_integration:
             try:
-                mcp_sources = agent_config.get("mcp_sources", [])
+                mcp_sources = agent_config.mcp_sources
                 mcp_context = await self._fetch_mcp_context(mcp_sources, input_data)
                 result["mcp_context"] = mcp_context
             except Exception as e:
@@ -123,23 +126,23 @@ class GeneratorWorkflow(WorkflowBuilder[GeneratorState]):
         Returns:
             State update with RAG context.
         """
-        agent_config = state.get("agent_config", {})
+        agent_config = state["agent_config"]
         input_data = state.get("input_data", {})
 
-        rag_config = agent_config.get("rag", {})
+        rag_config = agent_config.rag
 
-        if not rag_config.get("enabled", True) or not self._ranking_service:
+        if not rag_config.enabled or not self._ranking_service:
             return {"rag_context": [], "rag_query": ""}
 
         try:
             # Build query from input or template
-            query_template = rag_config.get("query_template")
+            query_template = rag_config.query_template
             if query_template:
                 query = self._render_template(query_template, input_data)
             else:
                 query = self._build_generation_query(input_data)
 
-            domains = rag_config.get("knowledge_domains", [])
+            domains = rag_config.knowledge_domains
 
             ranking_result = await self._ranking_service.rank(
                 query=query,
@@ -192,13 +195,13 @@ class GeneratorWorkflow(WorkflowBuilder[GeneratorState]):
         Returns:
             State update with raw generation.
         """
-        agent_config = state.get("agent_config", {})
+        agent_config = state["agent_config"]
         input_data = state.get("input_data", {})
         mcp_context = state.get("mcp_context", {})
         rag_context = state.get("rag_context", [])
         prompt_template = state.get("prompt_template", "")
         output_format: Literal["json", "markdown", "text"] = state.get("output_format", "markdown")
-        llm_config = agent_config.get("llm", {})
+        llm_config = agent_config.llm
 
         # Build generation prompt
         system_prompt = self._build_generation_system_prompt(output_format)
@@ -217,12 +220,12 @@ class GeneratorWorkflow(WorkflowBuilder[GeneratorState]):
 
             result = await self._llm_gateway.complete(
                 messages=messages,
-                model=llm_config.get("model", "anthropic/claude-3-5-sonnet"),
+                model=llm_config.model,
                 agent_id=state.get("agent_id", ""),
                 agent_type="generator",
                 request_id=state.get("correlation_id"),
-                temperature=llm_config.get("temperature", 0.5),
-                max_tokens=llm_config.get("max_tokens", 3000),
+                temperature=llm_config.temperature,
+                max_tokens=llm_config.max_tokens,
             )
 
             tokens_used = result.get("tokens_in", 0) + result.get("tokens_out", 0)
@@ -341,9 +344,75 @@ class GeneratorWorkflow(WorkflowBuilder[GeneratorState]):
         mcp_sources: list[dict[str, Any]],
         input_data: dict[str, Any],
     ) -> dict[str, Any]:
-        """Fetch context from MCP servers."""
-        # Placeholder - actual implementation depends on MCP integration
-        return {}
+        """Fetch context from MCP servers.
+
+        Story 0.75.16b: Implemented actual MCP tool calls via AgentToolProvider.
+
+        Args:
+            mcp_sources: List of MCP source configurations from agent config.
+            input_data: Input data to pass to MCP tools.
+
+        Returns:
+            Dictionary with context from each MCP tool call.
+        """
+        # Prefer tool_provider (Story 0.75.16b), fallback to mcp_integration
+        tool_source = self._tool_provider or self._mcp_integration
+        if not tool_source or not mcp_sources:
+            return {}
+
+        context: dict[str, Any] = {}
+
+        for source in mcp_sources:
+            server = source.get("server", "")
+            tool_name = source.get("tool", "")
+            arg_mapping = source.get("arg_mapping", {})
+
+            if not server or not tool_name:
+                logger.warning("Invalid MCP source config", source=source)
+                continue
+
+            try:
+                # Get the tool from tool_provider or mcp_integration
+                tool = tool_source.get_tool(server, tool_name)
+
+                # Build tool arguments from input data using arg_mapping
+                tool_args = {}
+                for arg_name, input_key in arg_mapping.items():
+                    if input_key in input_data:
+                        tool_args[arg_name] = input_data[input_key]
+
+                # Invoke the tool
+                result = await tool.ainvoke(tool_args)
+
+                # Store result under server.tool key
+                key = f"{server}.{tool_name}"
+                context[key] = result
+
+                logger.debug(
+                    "MCP tool call succeeded",
+                    server=server,
+                    tool=tool_name,
+                    result_type=type(result).__name__,
+                )
+
+            except ValueError as e:
+                # Server not registered or tool not found
+                logger.warning(
+                    "MCP tool not available",
+                    server=server,
+                    tool=tool_name,
+                    error=str(e),
+                )
+            except Exception as e:
+                # Tool invocation failed
+                logger.warning(
+                    "MCP tool call failed",
+                    server=server,
+                    tool=tool_name,
+                    error=str(e),
+                )
+
+        return context
 
     def _render_template(
         self,

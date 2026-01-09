@@ -77,3 +77,46 @@ def is_valid_topic(topic: str) -> bool:
         True if the topic is defined in one of the domain enums.
     """
     return topic in get_all_valid_topics()
+
+
+class AIModelEventTopic(StrEnum):
+    """Valid DAPR Pub/Sub topics for AI Model events.
+
+    Note: AGENT_COMPLETED and AGENT_FAILED use dynamic topic names with agent_id.
+    The enum values are prefixes - actual topics are:
+    - ai.agent.{agent_id}.completed
+    - ai.agent.{agent_id}.failed
+
+    Collection Model subscribes using the agent_id it sent in the request.
+    """
+
+    AGENT_REQUESTED = "ai.agent.requested"
+    # Note: These are topic prefixes. Publisher appends agent_id:
+    # e.g., ai.agent.qc-event-extractor.completed
+    AGENT_COMPLETED_PREFIX = "ai.agent"  # Full: ai.agent.{agent_id}.completed
+    AGENT_FAILED_PREFIX = "ai.agent"  # Full: ai.agent.{agent_id}.failed
+    COST_RECORDED = "ai.cost.recorded"
+
+    @staticmethod
+    def agent_completed_topic(agent_id: str) -> str:
+        """Get the completed topic for a specific agent.
+
+        Args:
+            agent_id: The agent configuration ID.
+
+        Returns:
+            Full topic name for completed events.
+        """
+        return f"ai.agent.{agent_id}.completed"
+
+    @staticmethod
+    def agent_failed_topic(agent_id: str) -> str:
+        """Get the failed topic for a specific agent.
+
+        Args:
+            agent_id: The agent configuration ID.
+
+        Returns:
+            Full topic name for failed events.
+        """
+        return f"ai.agent.{agent_id}.failed"

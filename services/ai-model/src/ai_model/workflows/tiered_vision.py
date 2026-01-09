@@ -221,21 +221,21 @@ class TieredVisionWorkflow(WorkflowBuilder[TieredVisionState]):
         """
         thumbnail_data = state.get("thumbnail_data", "")
         image_mime_type = state.get("image_mime_type", "image/jpeg")
-        agent_config = state.get("agent_config", {})
+        agent_config = state["agent_config"]
 
         # Check for preprocessing errors
         if state.get("preprocessing_error"):
             return {}
 
-        # Get screen model and routing config
-        tiered_llm = agent_config.get("tiered_llm", {})
-        screen_config = tiered_llm.get("screen", {})
-        routing_config = agent_config.get("routing", {})
+        # Get screen model and routing config from typed config
+        tiered_llm = agent_config.tiered_llm
+        screen_config = tiered_llm.screen
+        routing_config = agent_config.routing
 
-        screen_model = screen_config.get("model", "anthropic/claude-3-haiku")
-        screen_threshold = routing_config.get("screen_threshold", DEFAULT_SCREEN_THRESHOLD)
-        healthy_skip = routing_config.get("healthy_skip_threshold", DEFAULT_HEALTHY_SKIP_THRESHOLD)
-        obvious_skip = routing_config.get("obvious_skip_threshold", DEFAULT_OBVIOUS_SKIP_THRESHOLD)
+        screen_model = screen_config.model
+        screen_threshold = routing_config.screen_threshold
+        healthy_skip = routing_config.healthy_skip_threshold
+        obvious_skip = routing_config.obvious_skip_threshold
 
         system_prompt = self._build_screen_system_prompt()
 
@@ -334,25 +334,25 @@ class TieredVisionWorkflow(WorkflowBuilder[TieredVisionState]):
         """
         image_data = state.get("image_data", "")
         image_mime_type = state.get("image_mime_type", "image/jpeg")
-        agent_config = state.get("agent_config", {})
+        agent_config = state["agent_config"]
         screen_result = state.get("screen_result")
 
-        # Get diagnose model
-        tiered_llm = agent_config.get("tiered_llm", {})
-        diagnose_config = tiered_llm.get("diagnose", {})
+        # Get diagnose model from typed config
+        tiered_llm = agent_config.tiered_llm
+        diagnose_config = tiered_llm.diagnose
 
-        diagnose_model = diagnose_config.get("model", "anthropic/claude-3-5-sonnet")
+        diagnose_model = diagnose_config.model
 
         # Fetch RAG context if available
         rag_context: list[dict[str, Any]] = []
         if self._ranking_service:
             try:
-                rag_config = agent_config.get("rag", {})
-                if rag_config.get("enabled", True):
+                rag_config = agent_config.rag
+                if rag_config.enabled:
                     # Build query from preliminary findings
                     preliminary = screen_result.get("preliminary_findings", []) if screen_result else []
                     query = " ".join(preliminary) if preliminary else "plant health diagnosis"
-                    domains = rag_config.get("knowledge_domains", [])
+                    domains = rag_config.knowledge_domains
 
                     ranking_result = await self._ranking_service.rank(
                         query=query,

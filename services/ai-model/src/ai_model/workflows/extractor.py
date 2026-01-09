@@ -113,13 +113,13 @@ class ExtractorWorkflow(WorkflowBuilder[ExtractorState]):
         Returns:
             State update with raw extraction result.
         """
-        agent_config = state.get("agent_config", {})
+        agent_config = state["agent_config"]
         input_data = state.get("input_data", {})
         prompt_template = state.get("prompt_template", "")
 
-        # Get extraction schema from config
-        extraction_schema = agent_config.get("extraction_schema", {})
-        llm_config = agent_config.get("llm", {})
+        # Get extraction schema and LLM config from typed config
+        extraction_schema = agent_config.extraction_schema
+        llm_config = agent_config.llm
 
         # Build extraction prompt
         system_prompt = self._build_system_prompt(extraction_schema)
@@ -128,7 +128,7 @@ class ExtractorWorkflow(WorkflowBuilder[ExtractorState]):
         logger.debug(
             "Extracting data with LLM",
             agent_id=state.get("agent_id"),
-            model=llm_config.get("model", "default"),
+            model=llm_config.model,
         )
 
         try:
@@ -139,12 +139,12 @@ class ExtractorWorkflow(WorkflowBuilder[ExtractorState]):
 
             result = await self._llm_gateway.complete(
                 messages=messages,
-                model=llm_config.get("model", "anthropic/claude-3-5-sonnet"),
+                model=llm_config.model,
                 agent_id=state.get("agent_id", ""),
                 agent_type="extractor",
                 request_id=state.get("correlation_id"),
-                temperature=llm_config.get("temperature", 0.1),
-                max_tokens=llm_config.get("max_tokens", 2000),
+                temperature=llm_config.temperature,
+                max_tokens=llm_config.max_tokens,
             )
 
             # Parse JSON from response
@@ -180,8 +180,8 @@ class ExtractorWorkflow(WorkflowBuilder[ExtractorState]):
             State update with validation results.
         """
         raw_extraction = state.get("raw_extraction", {})
-        agent_config = state.get("agent_config", {})
-        extraction_schema = agent_config.get("extraction_schema", {})
+        agent_config = state["agent_config"]
+        extraction_schema = agent_config.extraction_schema
 
         # Check for prior errors
         if state.get("error_message"):
@@ -231,8 +231,8 @@ class ExtractorWorkflow(WorkflowBuilder[ExtractorState]):
             State update with normalized data.
         """
         validated_data = state.get("validated_data", {})
-        agent_config = state.get("agent_config", {})
-        normalization_rules = agent_config.get("normalization_rules", [])
+        agent_config = state["agent_config"]
+        normalization_rules = agent_config.normalization_rules or []
 
         # Check for prior errors
         if state.get("error_message"):

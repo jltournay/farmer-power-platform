@@ -5,6 +5,7 @@ Story 0.75.10b: Document extraction service and workflow.
 Story 0.75.10d: Semantic chunking service and workflow.
 Story 0.75.12: Embedding service using Pinecone Inference API.
 Story 0.75.13b: Vectorization pipeline orchestrating embed + store.
+Story 0.75.16b: AgentExecutor for workflow orchestration.
 """
 
 from ai_model.domain.exceptions import (
@@ -13,6 +14,7 @@ from ai_model.domain.exceptions import (
     VectorizationError as VectorizationPipelineError,
 )
 from ai_model.services.agent_config_cache import AgentConfigCache
+from ai_model.services.agent_executor import AgentExecutionError, AgentExecutor
 from ai_model.services.chunking_workflow import (
     ChunkingError,
     ChunkingWorkflow,
@@ -43,6 +45,8 @@ from ai_model.services.vectorization_pipeline import VectorizationPipeline
 
 __all__ = [
     "AgentConfigCache",
+    "AgentExecutionError",
+    "AgentExecutor",
     "ChunkResult",
     "ChunkingError",
     "ChunkingWorkflow",

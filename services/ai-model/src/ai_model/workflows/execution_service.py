@@ -4,22 +4,35 @@ This service provides a unified interface for executing any workflow type
 with proper initialization, checkpointing, and error handling.
 
 Story 0.75.16: LangGraph SDK Integration & Base Workflows
+Story 0.75.16b: Refactored to accept Pydantic AgentConfig models for type safety
 """
 
 import uuid
 from typing import Any
 
 import structlog
-from ai_model.domain.agent_config import AgentType
+from ai_model.domain.agent_config import (
+    AgentConfig,
+    AgentType,
+    ConversationalConfig,
+    ExplorerConfig,
+    ExtractorConfig,
+    GeneratorConfig,
+    TieredVisionConfig,
+)
 from ai_model.workflows.checkpointer import create_mongodb_checkpointer
 from ai_model.workflows.conversational import ConversationalWorkflow
 from ai_model.workflows.explorer import ExplorerWorkflow
 from ai_model.workflows.extractor import ExtractorWorkflow
 from ai_model.workflows.generator import GeneratorWorkflow
 from ai_model.workflows.tiered_vision import TieredVisionWorkflow
+from pydantic import TypeAdapter
 from pymongo import MongoClient
 
 logger = structlog.get_logger(__name__)
+
+# TypeAdapter for parsing AgentConfig from dict
+_agent_config_adapter = TypeAdapter(AgentConfig)
 
 
 class WorkflowExecutionError(Exception):
@@ -76,6 +89,7 @@ class WorkflowExecutionService:
         llm_gateway: Any,  # LLMGateway
         ranking_service: Any | None = None,  # RankingService
         mcp_integration: Any | None = None,  # MCPIntegration
+        tool_provider: Any | None = None,  # AgentToolProvider (Story 0.75.16b)
         checkpoint_ttl_seconds: int = 1800,  # 30 minutes
     ) -> None:
         """Initialize the workflow execution service.
@@ -86,6 +100,7 @@ class WorkflowExecutionService:
             llm_gateway: LLM gateway for all workflows.
             ranking_service: Optional ranking service for RAG workflows.
             mcp_integration: Optional MCP integration for context.
+            tool_provider: Optional AgentToolProvider for resolving agent tools.
             checkpoint_ttl_seconds: TTL for checkpoints (default 30 min).
         """
         # Create PyMongo client for checkpointer (langgraph requires sync client)
@@ -94,6 +109,7 @@ class WorkflowExecutionService:
         self._llm_gateway = llm_gateway
         self._ranking_service = ranking_service
         self._mcp_integration = mcp_integration
+        self._tool_provider = tool_provider
         self._checkpoint_ttl_seconds = checkpoint_ttl_seconds
         self._checkpointer: Any | None = None
 
@@ -147,6 +163,7 @@ class WorkflowExecutionService:
                 llm_gateway=self._llm_gateway,
                 ranking_service=self._ranking_service,
                 mcp_integration=self._mcp_integration,
+                tool_provider=self._tool_provider,  # Story 0.75.16b: Wire AgentToolProvider
                 checkpointer=cp,
             )
         elif agent_type == AgentType.GENERATOR:
@@ -154,6 +171,7 @@ class WorkflowExecutionService:
                 llm_gateway=self._llm_gateway,
                 ranking_service=self._ranking_service,
                 mcp_integration=self._mcp_integration,
+                tool_provider=self._tool_provider,  # Story 0.75.16b: Wire AgentToolProvider
                 checkpointer=cp,
             )
         elif agent_type == AgentType.CONVERSATIONAL:
@@ -175,7 +193,7 @@ class WorkflowExecutionService:
         self,
         agent_type: AgentType | str,
         agent_id: str,
-        agent_config: dict[str, Any],
+        agent_config: AgentConfig,
         input_data: dict[str, Any],
         correlation_id: str | None = None,
         prompt_template: str = "",
@@ -188,7 +206,7 @@ class WorkflowExecutionService:
         Args:
             agent_type: Type of workflow to execute.
             agent_id: ID of the agent being executed.
-            agent_config: Agent configuration dictionary.
+            agent_config: Agent configuration (typed Pydantic model).
             input_data: Input data for the workflow.
             correlation_id: Optional correlation ID for tracing.
             prompt_template: Optional prompt template.
@@ -201,6 +219,9 @@ class WorkflowExecutionService:
 
         Raises:
             WorkflowExecutionError: If execution fails.
+
+        Note:
+            Story 0.75.16b: agent_config MUST be a typed Pydantic model for type safety.
         """
         correlation_id = correlation_id or str(uuid.uuid4())
 
@@ -224,6 +245,7 @@ class WorkflowExecutionService:
             )
 
             # Initialize state with workflow-specific fields
+            # Note: Pass Pydantic model directly for type safety
             initial_state = workflow.initialize_state(
                 input_data=input_data,
                 agent_id=agent_id,
@@ -310,7 +332,7 @@ class WorkflowExecutionService:
     async def execute_extractor(
         self,
         agent_id: str,
-        agent_config: dict[str, Any],
+        agent_config: ExtractorConfig,
         input_data: dict[str, Any],
         prompt_template: str = "",
         correlation_id: str | None = None,
@@ -319,7 +341,7 @@ class WorkflowExecutionService:
 
         Args:
             agent_id: ID of the extractor agent.
-            agent_config: Agent configuration.
+            agent_config: Agent configuration (ExtractorConfig or dict).
             input_data: Data to extract from.
             prompt_template: Optional prompt template.
             correlation_id: Optional correlation ID.
@@ -339,7 +361,7 @@ class WorkflowExecutionService:
     async def execute_explorer(
         self,
         agent_id: str,
-        agent_config: dict[str, Any],
+        agent_config: ExplorerConfig,
         input_data: dict[str, Any],
         prompt_template: str = "",
         correlation_id: str | None = None,
@@ -348,7 +370,7 @@ class WorkflowExecutionService:
 
         Args:
             agent_id: ID of the explorer agent.
-            agent_config: Agent configuration.
+            agent_config: Agent configuration (ExplorerConfig or dict).
             input_data: Data to analyze.
             prompt_template: Optional prompt template.
             correlation_id: Optional correlation ID.
@@ -368,7 +390,7 @@ class WorkflowExecutionService:
     async def execute_generator(
         self,
         agent_id: str,
-        agent_config: dict[str, Any],
+        agent_config: GeneratorConfig,
         input_data: dict[str, Any],
         output_format: str = "markdown",
         prompt_template: str = "",
@@ -378,7 +400,7 @@ class WorkflowExecutionService:
 
         Args:
             agent_id: ID of the generator agent.
-            agent_config: Agent configuration.
+            agent_config: Agent configuration (GeneratorConfig or dict).
             input_data: Generation request data.
             output_format: Output format (json/markdown/text).
             prompt_template: Optional prompt template.
@@ -400,7 +422,7 @@ class WorkflowExecutionService:
     async def execute_conversational(
         self,
         agent_id: str,
-        agent_config: dict[str, Any],
+        agent_config: ConversationalConfig,
         user_message: str,
         session_id: str | None = None,
         conversation_history: list[dict[str, Any]] | None = None,
@@ -410,7 +432,7 @@ class WorkflowExecutionService:
 
         Args:
             agent_id: ID of the conversational agent.
-            agent_config: Agent configuration.
+            agent_config: Agent configuration (ConversationalConfig or dict).
             user_message: User's message.
             session_id: Session ID for continuity.
             conversation_history: Previous conversation turns.
@@ -434,7 +456,7 @@ class WorkflowExecutionService:
     async def execute_tiered_vision(
         self,
         agent_id: str,
-        agent_config: dict[str, Any],
+        agent_config: TieredVisionConfig,
         image_data: str,
         image_mime_type: str = "image/jpeg",
         correlation_id: str | None = None,
@@ -443,7 +465,7 @@ class WorkflowExecutionService:
 
         Args:
             agent_id: ID of the tiered-vision agent.
-            agent_config: Agent configuration.
+            agent_config: Agent configuration (TieredVisionConfig or dict).
             image_data: Base64-encoded image data.
             image_mime_type: MIME type of the image.
             correlation_id: Optional correlation ID.
