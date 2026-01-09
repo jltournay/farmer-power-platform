@@ -232,7 +232,7 @@ Story 0.75.16 implemented the `ExtractorWorkflow` in LangGraph with the 5-step l
 - [ ] PR approved and merged (squash)
 - [ ] Local branch cleaned up: `git branch -d feature/0-75-17-extractor-agent-implementation`
 
-**PR URL:** _______________ (fill in when created)
+**PR URL:** https://github.com/jltournay/farmer-power-platform/pull/146
 
 ---
 
