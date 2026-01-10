@@ -16,20 +16,11 @@ Story 0.75.16b: Wired AgentExecutor and WorkflowExecutionService for event proce
 """
 
 import asyncio
-import logging
-import sys
 import threading
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 
 import structlog
-
-# Configure Python standard logging (required for structlog.stdlib integration)
-logging.basicConfig(
-    format="%(message)s",
-    stream=sys.stdout,
-    level=logging.DEBUG,
-)
 from ai_model.api import health
 from ai_model.api.grpc_server import start_grpc_server, stop_grpc_server
 from ai_model.config import settings
@@ -59,6 +50,7 @@ from ai_model.services import AgentConfigCache, AgentExecutor, PromptCache
 from ai_model.workflows.execution_service import WorkflowExecutionService
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fp_common import configure_logging, create_admin_router
 from fp_common.events import (
     DLQRepository,
     set_dlq_event_loop,
@@ -66,26 +58,10 @@ from fp_common.events import (
     start_dlq_subscription,
 )
 
-# Configure structured logging
-structlog.configure(
-    processors=[
-        structlog.stdlib.filter_by_level,
-        structlog.stdlib.add_logger_name,
-        structlog.stdlib.add_log_level,
-        structlog.stdlib.PositionalArgumentsFormatter(),
-        structlog.processors.TimeStamper(fmt="iso"),
-        structlog.processors.StackInfoRenderer(),
-        structlog.processors.format_exc_info,
-        structlog.processors.UnicodeDecoder(),
-        structlog.processors.JSONRenderer(),
-    ],
-    wrapper_class=structlog.stdlib.BoundLogger,
-    context_class=dict,
-    logger_factory=structlog.stdlib.LoggerFactory(),
-    cache_logger_on_first_use=True,
-)
+# Configure structured logging via fp_common (ADR-009)
+configure_logging("ai-model")
 
-logger = structlog.get_logger(__name__)
+logger = structlog.get_logger("ai_model.main")
 
 
 @asynccontextmanager
@@ -347,6 +323,7 @@ app.add_middleware(
 
 # Include routers
 app.include_router(health.router)
+app.include_router(create_admin_router())  # Story 0.6.15: Runtime log level control
 
 # Instrument FastAPI with OpenTelemetry
 instrument_fastapi(app)

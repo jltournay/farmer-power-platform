@@ -1,13 +1,13 @@
 """Base repository class with common CRUD operations."""
 
-import logging
 from datetime import UTC, datetime
 from typing import Generic, TypeVar
 
+import structlog
 from motor.motor_asyncio import AsyncIOMotorCollection, AsyncIOMotorDatabase
 from pydantic import BaseModel
 
-logger = logging.getLogger(__name__)
+logger = structlog.get_logger("plantation_model.infrastructure.repositories.base")
 
 T = TypeVar("T", bound=BaseModel)
 

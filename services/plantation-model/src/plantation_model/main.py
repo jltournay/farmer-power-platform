@@ -18,6 +18,7 @@ from contextlib import asynccontextmanager
 import structlog
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fp_common import configure_logging, create_admin_router
 from fp_common.events import (
     DLQRepository,
     set_dlq_event_loop,
@@ -65,26 +66,10 @@ from plantation_model.infrastructure.tracing import (
     shutdown_tracing,
 )
 
-# Configure structured logging
-structlog.configure(
-    processors=[
-        structlog.stdlib.filter_by_level,
-        structlog.stdlib.add_logger_name,
-        structlog.stdlib.add_log_level,
-        structlog.stdlib.PositionalArgumentsFormatter(),
-        structlog.processors.TimeStamper(fmt="iso"),
-        structlog.processors.StackInfoRenderer(),
-        structlog.processors.format_exc_info,
-        structlog.processors.UnicodeDecoder(),
-        structlog.processors.JSONRenderer(),
-    ],
-    wrapper_class=structlog.stdlib.BoundLogger,
-    context_class=dict,
-    logger_factory=structlog.stdlib.LoggerFactory(),
-    cache_logger_on_first_use=True,
-)
+# Configure structured logging via fp_common (ADR-009)
+configure_logging("plantation-model")
 
-logger = structlog.get_logger(__name__)
+logger = structlog.get_logger("plantation_model.main")
 
 
 @asynccontextmanager
@@ -234,6 +219,7 @@ app.add_middleware(
 # Include routers
 # Note: HTTP event handlers removed in Story 0.6.5 - using DAPR streaming subscriptions
 app.include_router(health.router)
+app.include_router(create_admin_router())  # Story 0.6.15: Runtime log level control
 
 # Instrument FastAPI with OpenTelemetry
 instrument_fastapi(app)

@@ -2,17 +2,17 @@
 
 from __future__ import annotations
 
-import logging
 from datetime import UTC, datetime
 from typing import TYPE_CHECKING
 
+import structlog
 from plantation_model.domain.models import Region
 from pymongo import ASCENDING
 
 if TYPE_CHECKING:
     from motor.motor_asyncio import AsyncIOMotorCollection, AsyncIOMotorDatabase
 
-logger = logging.getLogger(__name__)
+logger = structlog.get_logger("plantation_model.infrastructure.repositories.region_repository")
 
 
 class RegionRepository:

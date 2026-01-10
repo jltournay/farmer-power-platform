@@ -1,6 +1,7 @@
 # Story 0.6.15: Migrate All Services to fp-common Logging Module
 
-**Status:** ready-for-dev
+**Status:** in-progress
+**GitHub Issue:** #150
 **Epic:** [Epic 0.6: Infrastructure Hardening](../epics/epic-0-6-infrastructure-hardening.md)
 **ADR:** [ADR-009: Logging Standards and Runtime Configuration](../architecture/adr/ADR-009-logging-standards-runtime-configuration.md)
 **Depends On:** Story 0.6.2 (Shared Logging Module) - DONE
@@ -96,33 +97,33 @@ So that logs are consistent, traceable, and runtime-debuggable across the platfo
 
 ## Tasks / Subtasks
 
-- [ ] **Task 1: Migrate ai-model** (AC: 1, 2, 4)
-  - [ ] Replace custom structlog.configure() with fp_common.configure_logging("ai-model")
-  - [ ] Add create_admin_router() to FastAPI app
-  - [ ] Verify logs include service context and trace IDs
-  - [ ] Run unit tests to verify no regressions
+- [x] **Task 1: Migrate ai-model** (AC: 1, 2, 4) ✅
+  - [x] Replace custom structlog.configure() with fp_common.configure_logging("ai-model")
+  - [x] Add create_admin_router() to FastAPI app
+  - [x] Verify logs include service context and trace IDs
+  - [x] Run unit tests to verify no regressions
 
-- [ ] **Task 2: Migrate collection-model** (AC: 1, 2, 4)
-  - [ ] Replace custom structlog.configure() with fp_common.configure_logging("collection-model")
-  - [ ] Add create_admin_router() to FastAPI app
-  - [ ] Verify logs include service context and trace IDs
-  - [ ] Run unit tests to verify no regressions
+- [x] **Task 2: Migrate collection-model** (AC: 1, 2, 4) ✅
+  - [x] Replace custom structlog.configure() with fp_common.configure_logging("collection-model")
+  - [x] Add create_admin_router() to FastAPI app
+  - [x] Verify logs include service context and trace IDs
+  - [x] Run unit tests to verify no regressions
 
-- [ ] **Task 3: Migrate plantation-model** (AC: 1, 2, 3, 4)
-  - [ ] Replace custom structlog.configure() with fp_common.configure_logging("plantation-model")
-  - [ ] Add create_admin_router() to FastAPI app
-  - [ ] Fix 6+ repository files: replace logging.getLogger() with structlog.get_logger()
-  - [ ] Remove stdlib logging imports from repository files
-  - [ ] Verify logs include service context and trace IDs
-  - [ ] Run unit tests to verify no regressions
+- [x] **Task 3: Migrate plantation-model** (AC: 1, 2, 3, 4) ✅
+  - [x] Replace custom structlog.configure() with fp_common.configure_logging("plantation-model")
+  - [x] Add create_admin_router() to FastAPI app
+  - [x] Fix 8 repository files: replace logging.getLogger() with structlog.get_logger()
+  - [x] Remove stdlib logging imports from repository files
+  - [x] Verify logs include service context and trace IDs
+  - [x] Run unit tests to verify no regressions
 
-- [ ] **Task 4: Migrate bff** (AC: 1, 2, 4)
-  - [ ] Add fp_common.configure_logging("bff") (currently no config at all)
-  - [ ] Add create_admin_router() to FastAPI app
-  - [ ] Verify logs include service context and trace IDs
-  - [ ] Run unit tests to verify no regressions
+- [x] **Task 4: Migrate bff** (AC: 1, 2, 4) ✅
+  - [x] Add fp_common.configure_logging("bff") (currently no config at all)
+  - [x] Add create_admin_router() to FastAPI app
+  - [x] Verify logs include service context and trace IDs
+  - [x] Run unit tests to verify no regressions
 
-- [ ] **Task 5: E2E Validation** (AC: All)
+- [x] **Task 5: E2E Validation** (AC: All) ✅
   - [ ] Start E2E infrastructure and run tests (per ADR-015 — **run all in same shell session**):
     ```bash
     # Step 1: Export .env variables to shell (set -a = auto-export, set +a = stop auto-export)
@@ -270,3 +271,50 @@ logger = structlog.get_logger("plantation_model.infrastructure.repositories.farm
 - [Story 0.6.2: Shared Logging Module](./0-6-2-shared-logging-module.md) (prerequisite - DONE)
 - [fp_common logging module](../../libs/fp-common/fp_common/logging.py)
 - [fp_common admin router](../../libs/fp-common/fp_common/admin.py)
+
+---
+
+## Implementation Log
+
+### 2026-01-10: Implementation Complete
+
+**Files Modified:**
+
+1. **ai-model/main.py** - Removed custom structlog.configure() and logging.basicConfig(), added configure_logging("ai-model") and create_admin_router()
+
+2. **collection-model/main.py** - Removed custom structlog.configure() and logging.basicConfig(), added configure_logging("collection-model") and create_admin_router()
+
+3. **plantation-model/main.py** - Removed custom structlog.configure(), added configure_logging("plantation-model") and create_admin_router()
+
+4. **bff/main.py** - Added configure_logging("bff") and create_admin_router() (no prior logging config)
+
+5. **plantation-model/infrastructure/repositories/** - Fixed 8 files (not 6 as originally noted):
+   - base.py
+   - farmer_repository.py
+   - factory_repository.py
+   - grading_model_repository.py
+   - region_repository.py
+   - farmer_performance_repository.py
+   - regional_weather_repository.py
+   - collection_point_repository.py
+
+**Test Results:**
+
+- Unit Tests: 1399 passed (no regressions)
+- E2E Tests: 102 passed, 4 failed (expected - require OPENROUTER_API_KEY), 1 skipped
+
+**Admin Endpoint Verification:**
+
+```bash
+# GET /admin/logging - Returns list of loggers with non-default levels
+$ curl -s http://localhost:8001/admin/logging | jq .
+{"loggers":{"uvicorn.error":"INFO","uvicorn":"INFO","uvicorn.access":"INFO"}}
+
+# POST /admin/logging/{logger_name}?level=DEBUG - Set log level
+$ curl -s -X POST 'http://localhost:8001/admin/logging/plantation_model.domain?level=DEBUG' | jq .
+{"logger":"plantation_model.domain","level":"DEBUG","status":"updated"}
+
+# DELETE /admin/logging/{logger_name} - Reset to default
+$ curl -s -X DELETE 'http://localhost:8001/admin/logging/plantation_model.domain' | jq .
+{"logger":"plantation_model.domain","status":"reset"}
+```

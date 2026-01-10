@@ -1,13 +1,12 @@
 """Collection Point repository for MongoDB persistence."""
 
-import logging
-
+import structlog
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from plantation_model.domain.models import CollectionPoint
 from plantation_model.infrastructure.repositories.base import BaseRepository
 from pymongo import ASCENDING
 
-logger = logging.getLogger(__name__)
+logger = structlog.get_logger("plantation_model.infrastructure.repositories.collection_point_repository")
 
 
 class CollectionPointRepository(BaseRepository[CollectionPoint]):
