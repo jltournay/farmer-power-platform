@@ -1,0 +1,173 @@
+{
+  "id": "weekly-action-plan:1.0.0",
+  "prompt_id": "weekly-action-plan",
+  "agent_id": "weekly-action-plan",
+  "version": "1.0.0",
+  "status": "active",
+  "content": {
+    "system_prompt": "You are an expert tea farming advisor for the Farmer Power Platform.\n\nYour task is to create personalized weekly action plans for farmers based on:\n1. Recent quality diagnoses and issues\n2. Weather forecasts and conditions\n3. Farmer context (region, performance trends, farm size)\n4. Best practices from the knowledge base\n\nAction Plan Guidelines:\n- Maximum 5 priority actions (focus on most impactful)\n- Actions must be specific and actionable (start with verbs)\n- Consider farmer's capacity and resources based on farm size\n- Adapt language for 6th-grade reading level\n- Include timing guidance (e.g., 'within 48 hours', 'before rain')\n\nPriority Levels:\n- critical: Immediate action required (disease outbreak, pest infestation, imminent crop loss)\n- high: Action needed this week (weather preparation, treatment follow-up)\n- medium: Beneficial if done this week (optimization, preventive maintenance)\n- low: Can defer if needed (long-term improvements, non-urgent tasks)\n\nSMS Summary Rules (max 300 characters):\n- Include farmer's name\n- Most critical action with emoji\n- USSD code for more details (*384#)\n- Use Swahili or farmer's preferred language\n\nVoice Script Rules (max 2000 characters):\n- Conversational tone, numbered actions\n- Speaking rate 0.9x, pause 0.8s between items\n- Greeting, quality summary, 2-3 main actions, closing\n\nRESPOND WITH ONLY VALID JSON matching the output schema. No additional text outside JSON.",
+    "template": "Create a weekly action plan for the farmer based on the following context.\n\n## Farmer Context\n{{farmer_context}}\n\n## Recent Diagnoses\n{{diagnoses}}\n\n## Weather Forecast (7 days)\n{{weather_forecast}}\n\n## Best Practices (from knowledge base)\n{{rag_knowledge}}\n\n## Output Format Requested\n{{format_type}}\n\n## Required Output\nProvide a JSON object with:\n- action_plan: {week_of (YYYY-MM-DD), priority_actions[] (max 5), weather_considerations[], expected_outcomes}\n- summary: {sms_message (max 300 chars), voice_script (max 2000 chars)}",
+    "output_schema": {
+      "type": "object",
+      "required": ["action_plan", "summary"],
+      "properties": {
+        "action_plan": {
+          "type": "object",
+          "required": ["week_of", "priority_actions"],
+          "properties": {
+            "week_of": {
+              "type": "string",
+              "format": "date",
+              "description": "Week start date in YYYY-MM-DD format"
+            },
+            "priority_actions": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": ["action", "priority", "timing"],
+                "properties": {
+                  "action": {
+                    "type": "string",
+                    "description": "Actionable instruction starting with a verb"
+                  },
+                  "priority": {
+                    "type": "string",
+                    "enum": ["critical", "high", "medium", "low"]
+                  },
+                  "timing": {
+                    "type": "string",
+                    "description": "When to perform the action"
+                  },
+                  "reason": {
+                    "type": "string",
+                    "description": "Why this action is important"
+                  }
+                }
+              },
+              "minItems": 1,
+              "maxItems": 5
+            },
+            "weather_considerations": {
+              "type": "array",
+              "items": {"type": "string"},
+              "description": "Weather-related notes for the week"
+            },
+            "expected_outcomes": {
+              "type": "string",
+              "description": "Expected results if actions are followed"
+            }
+          }
+        },
+        "summary": {
+          "type": "object",
+          "properties": {
+            "sms_message": {
+              "type": "string",
+              "maxLength": 300,
+              "description": "SMS summary with emoji and USSD code"
+            },
+            "voice_script": {
+              "type": "string",
+              "maxLength": 2000,
+              "description": "Voice IVR script in conversational tone"
+            }
+          }
+        }
+      }
+    },
+    "few_shot_examples": [
+      {
+        "input": {
+          "farmer_context": {"name": "John Kamau", "region": "Kericho-High", "farm_size": "small", "recent_performance": {"quality_score_avg": 72.0, "trend": "declining"}},
+          "diagnoses": [{"condition": "tea_blister_blight", "severity": "moderate", "confidence": 0.88}],
+          "weather_forecast": {"next_7_days": {"rain_probability": 0.7, "humidity_avg": 85, "temperature_avg_c": 20}},
+          "format_type": "detailed"
+        },
+        "output": {
+          "action_plan": {
+            "week_of": "2026-01-13",
+            "priority_actions": [
+              {
+                "action": "Apply copper-based fungicide to affected tea bushes",
+                "priority": "high",
+                "timing": "Within 48 hours, before rain",
+                "reason": "Treat blister blight before high humidity worsens spread"
+              },
+              {
+                "action": "Prune affected branches to improve air circulation",
+                "priority": "medium",
+                "timing": "After fungicide application",
+                "reason": "Reduce moisture retention that encourages fungal growth"
+              },
+              {
+                "action": "Inspect neighboring bushes for early signs of infection",
+                "priority": "medium",
+                "timing": "During this week",
+                "reason": "Early detection prevents widespread outbreak"
+              }
+            ],
+            "weather_considerations": [
+              "High humidity (85%) increases fungal disease risk",
+              "Apply fungicide before expected rain for better absorption",
+              "Avoid harvesting wet leaves to prevent disease spread"
+            ],
+            "expected_outcomes": "With treatment, expect recovery in 2-3 weeks and reduced spread to neighboring plants"
+          },
+          "summary": {
+            "sms_message": "John, hatua ya wiki: \ud83c\udf3f Nyunyiza dawa ya fungicide kwa majani yenye ugonjwa kabla ya mvua. Kata matawi yaliyoathirika. Piga *384# kwa maelezo zaidi.",
+            "voice_script": "Habari John. Hii ni mpango wako wa wiki. Kwanza, nyunyiza dawa ya fungicide kwa majani yenye ugonjwa ndani ya masaa 48 kabla ya mvua. Pili, kata matawi yaliyoathirika baada ya kunyunyiza dawa ili kuongeza mzunguko wa hewa. Tatu, kagua mimea jirani kwa ishara za mapema za maambukizi. Mvua inatarajiwa, kwa hivyo fanya haraka. Asante."
+          }
+        }
+      },
+      {
+        "input": {
+          "farmer_context": {"name": "Mary Wanjiku", "region": "Nandi-Medium", "farm_size": "medium", "recent_performance": {"quality_score_avg": 88.0, "trend": "stable"}},
+          "diagnoses": [],
+          "weather_forecast": {"next_7_days": {"rain_probability": 0.2, "humidity_avg": 60, "temperature_avg_c": 25}},
+          "format_type": "detailed"
+        },
+        "output": {
+          "action_plan": {
+            "week_of": "2026-01-13",
+            "priority_actions": [
+              {
+                "action": "Apply light irrigation during early morning hours",
+                "priority": "medium",
+                "timing": "Every 2-3 days",
+                "reason": "Low rainfall predicted - maintain soil moisture"
+              },
+              {
+                "action": "Apply mulch around tea bushes to retain moisture",
+                "priority": "low",
+                "timing": "Within this week",
+                "reason": "Conserve water during dry spell"
+              }
+            ],
+            "weather_considerations": [
+              "Low rainfall (20% probability) - prepare for dry conditions",
+              "Higher temperature (25C) increases water needs",
+              "Good conditions for maintenance activities"
+            ],
+            "expected_outcomes": "Maintain current high quality with proactive moisture management during dry period"
+          },
+          "summary": {
+            "sms_message": "Mary, chai yako nzuri! \ud83d\udca7 Mwagilia asubuhi kwa sababu mvua ni kidogo wiki hii. Piga *384# kwa maelezo.",
+            "voice_script": "Habari Mary. Chai yako iko vizuri sana. Wiki hii, mvua itakuwa kidogo. Kwanza, mwagilia mimea yako asubuhi mapema kila siku mbili au tatu. Pili, weka matandazo karibu na mimea kuhifadhi unyevu. Endelea kazi nzuri. Asante."
+          }
+        }
+      }
+    ]
+  },
+  "metadata": {
+    "author": "dev-story-0.75.20",
+    "created_at": "2026-01-10T00:00:00Z",
+    "updated_at": "2026-01-10T00:00:00Z",
+    "changelog": "Initial version for Story 0.75.20 - Generator Agent Sample Config",
+    "git_commit": null
+  },
+  "ab_test": {
+    "enabled": false,
+    "traffic_percentage": 0.0,
+    "test_id": null
+  }
+}

@@ -1,0 +1,202 @@
+# Weekly Action Plan Generator Agent Configuration
+# Story 0.75.20: Generator Agent Implementation
+#
+# This agent generates personalized weekly action plans for farmers
+# based on recent quality diagnoses, weather conditions, and best practices.
+#
+# See: _bmad-output/architecture/ai-model-architecture/agent-types.md @ Generator Type
+# Reference: GeneratorConfig in services/ai-model/src/ai_model/domain/agent_config.py:396-434
+
+id: "weekly-action-plan:1.0.0"
+agent_id: "weekly-action-plan"
+version: "1.0.0"
+type: generator
+status: active
+description: "Generates personalized weekly action plans for farmers based on diagnoses and conditions"
+
+# Input contract
+input:
+  event: "ai.agent.requested"
+  schema:
+    type: object
+    required:
+      - farmer_id
+    properties:
+      farmer_id:
+        type: string
+        description: "Farmer identifier (e.g., 'WM-4521')"
+      diagnoses:
+        type: array
+        items:
+          type: object
+          properties:
+            condition:
+              type: string
+              description: "Condition in snake_case (e.g., 'tea_blister_blight')"
+            severity:
+              type: string
+              enum: ["low", "moderate", "high", "critical"]
+            confidence:
+              type: number
+              minimum: 0
+              maximum: 1
+        description: "Recent diagnoses from Explorer agents"
+      weather_forecast:
+        type: object
+        description: "7-day weather forecast"
+        properties:
+          next_7_days:
+            type: object
+            properties:
+              rain_probability:
+                type: number
+                minimum: 0
+                maximum: 1
+              humidity_avg:
+                type: number
+              temperature_avg_c:
+                type: number
+              extreme_weather_alerts:
+                type: array
+                items:
+                  type: string
+      farmer_context:
+        type: object
+        description: "Farmer profile and recent performance"
+        properties:
+          name:
+            type: string
+          region:
+            type: string
+          farm_size:
+            type: string
+            enum: ["small", "medium", "large"]
+          recent_performance:
+            type: object
+            properties:
+              quality_score_avg:
+                type: number
+              trend:
+                type: string
+                enum: ["improving", "stable", "declining"]
+      format_type:
+        type: string
+        enum: ["detailed", "sms_summary", "voice_script"]
+        default: "detailed"
+        description: "Output format type (affects summary generation)"
+
+# Output contract
+output:
+  event: "ai.agent.weekly-action-plan.completed"
+  schema:
+    type: object
+    required:
+      - action_plan
+      - summary
+    properties:
+      action_plan:
+        type: object
+        required:
+          - week_of
+          - priority_actions
+        properties:
+          week_of:
+            type: string
+            format: date
+            description: "Week start date (YYYY-MM-DD)"
+          priority_actions:
+            type: array
+            items:
+              type: object
+              required:
+                - action
+                - priority
+                - timing
+              properties:
+                action:
+                  type: string
+                  description: "Action instruction (starts with verb)"
+                priority:
+                  type: string
+                  enum: ["critical", "high", "medium", "low"]
+                timing:
+                  type: string
+                  description: "When to do the action (e.g., 'within 48 hours')"
+                reason:
+                  type: string
+                  description: "Why this action is important"
+            minItems: 1
+            maxItems: 5
+          weather_considerations:
+            type: array
+            items:
+              type: string
+            description: "Weather-related notes for the week"
+          expected_outcomes:
+            type: string
+            description: "What to expect if actions are followed"
+      summary:
+        type: object
+        properties:
+          sms_message:
+            type: string
+            maxLength: 300
+            description: "SMS-friendly summary (max 300 chars)"
+          voice_script:
+            type: string
+            maxLength: 2000
+            description: "Voice IVR script (max 2000 chars)"
+      metadata:
+        type: object
+        properties:
+          diagnoses_used:
+            type: integer
+            description: "Number of diagnoses considered"
+          rag_sources_used:
+            type: integer
+            description: "Number of RAG knowledge sources used"
+
+# LLM configuration
+llm:
+  model: "anthropic/claude-3-5-sonnet"
+  temperature: 0.5
+  max_tokens: 3000
+
+# RAG configuration (generator uses for best practices)
+rag:
+  enabled: true
+  query_template: "tea farming best practices for: {{conditions}} season: {{season}} region: {{region}}"
+  knowledge_domains:
+    - tea-cultivation
+    - regional-context
+    - action-plan-best-practices
+  top_k: 5
+  min_similarity: 0.65
+
+# Output format (generator-specific)
+output_format: markdown
+
+# MCP sources for context fetching
+mcp_sources:
+  - server: plantation-mcp
+    tools:
+      - get_farmer
+      - get_region
+      - get_weather_forecast
+  - server: knowledge-mcp
+    tools:
+      - get_recent_diagnoses
+
+# Error handling
+error_handling:
+  max_attempts: 3
+  backoff_ms: [100, 500, 2000]
+  on_failure: publish_error_event
+  dead_letter_topic: null
+
+# Metadata
+metadata:
+  author: "dev-story-0.75.20"
+  created_at: "2026-01-10T00:00:00Z"
+  updated_at: "2026-01-10T00:00:00Z"
+  git_commit: null
