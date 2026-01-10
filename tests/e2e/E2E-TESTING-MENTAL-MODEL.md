@@ -571,6 +571,170 @@ pytest tests/unit/plantation_model/ -v # If you modified plantation-model
 | Seed data | `tests/e2e/infrastructure/seed/` |
 | E2E test fixtures | `tests/e2e/conftest.py` |
 | E2E test scenarios | `tests/e2e/scenarios/` |
+| **E2E Scripts** | `scripts/e2e-up.sh`, `scripts/e2e-test.sh`, `scripts/e2e-preflight.sh`, `scripts/e2e-diagnose.sh` |
+| **Checkpoint Helpers** | `tests/e2e/helpers/checkpoints.py` |
+
+---
+
+## E2E Debugging Infrastructure (Story 0.6.16)
+
+Story 0.6.16 introduced autonomous debugging infrastructure for E2E tests. When tests fail, use these tools in order:
+
+### 1. Pre-Flight Check (Before Running Tests)
+
+```bash
+bash scripts/e2e-preflight.sh
+```
+
+Validates:
+- All required containers are running
+- Service health endpoints respond HTTP 200
+- MongoDB seed data is loaded
+- Environment variables are set (shell and inside containers)
+- DAPR sidecars are connected
+
+**If pre-flight fails:** Fix the issues before running tests.
+
+### 2. Diagnostic Script (After Test Failure)
+
+```bash
+bash scripts/e2e-diagnose.sh
+```
+
+Produces a structured diagnostic report with:
+- **Image build dates + stale detection:** Did you forget `--build`?
+- **Service health status:** Which services are unhealthy?
+- **MongoDB state:** What documents exist? Counts per collection.
+- **DAPR subscriptions:** Are events being routed?
+- **Recent errors:** Last 5 errors from each service log.
+- **Event flow trace:** Did AgentRequestEvent reach AI Model?
+- **Auto-diagnosis:** Likely issue and suggested investigation.
+
+### 3. Checkpoint-Based Tests
+
+Tests can use checkpoint helpers for better failure diagnostics:
+
+```python
+from tests.e2e.helpers.checkpoints import (
+    checkpoint_documents_created,
+    checkpoint_extraction_complete,
+    CheckpointFailure,
+)
+
+# Checkpoint 1: Documents Created (Collection Model layer)
+try:
+    documents = await checkpoint_documents_created(
+        mongodb_direct,
+        source_id="e2e-weather-api",
+        min_count=1,
+        timeout=15.0,  # Fast timeout for document creation
+    )
+except CheckpointFailure as e:
+    # Diagnostics include: layer, likely_issue, suggested_check
+    pytest.fail(str(e))
+
+# Checkpoint 3: Extraction Complete (AI Model layer)
+try:
+    doc = await checkpoint_extraction_complete(
+        mongodb_direct,
+        source_id="e2e-weather-api",
+        timeout=90.0,  # Long timeout for LLM processing
+    )
+except CheckpointFailure as e:
+    pytest.fail(str(e))
+```
+
+### Checkpoint Failure Example
+
+```
+CheckpointFailure: CHECKPOINT 3-EXTRACTION_COMPLETE FAILED
+Diagnostics: {
+    'checkpoint': '3-EXTRACTION_COMPLETE',
+    'layer': 'AI Model',
+    'timeout_seconds': 90.0,
+    'elapsed_seconds': 90.0,
+    'last_observed': 'pending',
+    'expected': "extraction.status == 'complete'",
+    'mongodb_state': {'documents_count': 2, 'last_extraction_status': 'pending'},
+    'service_health': {'Collection Model': 'healthy', 'AI Model': 'healthy'},
+    'likely_issue': "Extraction stuck in 'pending' - AI Model may not have received event",
+    'suggested_check': 'Check OPENROUTER_API_KEY is set inside AI Model container'
+}
+```
+
+### Available Checkpoints
+
+| Checkpoint | Layer | Default Timeout | Purpose |
+|------------|-------|-----------------|---------|
+| `checkpoint_documents_created` | Collection Model | 15s | Verify documents saved to MongoDB |
+| `checkpoint_event_published` | AI Model | 10s | Verify DAPR event was received |
+| `checkpoint_extraction_complete` | AI Model | 90s | Verify LLM extraction finished |
+
+---
+
+## E2E Workflow: Local Before CI
+
+**Story 0.6.16 (AC7):** Always run E2E tests locally before pushing to CI.
+
+### Complete Local E2E Workflow
+
+```bash
+# 1. Start infrastructure (with fresh build if you modified code)
+bash scripts/e2e-up.sh --build
+
+# 2. Run pre-flight check
+bash scripts/e2e-preflight.sh
+
+# 3. Run E2E tests (handles env vars automatically)
+bash scripts/e2e-test.sh
+
+# 4. If tests fail, run diagnostics
+bash scripts/e2e-diagnose.sh
+
+# 5. When done, stop infrastructure
+bash scripts/e2e-up.sh --down
+```
+
+### Why Local Before CI?
+
+| Issue | Local Detection Time | CI Detection Time |
+|-------|---------------------|-------------------|
+| Missing `--build` flag | 2 minutes | 15+ minutes |
+| Env var not in container | 5 minutes | 20+ minutes |
+| Stale Docker image | Immediate (preflight) | Test timeout |
+| Seed data error | Immediate (preflight) | Test failure |
+
+**CI is for validation, not debugging.** Find issues locally where you have full access to logs, MongoDB, and containers.
+
+---
+
+## Regression Ownership (Story 0.6.16, AC6)
+
+When you modify production code and tests fail:
+
+### You Own the Regression
+
+If you changed `services/collection-model/src/...` and E2E tests fail:
+1. You broke it, you fix it
+2. Do not mark story as complete
+3. Run diagnostics, identify root cause
+4. Either fix your code OR update tests (with justification)
+
+### Investigation Order
+
+1. **Run `bash scripts/e2e-diagnose.sh`** - Get structured diagnosis
+2. **Check auto-diagnosis section** - It identifies likely issues
+3. **Look at the layer indicated** - Collection Model? AI Model? Plantation Model?
+4. **Follow suggested_check** - The diagnostic tells you where to look
+
+### Common Regressions
+
+| Symptom | Likely Cause | Fix |
+|---------|--------------|-----|
+| Stale image detected | Forgot `--build` | `docker compose ... up -d --build` |
+| Documents not created | Collection Model bug | Check service logs |
+| Extraction stuck pending | OPENROUTER_API_KEY missing | Restart with env var |
+| Event not received | DAPR pub/sub issue | Check DAPR sidecar logs |
 
 ---
 
@@ -582,5 +746,7 @@ pytest tests/unit/plantation_model/ -v # If you modified plantation-model
 4. **Tests verify behavior** - Assertions should match proto expectations
 5. **When tests fail, investigate** - Use the debugging checklist
 6. **Fix the right layer** - Never modify production to accommodate test errors
+7. **Use diagnostic tools** - Pre-flight, diagnose, checkpoints (Story 0.6.16)
+8. **Local before CI** - Debug locally where you have full access
 
 **Remember:** The test exposed a problem. Your job is to find WHERE the problem is, not to make the test pass by any means necessary.

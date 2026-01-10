@@ -3,6 +3,8 @@
 Story 0.75.18: Validates weather data ingestion via scheduled pull with real AI Model
 extraction using the weather-extractor agent and Claude 3 Haiku.
 
+Story 0.6.16: Refactored to use checkpoint-based testing pattern (AC4).
+
 This test validates the complete async event-driven flow:
 1. Collection Model triggers weather pull job
 2. Open-Meteo API returns real weather data
@@ -49,6 +51,13 @@ import os
 import time
 
 import pytest
+
+# Story 0.6.16: Import checkpoint helpers for better diagnostics on failure
+from tests.e2e.helpers.checkpoints import (
+    CheckpointFailure,
+    checkpoint_documents_created,
+    checkpoint_extraction_complete,
+)
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # TEST CONSTANTS
@@ -422,3 +431,105 @@ class TestCollectionMCPWeatherQuery:
         # Verify document has weather source_id
         doc = documents[0]
         assert doc.get("source_id") == SOURCE_ID or "weather" in str(doc).lower()
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# CHECKPOINT-BASED TESTS (Story 0.6.16)
+# ═══════════════════════════════════════════════════════════════════════════════
+
+
+@pytest.mark.e2e
+class TestWeatherIngestionWithCheckpoints:
+    """Weather ingestion tests using checkpoint-based pattern (Story 0.6.16).
+
+    These tests use the checkpoint helpers which provide:
+    1. Named checkpoints (e.g., 1-DOCUMENTS_CREATED)
+    2. Appropriate timeouts (short for fast ops, long for LLM)
+    3. Rich diagnostics on failure (CheckpointFailure exception)
+    4. Layer identification (Collection Model, AI Model, etc.)
+
+    When a test fails, the checkpoint diagnostics identify:
+    - Which layer failed
+    - What was expected vs observed
+    - MongoDB state at failure time
+    - Recent errors from logs
+    - Likely issue and suggested investigation
+
+    Example failure output:
+        CheckpointFailure: CHECKPOINT 1-DOCUMENTS_CREATED FAILED
+        Diagnostics: {
+            'checkpoint': '1-DOCUMENTS_CREATED',
+            'layer': 'Collection Model',
+            'likely_issue': 'Pull job not creating documents',
+            'suggested_check': 'Check Collection Model logs for pull job errors'
+        }
+    """
+
+    @pytest.mark.asyncio
+    async def test_end_to_end_weather_flow_with_checkpoints(
+        self,
+        collection_api,
+        mongodb_direct,
+        seed_data,
+        openrouter_is_configured,
+    ):
+        """Complete E2E flow with checkpoint-based verification.
+
+        This test demonstrates the checkpoint pattern:
+        - Checkpoint 1: Documents created (Collection Model)
+        - Checkpoint 3: Extraction complete (AI Model)
+
+        Each checkpoint provides rich diagnostics on failure.
+        """
+        # Skip if OPENROUTER not configured
+        if not openrouter_is_configured:
+            pytest.skip(
+                "OPENROUTER_API_KEY not set - skipping AI extraction test. "
+                "Set in shell: export OPENROUTER_API_KEY=your-key"
+            )
+
+        # Trigger the weather pull job
+        result = await collection_api.trigger_pull_job(SOURCE_ID)
+        assert result["success"] is True, f"Pull job failed: {result.get('error')}"
+
+        # ════════════════════════════════════════════════════════════════════
+        # CHECKPOINT 1: Documents Created (Collection Model)
+        # Timeout: 15s (document creation should be fast)
+        # ════════════════════════════════════════════════════════════════════
+        try:
+            documents = await checkpoint_documents_created(
+                mongodb_direct,
+                source_id=SOURCE_ID,
+                collection="weather_documents",
+                min_count=1,
+                timeout=15.0,  # Fast timeout for document creation
+            )
+            print(f"✓ Checkpoint 1 passed: {len(documents)} documents created")
+        except CheckpointFailure as e:
+            # Re-raise with full diagnostics
+            pytest.fail(str(e))
+
+        # ════════════════════════════════════════════════════════════════════
+        # CHECKPOINT 3: Extraction Complete (AI Model)
+        # Timeout: 90s (LLM calls take time)
+        # ════════════════════════════════════════════════════════════════════
+        try:
+            completed_doc = await checkpoint_extraction_complete(
+                mongodb_direct,
+                source_id=SOURCE_ID,
+                collection="weather_documents",
+                timeout=90.0,  # Long timeout for LLM processing
+            )
+            print("✓ Checkpoint 3 passed: extraction.status=complete")
+
+            # Verify extracted fields exist
+            extracted = completed_doc.get("extracted_fields", {})
+            assert len(extracted) > 0, "No extracted fields in completed document"
+
+        except CheckpointFailure as e:
+            # Re-raise with full diagnostics
+            pytest.fail(str(e))
+
+        # Final verification
+        assert completed_doc.get("linkage_fields", {}).get("region_id") is not None
+        print("✓ End-to-end weather flow completed successfully")
