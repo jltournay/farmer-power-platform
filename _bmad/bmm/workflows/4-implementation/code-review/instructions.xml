@@ -67,12 +67,14 @@
         The story has an unchecked E2E tests checkbox.
         The dev agent MUST run E2E tests before this review can proceed.
 
-        **Required Actions (by dev agent):**
-        1. Run: `docker compose -f tests/e2e/infrastructure/docker-compose.e2e.yaml up -d`
-        2. Run: `PYTHONPATH="${PYTHONPATH}:.:libs/fp-proto/src" pytest tests/e2e/scenarios/ -v`
-        3. Capture output in story file
-        4. Mark E2E checkbox as [x]
-        5. Re-submit for review
+        **Required Actions (by dev agent, per ADR-015):**
+        1. Run: `bash scripts/e2e-up.sh --build`
+        2. Run: `bash scripts/e2e-preflight.sh`
+        3. Run: `bash scripts/e2e-test.sh --keep-up`
+        4. Capture output in story file
+        5. Mark E2E checkbox as [x]
+        6. Run: `bash scripts/e2e-up.sh --down`
+        7. Re-submit for review
       </output>
       <action>Set story status to "in-progress"</action>
       <action>HALT: "Cannot proceed with review - E2E tests not executed"</action>

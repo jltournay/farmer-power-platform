@@ -351,7 +351,7 @@
   <step n="7b" goal="Run E2E tests locally (MANDATORY)">
     <critical>E2E tests MUST pass locally before marking story ready for review - NO EXCEPTIONS</critical>
     <critical>This step CANNOT be skipped - story will be rejected without E2E evidence</critical>
-    <critical>Docker images MUST be rebuilt before running E2E tests - stale images cause false positives</critical>
+    <critical>Per ADR-015: Use E2E scripts instead of raw docker-compose commands</critical>
 
     <action>Check if E2E test infrastructure exists: tests/e2e/infrastructure/docker-compose.e2e.yaml</action>
 
@@ -359,46 +359,42 @@
       <output>🧪 **Starting E2E Test Suite (MANDATORY)**
         E2E tests must pass before story can move to review status.
 
-        ⚠️ **IMPORTANT:** Docker images will be rebuilt to ensure you're testing current code.
+        Per ADR-015, using E2E scripts that handle env vars, health checks, and stale image detection.
       </output>
 
-      <action>Rebuild and start E2E infrastructure (--build is MANDATORY to avoid testing stale images):
-        docker compose -f tests/e2e/infrastructure/docker-compose.e2e.yaml up -d --build
+      <action>Start E2E infrastructure with rebuild:
+        bash scripts/e2e-up.sh --build
       </action>
+      <note>The script automatically:
+        - Loads .env and exports variables correctly (set -a &amp;&amp; source .env &amp;&amp; set +a)
+        - Rebuilds Docker images
+        - Verifies environment variables are set INSIDE containers
+        - Waits for services to be healthy
+      </note>
 
-      <!-- CRITICAL: Verify Docker images were actually rebuilt -->
-      <critical>VERIFY Docker images were ACTUALLY rebuilt - do NOT proceed with cached images</critical>
-      <action>Check the docker compose build output for evidence of actual rebuilding:
-        - Look for `COPY services/` lines in the build output
-        - If you see `CACHED` next to COPY commands for services you modified, the rebuild FAILED
-        - You MUST see actual build steps (not CACHED) for modified service directories
+      <action>Run pre-flight validation:
+        bash scripts/e2e-preflight.sh
       </action>
-      <check if="build output shows CACHED for modified service COPY commands">
-        <output>❌ **Docker Build Used Cached Images - INVALID**
-
-          The Docker build used cached layers for services you modified.
-          This means you are NOT testing your current code changes.
-
-          **Required action:** Force rebuild without cache:
-          ```
-          docker compose -f tests/e2e/infrastructure/docker-compose.e2e.yaml build --no-cache
-          docker compose -f tests/e2e/infrastructure/docker-compose.e2e.yaml up -d
-          ```
+      <check if="pre-flight fails">
+        <output>❌ **Pre-flight Check Failed**
+          Fix the issues reported by e2e-preflight.sh before running tests.
         </output>
-        <action>Force rebuild: docker compose -f tests/e2e/infrastructure/docker-compose.e2e.yaml build --no-cache</action>
-        <action>Restart: docker compose -f tests/e2e/infrastructure/docker-compose.e2e.yaml up -d</action>
+        <action>HALT: "Pre-flight failed - fix issues before proceeding"</action>
       </check>
 
-      <action>Wait for services to be healthy (use docker compose logs to verify)</action>
       <action>Run E2E test suite:
-        PYTHONPATH="${PYTHONPATH}:.:libs/fp-proto/src" pytest tests/e2e/scenarios/ -v
+        bash scripts/e2e-test.sh --keep-up
       </action>
-      <action>Capture COMPLETE E2E output including pass/fail counts</action>
-      <action>Tear down infrastructure:
-        docker compose -f tests/e2e/infrastructure/docker-compose.e2e.yaml down -v
-      </action>
+      <note>Or manually: PYTHONPATH="${PYTHONPATH}:.:libs/fp-proto/src" pytest tests/e2e/scenarios/ -v</note>
 
+      <action>Capture COMPLETE E2E output including pass/fail counts</action>
+
+      <action if="E2E tests fail">Run diagnostics: bash scripts/e2e-diagnose.sh</action>
       <action if="E2E tests fail">HALT: "E2E tests failed - MUST fix before proceeding to review"</action>
+
+      <action>Tear down infrastructure:
+        bash scripts/e2e-up.sh --down
+      </action>
 
       <action>Paste E2E output in story file under "Local Test Run Evidence → E2E Tests" section</action>
       <action>Mark E2E evidence checkbox in story file</action>
@@ -475,17 +471,16 @@
         Step 7b (Local E2E) was not completed properly.
         The story file must contain actual E2E test output, not placeholders.
 
-        **Required action:** Return to Step 7b and run:
+        **Required action:** Return to Step 7b and run (per ADR-015):
         ```
-        docker compose -f tests/e2e/infrastructure/docker-compose.e2e.yaml up -d --build
+        bash scripts/e2e-up.sh --build
+        bash scripts/e2e-preflight.sh
+        bash scripts/e2e-test.sh --keep-up
         ```
 
-        **CRITICAL:** Verify Docker images were ACTUALLY rebuilt:
-        - Check build output for `COPY services/` lines
-        - If you see `CACHED` next to COPY commands for modified services, rebuild failed
-        - Use `--no-cache` if needed: `docker compose ... build --no-cache`
+        The scripts handle env vars, image rebuilding, and health checks automatically.
 
-        Then run tests and capture FULL output in story file before proceeding.
+        Then capture FULL output in story file before proceeding.
       </output>
       <action>HALT: "Missing Local E2E evidence - complete Step 7b before proceeding"</action>
     </check>

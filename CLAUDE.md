@@ -108,35 +108,47 @@ You create:    Own todo: Unit tests → Lint → Push → Done  ← WRONG! (skip
 
 | Step   | What      | When                                                                                         | Command                                               |
 |--------|-----------|----------------------------------------------------------------------------------------------|-------------------------------------------------------|
-| **7b** | Local E2E | Before marking tasks complete                                                                | `docker compose ... up -d --build`                    |
+| **7b** | Local E2E | Before marking tasks complete                                                                | `bash scripts/e2e-up.sh --build`                      |
 | **9c** | CI E2E    | After push in the story branch, run the e2e workflow in the story branch, before code review | `gh workflow run e2e-tests.yaml --ref <story branch>` |
 
 #### Step 7b: Local E2E (MANDATORY)
 
 **BEFORE marking ANY story complete or pushing final commits:**
 
-1. **Rebuild and start E2E infrastructure (--build is MANDATORY):**
-   ```bash
-   docker compose -f tests/e2e/infrastructure/docker-compose.e2e.yaml up -d --build
-   ```
-   > ⚠️ **WARNING:** You MUST use `--build` to rebuild Docker images. Without it, you test stale code and get false positives that fail in CI.
+> **Per ADR-015:** Use E2E scripts instead of raw docker-compose commands. Scripts handle environment variables, health checks, and stale image detection automatically.
 
-2. **VERIFY Docker images were actually rebuilt (NOT cached):**
-   - Check the build output for `COPY services/` lines
-   - If you see `CACHED` next to COPY commands for services you modified, the rebuild FAILED
-   - You MUST see actual build steps (not CACHED) for modified service directories
-   - If images are cached, run: `docker compose -f tests/e2e/infrastructure/docker-compose.e2e.yaml build --no-cache`
+1. **Start E2E infrastructure with rebuild:**
+   ```bash
+   bash scripts/e2e-up.sh --build
+   ```
+   The script automatically:
+   - Loads `.env` and exports variables correctly (`set -a && source .env && set +a`)
+   - Rebuilds Docker images
+   - Verifies environment variables are set INSIDE containers
+   - Waits for services to be healthy
+
+2. **Run pre-flight validation:**
+   ```bash
+   bash scripts/e2e-preflight.sh
+   ```
+   Validates containers, health endpoints, MongoDB seed data, env vars, and DAPR sidecars.
 
 3. **Run E2E test suite:**
    ```bash
-   PYTHONPATH="${PYTHONPATH}:.:libs/fp-proto/src" pytest tests/e2e/scenarios/ -v
+   bash scripts/e2e-test.sh --keep-up
+   ```
+   Or manually: `PYTHONPATH="${PYTHONPATH}:.:libs/fp-proto/src" pytest tests/e2e/scenarios/ -v`
+
+4. **If tests fail, run diagnostics:**
+   ```bash
+   bash scripts/e2e-diagnose.sh
    ```
 
-4. **Capture output in story file** - Paste actual test results, not placeholders
+5. **Capture output in story file** - Paste actual test results, not placeholders
 
-5. **Tear down infrastructure:**
+6. **Tear down infrastructure:**
    ```bash
-   docker compose -f tests/e2e/infrastructure/docker-compose.e2e.yaml down -v
+   bash scripts/e2e-up.sh --down
    ```
 
 #### Step 9c: E2E CI (MANDATORY - SEPARATE FROM LOCAL)
