@@ -8,6 +8,17 @@
 
 ---
 
+## Required Reading (MANDATORY)
+
+Before starting implementation, you MUST read:
+
+| Document | Why |
+|----------|-----|
+| `tests/e2e/E2E-TESTING-MENTAL-MODEL.md` | Understand truth hierarchy: Proto → Production → Seed → Tests. Never modify production code to make tests pass. |
+| [ADR-015: E2E Autonomous Debugging Infrastructure](../architecture/adr/ADR-015-e2e-autonomous-debugging-infrastructure.md) | Understand local E2E environment variable handling and Docker image rebuild requirements. |
+
+---
+
 ## Context
 
 Story 0.6.2 created the shared logging module in `fp-common` with:
@@ -112,9 +123,32 @@ So that logs are consistent, traceable, and runtime-debuggable across the platfo
   - [ ] Run unit tests to verify no regressions
 
 - [ ] **Task 5: E2E Validation** (AC: All)
-  - [ ] Run full E2E suite to verify no regressions
-  - [ ] Verify `/admin/logging` endpoints respond correctly
-  - [ ] Capture sample log output showing new context fields
+  - [ ] Start E2E infrastructure and run tests (per ADR-015 — **run all in same shell session**):
+    ```bash
+    # Step 1: Export .env variables to shell (set -a = auto-export, set +a = stop auto-export)
+    set -a && source .env && set +a
+
+    # Step 2: Start Docker with --build (MUST rebuild to include code changes)
+    docker compose -f tests/e2e/infrastructure/docker-compose.e2e.yaml up -d --build
+
+    # Step 3: Wait for services to be healthy
+    sleep 10
+
+    # Step 4: Run E2E tests (PYTHONPATH for fp-proto module resolution)
+    PYTHONPATH="${PYTHONPATH}:.:libs/fp-proto/src" pytest tests/e2e/scenarios/ -v
+    ```
+  - [ ] Manually verify `/admin/logging` endpoints respond (no E2E test required - curl verification):
+    ```bash
+    curl -s http://localhost:8001/admin/logging  # plantation-model → expect {}
+    curl -s http://localhost:8002/admin/logging  # collection-model → expect {}
+    curl -s http://localhost:8091/admin/logging  # ai-model → expect {}
+    curl -s http://localhost:8083/admin/logging  # bff → expect {}
+    ```
+  - [ ] Capture sample log output showing new context fields (service, trace_id, span_id)
+  - [ ] Tear down infrastructure:
+    ```bash
+    docker compose -f tests/e2e/infrastructure/docker-compose.e2e.yaml down -v
+    ```
 
 ---
 
@@ -143,11 +177,28 @@ def test_admin_logging_endpoint_available(client):
 - **No breaking changes** - Services log the same events, just with richer context
 - **Log format unchanged** - Already JSON, just with additional fields
 
-### Verification
+### Verification (per ADR-015)
+
+**Run all commands in the same shell session:**
 ```bash
+# Step 1: Export .env variables to shell
+set -a && source .env && set +a
+
+# Step 2: Start Docker with --build
 docker compose -f tests/e2e/infrastructure/docker-compose.e2e.yaml up -d --build
+
+# Step 3: Wait for services, then run tests
+sleep 10
 PYTHONPATH="${PYTHONPATH}:.:libs/fp-proto/src" pytest tests/e2e/scenarios/ -v
+
+# Step 4: Tear down
 docker compose -f tests/e2e/infrastructure/docker-compose.e2e.yaml down -v
+```
+
+**Verify env vars are inside containers (not just shell):**
+```bash
+docker exec e2e-ai-model printenv OPENROUTER_API_KEY | head -c 10
+# Should show first 10 chars of key, not empty
 ```
 
 ---
