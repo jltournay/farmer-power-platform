@@ -16,11 +16,20 @@ Story 0.75.16b: Wired AgentExecutor and WorkflowExecutionService for event proce
 """
 
 import asyncio
+import logging
+import sys
 import threading
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 
 import structlog
+
+# Configure Python standard logging (required for structlog.stdlib integration)
+logging.basicConfig(
+    format="%(message)s",
+    stream=sys.stdout,
+    level=logging.DEBUG,
+)
 from ai_model.api import health
 from ai_model.api.grpc_server import start_grpc_server, stop_grpc_server
 from ai_model.config import settings
