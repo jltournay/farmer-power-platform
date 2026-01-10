@@ -318,3 +318,7 @@ $ curl -s -X POST 'http://localhost:8001/admin/logging/plantation_model.domain?l
 $ curl -s -X DELETE 'http://localhost:8001/admin/logging/plantation_model.domain' | jq .
 {"logger":"plantation_model.domain","status":"reset"}
 ```
+
+**CI Results:**
+- Quality CI: ✅ PASSED (Run ID: 20879305683)
+- E2E CI: ✅ PASSED (Run ID: 20879409322)
