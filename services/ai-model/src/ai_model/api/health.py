@@ -101,6 +101,43 @@ async def ready() -> JSONResponse:
         )
 
 
+@router.post(
+    "/admin/invalidate-cache",
+    status_code=status.HTTP_200_OK,
+    summary="Invalidate all caches",
+    description="Forces cache reload on next access. Used by E2E tests after seeding data.",
+)
+async def invalidate_cache() -> JSONResponse:
+    """Invalidate all caches.
+
+    Story 0.75.18: Admin endpoint to force cache reload after E2E test seeding.
+
+    This triggers cache invalidation for both AgentConfigCache and PromptCache,
+    forcing them to reload from MongoDB on the next access.
+
+    Returns:
+        JSON with invalidation status for each cache.
+    """
+    result: dict[str, str] = {}
+
+    if _agent_config_cache is not None:
+        _agent_config_cache.invalidate_cache()
+        result["agent_config"] = "invalidated"
+    else:
+        result["agent_config"] = "not_initialized"
+
+    if _prompt_cache is not None:
+        _prompt_cache.invalidate_cache()
+        result["prompt"] = "invalidated"
+    else:
+        result["prompt"] = "not_initialized"
+
+    return JSONResponse(
+        status_code=status.HTTP_200_OK,
+        content={"status": "caches_invalidated", "caches": result},
+    )
+
+
 @router.get(
     "/health/cache",
     status_code=status.HTTP_200_OK,

@@ -1,0 +1,247 @@
+/**
+ * MongoDB initialization script for E2E tests.
+ *
+ * Story 0.75.18: Pre-seeds source_configs collection before services start,
+ * ensuring Collection Model can register agent IDs for subscription topics.
+ *
+ * This script runs automatically when MongoDB container starts via
+ * /docker-entrypoint-initdb.d/ volume mount.
+ */
+
+// Switch to the collection_e2e database (must match COLLECTION_MONGODB_DATABASE in docker-compose)
+db = db.getSiblingDB('collection_e2e');
+
+// Pre-seed source_configs collection
+// This ensures Collection Model can register agent IDs at startup
+// before the pytest seeding happens
+
+// Check if already seeded (idempotent)
+if (db.source_configs.countDocuments({}) > 0) {
+  print("source_configs already seeded, skipping");
+  quit();
+}
+
+db.source_configs.insertMany([
+  {
+    "source_id": "e2e-qc-direct-json",
+    "display_name": "E2E QC Direct JSON",
+    "enabled": true,
+    "description": "E2E Test - Direct JSON ingestion without AI extraction (Story 0.4.5)",
+    "ingestion": {
+      "mode": "blob_trigger",
+      "processor_type": "json-extraction",
+      "landing_container": "quality-events-e2e",
+      "path_pattern": {
+        "pattern": "{farmer_id}/{event_id}.json",
+        "extract_fields": ["farmer_id", "event_id"]
+      }
+    },
+    "transformation": {
+      "ai_agent_id": null,
+      "link_field": "farmer_id",
+      "extract_fields": [
+        "farmer_id",
+        "collection_point_id",
+        "grading_model_id",
+        "grading_model_version",
+        "factory_id",
+        "leaf_analysis",
+        "weight_kg",
+        "grade",
+        "bag_summary"
+      ]
+    },
+    "storage": {
+      "index_collection": "quality_documents",
+      "raw_container": "raw-documents-e2e"
+    },
+    "events": {
+      "on_success": {
+        "topic": "collection.quality_result.received",
+        "payload_fields": ["document_id", "farmer_id"]
+      }
+    },
+    "created_at": new Date("2025-01-01T00:00:00Z"),
+    "updated_at": new Date("2025-01-01T00:00:00Z")
+  },
+  {
+    "source_id": "e2e-qc-analyzer-json",
+    "display_name": "E2E QC Analyzer JSON",
+    "enabled": true,
+    "description": "E2E Test - QC Analyzer JSON results from blob storage",
+    "ingestion": {
+      "mode": "blob_trigger",
+      "processor_type": "json-extraction",
+      "landing_container": "quality-events-e2e",
+      "path_pattern": {
+        "pattern": "results/{factory_id}/{farmer_id}/{batch_id}.json",
+        "extract_fields": ["factory_id", "farmer_id", "batch_id"]
+      }
+    },
+    "transformation": {
+      "ai_agent_id": "qc_event_extractor",
+      "link_field": "farmer_id",
+      "extract_fields": [
+        "farmer_id",
+        "factory_id",
+        "grading_model_id",
+        "grading_model_version",
+        "bag_summary"
+      ]
+    },
+    "storage": {
+      "index_collection": "quality_documents",
+      "raw_container": "raw-documents-e2e"
+    },
+    "events": {
+      "on_success": {
+        "topic": "collection.quality_result.received"
+      }
+    },
+    "created_at": new Date("2025-01-01T00:00:00Z"),
+    "updated_at": new Date("2025-01-01T00:00:00Z")
+  },
+  {
+    "source_id": "e2e-manual-upload",
+    "display_name": "E2E Manual Upload",
+    "enabled": true,
+    "description": "E2E Test - Manual quality document upload",
+    "ingestion": {
+      "mode": "blob_trigger",
+      "processor_type": "json-extraction",
+      "landing_container": "manual-uploads-e2e",
+      "path_pattern": {
+        "pattern": "{farmer_id}/{document_id}.json",
+        "extract_fields": ["farmer_id", "document_id"]
+      }
+    },
+    "transformation": {
+      "ai_agent_id": "qc_event_extractor",
+      "link_field": "farmer_id",
+      "extract_fields": [
+        "farmer_id",
+        "factory_id",
+        "grading_model_id",
+        "bag_summary"
+      ]
+    },
+    "storage": {
+      "index_collection": "quality_documents",
+      "raw_container": "raw-documents-e2e"
+    },
+    "events": {
+      "on_success": {
+        "topic": "collection.quality_result.received"
+      }
+    },
+    "created_at": new Date("2025-01-01T00:00:00Z"),
+    "updated_at": new Date("2025-01-01T00:00:00Z")
+  },
+  {
+    "source_id": "e2e-weather-api",
+    "display_name": "E2E Weather API",
+    "enabled": true,
+    "description": "E2E Test - Weather data from Open-Meteo with real AI extraction (Story 0.75.18)",
+    "ingestion": {
+      "mode": "scheduled_pull",
+      "processor_type": "json-extraction",
+      "request": {
+        "base_url": "https://api.open-meteo.com/v1/forecast",
+        "auth_type": "none",
+        "timeout_seconds": 45,
+        "parameters": {
+          "latitude": "{item.weather_config.api_location.lat}",
+          "longitude": "{item.weather_config.api_location.lng}",
+          "daily": "temperature_2m_max,temperature_2m_min,precipitation_sum,relative_humidity_2m_mean",
+          "timezone": "Africa/Nairobi"
+        }
+      },
+      "iteration": {
+        "foreach": "region",
+        "source_mcp": "plantation-mcp",
+        "source_tool": "list_regions",
+        "tool_arguments": {},
+        "result_path": "regions",
+        "inject_linkage": ["region_id", "name"],
+        "concurrency": 3
+      }
+    },
+    "transformation": {
+      "ai_agent_id": "weather-extractor",
+      "link_field": "region_id",
+      "extract_fields": [
+        "region_id",
+        "observation_date",
+        "temperature_c",
+        "temperature_min_c",
+        "temperature_max_c",
+        "precipitation_mm",
+        "humidity_percent"
+      ]
+    },
+    "storage": {
+      "index_collection": "weather_documents",
+      "raw_container": "raw-documents-e2e"
+    },
+    "events": {
+      "on_success": {
+        "topic": "collection.weather.updated"
+      }
+    },
+    "created_at": new Date("2025-01-01T00:00:00Z"),
+    "updated_at": new Date("2026-01-10T00:00:00Z")
+  },
+  {
+    "source_id": "e2e-exception-images-zip",
+    "display_name": "E2E Exception Images ZIP",
+    "enabled": true,
+    "description": "E2E Test - ZIP processor for exception images (Story 0.4.9, validates Story 2.5)",
+    "ingestion": {
+      "mode": "blob_trigger",
+      "processor_type": "zip-extraction",
+      "landing_container": "exception-landing-e2e",
+      "path_pattern": {
+        "pattern": "{plantation_id}/{batch_id}.zip",
+        "extract_fields": ["plantation_id", "batch_id"]
+      },
+      "zip_config": {
+        "manifest_file": "manifest.json",
+        "images_folder": "images",
+        "extract_images": true,
+        "image_storage_container": "exception-images-e2e"
+      }
+    },
+    "transformation": {
+      "ai_agent_id": null,
+      "link_field": "batch_result_ref",
+      "extract_fields": [
+        "plantation_id",
+        "batch_id",
+        "batch_result_ref",
+        "exception_count",
+        "exception_type",
+        "severity"
+      ]
+    },
+    "storage": {
+      "index_collection": "documents",
+      "raw_container": "exception-raw-e2e",
+      "file_container": "exception-images-e2e",
+      "file_path_pattern": "{plantation_id}/{batch_id}/{doc_id}/{filename}"
+    },
+    "events": {
+      "on_success": {
+        "topic": "collection.exception_images.received",
+        "payload_fields": ["document_id", "plantation_id", "batch_id", "exception_count"]
+      },
+      "on_failure": {
+        "topic": "collection.exception_images.failed",
+        "payload_fields": ["source_id", "error_type", "error_message"]
+      }
+    },
+    "created_at": new Date("2025-01-01T00:00:00Z"),
+    "updated_at": new Date("2025-01-01T00:00:00Z")
+  }
+]);
+
+print("E2E source_configs seeded successfully");

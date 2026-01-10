@@ -10,6 +10,8 @@ Story 0.5.1a: Added gRPC server on port 50051 for BFF document queries (ADR-011)
 
 import asyncio
 import contextlib
+import logging
+import sys
 import threading
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
@@ -17,17 +19,27 @@ from contextlib import asynccontextmanager
 # Import processors to register them
 import collection_model.processors  # noqa: F401
 import structlog
+
+# Configure Python standard logging (required for structlog.stdlib integration)
+logging.basicConfig(
+    format="%(message)s",
+    stream=sys.stdout,
+    level=logging.DEBUG,
+)
 from collection_model.api import events, health
 from collection_model.api.grpc_service import serve_grpc
 from collection_model.config import settings
 from collection_model.events.subscriber import (
+    register_agent_id,
     run_streaming_subscriptions,
+    set_ai_event_handlers,
     set_blob_processor,
     set_main_event_loop,
 )
 from collection_model.infrastructure.dapr_event_publisher import DaprEventPublisher
 from collection_model.infrastructure.dapr_jobs_client import DaprJobsClient
 from collection_model.infrastructure.dapr_secret_client import DaprSecretClient
+from collection_model.infrastructure.document_repository import DocumentRepository
 from collection_model.infrastructure.ingestion_queue import IngestionQueue
 from collection_model.infrastructure.iteration_resolver import IterationResolver
 from collection_model.infrastructure.metrics import setup_metrics, shutdown_metrics
@@ -117,6 +129,16 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
         # Story 0.6.9: Warm cache before accepting requests (ADR-007)
         await app.state.source_config_service.warm_cache()
 
+        # Story 0.75.18: Register agent IDs for completion event subscriptions
+        # This enables Collection Model to subscribe to ai.agent.{agent_id}.completed topics
+        agent_ids = await app.state.source_config_service.get_all_agent_ids()
+        for agent_id in agent_ids:
+            register_agent_id(agent_id)
+        logger.info(
+            "Registered agent IDs for completion subscriptions",
+            agent_ids=list(agent_ids),
+        )
+
         # Story 0.6.9: Start change stream watcher for real-time invalidation (ADR-007)
         await app.state.source_config_service.start_change_stream()
 
@@ -192,6 +214,15 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
             ingestion_queue=app.state.ingestion_queue,
             event_metrics=app.state.event_metrics,
         )
+
+        # Story 0.75.18: Set AI event handler dependencies for AgentCompleted/Failed events
+        app.state.document_repository = DocumentRepository(db)
+        set_ai_event_handlers(
+            document_repository=app.state.document_repository,
+            event_publisher=app.state.event_publisher,
+            source_config_service=app.state.source_config_service,
+        )
+        logger.info("AI event handler dependencies configured")
 
         # Story 0.6.8: Initialize DLQ repository and configure DLQ handler (ADR-006)
         dlq_repository = DLQRepository(db["event_dead_letter"])

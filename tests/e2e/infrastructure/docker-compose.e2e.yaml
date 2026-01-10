@@ -46,6 +46,24 @@ services:
     networks:
       - e2e-network
 
+  # ==========================================================================
+  # MongoDB Init Container (Story 0.75.18)
+  # Pre-seeds source_configs before services start, ensuring Collection Model
+  # can register agent IDs for subscription topics at startup.
+  # ==========================================================================
+  mongodb-init:
+    image: mongo:7.0
+    container_name: e2e-mongodb-init
+    depends_on:
+      mongodb:
+        condition: service_healthy
+    volumes:
+      - ./mongo-init.js:/mongo-init.js:ro
+    entrypoint: ["mongosh", "--host", "mongodb:27017", "--file", "/mongo-init.js"]
+    restart: "no"
+    networks:
+      - e2e-network
+
   redis:
     image: redis:7-alpine
     container_name: e2e-redis
@@ -110,6 +128,7 @@ services:
     container_name: e2e-ai-model
     ports:
       - "8090:50051"
+      - "8091:8000"  # Story 0.75.18: HTTP port for admin/health endpoints
     environment:
       AI_MODEL_MONGODB_URI: mongodb://mongodb:27017/?replicaSet=rs0
       AI_MODEL_MONGODB_DATABASE: ai_model_e2e
@@ -247,6 +266,8 @@ services:
     depends_on:
       mongodb:
         condition: service_healthy
+      mongodb-init:
+        condition: service_completed_successfully
       azurite:
         condition: service_healthy
       ai-model:
