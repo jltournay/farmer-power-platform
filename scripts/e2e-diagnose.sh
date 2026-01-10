@@ -36,14 +36,13 @@ NC='\033[0m' # No Color
 
 COMPOSE_FILE="tests/e2e/infrastructure/docker-compose.e2e.yaml"
 
-# Track findings for auto-diagnosis
-declare -A FINDINGS
-FINDINGS[stale_images]=""
-FINDINGS[unhealthy_services]=""
-FINDINGS[missing_env_vars]=""
-FINDINGS[empty_collections]=""
-FINDINGS[recent_errors]=""
-FINDINGS[missing_events]=""
+# Track findings for auto-diagnosis (bash 3.2 compatible - use separate variables)
+FINDINGS_stale_images=""
+FINDINGS_unhealthy_services=""
+FINDINGS_missing_env_vars=""
+FINDINGS_empty_collections=""
+FINDINGS_recent_errors=""
+FINDINGS_missing_events=""
 
 # =============================================================================
 # Helper Functions
@@ -135,7 +134,7 @@ check_image_build_dates() {
             print_info "  Image built:    $image_created"
             print_info "  Code modified:  $code_modified"
             print_info "  → Rebuild with: docker compose -f $COMPOSE_FILE build --no-cache $container"
-            FINDINGS[stale_images]+="$container "
+            FINDINGS_stale_images+="$container "
         else
             print_success "$container: Image is up-to-date"
             print_info "  Image built:    $image_created"
@@ -156,7 +155,7 @@ check_service_health() {
     docker compose -f "$COMPOSE_FILE" ps 2>/dev/null | while IFS= read -r line; do
         if echo "$line" | grep -q "unhealthy\|Exit\|Restarting"; then
             print_error "$line"
-            FINDINGS[unhealthy_services]+="$(echo "$line" | awk '{print $1}') "
+            FINDINGS_unhealthy_services+="$(echo "$line" | awk '{print $1}') "
         elif echo "$line" | grep -q "healthy"; then
             print_success "$line"
         else
@@ -187,7 +186,7 @@ check_service_health() {
         else
             print_error "$name: HTTP $status"
             print_info "  Response: $response"
-            FINDINGS[unhealthy_services]+="$name "
+            FINDINGS_unhealthy_services+="$name "
         fi
     done
 }
@@ -201,7 +200,7 @@ check_mongodb_state() {
 
     if ! docker ps --format '{{.Names}}' | grep -q "e2e-mongodb"; then
         print_error "MongoDB container not running!"
-        FINDINGS[unhealthy_services]+="mongodb "
+        FINDINGS_unhealthy_services+="mongodb "
         return
     fi
 
@@ -231,7 +230,7 @@ check_mongodb_state() {
             print_error "$db.$collection: Error querying"
         elif [[ "$count" == "0" ]]; then
             print_warning "$db.$collection: 0 documents"
-            FINDINGS[empty_collections]+="$db.$collection "
+            FINDINGS_empty_collections+="$db.$collection "
         else
             print_success "$db.$collection: $count documents"
         fi
@@ -273,7 +272,7 @@ check_mongodb_state() {
 
     if [[ "$recent_events" == "[]" ]]; then
         print_warning "No workflow checkpoints found (AI Model may not have received events)"
-        FINDINGS[missing_events]+="workflow_checkpoints "
+        FINDINGS_missing_events+="workflow_checkpoints "
     else
         echo "$recent_events" | python3 -m json.tool 2>/dev/null | head -30 | while IFS= read -r line; do
             print_info "$line"
@@ -344,7 +343,7 @@ check_recent_errors() {
                 echo "$errors" | while IFS= read -r line; do
                     print_info "${line:0:120}"
                 done
-                FINDINGS[recent_errors]+="$service "
+                FINDINGS_recent_errors+="$service "
             else
                 print_success "No recent errors in logs"
             fi
@@ -375,7 +374,7 @@ check_event_flow() {
             done
         else
             print_warning "No AgentRequestEvent activity in Collection Model logs"
-            FINDINGS[missing_events]+="AgentRequestEvent "
+            FINDINGS_missing_events+="AgentRequestEvent "
         fi
     fi
 
@@ -393,7 +392,7 @@ check_event_flow() {
             done
         else
             print_warning "No AgentCompletedEvent activity in AI Model logs"
-            FINDINGS[missing_events]+="AgentCompletedEvent "
+            FINDINGS_missing_events+="AgentCompletedEvent "
         fi
     fi
 
@@ -428,20 +427,20 @@ auto_diagnosis() {
     local has_issues=0
 
     # Check for stale images
-    if [[ -n "${FINDINGS[stale_images]}" ]]; then
+    if [[ -n "${FINDINGS_stale_images}" ]]; then
         has_issues=1
         print_error "LIKELY ISSUE: Stale Docker images detected"
-        print_info "  Affected: ${FINDINGS[stale_images]}"
+        print_info "  Affected: ${FINDINGS_stale_images}"
         print_info "  Impact: Tests are running against old code"
         print_info "  Fix: docker compose -f $COMPOSE_FILE up -d --build"
         echo ""
     fi
 
     # Check for unhealthy services
-    if [[ -n "${FINDINGS[unhealthy_services]}" ]]; then
+    if [[ -n "${FINDINGS_unhealthy_services}" ]]; then
         has_issues=1
         print_error "LIKELY ISSUE: Services not healthy"
-        print_info "  Affected: ${FINDINGS[unhealthy_services]}"
+        print_info "  Affected: ${FINDINGS_unhealthy_services}"
         print_info "  Impact: Service calls will fail or timeout"
         print_info "  Fix: Check logs with: docker logs <service-name>"
         echo ""
@@ -457,30 +456,30 @@ auto_diagnosis() {
     fi
 
     # Check for empty critical collections
-    if [[ -n "${FINDINGS[empty_collections]}" ]]; then
+    if [[ -n "${FINDINGS_empty_collections}" ]]; then
         has_issues=1
         print_warning "POTENTIAL ISSUE: Empty collections"
-        print_info "  Affected: ${FINDINGS[empty_collections]}"
+        print_info "  Affected: ${FINDINGS_empty_collections}"
         print_info "  Impact: Tests may fail due to missing seed data or processing issues"
         print_info "  Check: Verify seed data and event flow"
         echo ""
     fi
 
     # Check for missing events
-    if [[ -n "${FINDINGS[missing_events]}" ]]; then
+    if [[ -n "${FINDINGS_missing_events}" ]]; then
         has_issues=1
         print_warning "POTENTIAL ISSUE: Missing event activity"
-        print_info "  Missing: ${FINDINGS[missing_events]}"
+        print_info "  Missing: ${FINDINGS_missing_events}"
         print_info "  Impact: Async processing pipeline may be broken"
         print_info "  Check: DAPR sidecars, Redis pub/sub, event handlers"
         echo ""
     fi
 
     # Check for recent errors
-    if [[ -n "${FINDINGS[recent_errors]}" ]]; then
+    if [[ -n "${FINDINGS_recent_errors}" ]]; then
         has_issues=1
         print_warning "POTENTIAL ISSUE: Errors in service logs"
-        print_info "  Affected: ${FINDINGS[recent_errors]}"
+        print_info "  Affected: ${FINDINGS_recent_errors}"
         print_info "  Impact: Services may be partially working"
         print_info "  Check: docker logs <service-name> | grep -i error"
         echo ""

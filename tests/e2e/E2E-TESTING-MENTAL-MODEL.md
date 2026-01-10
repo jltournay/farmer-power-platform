@@ -571,7 +571,7 @@ pytest tests/unit/plantation_model/ -v # If you modified plantation-model
 | Seed data | `tests/e2e/infrastructure/seed/` |
 | E2E test fixtures | `tests/e2e/conftest.py` |
 | E2E test scenarios | `tests/e2e/scenarios/` |
-| **E2E Scripts** | `scripts/e2e-*.sh` |
+| **E2E Scripts** | `scripts/e2e-up.sh`, `scripts/e2e-test.sh`, `scripts/e2e-preflight.sh`, `scripts/e2e-diagnose.sh` |
 | **Checkpoint Helpers** | `tests/e2e/helpers/checkpoints.py` |
 
 ---
@@ -685,8 +685,8 @@ bash scripts/e2e-up.sh --build
 # 2. Run pre-flight check
 bash scripts/e2e-preflight.sh
 
-# 3. Run E2E tests
-PYTHONPATH="${PYTHONPATH}:.:libs/fp-proto/src" pytest tests/e2e/scenarios/ -v
+# 3. Run E2E tests (handles env vars automatically)
+bash scripts/e2e-test.sh
 
 # 4. If tests fail, run diagnostics
 bash scripts/e2e-diagnose.sh

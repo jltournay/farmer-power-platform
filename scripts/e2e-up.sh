@@ -279,8 +279,7 @@ main() {
     echo ""
     echo "Next steps:"
     echo "  1. Run pre-flight check:  bash scripts/e2e-preflight.sh"
-    echo "  2. Run E2E tests:"
-    echo '     PYTHONPATH="${PYTHONPATH}:.:libs/fp-proto/src" pytest tests/e2e/scenarios/ -v'
+    echo "  2. Run E2E tests:         bash scripts/e2e-test.sh"
     echo "  3. If tests fail, diagnose: bash scripts/e2e-diagnose.sh"
     echo "  4. When done, stop:        bash scripts/e2e-up.sh --down"
     echo ""
