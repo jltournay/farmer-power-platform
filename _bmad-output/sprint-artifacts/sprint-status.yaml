@@ -111,7 +111,7 @@ development_status:
   # Epic 0.6: Infrastructure Hardening (ADR Implementation)
   # Dependencies: Epic 0.4 (E2E Tests). Blocks: All future epics
   # Implements ADRs: 004-011 (49 story points total, Wave 4 added 2026-01-06)
-  epic-0-6: in-progress  # Reopened for Wave 4: Type Safety & Service Boundaries
+  epic-0-6: done  # Wave 5 completed 2026-01-10
   0-6-1-shared-pydantic-models: done  # ADR-004, 5 points, github_issue: 41, PR: #42
   0-6-2-shared-logging-module: done  # ADR-009, 3why the /sm points, github_issue: 43, PR: #44
   0-6-3-grpc-retry-ai-model-client: done  # ADR-005, 2 points, github_issue: 45
@@ -129,7 +129,7 @@ development_status:
   0-6-14-dapr-sdk-publishing: done  # ADR-010, 3 points, github_issue: 115, PR: #116 - Replace custom DaprPubSubClient with SDK publish_event()
   # Wave 5: Observability & Debugging (added 2026-01-10)
   0-6-15-service-logging-migration: done  # ADR-009, 5 points, github_issue: 150 - Migrate all services to fp_common logging module
-  0-6-16-e2e-autonomous-debugging: in-progress  # ADR-015, 5 points, github_issue: 152 - Diagnostic scripts, checkpoints for E2E autonomous debugging
+  0-6-16-e2e-autonomous-debugging: done  # ADR-015, 5 points, github_issue: 152 - Diagnostic scripts, checkpoints for E2E autonomous debugging
   epic-0-6-retrospective: done  # 2026-01-02: epic-0-6-retro-2026-01-02.md (will need update after Wave 5)
 
   # ═══════════════════════════════════════════════════════════════════════════
@@ -190,7 +190,7 @@ development_status:
   0-75-16b-event-subscriber-workflow-wiring: done  # github_issue: 143, Wire subscriber to WorkflowExecutionService, CODE REVIEW COMPLETED 2026-01-09
   0-75-17-extractor-agent-implementation: done  # github_issue: 145, Sample extractor config, golden samples, CODE REVIEW COMPLETED 2026-01-09, PR #146 MERGED
   0-75-18-e2e-weather-observation-extraction-flow: done  # github_issue: 148, CODE REVIEW COMPLETED 2026-01-10
-  0-75-19-explorer-agent-implementation: backlog  # LangGraph + RAG, golden samples
+  0-75-19-explorer-agent-implementation: done  # LangGraph + RAG, golden samples, github_issue: 154, CODE REVIEW COMPLETED 2026-01-10
   0-75-20-generator-agent-implementation: backlog  # LangGraph + RAG, multi-format, golden samples
   0-75-21-conversational-agent-implementation: backlog  # Two LLM calls, state management, golden samples
   0-75-22-tiered-vision-agent-implementation: blocked  # Blocked by: 2-13 - Cost-optimized image analysis, golden samples
