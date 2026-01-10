@@ -563,11 +563,17 @@ gh workflow run "E2E Tests" --ref feature/0-75-20-generator-agent-implementation
 # Wait and check status
 gh run list --branch feature/0-75-20-generator-agent-implementation --limit 3
 ```
-**CI Run ID:** _______________
-**CI E2E Run ID:** _______________
-**CI Status:** [ ] Passed / [ ] Failed
-**CI E2E Status:** [ ] Passed / [ ] Failed
-**Verification Date:** _______________
+**CI Run ID:** 20885599143
+**CI E2E Run ID:** 20885675809
+**CI Status:** [x] Passed / [ ] Failed
+**CI E2E Status:** [ ] Passed / [x] Failed (pre-existing flaky test unrelated to story)
+**Verification Date:** 2026-01-10
+
+**E2E CI Note:** 106 passed, 1 failed, 1 skipped. The failing test `test_get_region_weather_returns_observations`
+is a pre-existing weather query test that timed out in CI (httpx.ConnectTimeout). This test:
+- Passed locally (107 total passed)
+- Is unrelated to this story (weather query vs generator agent config)
+- Is known to be flaky in CI due to network timing issues
 
 ---
 
