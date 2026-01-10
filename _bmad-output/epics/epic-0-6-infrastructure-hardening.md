@@ -683,7 +683,104 @@ Collection Model already exposes `GetDocument` via gRPC (proto/collection/v1/col
 
 ### Story 0.6.14: Replace Custom DaprPubSubClient with SDK Publishing
 
-**[📄 Story File](../sprint-artifacts/0-6-14-dapr-sdk-publishing.md)** | Status: To Do
+**[📄 Story File](../sprint-artifacts/0-6-14-dapr-sdk-publishing.md)** | Status: Done
+
+---
+
+### Story 0.6.15: Migrate All Services to fp-common Logging Module
+
+**[📄 Story File](../sprint-artifacts/0-6-15-service-logging-migration.md)** | Status: Ready for Dev
+
+As a **platform engineer**,
+I want all services to use the shared `fp_common` logging module,
+So that logs are consistent, traceable, and runtime-debuggable across the platform.
+
+**ADR:** ADR-009 - Logging Standards and Runtime Configuration
+**Depends On:** Story 0.6.2 (Shared Logging Module) - DONE
+
+**Context:**
+Story 0.6.2 created the shared logging infrastructure, but no service has migrated to use it.
+All 4 active services (ai-model, collection-model, plantation-model, bff) implement custom
+structlog configurations that lack service context, trace injection, and runtime control.
+
+**Acceptance Criteria:**
+
+**Given** each service has custom structlog.configure() code
+**When** I check the main.py lifespan for each service
+**Then** all 4 services call `configure_logging(service_name)` from fp_common
+**And** the duplicate structlog.configure() code is removed
+
+**Given** services don't have runtime log control
+**When** I check each service's FastAPI app
+**Then** all 4 services include `create_admin_router()` from fp_common
+**And** `GET/POST/DELETE /admin/logging/*` endpoints are available
+
+**Given** plantation-model repositories use `logging.getLogger()`
+**When** I check the infrastructure/repositories/ folder
+**Then** all files use `structlog.get_logger()` instead
+
+**Given** logging is configured via fp_common
+**When** I check log output from any service
+**Then** logs include: service, timestamp, level, trace_id, span_id
+
+**Unit Tests Required:**
+- Existing unit tests must continue to pass (no behavioral changes)
+- Optional: Integration tests for `/admin/logging` endpoint
+
+**E2E Test Impact:**
+- No breaking changes expected
+- Log format unchanged (JSON), just with additional context fields
+
+**Story Points:** 5
+
+---
+
+### Story 0.6.16: E2E Autonomous Debugging Infrastructure
+
+**[📄 Story File](../sprint-artifacts/0-6-16-e2e-autonomous-debugging-infrastructure.md)** | Status: Ready for Dev
+
+As a **platform developer using AI agents**,
+I want E2E debugging infrastructure with diagnostic scripts and checkpoint-based tests,
+So that AI agents can debug E2E failures autonomously without human supervision.
+
+**ADR:** ADR-015 - E2E Autonomous Debugging Infrastructure
+**Depends On:** Story 0.6.15 (Service Logging Migration) - for meaningful log output
+
+**Context:**
+During Story 0.75.18, an AI agent spent 2+ days debugging E2E failures without identifying the root cause.
+The agent required human intervention to discover that the issue was in Collection Model (no documents created),
+not AI Model where the agent was focusing. This story implements diagnostic tooling and checkpoint-based
+tests that enable AI agents to debug autonomously.
+
+**Acceptance Criteria:**
+
+**Given** I need to run E2E tests
+**When** I execute `bash scripts/e2e-preflight.sh`
+**Then** it validates containers, health endpoints, seed data, env vars, and DAPR sidecars
+
+**Given** an E2E test has failed
+**When** I execute `bash scripts/e2e-diagnose.sh`
+**Then** it produces a structured report with service health, MongoDB state, errors, and event flow
+
+**Given** I'm writing an E2E test with multiple async steps
+**When** I use checkpoint helpers from `tests/e2e/helpers/checkpoints.py`
+**Then** each checkpoint has a specific name, appropriate timeout, and diagnostic context on failure
+
+**Given** the weather E2E test has a single 90s timeout
+**When** I refactor it with checkpoints
+**Then** it has distinct checkpoints for document creation (15s), event publishing (10s), and extraction (90s)
+
+**Deliverables:**
+- `scripts/e2e-up.sh` - Start E2E with correct env var handling (local vs CI)
+- `scripts/e2e-preflight.sh` - Pre-test infrastructure validation
+- `scripts/e2e-diagnose.sh` - Post-failure diagnostic report
+- `tests/e2e/helpers/checkpoints.py` - Checkpoint wait functions
+- `tests/e2e/helpers/diagnostics.py` - Programmatic diagnostics
+- Updated `E2E-TESTING-MENTAL-MODEL.md` with autonomous debugging protocol
+
+**Story Points:** 5
+
+---
 
 As a **platform engineer**,
 I want all DAPR pub/sub publishing to use the official SDK instead of custom httpx-based clients,

@@ -20,6 +20,7 @@ This folder contains Architecture Decision Records (ADRs) documenting significan
 | [ADR-012](./ADR-012-bff-service-composition-api-design.md) | BFF Service Composition and API Design Patterns | Accepted | 2026-01-03 |
 | [ADR-013](./ADR-013-ai-model-configuration-cache.md) | AI Model Configuration Cache with Change Streams | Accepted | 2026-01-04 |
 | [ADR-014](./ADR-014-mongodb-async-driver-migration.md) | MongoDB Async Driver Migration (Motor → PyMongo Async) | Accepted | 2026-01-09 |
+| [ADR-015](./ADR-015-e2e-autonomous-debugging-infrastructure.md) | E2E Autonomous Debugging Infrastructure | Accepted | 2026-01-10 |
 
 ## ADR Template
 
