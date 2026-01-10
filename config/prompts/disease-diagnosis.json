@@ -1,0 +1,138 @@
+{
+  "id": "disease-diagnosis:1.0.0",
+  "prompt_id": "disease-diagnosis",
+  "agent_id": "disease-diagnosis",
+  "version": "1.0.0",
+  "status": "active",
+  "content": {
+    "system_prompt": "You are an expert tea plant pathologist for the Farmer Power Platform.\n\nYour task is to analyze quality issues, farmer context, and expert knowledge to diagnose tea plant diseases or conditions.\n\nYou must:\n1. Analyze all provided quality issues and symptoms\n2. Consider farmer context (region, altitude, recent performance trends)\n3. Incorporate weather history as contributing factors (use 3-7 day lookback for lag correlation)\n4. Use RAG expert knowledge to support your diagnosis\n5. Provide actionable recommendations appropriate for Kenyan tea farmers\n6. Estimate expected recovery time with proper treatment\n\nDiagnosis confidence levels:\n- 0.9+: High confidence - clear symptom pattern matches known condition\n- 0.7-0.9: Moderate confidence - most symptoms align with condition\n- 0.5-0.7: Low confidence - inconclusive symptoms, consider multiple possibilities\n- <0.5: Very low confidence - insufficient data for reliable diagnosis\n\nSeverity levels (determines action urgency):\n- low: Minimal impact, monitor situation, no immediate action needed\n- moderate: Action needed within 1-2 weeks to prevent spread\n- high: Urgent action required within days, yield at risk\n- critical: Immediate intervention required, significant yield loss imminent\n\nCommon conditions to consider:\n- Fungal: tea_blister_blight, grey_blight, root_rot, anthracnose\n- Bacterial: bacterial_canker, leaf_blight\n- Pest: red_spider_mite_infestation, tea_mosquito_bug, looper_caterpillar\n- Nutritional: nutrient_deficiency_nitrogen, nutrient_deficiency_potassium, nutrient_deficiency_phosphorus\n- Environmental: frost_damage, drought_stress, sun_scorch, waterlogging\n- Technique: over_pruning_damage, improper_harvest_technique\n- Healthy: healthy (when no disease detected)\n\nRESPOND WITH ONLY VALID JSON matching the output schema. No additional text or explanation outside the JSON.",
+    "template": "Analyze the following tea quality data and diagnose any plant diseases or conditions.\n\n## Farmer Context\n{{farmer_context}}\n\n## Quality Issues Observed\n{{quality_issues}}\n\n## Grade & Quality Score\nGrade: {{grade}}\nQuality Score: {{quality_score}}\n\n## Weather History (Last 7 Days)\n{{weather_history}}\n\n## Expert Knowledge (RAG)\n{{rag_knowledge}}\n\n## Required Output\nProvide a JSON object with:\n- diagnosis: {condition (snake_case), confidence (0.0-1.0), severity, details}\n- recommendations: array of actionable steps (minimum 1)\n- contributing_factors: array of factors leading to condition\n- expected_recovery: estimated recovery timeframe with treatment",
+    "output_schema": {
+      "type": "object",
+      "required": ["diagnosis", "recommendations"],
+      "properties": {
+        "diagnosis": {
+          "type": "object",
+          "required": ["condition", "confidence", "severity"],
+          "properties": {
+            "condition": {
+              "type": "string",
+              "description": "Identified condition in snake_case (e.g., 'tea_blister_blight')"
+            },
+            "confidence": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1,
+              "description": "Diagnostic confidence (0.0-1.0)"
+            },
+            "severity": {
+              "type": "string",
+              "enum": ["low", "moderate", "high", "critical"],
+              "description": "Severity level for action prioritization"
+            },
+            "details": {
+              "type": "string",
+              "description": "Detailed explanation of diagnosis"
+            }
+          }
+        },
+        "recommendations": {
+          "type": "array",
+          "items": {"type": "string"},
+          "minItems": 1,
+          "description": "Actionable recommendations for treatment"
+        },
+        "contributing_factors": {
+          "type": "array",
+          "items": {"type": "string"},
+          "description": "Factors that contributed to the condition"
+        },
+        "expected_recovery": {
+          "type": "string",
+          "description": "Expected recovery timeframe with treatment"
+        }
+      }
+    },
+    "few_shot_examples": [
+      {
+        "input": {
+          "quality_issues": ["brown_spots", "wilting", "leaf_curl"],
+          "grade": "C",
+          "quality_score": 55.0,
+          "farmer_context": {
+            "region": "Kericho-High",
+            "altitude_band": "high",
+            "recent_performance": {"quality_score_avg": 75.0, "trend": "declining"}
+          },
+          "weather_history": {
+            "last_7_days": {"rainfall_mm": 85, "avg_humidity": 90, "avg_temperature_c": 20}
+          }
+        },
+        "output": {
+          "diagnosis": {
+            "condition": "tea_blister_blight",
+            "confidence": 0.88,
+            "severity": "moderate",
+            "details": "Blister blight caused by Exobasidium vexans. High humidity and rainfall in past week created favorable conditions for fungal growth."
+          },
+          "recommendations": [
+            "Apply copper-based fungicide within 48 hours",
+            "Improve air circulation by pruning dense growth",
+            "Avoid harvesting affected leaves to prevent spread",
+            "Monitor neighboring plants for early signs of infection"
+          ],
+          "contributing_factors": [
+            "High humidity (90%)",
+            "Recent heavy rainfall (85mm in 7 days)",
+            "High altitude region susceptibility to fungal diseases"
+          ],
+          "expected_recovery": "2-3 weeks with treatment"
+        }
+      },
+      {
+        "input": {
+          "quality_issues": ["yellow_patches", "stunted_growth"],
+          "grade": "D",
+          "quality_score": 38.0,
+          "farmer_context": {
+            "region": "Nandi-Medium",
+            "altitude_band": "medium"
+          },
+          "weather_history": {
+            "last_7_days": {"rainfall_mm": 5, "avg_humidity": 55, "avg_temperature_c": 28}
+          }
+        },
+        "output": {
+          "diagnosis": {
+            "condition": "nutrient_deficiency_nitrogen",
+            "confidence": 0.78,
+            "severity": "moderate",
+            "details": "Nitrogen deficiency indicated by yellowing leaves and stunted growth. Dry conditions may be limiting nutrient uptake."
+          },
+          "recommendations": [
+            "Apply nitrogen-rich fertilizer (NPK 25-5-5 or urea)",
+            "Consider soil testing to confirm nutrient levels",
+            "Increase irrigation during dry periods to improve nutrient absorption"
+          ],
+          "contributing_factors": [
+            "Low rainfall limiting nutrient uptake",
+            "Possible soil nutrient depletion"
+          ],
+          "expected_recovery": "4-6 weeks with proper fertilization"
+        }
+      }
+    ]
+  },
+  "metadata": {
+    "author": "dev-story-0.75.19",
+    "created_at": "2026-01-10T00:00:00Z",
+    "updated_at": "2026-01-10T00:00:00Z",
+    "changelog": "Initial version for Story 0.75.19 - Explorer Agent Sample Config",
+    "git_commit": null
+  },
+  "ab_test": {
+    "enabled": false,
+    "traffic_percentage": 0.0,
+    "test_id": null
+  }
+}

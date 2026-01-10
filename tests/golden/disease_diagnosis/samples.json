@@ -3,6 +3,7 @@
   "agent_type": "explorer",
   "version": "1.0.0",
   "created_at": "2025-12-23T00:00:00Z",
+  "updated_at": "2026-01-10T00:00:00Z",
   "samples": [
     {
       "input": {
@@ -179,6 +180,403 @@
         "validated_at": "2025-12-18T00:00:00Z",
         "tags": ["pest", "mite", "dry-conditions", "expert-validated"],
         "priority": "P0"
+      }
+    },
+    {
+      "input": {
+        "farmer_id": "WM-5678",
+        "doc_id": "DOC-01001",
+        "quality_issues": ["brown_spots", "rust_pustules", "powdery_coating"],
+        "grade": "D",
+        "quality_score": 32.0,
+        "image_url": "https://storage.example.com/images/doc-01001.jpg",
+        "farmer_context": {
+          "region": "Bomet-High",
+          "altitude_band": "high",
+          "recent_performance": {
+            "quality_score_avg": 72.0,
+            "trend": "declining"
+          }
+        },
+        "weather_history": {
+          "last_7_days": {
+            "rainfall_mm": 65,
+            "avg_humidity": 85,
+            "avg_temperature_c": 18
+          }
+        }
+      },
+      "expected_output": {
+        "diagnosis": {
+          "condition": "grey_blight",
+          "confidence": 0.75,
+          "severity": "high",
+          "details": "Grey blight (Pestalotiopsis) with secondary rust infection. Multiple fungal pathogens present indicating weakened plant immunity. Wet conditions promoting rapid spread."
+        },
+        "recommendations": [
+          "Apply systemic fungicide (carbendazim or mancozeb) immediately",
+          "Remove and destroy all heavily infected leaves",
+          "Improve drainage around affected bushes",
+          "Space plants further to improve air circulation",
+          "Apply foliar micronutrients to boost plant immunity"
+        ],
+        "contributing_factors": [
+          "Sustained wet conditions (65mm rainfall)",
+          "High humidity favoring fungal growth",
+          "Multiple pathogen co-infection",
+          "Weakened plant immunity from previous stress"
+        ],
+        "expected_recovery": "3-4 weeks with aggressive treatment"
+      },
+      "acceptable_variance": {
+        "diagnosis.confidence": 0.12
+      },
+      "metadata": {
+        "sample_id": "GS-diag-004",
+        "agent_name": "disease_diagnosis",
+        "agent_type": "explorer",
+        "description": "Multiple disease detection - grey blight with secondary rust",
+        "source": "synthetic",
+        "tags": ["multiple-disease", "fungal", "co-infection", "high-severity"],
+        "priority": "P0"
+      }
+    },
+    {
+      "input": {
+        "farmer_id": "WM-9012",
+        "doc_id": "DOC-01002",
+        "quality_issues": [],
+        "grade": "A",
+        "quality_score": 92.0,
+        "image_url": "https://storage.example.com/images/doc-01002.jpg",
+        "farmer_context": {
+          "region": "Kericho-Medium",
+          "altitude_band": "medium",
+          "recent_performance": {
+            "quality_score_avg": 88.0,
+            "trend": "improving"
+          }
+        },
+        "weather_history": {
+          "last_7_days": {
+            "rainfall_mm": 25,
+            "avg_humidity": 70,
+            "avg_temperature_c": 22
+          }
+        }
+      },
+      "expected_output": {
+        "diagnosis": {
+          "condition": "healthy",
+          "confidence": 0.95,
+          "severity": "low",
+          "details": "No disease indicators detected. Plant shows excellent health with high quality score and no observed issues. Weather conditions are optimal for tea growth."
+        },
+        "recommendations": [
+          "Continue current farming practices",
+          "Maintain regular monitoring for early detection",
+          "Consider documenting practices for replication"
+        ],
+        "contributing_factors": [
+          "Optimal weather conditions",
+          "Good farming practices",
+          "Healthy plant nutrition"
+        ],
+        "expected_recovery": "N/A - Plant is healthy"
+      },
+      "acceptable_variance": {
+        "diagnosis.confidence": 0.05
+      },
+      "metadata": {
+        "sample_id": "GS-diag-005",
+        "agent_name": "disease_diagnosis",
+        "agent_type": "explorer",
+        "description": "Healthy plant - no disease detected (control sample)",
+        "source": "synthetic",
+        "tags": ["healthy", "control-sample", "no-disease"],
+        "priority": "P0"
+      }
+    },
+    {
+      "input": {
+        "farmer_id": "WM-3344",
+        "doc_id": "DOC-01003",
+        "quality_issues": ["slight_discoloration"],
+        "grade": "B",
+        "quality_score": 68.0,
+        "farmer_context": {
+          "region": "Nyeri-Low",
+          "altitude_band": "low"
+        },
+        "weather_history": {
+          "last_7_days": {
+            "rainfall_mm": 12,
+            "avg_humidity": 65,
+            "avg_temperature_c": 25
+          }
+        }
+      },
+      "expected_output": {
+        "diagnosis": {
+          "condition": "undetermined",
+          "confidence": 0.42,
+          "severity": "low",
+          "details": "Insufficient data to make a reliable diagnosis. Single symptom (slight discoloration) is non-specific and could indicate multiple conditions or normal variation."
+        },
+        "recommendations": [
+          "Monitor the plants closely for additional symptoms",
+          "Collect more samples from the same area for comparison",
+          "Document progression of symptoms with photos",
+          "Consult local extension officer if symptoms worsen"
+        ],
+        "contributing_factors": [
+          "Insufficient symptom data",
+          "Non-specific presentation",
+          "Missing image analysis"
+        ],
+        "expected_recovery": "Further observation required"
+      },
+      "acceptable_variance": {
+        "diagnosis.confidence": 0.15
+      },
+      "metadata": {
+        "sample_id": "GS-diag-006",
+        "agent_name": "disease_diagnosis",
+        "agent_type": "explorer",
+        "description": "Low confidence - insufficient data for diagnosis",
+        "source": "synthetic",
+        "tags": ["low-confidence", "insufficient-data", "undetermined"],
+        "priority": "P1"
+      }
+    },
+    {
+      "input": {
+        "farmer_id": "WM-5566",
+        "doc_id": "DOC-01004",
+        "quality_issues": ["leaf_burn", "brittle_leaves", "brown_edges"],
+        "grade": "C",
+        "quality_score": 48.0,
+        "image_url": "https://storage.example.com/images/doc-01004.jpg",
+        "farmer_context": {
+          "region": "Nakuru-High",
+          "altitude_band": "high",
+          "recent_performance": {
+            "quality_score_avg": 78.0,
+            "trend": "declining"
+          }
+        },
+        "weather_history": {
+          "last_7_days": {
+            "rainfall_mm": 0,
+            "avg_humidity": 35,
+            "avg_temperature_c": 8
+          }
+        }
+      },
+      "expected_output": {
+        "diagnosis": {
+          "condition": "frost_damage",
+          "confidence": 0.85,
+          "severity": "moderate",
+          "details": "Frost damage from cold temperatures at high altitude. Brittle leaves and brown edges are characteristic of frost injury. Low humidity contributed to desiccation."
+        },
+        "recommendations": [
+          "Do not harvest affected leaves - allow natural recovery",
+          "Apply light mulch around base for thermal insulation",
+          "Consider frost protection measures for future (shade cloth, smoke pots)",
+          "Prune severely damaged tips after recovery period"
+        ],
+        "contributing_factors": [
+          "Low temperature (8°C) at high altitude",
+          "No rainfall to moderate temperature extremes",
+          "Low humidity (35%) causing desiccation",
+          "High altitude exposure"
+        ],
+        "expected_recovery": "3-4 weeks as temperatures moderate"
+      },
+      "acceptable_variance": {
+        "diagnosis.confidence": 0.1
+      },
+      "metadata": {
+        "sample_id": "GS-diag-007",
+        "agent_name": "disease_diagnosis",
+        "agent_type": "explorer",
+        "description": "Weather damage - frost at high altitude",
+        "source": "synthetic",
+        "tags": ["weather-damage", "frost", "environmental", "high-altitude"],
+        "priority": "P0"
+      }
+    },
+    {
+      "input": {
+        "farmer_id": "WM-7788",
+        "doc_id": "DOC-01005",
+        "quality_issues": ["uneven_growth", "bare_patches", "excessive_shoots"],
+        "grade": "C",
+        "quality_score": 52.0,
+        "image_url": "https://storage.example.com/images/doc-01005.jpg",
+        "farmer_context": {
+          "region": "Kericho-Medium",
+          "altitude_band": "medium",
+          "recent_performance": {
+            "quality_score_avg": 82.0,
+            "trend": "declining"
+          }
+        },
+        "weather_history": {
+          "last_7_days": {
+            "rainfall_mm": 40,
+            "avg_humidity": 75,
+            "avg_temperature_c": 21
+          }
+        }
+      },
+      "expected_output": {
+        "diagnosis": {
+          "condition": "over_pruning_damage",
+          "confidence": 0.78,
+          "severity": "moderate",
+          "details": "Symptoms indicate improper pruning technique - likely too aggressive or at wrong time. Uneven growth and bare patches from excessive cutting. Excessive shoots indicate stress response."
+        },
+        "recommendations": [
+          "Allow bush to recover naturally for 4-6 weeks",
+          "Apply balanced NPK fertilizer to support regrowth",
+          "Avoid further pruning until full recovery",
+          "Review proper pruning techniques with extension service",
+          "Schedule future pruning during appropriate season"
+        ],
+        "contributing_factors": [
+          "Recent aggressive pruning",
+          "Possible improper timing of pruning",
+          "Cutting too close to main branches"
+        ],
+        "expected_recovery": "6-8 weeks with proper care"
+      },
+      "acceptable_variance": {
+        "diagnosis.confidence": 0.12
+      },
+      "metadata": {
+        "sample_id": "GS-diag-008",
+        "agent_name": "disease_diagnosis",
+        "agent_type": "explorer",
+        "description": "Technique issue - over-pruning damage",
+        "source": "synthetic",
+        "tags": ["technique-issue", "pruning", "management-error"],
+        "priority": "P1"
+      }
+    },
+    {
+      "input": {
+        "farmer_id": "WM-9900",
+        "doc_id": "DOC-01006",
+        "quality_issues": ["wilting", "healthy_color", "soft_leaves"],
+        "grade": "B",
+        "quality_score": 65.0,
+        "image_url": "https://storage.example.com/images/doc-01006.jpg",
+        "farmer_context": {
+          "region": "Nandi-High",
+          "altitude_band": "high",
+          "recent_performance": {
+            "quality_score_avg": 75.0,
+            "trend": "stable"
+          }
+        },
+        "weather_history": {
+          "last_7_days": {
+            "rainfall_mm": 95,
+            "avg_humidity": 92,
+            "avg_temperature_c": 19
+          }
+        }
+      },
+      "expected_output": {
+        "diagnosis": {
+          "condition": "waterlogging_stress",
+          "confidence": 0.55,
+          "severity": "low",
+          "details": "Contradictory symptoms present: wilting typically indicates drought but leaves are soft with healthy color. Given excessive rainfall (95mm), likely temporary waterlogging causing root stress. Symptoms should resolve as soil drains."
+        },
+        "recommendations": [
+          "Check drainage around affected plants",
+          "Avoid additional irrigation until soil dries",
+          "Consider raised beds or improved drainage channels if recurring",
+          "Monitor for 3-5 days for symptom resolution"
+        ],
+        "contributing_factors": [
+          "Excessive rainfall (95mm) causing waterlogging",
+          "Possible poor soil drainage",
+          "High humidity reducing evapotranspiration"
+        ],
+        "expected_recovery": "1-2 weeks as conditions normalize"
+      },
+      "acceptable_variance": {
+        "diagnosis.confidence": 0.18
+      },
+      "metadata": {
+        "sample_id": "GS-diag-009",
+        "agent_name": "disease_diagnosis",
+        "agent_type": "explorer",
+        "description": "Edge case - contradictory symptoms (wilting with healthy color)",
+        "source": "synthetic",
+        "tags": ["edge-case", "contradictory-symptoms", "waterlogging"],
+        "priority": "P1"
+      }
+    },
+    {
+      "input": {
+        "farmer_id": "WM-1122",
+        "doc_id": "DOC-01007",
+        "quality_issues": ["purple_tinge", "slow_growth", "small_leaves"],
+        "grade": "D",
+        "quality_score": 40.0,
+        "image_url": "https://storage.example.com/images/doc-01007.jpg",
+        "farmer_context": {
+          "region": "Nyeri-Low",
+          "altitude_band": "low",
+          "recent_performance": {
+            "quality_score_avg": 68.0,
+            "trend": "declining"
+          }
+        },
+        "weather_history": {
+          "last_7_days": {
+            "rainfall_mm": 8,
+            "avg_humidity": 55,
+            "avg_temperature_c": 28
+          }
+        }
+      },
+      "expected_output": {
+        "diagnosis": {
+          "condition": "nutrient_deficiency_phosphorus",
+          "confidence": 0.70,
+          "severity": "moderate",
+          "details": "Purple tinge and small leaves are atypical for this low-altitude region. Pattern suggests phosphorus deficiency rather than cold stress (which would be expected at higher altitudes). Slow growth confirms nutritional issue."
+        },
+        "recommendations": [
+          "Apply phosphorus-rich fertilizer (DAP or TSP)",
+          "Conduct soil pH test - phosphorus availability affected by pH",
+          "Consider mycorrhizal inoculant to improve phosphorus uptake",
+          "Monitor neighboring plots for similar symptoms"
+        ],
+        "contributing_factors": [
+          "Likely soil phosphorus depletion",
+          "Dry conditions limiting nutrient availability",
+          "Unusual presentation for low altitude region"
+        ],
+        "expected_recovery": "4-5 weeks with fertilizer application"
+      },
+      "acceptable_variance": {
+        "diagnosis.confidence": 0.15
+      },
+      "metadata": {
+        "sample_id": "GS-diag-010",
+        "agent_name": "disease_diagnosis",
+        "agent_type": "explorer",
+        "description": "Edge case - unusual regional pattern (phosphorus deficiency at low altitude)",
+        "source": "synthetic",
+        "tags": ["edge-case", "regional-anomaly", "phosphorus-deficiency"],
+        "priority": "P1"
       }
     }
   ]

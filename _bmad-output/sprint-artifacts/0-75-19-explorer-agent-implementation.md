@@ -1,7 +1,7 @@
 # Story 0.75.19: Explorer Agent Implementation - Sample Config & Golden Tests
 
-**Status:** ready-for-dev
-**GitHub Issue:** <!-- Auto-created by dev-story workflow -->
+**Status:** in-progress
+**GitHub Issue:** #154
 
 ## Story
 
