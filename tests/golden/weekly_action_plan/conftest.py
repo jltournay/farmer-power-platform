@@ -23,7 +23,6 @@ from ai_model.domain.agent_config import (
     OutputConfig,
     RAGConfig,
 )
-from ai_model.workflows.generator import GeneratorWorkflow
 
 if TYPE_CHECKING:
     from tests.golden.framework import GoldenSampleCollection
@@ -162,20 +161,6 @@ def mock_mcp_integration() -> MagicMock:
         }
     )
     return integration
-
-
-@pytest.fixture
-def generator_workflow(
-    mock_llm_gateway: MagicMock,
-    mock_ranking_service: MagicMock,
-    mock_mcp_integration: MagicMock,
-) -> GeneratorWorkflow:
-    """Generator workflow instance with mocked dependencies."""
-    return GeneratorWorkflow(
-        llm_gateway=mock_llm_gateway,
-        ranking_service=mock_ranking_service,
-        mcp_integration=mock_mcp_integration,
-    )
 
 
 @pytest.fixture
