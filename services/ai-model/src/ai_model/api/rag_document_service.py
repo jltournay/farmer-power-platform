@@ -1519,7 +1519,7 @@ class RAGDocumentServiceServicer(ai_model_pb2_grpc.RAGDocumentServiceServicer):
             # Note: 'async' is a Python reserved word, access via getattr
             is_async = getattr(request, "async", False)
             if is_async:
-                job = self._vectorization_pipeline.create_job(
+                job = await self._vectorization_pipeline.create_job(
                     document_id=request.document_id,
                     document_version=version,
                 )
