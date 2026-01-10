@@ -128,7 +128,7 @@ development_status:
   0-6-13-collection-client-grpc: done  # ADR-010/011, 3 points, github_issue: 113, PR: #114 - Replace direct MongoDB with gRPC via DAPR
   0-6-14-dapr-sdk-publishing: done  # ADR-010, 3 points, github_issue: 115, PR: #116 - Replace custom DaprPubSubClient with SDK publish_event()
   # Wave 5: Observability & Debugging (added 2026-01-10)
-  0-6-15-service-logging-migration: in-progress  # ADR-009, 5 points, github_issue: 150 - Migrate all services to fp_common logging module
+  0-6-15-service-logging-migration: review  # ADR-009, 5 points, github_issue: 150 - Migrate all services to fp_common logging module
   0-6-16-e2e-autonomous-debugging: ready-for-dev  # ADR-015, 5 points - Diagnostic scripts, checkpoints for E2E autonomous debugging
   epic-0-6-retrospective: done  # 2026-01-02: epic-0-6-retro-2026-01-02.md (will need update after Wave 5)
 

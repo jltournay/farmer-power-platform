@@ -1,6 +1,6 @@
 # Story 0.6.15: Migrate All Services to fp-common Logging Module
 
-**Status:** in-progress
+**Status:** review
 **GitHub Issue:** #150
 **Epic:** [Epic 0.6: Infrastructure Hardening](../epics/epic-0-6-infrastructure-hardening.md)
 **ADR:** [ADR-009: Logging Standards and Runtime Configuration](../architecture/adr/ADR-009-logging-standards-runtime-configuration.md)
