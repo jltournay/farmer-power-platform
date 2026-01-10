@@ -30,7 +30,7 @@ Environment Variables:
         export OPENROUTER_API_KEY=your-key-here
         docker compose -f tests/e2e/infrastructure/docker-compose.e2e.yaml up -d --build
 
-    For CI: The .env.e2e file is created from GitHub Secrets by e2e-tests.yaml workflow.
+    For CI: Environment variables are passed via env: block in e2e-tests.yaml workflow.
 
 Source Config Required:
     - e2e-weather-api: mode=scheduled_pull, ai_agent_id=weather-extractor
@@ -50,19 +50,24 @@ import time
 
 import pytest
 
-# Check if OpenRouter API key is available
-# This is used to skip tests that require real LLM calls when running locally without the key
-OPENROUTER_AVAILABLE = bool(os.environ.get("OPENROUTER_API_KEY"))
-SKIP_REASON_NO_OPENROUTER = (
-    "OPENROUTER_API_KEY not set. Set it before starting docker-compose for real LLM extraction. "
-    "See test docstring for details."
-)
-
 # ═══════════════════════════════════════════════════════════════════════════════
 # TEST CONSTANTS
 # ═══════════════════════════════════════════════════════════════════════════════
 
 SOURCE_ID = "e2e-weather-api"
+
+
+@pytest.fixture
+def openrouter_is_configured():
+    """Check if OPENROUTER is configured (returns bool, does NOT skip).
+
+    Story 0.75.18: Docker-compose reads OPENROUTER_API_KEY from shell environment.
+    For local testing with openrouter, run: source .env && docker compose ...
+    For CI, GitHub Actions sets env vars from secrets.
+
+    This fixture checks ONLY the shell environment to match Docker's behavior.
+    """
+    return bool(os.environ.get("OPENROUTER_API_KEY"))
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -240,10 +245,15 @@ class TestWeatherDocumentCreation:
         collection_api,
         mongodb_direct,
         seed_data,
+        openrouter_is_configured,
     ):
         """Given weather data is fetched and processed by AI extraction,
         When I query MongoDB, Then weather documents exist with region_id linkage.
         """
+        assert openrouter_is_configured, (
+            "OPENROUTER_API_KEY must be set for AI extraction tests. "
+            "Set it in your shell: export OPENROUTER_API_KEY=your-key"
+        )
         # Trigger pull job first
         result = await collection_api.trigger_pull_job(SOURCE_ID)
         assert result["success"] is True, f"Pull job failed: {result.get('error')}"
@@ -272,19 +282,20 @@ class TestWeatherDocumentCreation:
         assert len(extracted) > 0, "No extracted fields in weather document"
 
     @pytest.mark.asyncio
-    @pytest.mark.skipif(not OPENROUTER_AVAILABLE, reason=SKIP_REASON_NO_OPENROUTER)
     async def test_weather_document_has_weather_attributes(
         self,
         collection_api,
         mongodb_direct,
         seed_data,
+        openrouter_is_configured,
     ):
         """Given weather documents exist, When I check extracted fields,
         Then weather attributes from Open-Meteo are present.
-
-        Note: This test requires OPENROUTER_API_KEY to be set for LLM extraction.
-        If this test fails with "extraction status: pending", the API key is missing.
         """
+        assert openrouter_is_configured, (
+            "OPENROUTER_API_KEY must be set for AI extraction tests. "
+            "Set it in your shell: export OPENROUTER_API_KEY=your-key"
+        )
         # Trigger pull job
         result = await collection_api.trigger_pull_job(SOURCE_ID)
         assert result["success"] is True, f"Pull job failed: {result.get('error')}"
@@ -322,10 +333,15 @@ class TestPlantationMCPWeatherQuery:
         collection_api,
         mongodb_direct,
         seed_data,
+        openrouter_is_configured,
     ):
         """Given weather documents exist for a region, When I call get_region_weather,
         Then weather observations are returned.
         """
+        assert openrouter_is_configured, (
+            "OPENROUTER_API_KEY must be set for AI extraction tests. "
+            "Set it in your shell: export OPENROUTER_API_KEY=your-key"
+        )
         # First ensure weather data exists
         result = await collection_api.trigger_pull_job(SOURCE_ID)
         assert result["success"] is True, f"Pull job failed: {result.get('error')}"
@@ -371,10 +387,15 @@ class TestCollectionMCPWeatherQuery:
         collection_api,
         mongodb_direct,
         seed_data,
+        openrouter_is_configured,
     ):
         """Given weather document is stored, When I query via Collection MCP,
         Then the weather document is returned with attributes.
         """
+        assert openrouter_is_configured, (
+            "OPENROUTER_API_KEY must be set for AI extraction tests. "
+            "Set it in your shell: export OPENROUTER_API_KEY=your-key"
+        )
         # Trigger pull job to create weather documents
         result = await collection_api.trigger_pull_job(SOURCE_ID)
         assert result["success"] is True, f"Pull job failed: {result.get('error')}"

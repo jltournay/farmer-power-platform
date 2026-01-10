@@ -1,6 +1,6 @@
 # Story 0.75.18: E2E Weather Observation Extraction Flow
 
-**Status:** review
+**Status:** in_progress
 **GitHub Issue:** #148
 
 ## Story
