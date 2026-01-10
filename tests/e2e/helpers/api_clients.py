@@ -35,6 +35,7 @@ class PlantationClient:
         self._client: httpx.AsyncClient | None = None
 
     async def __aenter__(self) -> "PlantationClient":
+        # 90s timeout: Open-Meteo API can be slow/unstable in CI environments
         self._client = httpx.AsyncClient(base_url=self.base_url, timeout=90.0)
         return self
 
@@ -90,6 +91,7 @@ class CollectionClient:
         self._dapr_client: httpx.AsyncClient | None = None
 
     async def __aenter__(self) -> "CollectionClient":
+        # 90s timeout: Open-Meteo API can be slow/unstable in CI environments
         self._client = httpx.AsyncClient(base_url=self.base_url, timeout=90.0)
         self._dapr_client = httpx.AsyncClient(base_url=self.dapr_base_url, timeout=90.0)
         return self
@@ -239,6 +241,7 @@ class BFFClient:
         self._token_cache: dict[str, str] = {}
 
     async def __aenter__(self) -> "BFFClient":
+        # 90s timeout: Open-Meteo API can be slow/unstable in CI environments
         self._client = httpx.AsyncClient(base_url=self.base_url, timeout=90.0)
         return self
 

@@ -25,6 +25,7 @@ Usage:
 """
 
 import asyncio
+import os
 import subprocess
 import time
 from dataclasses import dataclass, field
@@ -407,8 +408,6 @@ async def checkpoint_extraction_complete(
         suggested_check = "Check AI Model logs for workflow errors"
 
     # Check for common env var issue
-    import os
-
     if not os.environ.get("OPENROUTER_API_KEY"):
         likely_issue += " (OPENROUTER_API_KEY not set in shell)"
         suggested_check = "Set OPENROUTER_API_KEY and rebuild: bash scripts/e2e-up.sh --build"

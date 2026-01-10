@@ -1,6 +1,6 @@
 # Story 0.6.16: E2E Autonomous Debugging Infrastructure
 
-**Status:** in-progress
+**Status:** review
 **GitHub Issue:** #152
 **Epic:** [Epic 0.6: Infrastructure Hardening](../epics/epic-0-6-infrastructure-hardening.md)
 **ADR:** [ADR-015: E2E Autonomous Debugging Infrastructure](../architecture/adr/ADR-015-e2e-autonomous-debugging-infrastructure.md)
@@ -230,7 +230,7 @@ So that AI agents can debug E2E failures autonomously without human supervision.
   - [x] Run diagnostics: `bash scripts/e2e-diagnose.sh` (fixed bash 3.2 compat, validated)
   - [x] Run weather E2E tests with new checkpoints: PASSED
   - [x] Stop infrastructure: `bash scripts/e2e-up.sh --down` (validated)
-  - [ ] E2E CI verification (Step 9c) - workflow triggered, awaiting completion
+  - [x] E2E CI verification (Step 9c) - PASSED (run 20881002755)
 
 ---
 
