@@ -1,4 +1,27 @@
-[
+/**
+ * MongoDB initialization script for E2E tests.
+ *
+ * Story 0.75.18: Pre-seeds source_configs collection before services start,
+ * ensuring Collection Model can register agent IDs for subscription topics.
+ *
+ * This script runs automatically when MongoDB container starts via
+ * /docker-entrypoint-initdb.d/ volume mount.
+ */
+
+// Switch to the collection_e2e database (must match COLLECTION_MONGODB_DATABASE in docker-compose)
+db = db.getSiblingDB('collection_e2e');
+
+// Pre-seed source_configs collection
+// This ensures Collection Model can register agent IDs at startup
+// before the pytest seeding happens
+
+// Check if already seeded (idempotent)
+if (db.source_configs.countDocuments({}) > 0) {
+  print("source_configs already seeded, skipping");
+  quit();
+}
+
+db.source_configs.insertMany([
   {
     "source_id": "e2e-qc-direct-json",
     "display_name": "E2E QC Direct JSON",
@@ -38,8 +61,8 @@
         "payload_fields": ["document_id", "farmer_id"]
       }
     },
-    "created_at": "2025-01-01T00:00:00Z",
-    "updated_at": "2025-01-01T00:00:00Z"
+    "created_at": new Date("2025-01-01T00:00:00Z"),
+    "updated_at": new Date("2025-01-01T00:00:00Z")
   },
   {
     "source_id": "e2e-qc-analyzer-json",
@@ -75,8 +98,8 @@
         "topic": "collection.quality_result.received"
       }
     },
-    "created_at": "2025-01-01T00:00:00Z",
-    "updated_at": "2025-01-01T00:00:00Z"
+    "created_at": new Date("2025-01-01T00:00:00Z"),
+    "updated_at": new Date("2025-01-01T00:00:00Z")
   },
   {
     "source_id": "e2e-manual-upload",
@@ -111,8 +134,8 @@
         "topic": "collection.quality_result.received"
       }
     },
-    "created_at": "2025-01-01T00:00:00Z",
-    "updated_at": "2025-01-01T00:00:00Z"
+    "created_at": new Date("2025-01-01T00:00:00Z"),
+    "updated_at": new Date("2025-01-01T00:00:00Z")
   },
   {
     "source_id": "e2e-weather-api",
@@ -165,8 +188,8 @@
         "topic": "collection.weather.updated"
       }
     },
-    "created_at": "2025-01-01T00:00:00Z",
-    "updated_at": "2026-01-10T00:00:00Z"
+    "created_at": new Date("2025-01-01T00:00:00Z"),
+    "updated_at": new Date("2026-01-10T00:00:00Z")
   },
   {
     "source_id": "e2e-exception-images-zip",
@@ -216,7 +239,9 @@
         "payload_fields": ["source_id", "error_type", "error_message"]
       }
     },
-    "created_at": "2025-01-01T00:00:00Z",
-    "updated_at": "2025-01-01T00:00:00Z"
+    "created_at": new Date("2025-01-01T00:00:00Z"),
+    "updated_at": new Date("2025-01-01T00:00:00Z")
   }
-]
+]);
+
+print("E2E source_configs seeded successfully");

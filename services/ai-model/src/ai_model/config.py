@@ -60,7 +60,10 @@ class Settings(BaseSettings):
 
     # OpenRouter API key (required for LLM operations)
     # Can also be set via OPENROUTER_API_KEY environment variable
-    openrouter_api_key: SecretStr | None = None
+    openrouter_api_key: SecretStr | None = Field(
+        default=None,
+        validation_alias="OPENROUTER_API_KEY",
+    )
 
     # OpenRouter base URL (default should not be changed)
     openrouter_base_url: str = "https://openrouter.ai/api/v1"

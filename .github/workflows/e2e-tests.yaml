@@ -42,20 +42,20 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Create E2E secrets file
-        working-directory: tests/e2e/infrastructure
+      - name: Add MongoDB hostname to /etc/hosts
         run: |
-          cat > .env.e2e << EOF
-          # Generated from GitHub Secrets
-          OPENROUTER_API_KEY=${{ secrets.OPENROUTER_API_KEY }}
-          AZURE_DOCUMENT_ENDPOINT=${{ secrets.AZURE_DOCUMENT_ENDPOINT }}
-          AZURE_DOCUMENT_KEY=${{ secrets.AZURE_DOCUMENT_KEY }}
-          PINECONE_API_KEY=${{ secrets.PINECONE_API_KEY }}
-          PINECONE_INDEX_NAME=${{ secrets.PINECONE_INDEX_NAME }}
-          EOF
+          # MongoDB replica set returns 'mongodb' as the hostname.
+          # Tests running on the host need to resolve this to localhost.
+          echo "127.0.0.1 mongodb" | sudo tee -a /etc/hosts
 
       - name: Build and start E2E stack
         working-directory: tests/e2e/infrastructure
+        env:
+          PINECONE_API_KEY: ${{ secrets.PINECONE_API_KEY }}
+          PINECONE_INDEX_NAME: ${{ secrets.PINECONE_INDEX_NAME }}
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+          AZURE_DOCUMENT_ENDPOINT: ${{ secrets.AZURE_DOCUMENT_ENDPOINT }}
+          AZURE_DOCUMENT_KEY: ${{ secrets.AZURE_DOCUMENT_KEY }}
         run: |
           docker compose -f docker-compose.e2e.yaml build
           docker compose -f docker-compose.e2e.yaml up -d
@@ -102,6 +102,10 @@ jobs:
           done
 
       - name: Run E2E tests
+        env:
+          PINECONE_API_KEY: ${{ secrets.PINECONE_API_KEY }}
+          PINECONE_INDEX_NAME: ${{ secrets.PINECONE_INDEX_NAME }}
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
         run: |
           TEST_FILTER="${{ github.event.inputs.test_filter }}"
           VERBOSE="${{ github.event.inputs.verbose }}"

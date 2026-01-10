@@ -514,6 +514,34 @@ This catches schema errors in seconds instead of minutes (after Docker startup).
 - [ ] `ruff check .` passes
 - [ ] `ruff format --check .` passes
 - [ ] `python tests/e2e/infrastructure/validate_seed_data.py` passes
+- [ ] **If production code was modified:** Unit tests pass locally (see Gate 1b)
+
+### Gate 1b: Unit Tests (MANDATORY when production code is modified)
+
+**If you modified ANY production code, you MUST run unit tests locally before pushing to CI.**
+
+```bash
+# Run all unit tests
+pytest tests/unit/ -v
+
+# Or run tests for specific service you modified
+pytest tests/unit/ai_model/ -v        # If you modified ai-model
+pytest tests/unit/collection_model/ -v # If you modified collection-model
+pytest tests/unit/plantation_model/ -v # If you modified plantation-model
+```
+
+**Why this matters:**
+- Unit tests run in seconds vs minutes for CI
+- Faster feedback loop = faster debugging
+- CI resources are shared - don't waste them on obvious failures
+- Finding unit test failures locally is 10x easier to debug than in CI logs
+
+**Red flags that indicate you skipped this gate:**
+- CI fails on unit tests immediately after push
+- Multiple fix commits for the same unit test failure
+- "I thought unit tests would pass because E2E passed"
+
+**Remember:** E2E tests and unit tests verify different things. E2E passing does NOT guarantee unit tests pass.
 
 ### Gate 2: Docker E2E (MANDATORY for any E2E story)
 - [ ] Docker stack is running: `docker compose ps` shows all healthy

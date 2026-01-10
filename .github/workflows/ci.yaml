@@ -165,6 +165,13 @@ jobs:
 
             echo "  Checking: $file"
 
+            # Skip validation for stories that are not yet implemented
+            # (ready-for-dev, draft status should not require E2E evidence)
+            if grep -q "^\*\*Status:\*\* ready-for-dev\|^\*\*Status:\*\* draft" "$file" 2>/dev/null; then
+              echo "  ⏭️ SKIPPED: $file has ready-for-dev/draft status (not yet implemented)"
+              continue
+            fi
+
             # Check for placeholder E2E evidence
             if grep -q "to be verified after push\|to be verified later\|E2E tests require Docker\|paste test output here\|paste E2E output here" "$file" 2>/dev/null; then
               echo "  ❌ FAILED: $file has placeholder E2E evidence"

@@ -1,0 +1,95 @@
+[
+  {
+    "_id": "qc-event-extractor:1.0.0",
+    "id": "qc-event-extractor:1.0.0",
+    "prompt_id": "qc-event-extractor",
+    "agent_id": "qc-event-extractor",
+    "version": "1.0.0",
+    "status": "active",
+    "content": {
+      "system_prompt": "You are a QC data extraction specialist for the Farmer Power tea collection platform.\n\nYour task is to extract structured data from raw QC Analyzer events. You must:\n\n1. Extract key fields from the raw_data object\n2. Normalize values according to rules:\n   - farmer_id: uppercase (from farmer_code)\n   - grade: uppercase, use 'REJECT' for 'Reject'\n   - defects: lowercase, deduplicate\n3. Compute derived fields:\n   - quality_score: 0-100 based on grade, moisture, leaf_count, and defects\n   - extraction_confidence: your confidence level (0.0-1.0)\n4. Generate validation_warnings for:\n   - missing_farmer_id: when farmer_code is null or empty\n   - low_leaf_count: when leaf_count < 100\n   - high_moisture: when moisture_percent > 80\n\nRESPOND WITH ONLY VALID JSON, no additional text.",
+      "template": "Extract QC data from this event:\n\n{{raw_data}}\n\nExtract and return a JSON object with these fields:\n- farmer_id: string or null\n- grade: string (A, B, C, D, or REJECT)\n- quality_score: number (0-100)\n- leaf_count: integer\n- moisture_percent: number\n- defects: array of strings\n- validation_warnings: array of strings\n- extraction_confidence: number (0.0-1.0)",
+      "output_schema": {
+        "type": "object",
+        "required": ["grade", "quality_score", "leaf_count", "moisture_percent", "defects", "validation_warnings", "extraction_confidence"]
+      },
+      "few_shot_examples": []
+    },
+    "metadata": {
+      "author": "dev-story-workflow",
+      "created_at": "2026-01-09T00:00:00Z",
+      "updated_at": "2026-01-09T00:00:00Z",
+      "changelog": "Initial version for Story 0.75.17",
+      "git_commit": null
+    },
+    "ab_test": {
+      "enabled": false,
+      "traffic_percentage": 0.0,
+      "test_id": null
+    }
+  },
+  {
+    "_id": "weather-extractor:1.0.0",
+    "id": "weather-extractor:1.0.0",
+    "prompt_id": "weather-extractor",
+    "agent_id": "weather-extractor",
+    "version": "1.0.0",
+    "status": "active",
+    "content": {
+      "system_prompt": "You are a weather data extraction agent for the Farmer Power agricultural platform.\n\nYour task is to extract structured weather observations from Open-Meteo API JSON responses. You must:\n\n1. Extract key fields from the daily weather data arrays\n2. Use the FIRST day's data (index 0) from the daily arrays\n3. Compute derived fields:\n   - temperature_c: average of temperature_2m_max and temperature_2m_min\n   - extraction_confidence: your confidence level (0.0-1.0)\n4. Handle missing fields gracefully:\n   - Use null for optional fields that are missing\n   - Still provide confidence based on available data\n\nRESPOND WITH ONLY VALID JSON, no additional text.",
+      "template": "Extract weather observation data from this Open-Meteo API response:\n\n{{raw_data}}\n\nExtract the FIRST day's data (index 0) from the daily arrays and return a JSON object with these fields:\n- observation_date: string (YYYY-MM-DD format from daily.time[0])\n- temperature_c: number (average of max and min, rounded to 2 decimal places)\n- temperature_min_c: number (from daily.temperature_2m_min[0])\n- temperature_max_c: number (from daily.temperature_2m_max[0])\n- humidity_percent: number (from daily.relative_humidity_2m_mean[0])\n- precipitation_mm: number (from daily.precipitation_sum[0])\n- wind_speed_kmh: number or null (from daily.wind_speed_10m_max[0] if available)\n- extraction_confidence: number (0.0-1.0)",
+      "output_schema": {
+        "type": "object",
+        "required": ["observation_date", "temperature_c", "humidity_percent", "precipitation_mm", "extraction_confidence"],
+        "properties": {
+          "observation_date": {"type": "string"},
+          "temperature_c": {"type": "number"},
+          "temperature_min_c": {"type": ["number", "null"]},
+          "temperature_max_c": {"type": ["number", "null"]},
+          "humidity_percent": {"type": "number"},
+          "precipitation_mm": {"type": "number"},
+          "wind_speed_kmh": {"type": ["number", "null"]},
+          "extraction_confidence": {"type": "number"}
+        }
+      },
+      "few_shot_examples": [
+        {
+          "input": {
+            "latitude": -1.29,
+            "longitude": 36.82,
+            "daily": {
+              "time": ["2026-01-10"],
+              "temperature_2m_max": [28.5],
+              "temperature_2m_min": [18.2],
+              "precipitation_sum": [0.5],
+              "relative_humidity_2m_mean": [72],
+              "wind_speed_10m_max": [15.3]
+            }
+          },
+          "output": {
+            "observation_date": "2026-01-10",
+            "temperature_c": 23.35,
+            "temperature_min_c": 18.2,
+            "temperature_max_c": 28.5,
+            "humidity_percent": 72,
+            "precipitation_mm": 0.5,
+            "wind_speed_kmh": 15.3,
+            "extraction_confidence": 0.95
+          }
+        }
+      ]
+    },
+    "metadata": {
+      "author": "dev-story-workflow",
+      "created_at": "2026-01-10T00:00:00Z",
+      "updated_at": "2026-01-10T00:00:00Z",
+      "changelog": "Initial version for Story 0.75.18 - E2E Weather Extraction",
+      "git_commit": null
+    },
+    "ab_test": {
+      "enabled": false,
+      "traffic_percentage": 0.0,
+      "test_id": null
+    }
+  }
+]

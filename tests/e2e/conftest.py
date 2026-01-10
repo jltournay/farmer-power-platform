@@ -44,11 +44,12 @@ E2E_CONFIG = {
     "collection_model_grpc_host": "localhost",  # Story 0.5.1a
     "collection_model_grpc_port": 50054,  # Story 0.5.1a
     "bff_url": "http://localhost:8083",  # Story 0.5.4b
+    "ai_model_url": "http://localhost:8091",  # Story 0.75.18: AI Model HTTP port
     "plantation_mcp_host": "localhost",
     "plantation_mcp_port": 50052,
     "collection_mcp_host": "localhost",
     "collection_mcp_port": 50053,
-    "mongodb_uri": "mongodb://localhost:27017",
+    "mongodb_uri": "mongodb://mongodb:27017/?replicaSet=rs0",
     "azurite_connection_string": AZURITE_CONNECTION_STRING,
     "health_check_timeout": 60,  # seconds
     "health_check_interval": 2,  # seconds
@@ -268,6 +269,7 @@ async def seed_data_session(
         for _service_name, url in [
             ("Plantation Model", f"{e2e_config['plantation_model_url']}/health"),
             ("Collection Model", f"{e2e_config['collection_model_url']}/health"),
+            ("AI Model", f"{e2e_config['ai_model_url']}/health"),  # Story 0.75.18
         ]:
             for _ in range(60):
                 try:
@@ -291,6 +293,8 @@ async def seed_data_session(
         "weather_observations": [],
         "documents": [],
         "document_blobs": [],
+        "agent_configs": [],
+        "prompts": [],
     }
 
     # Create clients for seeding
@@ -322,6 +326,9 @@ async def seed_data_session(
             ("farmer_performance.json", "farmer_performance", mongodb.seed_farmer_performance),
             ("weather_observations.json", "weather_observations", mongodb.seed_weather_observations),
             ("documents.json", "documents", mongodb.seed_documents),
+            # AI Model seed data (Story 0.75.18)
+            ("agent_configs.json", "agent_configs", mongodb.seed_agent_configs),
+            ("prompts.json", "prompts", mongodb.seed_prompts),
         ]
 
         for filename, key, seed_func in seed_files:
@@ -348,6 +355,9 @@ async def seed_data_session(
         # Invalidate collection-model's source config cache
         with contextlib.suppress(Exception):
             await client.post(f"{e2e_config['collection_model_url']}/admin/invalidate-cache")
+        # Story 0.75.18: Invalidate AI Model's agent config and prompt caches
+        with contextlib.suppress(Exception):
+            await client.post(f"{e2e_config['ai_model_url']}/admin/invalidate-cache")
 
     _seeded_data = seeded_data
     yield seeded_data

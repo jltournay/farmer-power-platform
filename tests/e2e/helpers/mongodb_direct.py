@@ -137,6 +137,7 @@ class MongoDBDirectClient:
         """Drop all E2E databases."""
         await self.drop_database("plantation_e2e")
         await self.drop_database("collection_e2e")
+        await self.drop_database("ai_model_e2e")
 
     async def list_databases(self) -> list[str]:
         """List all databases."""
@@ -342,3 +343,66 @@ class MongoDBDirectClient:
             The document if found, None otherwise.
         """
         return await self.collection_db[collection_name].find_one({"document_id": document_id})
+
+    # =========================================================================
+    # AI Model Database Helpers (Story 0.75.18)
+    # =========================================================================
+
+    @property
+    def ai_model_db(self) -> AsyncIOMotorDatabase:
+        """Get the AI Model E2E database."""
+        return self.get_database("ai_model_e2e")
+
+    async def seed_agent_configs(self, agent_configs: list[dict[str, Any]]) -> None:
+        """Seed agent configs into AI Model database.
+
+        Args:
+            agent_configs: List of agent config documents to seed.
+        """
+        if agent_configs:
+            for config in agent_configs:
+                # Set _id to match id for repository lookups
+                config_doc = {**config, "_id": config["id"]}
+                await self.ai_model_db.agent_configs.update_one(
+                    {"_id": config["id"]},
+                    {"$set": config_doc},
+                    upsert=True,
+                )
+
+    async def seed_prompts(self, prompts: list[dict[str, Any]]) -> None:
+        """Seed prompts into AI Model database.
+
+        Args:
+            prompts: List of prompt documents to seed.
+        """
+        if prompts:
+            for prompt in prompts:
+                # Set _id to match id for repository lookups
+                prompt_doc = {**prompt, "_id": prompt["id"]}
+                await self.ai_model_db.prompts.update_one(
+                    {"_id": prompt["id"]},
+                    {"$set": prompt_doc},
+                    upsert=True,
+                )
+
+    async def get_agent_config(self, agent_id: str) -> dict[str, Any] | None:
+        """Get an agent config by agent_id.
+
+        Args:
+            agent_id: The agent_id to look up.
+
+        Returns:
+            The agent config if found, None otherwise.
+        """
+        return await self.ai_model_db.agent_configs.find_one({"agent_id": agent_id})
+
+    async def get_prompt(self, prompt_id: str) -> dict[str, Any] | None:
+        """Get a prompt by prompt_id.
+
+        Args:
+            prompt_id: The prompt_id to look up.
+
+        Returns:
+            The prompt if found, None otherwise.
+        """
+        return await self.ai_model_db.prompts.find_one({"prompt_id": prompt_id})

@@ -16,11 +16,20 @@ Story 0.75.16b: Wired AgentExecutor and WorkflowExecutionService for event proce
 """
 
 import asyncio
+import logging
+import sys
 import threading
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 
 import structlog
+
+# Configure Python standard logging (required for structlog.stdlib integration)
+logging.basicConfig(
+    format="%(message)s",
+    stream=sys.stdout,
+    level=logging.DEBUG,
+)
 from ai_model.api import health
 from ai_model.api.grpc_server import start_grpc_server, stop_grpc_server
 from ai_model.config import settings
@@ -138,7 +147,8 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
         mcp_integration = McpIntegration(cache_ttl_seconds=settings.mcp_tool_cache_ttl_seconds)
 
         # Extract unique servers from all cached agent configs and register
-        registered_servers = mcp_integration.register_from_agent_configs(agent_configs)
+        # Note: agent_configs is a dict[str, AgentConfig], need to pass values as list
+        registered_servers = mcp_integration.register_from_agent_configs(list(agent_configs.values()))
         logger.info("Registered MCP servers", servers=list(registered_servers))
 
         # Discover tools from all servers (graceful failure - startup continues)
@@ -206,8 +216,8 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
             )
 
             rate_limiter = RateLimiter(
-                requests_per_minute=settings.llm_rate_limit_rpm,
-                tokens_per_minute=settings.llm_rate_limit_tpm,
+                rpm=settings.llm_rate_limit_rpm,
+                tpm=settings.llm_rate_limit_tpm,
             )
 
             llm_gateway = LLMGateway(

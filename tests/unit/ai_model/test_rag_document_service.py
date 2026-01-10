@@ -594,7 +594,7 @@ def mock_vectorization_pipeline():
         )
     )
 
-    pipeline.create_job = MagicMock(
+    pipeline.create_job = AsyncMock(
         return_value=MockJobResult(
             job_id="job-456",
             document_id="disease-guide",

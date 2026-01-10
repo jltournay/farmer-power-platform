@@ -259,6 +259,9 @@ ignore = [
 "**/api/*_service.py" = [
     "ARG002", # gRPC context parameter required by interface
 ]
+"services/**/main.py" = [
+    "E402",   # Module imports after logging.basicConfig() - required for structlog setup
+]
 
 [tool.ruff.lint.isort]
 known-first-party = ["src", "tests"]
