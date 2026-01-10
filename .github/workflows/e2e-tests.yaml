@@ -57,6 +57,12 @@ jobs:
       - name: Build and start E2E stack
         working-directory: tests/e2e/infrastructure
         run: |
+          # Source environment variables from .env.e2e for docker-compose
+          # This provides OPENROUTER_API_KEY to the AI Model container
+          set -a
+          source .env.e2e
+          set +a
+
           docker compose -f docker-compose.e2e.yaml build
           docker compose -f docker-compose.e2e.yaml up -d
 

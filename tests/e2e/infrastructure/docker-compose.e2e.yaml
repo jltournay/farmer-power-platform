@@ -109,6 +109,9 @@ services:
       # CI: Injected from GitHub Secrets
       PINECONE_API_KEY: ${PINECONE_API_KEY:-}
       PINECONE_INDEX_NAME: ${PINECONE_INDEX_NAME:-}
+      # OpenRouter API key for LLM calls (Story 0.75.18)
+      # Required for AI agent execution (weather-extractor, qc-event-extractor, etc.)
+      OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:-}
     depends_on:
       mongodb:
         condition: service_healthy
