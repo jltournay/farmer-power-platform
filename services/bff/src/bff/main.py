@@ -11,8 +11,12 @@ from bff.api.routes import farmers, health
 from bff.config import get_settings
 from bff.infrastructure.tracing import instrument_fastapi, setup_tracing
 from fastapi import FastAPI
+from fp_common import configure_logging, create_admin_router
 
-logger = structlog.get_logger(__name__)
+# Configure structured logging via fp_common (ADR-009, Story 0.6.15)
+configure_logging("bff")
+
+logger = structlog.get_logger("bff.main")
 
 
 @asynccontextmanager
@@ -64,6 +68,7 @@ def create_app() -> FastAPI:
     # Include routers
     app.include_router(health.router)
     app.include_router(farmers.router)
+    app.include_router(create_admin_router())  # Story 0.6.15: Runtime log level control
 
     return app
 

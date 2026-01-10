@@ -3,17 +3,17 @@
 from __future__ import annotations
 
 import datetime as dt
-import logging
 from datetime import UTC
 from typing import TYPE_CHECKING
 
+import structlog
 from plantation_model.domain.models import RegionalWeather, WeatherObservation
 from pymongo import ASCENDING, DESCENDING
 
 if TYPE_CHECKING:
     from motor.motor_asyncio import AsyncIOMotorCollection, AsyncIOMotorDatabase
 
-logger = logging.getLogger(__name__)
+logger = structlog.get_logger("plantation_model.infrastructure.repositories.regional_weather_repository")
 
 # TTL for weather data in seconds (90 days)
 WEATHER_TTL_SECONDS = 90 * 24 * 60 * 60

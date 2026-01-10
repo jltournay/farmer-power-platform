@@ -10,8 +10,6 @@ Story 0.5.1a: Added gRPC server on port 50051 for BFF document queries (ADR-011)
 
 import asyncio
 import contextlib
-import logging
-import sys
 import threading
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
@@ -19,13 +17,6 @@ from contextlib import asynccontextmanager
 # Import processors to register them
 import collection_model.processors  # noqa: F401
 import structlog
-
-# Configure Python standard logging (required for structlog.stdlib integration)
-logging.basicConfig(
-    format="%(message)s",
-    stream=sys.stdout,
-    level=logging.DEBUG,
-)
 from collection_model.api import events, health
 from collection_model.api.grpc_service import serve_grpc
 from collection_model.config import settings
@@ -61,6 +52,7 @@ from collection_model.services.pull_job_handler import PullJobHandler
 from collection_model.services.source_config_service import SourceConfigService
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fp_common import configure_logging, create_admin_router
 from fp_common.events import (
     DLQRepository,
     set_dlq_event_loop,
@@ -68,26 +60,10 @@ from fp_common.events import (
     start_dlq_subscription,
 )
 
-# Configure structured logging
-structlog.configure(
-    processors=[
-        structlog.stdlib.filter_by_level,
-        structlog.stdlib.add_logger_name,
-        structlog.stdlib.add_log_level,
-        structlog.stdlib.PositionalArgumentsFormatter(),
-        structlog.processors.TimeStamper(fmt="iso"),
-        structlog.processors.StackInfoRenderer(),
-        structlog.processors.format_exc_info,
-        structlog.processors.UnicodeDecoder(),
-        structlog.processors.JSONRenderer(),
-    ],
-    wrapper_class=structlog.stdlib.BoundLogger,
-    context_class=dict,
-    logger_factory=structlog.stdlib.LoggerFactory(),
-    cache_logger_on_first_use=True,
-)
+# Configure structured logging via fp_common (ADR-009)
+configure_logging("collection-model")
 
-logger = structlog.get_logger(__name__)
+logger = structlog.get_logger("collection_model.main")
 
 
 @asynccontextmanager
@@ -327,6 +303,7 @@ app.add_middleware(
 # Include routers
 app.include_router(health.router)
 app.include_router(events.router)
+app.include_router(create_admin_router())  # Story 0.6.15: Runtime log level control
 
 # Instrument FastAPI with OpenTelemetry
 instrument_fastapi(app)
