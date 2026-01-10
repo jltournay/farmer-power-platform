@@ -48,7 +48,7 @@ E2E_CONFIG = {
     "plantation_mcp_port": 50052,
     "collection_mcp_host": "localhost",
     "collection_mcp_port": 50053,
-    "mongodb_uri": "mongodb://localhost:27017",
+    "mongodb_uri": "mongodb://mongodb:27017/?replicaSet=rs0",
     "azurite_connection_string": AZURITE_CONNECTION_STRING,
     "health_check_timeout": 60,  # seconds
     "health_check_interval": 2,  # seconds

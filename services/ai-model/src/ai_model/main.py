@@ -138,7 +138,8 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
         mcp_integration = McpIntegration(cache_ttl_seconds=settings.mcp_tool_cache_ttl_seconds)
 
         # Extract unique servers from all cached agent configs and register
-        registered_servers = mcp_integration.register_from_agent_configs(agent_configs)
+        # Note: agent_configs is a dict[str, AgentConfig], need to pass values as list
+        registered_servers = mcp_integration.register_from_agent_configs(list(agent_configs.values()))
         logger.info("Registered MCP servers", servers=list(registered_servers))
 
         # Discover tools from all servers (graceful failure - startup continues)
@@ -206,8 +207,8 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
             )
 
             rate_limiter = RateLimiter(
-                requests_per_minute=settings.llm_rate_limit_rpm,
-                tokens_per_minute=settings.llm_rate_limit_tpm,
+                rpm=settings.llm_rate_limit_rpm,
+                tpm=settings.llm_rate_limit_tpm,
             )
 
             llm_gateway = LLMGateway(

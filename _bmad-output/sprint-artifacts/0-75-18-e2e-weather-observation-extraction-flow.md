@@ -93,7 +93,9 @@ TRUTH HIERARCHY (Top = Most Authoritative)
 
 | # | File | Lines | What Changed | Why (Root Cause) | Evidence (Proto/Spec) | Type |
 |---|------|-------|--------------|------------------|----------------------|------|
-| - | - | - | _None expected for this story_ | - | - | - |
+| 1 | `services/ai-model/src/ai_model/config.py` | 63-66 | Added `validation_alias="OPENROUTER_API_KEY"` to `openrouter_api_key` field | Bug: Field used `env_prefix="AI_MODEL_"` but other API keys (pinecone, azure) already used validation_alias to read standard env var names. OPENROUTER_API_KEY was inconsistent. | Pattern consistency with `pinecone_api_key` (line 185-188) and `azure_doc_intel_key` (line 146) which both use validation_alias | Bug fix |
+| 2 | `services/ai-model/src/ai_model/main.py` | 142 | Changed `register_from_agent_configs(agent_configs)` to `register_from_agent_configs(list(agent_configs.values()))` | Bug: `agent_config_cache.get_all()` returns `dict[str, AgentConfig]`, but `register_from_agent_configs()` expects `list[AgentConfig]`. Caused "'str' object has no attribute 'mcp_sources'" error. | `AgentConfigCache.get_all()` return type in `services/ai-model/src/ai_model/services/agent_config_cache.py` returns dict | Bug fix |
+| 3 | `services/ai-model/src/ai_model/main.py` | 209-212 | Changed `requests_per_minute`/`tokens_per_minute` to `rpm`/`tpm` in RateLimiter constructor | Bug: RateLimiter class signature uses `rpm` and `tpm` parameters, not `requests_per_minute`/`tokens_per_minute`. Caused "unexpected keyword argument" error. | `RateLimiter.__init__()` signature in `services/ai-model/src/ai_model/llm/rate_limiter.py` | Bug fix |
 
 **If you add entries above, each must include:**
 - **File:** Full path with line numbers
@@ -516,6 +518,89 @@ Claude Opus 4.5 (claude-opus-4-5-20251101)
 5. Re-enabled and updated weather E2E tests with polling helpers
 6. Local E2E: 105 passed, 2 skipped (due to no OPENROUTER_API_KEY locally)
 7. CI E2E: All weather tests passed, 2 unrelated RAG test failures
+
+---
+
+## 🚨 CURRENT SESSION STATUS (2026-01-10) - FOR NEXT AGENT
+
+### Production Code Bug Fixes (COMPLETED & DOCUMENTED)
+
+Three bugs were discovered and fixed during E2E testing. All documented in Production Code Change Log above:
+
+1. **`config.py` line 63-66**: Added `validation_alias="OPENROUTER_API_KEY"` - env_prefix was blocking the key
+2. **`main.py` line 142**: Fixed `agent_configs` dict→list conversion for `register_from_agent_configs()`
+3. **`main.py` line 209-212**: Fixed RateLimiter params (`rpm`/`tpm` not `requests_per_minute`/`tokens_per_minute`)
+
+### Current E2E Test Status: 6/7 PASSING
+
+| Test | Status |
+|------|--------|
+| `test_weather_extractor_agent_config_exists` | ✅ PASS |
+| `test_weather_extractor_prompt_exists` | ✅ PASS |
+| `test_weather_pull_job_trigger_succeeds` | ✅ PASS |
+| `test_weather_document_created_with_region_linkage` | ✅ PASS |
+| `test_weather_document_has_weather_attributes` | ❌ FAIL (timeout - extraction stays "pending") |
+| `test_get_region_weather_returns_observations` | ✅ PASS |
+| `test_get_documents_returns_weather_document` | ✅ PASS |
+
+### Failing Test Root Cause Investigation
+
+**Symptom:** `test_weather_document_has_weather_attributes` times out after 90s waiting for extraction status to change from "pending" to "complete".
+
+**Investigation Findings:**
+1. ✅ Source config seed data is CORRECT: `transformation.ai_agent_id: "weather-extractor"` confirmed in MongoDB
+2. ✅ DAPR subscription is ACTIVE: AI Model subscribed to `ai.agent.requested` topic
+3. ✅ OPENROUTER_API_KEY is SET in ai-model container (verified with `docker exec`)
+4. ✅ AI Model health endpoint returns healthy
+5. ❌ **NO weather documents exist in MongoDB** after pull job trigger
+6. ❓ AI Model structured logs are NOT appearing (only basic uvicorn output)
+
+**Likely Root Cause:** The pull job HTTP trigger succeeds (200 OK) but **no documents are being created**. This means the iteration/MCP call to `plantation-mcp.list_regions` may be failing silently, or documents aren't being stored.
+
+### Next Steps for Continuation
+
+1. **Debug Collection Model pull job processing:**
+   - Check Collection Model structured logs (they may not be appearing)
+   - Verify `plantation-mcp.list_regions` returns regions for iteration
+   - Add debug logging if needed
+
+2. **Once documents exist:**
+   - Verify AgentRequestEvent is published via DAPR
+   - Verify AI Model receives and processes the event
+   - Verify AgentCompletedEvent flows back to Collection Model
+
+3. **Complete workflow:**
+   - All 7 E2E tests pass locally
+   - CI E2E verification
+   - Code review
+
+### Key Commands
+
+```bash
+# Start infrastructure (MUST use set -a for env export)
+bash -c 'set -a && source .env && set +a && docker compose -f tests/e2e/infrastructure/docker-compose.e2e.yaml up -d --build'
+
+# Run weather tests only
+bash -c 'set -a && source .env && set +a && PYTHONPATH="${PYTHONPATH}:.:libs/fp-proto/src" pytest tests/e2e/scenarios/test_05_weather_ingestion.py -v'
+
+# Check weather documents in MongoDB
+bash -c 'set -a && source .env && set +a && python3 -c "
+import asyncio
+from motor.motor_asyncio import AsyncIOMotorClient
+async def check():
+    client = AsyncIOMotorClient(\"mongodb://mongodb:27017/?replicaSet=rs0\")
+    db = client.collection_e2e
+    docs = await db.weather_documents.find().to_list(length=5)
+    print(f\"Weather docs: {len(docs)}\")
+asyncio.run(check())
+"'
+
+# Check Collection Model logs
+docker logs e2e-collection-model 2>&1 | tail -50
+
+# Check AI Model logs
+docker logs e2e-ai-model 2>&1 | tail -50
+```
 
 ### File List
 
