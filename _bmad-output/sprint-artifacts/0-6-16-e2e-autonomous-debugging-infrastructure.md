@@ -1,6 +1,6 @@
 # Story 0.6.16: E2E Autonomous Debugging Infrastructure
 
-**Status:** review
+**Status:** done
 **GitHub Issue:** #152
 **Epic:** [Epic 0.6: Infrastructure Hardening](../epics/epic-0-6-infrastructure-hardening.md)
 **ADR:** [ADR-015: E2E Autonomous Debugging Infrastructure](../architecture/adr/ADR-015-e2e-autonomous-debugging-infrastructure.md)
