@@ -281,7 +281,7 @@ logger = structlog.get_logger("plantation_model.infrastructure.repositories.farm
 **Test Results:**
 
 - Unit Tests: 1399 passed (no regressions)
-- E2E Tests: 102 passed, 4 failed (expected - require OPENROUTER_API_KEY), 1 skipped
+- E2E Tests: 106 passed, 1 skipped
 
 **Admin Endpoint Verification:**
 
