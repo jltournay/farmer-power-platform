@@ -1,0 +1,910 @@
+{
+  "agent_name": "weekly_action_plan",
+  "agent_type": "generator",
+  "version": "1.0.0",
+  "created_at": "2026-01-10T00:00:00Z",
+  "updated_at": "2026-01-10T00:00:00Z",
+  "samples": [
+    {
+      "input": {
+        "farmer_id": "WM-4521",
+        "diagnoses": [
+          {"condition": "tea_blister_blight", "severity": "moderate", "confidence": 0.88}
+        ],
+        "weather_forecast": {
+          "next_7_days": {
+            "rain_probability": 0.7,
+            "humidity_avg": 85,
+            "temperature_avg_c": 20,
+            "extreme_weather_alerts": []
+          }
+        },
+        "farmer_context": {
+          "name": "John Kamau",
+          "region": "Kericho-High",
+          "farm_size": "small",
+          "recent_performance": {
+            "quality_score_avg": 72.0,
+            "trend": "declining"
+          }
+        },
+        "format_type": "detailed"
+      },
+      "expected_output": {
+        "action_plan": {
+          "week_of": "2026-01-13",
+          "priority_actions": [
+            {
+              "action": "Apply copper-based fungicide to affected tea bushes",
+              "priority": "high",
+              "timing": "Within 48 hours, before rain",
+              "reason": "Treat blister blight before high humidity worsens spread"
+            },
+            {
+              "action": "Prune affected branches to improve air circulation",
+              "priority": "medium",
+              "timing": "After fungicide application",
+              "reason": "Reduce moisture retention that encourages fungal growth"
+            },
+            {
+              "action": "Inspect neighboring bushes for early signs of infection",
+              "priority": "medium",
+              "timing": "During this week",
+              "reason": "Early detection prevents widespread outbreak"
+            }
+          ],
+          "weather_considerations": [
+            "High humidity (85%) increases fungal disease risk",
+            "Apply fungicide before expected rain for better absorption",
+            "Avoid harvesting wet leaves to prevent disease spread"
+          ],
+          "expected_outcomes": "With treatment, expect recovery in 2-3 weeks and reduced spread to neighboring plants"
+        },
+        "summary": {
+          "sms_message": "John, hatua ya wiki: \ud83c\udf3f Nyunyiza dawa ya fungicide kwa majani yenye ugonjwa kabla ya mvua. Piga *384# kwa maelezo zaidi.",
+          "voice_script": "Habari John. Hii ni mpango wako wa wiki. Kwanza, nyunyiza dawa ya fungicide kwa majani yenye ugonjwa ndani ya masaa 48 kabla ya mvua. Pili, kata matawi yaliyoathirika baada ya kunyunyiza dawa ili kuongeza mzunguko wa hewa. Tatu, kagua mimea jirani kwa ishara za mapema za maambukizi. Mvua inatarajiwa, kwa hivyo fanya haraka. Asante."
+        }
+      },
+      "acceptable_variance": {
+        "priority_actions.length": 1
+      },
+      "metadata": {
+        "sample_id": "GS-gen-001",
+        "agent_name": "weekly_action_plan",
+        "agent_type": "generator",
+        "description": "Standard weekly plan - moderate diagnosis, rainy weather",
+        "source": "synthetic",
+        "tags": ["standard", "blister-blight", "fungal-treatment", "rainy-weather"],
+        "priority": "P0"
+      }
+    },
+    {
+      "input": {
+        "farmer_id": "WM-7890",
+        "diagnoses": [
+          {"condition": "red_spider_mite_infestation", "severity": "critical", "confidence": 0.91},
+          {"condition": "drought_stress", "severity": "high", "confidence": 0.85}
+        ],
+        "weather_forecast": {
+          "next_7_days": {
+            "rain_probability": 0.05,
+            "humidity_avg": 40,
+            "temperature_avg_c": 32,
+            "extreme_weather_alerts": ["heat_wave"]
+          }
+        },
+        "farmer_context": {
+          "name": "Peter Ochieng",
+          "region": "Kericho-Low",
+          "farm_size": "medium",
+          "recent_performance": {
+            "quality_score_avg": 55.0,
+            "trend": "declining"
+          }
+        },
+        "format_type": "detailed"
+      },
+      "expected_output": {
+        "action_plan": {
+          "week_of": "2026-01-13",
+          "priority_actions": [
+            {
+              "action": "Apply acaricide spray (dicofol or abamectin) immediately",
+              "priority": "critical",
+              "timing": "Today, early morning or late evening",
+              "reason": "Critical spider mite infestation requires immediate action before population explodes"
+            },
+            {
+              "action": "Set up emergency irrigation with 25mm water every 2 days",
+              "priority": "critical",
+              "timing": "Start immediately, continue through heat wave",
+              "reason": "Drought stress and heat wave will kill plants without water"
+            },
+            {
+              "action": "Apply mulch layer (5-10cm) around all bushes",
+              "priority": "high",
+              "timing": "Within 48 hours",
+              "reason": "Retain soil moisture during extreme heat"
+            },
+            {
+              "action": "Remove heavily infested leaves and burn them",
+              "priority": "high",
+              "timing": "After acaricide application",
+              "reason": "Reduce mite population and prevent re-infestation"
+            }
+          ],
+          "weather_considerations": [
+            "ALERT: Heat wave expected - plan work for early morning",
+            "Very low humidity (40%) favors pest reproduction",
+            "No rain expected - irrigation is essential",
+            "Work during coolest parts of day to protect yourself"
+          ],
+          "expected_outcomes": "Immediate action critical - expect 2-3 week recovery if all steps followed. Delayed action risks total crop loss."
+        },
+        "summary": {
+          "sms_message": "Peter HARAKA! \ud83d\udea8 Nyunyiza dawa ya mite LEO + mwagilia maji. Joto kali wiki hii! Piga *384# sasa.",
+          "voice_script": "Habari Peter. Kuna hali ya dharura kwenye shamba lako. Kuna wadudu wengi na joto kali linakuja. Kwanza, nyunyiza dawa ya mite leo asubuhi au jioni. Ni muhimu sana. Pili, anza kumwagilia maji mara moja kwa sababu mvua haitakuja wiki hii. Tatu, weka matandazo kuzunguka mimea yako. Fanya hizi leo. Subiri na itakuwa mbaya zaidi. Asante."
+        }
+      },
+      "acceptable_variance": {
+        "priority_actions.length": 1
+      },
+      "metadata": {
+        "sample_id": "GS-gen-002",
+        "agent_name": "weekly_action_plan",
+        "agent_type": "generator",
+        "description": "Critical situation - pest outbreak + drought + heat wave",
+        "source": "synthetic",
+        "tags": ["critical", "emergency", "pest-outbreak", "drought", "heat-wave"],
+        "priority": "P0"
+      }
+    },
+    {
+      "input": {
+        "farmer_id": "WM-3456",
+        "diagnoses": [],
+        "weather_forecast": {
+          "next_7_days": {
+            "rain_probability": 0.9,
+            "humidity_avg": 92,
+            "temperature_avg_c": 18,
+            "extreme_weather_alerts": ["heavy_rain_warning", "flooding_risk"]
+          }
+        },
+        "farmer_context": {
+          "name": "Grace Wambui",
+          "region": "Nandi-High",
+          "farm_size": "small",
+          "recent_performance": {
+            "quality_score_avg": 80.0,
+            "trend": "stable"
+          }
+        },
+        "format_type": "detailed"
+      },
+      "expected_output": {
+        "action_plan": {
+          "week_of": "2026-01-13",
+          "priority_actions": [
+            {
+              "action": "Clear all drainage channels around tea fields",
+              "priority": "high",
+              "timing": "Before rain starts (within 24 hours)",
+              "reason": "Prevent waterlogging and root rot during heavy rains"
+            },
+            {
+              "action": "Apply preventive fungicide spray to healthy plants",
+              "priority": "high",
+              "timing": "Before rain, during dry window",
+              "reason": "High humidity will create ideal conditions for fungal diseases"
+            },
+            {
+              "action": "Reinforce mulch on slopes to prevent soil erosion",
+              "priority": "medium",
+              "timing": "Before heavy rain starts",
+              "reason": "Protect topsoil and plant roots from erosion"
+            },
+            {
+              "action": "Postpone any planned harvesting until weather improves",
+              "priority": "medium",
+              "timing": "All week",
+              "reason": "Wet tea leaves have lower quality and can spread diseases"
+            }
+          ],
+          "weather_considerations": [
+            "ALERT: Heavy rain warning for the week",
+            "Flooding risk in low-lying areas",
+            "Very high humidity (92%) increases fungal disease risk",
+            "Plan indoor activities for heavy rain days"
+          ],
+          "expected_outcomes": "Proper preparation will protect crops from rain damage and fungal infection. Resume normal operations when weather clears."
+        },
+        "summary": {
+          "sms_message": "Grace, mvua kubwa inakuja! \ud83c\udf27\ufe0f Safisha mifereji yako leo. Nyunyiza dawa ya fungus kabla ya mvua. Piga *384# kwa maelezo.",
+          "voice_script": "Habari Grace. Wiki hii mvua kubwa inatarajiwa. Kwanza, safisha mifereji yote leo kabla ya mvua kuanza. Pili, nyunyiza dawa ya kuzuia ugonjwa wa fungus wakati bado kavu. Tatu, imarisha matandazo ili kuzuia mmomonyoko wa udongo. Nne, usivune chai wiki hii kwa sababu majani yenye unyevu yana ubora mdogo. Jiandae sasa. Asante."
+        }
+      },
+      "acceptable_variance": {
+        "priority_actions.length": 1
+      },
+      "metadata": {
+        "sample_id": "GS-gen-003",
+        "agent_name": "weekly_action_plan",
+        "agent_type": "generator",
+        "description": "Weather-focused - heavy rain and flooding preparation",
+        "source": "synthetic",
+        "tags": ["weather-preparation", "heavy-rain", "preventive", "no-diagnosis"],
+        "priority": "P0"
+      }
+    },
+    {
+      "input": {
+        "farmer_id": "WM-5678",
+        "diagnoses": [],
+        "weather_forecast": {
+          "next_7_days": {
+            "rain_probability": 0.3,
+            "humidity_avg": 70,
+            "temperature_avg_c": 22,
+            "extreme_weather_alerts": []
+          }
+        },
+        "farmer_context": {
+          "name": "Mary Wanjiku",
+          "region": "Kericho-Medium",
+          "farm_size": "large",
+          "recent_performance": {
+            "quality_score_avg": 92.0,
+            "trend": "improving"
+          }
+        },
+        "format_type": "detailed"
+      },
+      "expected_output": {
+        "action_plan": {
+          "week_of": "2026-01-13",
+          "priority_actions": [
+            {
+              "action": "Continue regular harvesting schedule (every 7-10 days)",
+              "priority": "medium",
+              "timing": "As per normal schedule",
+              "reason": "Maintain high quality with timely plucking"
+            },
+            {
+              "action": "Apply balanced NPK fertilizer to support continued growth",
+              "priority": "medium",
+              "timing": "Mid-week, before light rain",
+              "reason": "Sustain excellent performance and healthy plant nutrition"
+            },
+            {
+              "action": "Document current farming practices for knowledge sharing",
+              "priority": "low",
+              "timing": "When convenient this week",
+              "reason": "Your success can help other farmers in the region"
+            }
+          ],
+          "weather_considerations": [
+            "Good weather conditions expected",
+            "Moderate humidity (70%) is optimal for tea growth",
+            "Light rain mid-week is ideal for fertilizer application"
+          ],
+          "expected_outcomes": "Maintain excellent quality scores with consistent care. Consider expanding best practices to improve yields further."
+        },
+        "summary": {
+          "sms_message": "Mary, chai yako nzuri sana! \u2b50 Endelea kama kawaida. Weka mbolea wiki hii. Hongera! Piga *384# kwa maelezo.",
+          "voice_script": "Habari Mary. Chai yako iko vizuri sana, hongera! Kwa wiki hii, kwanza, endelea na ratiba yako ya kawaida ya kuvuna. Pili, weka mbolea katikati ya wiki kabla ya mvua kidogo. Endelea kazi nzuri. Wewe ni mfano mzuri kwa wakulima wengine. Asante."
+        }
+      },
+      "acceptable_variance": {
+        "priority_actions.length": 1
+      },
+      "metadata": {
+        "sample_id": "GS-gen-004",
+        "agent_name": "weekly_action_plan",
+        "agent_type": "generator",
+        "description": "High-performer - maintenance and optimization focus",
+        "source": "synthetic",
+        "tags": ["high-performer", "maintenance", "optimization", "no-issues"],
+        "priority": "P1"
+      }
+    },
+    {
+      "input": {
+        "farmer_id": "WM-9012",
+        "diagnoses": [
+          {"condition": "nutrient_deficiency_nitrogen", "severity": "high", "confidence": 0.82},
+          {"condition": "grey_blight", "severity": "moderate", "confidence": 0.75},
+          {"condition": "over_pruning_damage", "severity": "moderate", "confidence": 0.68}
+        ],
+        "weather_forecast": {
+          "next_7_days": {
+            "rain_probability": 0.5,
+            "humidity_avg": 75,
+            "temperature_avg_c": 21,
+            "extreme_weather_alerts": []
+          }
+        },
+        "farmer_context": {
+          "name": "James Kiprop",
+          "region": "Bomet-Medium",
+          "farm_size": "small",
+          "recent_performance": {
+            "quality_score_avg": 45.0,
+            "trend": "declining"
+          }
+        },
+        "format_type": "detailed"
+      },
+      "expected_output": {
+        "action_plan": {
+          "week_of": "2026-01-13",
+          "priority_actions": [
+            {
+              "action": "Apply nitrogen-rich fertilizer (urea) at 50g per bush",
+              "priority": "high",
+              "timing": "Within 48 hours, before rain",
+              "reason": "Address severe nitrogen deficiency causing yellow leaves and poor growth"
+            },
+            {
+              "action": "Apply systemic fungicide (carbendazim) to treat grey blight",
+              "priority": "high",
+              "timing": "3-4 days after fertilizer (separate applications)",
+              "reason": "Stop fungal spread before humidity increases it"
+            },
+            {
+              "action": "Do NOT prune any more - allow natural recovery",
+              "priority": "high",
+              "timing": "All week and next 4-6 weeks",
+              "reason": "Plants are stressed from over-pruning and need time to recover"
+            },
+            {
+              "action": "Schedule consultation with local extension officer",
+              "priority": "medium",
+              "timing": "This week",
+              "reason": "Get expert guidance on recovery plan for multiple issues"
+            }
+          ],
+          "weather_considerations": [
+            "Mixed weather (50% rain) - good for fertilizer absorption",
+            "Moderate humidity - watch for fungal spread",
+            "Apply treatments during dry windows"
+          ],
+          "expected_outcomes": "Recovery will take 6-8 weeks due to multiple issues. Focus on one treatment at a time. Expect gradual improvement starting week 3-4."
+        },
+        "summary": {
+          "sms_message": "James, mimea yako inahitaji msaada! \ud83c\udf31 Weka mbolea ya urea SASA. Usikate tena. Piga *384# sasa kwa hatua muhimu.",
+          "voice_script": "Habari James. Mimea yako ina matatizo kadhaa, lakini tunaweza kusaidia. Kwanza, weka mbolea ya urea gramu hamsini kwa kila mmea ndani ya masaa 48. Pili, nyunyiza dawa ya fungus baada ya siku tatu au nne. Tatu, usikata mimea tena kwa wiki sita. Mimea yanahitaji kupumzika. Nne, piga simu ofisi ya kilimo wiki hii kwa ushauri zaidi. Fanya polepole, hatua moja kwa wakati. Asante."
+        }
+      },
+      "acceptable_variance": {
+        "priority_actions.length": 1
+      },
+      "metadata": {
+        "sample_id": "GS-gen-005",
+        "agent_name": "weekly_action_plan",
+        "agent_type": "generator",
+        "description": "Struggling farmer - multiple issues, prioritized recovery",
+        "source": "synthetic",
+        "tags": ["struggling", "multiple-issues", "recovery-plan", "prioritized"],
+        "priority": "P0"
+      }
+    },
+    {
+      "input": {
+        "farmer_id": "WM-3344",
+        "diagnoses": [],
+        "weather_forecast": {
+          "next_7_days": {
+            "rain_probability": 0.4,
+            "humidity_avg": 72,
+            "temperature_avg_c": 23,
+            "extreme_weather_alerts": []
+          }
+        },
+        "farmer_context": {
+          "name": "Sarah Chebet",
+          "region": "Nandi-Low",
+          "farm_size": "medium",
+          "recent_performance": {
+            "quality_score_avg": 78.0,
+            "trend": "stable"
+          }
+        },
+        "format_type": "detailed"
+      },
+      "expected_output": {
+        "action_plan": {
+          "week_of": "2026-01-13",
+          "priority_actions": [
+            {
+              "action": "Conduct thorough inspection of all tea bushes for pest or disease signs",
+              "priority": "medium",
+              "timing": "Early this week",
+              "reason": "Proactive monitoring catches problems early when easier to treat"
+            },
+            {
+              "action": "Apply preventive copper fungicide spray",
+              "priority": "low",
+              "timing": "Mid-week, during dry period",
+              "reason": "Seasonal prevention is cheaper than treating outbreaks"
+            },
+            {
+              "action": "Review and adjust fertilizer schedule based on plant growth",
+              "priority": "low",
+              "timing": "When convenient",
+              "reason": "Optimize nutrition for best yield and quality"
+            }
+          ],
+          "weather_considerations": [
+            "Normal weather expected - good for routine maintenance",
+            "Moderate humidity - low disease risk",
+            "Plan outdoor work for dry days"
+          ],
+          "expected_outcomes": "Maintain current stable performance with proactive care. Early detection of any issues will prevent major problems."
+        },
+        "summary": {
+          "sms_message": "Sarah, chai yako iko sawa! \ud83d\udc40 Kagua mimea yako wiki hii. Nyunyiza dawa ya kuzuia ugonjwa. Piga *384# kwa maelezo.",
+          "voice_script": "Habari Sarah. Chai yako iko vizuri. Kwa wiki hii, kwanza, kagua mimea yako yote kwa makini kutafuta ishara za wadudu au magonjwa. Pili, nyunyiza dawa kidogo ya kuzuia fungus. Ni bora kuzuia kuliko kutibu. Endelea kazi nzuri. Asante."
+        }
+      },
+      "acceptable_variance": {
+        "priority_actions.length": 1
+      },
+      "metadata": {
+        "sample_id": "GS-gen-006",
+        "agent_name": "weekly_action_plan",
+        "agent_type": "generator",
+        "description": "No active diagnoses - proactive best practices",
+        "source": "synthetic",
+        "tags": ["proactive", "best-practices", "prevention", "stable-farmer"],
+        "priority": "P1"
+      }
+    },
+    {
+      "input": {
+        "farmer_id": "WM-5566",
+        "diagnoses": [
+          {"condition": "tea_blister_blight", "severity": "moderate", "confidence": 0.80}
+        ],
+        "weather_forecast": {
+          "next_7_days": {
+            "rain_probability": 0.6,
+            "humidity_avg": 80,
+            "temperature_avg_c": 19,
+            "extreme_weather_alerts": []
+          }
+        },
+        "farmer_context": {
+          "name": "David Korir",
+          "region": "Kericho-High",
+          "farm_size": "small",
+          "recent_performance": {
+            "quality_score_avg": 68.0,
+            "trend": "declining"
+          }
+        },
+        "format_type": "sms_summary"
+      },
+      "expected_output": {
+        "action_plan": {
+          "week_of": "2026-01-13",
+          "priority_actions": [
+            {
+              "action": "Apply copper fungicide to affected bushes",
+              "priority": "high",
+              "timing": "Within 48 hours",
+              "reason": "Treat blister blight before rain increases spread"
+            },
+            {
+              "action": "Prune diseased branches",
+              "priority": "medium",
+              "timing": "After treatment",
+              "reason": "Improve air circulation"
+            }
+          ],
+          "weather_considerations": [
+            "Rain expected - apply before wet conditions"
+          ],
+          "expected_outcomes": "Recovery in 2-3 weeks with treatment"
+        },
+        "summary": {
+          "sms_message": "David, hatua ya wiki: \ud83c\udf3f Nyunyiza dawa ya fungicide kabla ya mvua. Kata matawi yenye ugonjwa. Piga *384# kwa maelezo zaidi.",
+          "voice_script": "Habari David. Nyunyiza dawa ya fungicide ndani ya masaa 48. Kata matawi yaliyoathirika. Mvua inakuja, fanya haraka. Asante."
+        }
+      },
+      "acceptable_variance": {
+        "priority_actions.length": 1
+      },
+      "metadata": {
+        "sample_id": "GS-gen-007",
+        "agent_name": "weekly_action_plan",
+        "agent_type": "generator",
+        "description": "SMS format request - short summary validation",
+        "source": "synthetic",
+        "tags": ["sms-format", "short-summary", "format-test"],
+        "priority": "P0"
+      }
+    },
+    {
+      "input": {
+        "farmer_id": "WM-7788",
+        "diagnoses": [
+          {"condition": "nutrient_deficiency_potassium", "severity": "moderate", "confidence": 0.76}
+        ],
+        "weather_forecast": {
+          "next_7_days": {
+            "rain_probability": 0.3,
+            "humidity_avg": 65,
+            "temperature_avg_c": 24,
+            "extreme_weather_alerts": []
+          }
+        },
+        "farmer_context": {
+          "name": "Elizabeth Njeri",
+          "region": "Nyeri-Medium",
+          "farm_size": "small",
+          "recent_performance": {
+            "quality_score_avg": 62.0,
+            "trend": "declining"
+          }
+        },
+        "format_type": "voice_script"
+      },
+      "expected_output": {
+        "action_plan": {
+          "week_of": "2026-01-13",
+          "priority_actions": [
+            {
+              "action": "Apply potassium-rich fertilizer (muriate of potash)",
+              "priority": "high",
+              "timing": "Within this week",
+              "reason": "Address potassium deficiency affecting leaf quality"
+            },
+            {
+              "action": "Improve irrigation during dry period",
+              "priority": "medium",
+              "timing": "Every 3 days",
+              "reason": "Help nutrient uptake during low rainfall"
+            }
+          ],
+          "weather_considerations": [
+            "Light rain expected - good for fertilizer absorption",
+            "Supplement with irrigation between rains"
+          ],
+          "expected_outcomes": "Expect improvement in 4-5 weeks with proper fertilization"
+        },
+        "summary": {
+          "sms_message": "Elizabeth, chai inahitaji mbolea! \ud83c\udf31 Weka mbolea ya potash wiki hii. Mwagilia kila siku 3. Piga *384#.",
+          "voice_script": "Habari Elizabeth. Mimea yako inahitaji mbolea ya potash kwa sababu majani yanaonyesha upungufu wa virutubisho. Kwanza, weka mbolea ya potash karibu na kila mmea wiki hii. Gramu hamsini kwa kila mmea. Pili, mwagilia maji kila siku tatu kwa sababu mvua itakuwa kidogo. Hii itasaidia mimea kupata virutubisho vizuri. Kwa wiki nne au tano, unapaswa kuona maboresho. Asante sana."
+        }
+      },
+      "acceptable_variance": {
+        "priority_actions.length": 1
+      },
+      "metadata": {
+        "sample_id": "GS-gen-008",
+        "agent_name": "weekly_action_plan",
+        "agent_type": "generator",
+        "description": "Voice script format - Swahili conversational",
+        "source": "synthetic",
+        "tags": ["voice-format", "swahili", "conversational", "format-test"],
+        "priority": "P1"
+      }
+    },
+    {
+      "input": {
+        "farmer_id": "WM-9900",
+        "diagnoses": [
+          {"condition": "drought_stress", "severity": "high", "confidence": 0.85},
+          {"condition": "waterlogging_stress", "severity": "moderate", "confidence": 0.72}
+        ],
+        "weather_forecast": {
+          "next_7_days": {
+            "rain_probability": 0.4,
+            "humidity_avg": 70,
+            "temperature_avg_c": 23,
+            "extreme_weather_alerts": []
+          }
+        },
+        "farmer_context": {
+          "name": "Joseph Mutai",
+          "region": "Bomet-High",
+          "farm_size": "medium",
+          "recent_performance": {
+            "quality_score_avg": 58.0,
+            "trend": "declining"
+          }
+        },
+        "format_type": "detailed"
+      },
+      "expected_output": {
+        "action_plan": {
+          "week_of": "2026-01-13",
+          "priority_actions": [
+            {
+              "action": "Assess actual field conditions - check soil moisture in different areas",
+              "priority": "high",
+              "timing": "Immediately",
+              "reason": "Conflicting diagnoses suggest different areas have different problems"
+            },
+            {
+              "action": "For dry areas: Apply irrigation and mulch",
+              "priority": "high",
+              "timing": "After assessment, within 48 hours",
+              "reason": "Address drought stress in affected zones"
+            },
+            {
+              "action": "For wet areas: Clear drainage and avoid watering",
+              "priority": "high",
+              "timing": "After assessment, within 48 hours",
+              "reason": "Address waterlogging in low-lying zones"
+            },
+            {
+              "action": "Consider field re-mapping for zone-specific management",
+              "priority": "medium",
+              "timing": "This week",
+              "reason": "Different areas need different treatment approaches"
+            }
+          ],
+          "weather_considerations": [
+            "Mixed weather ahead - plan treatments for appropriate conditions",
+            "Monitor both dry and wet zones separately",
+            "Irrigation schedule should vary by zone"
+          ],
+          "expected_outcomes": "Zone-specific treatment approach should show improvement in 3-4 weeks. Proper drainage and irrigation management is key."
+        },
+        "summary": {
+          "sms_message": "Joseph, kagua shamba! \ud83d\udccd Sehemu tofauti zina matatizo tofauti. Angalia unyevu wa udongo kwanza. Piga *384# kwa mpango.",
+          "voice_script": "Habari Joseph. Shamba lako lina matatizo mawili tofauti. Sehemu zingine zina ukame, sehemu zingine zina maji mengi. Kwanza, kagua udongo katika sehemu tofauti za shamba. Pili, kwa sehemu kavu, mwagilia na weka matandazo. Tatu, kwa sehemu yenye maji mengi, safisha mifereji na usimwagilie. Shamba lako linahitaji mpango tofauti kwa kila sehemu. Asante."
+        }
+      },
+      "acceptable_variance": {
+        "priority_actions.length": 1
+      },
+      "metadata": {
+        "sample_id": "GS-gen-009",
+        "agent_name": "weekly_action_plan",
+        "agent_type": "generator",
+        "description": "Edge case - conflicting diagnoses (drought AND waterlogging)",
+        "source": "synthetic",
+        "tags": ["edge-case", "conflicting-diagnoses", "zone-management"],
+        "priority": "P1"
+      }
+    },
+    {
+      "input": {
+        "farmer_id": "WM-1122",
+        "diagnoses": [
+          {"condition": "frost_damage", "severity": "critical", "confidence": 0.90}
+        ],
+        "weather_forecast": {
+          "next_7_days": {
+            "rain_probability": 0.1,
+            "humidity_avg": 35,
+            "temperature_avg_c": 5,
+            "extreme_weather_alerts": ["frost_warning", "cold_snap"]
+          }
+        },
+        "farmer_context": {
+          "name": "Agnes Cherono",
+          "region": "Nakuru-High",
+          "farm_size": "small",
+          "recent_performance": {
+            "quality_score_avg": 50.0,
+            "trend": "declining"
+          }
+        },
+        "format_type": "detailed"
+      },
+      "expected_output": {
+        "action_plan": {
+          "week_of": "2026-01-13",
+          "priority_actions": [
+            {
+              "action": "Set up frost protection overnight (shade cloth or plastic covers)",
+              "priority": "critical",
+              "timing": "TONIGHT before sunset",
+              "reason": "More frost expected - protect remaining healthy plants"
+            },
+            {
+              "action": "Apply heavy mulch (10-15cm) around all bushes",
+              "priority": "critical",
+              "timing": "Today",
+              "reason": "Insulate roots from freezing temperatures"
+            },
+            {
+              "action": "Do NOT harvest or prune frost-damaged leaves yet",
+              "priority": "high",
+              "timing": "All week",
+              "reason": "Damaged leaves protect inner growth during continued cold"
+            },
+            {
+              "action": "Consider smoke pots or small fires near plants if frost severe",
+              "priority": "high",
+              "timing": "Tonight and following nights",
+              "reason": "Traditional method to raise overnight temperatures slightly"
+            }
+          ],
+          "weather_considerations": [
+            "ALERT: Frost warning and cold snap expected",
+            "Temperatures near 5C - dangerous for tea plants",
+            "Very low humidity (35%) increases frost damage risk",
+            "No rain - dry conditions worsen cold damage"
+          ],
+          "expected_outcomes": "Focus on survival this week. Recovery assessment possible after temperatures rise. Some plants may not survive - prepare for replanting."
+        },
+        "summary": {
+          "sms_message": "Agnes HATARI! \u2744\ufe0f Frost inakuja usiku! Funika mimea LEO kabla ya jua kutua. Weka matandazo mengi. Piga *384# sasa!",
+          "voice_script": "Habari Agnes. Kuna hatari kubwa ya frost usiku huu na wiki hii. Kwanza, funika mimea yako leo kabla ya jua kutua na vitambaa au plastiki. Pili, weka matandazo mengi karibu na mimea, sentimita kumi hadi kumi na tano. Tatu, usivune au kukate majani yaliyoharibika bado. Yanasaidia kulinda mimea. Nne, ukiweza, weka moto mdogo karibu na mimea usiku wa baridi sana. Hii ni dharura. Fanya sasa. Asante."
+        }
+      },
+      "acceptable_variance": {
+        "priority_actions.length": 1
+      },
+      "metadata": {
+        "sample_id": "GS-gen-010",
+        "agent_name": "weekly_action_plan",
+        "agent_type": "generator",
+        "description": "Edge case - extreme weather (frost/cold snap)",
+        "source": "synthetic",
+        "tags": ["edge-case", "extreme-weather", "frost", "emergency"],
+        "priority": "P1"
+      }
+    },
+    {
+      "input": {
+        "farmer_id": "WM-2233",
+        "diagnoses": [
+          {"condition": "bacterial_canker", "severity": "high", "confidence": 0.78},
+          {"condition": "tea_mosquito_bug", "severity": "moderate", "confidence": 0.72},
+          {"condition": "nutrient_deficiency_nitrogen", "severity": "low", "confidence": 0.65}
+        ],
+        "weather_forecast": {
+          "next_7_days": {
+            "rain_probability": 0.6,
+            "humidity_avg": 78,
+            "temperature_avg_c": 21,
+            "extreme_weather_alerts": []
+          }
+        },
+        "farmer_context": {
+          "name": "Michael Sang",
+          "region": "Kericho-Medium",
+          "farm_size": "large",
+          "recent_performance": {
+            "quality_score_avg": 55.0,
+            "trend": "declining"
+          }
+        },
+        "format_type": "detailed"
+      },
+      "expected_output": {
+        "action_plan": {
+          "week_of": "2026-01-13",
+          "priority_actions": [
+            {
+              "action": "Remove and destroy all branches showing bacterial canker symptoms",
+              "priority": "critical",
+              "timing": "Immediately",
+              "reason": "Bacterial canker spreads quickly - remove infected material first"
+            },
+            {
+              "action": "Apply copper bactericide to cut surfaces and surrounding healthy plants",
+              "priority": "high",
+              "timing": "After removal, same day",
+              "reason": "Prevent bacterial infection of remaining healthy tissue"
+            },
+            {
+              "action": "Apply insecticide (thiamethoxam or imidacloprid) for tea mosquito bug",
+              "priority": "high",
+              "timing": "2-3 days after bactericide, during dry window",
+              "reason": "Control pest population before rain increases humidity"
+            },
+            {
+              "action": "Postpone nitrogen fertilizer application for 2 weeks",
+              "priority": "medium",
+              "timing": "After plant recovery begins",
+              "reason": "Stressed plants cannot absorb nutrients well - treat infections first"
+            }
+          ],
+          "weather_considerations": [
+            "Moderate rain expected - apply treatments during dry windows",
+            "High humidity favors bacterial spread - act quickly",
+            "Space treatments apart - don't overload stressed plants"
+          ],
+          "expected_outcomes": "Prioritize bacterial canker control first, then pest management. Nutrient deficiency will improve once plant health stabilizes. Full recovery in 6-8 weeks."
+        },
+        "summary": {
+          "sms_message": "Michael, hatua 3 kwa mpangilio! \ud83d\udea8 1)Ondoa matawi yenye ugonjwa LEO 2)Nyunyiza dawa ya bacteria 3)Dawa ya wadudu baadaye. *384#",
+          "voice_script": "Habari Michael. Shamba lako lina matatizo matatu, lakini tutashughulikia kwa mpangilio. Kwanza, ondoa na uchome matawi yote yenye ishara za ugonjwa wa bacteria LEO. Hii ni muhimu sana. Pili, nyunyiza dawa ya copper kwenye sehemu zilizokatwa na mimea jirani. Tatu, baada ya siku mbili au tatu, nyunyiza dawa ya wadudu kwa mbu wa chai. Nne, USIWEKE mbolea bado. Mimea inahitaji kupona kwanza. Fanya hatua moja kwa wakati. Asante."
+        }
+      },
+      "acceptable_variance": {
+        "priority_actions.length": 1
+      },
+      "metadata": {
+        "sample_id": "GS-gen-011",
+        "agent_name": "weekly_action_plan",
+        "agent_type": "generator",
+        "description": "Complex case - prioritized treatment sequence for multiple issues",
+        "source": "synthetic",
+        "tags": ["multiple-diagnoses", "treatment-sequence", "prioritization", "large-farm"],
+        "priority": "P0"
+      }
+    },
+    {
+      "input": {
+        "farmer_id": "WM-4455",
+        "diagnoses": [
+          {"condition": "healthy", "severity": "low", "confidence": 0.95}
+        ],
+        "weather_forecast": {
+          "next_7_days": {
+            "rain_probability": 0.2,
+            "humidity_avg": 55,
+            "temperature_avg_c": 28,
+            "extreme_weather_alerts": ["drought_warning"]
+          }
+        },
+        "farmer_context": {
+          "name": "Ruth Akinyi",
+          "region": "Kisumu-Low",
+          "farm_size": "small",
+          "recent_performance": {
+            "quality_score_avg": 85.0,
+            "trend": "stable"
+          }
+        },
+        "format_type": "detailed"
+      },
+      "expected_output": {
+        "action_plan": {
+          "week_of": "2026-01-13",
+          "priority_actions": [
+            {
+              "action": "Set up irrigation schedule: 30mm water every 3 days",
+              "priority": "high",
+              "timing": "Start immediately, continue through drought",
+              "reason": "Drought warning - proactive water management essential"
+            },
+            {
+              "action": "Apply mulch layer (8-10cm) to retain soil moisture",
+              "priority": "high",
+              "timing": "This week",
+              "reason": "Reduce water evaporation during hot dry period"
+            },
+            {
+              "action": "Harvest tea leaves promptly to reduce plant water needs",
+              "priority": "medium",
+              "timing": "Every 5-7 days instead of 10",
+              "reason": "Fewer leaves means less water stress during drought"
+            }
+          ],
+          "weather_considerations": [
+            "ALERT: Drought warning for the region",
+            "Low rainfall expected (20%) - irrigation critical",
+            "Higher temperatures (28C) increase water needs",
+            "Low humidity (55%) - evaporation losses higher"
+          ],
+          "expected_outcomes": "With proactive water management, maintain plant health through drought. Plants are healthy now - goal is prevention, not treatment."
+        },
+        "summary": {
+          "sms_message": "Ruth, chai yako ni sawa, lakini ukame unakuja! \ud83d\udca7 Anza kumwagilia sasa. Weka matandazo. Piga *384# kwa maelezo.",
+          "voice_script": "Habari Ruth. Chai yako iko vizuri sana, hongera! Lakini ukame unakuja wiki hii, kwa hivyo tunahitaji kujiandaa. Kwanza, anza kumwagilia maji kila siku tatu, milimita thelathini. Pili, weka matandazo mengi karibu na mimea kuhifadhi unyevu. Tatu, vuna chai haraka haraka wiki hii ili kupunguza maji yanayohitajika na mimea. Kuwa tayari na utahifadhi ubora wako mzuri. Asante."
+        }
+      },
+      "acceptable_variance": {
+        "priority_actions.length": 1
+      },
+      "metadata": {
+        "sample_id": "GS-gen-012",
+        "agent_name": "weekly_action_plan",
+        "agent_type": "generator",
+        "description": "Healthy plant with extreme weather preparation (drought)",
+        "source": "synthetic",
+        "tags": ["healthy", "drought-preparation", "preventive", "weather-alert"],
+        "priority": "P0"
+      }
+    }
+  ]
+}
