@@ -43,10 +43,9 @@ jobs:
         uses: docker/setup-buildx-action@v3
 
       - name: Create E2E secrets file
-        working-directory: tests/e2e/infrastructure
         run: |
-          cat > .env.e2e << EOF
-          # Generated from GitHub Secrets
+          cat > .env << EOF
+          # Generated from GitHub Secrets for E2E tests
           OPENROUTER_API_KEY=${{ secrets.OPENROUTER_API_KEY }}
           AZURE_DOCUMENT_ENDPOINT=${{ secrets.AZURE_DOCUMENT_ENDPOINT }}
           AZURE_DOCUMENT_KEY=${{ secrets.AZURE_DOCUMENT_KEY }}
@@ -57,12 +56,6 @@ jobs:
       - name: Build and start E2E stack
         working-directory: tests/e2e/infrastructure
         run: |
-          # Source environment variables from .env.e2e for docker-compose
-          # This provides OPENROUTER_API_KEY to the AI Model container
-          set -a
-          source .env.e2e
-          set +a
-
           docker compose -f docker-compose.e2e.yaml build
           docker compose -f docker-compose.e2e.yaml up -d
 
