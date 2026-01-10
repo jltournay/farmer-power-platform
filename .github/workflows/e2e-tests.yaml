@@ -42,19 +42,14 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Create E2E secrets file
-        run: |
-          cat > .env << EOF
-          # Generated from GitHub Secrets for E2E tests
-          OPENROUTER_API_KEY=${{ secrets.OPENROUTER_API_KEY }}
-          AZURE_DOCUMENT_ENDPOINT=${{ secrets.AZURE_DOCUMENT_ENDPOINT }}
-          AZURE_DOCUMENT_KEY=${{ secrets.AZURE_DOCUMENT_KEY }}
-          PINECONE_API_KEY=${{ secrets.PINECONE_API_KEY }}
-          PINECONE_INDEX_NAME=${{ secrets.PINECONE_INDEX_NAME }}
-          EOF
-
       - name: Build and start E2E stack
         working-directory: tests/e2e/infrastructure
+        env:
+          PINECONE_API_KEY: ${{ secrets.PINECONE_API_KEY }}
+          PINECONE_INDEX_NAME: ${{ secrets.PINECONE_INDEX_NAME }}
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+          AZURE_DOCUMENT_ENDPOINT: ${{ secrets.AZURE_DOCUMENT_ENDPOINT }}
+          AZURE_DOCUMENT_KEY: ${{ secrets.AZURE_DOCUMENT_KEY }}
         run: |
           docker compose -f docker-compose.e2e.yaml build
           docker compose -f docker-compose.e2e.yaml up -d
