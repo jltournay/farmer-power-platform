@@ -291,6 +291,8 @@ async def seed_data_session(
         "weather_observations": [],
         "documents": [],
         "document_blobs": [],
+        "agent_configs": [],
+        "prompts": [],
     }
 
     # Create clients for seeding
@@ -322,6 +324,9 @@ async def seed_data_session(
             ("farmer_performance.json", "farmer_performance", mongodb.seed_farmer_performance),
             ("weather_observations.json", "weather_observations", mongodb.seed_weather_observations),
             ("documents.json", "documents", mongodb.seed_documents),
+            # AI Model seed data (Story 0.75.18)
+            ("agent_configs.json", "agent_configs", mongodb.seed_agent_configs),
+            ("prompts.json", "prompts", mongodb.seed_prompts),
         ]
 
         for filename, key, seed_func in seed_files:

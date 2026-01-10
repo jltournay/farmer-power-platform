@@ -118,7 +118,7 @@
     "source_id": "e2e-weather-api",
     "display_name": "E2E Weather API",
     "enabled": true,
-    "description": "E2E Test - Weather data from Open-Meteo with mock AI extraction (Story 0.4.6)",
+    "description": "E2E Test - Weather data from Open-Meteo with real AI extraction (Story 0.75.18)",
     "ingestion": {
       "mode": "scheduled_pull",
       "processor_type": "json-extraction",
@@ -144,7 +144,7 @@
       }
     },
     "transformation": {
-      "ai_agent_id": "mock-weather-extractor",
+      "ai_agent_id": "weather-extractor",
       "link_field": "region_id",
       "extract_fields": [
         "region_id",
@@ -166,7 +166,7 @@
       }
     },
     "created_at": "2025-01-01T00:00:00Z",
-    "updated_at": "2025-01-01T00:00:00Z"
+    "updated_at": "2026-01-10T00:00:00Z"
   },
   {
     "source_id": "e2e-exception-images-zip",

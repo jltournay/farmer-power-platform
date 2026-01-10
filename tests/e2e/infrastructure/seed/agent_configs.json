@@ -1,0 +1,122 @@
+[
+  {
+    "_id": "qc-event-extractor:1.0.0",
+    "id": "qc-event-extractor:1.0.0",
+    "agent_id": "qc-event-extractor",
+    "version": "1.0.0",
+    "type": "extractor",
+    "status": "active",
+    "description": "Extracts structured quality control data from QC Analyzer END_BAG events",
+    "input": {
+      "event": "collection.document.received",
+      "schema": {
+        "type": "object",
+        "required": ["raw_data"]
+      }
+    },
+    "output": {
+      "event": "ai.extraction.complete",
+      "schema": {
+        "type": "object",
+        "required": ["grade", "quality_score"]
+      }
+    },
+    "llm": {
+      "model": "anthropic/claude-3-haiku",
+      "temperature": 0.1,
+      "max_tokens": 500
+    },
+    "extraction_schema": {
+      "required_fields": ["grade", "quality_score", "leaf_count", "moisture_percent", "extraction_confidence"],
+      "optional_fields": ["farmer_id", "defects", "validation_warnings"],
+      "field_types": {
+        "farmer_id": "string",
+        "grade": "string",
+        "quality_score": "number",
+        "leaf_count": "integer",
+        "moisture_percent": "number",
+        "defects": "array",
+        "validation_warnings": "array",
+        "extraction_confidence": "number"
+      }
+    },
+    "normalization_rules": [
+      {"field": "farmer_id", "transform": "uppercase"},
+      {"field": "grade", "transform": "uppercase"}
+    ],
+    "mcp_sources": [],
+    "error_handling": {
+      "max_attempts": 3,
+      "backoff_ms": [100, 500, 2000],
+      "on_failure": "publish_error_event",
+      "dead_letter_topic": null
+    },
+    "metadata": {
+      "author": "dev-story-workflow",
+      "created_at": "2026-01-09T00:00:00Z",
+      "updated_at": "2026-01-09T00:00:00Z",
+      "git_commit": null
+    }
+  },
+  {
+    "_id": "weather-extractor:1.0.0",
+    "id": "weather-extractor:1.0.0",
+    "agent_id": "weather-extractor",
+    "version": "1.0.0",
+    "type": "extractor",
+    "status": "active",
+    "description": "Extracts structured weather observations from Open-Meteo API daily forecast responses",
+    "input": {
+      "event": "collection.document.received",
+      "schema": {
+        "type": "object",
+        "required": ["raw_data"]
+      }
+    },
+    "output": {
+      "event": "ai.extraction.complete",
+      "schema": {
+        "type": "object",
+        "required": ["observation_date", "temperature_c", "humidity_percent", "precipitation_mm"]
+      }
+    },
+    "llm": {
+      "model": "anthropic/claude-3-haiku",
+      "temperature": 0.1,
+      "max_tokens": 500
+    },
+    "extraction_schema": {
+      "required_fields": ["observation_date", "temperature_c", "humidity_percent", "precipitation_mm", "extraction_confidence"],
+      "optional_fields": ["temperature_min_c", "temperature_max_c", "wind_speed_kmh", "weather_code"],
+      "field_types": {
+        "observation_date": "string",
+        "temperature_c": "number",
+        "temperature_min_c": "number",
+        "temperature_max_c": "number",
+        "humidity_percent": "number",
+        "precipitation_mm": "number",
+        "wind_speed_kmh": "number",
+        "weather_code": "integer",
+        "extraction_confidence": "number"
+      }
+    },
+    "normalization_rules": [
+      {"field": "observation_date", "transform": "iso8601_date"},
+      {"field": "temperature_c", "transform": "round_2dp"},
+      {"field": "precipitation_mm", "transform": "round_2dp"}
+    ],
+    "mcp_sources": [],
+    "error_handling": {
+      "max_attempts": 3,
+      "backoff_ms": [100, 500, 2000],
+      "on_failure": "publish_error_event",
+      "dead_letter_topic": null
+    },
+    "metadata": {
+      "author": "dev-story-workflow",
+      "created_at": "2026-01-10T00:00:00Z",
+      "updated_at": "2026-01-10T00:00:00Z",
+      "git_commit": null
+    }
+  }
+]
