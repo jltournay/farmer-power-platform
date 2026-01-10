@@ -1,0 +1,172 @@
+# Weather Extractor Agent Configuration
+# Story 0.75.18: E2E Weather Observation Extraction Flow
+#
+# This agent extracts structured weather observations from Open-Meteo API responses.
+# It processes daily weather forecast data and extracts temperature, humidity,
+# precipitation, and other meteorological fields.
+#
+# See: _bmad-output/architecture/ai-model-architecture/key-decisions.md
+
+id: "weather-extractor:1.0.0"
+agent_id: "weather-extractor"
+version: "1.0.0"
+type: extractor
+status: active
+description: "Extracts structured weather observations from Open-Meteo API daily forecast responses"
+
+# Input contract
+input:
+  event: "collection.document.received"
+  schema:
+    type: object
+    required:
+      - raw_data
+    properties:
+      source:
+        type: string
+        description: "Source system (e.g., 'open-meteo')"
+      timestamp:
+        type: string
+        format: date-time
+      raw_data:
+        type: object
+        properties:
+          latitude:
+            type: number
+            description: "Location latitude"
+          longitude:
+            type: number
+            description: "Location longitude"
+          daily:
+            type: object
+            properties:
+              time:
+                type: array
+                items:
+                  type: string
+              temperature_2m_max:
+                type: array
+                items:
+                  type: number
+              temperature_2m_min:
+                type: array
+                items:
+                  type: number
+              precipitation_sum:
+                type: array
+                items:
+                  type: number
+              relative_humidity_2m_mean:
+                type: array
+                items:
+                  type: number
+
+# Output contract
+output:
+  event: "ai.extraction.complete"
+  schema:
+    type: object
+    required:
+      - observation_date
+      - temperature_c
+      - humidity_percent
+      - precipitation_mm
+    properties:
+      observation_date:
+        type: string
+        format: date
+        description: "Date of weather observation (ISO 8601 format YYYY-MM-DD)"
+      temperature_c:
+        type: number
+        description: "Average temperature in Celsius (mean of max and min)"
+      temperature_min_c:
+        type: number
+        nullable: true
+        description: "Minimum temperature in Celsius"
+      temperature_max_c:
+        type: number
+        nullable: true
+        description: "Maximum temperature in Celsius"
+      humidity_percent:
+        type: number
+        minimum: 0
+        maximum: 100
+        description: "Relative humidity percentage"
+      precipitation_mm:
+        type: number
+        minimum: 0
+        description: "Total precipitation in millimeters"
+      wind_speed_kmh:
+        type: number
+        nullable: true
+        minimum: 0
+        description: "Wind speed in km/h (optional)"
+      weather_code:
+        type: integer
+        nullable: true
+        description: "WMO weather interpretation code (optional)"
+      extraction_confidence:
+        type: number
+        minimum: 0
+        maximum: 1
+        description: "LLM confidence in extraction accuracy"
+
+# LLM configuration
+llm:
+  model: "anthropic/claude-3-haiku"
+  temperature: 0.1
+  max_tokens: 500
+
+# Extraction schema - defines required/optional fields and types
+extraction_schema:
+  required_fields:
+    - observation_date
+    - temperature_c
+    - humidity_percent
+    - precipitation_mm
+    - extraction_confidence
+  optional_fields:
+    - temperature_min_c
+    - temperature_max_c
+    - wind_speed_kmh
+    - weather_code
+  field_types:
+    observation_date: string
+    temperature_c: number
+    temperature_min_c: number
+    temperature_max_c: number
+    humidity_percent: number
+    precipitation_mm: number
+    wind_speed_kmh: number
+    weather_code: integer
+    extraction_confidence: number
+
+# Normalization rules - applied after extraction
+normalization_rules:
+  - field: observation_date
+    transform: iso8601_date
+  - field: temperature_c
+    transform: round_2dp
+  - field: precipitation_mm
+    transform: round_2dp
+
+# MCP sources - data retrieval tools (not used for weather extraction)
+mcp_sources: []
+
+# RAG configuration (disabled for simple extraction)
+rag:
+  enabled: false
+
+# Error handling
+error_handling:
+  max_attempts: 3
+  backoff_ms: [100, 500, 2000]
+  on_failure: publish_error_event
+  dead_letter_topic: null
+
+# Metadata
+metadata:
+  author: "dev-story-workflow"
+  created_at: "2026-01-10T00:00:00Z"
+  updated_at: "2026-01-10T00:00:00Z"
+  git_commit: null
