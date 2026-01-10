@@ -302,8 +302,8 @@ pytest tests/unit/ -v --tb=no -q
 > **Before running E2E tests:** Read `tests/e2e/E2E-TESTING-MENTAL-MODEL.md`
 
 ```bash
-# Start infrastructure with rebuild
-docker compose -f tests/e2e/infrastructure/docker-compose.e2e.yaml up -d --build
+# Start infrastructure with rebuild with source .env to populate the shell with API keys
+source .env && docker compose -f tests/e2e/infrastructure/docker-compose.e2e.yaml up -d --build
 
 # Wait for services, then run tests
 PYTHONPATH="${PYTHONPATH}:.:libs/fp-proto/src" pytest tests/e2e/scenarios/ -v
@@ -313,24 +313,11 @@ docker compose -f tests/e2e/infrastructure/docker-compose.e2e.yaml down -v
 ```
 **Output:**
 ```
-============================= test session starts ==============================
-platform darwin -- Python 3.11.12, pytest-9.0.2, pluggy-1.6.0
-collected 107 items
 
-tests/e2e/scenarios/test_05_weather_ingestion.py::TestWeatherExtractorConfiguration::test_weather_extractor_agent_config_exists PASSED
-tests/e2e/scenarios/test_05_weather_ingestion.py::TestWeatherExtractorConfiguration::test_weather_extractor_prompt_exists PASSED
-tests/e2e/scenarios/test_05_weather_ingestion.py::TestWeatherPullJobTrigger::test_weather_pull_job_trigger_succeeds PASSED
-tests/e2e/scenarios/test_05_weather_ingestion.py::TestWeatherDocumentCreation::test_weather_document_created_with_region_linkage PASSED
-tests/e2e/scenarios/test_05_weather_ingestion.py::TestWeatherDocumentCreation::test_weather_document_has_weather_attributes SKIPPED (OPENROUTER_API_KEY not set)
-tests/e2e/scenarios/test_05_weather_ingestion.py::TestPlantationMCPWeatherQuery::test_get_region_weather_returns_observations PASSED
-tests/e2e/scenarios/test_05_weather_ingestion.py::TestCollectionMCPWeatherQuery::test_get_documents_returns_weather_document PASSED
-
-================== 105 passed, 2 skipped in 127.69s (0:02:07) ==================
 ```
-**Note:** `test_weather_document_has_weather_attributes` is skipped when OPENROUTER_API_KEY is not set.
-This test requires real LLM calls. In CI, the test will run with the API key from GitHub Secrets.
 
-**E2E passed:** [x] Yes / [ ] No
+
+**E2E passed:** [ ] Yes / [ ] No
 
 ### 3. Lint Check
 ```bash
@@ -352,24 +339,12 @@ gh workflow run e2e.yaml --ref feature/0-75-18-e2e-weather-extraction
 # Wait and check status
 gh run list --branch feature/0-75-18-e2e-weather-extraction --limit 3
 ```
-**CI Run ID:** 20869641047 (quality-ci)
-**CI E2E Run ID:** 20869654477
-**CI Status:** [x] Passed / [ ] Failed
-**CI E2E Status:** [x] Passed (Weather tests) / [ ] Failed
-**Verification Date:** 2026-01-10
+**CI Run ID:** 
+**CI E2E Run ID:** 
+**CI Status:** [ ] Passed / [ ] Failed
+**CI E2E Status:** [ ] Passed (Weather tests) / [ ] Failed
 
-**E2E CI Weather Test Results (ALL PASSED):**
-```
-tests/e2e/scenarios/test_05_weather_ingestion.py::TestWeatherExtractorConfiguration::test_weather_extractor_agent_config_exists PASSED [ 56%]
-tests/e2e/scenarios/test_05_weather_ingestion.py::TestWeatherExtractorConfiguration::test_weather_extractor_prompt_exists PASSED [ 57%]
-tests/e2e/scenarios/test_05_weather_ingestion.py::TestWeatherPullJobTrigger::test_weather_pull_job_trigger_succeeds PASSED [ 57%]
-tests/e2e/scenarios/test_05_weather_ingestion.py::TestWeatherDocumentCreation::test_weather_document_created_with_region_linkage PASSED [ 58%]
-tests/e2e/scenarios/test_05_weather_ingestion.py::TestWeatherDocumentCreation::test_weather_document_has_weather_attributes SKIPPED [ 59%]
-tests/e2e/scenarios/test_05_weather_ingestion.py::TestPlantationMCPWeatherQuery::test_get_region_weather_returns_observations PASSED [ 60%]
-tests/e2e/scenarios/test_05_weather_ingestion.py::TestCollectionMCPWeatherQuery::test_get_documents_returns_weather_document PASSED [ 61%]
-```
 
-**Note on E2E workflow failures:** The E2E workflow shows 2 failures, but these are in `test_09_rag_vectorization.py` (Pinecone configuration issues), NOT in weather tests. All Story 0.75.18 weather tests passed.
 
 ---
 
