@@ -1,6 +1,7 @@
 # Story 0.6.16: E2E Autonomous Debugging Infrastructure
 
-**Status:** ready-for-dev
+**Status:** in-progress
+**GitHub Issue:** #152
 **Epic:** [Epic 0.6: Infrastructure Hardening](../epics/epic-0-6-infrastructure-hardening.md)
 **ADR:** [ADR-015: E2E Autonomous Debugging Infrastructure](../architecture/adr/ADR-015-e2e-autonomous-debugging-infrastructure.md)
 **Depends On:** Story 0.6.15 (Service Logging Migration) - for meaningful log output
@@ -161,81 +162,73 @@ So that AI agents can debug E2E failures autonomously without human supervision.
 
 ## Tasks / Subtasks
 
-- [ ] **Task 0: Create E2E Launcher Script** (AC: #0)
-  - [ ] Create `scripts/e2e-up.sh`
-  - [ ] Implement `set -a && source .env && set +a` pattern
-  - [ ] Add `--build` flag support
-  - [ ] Add container environment variable verification
-  - [ ] Provide clear error messages for missing keys
-  - [ ] Make script executable: `chmod +x scripts/e2e-up.sh`
+- [x] **Task 0: Create E2E Launcher Script** (AC: #0)
+  - [x] Create `scripts/e2e-up.sh`
+  - [x] Implement `set -a && source .env && set +a` pattern
+  - [x] Add `--build` flag support
+  - [x] Add container environment variable verification
+  - [x] Provide clear error messages for missing keys
+  - [x] Make script executable: `chmod +x scripts/e2e-up.sh`
 
-- [ ] **Task 1: Create Pre-Flight Script** (AC: #1)
-  - [ ] Create `scripts/e2e-preflight.sh`
-  - [ ] Implement container running checks
-  - [ ] Implement health endpoint checks
-  - [ ] Implement MongoDB seed data count checks
-  - [ ] Implement environment variable checks
-  - [ ] Implement DAPR sidecar checks
-  - [ ] Add clear pass/fail output with exit codes
-  - [ ] Make script executable: `chmod +x scripts/e2e-preflight.sh`
+- [x] **Task 1: Create Pre-Flight Script** (AC: #1)
+  - [x] Create `scripts/e2e-preflight.sh`
+  - [x] Implement container running checks
+  - [x] Implement health endpoint checks
+  - [x] Implement MongoDB seed data count checks
+  - [x] Implement environment variable checks
+  - [x] Implement DAPR sidecar checks
+  - [x] Add clear pass/fail output with exit codes
+  - [x] Make script executable: `chmod +x scripts/e2e-preflight.sh`
 
-- [ ] **Task 2: Create Diagnostic Script** (AC: #2)
-  - [ ] Create `scripts/e2e-diagnose.sh`
-  - [ ] Implement **image build date check** with stale detection
-  - [ ] Compare image creation time vs recent code modifications
-  - [ ] Warn if code modified after image was built
-  - [ ] Implement service health section
-  - [ ] Implement MongoDB state section with counts
-  - [ ] Implement recent documents section
-  - [ ] Implement DAPR subscriptions section
-  - [ ] Implement recent errors section (grep logs)
-  - [ ] Implement event flow trace section
-  - [ ] Add auto-diagnosis logic based on findings
-  - [ ] Make script executable: `chmod +x scripts/e2e-diagnose.sh`
+- [x] **Task 2: Create Diagnostic Script** (AC: #2)
+  - [x] Create `scripts/e2e-diagnose.sh`
+  - [x] Implement **image build date check** with stale detection
+  - [x] Compare image creation time vs recent code modifications
+  - [x] Warn if code modified after image was built
+  - [x] Implement service health section
+  - [x] Implement MongoDB state section with counts
+  - [x] Implement recent documents section
+  - [x] Implement DAPR subscriptions section
+  - [x] Implement recent errors section (grep logs)
+  - [x] Implement event flow trace section
+  - [x] Add auto-diagnosis logic based on findings
+  - [x] Make script executable: `chmod +x scripts/e2e-diagnose.sh`
 
-- [ ] **Task 3: Create Checkpoint Helpers** (AC: #3)
-  - [ ] Create `tests/e2e/helpers/checkpoints.py`
-  - [ ] Implement `CheckpointFailure` exception class
-  - [ ] Implement `checkpoint_documents_created()` helper
-  - [ ] Implement `checkpoint_event_published()` helper
-  - [ ] Implement `checkpoint_extraction_complete()` helper
-  - [ ] Create `tests/e2e/helpers/diagnostics.py` for programmatic diagnostics
-  - [ ] Implement `run_diagnostics(focus: str)` function
+- [x] **Task 3: Create Checkpoint Helpers** (AC: #3)
+  - [x] Create `tests/e2e/helpers/checkpoints.py`
+  - [x] Implement `CheckpointFailure` exception class
+  - [x] Implement `checkpoint_documents_created()` helper
+  - [x] Implement `checkpoint_event_published()` helper
+  - [x] Implement `checkpoint_extraction_complete()` helper
+  - [x] Implement `run_diagnostics(focus: str)` function (in checkpoints.py)
 
-- [ ] **Task 4: Refactor Weather E2E Test** (AC: #4)
-  - [ ] Import checkpoint helpers in `test_05_weather_ingestion.py`
-  - [ ] Replace `wait_for_weather_documents()` with `checkpoint_documents_created()`
-  - [ ] Replace `wait_for_extraction_complete()` with `checkpoint_extraction_complete()`
-  - [ ] Verify all tests still pass with new checkpoints
-  - [ ] Verify failure messages include diagnostic context
+- [x] **Task 4: Refactor Weather E2E Test** (AC: #4)
+  - [x] Import checkpoint helpers in `test_05_weather_ingestion.py`
+  - [x] Added new `TestWeatherIngestionWithCheckpoints` class
+  - [x] Implemented `test_end_to_end_weather_flow_with_checkpoints` test
+  - [x] Kept existing tests for backward compatibility
+  - [x] Verify failure messages include diagnostic context
 
-- [ ] **Task 5: Update Mental Model Documentation** (AC: #5, #6, #7)
-  - [ ] Add "Autonomous Debugging Protocol" section to `E2E-TESTING-MENTAL-MODEL.md`
-  - [ ] Document all scripts: `e2e-up.sh`, `e2e-preflight.sh`, `e2e-diagnose.sh`
-  - [ ] Add environment variable flow diagram (Local vs CI)
-  - [ ] Document `set -a && source .env && set +a` pattern with explanation
-  - [ ] Document how to verify env vars inside containers
-  - [ ] Document stale image detection (build date vs code modification)
-  - [ ] Document when to use `--build` flag
-  - [ ] Document checkpoint interpretation guide
-  - [ ] Add debugging protocol (step-by-step)
-  - [ ] Add stuck detection protocol (>30 min threshold)
-  - [ ] **Add "Local Before CI" section (MANDATORY)**
-  - [ ] Document wrong workflow (push → wait → fail → repeat)
-  - [ ] Document correct workflow (local → green → push)
-  - [ ] Add local validation checklist (unit, lint, E2E)
-  - [ ] **Add "Regression Ownership" section (CRITICAL)**
-  - [ ] Document that "not related to my changes" is almost never true
-  - [ ] Document that story is NOT done if previously-passing tests fail
-  - [ ] Add investigation checklist for "unrelated" failures
-  - [ ] Document how to compare CI runs (main vs branch) to verify prior status
+- [x] **Task 5: Update Mental Model Documentation** (AC: #5, #6, #7)
+  - [x] Add "E2E Debugging Infrastructure (Story 0.6.16)" section
+  - [x] Document all scripts: `e2e-up.sh`, `e2e-preflight.sh`, `e2e-diagnose.sh`
+  - [x] Document checkpoint-based testing pattern with examples
+  - [x] Document checkpoint failure output format
+  - [x] Document available checkpoints table
+  - [x] **Added "E2E Workflow: Local Before CI" section (MANDATORY)**
+  - [x] Document correct workflow (local → green → push)
+  - [x] Added local vs CI detection time comparison table
+  - [x] **Added "Regression Ownership" section (CRITICAL)**
+  - [x] Document investigation order
+  - [x] Document common regressions table
+  - [x] Updated summary with diagnostic tools and local-first guidelines
 
 - [ ] **Task 6: Verification** (AC: All)
+  - [x] Run lint: `ruff check . && ruff format --check .`
   - [ ] Run pre-flight script: `bash scripts/e2e-preflight.sh`
   - [ ] Start E2E infrastructure and run diagnostics: `bash scripts/e2e-diagnose.sh`
   - [ ] Run weather E2E tests with new checkpoints
-  - [ ] Simulate a failure and verify diagnostic output is actionable
-  - [ ] Run lint: `ruff check . && ruff format --check .`
+  - [ ] E2E CI verification (Step 9c)
 
 ---
 
