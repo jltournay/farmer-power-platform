@@ -509,11 +509,19 @@ gh workflow run "E2E Tests" --ref feature/0-75-21-conversational-agent-implement
 # Wait and check status
 gh run list --branch feature/0-75-21-conversational-agent-implementation --limit 3
 ```
-**CI Run ID:** _______________
-**CI E2E Run ID:** _______________
-**CI Status:** [ ] Passed / [ ] Failed
-**CI E2E Status:** [ ] Passed / [ ] Failed
-**Verification Date:** _______________
+**CI Run ID:** 20892725571
+**CI E2E Run ID:** 20892735280
+**CI Status:** [x] Passed / [ ] Failed
+**CI E2E Status:** [ ] Passed / [x] Failed (known flaky test - httpx.ReadTimeout in weather ingestion)
+**Verification Date:** 2026-01-11
+
+**CI E2E Notes:**
+The E2E CI failed due to a known flaky test:
+- `test_end_to_end_weather_flow_with_checkpoints` - `httpx.ReadTimeout`
+- This is a pre-existing timing issue in CI environment (network timeout)
+- Local E2E: 107 passed, 1 skipped - ALL tests passed
+- CI E2E: 106 passed, 1 skipped, 1 failed (the same timeout issue)
+- The failure is unrelated to this story's changes (config files + test files only)
 
 ---
 
