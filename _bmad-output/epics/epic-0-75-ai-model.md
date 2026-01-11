@@ -903,7 +903,7 @@ So that content (plans, reports, messages) can be created.
 
 ### Story 0.75.21: Conversational Agent Implementation
 
-**Story File:** Not yet created | Status: Backlog
+**Story File:** `_bmad-output/sprint-artifacts/0-75-21-conversational-agent-implementation.md` | Status: Done
 
 As a **developer**,
 I want the Conversational agent type implemented,
