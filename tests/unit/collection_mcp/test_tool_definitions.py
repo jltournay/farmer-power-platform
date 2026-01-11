@@ -22,6 +22,7 @@ class TestToolRegistry:
             "search_documents",
             "list_sources",
             "get_document_thumbnail",  # Story 2.13
+            "get_document_image",  # Story 0.75.22
         }
         assert set(TOOL_REGISTRY.keys()) == expected_tools
 
@@ -273,7 +274,7 @@ class TestHelperFunctions:
     def test_list_tools_returns_all_tools(self) -> None:
         """Verify list_tools returns all tools."""
         tools = list_tools()
-        assert len(tools) == 6  # Includes get_document_thumbnail from Story 2.13
+        assert len(tools) == 7  # Includes get_document_thumbnail (2.13) and get_document_image (0.75.22)
 
     def test_list_tools_filters_by_category(self) -> None:
         """Verify list_tools filters by category."""
