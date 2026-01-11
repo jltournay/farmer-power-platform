@@ -32,7 +32,7 @@ class DiagnoseResult(TypedDict):
     confidence: float
     detailed_findings: list[str]
     recommendations: list[str]
-    severity: Literal["low", "medium", "high", "critical"]
+    severity: Literal["low", "moderate", "high", "critical"]
 
 
 class TieredVisionState(TypedDict, total=False):

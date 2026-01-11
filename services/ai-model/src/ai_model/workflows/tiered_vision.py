@@ -277,8 +277,8 @@ class TieredVisionWorkflow(WorkflowBuilder[TieredVisionState]):
                 agent_id=state.get("agent_id", ""),
                 agent_type="tiered-vision",
                 request_id=state.get("correlation_id"),
-                temperature=0.1,
-                max_tokens=200,
+                temperature=screen_config.temperature,
+                max_tokens=screen_config.max_tokens,
             )
 
             # Parse screen response
@@ -490,7 +490,7 @@ class TieredVisionWorkflow(WorkflowBuilder[TieredVisionState]):
                     confidence=diagnose_result.get("confidence", 0.5),
                     detailed_findings=diagnose_result.get("findings", []),
                     recommendations=diagnose_result.get("recommendations", []),
-                    severity=diagnose_result.get("severity", "medium"),  # type: ignore[typeddict-item]
+                    severity=diagnose_result.get("severity", "moderate"),  # type: ignore[typeddict-item]
                 ),
                 "rag_context": rag_context,
                 "tier2_executed": True,
@@ -671,5 +671,5 @@ Respond with JSON:
                 "confidence": 0.5,
                 "findings": [],
                 "recommendations": [],
-                "severity": "medium",
+                "severity": "moderate",
             }

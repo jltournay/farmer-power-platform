@@ -690,3 +690,47 @@ class TestGetDocumentImageHandler:
 
         assert response.success is False
         assert "not configured" in response.error_message
+
+    @pytest.mark.asyncio
+    async def test_get_document_image_missing_blob_path(
+        self,
+        servicer_with_blob_storage: McpToolServiceServicer,
+        mock_document_client: MagicMock,
+    ) -> None:
+        """Verify get_document_image returns error when document has empty blob_path."""
+        now = datetime.now(UTC)
+        mock_doc = Document(
+            document_id="doc-005",
+            raw_document=RawDocumentRef(
+                blob_container="images",
+                blob_path="",  # Empty blob path
+                content_hash="abc123",
+                size_bytes=0,
+                stored_at=now,
+            ),
+            extraction=ExtractionMetadata(
+                ai_agent_id="test",
+                extraction_timestamp=now,
+                confidence=0.95,
+                validation_passed=True,
+            ),
+            ingestion=IngestionMetadata(
+                ingestion_id="ing-005",
+                source_id="test-source",
+                received_at=now,
+                processed_at=now,
+            ),
+            created_at=now,
+        )
+        mock_document_client.get_document_by_id.return_value = mock_doc
+
+        request = MockToolCallRequest(
+            tool_name="get_document_image",
+            arguments={"document_id": "doc-005"},
+        )
+        context = MockContext()
+
+        response = await servicer_with_blob_storage.CallTool(request, context)
+
+        assert response.success is False
+        assert "no raw document" in response.error_message.lower()
