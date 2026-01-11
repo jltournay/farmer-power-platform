@@ -1,6 +1,6 @@
 # Story 0.75.22: Tiered-Vision Agent Implementation - Sample Config & Golden Tests
 
-**Status:** in-progress
+**Status:** review
 **GitHub Issue:** #161
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
@@ -674,9 +674,10 @@ git push origin feature/0-75-22-tiered-vision-agent-implementation
 # Wait ~30s, then check CI status
 gh run list --branch feature/0-75-22-tiered-vision-agent-implementation --limit 3
 ```
-**CI Run ID:** _______________
-**CI E2E Status:** [ ] Passed / [ ] Failed
-**Verification Date:** _______________
+**CI Run ID:** 20896448033
+**CI E2E Status:** [x] Passed / [ ] Failed
+**E2E CI Run ID:** 20896310209 (107 passed, 1 skipped)
+**Verification Date:** 2026-01-11
 
 ---
 
@@ -922,11 +923,43 @@ This story can now proceed because:
 
 ### Agent Model Used
 
-{{agent_model_name_version}}
+Claude Opus 4.5 (claude-opus-4-5-20251101)
 
 ### Debug Log References
 
+None required.
+
 ### Completion Notes List
+
+1. **Workflow Refactoring Complete (AC1-AC3):**
+   - Updated TieredVisionState with `doc_id`, `has_thumbnail`, `thumbnail_data`, `original_data`
+   - Removed legacy `image_data` field (clean cut-over to MCP-based fetching)
+   - Refactored TieredVisionWorkflow to use MCP client for image fetching
+   - Implemented two-scenario handling: has_thumbnail=true/false
+
+2. **Collection MCP Enhancement (AC2):**
+   - Added `get_document_image` tool for fetching original images
+   - Implemented handler using Document.raw_document.blob_path
+
+3. **Sample Configuration (AC4):**
+   - Created leaf-quality-analyzer.yaml with full TieredVisionConfig schema
+   - Includes tiered_llm (Haiku screen, Sonnet diagnose), routing thresholds, RAG config
+
+4. **Golden Samples (AC5):**
+   - Created 12 samples covering: healthy (skip), obvious_issue (skip), uncertain (escalate)
+   - Includes both has_thumbnail=true and has_thumbnail=false scenarios
+   - Covers error handling cases (MCP failure, invalid doc_id)
+
+5. **Tests (AC6-AC8):**
+   - 20 tiered-vision workflow unit tests
+   - 25 config validation tests
+   - 4 new Collection MCP tests for get_document_image
+   - Updated tool_definitions test to include new tool (7 total tools)
+
+6. **Quality Gates (AC9-AC10):**
+   - Local E2E: 107 passed, 1 skipped
+   - CI: All checks pass (Run ID: 20896448033)
+   - E2E CI: All checks pass (Run ID: 20896310209)
 
 ### Code Review Record
 
