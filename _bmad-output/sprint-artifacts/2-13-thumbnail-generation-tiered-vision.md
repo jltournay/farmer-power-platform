@@ -1,7 +1,7 @@
 # Story 2.13: Thumbnail Generation for AI Tiered Vision Processing
 
 **Epic:** Epic 2 - Quality Data Ingestion
-**Status:** ready-for-dev
+**Status:** review
 **GitHub Issue:** #88
 **Story Points:** 5
 
@@ -93,14 +93,14 @@ AI Model (Story 0.75.22):
 
 ## Tasks / Subtasks
 
-- [ ] **Task 1: Add Pillow Dependency** (AC: #1)
-  - [ ] Add `Pillow>=10.1.0,<11.0.0` to `services/collection-model/pyproject.toml` under `[project.dependencies]`
-  - [ ] **CRITICAL: DO NOT change Python version** - Must stay `requires-python = ">=3.12,<3.13"` (Python 3.12 only)
-  - [ ] Verify import works: `from PIL import Image`
-  - [ ] Run `uv sync` to install dependency
+- [x] **Task 1: Add Pillow Dependency** (AC: #1)
+  - [x] Add `Pillow>=10.1.0,<11.0.0` to `services/collection-model/pyproject.toml` under `[project.dependencies]`
+  - [x] **CRITICAL: DO NOT change Python version** - Fixed to `>=3.12,<3.13` (Python 3.12 only)
+  - [x] Verify import works: `from PIL import Image`
+  - [x] Run `poetry install` to install dependency
 
-- [ ] **Task 2: Implement ThumbnailGenerator** (AC: #1)
-  - [ ] Create `services/collection-model/src/collection_model/infrastructure/thumbnail_generator.py`
+- [x] **Task 2: Implement ThumbnailGenerator** (AC: #1)
+  - [x] Create `services/collection-model/src/collection_model/infrastructure/thumbnail_generator.py`
   - [ ] Implement `ThumbnailGenerator` class:
     ```python
     class ThumbnailGenerator:
@@ -383,15 +383,15 @@ bash scripts/e2e-up.sh --down
 ```
 **Output:**
 ```
-(paste E2E test output here - story is NOT ready for review without this)
+================== 107 passed, 1 skipped in 140.37s (0:02:20) ==================
 ```
-**E2E passed:** [ ] Yes / [ ] No
+**E2E passed:** [x] Yes / [ ] No
 
 ### 3. Lint Check
 ```bash
 ruff check . && ruff format --check .
 ```
-**Lint passed:** [ ] Yes / [ ] No
+**Lint passed:** [x] Yes / [ ] No
 
 ### 4. CI Verification on Story Branch (MANDATORY)
 
@@ -410,10 +410,10 @@ gh workflow run e2e.yaml --ref story/2-13-thumbnail-generation
 # Get E2E run ID
 gh run list --workflow=e2e.yaml --branch story/2-13-thumbnail-generation --limit 1
 ```
-**Quality CI Run ID:** _______________
-**E2E CI Run ID:** _______________
-**CI E2E Status:** [ ] Passed / [ ] Failed
-**Verification Date:** _______________
+**Quality CI Run ID:** 20894578698
+**E2E CI Run ID:** 20894692559
+**CI E2E Status:** [x] Passed / [ ] Failed
+**Verification Date:** 2026-01-11
 
 ---
 
@@ -619,19 +619,40 @@ The `role` field in ManifestFile is a free-form string set by the manifest creat
 
 ### Agent Model Used
 
-{{agent_model_name_version}}
+Claude Opus 4.5 (claude-opus-4-5-20251101)
 
 ### Debug Log References
 
+- Local E2E run: 107 passed, 1 skipped in 140.37s
+- CI Quality Run: 20894578698 (passed)
+- CI E2E Run: 20894692559 (passed)
+
 ### Completion Notes List
+
+1. Added Pillow dependency with Python 3.12 constraint fix
+2. Implemented ThumbnailGenerator with aspect ratio preservation and small image skip logic
+3. Integrated with ZipExtractionProcessor for automatic thumbnail generation during ingestion
+4. Added get_document_thumbnail MCP tool for AI agents to fetch thumbnails
+5. Updated existing MCP tests to include the new tool
+6. All E2E tests pass - no regressions
 
 ### File List
 
 **Created:**
-- (list new files)
+- `services/collection-model/src/collection_model/infrastructure/thumbnail_generator.py` - ThumbnailGenerator class
+- `services/collection-model/poetry.lock` - Updated dependency lock
+- `mcp-servers/collection-mcp/src/collection_mcp/infrastructure/blob_storage_client.py` - Blob download client for MCP
+- `tests/unit/collection_model/infrastructure/test_thumbnail_generator.py` - Unit tests for ThumbnailGenerator
 
 **Modified:**
-- (list modified files with brief description)
+- `services/collection-model/pyproject.toml` - Added Pillow dep, fixed Python version to >=3.12,<3.13
+- `services/collection-model/src/collection_model/infrastructure/blob_storage.py` - Added thumbnail_blob_path to BlobReference
+- `services/collection-model/src/collection_model/processors/zip_extraction.py` - Integrated thumbnail generation, added has_thumbnail to events
+- `mcp-servers/collection-mcp/src/collection_mcp/tools/definitions.py` - Added get_document_thumbnail tool definition
+- `mcp-servers/collection-mcp/src/collection_mcp/api/mcp_service.py` - Added thumbnail handler
+- `mcp-servers/collection-mcp/src/collection_mcp/main.py` - Added blob storage client injection
+- `tests/unit/collection_mcp/test_tool_definitions.py` - Updated to include new tool
+- `tests/unit/collection_mcp/test_mcp_service.py` - Updated expected tool count
 
 ---
 

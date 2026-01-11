@@ -90,7 +90,7 @@ development_status:
   2-10-collection-model-repository-refactoring: done  # github_issue: 35 - Tech debt: Pydantic models + repository pattern
   2-11-source-config-cli-schema-alignment: done  # github_issue: 36 - Tech debt: CLI writes nested schema, Collection Model expects flat
   2-12-collection-ai-model-event-driven-communication: done  # github_issue: 81, PR: #147 MERGED 2026-01-10
-  2-13-thumbnail-generation-tiered-vision: in-progress  # github_issue: 88 - Blocks: 0.75.22
+  2-13-thumbnail-generation-tiered-vision: review  # github_issue: 88 - Blocks: 0.75.22
   epic-2-retrospective: done
 
   # Epic 0.4: E2E Test Scenarios for Plantation & Collection Models
