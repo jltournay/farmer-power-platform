@@ -125,7 +125,7 @@
       "request": {
         "base_url": "https://api.open-meteo.com/v1/forecast",
         "auth_type": "none",
-        "timeout_seconds": 45,
+        "timeout_seconds": 90,
         "parameters": {
           "latitude": "{item.weather_config.api_location.lat}",
           "longitude": "{item.weather_config.api_location.lng}",
