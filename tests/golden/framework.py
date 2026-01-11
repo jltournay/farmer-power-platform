@@ -44,7 +44,9 @@ class AgentType(str, Enum):
     EXTRACTOR = "extractor"
     EXPLORER = "explorer"
     GENERATOR = "generator"
-    TRIAGE = "triage"
+    CONVERSATIONAL = "conversational"
+    TIERED_VISION = "tiered-vision"
+    TRIAGE = "triage"  # Legacy - kept for backwards compatibility
 
 
 class ValidationResult(str, Enum):
