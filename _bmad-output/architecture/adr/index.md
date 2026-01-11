@@ -21,6 +21,7 @@ This folder contains Architecture Decision Records (ADRs) documenting significan
 | [ADR-013](./ADR-013-ai-model-configuration-cache.md) | AI Model Configuration Cache with Change Streams | Accepted | 2026-01-04 |
 | [ADR-014](./ADR-014-mongodb-async-driver-migration.md) | MongoDB Async Driver Migration (Motor → PyMongo Async) | Accepted | 2026-01-09 |
 | [ADR-015](./ADR-015-e2e-autonomous-debugging-infrastructure.md) | E2E Autonomous Debugging Infrastructure | Accepted | 2026-01-10 |
+| [ADR-016](./ADR-016-unified-cost-model.md) | Unified Cost Model and Platform Cost Service | Draft | 2026-01-11 |
 
 ## ADR Template
 
