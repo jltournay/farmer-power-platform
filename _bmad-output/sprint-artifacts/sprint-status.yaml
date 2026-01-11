@@ -193,7 +193,7 @@ development_status:
   0-75-19-explorer-agent-implementation: done  # LangGraph + RAG, golden samples, github_issue: 154, CODE REVIEW COMPLETED 2026-01-10
   0-75-20-generator-agent-implementation: done  # github_issue: 156, LangGraph + RAG, multi-format, golden samples
   0-75-21-conversational-agent-implementation: done  # github_issue: 158, Two LLM calls, state management, golden samples, PR #159, CODE REVIEW COMPLETED 2026-01-11
-  0-75-22-tiered-vision-agent-implementation: blocked  # Blocked by: 2-13 - Cost-optimized image analysis, golden samples
+  0-75-22-tiered-vision-agent-implementation: done  # github_issue: 161, CODE REVIEW COMPLETED 2026-01-11 - Cost-optimized image analysis, golden samples
   epic-0-75-retrospective: optional
 
   # ═══════════════════════════════════════════════════════════════════════════

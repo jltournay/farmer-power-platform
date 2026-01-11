@@ -922,7 +922,7 @@ So that multi-turn dialogue can be handled.
 
 ### Story 0.75.22: Tiered-Vision Agent Implementation
 
-**Story File:** Not yet created | Status: Backlog
+**Story File:** `_bmad-output/sprint-artifacts/0-75-22-tiered-vision-agent-implementation.md` | Status: Ready for Dev
 
 As a **developer**,
 I want the Tiered-Vision agent type implemented,
@@ -977,11 +977,11 @@ So that images can be analyzed with cost optimization.
 | 15   | RAG Ranking Logic                                        | RAG            | Backlog |
 | 16   | LangGraph SDK Integration & Base Workflows               | Framework      | Backlog |
 | 17   | Extractor Agent Implementation                           | Agent          | Backlog |
-| 18   | E2E: Weather Observation Extraction Flow                 | Validation     | Blocked |
-| 19   | Explorer Agent Implementation                            | Agent          | Backlog |
-| 20   | Generator Agent Implementation                           | Agent          | Backlog |
-| 21   | Conversational Agent Implementation                      | Agent          | Backlog |
-| 22   | Tiered-Vision Agent Implementation                       | Agent          | Backlog |
+| 18   | E2E: Weather Observation Extraction Flow                 | Validation     | Done    |
+| 19   | Explorer Agent Implementation                            | Agent          | Done    |
+| 20   | Generator Agent Implementation                           | Agent          | Done    |
+| 21   | Conversational Agent Implementation                      | Agent          | Done    |
+| 22   | Tiered-Vision Agent Implementation                       | Agent          | Ready   |
 
 ---
 
@@ -1026,4 +1026,4 @@ So that images can be analyzed with cost optimization.
 
 ---
 
-_Last Updated: 2026-01-08_
+_Last Updated: 2026-01-11_

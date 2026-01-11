@@ -1,0 +1,528 @@
+{
+  "agent_name": "leaf_quality_analyzer",
+  "agent_type": "tiered-vision",
+  "version": "1.0.0",
+  "created_at": "2026-01-11T00:00:00Z",
+  "updated_at": "2026-01-11T00:00:00Z",
+  "samples": [
+    {
+      "input": {
+        "doc_id": "qc-analyzer-exceptions/batch-001/leaf_001",
+        "has_thumbnail": true,
+        "image_mime_type": "image/jpeg"
+      },
+      "expected_output": {
+        "classification": "healthy",
+        "confidence": 0.92,
+        "tier1": {
+          "executed": true,
+          "result": {
+            "classification": "healthy",
+            "confidence": 0.92,
+            "preliminary_findings": ["Good leaf color", "No visible damage"],
+            "skip_reason": "Healthy with high confidence (0.92 >= 0.85)"
+          }
+        },
+        "tier2": {
+          "executed": false,
+          "skip_reason": "Healthy with high confidence (0.92 >= 0.85)"
+        },
+        "success": true
+      },
+      "acceptable_variance": {
+        "confidence": 0.08
+      },
+      "metadata": {
+        "sample_id": "GS-vision-001",
+        "agent_name": "leaf_quality_analyzer",
+        "agent_type": "tiered-vision",
+        "description": "Healthy leaf - Tier 1 only (high confidence healthy skip)",
+        "source": "synthetic",
+        "tags": ["healthy", "tier1-only", "skip-tier2", "high-confidence"],
+        "priority": "P0"
+      }
+    },
+    {
+      "input": {
+        "doc_id": "qc-analyzer-exceptions/batch-001/leaf_002",
+        "has_thumbnail": true,
+        "image_mime_type": "image/jpeg"
+      },
+      "expected_output": {
+        "classification": "tea_blister_blight",
+        "confidence": 0.88,
+        "tier1": {
+          "executed": true,
+          "result": {
+            "classification": "obvious_issue",
+            "confidence": 0.82,
+            "preliminary_findings": ["Blistered lesions visible", "White fungal coating"],
+            "skip_reason": "Obvious issue with high confidence (0.82 >= 0.75)"
+          }
+        },
+        "tier2": {
+          "executed": false,
+          "skip_reason": "Obvious issue with high confidence (0.82 >= 0.75)"
+        },
+        "severity": "moderate",
+        "success": true
+      },
+      "acceptable_variance": {
+        "confidence": 0.1
+      },
+      "metadata": {
+        "sample_id": "GS-vision-002",
+        "agent_name": "leaf_quality_analyzer",
+        "agent_type": "tiered-vision",
+        "description": "Obvious disease - Tier 1 only (high confidence obvious issue skip)",
+        "source": "synthetic",
+        "tags": ["disease", "blister-blight", "tier1-only", "obvious-issue"],
+        "priority": "P0"
+      }
+    },
+    {
+      "input": {
+        "doc_id": "qc-analyzer-exceptions/batch-002/leaf_003",
+        "has_thumbnail": true,
+        "image_mime_type": "image/jpeg"
+      },
+      "expected_output": {
+        "classification": "red_spider_mite_infestation",
+        "confidence": 0.91,
+        "tier1": {
+          "executed": true,
+          "result": {
+            "classification": "uncertain",
+            "confidence": 0.55,
+            "preliminary_findings": ["Small specks visible", "Possible webbing"],
+            "skip_reason": null
+          }
+        },
+        "tier2": {
+          "executed": true,
+          "result": {
+            "primary_issue": "red_spider_mite_infestation",
+            "confidence": 0.91,
+            "detailed_findings": ["Fine webbing between leaves", "Stippled leaf surface", "Tiny mites visible under magnification"],
+            "recommendations": ["Apply acaricide spray", "Increase humidity if possible", "Remove heavily infested leaves"],
+            "severity": "moderate"
+          }
+        },
+        "severity": "moderate",
+        "recommendations": ["Apply acaricide spray", "Increase humidity if possible", "Remove heavily infested leaves"],
+        "detailed_findings": ["Fine webbing between leaves", "Stippled leaf surface", "Tiny mites visible under magnification"],
+        "success": true
+      },
+      "acceptable_variance": {
+        "confidence": 0.1,
+        "tier1.result.confidence": 0.15
+      },
+      "metadata": {
+        "sample_id": "GS-vision-003",
+        "agent_name": "leaf_quality_analyzer",
+        "agent_type": "tiered-vision",
+        "description": "Uncertain screening - escalates to Tier 2 for detailed diagnosis",
+        "source": "agronomist_validated",
+        "validated_by": "Senior Agronomist Mary",
+        "validated_at": "2026-01-10T00:00:00Z",
+        "tags": ["pest", "mite", "tier2-escalation", "uncertain-screen", "expert-validated"],
+        "priority": "P0"
+      }
+    },
+    {
+      "input": {
+        "doc_id": "qc-analyzer-exceptions/batch-002/leaf_004",
+        "has_thumbnail": true,
+        "image_mime_type": "image/jpeg"
+      },
+      "expected_output": {
+        "classification": "nutrient_deficiency_nitrogen",
+        "confidence": 0.85,
+        "tier1": {
+          "executed": true,
+          "result": {
+            "classification": "obvious_issue",
+            "confidence": 0.65,
+            "preliminary_findings": ["Yellowing visible", "Stunted appearance"],
+            "skip_reason": null
+          }
+        },
+        "tier2": {
+          "executed": true,
+          "result": {
+            "primary_issue": "nutrient_deficiency_nitrogen",
+            "confidence": 0.85,
+            "detailed_findings": ["Uniform yellowing of older leaves", "Interveinal chlorosis pattern", "No pest damage visible"],
+            "recommendations": ["Apply nitrogen-rich fertilizer", "Consider soil testing", "Add organic matter"],
+            "severity": "high"
+          }
+        },
+        "severity": "high",
+        "recommendations": ["Apply nitrogen-rich fertilizer", "Consider soil testing", "Add organic matter"],
+        "detailed_findings": ["Uniform yellowing of older leaves", "Interveinal chlorosis pattern", "No pest damage visible"],
+        "success": true
+      },
+      "acceptable_variance": {
+        "confidence": 0.12,
+        "tier1.result.confidence": 0.15
+      },
+      "metadata": {
+        "sample_id": "GS-vision-004",
+        "agent_name": "leaf_quality_analyzer",
+        "agent_type": "tiered-vision",
+        "description": "Low confidence obvious issue - escalates to Tier 2",
+        "source": "synthetic",
+        "tags": ["nutrient-deficiency", "nitrogen", "tier2-escalation", "low-confidence-screen"],
+        "priority": "P0"
+      }
+    },
+    {
+      "input": {
+        "doc_id": "qc-analyzer-exceptions/batch-003/leaf_005",
+        "has_thumbnail": false,
+        "image_mime_type": "image/jpeg"
+      },
+      "expected_output": {
+        "classification": "healthy",
+        "confidence": 0.88,
+        "tier1": {
+          "executed": true,
+          "result": {
+            "classification": "healthy",
+            "confidence": 0.88,
+            "preliminary_findings": ["Small but healthy leaf", "Good color"],
+            "skip_reason": "Healthy with high confidence (0.88 >= 0.85)"
+          }
+        },
+        "tier2": {
+          "executed": false,
+          "skip_reason": "Healthy with high confidence (0.88 >= 0.85)"
+        },
+        "success": true
+      },
+      "acceptable_variance": {
+        "confidence": 0.1
+      },
+      "metadata": {
+        "sample_id": "GS-vision-005",
+        "agent_name": "leaf_quality_analyzer",
+        "agent_type": "tiered-vision",
+        "description": "Small image (no thumbnail) - uses original for Tier 1, healthy result",
+        "source": "synthetic",
+        "tags": ["healthy", "no-thumbnail", "small-image", "tier1-only"],
+        "priority": "P0"
+      }
+    },
+    {
+      "input": {
+        "doc_id": "qc-analyzer-exceptions/batch-003/leaf_006",
+        "has_thumbnail": false,
+        "image_mime_type": "image/jpeg"
+      },
+      "expected_output": {
+        "classification": "grey_blight",
+        "confidence": 0.82,
+        "tier1": {
+          "executed": true,
+          "result": {
+            "classification": "uncertain",
+            "confidence": 0.45,
+            "preliminary_findings": ["Grey patches visible", "Unclear pattern"],
+            "skip_reason": null
+          }
+        },
+        "tier2": {
+          "executed": true,
+          "result": {
+            "primary_issue": "grey_blight",
+            "confidence": 0.82,
+            "detailed_findings": ["Characteristic grey lesions", "Concentric ring pattern", "Pestalotiopsis fungal infection"],
+            "recommendations": ["Apply fungicide immediately", "Remove infected leaves", "Improve air circulation"],
+            "severity": "high"
+          }
+        },
+        "severity": "high",
+        "recommendations": ["Apply fungicide immediately", "Remove infected leaves", "Improve air circulation"],
+        "detailed_findings": ["Characteristic grey lesions", "Concentric ring pattern", "Pestalotiopsis fungal infection"],
+        "success": true
+      },
+      "acceptable_variance": {
+        "confidence": 0.12,
+        "tier1.result.confidence": 0.18
+      },
+      "metadata": {
+        "sample_id": "GS-vision-006",
+        "agent_name": "leaf_quality_analyzer",
+        "agent_type": "tiered-vision",
+        "description": "Small image (no thumbnail) - escalates to Tier 2 for fungal diagnosis",
+        "source": "synthetic",
+        "tags": ["disease", "fungal", "grey-blight", "no-thumbnail", "tier2-escalation"],
+        "priority": "P0"
+      }
+    },
+    {
+      "input": {
+        "doc_id": "qc-analyzer-exceptions/batch-004/leaf_007",
+        "has_thumbnail": true,
+        "image_mime_type": "image/jpeg"
+      },
+      "expected_output": {
+        "classification": "healthy",
+        "confidence": 0.78,
+        "tier1": {
+          "executed": true,
+          "result": {
+            "classification": "healthy",
+            "confidence": 0.78,
+            "preliminary_findings": ["Generally healthy appearance", "Minor blemishes"],
+            "skip_reason": "Clear classification above threshold (0.78 >= 0.70)"
+          }
+        },
+        "tier2": {
+          "executed": false,
+          "skip_reason": "Clear classification above threshold (0.78 >= 0.70)"
+        },
+        "success": true
+      },
+      "acceptable_variance": {
+        "confidence": 0.1
+      },
+      "metadata": {
+        "sample_id": "GS-vision-007",
+        "agent_name": "leaf_quality_analyzer",
+        "agent_type": "tiered-vision",
+        "description": "Borderline healthy - above screen threshold, skips Tier 2",
+        "source": "synthetic",
+        "tags": ["healthy", "borderline", "screen-threshold", "tier1-only"],
+        "priority": "P1"
+      }
+    },
+    {
+      "input": {
+        "doc_id": "qc-analyzer-exceptions/batch-004/leaf_008",
+        "has_thumbnail": true,
+        "image_mime_type": "image/jpeg"
+      },
+      "expected_output": {
+        "classification": "frost_damage",
+        "confidence": 0.78,
+        "tier1": {
+          "executed": true,
+          "result": {
+            "classification": "obvious_issue",
+            "confidence": 0.72,
+            "preliminary_findings": ["Brown edges visible", "Brittle texture appearance"],
+            "skip_reason": null
+          }
+        },
+        "tier2": {
+          "executed": true,
+          "result": {
+            "primary_issue": "frost_damage",
+            "confidence": 0.78,
+            "detailed_findings": ["Characteristic brown edge pattern", "No fungal or pest indicators", "Weather-related damage pattern"],
+            "recommendations": ["Do not harvest affected leaves", "Apply mulch for insulation", "Consider frost protection"],
+            "severity": "moderate"
+          }
+        },
+        "severity": "moderate",
+        "recommendations": ["Do not harvest affected leaves", "Apply mulch for insulation", "Consider frost protection"],
+        "detailed_findings": ["Characteristic brown edge pattern", "No fungal or pest indicators", "Weather-related damage pattern"],
+        "success": true
+      },
+      "acceptable_variance": {
+        "confidence": 0.12,
+        "tier1.result.confidence": 0.12
+      },
+      "metadata": {
+        "sample_id": "GS-vision-008",
+        "agent_name": "leaf_quality_analyzer",
+        "agent_type": "tiered-vision",
+        "description": "Environmental damage - borderline obvious issue escalates to Tier 2",
+        "source": "synthetic",
+        "tags": ["environmental", "frost", "tier2-escalation", "borderline-confidence"],
+        "priority": "P0"
+      }
+    },
+    {
+      "input": {
+        "doc_id": "qc-analyzer-exceptions/batch-005/leaf_009",
+        "has_thumbnail": true,
+        "image_mime_type": "image/jpeg"
+      },
+      "expected_output": {
+        "classification": "undetermined",
+        "confidence": 0.35,
+        "tier1": {
+          "executed": true,
+          "result": {
+            "classification": "uncertain",
+            "confidence": 0.40,
+            "preliminary_findings": ["Unclear image quality", "Non-specific appearance"],
+            "skip_reason": null
+          }
+        },
+        "tier2": {
+          "executed": true,
+          "result": {
+            "primary_issue": "undetermined",
+            "confidence": 0.35,
+            "detailed_findings": ["Image quality too poor for diagnosis", "Multiple possible conditions", "Insufficient visual data"],
+            "recommendations": ["Retake image with better lighting", "Get closer focus on affected areas", "Submit physical sample if issues persist"],
+            "severity": "low"
+          }
+        },
+        "severity": "low",
+        "recommendations": ["Retake image with better lighting", "Get closer focus on affected areas", "Submit physical sample if issues persist"],
+        "detailed_findings": ["Image quality too poor for diagnosis", "Multiple possible conditions", "Insufficient visual data"],
+        "success": true
+      },
+      "acceptable_variance": {
+        "confidence": 0.2,
+        "tier1.result.confidence": 0.2
+      },
+      "metadata": {
+        "sample_id": "GS-vision-009",
+        "agent_name": "leaf_quality_analyzer",
+        "agent_type": "tiered-vision",
+        "description": "Low quality image - undetermined result even after Tier 2",
+        "source": "synthetic",
+        "tags": ["low-confidence", "undetermined", "poor-image-quality", "tier2-inconclusive"],
+        "priority": "P1"
+      }
+    },
+    {
+      "input": {
+        "doc_id": "qc-analyzer-exceptions/batch-005/leaf_010",
+        "has_thumbnail": true,
+        "image_mime_type": "image/jpeg"
+      },
+      "expected_output": {
+        "classification": "tea_mosquito_bug_damage",
+        "confidence": 0.87,
+        "tier1": {
+          "executed": true,
+          "result": {
+            "classification": "uncertain",
+            "confidence": 0.52,
+            "preliminary_findings": ["Small holes visible", "Irregular damage pattern"],
+            "skip_reason": null
+          }
+        },
+        "tier2": {
+          "executed": true,
+          "result": {
+            "primary_issue": "tea_mosquito_bug_damage",
+            "confidence": 0.87,
+            "detailed_findings": ["Characteristic shot-hole damage", "Necrotic spots around feeding sites", "Helopeltis theivora feeding pattern"],
+            "recommendations": ["Apply systemic insecticide", "Monitor for bug presence", "Remove heavily damaged shoots"],
+            "severity": "high"
+          }
+        },
+        "severity": "high",
+        "recommendations": ["Apply systemic insecticide", "Monitor for bug presence", "Remove heavily damaged shoots"],
+        "detailed_findings": ["Characteristic shot-hole damage", "Necrotic spots around feeding sites", "Helopeltis theivora feeding pattern"],
+        "success": true
+      },
+      "acceptable_variance": {
+        "confidence": 0.1,
+        "tier1.result.confidence": 0.15
+      },
+      "metadata": {
+        "sample_id": "GS-vision-010",
+        "agent_name": "leaf_quality_analyzer",
+        "agent_type": "tiered-vision",
+        "description": "Pest damage - uncertain screen escalates, specific pest identified in Tier 2",
+        "source": "agronomist_validated",
+        "validated_by": "Senior Agronomist Mary",
+        "validated_at": "2026-01-10T00:00:00Z",
+        "tags": ["pest", "mosquito-bug", "tier2-escalation", "expert-validated"],
+        "priority": "P0"
+      }
+    },
+    {
+      "input": {
+        "doc_id": "qc-analyzer-exceptions/batch-006/leaf_011",
+        "has_thumbnail": true,
+        "image_mime_type": "image/jpeg"
+      },
+      "expected_output": {
+        "classification": "obvious_issue",
+        "confidence": 0.85,
+        "tier1": {
+          "executed": true,
+          "result": {
+            "classification": "obvious_issue",
+            "confidence": 0.85,
+            "preliminary_findings": ["Severe discoloration", "Multiple symptoms visible"],
+            "skip_reason": "Obvious issue with high confidence (0.85 >= 0.75)"
+          }
+        },
+        "tier2": {
+          "executed": false,
+          "skip_reason": "Obvious issue with high confidence (0.85 >= 0.75)"
+        },
+        "success": true
+      },
+      "acceptable_variance": {
+        "confidence": 0.1
+      },
+      "metadata": {
+        "sample_id": "GS-vision-011",
+        "agent_name": "leaf_quality_analyzer",
+        "agent_type": "tiered-vision",
+        "description": "High confidence obvious issue - Tier 1 only, cost savings",
+        "source": "synthetic",
+        "tags": ["obvious-issue", "high-confidence", "tier1-only", "cost-optimized"],
+        "priority": "P0"
+      }
+    },
+    {
+      "input": {
+        "doc_id": "qc-analyzer-exceptions/batch-006/leaf_012",
+        "has_thumbnail": false,
+        "image_mime_type": "image/png"
+      },
+      "expected_output": {
+        "classification": "multiple_issues_detected",
+        "confidence": 0.79,
+        "tier1": {
+          "executed": true,
+          "result": {
+            "classification": "uncertain",
+            "confidence": 0.48,
+            "preliminary_findings": ["Complex symptom pattern", "Multiple issues suspected"],
+            "skip_reason": null
+          }
+        },
+        "tier2": {
+          "executed": true,
+          "result": {
+            "primary_issue": "multiple_issues_detected",
+            "confidence": 0.79,
+            "detailed_findings": ["Fungal infection on older leaves", "Nutrient deficiency in new growth", "Secondary pest damage"],
+            "recommendations": ["Address fungal infection first with fungicide", "Apply balanced fertilizer after fungicide", "Monitor for pest progression"],
+            "severity": "critical"
+          }
+        },
+        "severity": "critical",
+        "recommendations": ["Address fungal infection first with fungicide", "Apply balanced fertilizer after fungicide", "Monitor for pest progression"],
+        "detailed_findings": ["Fungal infection on older leaves", "Nutrient deficiency in new growth", "Secondary pest damage"],
+        "success": true
+      },
+      "acceptable_variance": {
+        "confidence": 0.15,
+        "tier1.result.confidence": 0.2
+      },
+      "metadata": {
+        "sample_id": "GS-vision-012",
+        "agent_name": "leaf_quality_analyzer",
+        "agent_type": "tiered-vision",
+        "description": "Complex case - multiple issues detected, PNG format, no thumbnail",
+        "source": "synthetic",
+        "tags": ["multiple-issues", "complex-case", "png-format", "no-thumbnail", "critical-severity"],
+        "priority": "P0"
+      }
+    }
+  ]
+}

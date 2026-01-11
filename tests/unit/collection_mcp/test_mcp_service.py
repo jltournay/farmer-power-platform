@@ -172,7 +172,9 @@ class TestListTools:
 
         response = await servicer.ListTools(request, context)
 
-        assert len(response.tools) == 6  # Includes get_document_thumbnail from Story 2.13
+        assert (
+            len(response.tools) == 7
+        )  # Includes get_document_thumbnail (Story 2.13) and get_document_image (Story 0.75.22)
         tool_names = {t.name for t in response.tools}
         assert tool_names == {
             "get_documents",
@@ -181,6 +183,7 @@ class TestListTools:
             "search_documents",
             "list_sources",
             "get_document_thumbnail",  # Story 2.13
+            "get_document_image",  # Story 0.75.22
         }
 
     @pytest.mark.asyncio
@@ -490,3 +493,244 @@ class TestListSourcesHandler:
         mock_source_config_client.list_sources.assert_called_once_with(
             enabled_only=False,
         )
+
+
+class TestGetDocumentImageHandler:
+    """Tests for get_document_image tool handler (Story 0.75.22)."""
+
+    @pytest.fixture
+    def mock_blob_storage_client(self) -> MagicMock:
+        """Create a mock blob storage client."""
+        client = MagicMock()
+        client.download_blob = AsyncMock(return_value=b"test_image_bytes")
+        return client
+
+    @pytest.fixture
+    def servicer_with_blob_storage(
+        self,
+        mock_document_client: MagicMock,
+        mock_blob_url_generator: MagicMock,
+        mock_source_config_client: MagicMock,
+        mock_blob_storage_client: MagicMock,
+    ) -> McpToolServiceServicer:
+        """Create a servicer with blob storage client."""
+        return McpToolServiceServicer(
+            document_client=mock_document_client,
+            blob_url_generator=mock_blob_url_generator,
+            source_config_client=mock_source_config_client,
+            blob_storage_client=mock_blob_storage_client,
+        )
+
+    @pytest.mark.asyncio
+    async def test_get_document_image_success(
+        self,
+        servicer_with_blob_storage: McpToolServiceServicer,
+        mock_document_client: MagicMock,
+        mock_blob_storage_client: MagicMock,
+    ) -> None:
+        """Verify get_document_image returns base64-encoded image."""
+        now = datetime.now(UTC)
+        mock_doc = Document(
+            document_id="doc-001",
+            raw_document=RawDocumentRef(
+                blob_container="images",
+                blob_path="path/to/image.jpg",
+                content_hash="abc123",
+                size_bytes=1024,
+                stored_at=now,
+            ),
+            extraction=ExtractionMetadata(
+                ai_agent_id="test",
+                extraction_timestamp=now,
+                confidence=0.95,
+                validation_passed=True,
+            ),
+            ingestion=IngestionMetadata(
+                ingestion_id="ing-001",
+                source_id="test-source",
+                received_at=now,
+                processed_at=now,
+            ),
+            created_at=now,
+        )
+        mock_document_client.get_document_by_id.return_value = mock_doc
+        mock_blob_storage_client.download_blob.return_value = b"test_image_bytes"
+
+        request = MockToolCallRequest(
+            tool_name="get_document_image",
+            arguments={"document_id": "doc-001"},
+        )
+        context = MockContext()
+
+        response = await servicer_with_blob_storage.CallTool(request, context)
+
+        assert response.success is True
+        result = json.loads(response.result_json)
+        assert result["document_id"] == "doc-001"
+        assert result["content_type"] == "image/jpeg"
+        assert result["size_bytes"] == len(b"test_image_bytes")
+        # Verify base64 encoding
+        import base64
+
+        decoded = base64.b64decode(result["image_base64"])
+        assert decoded == b"test_image_bytes"
+
+    @pytest.mark.asyncio
+    async def test_get_document_image_png_content_type(
+        self,
+        servicer_with_blob_storage: McpToolServiceServicer,
+        mock_document_client: MagicMock,
+        mock_blob_storage_client: MagicMock,
+    ) -> None:
+        """Verify get_document_image detects PNG content type from path."""
+        now = datetime.now(UTC)
+        mock_doc = Document(
+            document_id="doc-002",
+            raw_document=RawDocumentRef(
+                blob_container="images",
+                blob_path="path/to/image.png",  # PNG extension
+                content_hash="abc123",
+                size_bytes=2048,
+                stored_at=now,
+            ),
+            extraction=ExtractionMetadata(
+                ai_agent_id="test",
+                extraction_timestamp=now,
+                confidence=0.95,
+                validation_passed=True,
+            ),
+            ingestion=IngestionMetadata(
+                ingestion_id="ing-002",
+                source_id="test-source",
+                received_at=now,
+                processed_at=now,
+            ),
+            created_at=now,
+        )
+        mock_document_client.get_document_by_id.return_value = mock_doc
+        mock_blob_storage_client.download_blob.return_value = b"png_image_bytes"
+
+        request = MockToolCallRequest(
+            tool_name="get_document_image",
+            arguments={"document_id": "doc-002"},
+        )
+        context = MockContext()
+
+        response = await servicer_with_blob_storage.CallTool(request, context)
+
+        assert response.success is True
+        result = json.loads(response.result_json)
+        assert result["content_type"] == "image/png"
+        # Verify correct container and path used
+        mock_blob_storage_client.download_blob.assert_called_once_with(
+            container="images",
+            blob_path="path/to/image.png",
+        )
+
+    @pytest.mark.asyncio
+    async def test_get_document_image_document_not_found(
+        self,
+        servicer_with_blob_storage: McpToolServiceServicer,
+        mock_document_client: MagicMock,
+    ) -> None:
+        """Verify get_document_image returns error for non-existent document."""
+        mock_document_client.get_document_by_id.side_effect = DocumentNotFoundError("doc-999")
+
+        request = MockToolCallRequest(
+            tool_name="get_document_image",
+            arguments={"document_id": "doc-999"},
+        )
+        context = MockContext()
+
+        response = await servicer_with_blob_storage.CallTool(request, context)
+
+        assert response.success is False
+        assert "not found" in response.error_message.lower()
+
+    @pytest.mark.asyncio
+    async def test_get_document_image_no_blob_storage_client(
+        self,
+        servicer: McpToolServiceServicer,  # Without blob storage client
+        mock_document_client: MagicMock,
+    ) -> None:
+        """Verify get_document_image returns error when blob storage not configured."""
+        now = datetime.now(UTC)
+        mock_doc = Document(
+            document_id="doc-004",
+            raw_document=RawDocumentRef(
+                blob_container="images",
+                blob_path="path/to/image.jpg",
+                content_hash="abc123",
+                size_bytes=1024,
+                stored_at=now,
+            ),
+            extraction=ExtractionMetadata(
+                ai_agent_id="test",
+                extraction_timestamp=now,
+                confidence=0.95,
+                validation_passed=True,
+            ),
+            ingestion=IngestionMetadata(
+                ingestion_id="ing-004",
+                source_id="test-source",
+                received_at=now,
+                processed_at=now,
+            ),
+            created_at=now,
+        )
+        mock_document_client.get_document_by_id.return_value = mock_doc
+
+        request = MockToolCallRequest(
+            tool_name="get_document_image",
+            arguments={"document_id": "doc-004"},
+        )
+        context = MockContext()
+
+        response = await servicer.CallTool(request, context)
+
+        assert response.success is False
+        assert "not configured" in response.error_message
+
+    @pytest.mark.asyncio
+    async def test_get_document_image_missing_blob_path(
+        self,
+        servicer_with_blob_storage: McpToolServiceServicer,
+        mock_document_client: MagicMock,
+    ) -> None:
+        """Verify get_document_image returns error when document has empty blob_path."""
+        now = datetime.now(UTC)
+        mock_doc = Document(
+            document_id="doc-005",
+            raw_document=RawDocumentRef(
+                blob_container="images",
+                blob_path="",  # Empty blob path
+                content_hash="abc123",
+                size_bytes=0,
+                stored_at=now,
+            ),
+            extraction=ExtractionMetadata(
+                ai_agent_id="test",
+                extraction_timestamp=now,
+                confidence=0.95,
+                validation_passed=True,
+            ),
+            ingestion=IngestionMetadata(
+                ingestion_id="ing-005",
+                source_id="test-source",
+                received_at=now,
+                processed_at=now,
+            ),
+            created_at=now,
+        )
+        mock_document_client.get_document_by_id.return_value = mock_doc
+
+        request = MockToolCallRequest(
+            tool_name="get_document_image",
+            arguments={"document_id": "doc-005"},
+        )
+        context = MockContext()
+
+        response = await servicer_with_blob_storage.CallTool(request, context)
+
+        assert response.success is False
+        assert "no raw document" in response.error_message.lower()
