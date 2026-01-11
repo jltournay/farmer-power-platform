@@ -1,0 +1,341 @@
+{
+  "agent_name": "farmer_voice_advisor",
+  "agent_type": "conversational",
+  "version": "1.0.0",
+  "created_at": "2026-01-11T00:00:00Z",
+  "updated_at": "2026-01-11T00:00:00Z",
+  "samples": [
+    {
+      "input": {
+        "session_id": "sess-001",
+        "user_message": "Hello, I need help with my tea plants",
+        "farmer_id": "WM-4521",
+        "language": "en"
+      },
+      "expected_output": {
+        "response": "Hello! Welcome to Shamba Advisor. I'm here to help you with your tea plants. What seems to be the problem or what would you like to know about today?",
+        "session_id": "sess-001",
+        "turn_count": 1,
+        "session_ended": false
+      },
+      "acceptable_variance": {},
+      "metadata": {
+        "sample_id": "GS-conv-001",
+        "agent_name": "farmer_voice_advisor",
+        "agent_type": "conversational",
+        "description": "Greeting with request for help - first turn",
+        "source": "synthetic",
+        "validated_by": "dev-story-0.75.21",
+        "validated_at": "2026-01-11T00:00:00Z",
+        "tags": ["greeting", "first-turn", "help-request"],
+        "priority": "P0"
+      }
+    },
+    {
+      "input": {
+        "session_id": "sess-002",
+        "user_message": "Good morning",
+        "farmer_id": "WM-7890",
+        "language": "en"
+      },
+      "expected_output": {
+        "response": "Good morning! I'm Shamba Advisor, your tea farming assistant. How can I help you with your tea bushes today?",
+        "session_id": "sess-002",
+        "turn_count": 1,
+        "session_ended": false
+      },
+      "acceptable_variance": {},
+      "metadata": {
+        "sample_id": "GS-conv-002",
+        "agent_name": "farmer_voice_advisor",
+        "agent_type": "conversational",
+        "description": "Simple greeting - conversation opener",
+        "source": "synthetic",
+        "validated_by": "dev-story-0.75.21",
+        "validated_at": "2026-01-11T00:00:00Z",
+        "tags": ["greeting", "first-turn"],
+        "priority": "P0"
+      }
+    },
+    {
+      "input": {
+        "session_id": "sess-003",
+        "user_message": "My tea leaves are turning yellow, what could be wrong?",
+        "farmer_id": "WM-3456",
+        "language": "en"
+      },
+      "expected_output": {
+        "response": "Yellow leaves can have a few causes. The most common is nitrogen deficiency, especially if the older leaves are turning yellow first. It could also be waterlogging if you've had heavy rains recently. Have the younger leaves or older leaves been affected first?",
+        "session_id": "sess-003",
+        "turn_count": 1,
+        "session_ended": false
+      },
+      "acceptable_variance": {},
+      "metadata": {
+        "sample_id": "GS-conv-003",
+        "agent_name": "farmer_voice_advisor",
+        "agent_type": "conversational",
+        "description": "Question about yellowing leaves - plant care inquiry",
+        "source": "agronomist_validated",
+        "validated_by": "Senior Agronomist Mary",
+        "validated_at": "2026-01-11T00:00:00Z",
+        "tags": ["question", "plant-care", "nutrient-deficiency", "expert-validated"],
+        "priority": "P0"
+      }
+    },
+    {
+      "input": {
+        "session_id": "sess-004",
+        "user_message": "How deep should I plant new tea seedlings?",
+        "farmer_id": "WM-5678",
+        "language": "en"
+      },
+      "expected_output": {
+        "response": "Plant your tea seedlings so the root collar sits at ground level - about 15 to 20 centimeters deep for most seedlings. Make sure the hole is wide enough so roots aren't bent. After planting, press the soil firmly and water well. Are you planting in a nursery bed or in the field?",
+        "session_id": "sess-004",
+        "turn_count": 1,
+        "session_ended": false
+      },
+      "acceptable_variance": {},
+      "metadata": {
+        "sample_id": "GS-conv-004",
+        "agent_name": "farmer_voice_advisor",
+        "agent_type": "conversational",
+        "description": "Question about planting depth - cultivation inquiry",
+        "source": "agronomist_validated",
+        "validated_by": "Senior Agronomist Mary",
+        "validated_at": "2026-01-11T00:00:00Z",
+        "tags": ["question", "plant-care", "planting", "expert-validated"],
+        "priority": "P0"
+      }
+    },
+    {
+      "input": {
+        "session_id": "sess-005",
+        "user_message": "I see white spots on my tea leaves and some leaves have holes",
+        "farmer_id": "WM-9012",
+        "language": "en"
+      },
+      "expected_output": {
+        "response": "White spots with holes suggest you might have a combination of issues - possibly blister blight fungus causing the white spots and tea mosquito bugs or thrips making the holes. First, can you tell me if the white spots are raised and blister-like, or flat and powdery?",
+        "session_id": "sess-005",
+        "turn_count": 1,
+        "session_ended": false
+      },
+      "acceptable_variance": {},
+      "metadata": {
+        "sample_id": "GS-conv-005",
+        "agent_name": "farmer_voice_advisor",
+        "agent_type": "conversational",
+        "description": "Problem reporting - multiple symptoms requiring follow-up",
+        "source": "agronomist_validated",
+        "validated_by": "Senior Agronomist Mary",
+        "validated_at": "2026-01-11T00:00:00Z",
+        "tags": ["problem", "pest-disease", "follow-up-question", "expert-validated"],
+        "priority": "P0"
+      }
+    },
+    {
+      "input": {
+        "session_id": "sess-005",
+        "user_message": "The spots are raised like blisters",
+        "farmer_id": "WM-9012",
+        "language": "en",
+        "conversation_history": [
+          {
+            "role": "user",
+            "content": "I see white spots on my tea leaves and some leaves have holes"
+          },
+          {
+            "role": "assistant",
+            "content": "White spots with holes suggest you might have a combination of issues - possibly blister blight fungus causing the white spots and tea mosquito bugs or thrips making the holes. First, can you tell me if the white spots are raised and blister-like, or flat and powdery?"
+          }
+        ]
+      },
+      "expected_output": {
+        "response": "That confirms blister blight, which is a fungal disease common in humid weather. Apply a copper-based fungicide like Copper Oxychloride within the next two days, spraying early morning. Remove and destroy the most affected leaves. Also check if your bushes have good air circulation. Shall I explain more about preventing it in the future?",
+        "session_id": "sess-005",
+        "turn_count": 2,
+        "session_ended": false
+      },
+      "acceptable_variance": {},
+      "metadata": {
+        "sample_id": "GS-conv-006",
+        "agent_name": "farmer_voice_advisor",
+        "agent_type": "conversational",
+        "description": "Problem follow-up - diagnosis confirmation with treatment",
+        "source": "agronomist_validated",
+        "validated_by": "Senior Agronomist Mary",
+        "validated_at": "2026-01-11T00:00:00Z",
+        "tags": ["problem", "blister-blight", "treatment", "multi-turn", "expert-validated"],
+        "priority": "P0"
+      }
+    },
+    {
+      "input": {
+        "session_id": "sess-006",
+        "user_message": "How do I prune my tea bushes properly?",
+        "farmer_id": "WM-3344",
+        "language": "en"
+      },
+      "expected_output": {
+        "response": "For proper pruning, cut your tea bushes to a flat table about 60 centimeters from the ground. Use sharp, clean tools and make clean cuts at a slight angle. The best time is after the main harvest when bushes look tired. Remove any dead or crossing branches inside the bush too. When did you last prune your bushes?",
+        "session_id": "sess-006",
+        "turn_count": 1,
+        "session_ended": false
+      },
+      "acceptable_variance": {},
+      "metadata": {
+        "sample_id": "GS-conv-007",
+        "agent_name": "farmer_voice_advisor",
+        "agent_type": "conversational",
+        "description": "How-to inquiry - pruning technique",
+        "source": "agronomist_validated",
+        "validated_by": "Senior Agronomist Mary",
+        "validated_at": "2026-01-11T00:00:00Z",
+        "tags": ["how-to", "pruning", "technique", "expert-validated"],
+        "priority": "P0"
+      }
+    },
+    {
+      "input": {
+        "session_id": "sess-007",
+        "user_message": "How can I improve the quality of my tea to get better grades?",
+        "farmer_id": "WM-5566",
+        "language": "en"
+      },
+      "expected_output": {
+        "response": "To improve your tea grade, focus on plucking only the two leaves and a bud - that's the golden rule. Pluck in the morning when it's cool and get your leaves to the factory quickly, within 4 hours if possible. Also, keep your bushes healthy with proper fertilization and pest control. What grade are you currently getting?",
+        "session_id": "sess-007",
+        "turn_count": 1,
+        "session_ended": false
+      },
+      "acceptable_variance": {},
+      "metadata": {
+        "sample_id": "GS-conv-008",
+        "agent_name": "farmer_voice_advisor",
+        "agent_type": "conversational",
+        "description": "How-to inquiry - quality improvement",
+        "source": "agronomist_validated",
+        "validated_by": "Senior Agronomist Mary",
+        "validated_at": "2026-01-11T00:00:00Z",
+        "tags": ["how-to", "quality", "grading", "expert-validated"],
+        "priority": "P0"
+      }
+    },
+    {
+      "input": {
+        "session_id": "sess-008",
+        "user_message": "Thank you for your help. Goodbye!",
+        "farmer_id": "WM-7788",
+        "language": "en",
+        "conversation_history": [
+          {
+            "role": "user",
+            "content": "My bushes are looking weak after the dry spell"
+          },
+          {
+            "role": "assistant",
+            "content": "After a dry spell, your bushes need extra care. Water them deeply if possible, and apply mulch around the base to help retain moisture. Hold off on heavy fertilizing until the rains return. The bushes should recover well once moisture returns."
+          }
+        ]
+      },
+      "expected_output": {
+        "response": "You're welcome! I hope your tea bushes recover well from the dry spell. Don't hesitate to come back if you have more questions. Good luck with your farming! Kwaheri!",
+        "session_id": "sess-008",
+        "turn_count": 2,
+        "session_ended": true
+      },
+      "acceptable_variance": {},
+      "metadata": {
+        "sample_id": "GS-conv-009",
+        "agent_name": "farmer_voice_advisor",
+        "agent_type": "conversational",
+        "description": "Goodbye - ending conversation after help",
+        "source": "synthetic",
+        "validated_by": "dev-story-0.75.21",
+        "validated_at": "2026-01-11T00:00:00Z",
+        "tags": ["goodbye", "end-session", "multi-turn"],
+        "priority": "P0"
+      }
+    },
+    {
+      "input": {
+        "session_id": "sess-009",
+        "user_message": "ajkdhfkjashdf",
+        "farmer_id": "WM-9900",
+        "language": "en"
+      },
+      "expected_output": {
+        "response": "I'm sorry, I didn't quite understand that. Could you please tell me what you'd like help with? I can assist with tea plant care, pest problems, fertilization, pruning, and other farming questions.",
+        "session_id": "sess-009",
+        "turn_count": 1,
+        "session_ended": false
+      },
+      "acceptable_variance": {},
+      "metadata": {
+        "sample_id": "GS-conv-010",
+        "agent_name": "farmer_voice_advisor",
+        "agent_type": "conversational",
+        "description": "Edge case - unintelligible input handling",
+        "source": "synthetic",
+        "validated_by": "dev-story-0.75.21",
+        "validated_at": "2026-01-11T00:00:00Z",
+        "tags": ["edge-case", "unintelligible", "error-handling"],
+        "priority": "P1"
+      }
+    },
+    {
+      "input": {
+        "session_id": "sess-010",
+        "user_message": "What is the capital of Kenya?",
+        "farmer_id": "WM-1122",
+        "language": "en"
+      },
+      "expected_output": {
+        "response": "I'm specialized in helping with tea farming and agriculture. For general questions, I'd recommend asking elsewhere. But if you have any questions about your tea plants or farming practices, I'm happy to help! Is there anything farming-related I can assist with?",
+        "session_id": "sess-010",
+        "turn_count": 1,
+        "session_ended": false
+      },
+      "acceptable_variance": {},
+      "metadata": {
+        "sample_id": "GS-conv-011",
+        "agent_name": "farmer_voice_advisor",
+        "agent_type": "conversational",
+        "description": "Edge case - off-topic question handling",
+        "source": "synthetic",
+        "validated_by": "dev-story-0.75.21",
+        "validated_at": "2026-01-11T00:00:00Z",
+        "tags": ["edge-case", "off-topic", "scope-boundary"],
+        "priority": "P1"
+      }
+    },
+    {
+      "input": {
+        "session_id": "sess-011",
+        "user_message": "The rain has been very heavy and my bushes are waterlogged",
+        "farmer_id": "WM-2233",
+        "language": "en"
+      },
+      "expected_output": {
+        "response": "Waterlogging can damage tea roots quickly. Immediately dig small drainage channels around affected bushes to let water drain away. If possible, add organic matter like dry grass or leaves around the base to help absorb excess moisture. Once the water drains, avoid walking around the bushes as wet soil compacts easily. How long have the bushes been waterlogged?",
+        "session_id": "sess-011",
+        "turn_count": 1,
+        "session_ended": false
+      },
+      "acceptable_variance": {},
+      "metadata": {
+        "sample_id": "GS-conv-012",
+        "agent_name": "farmer_voice_advisor",
+        "agent_type": "conversational",
+        "description": "Problem - weather-related emergency (waterlogging)",
+        "source": "agronomist_validated",
+        "validated_by": "Senior Agronomist Mary",
+        "validated_at": "2026-01-11T00:00:00Z",
+        "tags": ["problem", "weather", "waterlogging", "urgent", "expert-validated"],
+        "priority": "P0"
+      }
+    }
+  ]
+}

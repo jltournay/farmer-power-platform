@@ -91,9 +91,10 @@ class CollectionClient:
         self._dapr_client: httpx.AsyncClient | None = None
 
     async def __aenter__(self) -> "CollectionClient":
-        # 90s timeout: Open-Meteo API can be slow/unstable in CI environments
-        self._client = httpx.AsyncClient(base_url=self.base_url, timeout=90.0)
-        self._dapr_client = httpx.AsyncClient(base_url=self.dapr_base_url, timeout=90.0)
+        # 180s timeout: Open-Meteo API can be very slow/rate-limited in CI environments
+        # The pull job endpoint waits synchronously for external API calls
+        self._client = httpx.AsyncClient(base_url=self.base_url, timeout=180.0)
+        self._dapr_client = httpx.AsyncClient(base_url=self.dapr_base_url, timeout=180.0)
         return self
 
     async def __aexit__(self, *args: Any) -> None:
