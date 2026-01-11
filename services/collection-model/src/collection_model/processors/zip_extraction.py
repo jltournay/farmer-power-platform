@@ -35,6 +35,7 @@ from collection_model.infrastructure.dapr_event_publisher import DaprEventPublis
 from collection_model.infrastructure.document_repository import DocumentRepository
 from collection_model.infrastructure.raw_document_store import RawDocumentStore
 from collection_model.infrastructure.storage_metrics import StorageMetrics
+from collection_model.infrastructure.thumbnail_generator import ThumbnailGenerator
 from collection_model.processors.base import ContentProcessor, ProcessorResult
 from fp_common.models.source_config import SourceConfig
 from pydantic import ValidationError as PydanticValidationError
@@ -74,6 +75,7 @@ class ZipExtractionProcessor(ContentProcessor):
         raw_document_store: RawDocumentStore | None = None,
         document_repository: DocumentRepository | None = None,
         event_publisher: DaprEventPublisher | None = None,
+        thumbnail_generator: ThumbnailGenerator | None = None,
     ) -> None:
         """Initialize the processor.
 
@@ -82,11 +84,13 @@ class ZipExtractionProcessor(ContentProcessor):
             raw_document_store: Raw document storage.
             document_repository: Generic document repository.
             event_publisher: DAPR event publisher.
+            thumbnail_generator: Generator for image thumbnails (Story 2.13).
         """
         self._blob_client = blob_client
         self._raw_store = raw_document_store
         self._doc_repo = document_repository
         self._event_publisher = event_publisher
+        self._thumbnail_gen = thumbnail_generator
 
     async def process(
         self,
@@ -493,12 +497,43 @@ class ZipExtractionProcessor(ContentProcessor):
         # Determine content type
         content_type = file_entry.mime_type or self._guess_mime_type(file_entry.path)
 
-        # Upload to blob storage
-        return await self._blob_client.upload_blob(
+        # Upload original to blob storage
+        blob_ref = await self._blob_client.upload_blob(
             container=container,
             blob_path=blob_path,
             content=file_content,
             content_type=content_type,
+        )
+
+        # Generate thumbnail for image files (Story 2.13)
+        thumbnail_blob_path: str | None = None
+        if self._thumbnail_gen and file_entry.role == "image" and self._thumbnail_gen.supports_format(content_type):
+            thumbnail_bytes = self._thumbnail_gen.generate_thumbnail(file_content)
+            if thumbnail_bytes:
+                thumb_path = f"{blob_path}_thumb.jpg"
+                await self._blob_client.upload_blob(
+                    container=container,
+                    blob_path=thumb_path,
+                    content=thumbnail_bytes,
+                    content_type="image/jpeg",
+                )
+                thumbnail_blob_path = thumb_path
+                logger.debug(
+                    "Thumbnail stored",
+                    original_path=blob_path,
+                    thumbnail_path=thumb_path,
+                    thumbnail_size=len(thumbnail_bytes),
+                )
+
+        # Return BlobReference with thumbnail path
+        return BlobReference(
+            container=blob_ref.container,
+            blob_path=blob_ref.blob_path,
+            content_type=blob_ref.content_type,
+            size_bytes=blob_ref.size_bytes,
+            etag=blob_ref.etag,
+            stored_at=blob_ref.stored_at,
+            thumbnail_blob_path=thumbnail_blob_path,
         )
 
     def _build_blob_path(
@@ -609,6 +644,20 @@ class ZipExtractionProcessor(ContentProcessor):
 
         # Add file references by role (generic, not image-specific)
         extracted_fields["file_refs"] = {role: [ref.model_dump() for ref in refs] for role, refs in file_refs.items()}
+
+        # Add thumbnail info to extracted_fields (Story 2.13)
+        # Check if any file in this document has a thumbnail
+        has_thumbnail = any(ref.thumbnail_blob_path for refs in file_refs.values() for ref in refs)
+        extracted_fields["has_thumbnail"] = has_thumbnail
+        if has_thumbnail:
+            # Get first thumbnail URL (documents typically have single image)
+            for refs in file_refs.values():
+                for ref in refs:
+                    if ref.thumbnail_blob_path:
+                        extracted_fields["thumbnail_url"] = f"blob://{ref.container}/{ref.thumbnail_blob_path}"
+                        break
+                if "thumbnail_url" in extracted_fields:
+                    break
 
         # Create metadata models
         extraction = ExtractionMetadata(
@@ -741,6 +790,11 @@ class ZipExtractionProcessor(ContentProcessor):
                 payload[field_name] = manifest.linkage[field_name]
             elif field_name in manifest.payload:
                 payload[field_name] = manifest.payload[field_name]
+
+        # Add thumbnail availability flag (Story 2.13)
+        # True if ANY document in batch has a thumbnail
+        has_any_thumbnail = any(doc.extracted_fields.get("has_thumbnail", False) for doc in documents)
+        payload["has_thumbnail"] = has_any_thumbnail
 
         await self._event_publisher.publish(
             topic=topic,

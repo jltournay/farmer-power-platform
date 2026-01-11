@@ -7,7 +7,7 @@ readme = "README.md"
 packages = [{include = "collection_model", from = "src"}]
 
 [tool.poetry.dependencies]
-python = "^3.12"
+python = ">=3.12,<3.13"
 fastapi = "^0.109.0"
 uvicorn = {extras = ["standard"], version = "^0.27.0"}
 pydantic = "^2.5.0"
@@ -26,6 +26,8 @@ opentelemetry-instrumentation-pymongo = ">=0.50b0"
 dapr = "^1.13.0"
 # Azure Blob Storage (Story 2.4)
 azure-storage-blob = "^12.19.0"
+# Image processing for thumbnails (Story 2.13)
+Pillow = ">=10.1.0,<11.0.0"
 # Shared libs
 fp-proto = { path = "../../libs/fp-proto" }
 

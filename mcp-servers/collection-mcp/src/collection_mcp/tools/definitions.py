@@ -221,6 +221,29 @@ TOOL_REGISTRY: dict[str, ToolDefinition] = {
         },
         category="query",
     ),
+    "get_document_thumbnail": ToolDefinition(
+        name="get_document_thumbnail",
+        description=(
+            "Get thumbnail image bytes for a document. Returns the thumbnail as base64-encoded "
+            "JPEG image data. Use this for AI vision processing with Tiered Vision pattern - "
+            "fetch thumbnail first for screening, then full image only if needed. "
+            "Returns NOT_FOUND error if document doesn't exist or has no thumbnail."
+        ),
+        input_schema={
+            "type": "object",
+            "properties": {
+                "document_id": {
+                    "type": "string",
+                    "description": (
+                        "The document ID (e.g., 'qc-analyzer-exceptions/batch-001/leaf_001'). "
+                        "This is the unique identifier for the document in the collection."
+                    ),
+                },
+            },
+            "required": ["document_id"],
+        },
+        category="media",
+    ),
 }
 
 

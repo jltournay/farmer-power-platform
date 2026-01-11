@@ -27,6 +27,7 @@ class BlobReference(BaseModel):
         size_bytes: Size of the blob in bytes.
         etag: ETag for versioning.
         stored_at: When the blob was stored.
+        thumbnail_blob_path: Path to thumbnail blob if generated (Story 2.13).
     """
 
     container: str
@@ -35,6 +36,7 @@ class BlobReference(BaseModel):
     size_bytes: int = 0
     etag: str | None = None
     stored_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
+    thumbnail_blob_path: str | None = Field(default=None, description="Path to thumbnail blob if generated")
 
 
 class BlobStorageClient:

@@ -18,6 +18,7 @@ from opentelemetry.sdk.trace.export import BatchSpanProcessor
 
 from collection_mcp.api.mcp_service import McpToolServiceServicer
 from collection_mcp.config import settings
+from collection_mcp.infrastructure.blob_storage_client import BlobStorageClient
 from collection_mcp.infrastructure.blob_url_generator import BlobUrlGenerator
 from collection_mcp.infrastructure.document_client import DocumentClient
 from collection_mcp.infrastructure.source_config_client import SourceConfigClient
@@ -71,12 +72,19 @@ async def serve() -> None:
         mongodb_uri=settings.mongodb_uri,
         database_name=settings.mongodb_database,
     )
+    # Blob storage client for thumbnail downloads (Story 2.13)
+    blob_storage_client: BlobStorageClient | None = None
+    if settings.azure_storage_connection_string:
+        blob_storage_client = BlobStorageClient(
+            connection_string=settings.azure_storage_connection_string,
+        )
 
     # Add MCP Tool Service
     mcp_servicer = McpToolServiceServicer(
         document_client=document_client,
         blob_url_generator=blob_url_generator,
         source_config_client=source_config_client,
+        blob_storage_client=blob_storage_client,
     )
     mcp_tool_pb2_grpc.add_McpToolServiceServicer_to_server(mcp_servicer, server)
 
@@ -117,9 +125,11 @@ async def serve() -> None:
     logger.info("Shutting down server...")
     await server.stop(grace=5)
 
-    # Close database connections
+    # Close database and storage connections
     await document_client.close()
     await source_config_client.close()
+    if blob_storage_client:
+        await blob_storage_client.close()
 
     logger.info("Server stopped")
 
