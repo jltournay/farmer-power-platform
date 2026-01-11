@@ -25,6 +25,8 @@ date: '2025-12-16'](#stepscompleted-1-inputdocuments-bmad-outputanalysisproduct-
     - [ADR-012: BFF Service Composition and API Design](./adr/ADR-012-bff-service-composition-api-design.md)
     - [ADR-013: AI Model Configuration Cache with Change Streams](./adr/ADR-013-ai-model-configuration-cache.md)
     - [ADR-014: MongoDB Async Driver Migration (Motor → PyMongo Async)](./adr/ADR-014-mongodb-async-driver-migration.md)
+    - [ADR-015: E2E Autonomous Debugging Infrastructure](./adr/ADR-015-e2e-autonomous-debugging-infrastructure.md)
+    - [ADR-016: Unified Cost Model and Platform Cost Service](./adr/ADR-016-unified-cost-model.md)
   - [Source of Truth Declaration](./source-of-truth-declaration.md)
     - [Platform Model Overview (9 Models)](./source-of-truth-declaration.md#platform-model-overview-9-models)
   - [Collection Model Architecture](./collection-model-architecture.md)

@@ -128,7 +128,7 @@ _Single entry point for all platform documentation. This index ensures coherence
        ▼              ▼                            ▼
 ┌─────────────────────┐  ┌─────────────────────┐  ┌─────────────────────┐
 │ architecture/adr/   │  │ ai-model-developer- │  │ sprint-artifacts/   │
-│ ADR-001 to ADR-013  │  │ guide/ (12 files)   │  │ Story files + YAML  │
+│ ADR-001 to ADR-016  │  │ guide/ (12 files)   │  │ Story files + YAML  │
 │ (Tech Decisions)    │  │                     │  │                     │
 └──────────┬──────────┘  └─────────────────────┘  └─────────────────────┘
            │
@@ -164,6 +164,8 @@ Product Brief → Architecture → ADRs → Epics → Stories → Test Design �
 | ADR-012 | BFF Service Composition and API Design | Stories 0.5.4a, 0.5.4b |
 | ADR-013 | AI Model Configuration Cache with Change Streams | Story 0.75.x (AI Model Foundation) |
 | ADR-014 | MongoDB Async Driver Migration (Motor → PyMongo Async) | Phase 0-7 (Migration) |
+| ADR-015 | E2E Autonomous Debugging Infrastructure | Epic 0.4 (E2E Tests) |
+| ADR-016 | Unified Cost Model and Platform Cost Service | Epic 9 (Admin Portal) - Draft |
 
 ---
 
