@@ -244,6 +244,29 @@ TOOL_REGISTRY: dict[str, ToolDefinition] = {
         },
         category="media",
     ),
+    "get_document_image": ToolDefinition(
+        name="get_document_image",
+        description=(
+            "Get original image bytes for a document. Returns the image as base64-encoded data. "
+            "Use this for AI vision processing when full resolution is needed (Tier 2 diagnosis) "
+            "or when the document has no thumbnail (small images <256px). "
+            "Returns NOT_FOUND error if document doesn't exist or has no associated image."
+        ),
+        input_schema={
+            "type": "object",
+            "properties": {
+                "document_id": {
+                    "type": "string",
+                    "description": (
+                        "The document ID (e.g., 'qc-analyzer-exceptions/batch-001/leaf_001'). "
+                        "This is the unique identifier for the document in the collection."
+                    ),
+                },
+            },
+            "required": ["document_id"],
+        },
+        category="media",
+    ),
 }
 
 

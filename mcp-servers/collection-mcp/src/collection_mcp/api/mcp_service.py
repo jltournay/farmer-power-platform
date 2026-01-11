@@ -97,6 +97,7 @@ class McpToolServiceServicer(mcp_tool_pb2_grpc.McpToolServiceServicer):
             "search_documents": self._handle_search_documents,
             "list_sources": self._handle_list_sources,
             "get_document_thumbnail": self._handle_get_document_thumbnail,
+            "get_document_image": self._handle_get_document_image,
         }
 
     async def ListTools(
@@ -447,4 +448,82 @@ class McpToolServiceServicer(mcp_tool_pb2_grpc.McpToolServiceServicer):
             "thumbnail_base64": thumbnail_base64,
             "content_type": "image/jpeg",
             "size_bytes": len(thumbnail_bytes),
+        }
+
+    async def _handle_get_document_image(self, arguments: dict[str, Any]) -> dict[str, Any]:
+        """Handle get_document_image tool call (Story 0.75.22).
+
+        Fetches the original image bytes for a document. Used for Tier 2 diagnosis
+        in Tiered-Vision workflows, or for small images (<256px) that don't have thumbnails.
+
+        Args:
+            arguments: Tool arguments with document_id.
+
+        Returns:
+            Dict with base64-encoded image and metadata.
+
+        Raises:
+            DocumentNotFoundError: If document doesn't exist or has no image.
+        """
+        document_id = arguments["document_id"]
+
+        # Get document to find blob location
+        document: Document = await self._document_client.get_document_by_id(document_id)
+
+        # Get blob location from raw_document
+        raw_doc = document.raw_document
+        if not raw_doc or not raw_doc.blob_container or not raw_doc.blob_path:
+            logger.warning(
+                "Document has no raw document reference",
+                document_id=document_id,
+            )
+            raise DocumentNotFoundError(f"{document_id} (no raw document)")
+
+        # Check blob storage client configured
+        if not self._blob_storage_client:
+            logger.error("Blob storage client not configured")
+            raise DocumentNotFoundError(f"{document_id} (blob storage not configured)")
+
+        container = raw_doc.blob_container
+        blob_path = raw_doc.blob_path
+
+        # Download image bytes
+        try:
+            image_bytes = await self._blob_storage_client.download_blob(
+                container=container,
+                blob_path=blob_path,
+            )
+        except ThumbnailBlobNotFoundError:
+            logger.warning(
+                "Image blob not found",
+                document_id=document_id,
+                container=container,
+                blob_path=blob_path,
+            )
+            raise DocumentNotFoundError(f"{document_id} (image blob not found)")
+
+        # Encode as base64 for JSON transport
+        image_base64 = base64.b64encode(image_bytes).decode("utf-8")
+
+        # Determine content type from blob path extension or default to jpeg
+        content_type = "image/jpeg"
+        if blob_path.lower().endswith(".png"):
+            content_type = "image/png"
+        elif blob_path.lower().endswith(".webp"):
+            content_type = "image/webp"
+        elif blob_path.lower().endswith(".gif"):
+            content_type = "image/gif"
+
+        logger.info(
+            "Image retrieved",
+            document_id=document_id,
+            size_bytes=len(image_bytes),
+            content_type=content_type,
+        )
+
+        return {
+            "document_id": document_id,
+            "image_base64": image_base64,
+            "content_type": content_type,
+            "size_bytes": len(image_bytes),
         }
