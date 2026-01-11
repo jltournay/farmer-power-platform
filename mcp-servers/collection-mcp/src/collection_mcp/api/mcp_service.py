@@ -1,5 +1,6 @@
 """MCP Tool Service implementation for Collection Model."""
 
+import base64
 import json
 from typing import Any
 
@@ -11,6 +12,10 @@ from jsonschema import ValidationError as JsonSchemaValidationError, validate
 from opentelemetry import trace
 from pydantic import BaseModel
 
+from collection_mcp.infrastructure.blob_storage_client import (
+    BlobNotFoundError as ThumbnailBlobNotFoundError,
+    BlobStorageClient,
+)
 from collection_mcp.infrastructure.blob_url_generator import BlobUrlGenerator
 from collection_mcp.infrastructure.document_client import (
     DocumentClient,
@@ -70,6 +75,7 @@ class McpToolServiceServicer(mcp_tool_pb2_grpc.McpToolServiceServicer):
         document_client: DocumentClient,
         blob_url_generator: BlobUrlGenerator,
         source_config_client: SourceConfigClient,
+        blob_storage_client: BlobStorageClient | None = None,
     ) -> None:
         """Initialize the servicer.
 
@@ -77,10 +83,12 @@ class McpToolServiceServicer(mcp_tool_pb2_grpc.McpToolServiceServicer):
             document_client: Client for MongoDB document operations.
             blob_url_generator: Generator for Azure Blob SAS URLs.
             source_config_client: Client for source configuration queries.
+            blob_storage_client: Client for downloading blobs (Story 2.13).
         """
         self._document_client = document_client
         self._blob_url_generator = blob_url_generator
         self._source_config_client = source_config_client
+        self._blob_storage_client = blob_storage_client
 
         self._tool_handlers: dict[str, Any] = {
             "get_documents": self._handle_get_documents,
@@ -88,6 +96,7 @@ class McpToolServiceServicer(mcp_tool_pb2_grpc.McpToolServiceServicer):
             "get_farmer_documents": self._handle_get_farmer_documents,
             "search_documents": self._handle_search_documents,
             "list_sources": self._handle_list_sources,
+            "get_document_thumbnail": self._handle_get_document_thumbnail,
         }
 
     async def ListTools(
@@ -360,4 +369,82 @@ class McpToolServiceServicer(mcp_tool_pb2_grpc.McpToolServiceServicer):
             "sources": sources,
             "count": len(sources),
             "enabled_only": enabled_only,
+        }
+
+    async def _handle_get_document_thumbnail(self, arguments: dict[str, Any]) -> dict[str, Any]:
+        """Handle get_document_thumbnail tool call (Story 2.13).
+
+        Args:
+            arguments: Tool arguments with document_id.
+
+        Returns:
+            Dict with base64-encoded thumbnail image and metadata.
+
+        Raises:
+            DocumentNotFoundError: If document doesn't exist.
+            ThumbnailBlobNotFoundError: If thumbnail blob doesn't exist.
+        """
+        document_id = arguments["document_id"]
+
+        # Get document to find thumbnail URL
+        document: Document = await self._document_client.get_document_by_id(document_id)
+
+        # Check if document has thumbnail
+        extracted_fields = document.extracted_fields or {}
+        has_thumbnail = extracted_fields.get("has_thumbnail", False)
+        thumbnail_url = extracted_fields.get("thumbnail_url")
+
+        if not has_thumbnail or not thumbnail_url:
+            logger.warning(
+                "Document has no thumbnail",
+                document_id=document_id,
+                has_thumbnail=has_thumbnail,
+            )
+            raise DocumentNotFoundError(f"{document_id} (no thumbnail)")
+
+        # Parse blob:// URL format: blob://container/path
+        if not thumbnail_url.startswith("blob://"):
+            raise DocumentNotFoundError(f"{document_id} (invalid thumbnail URL)")
+
+        url_parts = thumbnail_url[7:].split("/", 1)
+        if len(url_parts) < 2:
+            raise DocumentNotFoundError(f"{document_id} (invalid thumbnail URL)")
+
+        container = url_parts[0]
+        blob_path = url_parts[1]
+
+        # Check blob storage client configured
+        if not self._blob_storage_client:
+            logger.error("Blob storage client not configured")
+            raise DocumentNotFoundError(f"{document_id} (blob storage not configured)")
+
+        # Download thumbnail bytes
+        try:
+            thumbnail_bytes = await self._blob_storage_client.download_blob(
+                container=container,
+                blob_path=blob_path,
+            )
+        except ThumbnailBlobNotFoundError:
+            logger.warning(
+                "Thumbnail blob not found",
+                document_id=document_id,
+                container=container,
+                blob_path=blob_path,
+            )
+            raise DocumentNotFoundError(f"{document_id} (thumbnail blob not found)")
+
+        # Encode as base64 for JSON transport
+        thumbnail_base64 = base64.b64encode(thumbnail_bytes).decode("utf-8")
+
+        logger.info(
+            "Thumbnail retrieved",
+            document_id=document_id,
+            size_bytes=len(thumbnail_bytes),
+        )
+
+        return {
+            "document_id": document_id,
+            "thumbnail_base64": thumbnail_base64,
+            "content_type": "image/jpeg",
+            "size_bytes": len(thumbnail_bytes),
         }
