@@ -1,6 +1,6 @@
 # Story 0.75.22: Tiered-Vision Agent Implementation - Sample Config & Golden Tests
 
-**Status:** review
+**Status:** done
 **GitHub Issue:** #161
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
@@ -963,8 +963,20 @@ None required.
 
 ### Code Review Record
 
-**Review Date:** _______________
-**Reviewer:** _______________
+**Review Date:** 2026-01-11
+**Reviewer:** Claude Opus 4.5 (Adversarial Code Review)
+**Outcome:** ✅ APPROVED (after fixes)
+
+**Issues Found:**
+| # | Severity | File | Issue | Status |
+|---|----------|------|-------|--------|
+| 1 | MEDIUM | states/tiered_vision.py:35 | Severity enum used "medium" instead of "moderate" | ✅ Fixed |
+| 2 | MEDIUM | tiered_vision.py:280-281 | Hardcoded screen temperature/max_tokens | ✅ Fixed |
+| 3 | MEDIUM | tiered_vision.py:493 | Default severity "medium" instead of "moderate" | ✅ Fixed |
+| 4 | LOW | test_mcp_service.py | Missing test for empty blob_path | ✅ Fixed |
+| 5 | LOW | tiered_vision.py:674 | Parse fallback used "medium" | ✅ Fixed |
+
+**All issues addressed in commit:** 4dbf0c8
 
 ### File List
 
