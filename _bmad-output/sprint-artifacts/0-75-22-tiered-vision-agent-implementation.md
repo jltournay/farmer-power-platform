@@ -626,10 +626,12 @@ defaults:
 ### 1. Unit Tests
 ```bash
 pytest tests/golden/leaf_quality_analyzer/ -v --tb=no -q
+pytest tests/unit/ai_model/workflows/test_tiered_vision.py -v --tb=short
+pytest tests/unit/collection_mcp/test_mcp_service.py -v --tb=short
 ```
 **Output:**
 ```
-(paste test summary here - e.g., "42 passed in 5.23s")
+63 passed in 2.98s (20 tiered vision + 18 collection MCP + 25 config validation)
 ```
 
 ### 2. E2E Tests (MANDATORY)
@@ -651,15 +653,15 @@ bash scripts/e2e-up.sh --down
 ```
 **Output:**
 ```
-(paste E2E test output here - story is NOT ready for review without this)
+================== 107 passed, 1 skipped in 132.42s (0:02:12) ==================
 ```
-**E2E passed:** [ ] Yes / [ ] No
+**E2E passed:** [x] Yes / [ ] No
 
 ### 3. Lint Check
 ```bash
 ruff check . && ruff format --check .
 ```
-**Lint passed:** [ ] Yes / [ ] No
+**Lint passed:** [x] Yes / [ ] No
 
 ### 4. CI Verification on Story Branch (MANDATORY)
 
@@ -934,10 +936,17 @@ This story can now proceed because:
 ### File List
 
 **Created:**
-- (list new files when created)
+- `config/agents/leaf-quality-analyzer.yaml` - Sample tiered-vision agent configuration
+- `tests/golden/leaf_quality_analyzer/samples.json` - 12 golden test samples
+- `tests/golden/leaf_quality_analyzer/test_config_validation.py` - 25 config validation tests
+- `tests/unit/ai_model/workflows/test_tiered_vision.py` - 20 workflow unit tests
 
 **Modified:**
-- (list modified files with brief description)
+- `services/ai-model/src/ai_model/workflows/states/tiered_vision.py` - Added doc_id, has_thumbnail, removed image_data
+- `services/ai-model/src/ai_model/workflows/tiered_vision.py` - Refactored to use MCP for image fetching
+- `mcp-servers/collection-mcp/src/collection_mcp/tools/definitions.py` - Added get_document_image tool
+- `mcp-servers/collection-mcp/src/collection_mcp/api/mcp_service.py` - Implemented get_document_image handler
+- `tests/unit/collection_mcp/test_mcp_service.py` - Added 4 tests for get_document_image tool
 
 ---
 
