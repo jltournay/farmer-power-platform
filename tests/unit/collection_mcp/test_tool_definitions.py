@@ -21,6 +21,7 @@ class TestToolRegistry:
             "get_farmer_documents",
             "search_documents",
             "list_sources",
+            "get_document_thumbnail",  # Story 2.13
         }
         assert set(TOOL_REGISTRY.keys()) == expected_tools
 
@@ -30,7 +31,7 @@ class TestToolRegistry:
             assert isinstance(tool, ToolDefinition)
             assert tool.name == name
             assert len(tool.description) > 0
-            assert tool.category in ("query", "search")
+            assert tool.category in ("query", "search", "media")  # media added in Story 2.13
             assert isinstance(tool.input_schema, dict)
 
     def test_all_tools_have_valid_json_schemas(self) -> None:
@@ -272,7 +273,7 @@ class TestHelperFunctions:
     def test_list_tools_returns_all_tools(self) -> None:
         """Verify list_tools returns all tools."""
         tools = list_tools()
-        assert len(tools) == 5
+        assert len(tools) == 6  # Includes get_document_thumbnail from Story 2.13
 
     def test_list_tools_filters_by_category(self) -> None:
         """Verify list_tools filters by category."""

@@ -172,7 +172,7 @@ class TestListTools:
 
         response = await servicer.ListTools(request, context)
 
-        assert len(response.tools) == 5
+        assert len(response.tools) == 6  # Includes get_document_thumbnail from Story 2.13
         tool_names = {t.name for t in response.tools}
         assert tool_names == {
             "get_documents",
@@ -180,6 +180,7 @@ class TestListTools:
             "get_farmer_documents",
             "search_documents",
             "list_sources",
+            "get_document_thumbnail",  # Story 2.13
         }
 
     @pytest.mark.asyncio
