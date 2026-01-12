@@ -129,13 +129,13 @@ So that cost aggregation logic has a home.
 - [x] Push to feature branch: `git push -u origin feature/13-2-platform-cost-service-scaffold`
 
 ### Story Done
-- [ ] Create Pull Request: `gh pr create --title "Story 13.2: Platform Cost Service Scaffold" --base main`
-- [ ] CI passes on PR (including E2E tests)
+- [x] Create Pull Request: `gh pr create --title "Story 13.2: Platform Cost Service Scaffold" --base main`
+- [x] CI passes on PR (run ID: 20935393385)
 - [ ] Code review completed (`/code-review` or human review)
 - [ ] PR approved and merged (squash)
 - [ ] Local branch cleaned up: `git branch -d feature/13-2-platform-cost-service-scaffold`
 
-**PR URL:** _______________ (fill in when created)
+**PR URL:** https://github.com/jltournay/farmer-power-platform/pull/166
 
 ---
 
