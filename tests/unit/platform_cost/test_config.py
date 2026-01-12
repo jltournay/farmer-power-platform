@@ -6,8 +6,6 @@ Story 13.2: Platform Cost Service scaffold.
 import os
 from unittest import mock
 
-import pytest
-
 
 class TestSettings:
     """Test cases for Settings class."""
