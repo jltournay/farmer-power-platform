@@ -124,9 +124,9 @@ So that cost aggregation logic has a home.
 **Branch name:** `feature/13-2-platform-cost-service-scaffold`
 
 ### During Development
-- [ ] All commits reference GitHub issue: `Relates to #___`
-- [ ] Commits are atomic by type (production, test, seed - not mixed)
-- [ ] Push to feature branch: `git push -u origin feature/13-2-platform-cost-service-scaffold`
+- [x] All commits reference GitHub issue: `Relates to #165`
+- [x] Commits are atomic by type (production, test, seed - not mixed)
+- [x] Push to feature branch: `git push -u origin feature/13-2-platform-cost-service-scaffold`
 
 ### Story Done
 - [ ] Create Pull Request: `gh pr create --title "Story 13.2: Platform Cost Service Scaffold" --base main`
@@ -212,9 +212,9 @@ git push origin feature/13-2-platform-cost-service-scaffold
 # Check CI status
 gh run list --branch feature/13-2-platform-cost-service-scaffold --limit 3
 ```
-**CI Run ID:** ___________
-**CI Status:** [ ] Passed / [ ] Failed
-**Verification Date:** ___________
+**CI Run ID:** 20935393385
+**CI Status:** [x] Passed / [ ] Failed
+**Verification Date:** 2026-01-12
 
 ---
 
