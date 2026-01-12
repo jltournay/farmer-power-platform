@@ -6,21 +6,20 @@ Story 13.2: Platform Cost Service scaffold.
 import os
 from unittest import mock
 
+import pytest
+
 
 class TestSettings:
     """Test cases for Settings class."""
 
     def test_default_settings(self):
         """Test default configuration values."""
-        # Import inside test to avoid state pollution
+        # Import Settings class (not the global instance)
+        from platform_cost.config import Settings
+
+        # Create fresh instance with cleared environment
         with mock.patch.dict(os.environ, {}, clear=True):
-            # Need to reimport to get fresh settings with defaults
-            import importlib
-
-            import platform_cost.config
-
-            importlib.reload(platform_cost.config)
-            settings = platform_cost.config.Settings()
+            settings = Settings()
 
             assert settings.service_name == "platform-cost"
             assert settings.service_version == "0.1.0"
@@ -39,6 +38,8 @@ class TestSettings:
 
     def test_environment_variable_override(self):
         """Test configuration from environment variables."""
+        from platform_cost.config import Settings
+
         env_vars = {
             "PLATFORM_COST_SERVICE_NAME": "test-platform-cost",
             "PLATFORM_COST_PORT": "9000",
@@ -52,12 +53,7 @@ class TestSettings:
         }
 
         with mock.patch.dict(os.environ, env_vars, clear=True):
-            import importlib
-
-            import platform_cost.config
-
-            importlib.reload(platform_cost.config)
-            settings = platform_cost.config.Settings()
+            settings = Settings()
 
             assert settings.service_name == "test-platform-cost"
             assert settings.port == 9000
@@ -71,22 +67,21 @@ class TestSettings:
 
     def test_case_insensitive_env_vars(self):
         """Test that environment variables are case-insensitive."""
+        from platform_cost.config import Settings
+
         env_vars = {
             "platform_cost_port": "8888",  # lowercase
         }
 
         with mock.patch.dict(os.environ, env_vars, clear=True):
-            import importlib
-
-            import platform_cost.config
-
-            importlib.reload(platform_cost.config)
-            settings = platform_cost.config.Settings()
+            settings = Settings()
 
             assert settings.port == 8888
 
     def test_dapr_settings(self):
         """Test DAPR-related configuration."""
+        from platform_cost.config import Settings
+
         env_vars = {
             "PLATFORM_COST_DAPR_HOST": "dapr-sidecar",
             "PLATFORM_COST_DAPR_HTTP_PORT": "3600",
@@ -96,12 +91,7 @@ class TestSettings:
         }
 
         with mock.patch.dict(os.environ, env_vars, clear=True):
-            import importlib
-
-            import platform_cost.config
-
-            importlib.reload(platform_cost.config)
-            settings = platform_cost.config.Settings()
+            settings = Settings()
 
             assert settings.dapr_host == "dapr-sidecar"
             assert settings.dapr_http_port == 3600
@@ -111,18 +101,15 @@ class TestSettings:
 
     def test_mongodb_pool_settings(self):
         """Test MongoDB connection pool settings."""
+        from platform_cost.config import Settings
+
         env_vars = {
             "PLATFORM_COST_MONGODB_MIN_POOL_SIZE": "10",
             "PLATFORM_COST_MONGODB_MAX_POOL_SIZE": "100",
         }
 
         with mock.patch.dict(os.environ, env_vars, clear=True):
-            import importlib
-
-            import platform_cost.config
-
-            importlib.reload(platform_cost.config)
-            settings = platform_cost.config.Settings()
+            settings = Settings()
 
             assert settings.mongodb_min_pool_size == 10
             assert settings.mongodb_max_pool_size == 100

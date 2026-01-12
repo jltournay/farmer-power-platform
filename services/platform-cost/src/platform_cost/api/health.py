@@ -90,8 +90,9 @@ async def ready() -> JSONResponse:
             checks["mongodb"] = "error"
             all_healthy = False
     else:
-        # MongoDB not configured yet - still starting up
+        # MongoDB not configured yet - service not ready to accept traffic
         checks["mongodb"] = "not_configured"
+        all_healthy = False
 
     # Check DAPR sidecar
     dapr_ok = await check_dapr_sidecar()

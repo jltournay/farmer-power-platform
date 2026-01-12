@@ -3,6 +3,7 @@
 Story 13.2: Platform Cost Service scaffold.
 """
 
+import warnings
 from unittest import mock
 
 import pytest
@@ -18,7 +19,11 @@ class TestHealthEndpoints:
         # Import inside fixture to avoid side effects
         from platform_cost.main import app
 
-        return TestClient(app)
+        # Suppress httpx deprecation warning about 'app' shortcut
+        # This is a known issue with Starlette TestClient
+        with warnings.catch_warnings():
+            warnings.filterwarnings("ignore", category=DeprecationWarning, message=".*app.*shortcut.*")
+            return TestClient(app)
 
     def test_health_endpoint_returns_healthy(self, client: TestClient):
         """Test /health endpoint returns healthy status."""
@@ -47,10 +52,10 @@ class TestHealthEndpoints:
 
         response = client.get("/ready")
 
-        # Should return 200 even without MongoDB check configured
-        # The check will show "not_configured" status
+        # Should return 503 when MongoDB is not configured - service not ready
+        assert response.status_code == 503
         data = response.json()
-        assert "checks" in data
+        assert data["status"] == "not_ready"
         assert data["checks"]["mongodb"] == "not_configured"
 
     @pytest.mark.asyncio
