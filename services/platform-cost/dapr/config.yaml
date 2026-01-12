@@ -1,0 +1,35 @@
+# DAPR Application Configuration for Platform Cost Service
+# Story 13.2: Service scaffold
+#
+# This config is used by the DAPR sidecar to configure the application.
+# For Kubernetes deployment, this is applied as a ConfigMap.
+
+apiVersion: dapr.io/v1alpha1
+kind: Configuration
+metadata:
+  name: platform-cost-config
+spec:
+  # App protocol for service invocation
+  appProtocol: grpc
+
+  # Tracing configuration
+  tracing:
+    samplingRate: "1"  # 100% sampling in development, reduce in production
+    zipkin:
+      endpointAddress: http://zipkin:9411/api/v2/spans
+
+  # Metrics configuration
+  metrics:
+    enabled: true
+
+  # Logging configuration
+  logging:
+    apiLogLevel: info
+
+  # Features configuration
+  features:
+    - name: "pubsub.streaming"
+      enabled: true
+
+# Note: Subscription configuration will be added in Story 13.5
+# See: dapr/subscription.yaml (placeholder)
