@@ -260,6 +260,63 @@ class TestCostRecordedEventValidation:
                 metadata={},
             )
 
+    def test_negative_amount_usd_raises_error(self) -> None:
+        """Test that negative amount_usd raises ValidationError."""
+        with pytest.raises(ValidationError) as exc_info:
+            CostRecordedEvent(
+                cost_type=CostType.LLM,
+                amount_usd="-0.001",
+                quantity=100,
+                unit=CostUnit.TOKENS,
+                timestamp=datetime(2026, 1, 12, 10, 30, 0, tzinfo=UTC),
+                source_service="ai-model",
+                success=True,
+                metadata={},
+            )
+
+        assert "amount_usd" in str(exc_info.value)
+
+    def test_invalid_cost_type_unit_combination_raises_error(self) -> None:
+        """Test that mismatched cost_type and unit raises ValidationError."""
+        with pytest.raises(ValidationError) as exc_info:
+            CostRecordedEvent(
+                cost_type=CostType.LLM,
+                amount_usd="0.001",
+                quantity=100,
+                unit=CostUnit.PAGES,  # Should be TOKENS for LLM
+                timestamp=datetime(2026, 1, 12, 10, 30, 0, tzinfo=UTC),
+                source_service="ai-model",
+                success=True,
+                metadata={},
+            )
+
+        assert "Invalid unit" in str(exc_info.value)
+        assert "pages" in str(exc_info.value)
+        assert "TOKENS" in str(exc_info.value)
+
+    def test_valid_cost_type_unit_combinations(self) -> None:
+        """Test that all valid cost_type/unit combinations work."""
+        valid_combinations = [
+            (CostType.LLM, CostUnit.TOKENS),
+            (CostType.DOCUMENT, CostUnit.PAGES),
+            (CostType.EMBEDDING, CostUnit.QUERIES),
+            (CostType.SMS, CostUnit.MESSAGES),
+        ]
+
+        for cost_type, unit in valid_combinations:
+            event = CostRecordedEvent(
+                cost_type=cost_type,
+                amount_usd="0.001",
+                quantity=100,
+                unit=unit,
+                timestamp=datetime(2026, 1, 12, 10, 30, 0, tzinfo=UTC),
+                source_service="ai-model",
+                success=True,
+                metadata={},
+            )
+            assert event.cost_type == cost_type
+            assert event.unit == unit
+
 
 class TestCostRecordedEventSerialization:
     """Tests for CostRecordedEvent JSON serialization."""

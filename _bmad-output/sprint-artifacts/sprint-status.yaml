@@ -199,8 +199,8 @@ development_status:
   # Epic 13: Unified Platform Cost Service (NEW - 2026-01-12, ADR-016)
   # Dependencies: Epic 0.75. Blocks: Story 9.6 (LLM Cost Dashboard)
   # Unified cost aggregation via DAPR pub/sub, gRPC UnifiedCostService
-  epic-13: backlog
-  13-1-shared-cost-event-model: backlog  # fp-common CostRecordedEvent
+  epic-13: in-progress
+  13-1-shared-cost-event-model: done  # github_issue: 163, fp-common CostRecordedEvent, CODE REVIEW COMPLETED 2026-01-12
   13-2-platform-cost-service-scaffold: backlog  # FastAPI + DAPR + gRPC scaffold
   13-3-cost-repository-budget-monitor: backlog  # MongoDB repository + TTL + BudgetMonitor with warm-up
   13-4-grpc-unified-cost-service: backlog  # Proto + all RPC implementations

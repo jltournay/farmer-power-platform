@@ -39,7 +39,7 @@ from decimal import Decimal
 from enum import Enum
 from typing import Annotated, Any
 
-from pydantic import BaseModel, Field, PlainSerializer
+from pydantic import BaseModel, Field, PlainSerializer, model_validator
 
 
 class CostType(str, Enum):
@@ -110,6 +110,7 @@ class CostRecordedEvent(BaseModel):
         description="Type of cost (llm, document, embedding, sms)",
     )
     amount_usd: DecimalStr = Field(
+        ge=0,
         description="Cost amount in USD (serialized as string for precision)",
     )
     quantity: int = Field(
@@ -144,3 +145,21 @@ class CostRecordedEvent(BaseModel):
     model_config = {
         "use_enum_values": True,  # Serialize enums as their string values
     }
+
+    # Valid CostType → CostUnit mappings
+    _VALID_UNIT_BY_TYPE: dict[CostType, CostUnit] = {
+        CostType.LLM: CostUnit.TOKENS,
+        CostType.DOCUMENT: CostUnit.PAGES,
+        CostType.EMBEDDING: CostUnit.QUERIES,
+        CostType.SMS: CostUnit.MESSAGES,
+    }
+
+    @model_validator(mode="after")
+    def validate_cost_type_unit_match(self) -> "CostRecordedEvent":
+        """Validate that cost_type and unit are a valid combination."""
+        expected_unit = self._VALID_UNIT_BY_TYPE.get(self.cost_type)
+        if expected_unit and self.unit != expected_unit:
+            raise ValueError(
+                f"Invalid unit '{self.unit}' for cost_type '{self.cost_type}'. Expected '{expected_unit}'."
+            )
+        return self
