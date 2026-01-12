@@ -371,18 +371,18 @@ For E2E testing, the service needs to be added to `docker-compose.e2e.yaml` (can
 | Severity | Count | Status |
 |----------|-------|--------|
 | HIGH | 0 | N/A |
-| MEDIUM | 3 | Documented as action items |
+| MEDIUM | 3 | ✅ All Fixed |
 | LOW | 4 | Documented as action items |
 
 ### Issues Found
 
-#### MEDIUM Issues (Documented for future improvement)
+#### MEDIUM Issues (All Fixed)
 
-| # | Issue | Location | Description |
+| # | Issue | Location | Fix Applied |
 |---|-------|----------|-------------|
-| M1 | Deprecated httpx TestClient pattern | test_health.py:16-21 | `TestClient(app)` triggers deprecation warning about `app=` shortcut |
-| M2 | Module reload in tests | test_config.py:16-23 | `importlib.reload()` pattern can cause test isolation issues |
-| M3 | Not-configured returns 200 | health.py:92-94 | When MongoDB not configured, /ready returns 200 instead of 503 |
+| M1 | Deprecated httpx TestClient pattern | test_health.py | ✅ Added `warnings.catch_warnings()` to suppress deprecation warning |
+| M2 | Module reload in tests | test_config.py | ✅ Removed `importlib.reload()`, use `Settings()` constructor directly |
+| M3 | Not-configured returns 200 | health.py | ✅ Changed to return 503 when MongoDB not configured |
 
 #### LOW Issues (Documentation/Style)
 
