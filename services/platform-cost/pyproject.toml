@@ -1,0 +1,52 @@
+[tool.poetry]
+name = "platform-cost"
+version = "0.1.0"
+description = "Platform Cost Service - Unified cost aggregation for Farmer Power Platform"
+authors = ["Farmer Power Team"]
+readme = "README.md"
+packages = [{include = "platform_cost", from = "src"}]
+
+[tool.poetry.dependencies]
+python = "^3.12"
+fastapi = "^0.115.0"
+uvicorn = {extras = ["standard"], version = "^0.27.0"}
+pydantic = "^2.5.0"
+pydantic-settings = "^2.1.0"
+motor = "^3.3.0"
+structlog = "^24.1.0"
+tenacity = "^8.2.0"
+httpx = ">=0.26.0,<0.28.0"  # Required for DAPR health checks
+# OpenTelemetry - use compatible versions (instrumentation versions = 0.XXb0 match SDK 1.XX)
+opentelemetry-api = "^1.29.0"
+opentelemetry-sdk = "^1.29.0"
+opentelemetry-exporter-otlp = "^1.29.0"
+opentelemetry-instrumentation-fastapi = ">=0.50b0"
+opentelemetry-instrumentation-pymongo = ">=0.50b0"
+# Internal libraries (relative paths)
+fp-proto = { path = "../../libs/fp-proto" }
+fp-common = { path = "../../libs/fp-common" }
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^8.0.0"
+pytest-asyncio = "^0.23.0"
+pytest-cov = "^4.1.0"
+ruff = "^0.1.0"
+mypy = "^1.8.0"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_functions = ["test_*"]
+
+# Ruff config inherited from root pyproject.toml
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+warn_return_any = true
+warn_unused_configs = true
