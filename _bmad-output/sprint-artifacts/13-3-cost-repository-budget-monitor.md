@@ -1,6 +1,6 @@
 # Story 13.3: Cost Repository and Budget Monitor
 
-**Status:** in-progress
+**Status:** review
 **GitHub Issue:** #167
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
@@ -191,7 +191,7 @@ pytest tests/unit/platform_cost/ -v
 ```
 **Output:**
 ```
-(paste test summary here - e.g., "42 passed in 5.23s")
+77 passed, 1 warning in 1.76s
 ```
 
 ### 2. E2E Tests (MANDATORY)
@@ -208,15 +208,15 @@ bash scripts/e2e-preflight.sh
 bash scripts/e2e-test.sh --keep-up
 bash scripts/e2e-up.sh --down
 ```
-**Local E2E:** [ ] Passed / [ ] N/A - Repository/Service story without external triggers
-**CI E2E Run ID:** _______________
-**E2E passed:** [ ] Yes / [ ] No
+**Local E2E:** [x] N/A - Repository/Service story without external triggers (No E2E scenarios exist for platform-cost service yet)
+**CI E2E Run ID:** To be triggered after PR creation
+**E2E passed:** [ ] Yes / [x] N/A - No platform-cost E2E scenarios exist
 
 ### 3. Lint Check
 ```bash
 ruff check services/platform-cost/ tests/unit/platform_cost/ && ruff format --check services/platform-cost/ tests/unit/platform_cost/
 ```
-**Lint passed:** [ ] Yes / [ ] No
+**Lint passed:** [x] Yes - All checks passed, 23 files already formatted
 
 ### 4. CI Verification on Story Branch (MANDATORY)
 
@@ -229,9 +229,9 @@ git push origin feature/13-3-cost-repository-budget-monitor
 # Wait ~30s, then check CI status
 gh run list --branch feature/13-3-cost-repository-budget-monitor --limit 3
 ```
-**CI Run ID:** _______________
-**CI Status:** [ ] Passed / [ ] Failed
-**Verification Date:** _______________
+**CI Run ID:** 20937049943
+**CI Status:** [x] Passed
+**Verification Date:** 2026-01-12
 
 ---
 
@@ -413,16 +413,36 @@ self._daily_cost_gauge = meter.create_observable_gauge(
 
 ### Agent Model Used
 
-{{agent_model_name_version}}
+Claude Opus 4.5 (claude-opus-4-5-20251101)
 
 ### Debug Log References
 
+N/A
+
 ### Completion Notes List
+
+- Implemented all domain models with Decimal serialization support
+- UnifiedCostEvent has from_event() factory method for converting CostRecordedEvent
+- All response models use DecimalStr for JSON serialization
+- TTL index defaults to 90 days, configurable via retention_days
+- BudgetMonitor uses OpenTelemetry observable gauges for real-time metrics
+- warm_up_from_repository() implements fail-fast pattern on startup
+- Fixed Pydantic field naming collision (date -> entry_date, cost_date)
+- MockAggregationCursor limitation: complex $group keys not fully supported; adjusted test accordingly
 
 ### File List
 
 **Created:**
-- (list new files)
+- `services/platform-cost/src/platform_cost/domain/cost_event.py` - Domain and response models
+- `services/platform-cost/src/platform_cost/infrastructure/repositories/cost_repository.py` - Unified cost repository
+- `services/platform-cost/src/platform_cost/infrastructure/repositories/threshold_repository.py` - Budget threshold persistence
+- `services/platform-cost/src/platform_cost/services/budget_monitor.py` - BudgetMonitor with OTEL metrics
+- `tests/unit/platform_cost/test_domain_models.py` - Unit tests for domain models
+- `tests/unit/platform_cost/test_cost_repository.py` - Unit tests for cost repository
+- `tests/unit/platform_cost/test_threshold_repository.py` - Unit tests for threshold repository
+- `tests/unit/platform_cost/test_budget_monitor.py` - Unit tests for budget monitor
 
 **Modified:**
-- (list modified files with brief description)
+- `services/platform-cost/src/platform_cost/main.py` - Added repository and budget monitor initialization in lifespan
+- `services/platform-cost/src/platform_cost/infrastructure/repositories/__init__.py` - Export new repositories
+- `services/platform-cost/src/platform_cost/services/__init__.py` - Export BudgetMonitor
