@@ -5,9 +5,11 @@ Provides shared components for DAPR event subscriptions including:
 - DLQ Repository for MongoDB storage
 - DLQ subscription startup utilities
 - AI Model event models (shared across services)
+- Unified Cost Event Model (ADR-016)
 
 Story 0.6.8: Dead Letter Queue Handler (ADR-006)
 Story 0.75.16b: AI Model event models moved to fp-common
+Story 13.1: Unified Cost Event Model (ADR-016)
 """
 
 from fp_common.events.ai_model_events import (
@@ -16,12 +18,19 @@ from fp_common.events.ai_model_events import (
     AgentRequestEvent,
     AgentResult,
     ConversationalAgentResult,
-    CostRecordedEvent,
     EntityLinkage,
     ExplorerAgentResult,
     ExtractorAgentResult,
     GeneratorAgentResult,
     TieredVisionAgentResult,
+)
+
+# Story 13.1: Unified Cost Event Model (ADR-016)
+# Import from new location - replaces LLM-only CostRecordedEvent
+from fp_common.events.cost_recorded import (
+    CostRecordedEvent,
+    CostType,
+    CostUnit,
 )
 from fp_common.events.dlq_handler import (
     DLQHandler,
@@ -39,6 +48,8 @@ __all__ = [
     "AgentResult",
     "ConversationalAgentResult",
     "CostRecordedEvent",
+    "CostType",
+    "CostUnit",
     "DLQHandler",
     "DLQRecord",
     "DLQRepository",
