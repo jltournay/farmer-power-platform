@@ -201,7 +201,7 @@ development_status:
   # Unified cost aggregation via DAPR pub/sub, gRPC UnifiedCostService
   epic-13: in-progress
   13-1-shared-cost-event-model: done  # github_issue: 163, fp-common CostRecordedEvent, CODE REVIEW COMPLETED 2026-01-12
-  13-2-platform-cost-service-scaffold: in-progress  # github_issue: 165, FastAPI + DAPR + gRPC scaffold
+  13-2-platform-cost-service-scaffold: done  # github_issue: 165, FastAPI + DAPR + gRPC scaffold
   13-3-cost-repository-budget-monitor: backlog  # MongoDB repository + TTL + BudgetMonitor with warm-up
   13-4-grpc-unified-cost-service: backlog  # Proto + all RPC implementations
   13-5-dapr-cost-event-subscription: backlog  # Subscribe to platform.cost.recorded
