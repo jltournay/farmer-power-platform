@@ -325,13 +325,14 @@ So that I can track AI costs, identify cost drivers, and configure budget alerts
 
 **Technical Notes:**
 - Location: `web/platform-admin/src/pages/costs/`
-- Consumes gRPC `CostService` API from AI Model (Story 0.75.5)
+- Consumes gRPC `UnifiedCostService` API from **platform-cost** service (Epic 13)
 - BFF endpoints: `GET /api/admin/costs/summary`, `GET /api/admin/costs/by-agent`, etc.
 - Charts: Use existing charting library from @fp/ui-components
 - Caching: BFF caches responses for 5 minutes to reduce load
+- Reference: ADR-016 (Unified Cost Model and Platform Cost Service)
 
 **Dependencies:**
 - Story 9.1: Platform Admin Application Scaffold
-- Story 0.75.5: OpenRouter LLM Gateway with Cost Observability (provides gRPC API)
+- **Epic 13: Unified Platform Cost Service** (provides gRPC UnifiedCostService API)
 
 **Story Points:** 5

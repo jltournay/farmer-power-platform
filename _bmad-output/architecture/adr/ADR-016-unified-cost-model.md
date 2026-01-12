@@ -1,7 +1,7 @@
 # ADR-016: Unified Cost Model and Platform Cost Service
 
-**Status:** Draft (Not Validated)
-**Date:** 2026-01-11
+**Status:** Accepted
+**Date:** 2026-01-12
 **Deciders:** Winston (Architect), Amelia (Dev), John (PM), Jeanlouistournay
 **Related Stories:** Epic 9 (Admin Portal), Story 9.6 (LLM Cost Dashboard)
 
@@ -766,6 +766,7 @@ message DailyTrendRequest {
 
 message DailyTrendResponse {
   repeated DailyCostEntry entries = 1;
+  string data_available_from = 2;  // ISO date (YYYY-MM-DD) - earliest date with available data (based on TTL retention)
 }
 
 message DailyCostEntry {
@@ -1090,9 +1091,22 @@ class UnifiedCostRepository:
 
     COLLECTION = "cost_events"
 
-    def __init__(self, db: AsyncIOMotorDatabase) -> None:
+    def __init__(
+        self,
+        db: AsyncIOMotorDatabase,
+        retention_days: int = 90,
+    ) -> None:
         self._db = db
         self._collection = db[self.COLLECTION]
+        self._retention_days = retention_days
+
+    @property
+    def data_available_from(self) -> date:
+        """Earliest date for which data may exist (based on TTL retention)."""
+        if self._retention_days <= 0:
+            # No TTL - data available from beginning of time (use a reasonable default)
+            return date(2024, 1, 1)
+        return datetime.now(UTC).date() - timedelta(days=self._retention_days)
 
     async def ensure_indexes(self) -> None:
         """Create indexes for efficient queries."""
@@ -1122,6 +1136,19 @@ class UnifiedCostRepository:
 
         for keys, options in indexes:
             await self._collection.create_index(keys, **options)
+
+        # TTL index for automatic data retention (if enabled)
+        if self._retention_days > 0:
+            await self._collection.create_index(
+                [("timestamp", 1)],
+                expireAfterSeconds=self._retention_days * 86400,  # days to seconds
+                name="idx_ttl",
+            )
+            logger.info(
+                "TTL index created",
+                retention_days=self._retention_days,
+                collection=self.COLLECTION,
+            )
 
         logger.info("Cost repository indexes ensured", collection=self.COLLECTION)
 
@@ -1683,6 +1710,49 @@ class BudgetMonitor:
             monthly_remaining_usd=max(Decimal("0"), self._monthly_threshold - self._monthly_total),
         )
 
+    async def warm_up_from_repository(
+        self,
+        repository: "UnifiedCostRepository",
+    ) -> None:
+        """Re-calculate running totals from MongoDB on startup.
+
+        CRITICAL: This method MUST be called during service startup to ensure
+        accurate metrics after a restart. Without this, a mid-day restart would
+        reset totals to zero, causing missed budget alerts.
+
+        Args:
+            repository: The cost repository to query for current totals.
+
+        Raises:
+            Exception: If MongoDB query fails. Caller should fail startup.
+        """
+        from platform_cost.domain.cost_event import CostType
+
+        # Get current day totals (includes breakdown by type)
+        current_day = await repository.get_current_day_cost()
+        self._daily_total = current_day.total_cost_usd
+
+        # Rebuild by-type breakdown
+        for type_summary in current_day.by_type:
+            self._daily_by_type[type_summary.cost_type] = type_summary.total_cost_usd
+
+        # Get current month total
+        self._monthly_total = await repository.get_current_month_cost()
+
+        # Check if we should already be in alert state
+        if self._daily_threshold > 0 and self._daily_total >= self._daily_threshold:
+            self._daily_alert_triggered = True
+        if self._monthly_threshold > 0 and self._monthly_total >= self._monthly_threshold:
+            self._monthly_alert_triggered = True
+
+        logger.info(
+            "BudgetMonitor warmed up from repository",
+            daily_total_usd=str(self._daily_total),
+            monthly_total_usd=str(self._monthly_total),
+            daily_alert_triggered=self._daily_alert_triggered,
+            monthly_alert_triggered=self._monthly_alert_triggered,
+        )
+
     def update_thresholds(
         self,
         daily_threshold_usd: Decimal | None = None,
@@ -1768,7 +1838,34 @@ groups:
           description: "Platform cost increased by >50% in the last hour"
 ```
 
-#### 3.5.2 Grafana Dashboard Metrics
+#### 3.5.2 Budget Alert Latency SLA
+
+**Expected Latency:** 30 seconds to 2 minutes between threshold breach and alert firing.
+
+**Latency Breakdown:**
+
+| Stage | Typical Latency |
+|-------|-----------------|
+| ai-model → DAPR pub/sub → platform-cost | 10-50ms |
+| MongoDB persistence + BudgetMonitor update | 5-20ms |
+| Prometheus scrape interval | 15-60s (configurable) |
+| Alert rule evaluation interval | 15-60s (configurable) |
+| **Total** | **30s - 2m** |
+
+**Implications:**
+
+- High-velocity batch operations (e.g., 100 LLM calls in 30s) may exceed threshold by 50-100% before alert fires
+- This is **accepted behavior** for this architecture
+
+**Recommendations:**
+
+1. **Set thresholds with 10-20% safety buffer** - If your hard limit is $100/day, set threshold at $80-90
+2. **For tighter control:** Reduce Prometheus scrape interval to 5-10 seconds (increases monitoring load)
+3. **For critical environments:** Consider rate limiting at the source (ai-model) rather than relying solely on alerts
+
+**Decision:** Alert latency of 30s-2m is acceptable for Farmer Power Platform. Threshold buffers provide adequate protection for expected usage patterns.
+
+#### 3.5.3 Grafana Dashboard Metrics
 
 | Metric | Type | Description | Use Case |
 |--------|------|-------------|----------|
@@ -1846,6 +1943,14 @@ class Settings(BaseSettings):
 
     # DAPR topic for cost events (subscribes to this topic)
     cost_event_topic: str = "platform.cost.recorded"
+
+    # ========================================
+    # Data Retention (TTL)
+    # ========================================
+    # Cost events older than this are automatically deleted by MongoDB TTL index.
+    # Set to 0 to disable TTL (keep data forever).
+    # Note: Queries for dates beyond retention window will return empty results.
+    cost_event_retention_days: int = 90
 
 
 settings = Settings()
@@ -1990,6 +2095,14 @@ budget_monitor = BudgetMonitor(
     daily_threshold_usd=daily_threshold,
     monthly_threshold_usd=monthly_threshold,
 )
+
+# CRITICAL: Warm up from MongoDB to restore accurate totals after restart
+# This blocks startup until complete - health check won't pass with stale data
+try:
+    await budget_monitor.warm_up_from_repository(cost_repository)
+except Exception as e:
+    logger.error("Failed to warm up BudgetMonitor - cannot start with inaccurate metrics", error=str(e))
+    raise  # Fail startup - better to be down than report wrong alerts
 ```
 
 **4. gRPC ConfigureBudgetThreshold Implementation**
@@ -2068,6 +2181,7 @@ async def ConfigureBudgetThreshold(
 |----------|---------|-------------|
 | `PLATFORM_COST_BUDGET_DAILY_THRESHOLD_USD` | 10.0 | Initial daily threshold |
 | `PLATFORM_COST_BUDGET_MONTHLY_THRESHOLD_USD` | 100.0 | Initial monthly threshold |
+| `PLATFORM_COST_COST_EVENT_RETENTION_DAYS` | 90 | Days to retain cost events (0 = forever) |
 
 ---
 
@@ -2173,8 +2287,9 @@ class CostEventHandler:
 | Risk | Mitigation |
 |------|------------|
 | Lost cost events (DAPR failure) | Dead letter queue + reconciliation job (future) |
-| Budget alerts delayed | Accept sub-second latency as acceptable |
-| MongoDB index bloat | Careful index design, TTL for old events (future) |
+| Budget alerts delayed | Accept 30s-2m latency as acceptable (see section 3.5.2) |
+| MongoDB storage growth | 90-day TTL index auto-deletes old events (configurable) |
+| Inaccurate metrics after restart | BudgetMonitor warm-up from MongoDB on startup (see section 3.5) |
 
 ---
 

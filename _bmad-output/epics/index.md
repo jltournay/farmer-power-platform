@@ -19,6 +19,7 @@ This document provides the complete epic and story breakdown for farmer-power-pl
 | P0 | **Epic 0.6** | [epic-0-6-infrastructure-hardening.md](epic-0-6-infrastructure-hardening.md) | **Backlog** | **0.6.1-0.6.10** | **Epic 0.4** |
 | P1 | Epic 0.5 | [epic-0-5-frontend.md](epic-0-5-frontend.md) | Backlog | 0.5.1-0.5.6 | Epic 0 |
 | P1 | **Epic 0.75** | [epic-0-75-ai-model.md](epic-0-75-ai-model.md) | **Backlog** | **0.75.1-0.75.7** | **Epic 0** |
+| P1 | **Epic 13** | [epic-13-platform-cost.md](epic-13-platform-cost.md) | **Backlog** | **13.1-13.7** | **Epic 0.75** |
 | P2 | **Epic 11** | [epic-11-registration-kiosk.md](epic-11-registration-kiosk.md) | Backlog | 11.1-11.4 | Epic 0.5, 1 |
 | P2 | **Epic 9** | [epic-9-admin-portal.md](epic-9-admin-portal.md) | Backlog | 9.1-9.4 | Epic 0.5, 1 |
 | P3 | Epic 5 | [epic-5-diagnosis-ai.md](epic-5-diagnosis-ai.md) | Backlog | 5.1-5.9 | **Epic 0.75**, 1, 2 |
@@ -29,6 +30,11 @@ This document provides the complete epic and story breakdown for farmer-power-pl
 | P5 | Epic 8 | [epic-8-voice-advisor.md](epic-8-voice-advisor.md) | Backlog | 8.1-8.7 | **Epic 0.75**, 5, 6 |
 | P5 | **Epic 12** | [epic-12-engagement-model.md](epic-12-engagement-model.md) | **Backlog** | **12.1-12.8** | **Epic 0.75**, 1 |
 | P6 | **Epic 3** | [epic-3-dashboard.md](epic-3-dashboard.md) | Backlog | 3.1-3.11 | Epic 0.5, 1, 2, 4, 5, 6 |
+
+### Key Changes (2026-01-12)
+
+1. **Epic 13 (Platform Cost)** - NEW: Unified cost aggregation service (ADR-016), 7 stories, 28 story points
+2. **Epic 13 blocks Story 9.6** - LLM Cost Dashboard now consumes platform-cost gRPC instead of ai-model
 
 ### Key Changes (2026-01-01)
 
@@ -291,3 +297,10 @@ Field staff can register farmers using a mobile PWA with offline support.
 Track farmer progress with streaks, milestones, and levels. Enable Duolingo-style encouragement patterns that motivate farmers to consistently improve quality.
 **Dependencies:** Epic 0.75, 1
 **Domain Model:** Engagement Model (9th domain model)
+
+### Epic 13: Unified Platform Cost Service (NEW)
+Centralized cost aggregation service collecting costs from all billable services (LLM, Document Intelligence, Embeddings, SMS) via DAPR pub/sub. Exposes unified gRPC API for Platform Admin Cost Dashboard.
+**Dependencies:** Epic 0.75
+**ADR:** ADR-016 (Unified Cost Model and Platform Cost Service)
+**NFRs covered:** NFR18, NFR19, NFR20, NFR30 (cost attribution)
+**Blocks:** Story 9.6 (LLM Cost Dashboard)
