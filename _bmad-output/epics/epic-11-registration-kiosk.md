@@ -1,5 +1,7 @@
 # Epic 11: Registration Kiosk PWA
 
+**Status:** DEFERRED (2026-01-11) - Awaiting information
+
 **Priority:** P2 (1st frontend to build - SIMPLEST)
 
 **Dependencies:** Epic 0.5 (Frontend Infrastructure), Epic 1 (Plantation Model)
