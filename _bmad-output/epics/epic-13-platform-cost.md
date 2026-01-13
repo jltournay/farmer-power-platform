@@ -248,7 +248,74 @@ So that costs from all services are aggregated automatically.
 
 ---
 
-## Story 13.6: AI Model Refactor - Publish Costs via DAPR
+## Story 13.6: BFF Integration Layer
+
+As a **platform developer**,
+I want shared cost models in fp-common with converters and BFF client,
+So that Platform Admin UI can consume cost data with type safety (not dict).
+
+**Acceptance Criteria:**
+
+**Given** I need to return cost data from BFF
+**When** I import from fp-common
+**Then** Shared response models are available in `fp_common/models/cost.py`:
+  - `CostType`: enum (llm, document, embedding, sms)
+  - `CostTypeSummary`: breakdown per type
+  - `CostSummary`: total with type breakdown
+  - `DailyCostEntry`: daily breakdown for charts
+  - `DailyCostTrend`: trend with data availability date
+  - `CurrentDayCost`: today's running total
+  - `AgentTypeCost`: LLM cost by agent type
+  - `ModelCost`: LLM cost by model
+  - `DomainCost`: embedding cost by knowledge domain
+  - `DocumentCostSummary`: document processing costs
+  - `BudgetStatus`: thresholds and alert states
+
+**Given** BFF receives gRPC responses from platform-cost
+**When** I need to convert proto to Pydantic
+**Then** Converters are available in `fp_common/converters/cost_converters.py`:
+  - `cost_summary_from_proto()`
+  - `daily_cost_entry_from_proto()`
+  - `daily_cost_trend_from_proto()`
+  - `current_day_cost_from_proto()`
+  - `agent_type_cost_from_proto()`
+  - `model_cost_from_proto()`
+  - `domain_cost_from_proto()`
+  - `document_cost_summary_from_proto()`
+  - `budget_status_from_proto()`
+
+**Given** BFF needs to call platform-cost service
+**When** I use PlatformCostClient
+**Then** Client exists at `bff/infrastructure/clients/platform_cost_client.py`:
+  - Follows PlantationClient/CollectionClient pattern
+  - Uses DAPR gRPC service invocation (dapr-app-id metadata)
+  - Returns typed Pydantic models (NOT dict[str, Any])
+  - Implements retry decorator per ADR-005
+  - Methods: `get_cost_summary()`, `get_daily_trend()`, `get_current_day_cost()`,
+    `get_llm_cost_by_agent_type()`, `get_llm_cost_by_model()`,
+    `get_document_cost_summary()`, `get_embedding_cost_by_domain()`,
+    `get_budget_status()`, `configure_budget_threshold()`
+
+**Given** platform-cost service has internal models
+**When** I review the codebase
+**Then** Service imports response models from fp-common (not duplicated)
+**And** Only `UnifiedCostEvent` storage model remains in `platform_cost/domain/cost_event.py`
+
+**Technical Notes:**
+- fp-common models: `libs/fp-common/fp_common/models/cost.py`
+- fp-common converters: `libs/fp-common/fp_common/converters/cost_converters.py`
+- BFF client: `services/bff/src/bff/infrastructure/clients/platform_cost_client.py`
+- Pattern reference: PlantationClient, CollectionClient
+- Reference: ADR-016 Parts 4, 5, 6
+
+**Dependencies:**
+- Story 13.4: gRPC UnifiedCostService (proto must exist)
+
+**Story Points:** 5
+
+---
+
+## Story 13.7: AI Model Refactor - Publish Costs via DAPR
 
 As a **platform developer**,
 I want ai-model to publish cost events instead of persisting them,
@@ -302,7 +369,7 @@ So that platform-cost becomes the single source of truth for costs.
 
 ---
 
-## Story 13.7: E2E Integration Tests
+## Story 13.8: E2E Integration Tests
 
 As a **platform developer**,
 I want E2E tests validating the full cost tracking flow,
@@ -343,7 +410,7 @@ So that I have confidence the pub/sub integration works correctly.
 
 **Dependencies:**
 - Story 13.5: DAPR Cost Event Subscription
-- Story 13.6: AI Model Refactor
+- Story 13.7: AI Model Refactor
 
 **Story Points:** 5
 
@@ -351,15 +418,16 @@ So that I have confidence the pub/sub integration works correctly.
 
 ## Notes
 
-**Total Story Points:** 28
+**Total Story Points:** 33
 
 **Implementation Order:**
-1. Story 13.1 (shared model) - no dependencies
-2. Story 13.2 (scaffold) - depends on 13.1
-3. Story 13.3 (repository + monitor) - depends on 13.2
-4. Story 13.4 (gRPC service) - depends on 13.3
+1. Story 13.1 (shared event model) - no dependencies ✅
+2. Story 13.2 (scaffold) - depends on 13.1 ✅
+3. Story 13.3 (repository + monitor) - depends on 13.2 ✅
+4. Story 13.4 (proto + gRPC service) - depends on 13.3
 5. Story 13.5 (DAPR subscription) - depends on 13.3
-6. Story 13.6 (ai-model refactor) - depends on 13.1, 13.5
-7. Story 13.7 (E2E tests) - depends on 13.5, 13.6
+6. Story 13.6 (BFF integration: fp-common models + converters + client) - depends on 13.4
+7. Story 13.7 (ai-model refactor) - depends on 13.1, 13.5
+8. Story 13.8 (E2E tests) - depends on 13.5, 13.7
 
 **Post-Epic:** Update Story 9.6 (LLM Cost Dashboard) to consume `platform-cost` gRPC instead of `ai-model` CostService.

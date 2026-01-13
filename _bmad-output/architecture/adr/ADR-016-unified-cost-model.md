@@ -962,27 +962,41 @@ class UnifiedCostEvent(BaseModel):
         }
 
     @classmethod
-    def from_event(cls, event_data: dict) -> "UnifiedCostEvent":
-        """Create from incoming DAPR event data."""
-        import uuid
+    def from_event(cls, event_id: str, event: CostRecordedEvent) -> "UnifiedCostEvent":
+        """Create a UnifiedCostEvent from a CostRecordedEvent.
 
-        metadata = event_data.get("metadata", {})
+        Extracts indexed fields from metadata for efficient querying:
+        - agent_type: from LLM metadata
+        - model: from LLM or Embedding metadata
+        - knowledge_domain: from Embedding metadata
+
+        Args:
+            event_id: Unique identifier for this event (typically UUID)
+            event: The CostRecordedEvent from DAPR pub/sub
+
+        Returns:
+            UnifiedCostEvent ready for MongoDB storage
+        """
+        # Extract indexed fields from metadata
+        agent_type = event.metadata.get("agent_type") if event.cost_type == CostType.LLM else None
+        model = event.metadata.get("model")  # Present in both LLM and Embedding
+        knowledge_domain = event.metadata.get("knowledge_domain") if event.cost_type == CostType.EMBEDDING else None
 
         return cls(
-            id=str(uuid.uuid4()),
-            cost_type=CostType(event_data["cost_type"]),
-            amount_usd=Decimal(event_data["amount_usd"]),
-            quantity=event_data["quantity"],
-            unit=event_data["unit"],
-            timestamp=datetime.fromisoformat(event_data["timestamp"]),
-            source_service=event_data["source_service"],
-            success=event_data.get("success", True),
-            metadata=metadata,
-            factory_id=event_data.get("factory_id") or metadata.get("factory_id"),
-            request_id=event_data.get("request_id") or metadata.get("request_id"),
-            agent_type=metadata.get("agent_type"),
-            model=metadata.get("model"),
-            knowledge_domain=metadata.get("knowledge_domain"),
+            id=event_id,
+            cost_type=event.cost_type if isinstance(event.cost_type, str) else event.cost_type.value,
+            amount_usd=event.amount_usd,
+            quantity=event.quantity,
+            unit=event.unit if isinstance(event.unit, str) else event.unit.value,
+            timestamp=event.timestamp,
+            source_service=event.source_service,
+            success=event.success,
+            metadata=event.metadata,
+            factory_id=event.factory_id,
+            request_id=event.request_id,
+            agent_type=agent_type,
+            model=model,
+            knowledge_domain=knowledge_domain,
         )
 
 
@@ -2265,6 +2279,779 @@ class CostEventHandler:
 
 ---
 
+### Part 4: Shared Response Models (fp-common)
+
+The platform-cost service has internal domain models in `platform_cost/domain/cost_event.py`.
+However, following the established pattern for Collection and Plantation models, the **BFF
+must use shared models from fp-common** to avoid direct dependency on service code.
+
+#### New File: `libs/fp-common/fp_common/models/cost.py`
+
+```python
+"""Cost domain models for BFF consumption.
+
+These models are returned by the PlatformCostClient to the BFF,
+following the same pattern as Farmer, Factory, Document, etc.
+
+The CostRecordedEvent (events/cost_recorded.py) is for PUBLISHING.
+These models are for QUERYING via gRPC responses.
+
+Reference:
+- Proto definition: proto/platform_cost/v1/platform_cost.proto
+- Service models: services/platform-cost/src/platform_cost/domain/cost_event.py
+"""
+
+from datetime import date, datetime
+from decimal import Decimal
+from enum import Enum
+from typing import Annotated
+
+from pydantic import BaseModel, Field, PlainSerializer
+
+# Custom type for Decimal that serializes as string to preserve precision
+DecimalStr = Annotated[Decimal, PlainSerializer(str, return_type=str)]
+
+
+class CostType(str, Enum):
+    """Cost type enum (mirrors events/cost_recorded.py)."""
+
+    LLM = "llm"
+    DOCUMENT = "document"
+    EMBEDDING = "embedding"
+    SMS = "sms"
+
+
+class CostTypeSummary(BaseModel):
+    """Summary for a single cost type in breakdown responses.
+
+    Maps to: CostTypeBreakdown proto message.
+    """
+
+    cost_type: CostType
+    amount_usd: DecimalStr
+    quantity: int
+    unit: str
+    request_count: int
+    percentage: float
+
+
+class CostSummary(BaseModel):
+    """Overall cost summary with breakdown by type.
+
+    Maps to: CostSummaryResponse proto message.
+    """
+
+    total_cost_usd: DecimalStr
+    by_type: list[CostTypeSummary]
+    period_start: date
+    period_end: date
+    trend_vs_previous_period: str  # e.g., "+8.5%"
+    total_requests: int
+
+
+class DailyCostEntry(BaseModel):
+    """Single day cost breakdown for trend charts.
+
+    Maps to: DailyCostEntry proto message.
+    """
+
+    date: date
+    total_cost_usd: DecimalStr
+    llm_cost_usd: DecimalStr = Field(default=Decimal("0"))
+    document_cost_usd: DecimalStr = Field(default=Decimal("0"))
+    embedding_cost_usd: DecimalStr = Field(default=Decimal("0"))
+    sms_cost_usd: DecimalStr = Field(default=Decimal("0"))
+
+
+class DailyCostTrend(BaseModel):
+    """Daily trend response with data availability info.
+
+    Maps to: DailyTrendResponse proto message.
+    """
+
+    entries: list[DailyCostEntry]
+    data_available_from: date  # Earliest date based on TTL retention
+
+
+class CurrentDayCost(BaseModel):
+    """Current day running total.
+
+    Maps to: CurrentDayCostResponse proto message.
+    """
+
+    date: date
+    total_cost_usd: DecimalStr
+    by_type: list[CostTypeSummary]
+    updated_at: datetime
+
+
+class AgentTypeCost(BaseModel):
+    """LLM cost breakdown by agent type.
+
+    Maps to: AgentTypeCostEntry proto message.
+    """
+
+    agent_type: str
+    cost_usd: DecimalStr
+    request_count: int
+    tokens_in: int
+    tokens_out: int
+    percentage: float
+
+
+class ModelCost(BaseModel):
+    """LLM cost breakdown by model.
+
+    Maps to: ModelCostEntry proto message.
+    """
+
+    model: str
+    cost_usd: DecimalStr
+    request_count: int
+    tokens_in: int
+    tokens_out: int
+    percentage: float
+
+
+class DomainCost(BaseModel):
+    """Embedding cost breakdown by knowledge domain.
+
+    Maps to: DomainCostEntry proto message.
+    """
+
+    knowledge_domain: str
+    cost_usd: DecimalStr
+    tokens_total: int
+    texts_count: int
+    percentage: float
+
+
+class DocumentCostSummary(BaseModel):
+    """Document processing cost summary.
+
+    Maps to: DocumentCostResponse proto message.
+    """
+
+    total_cost_usd: DecimalStr
+    total_pages: int
+    total_documents: int
+    average_cost_per_document: DecimalStr
+
+
+class BudgetStatus(BaseModel):
+    """Current budget status with thresholds and alerts.
+
+    Maps to: BudgetStatusResponse proto message.
+    """
+
+    daily_threshold_usd: DecimalStr
+    monthly_threshold_usd: DecimalStr
+    current_daily_cost_usd: DecimalStr
+    current_monthly_cost_usd: DecimalStr
+    daily_alert_triggered: bool
+    monthly_alert_triggered: bool
+    daily_remaining_usd: DecimalStr
+    monthly_remaining_usd: DecimalStr
+```
+
+#### Update `libs/fp-common/fp_common/models/__init__.py`
+
+Add exports for cost models:
+
+```python
+from fp_common.models.cost import (
+    AgentTypeCost,
+    BudgetStatus,
+    CostSummary,
+    CostType,
+    CostTypeSummary,
+    CurrentDayCost,
+    DailyCostEntry,
+    DailyCostTrend,
+    DocumentCostSummary,
+    DomainCost,
+    ModelCost,
+)
+```
+
+---
+
+### Part 5: gRPC Converters (fp-common)
+
+Following the pattern in `collection_converters.py` and `plantation_converters.py`.
+
+#### New File: `libs/fp-common/fp_common/converters/cost_converters.py`
+
+```python
+"""Proto-to-Pydantic converters for Platform Cost domain.
+
+Following the same pattern as plantation_converters.py and collection_converters.py.
+
+Usage:
+    from fp_common.converters import cost_summary_from_proto, daily_cost_entry_from_proto
+
+    # In BFF client
+    summary = cost_summary_from_proto(grpc_response)
+
+Reference:
+- Pydantic models: fp_common/models/cost.py
+- Proto definition: proto/platform_cost/v1/platform_cost.proto
+"""
+
+from datetime import date, datetime
+from decimal import Decimal
+
+from fp_proto.platform_cost.v1 import platform_cost_pb2
+
+from fp_common.models.cost import (
+    AgentTypeCost,
+    BudgetStatus,
+    CostSummary,
+    CostType,
+    CostTypeSummary,
+    CurrentDayCost,
+    DailyCostEntry,
+    DailyCostTrend,
+    DocumentCostSummary,
+    DomainCost,
+    ModelCost,
+)
+
+
+def _proto_cost_type_to_enum(proto_str: str) -> CostType:
+    """Convert proto cost_type string to CostType enum."""
+    mapping = {
+        "llm": CostType.LLM,
+        "document": CostType.DOCUMENT,
+        "embedding": CostType.EMBEDDING,
+        "sms": CostType.SMS,
+    }
+    return mapping.get(proto_str.lower(), CostType.LLM)
+
+
+def cost_type_summary_from_proto(
+    proto: platform_cost_pb2.CostTypeBreakdown,
+) -> CostTypeSummary:
+    """Convert CostTypeBreakdown proto to Pydantic model."""
+    return CostTypeSummary(
+        cost_type=_proto_cost_type_to_enum(proto.cost_type),
+        amount_usd=Decimal(proto.amount_usd),
+        quantity=proto.quantity,
+        unit=proto.unit,
+        request_count=proto.request_count,
+        percentage=proto.percentage,
+    )
+
+
+def cost_summary_from_proto(
+    proto: platform_cost_pb2.CostSummaryResponse,
+) -> CostSummary:
+    """Convert CostSummaryResponse proto to Pydantic model."""
+    return CostSummary(
+        total_cost_usd=Decimal(proto.total_cost_usd),
+        by_type=[cost_type_summary_from_proto(bt) for bt in proto.by_type],
+        period_start=date.fromisoformat(proto.period_start),
+        period_end=date.fromisoformat(proto.period_end),
+        trend_vs_previous_period=proto.trend_vs_previous_period,
+        total_requests=proto.total_requests,
+    )
+
+
+def daily_cost_entry_from_proto(
+    proto: platform_cost_pb2.DailyCostEntry,
+) -> DailyCostEntry:
+    """Convert DailyCostEntry proto to Pydantic model."""
+    return DailyCostEntry(
+        date=date.fromisoformat(proto.date),
+        total_cost_usd=Decimal(proto.total_cost_usd),
+        llm_cost_usd=Decimal(proto.llm_cost_usd),
+        document_cost_usd=Decimal(proto.document_cost_usd),
+        embedding_cost_usd=Decimal(proto.embedding_cost_usd),
+        sms_cost_usd=Decimal(proto.sms_cost_usd),
+    )
+
+
+def daily_cost_trend_from_proto(
+    proto: platform_cost_pb2.DailyTrendResponse,
+) -> DailyCostTrend:
+    """Convert DailyTrendResponse proto to Pydantic model."""
+    return DailyCostTrend(
+        entries=[daily_cost_entry_from_proto(e) for e in proto.entries],
+        data_available_from=date.fromisoformat(proto.data_available_from),
+    )
+
+
+def current_day_cost_from_proto(
+    proto: platform_cost_pb2.CurrentDayCostResponse,
+) -> CurrentDayCost:
+    """Convert CurrentDayCostResponse proto to Pydantic model."""
+    return CurrentDayCost(
+        date=date.fromisoformat(proto.date),
+        total_cost_usd=Decimal(proto.total_cost_usd),
+        by_type=[cost_type_summary_from_proto(bt) for bt in proto.by_type],
+        updated_at=datetime.fromisoformat(proto.updated_at),
+    )
+
+
+def agent_type_cost_from_proto(
+    proto: platform_cost_pb2.AgentTypeCostEntry,
+) -> AgentTypeCost:
+    """Convert AgentTypeCostEntry proto to Pydantic model."""
+    return AgentTypeCost(
+        agent_type=proto.agent_type,
+        cost_usd=Decimal(proto.cost_usd),
+        request_count=proto.request_count,
+        tokens_in=proto.tokens_in,
+        tokens_out=proto.tokens_out,
+        percentage=proto.percentage,
+    )
+
+
+def model_cost_from_proto(
+    proto: platform_cost_pb2.ModelCostEntry,
+) -> ModelCost:
+    """Convert ModelCostEntry proto to Pydantic model."""
+    return ModelCost(
+        model=proto.model,
+        cost_usd=Decimal(proto.cost_usd),
+        request_count=proto.request_count,
+        tokens_in=proto.tokens_in,
+        tokens_out=proto.tokens_out,
+        percentage=proto.percentage,
+    )
+
+
+def domain_cost_from_proto(
+    proto: platform_cost_pb2.DomainCostEntry,
+) -> DomainCost:
+    """Convert DomainCostEntry proto to Pydantic model."""
+    return DomainCost(
+        knowledge_domain=proto.knowledge_domain,
+        cost_usd=Decimal(proto.cost_usd),
+        tokens_total=proto.tokens_total,
+        texts_count=proto.texts_count,
+        percentage=proto.percentage if hasattr(proto, "percentage") else 0.0,
+    )
+
+
+def document_cost_summary_from_proto(
+    proto: platform_cost_pb2.DocumentCostResponse,
+) -> DocumentCostSummary:
+    """Convert DocumentCostResponse proto to Pydantic model."""
+    return DocumentCostSummary(
+        total_cost_usd=Decimal(proto.total_cost_usd),
+        total_pages=proto.total_pages,
+        total_documents=proto.total_documents,
+        average_cost_per_document=Decimal(proto.average_cost_per_document),
+    )
+
+
+def budget_status_from_proto(
+    proto: platform_cost_pb2.BudgetStatusResponse,
+) -> BudgetStatus:
+    """Convert BudgetStatusResponse proto to Pydantic model."""
+    return BudgetStatus(
+        daily_threshold_usd=Decimal(proto.daily_threshold_usd),
+        monthly_threshold_usd=Decimal(proto.monthly_threshold_usd),
+        current_daily_cost_usd=Decimal(proto.current_daily_cost_usd),
+        current_monthly_cost_usd=Decimal(proto.current_monthly_cost_usd),
+        daily_alert_triggered=proto.daily_alert_triggered,
+        monthly_alert_triggered=proto.monthly_alert_triggered,
+        daily_remaining_usd=Decimal(proto.daily_remaining_usd),
+        monthly_remaining_usd=Decimal(proto.monthly_remaining_usd),
+    )
+```
+
+#### Update `libs/fp-common/fp_common/converters/__init__.py`
+
+Add exports for cost converters:
+
+```python
+from fp_common.converters.cost_converters import (
+    agent_type_cost_from_proto,
+    budget_status_from_proto,
+    cost_summary_from_proto,
+    cost_type_summary_from_proto,
+    current_day_cost_from_proto,
+    daily_cost_entry_from_proto,
+    daily_cost_trend_from_proto,
+    document_cost_summary_from_proto,
+    domain_cost_from_proto,
+    model_cost_from_proto,
+)
+```
+
+---
+
+### Part 6: BFF Client
+
+Following the pattern in `plantation_client.py` and `collection_client.py`.
+
+#### New File: `services/bff/src/bff/infrastructure/clients/platform_cost_client.py`
+
+```python
+"""Platform Cost gRPC client for BFF.
+
+Provides typed access to Platform Cost service via DAPR gRPC.
+All methods return fp-common Pydantic domain models (NOT dicts).
+
+Pattern follows PlantationClient and CollectionClient per:
+- ADR-002 §"Service Invocation Pattern" (native gRPC with dapr-app-id metadata)
+- ADR-005 for retry logic (3 attempts, exponential backoff 1-10s)
+- ADR-016 for unified cost model
+
+CRITICAL: Uses fp-common domain models for type safety. Never returns dict[str, Any].
+"""
+
+from datetime import date
+
+import grpc.aio
+from bff.infrastructure.clients.base import BaseGrpcClient, grpc_retry
+from fp_common.converters.cost_converters import (
+    agent_type_cost_from_proto,
+    budget_status_from_proto,
+    cost_summary_from_proto,
+    current_day_cost_from_proto,
+    daily_cost_trend_from_proto,
+    document_cost_summary_from_proto,
+    domain_cost_from_proto,
+    model_cost_from_proto,
+)
+from fp_common.models.cost import (
+    AgentTypeCost,
+    BudgetStatus,
+    CostSummary,
+    CurrentDayCost,
+    DailyCostTrend,
+    DocumentCostSummary,
+    DomainCost,
+    ModelCost,
+)
+from fp_proto.platform_cost.v1 import platform_cost_pb2, platform_cost_pb2_grpc
+
+
+class PlatformCostClient(BaseGrpcClient):
+    """gRPC client for Platform Cost service.
+
+    Provides typed access to unified cost reporting via DAPR.
+    All methods return Pydantic domain models from fp_common.models.cost.
+
+    Example:
+        >>> client = PlatformCostClient()
+        >>> summary = await client.get_cost_summary(
+        ...     start_date=date(2026, 1, 1),
+        ...     end_date=date(2026, 1, 31),
+        ... )
+        >>> assert isinstance(summary, CostSummary)
+        >>> print(summary.total_cost_usd)
+    """
+
+    def __init__(
+        self,
+        dapr_grpc_port: int = 50001,
+        direct_host: str | None = None,
+        channel: grpc.aio.Channel | None = None,
+    ) -> None:
+        super().__init__(
+            target_app_id="platform-cost",
+            dapr_grpc_port=dapr_grpc_port,
+            direct_host=direct_host,
+            channel=channel,
+        )
+
+    async def _get_cost_stub(self) -> platform_cost_pb2_grpc.UnifiedCostServiceStub:
+        return await self._get_stub(platform_cost_pb2_grpc.UnifiedCostServiceStub)
+
+    # =========================================================================
+    # Summary & Trend Queries
+    # =========================================================================
+
+    @grpc_retry
+    async def get_cost_summary(
+        self,
+        start_date: date,
+        end_date: date,
+        factory_id: str | None = None,
+    ) -> CostSummary:
+        """Get cost summary with breakdown by type.
+
+        Args:
+            start_date: Start of date range (inclusive).
+            end_date: End of date range (inclusive).
+            factory_id: Optional filter by factory.
+
+        Returns:
+            CostSummary with total, breakdown by type, and trend.
+
+        Raises:
+            ServiceUnavailableError: If service is unavailable.
+        """
+        try:
+            stub = await self._get_cost_stub()
+            request = platform_cost_pb2.CostSummaryRequest(
+                start_date=start_date.isoformat(),
+                end_date=end_date.isoformat(),
+                factory_id=factory_id or "",
+            )
+            response = await stub.GetCostSummary(request, metadata=self._get_metadata())
+            return cost_summary_from_proto(response)
+        except grpc.aio.AioRpcError as e:
+            self._handle_grpc_error(e, "Cost summary")
+            raise
+
+    @grpc_retry
+    async def get_daily_trend(
+        self,
+        start_date: date,
+        end_date: date,
+        factory_id: str | None = None,
+    ) -> DailyCostTrend:
+        """Get daily cost trend for stacked area chart.
+
+        Args:
+            start_date: Start of date range (inclusive).
+            end_date: End of date range (inclusive).
+            factory_id: Optional filter by factory.
+
+        Returns:
+            DailyCostTrend with entries and data availability date.
+
+        Raises:
+            ServiceUnavailableError: If service is unavailable.
+        """
+        try:
+            stub = await self._get_cost_stub()
+            request = platform_cost_pb2.DailyTrendRequest(
+                start_date=start_date.isoformat(),
+                end_date=end_date.isoformat(),
+                factory_id=factory_id or "",
+            )
+            response = await stub.GetDailyCostTrend(request, metadata=self._get_metadata())
+            return daily_cost_trend_from_proto(response)
+        except grpc.aio.AioRpcError as e:
+            self._handle_grpc_error(e, "Daily trend")
+            raise
+
+    @grpc_retry
+    async def get_current_day_cost(
+        self,
+        factory_id: str | None = None,
+    ) -> CurrentDayCost:
+        """Get current day running total.
+
+        Args:
+            factory_id: Optional filter by factory.
+
+        Returns:
+            CurrentDayCost with today's running total and breakdown.
+
+        Raises:
+            ServiceUnavailableError: If service is unavailable.
+        """
+        try:
+            stub = await self._get_cost_stub()
+            request = platform_cost_pb2.CurrentDayCostRequest(
+                factory_id=factory_id or "",
+            )
+            response = await stub.GetCurrentDayCost(request, metadata=self._get_metadata())
+            return current_day_cost_from_proto(response)
+        except grpc.aio.AioRpcError as e:
+            self._handle_grpc_error(e, "Current day cost")
+            raise
+
+    # =========================================================================
+    # LLM-Specific Queries
+    # =========================================================================
+
+    @grpc_retry
+    async def get_llm_cost_by_agent_type(
+        self,
+        start_date: date,
+        end_date: date,
+        factory_id: str | None = None,
+    ) -> tuple[list[AgentTypeCost], str]:
+        """Get LLM costs grouped by agent type.
+
+        Args:
+            start_date: Start of date range (inclusive).
+            end_date: End of date range (inclusive).
+            factory_id: Optional filter by factory.
+
+        Returns:
+            Tuple of (list of AgentTypeCost, total_cost_usd string).
+
+        Raises:
+            ServiceUnavailableError: If service is unavailable.
+        """
+        try:
+            stub = await self._get_cost_stub()
+            request = platform_cost_pb2.LlmCostByAgentTypeRequest(
+                start_date=start_date.isoformat(),
+                end_date=end_date.isoformat(),
+                factory_id=factory_id or "",
+            )
+            response = await stub.GetLlmCostByAgentType(request, metadata=self._get_metadata())
+            entries = [agent_type_cost_from_proto(e) for e in response.entries]
+            return entries, response.total_cost_usd
+        except grpc.aio.AioRpcError as e:
+            self._handle_grpc_error(e, "LLM cost by agent type")
+            raise
+
+    @grpc_retry
+    async def get_llm_cost_by_model(
+        self,
+        start_date: date,
+        end_date: date,
+        factory_id: str | None = None,
+    ) -> tuple[list[ModelCost], str]:
+        """Get LLM costs grouped by model.
+
+        Args:
+            start_date: Start of date range (inclusive).
+            end_date: End of date range (inclusive).
+            factory_id: Optional filter by factory.
+
+        Returns:
+            Tuple of (list of ModelCost, total_cost_usd string).
+
+        Raises:
+            ServiceUnavailableError: If service is unavailable.
+        """
+        try:
+            stub = await self._get_cost_stub()
+            request = platform_cost_pb2.LlmCostByModelRequest(
+                start_date=start_date.isoformat(),
+                end_date=end_date.isoformat(),
+                factory_id=factory_id or "",
+            )
+            response = await stub.GetLlmCostByModel(request, metadata=self._get_metadata())
+            entries = [model_cost_from_proto(e) for e in response.entries]
+            return entries, response.total_cost_usd
+        except grpc.aio.AioRpcError as e:
+            self._handle_grpc_error(e, "LLM cost by model")
+            raise
+
+    # =========================================================================
+    # Type-Specific Queries
+    # =========================================================================
+
+    @grpc_retry
+    async def get_document_cost_summary(
+        self,
+        start_date: date,
+        end_date: date,
+    ) -> DocumentCostSummary:
+        """Get document processing cost summary.
+
+        Args:
+            start_date: Start of date range (inclusive).
+            end_date: End of date range (inclusive).
+
+        Returns:
+            DocumentCostSummary with total, pages, and averages.
+
+        Raises:
+            ServiceUnavailableError: If service is unavailable.
+        """
+        try:
+            stub = await self._get_cost_stub()
+            request = platform_cost_pb2.DocumentCostRequest(
+                start_date=start_date.isoformat(),
+                end_date=end_date.isoformat(),
+            )
+            response = await stub.GetDocumentCostSummary(request, metadata=self._get_metadata())
+            return document_cost_summary_from_proto(response)
+        except grpc.aio.AioRpcError as e:
+            self._handle_grpc_error(e, "Document cost summary")
+            raise
+
+    @grpc_retry
+    async def get_embedding_cost_by_domain(
+        self,
+        start_date: date,
+        end_date: date,
+    ) -> tuple[list[DomainCost], str]:
+        """Get embedding costs grouped by knowledge domain.
+
+        Args:
+            start_date: Start of date range (inclusive).
+            end_date: End of date range (inclusive).
+
+        Returns:
+            Tuple of (list of DomainCost, total_cost_usd string).
+
+        Raises:
+            ServiceUnavailableError: If service is unavailable.
+        """
+        try:
+            stub = await self._get_cost_stub()
+            request = platform_cost_pb2.EmbeddingCostByDomainRequest(
+                start_date=start_date.isoformat(),
+                end_date=end_date.isoformat(),
+            )
+            response = await stub.GetEmbeddingCostByDomain(request, metadata=self._get_metadata())
+            entries = [domain_cost_from_proto(e) for e in response.entries]
+            return entries, response.total_cost_usd
+        except grpc.aio.AioRpcError as e:
+            self._handle_grpc_error(e, "Embedding cost by domain")
+            raise
+
+    # =========================================================================
+    # Budget Management
+    # =========================================================================
+
+    @grpc_retry
+    async def get_budget_status(self) -> BudgetStatus:
+        """Get current budget status with thresholds and alerts.
+
+        Returns:
+            BudgetStatus with thresholds, current costs, and alert states.
+
+        Raises:
+            ServiceUnavailableError: If service is unavailable.
+        """
+        try:
+            stub = await self._get_cost_stub()
+            request = platform_cost_pb2.BudgetStatusRequest()
+            response = await stub.GetBudgetStatus(request, metadata=self._get_metadata())
+            return budget_status_from_proto(response)
+        except grpc.aio.AioRpcError as e:
+            self._handle_grpc_error(e, "Budget status")
+            raise
+
+    @grpc_retry
+    async def configure_budget_threshold(
+        self,
+        daily_threshold_usd: str | None = None,
+        monthly_threshold_usd: str | None = None,
+    ) -> tuple[str, str, str]:
+        """Configure budget thresholds.
+
+        Args:
+            daily_threshold_usd: New daily threshold (Decimal as string), or None to keep.
+            monthly_threshold_usd: New monthly threshold (Decimal as string), or None to keep.
+
+        Returns:
+            Tuple of (daily_threshold_usd, monthly_threshold_usd, message).
+
+        Raises:
+            ServiceUnavailableError: If service is unavailable.
+        """
+        try:
+            stub = await self._get_cost_stub()
+            request = platform_cost_pb2.ConfigureThresholdRequest(
+                daily_threshold_usd=daily_threshold_usd or "",
+                monthly_threshold_usd=monthly_threshold_usd or "",
+            )
+            response = await stub.ConfigureBudgetThreshold(request, metadata=self._get_metadata())
+            return response.daily_threshold_usd, response.monthly_threshold_usd, response.message
+        except grpc.aio.AioRpcError as e:
+            self._handle_grpc_error(e, "Configure budget threshold")
+            raise
+```
+
+---
+
 ## Consequences
 
 ### Positive
@@ -2295,15 +3082,25 @@ class CostEventHandler:
 
 ## Implementation Order
 
-1. **Create fp-common event model** (`CostRecordedEvent`)
-2. **Create platform-cost service** (empty scaffold)
-3. **Migrate repository + budget monitor** to platform-cost
-4. **Add gRPC UnifiedCostService** to platform-cost
-5. **Add DAPR subscription handler** to platform-cost
-6. **Modify ai-model** to publish instead of persist
-7. **Remove deleted files** from ai-model
-8. **Update proto** (remove CostService from ai-model, add platform-cost proto)
-9. **Integration testing** with E2E scenarios
+| # | Task | Story | Status |
+|---|------|-------|--------|
+| 1 | Create fp-common event model (`CostRecordedEvent`) | 13.1 | ✅ Done |
+| 2 | Create platform-cost service scaffold | 13.2 | ✅ Done |
+| 3 | Create repository + budget monitor in platform-cost | 13.3 | ✅ Done |
+| 4 | **Create proto definition** (`proto/platform_cost/v1/platform_cost.proto`) | 13.4 | Pending |
+| 5 | **Add gRPC UnifiedCostService** to platform-cost | 13.4 | Pending |
+| 6 | **Add DAPR subscription handler** to platform-cost | 13.5 | Pending |
+| 7 | **Create fp-common shared models** (`fp_common/models/cost.py`) | 13.6 | Pending |
+| 8 | **Create fp-common converters** (`fp_common/converters/cost_converters.py`) | 13.6 | Pending |
+| 9 | **Create BFF client** (`bff/.../platform_cost_client.py`) | 13.6 | Pending |
+| 10 | Modify ai-model to publish instead of persist | 13.7 | Pending |
+| 11 | Remove deleted files from ai-model | 13.7 | Pending |
+| 12 | Integration testing with E2E scenarios | 13.8 | Pending |
+
+**Notes:**
+- Steps 7-9 (BFF Integration) follow the established pattern from Collection/Plantation models
+- The fp-common models mirror the service-internal models but live in the shared library
+- Converters convert proto messages → fp-common Pydantic models for type-safe BFF consumption
 
 ---
 
