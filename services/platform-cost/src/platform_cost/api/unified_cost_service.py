@@ -1,6 +1,7 @@
 """gRPC UnifiedCostService implementation.
 
 Story 13.4: gRPC UnifiedCostService (ADR-016)
+Story 13.6: Refactored to use fp-common converters
 
 This module implements the UnifiedCostService gRPC servicer that exposes
 all cost query and budget management APIs. It delegates to the repository
@@ -23,6 +24,13 @@ from decimal import Decimal
 
 import grpc
 import structlog
+from fp_common.converters import (
+    agent_type_cost_to_proto,
+    cost_type_summary_to_proto,
+    daily_cost_entry_to_proto,
+    domain_cost_to_proto,
+    model_cost_to_proto,
+)
 from fp_proto.platform_cost.v1 import platform_cost_pb2, platform_cost_pb2_grpc
 
 from platform_cost.infrastructure.repositories.cost_repository import (
@@ -162,17 +170,8 @@ class UnifiedCostServiceServicer(platform_cost_pb2_grpc.UnifiedCostServiceServic
         total_cost = sum(s.total_cost_usd for s in summaries)
         total_requests = sum(s.request_count for s in summaries)
 
-        # Build response
-        by_type = [
-            platform_cost_pb2.CostTypeBreakdown(
-                cost_type=s.cost_type,
-                total_cost_usd=str(s.total_cost_usd),
-                total_quantity=s.total_quantity,
-                request_count=s.request_count,
-                percentage=s.percentage,
-            )
-            for s in summaries
-        ]
+        # Build response using fp-common converters (Story 13.6)
+        by_type = [cost_type_summary_to_proto(s) for s in summaries]
 
         return platform_cost_pb2.CostSummaryResponse(
             total_cost_usd=str(total_cost),
@@ -219,18 +218,8 @@ class UnifiedCostServiceServicer(platform_cost_pb2_grpc.UnifiedCostServiceServic
             days=days,
         )
 
-        # Build proto entries
-        proto_entries = [
-            platform_cost_pb2.DailyCostEntry(
-                date=e.entry_date.isoformat(),
-                total_cost_usd=str(e.total_cost_usd),
-                llm_cost_usd=str(e.llm_cost_usd),
-                document_cost_usd=str(e.document_cost_usd),
-                embedding_cost_usd=str(e.embedding_cost_usd),
-                sms_cost_usd=str(e.sms_cost_usd),
-            )
-            for e in entries
-        ]
+        # Build proto entries using fp-common converters (Story 13.6)
+        proto_entries = [daily_cost_entry_to_proto(e) for e in entries]
 
         # Get data availability date from repository
         data_available_from = self._cost_repository.data_available_from.date().isoformat()
@@ -301,17 +290,8 @@ class UnifiedCostServiceServicer(platform_cost_pb2_grpc.UnifiedCostServiceServic
 
         total_cost = sum(a.cost_usd for a in agent_costs)
 
-        proto_costs = [
-            platform_cost_pb2.AgentTypeCost(
-                agent_type=a.agent_type,
-                cost_usd=str(a.cost_usd),
-                request_count=a.request_count,
-                tokens_in=a.tokens_in,
-                tokens_out=a.tokens_out,
-                percentage=a.percentage,
-            )
-            for a in agent_costs
-        ]
+        # Build proto using fp-common converters (Story 13.6)
+        proto_costs = [agent_type_cost_to_proto(a) for a in agent_costs]
 
         # Use actual queried range - defaults come from repository's data_available_from
         effective_start = start_date or self._cost_repository.data_available_from.date()
@@ -360,17 +340,8 @@ class UnifiedCostServiceServicer(platform_cost_pb2_grpc.UnifiedCostServiceServic
 
         total_cost = sum(m.cost_usd for m in model_costs)
 
-        proto_costs = [
-            platform_cost_pb2.ModelCost(
-                model=m.model,
-                cost_usd=str(m.cost_usd),
-                request_count=m.request_count,
-                tokens_in=m.tokens_in,
-                tokens_out=m.tokens_out,
-                percentage=m.percentage,
-            )
-            for m in model_costs
-        ]
+        # Build proto using fp-common converters (Story 13.6)
+        proto_costs = [model_cost_to_proto(m) for m in model_costs]
 
         # Use actual queried range - defaults come from repository's data_available_from
         effective_start = start_date or self._cost_repository.data_available_from.date()
@@ -457,16 +428,8 @@ class UnifiedCostServiceServicer(platform_cost_pb2_grpc.UnifiedCostServiceServic
 
         total_cost = sum(d.cost_usd for d in domain_costs)
 
-        proto_costs = [
-            platform_cost_pb2.DomainCost(
-                knowledge_domain=d.knowledge_domain,
-                cost_usd=str(d.cost_usd),
-                tokens_total=d.tokens_total,
-                texts_count=d.texts_count,
-                percentage=d.percentage,
-            )
-            for d in domain_costs
-        ]
+        # Build proto using fp-common converters (Story 13.6)
+        proto_costs = [domain_cost_to_proto(d) for d in domain_costs]
 
         # Use actual queried range - defaults come from repository's data_available_from
         effective_start = start_date or self._cost_repository.data_available_from.date()

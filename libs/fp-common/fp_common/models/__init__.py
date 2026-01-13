@@ -10,6 +10,25 @@ from fp_common.models.collection_point import (
     CollectionPointUpdate,
 )
 
+# Cost models (Story 13.6)
+from fp_common.models.cost import (
+    AgentTypeCost,
+    BudgetStatus,
+    BudgetThresholdConfig,
+    CostSummary,
+    CostTypeSummary,
+    CurrentDayCost,
+    DailyCostEntry,
+    DailyCostTrend,
+    DecimalStr,
+    DocumentCostSummary,
+    DomainCost,
+    EmbeddingCostByDomain,
+    LlmCostByAgentType,
+    LlmCostByModel,
+    ModelCost,
+)
+
 # Document models
 from fp_common.models.document import (
     Document,
@@ -115,9 +134,13 @@ from fp_common.models.value_objects import (
 __all__ = [
     # Value Objects
     "GPS",
+    # Cost models (Story 13.6)
+    "AgentTypeCost",
     "Agronomic",
     "AltitudeBand",
     "AltitudeBandLabel",
+    "BudgetStatus",
+    "BudgetThresholdConfig",
     # Domain Events
     "CollectionEventTopic",
     # Collection Point
@@ -128,8 +151,17 @@ __all__ = [
     # Grading
     "ConditionalReject",
     "ContactInfo",
+    "CostSummary",
+    "CostTypeSummary",
+    "CurrentDayCost",
+    "DailyCostEntry",
+    "DailyCostTrend",
+    "DecimalStr",
     # Document
     "Document",
+    "DocumentCostSummary",
+    "DomainCost",
+    "EmbeddingCostByDomain",
     # Source Config
     "EventConfig",
     "EventsConfig",
@@ -160,6 +192,9 @@ __all__ = [
     "IngestionMetadata",
     "InteractionPreference",
     "IterationConfig",
+    "LlmCostByAgentType",
+    "LlmCostByModel",
+    "ModelCost",
     "NotificationChannel",
     "OperatingHours",
     "PathPatternConfig",
