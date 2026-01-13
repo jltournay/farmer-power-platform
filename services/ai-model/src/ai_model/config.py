@@ -1,6 +1,7 @@
 """Service configuration using Pydantic Settings.
 
 Story 0.75.5: Added LLM Gateway configuration.
+Story 13.7: Added unified_cost_topic and embedding_cost_per_1k_tokens for DAPR cost publishing (ADR-016).
 """
 
 from pydantic import Field, SecretStr
