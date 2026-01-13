@@ -1,6 +1,6 @@
 # Story 13.3: Cost Repository and Budget Monitor
 
-**Status:** review
+**Status:** done
 **GitHub Issue:** #167
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
@@ -173,7 +173,7 @@ So that costs are persisted efficiently and metrics survive restarts.
 - [ ] PR approved and merged (squash)
 - [ ] Local branch cleaned up: `git branch -d feature/13-3-cost-repository-budget-monitor`
 
-**PR URL:** _______________ (fill in when created)
+**PR URL:** https://github.com/jltournay/farmer-power-platform/pull/168
 
 ---
 
