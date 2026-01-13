@@ -4,6 +4,7 @@ This module provides async integration with Azure Document Intelligence
 for extracting text from scanned/image-based PDFs using OCR.
 
 Story 0.75.10c: Azure Document Intelligence Integration
+Story 13.7: Refactored to publish costs via DAPR instead of persisting locally (ADR-016)
 """
 
 import asyncio
@@ -27,6 +28,8 @@ from azure.core.exceptions import (
     HttpResponseError,
     ServiceRequestError,
 )
+from dapr.aio.clients import DaprClient
+from fp_common.events.cost_recorded import CostRecordedEvent, CostType, CostUnit
 from tenacity import (
     retry,
     retry_if_exception_type,
@@ -120,18 +123,27 @@ class AzureDocumentIntelligenceClient:
     - Async operation polling with progress callback
     - Markdown conversion from layout analysis results
     - Retry logic for transient errors (rate limits, service unavailable)
-    - Cost tracking for operational observability
+    - Cost publishing via DAPR (Story 13.7, ADR-016)
 
     Usage:
         client = AzureDocumentIntelligenceClient(settings)
         result = await client.analyze_pdf(content, progress_callback)
     """
 
-    def __init__(self, settings: Settings) -> None:
+    def __init__(
+        self,
+        settings: Settings,
+        dapr_client: DaprClient | None = None,
+        pubsub_name: str = "pubsub",
+        cost_topic: str = "platform.cost.recorded",
+    ) -> None:
         """Initialize the Azure Document Intelligence client.
 
         Args:
             settings: Application settings with Azure DI configuration.
+            dapr_client: DAPR client for publishing cost events (Story 13.7, ADR-016).
+            pubsub_name: DAPR pub/sub component name (default: "pubsub").
+            cost_topic: Topic for cost events (default: "platform.cost.recorded").
 
         Raises:
             ValueError: If Azure DI is not properly configured.
@@ -146,6 +158,9 @@ class AzureDocumentIntelligenceClient:
         self._model_id = settings.azure_doc_intel_model
         self._timeout = settings.azure_doc_intel_timeout
         self._cost_per_page = Decimal(str(settings.azure_doc_intel_cost_per_page))
+        self._dapr_client = dapr_client
+        self._pubsub_name = pubsub_name
+        self._cost_topic = cost_topic
 
         # Create the sync client (SDK is synchronous)
         # We'll wrap calls in run_in_executor for async operation
@@ -159,6 +174,7 @@ class AzureDocumentIntelligenceClient:
             endpoint=self._endpoint,
             model_id=self._model_id,
             timeout=self._timeout,
+            cost_publishing_enabled=dapr_client is not None,
         )
 
     @retry(
@@ -268,22 +284,22 @@ class AzureDocumentIntelligenceClient:
             paragraphs_count = len(result.paragraphs) if result.paragraphs else 0
             tables_count = len(result.tables) if result.tables else 0
 
-            # Log cost event
-            cost_event = AzureDocIntelCostEvent(
-                timestamp=datetime.now(UTC),
+            # Story 13.7 (ADR-016): Publish cost event to platform-cost via DAPR
+            estimated_cost_usd = self._cost_per_page * page_count
+            await self._publish_cost_event(
+                page_count=page_count,
+                estimated_cost_usd=estimated_cost_usd,
                 document_id=document_id,
                 job_id=job_id,
-                page_count=page_count,
-                estimated_cost_usd=self._cost_per_page * page_count,
-                model_id=self._model_id,
                 success=True,
             )
+
             logger.info(
-                "Azure DI cost event",
+                "Azure DI analysis cost published",
                 document_id=document_id,
                 job_id=job_id,
                 page_count=page_count,
-                estimated_cost_usd=str(cost_event.estimated_cost_usd),
+                estimated_cost_usd=str(estimated_cost_usd),
                 model_id=self._model_id,
             )
 
@@ -466,3 +482,68 @@ class AzureDocumentIntelligenceClient:
 
         # Default high confidence for Azure DI results
         return 0.9
+
+    async def _publish_cost_event(
+        self,
+        page_count: int,
+        estimated_cost_usd: Decimal,
+        document_id: str,
+        job_id: str,
+        success: bool,
+        error_message: str | None = None,
+    ) -> None:
+        """Publish document processing cost event to platform-cost service via DAPR (Story 13.7, ADR-016).
+
+        Cost publishing is best-effort - failures are logged but do not fail the
+        primary document processing operation.
+
+        Args:
+            page_count: Number of pages processed.
+            estimated_cost_usd: Estimated cost in USD.
+            document_id: Document identifier.
+            job_id: Job identifier.
+            success: Whether the operation succeeded.
+            error_message: Optional error message if operation failed.
+        """
+        if self._dapr_client is None:
+            logger.debug("DAPR client not configured, skipping cost event")
+            return
+
+        try:
+            event = CostRecordedEvent(
+                cost_type=CostType.DOCUMENT,
+                amount_usd=estimated_cost_usd,
+                quantity=page_count,
+                unit=CostUnit.PAGES,
+                timestamp=datetime.now(UTC),
+                source_service="ai-model",
+                success=success,
+                metadata={
+                    "model_id": self._model_id,
+                    "document_id": document_id,
+                    "job_id": job_id,
+                    "error_message": error_message,
+                },
+            )
+
+            await self._dapr_client.publish_event(
+                pubsub_name=self._pubsub_name,
+                topic_name=self._cost_topic,
+                data=event.model_dump_json(),
+                data_content_type="application/json",
+            )
+
+            logger.debug(
+                "Published document processing cost event",
+                cost_usd=str(estimated_cost_usd),
+                page_count=page_count,
+                document_id=document_id,
+            )
+
+        except Exception as e:
+            # Best-effort publishing - log warning but don't fail the document operation
+            logger.warning(
+                "Failed to publish document processing cost event",
+                error=str(e),
+                document_id=document_id,
+            )

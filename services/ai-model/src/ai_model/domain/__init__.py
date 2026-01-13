@@ -1,13 +1,12 @@
 """Domain models for the AI Model service.
 
-This module exports all domain models for prompt, agent configuration, cost tracking,
-and RAG document storage.
+This module exports all domain models for prompt, agent configuration, and RAG document storage.
 
-Story 0.75.5: Added LlmCostEvent and related cost models.
 Story 0.75.9: Added RagDocument, RagChunk, and related RAG models.
 Story 0.75.12: Added Embedding domain models.
 Story 0.75.13: Added Vector store domain models.
 Story 0.75.13b: Added Vectorization pipeline domain models.
+Story 13.7: Removed LlmCostEvent, EmbeddingCostEvent - cost tracking now via DAPR (ADR-016)
 """
 
 from ai_model.domain.agent_config import (
@@ -31,15 +30,7 @@ from ai_model.domain.agent_config import (
     TieredVisionLLMConfig,
     TieredVisionRoutingConfig,
 )
-from ai_model.domain.cost_event import (
-    AgentTypeCost,
-    CostSummary,
-    DailyCostSummary,
-    LlmCostEvent,
-    ModelCost,
-)
 from ai_model.domain.embedding import (
-    EmbeddingCostEvent,
     EmbeddingInputType,
     EmbeddingRequest,
     EmbeddingResult,
@@ -87,11 +78,7 @@ __all__ = [
     "AgentConfigMetadata",
     "AgentConfigStatus",
     "AgentType",
-    "AgentTypeCost",
     "ConversationalConfig",
-    "CostSummary",
-    "DailyCostSummary",
-    "EmbeddingCostEvent",
     "EmbeddingInputType",
     "EmbeddingRequest",
     "EmbeddingResult",
@@ -107,9 +94,7 @@ __all__ = [
     "InputConfig",
     "KnowledgeDomain",
     "LLMConfig",
-    "LlmCostEvent",
     "MCPSourceConfig",
-    "ModelCost",
     "NamespaceStats",
     "OutputConfig",
     "Prompt",

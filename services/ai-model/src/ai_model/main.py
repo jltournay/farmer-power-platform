@@ -37,17 +37,16 @@ from ai_model.infrastructure.mongodb import (
     get_database,
     get_mongodb_client,
 )
-from ai_model.infrastructure.repositories import LlmCostEventRepository
 from ai_model.infrastructure.tracing import (
     instrument_fastapi,
     setup_tracing,
     shutdown_tracing,
 )
 from ai_model.llm import LLMGateway, RateLimiter
-from ai_model.llm.budget_monitor import BudgetMonitor
 from ai_model.mcp import AgentToolProvider, McpIntegration
 from ai_model.services import AgentConfigCache, AgentExecutor, PromptCache
 from ai_model.workflows.execution_service import WorkflowExecutionService
+from dapr.aio.clients import DaprClient
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fp_common import configure_logging, create_admin_router
@@ -86,6 +85,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     agent_config_cache: AgentConfigCache | None = None
     prompt_cache: PromptCache | None = None
     llm_gateway: LLMGateway | None = None
+    dapr_client: DaprClient | None = None  # Story 13.7: DAPR client for cost publishing
 
     try:
         await get_mongodb_client()
@@ -181,15 +181,10 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
         dlq_thread.start()
         logger.info("DLQ subscription thread started")
 
-        # Story 0.75.5: Initialize LLM Gateway (AC15)
+        # Story 0.75.5 + Story 13.7: Initialize LLM Gateway with DAPR cost publishing (ADR-016)
         if settings.openrouter_api_key:
-            cost_repository = LlmCostEventRepository(db)
-            await cost_repository.ensure_indexes()
-
-            budget_monitor = BudgetMonitor(
-                daily_threshold_usd=settings.llm_cost_alert_daily_usd,
-                monthly_threshold_usd=settings.llm_cost_alert_monthly_usd,
-            )
+            # Story 13.7: Create DAPR client for cost event publishing
+            dapr_client = DaprClient()
 
             rate_limiter = RateLimiter(
                 rpm=settings.llm_rate_limit_rpm,
@@ -204,9 +199,9 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
                 retry_backoff_ms=settings.llm_retry_backoff_ms,
                 site_url=settings.openrouter_site_url,
                 site_name=settings.openrouter_site_name,
-                cost_tracking_enabled=settings.llm_cost_tracking_enabled,
-                cost_repository=cost_repository,
-                budget_monitor=budget_monitor,
+                dapr_client=dapr_client,
+                pubsub_name=settings.dapr_pubsub_name,
+                cost_topic=settings.unified_cost_topic,
             )
 
             # Validate models at startup (AC5, AC15)
@@ -224,7 +219,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
 
             # Store in app.state for dependency injection
             app.state.llm_gateway = llm_gateway
-            app.state.budget_monitor = budget_monitor
+            app.state.dapr_client = dapr_client
 
             # Story 0.75.16b: Initialize WorkflowExecutionService
             workflow_service = WorkflowExecutionService(
@@ -291,6 +286,11 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     if llm_gateway:
         await llm_gateway.close()
         logger.info("LLM Gateway closed")
+
+    # Story 13.7: Close DAPR client
+    if dapr_client:
+        await dapr_client.close()
+        logger.info("DAPR client closed")
 
     await stop_grpc_server()
     await close_mongodb_connection()

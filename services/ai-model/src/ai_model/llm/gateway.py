@@ -3,22 +3,21 @@
 This module provides the LLMGateway class that wraps ChatOpenRouter to add:
 - Tenacity retry with exponential backoff for transient errors
 - Fallback chain to try multiple models
-- Cost tracking via OpenRouter Generation Stats API
+- Cost tracking via OpenRouter Generation Stats API (published to platform-cost via DAPR)
 - Rate limiting integration
 - OpenTelemetry metrics
 
 Story 0.75.5: OpenRouter LLM Gateway with Cost Observability
+Story 13.7: Refactored to publish costs via DAPR instead of persisting locally (ADR-016)
 """
 
 import uuid
+from datetime import UTC, datetime
 from decimal import Decimal
 from typing import Any
 
 import httpx
 import structlog
-from ai_model.domain.cost_event import LlmCostEvent
-from ai_model.infrastructure.repositories import LlmCostEventRepository
-from ai_model.llm.budget_monitor import BudgetMonitor
 from ai_model.llm.chat_openrouter import (
     DEFAULT_MODEL,
     DEFAULT_SITE_NAME,
@@ -33,6 +32,8 @@ from ai_model.llm.exceptions import (
     TransientError,
 )
 from ai_model.llm.rate_limiter import RateLimiter
+from dapr.aio.clients import DaprClient
+from fp_common.events.cost_recorded import CostRecordedEvent, CostType, CostUnit
 from langchain_core.messages import BaseMessage
 from langchain_core.outputs import ChatGeneration, ChatResult
 from opentelemetry import metrics
@@ -147,9 +148,9 @@ class LLMGateway:
         retry_backoff_ms: list[int] | None = None,
         site_url: str = DEFAULT_SITE_URL,
         site_name: str = DEFAULT_SITE_NAME,
-        cost_tracking_enabled: bool = True,
-        cost_repository: LlmCostEventRepository | None = None,
-        budget_monitor: BudgetMonitor | None = None,
+        dapr_client: DaprClient | None = None,
+        pubsub_name: str = "pubsub",
+        cost_topic: str = "platform.cost.recorded",
     ) -> None:
         """Initialize the LLM Gateway.
 
@@ -161,9 +162,9 @@ class LLMGateway:
             retry_backoff_ms: Backoff delays in milliseconds [100, 500, 2000].
             site_url: Site URL for OpenRouter identification.
             site_name: Site name for OpenRouter identification.
-            cost_tracking_enabled: Whether to track costs via Generation Stats API.
-            cost_repository: Repository for persisting cost events (AC8).
-            budget_monitor: Budget monitor for threshold alerting (AC12).
+            dapr_client: DAPR client for publishing cost events (Story 13.7, ADR-016).
+            pubsub_name: DAPR pub/sub component name (default: "pubsub").
+            cost_topic: Topic for cost events (default: "platform.cost.recorded").
         """
         self._api_key = api_key if isinstance(api_key, SecretStr) else SecretStr(api_key)
         self._fallback_models = fallback_models or []
@@ -172,9 +173,9 @@ class LLMGateway:
         self._retry_backoff_ms = retry_backoff_ms or DEFAULT_RETRY_BACKOFF_MS
         self._site_url = site_url
         self._site_name = site_name
-        self._cost_tracking_enabled = cost_tracking_enabled
-        self._cost_repository = cost_repository
-        self._budget_monitor = budget_monitor
+        self._dapr_client = dapr_client
+        self._pubsub_name = pubsub_name
+        self._cost_topic = cost_topic
         self._http_client: httpx.AsyncClient | None = None
         self._available_models: set[str] = set()
 
@@ -182,7 +183,7 @@ class LLMGateway:
             "LLM Gateway initialized",
             fallback_models=self._fallback_models,
             retry_max_attempts=self._retry_max_attempts,
-            cost_tracking_enabled=self._cost_tracking_enabled,
+            cost_publishing_enabled=dapr_client is not None,
         )
 
     async def _get_http_client(self) -> httpx.AsyncClient:
@@ -263,7 +264,8 @@ class LLMGateway:
         Returns:
             GenerationStats if successful, None if not available.
         """
-        if not self._cost_tracking_enabled:
+        # Story 13.7: Only fetch generation stats if DAPR client is configured for cost publishing
+        if self._dapr_client is None:
             return None
 
         client = await self._get_http_client()
@@ -539,42 +541,19 @@ class LLMGateway:
                     agent_id=agent_id,
                 )
 
-                # AC10: Create and publish cost event via DAPR
-                cost_event = LlmCostEvent(
-                    id=str(uuid.uuid4()),
-                    request_id=request_id,
-                    agent_type=agent_type,
-                    agent_id=agent_id,
-                    model=actual_model,
-                    tokens_in=tokens_in,
-                    tokens_out=tokens_out,
-                    cost_usd=cost_usd,
-                    factory_id=factory_id,
-                    success=True,
-                    retry_count=retry_count,
-                )
-
-                # Persist cost event to MongoDB (AC8)
-                if self._cost_repository:
-                    try:
-                        await self._cost_repository.insert(cost_event)
-                    except Exception as e:
-                        logger.warning(
-                            "Failed to persist cost event",
-                            event_id=cost_event.id,
-                            error=str(e),
-                        )
-
-                # Check budget thresholds (AC12)
-                if self._budget_monitor:
-                    alert = await self._budget_monitor.record_cost(cost_event)
-                    if alert:
-                        logger.warning(
-                            "Cost threshold alert triggered",
-                            threshold_type=alert.threshold_type.value,
-                            threshold_usd=str(alert.threshold_usd),
-                            current_cost_usd=str(alert.current_cost_usd),
-                        )
+                # Story 13.7 (ADR-016): Publish cost event to platform-cost via DAPR
+                if self._dapr_client and cost_usd > 0:
+                    await self._publish_cost_event(
+                        cost_usd=cost_usd,
+                        tokens_in=tokens_in,
+                        tokens_out=tokens_out,
+                        model=actual_model,
+                        agent_type=agent_type,
+                        agent_id=agent_id,
+                        factory_id=factory_id,
+                        request_id=request_id,
+                        success=True,
+                    )
 
                 return {
                     "content": content,
@@ -612,6 +591,79 @@ class LLMGateway:
             attempted_models=attempted_models,
             cause=last_error,
         )
+
+    async def _publish_cost_event(
+        self,
+        cost_usd: Decimal,
+        tokens_in: int,
+        tokens_out: int,
+        model: str,
+        agent_type: str,
+        agent_id: str,
+        factory_id: str | None,
+        request_id: str,
+        success: bool,
+    ) -> None:
+        """Publish LLM cost event to platform-cost service via DAPR (Story 13.7, ADR-016).
+
+        Cost publishing is best-effort - failures are logged but do not fail the
+        primary LLM operation.
+
+        Args:
+            cost_usd: Total cost in USD.
+            tokens_in: Number of input tokens.
+            tokens_out: Number of output tokens.
+            model: LLM model identifier.
+            agent_type: Type of agent (extractor, explorer, etc.).
+            agent_id: Agent configuration ID.
+            factory_id: Optional factory ID for cost attribution.
+            request_id: Correlation ID for tracing.
+            success: Whether the LLM operation succeeded.
+        """
+        if not self._dapr_client:
+            return
+
+        try:
+            event = CostRecordedEvent(
+                cost_type=CostType.LLM,
+                amount_usd=cost_usd,
+                quantity=tokens_in + tokens_out,
+                unit=CostUnit.TOKENS,
+                timestamp=datetime.now(UTC),
+                source_service="ai-model",
+                success=success,
+                factory_id=factory_id,
+                request_id=request_id,
+                metadata={
+                    "model": model,
+                    "agent_type": agent_type,
+                    "agent_id": agent_id,
+                    "tokens_in": tokens_in,
+                    "tokens_out": tokens_out,
+                },
+            )
+
+            await self._dapr_client.publish_event(
+                pubsub_name=self._pubsub_name,
+                topic_name=self._cost_topic,
+                data=event.model_dump_json(),
+                data_content_type="application/json",
+            )
+
+            logger.debug(
+                "Published LLM cost event",
+                cost_usd=str(cost_usd),
+                model=model,
+                request_id=request_id,
+            )
+
+        except Exception as e:
+            # Best-effort publishing - log warning but don't fail the LLM operation
+            logger.warning(
+                "Failed to publish LLM cost event",
+                error=str(e),
+                request_id=request_id,
+            )
 
     async def __aenter__(self) -> "LLMGateway":
         """Async context manager entry."""

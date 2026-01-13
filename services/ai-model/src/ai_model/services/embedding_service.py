@@ -5,26 +5,27 @@ multilingual-e5-large model. It handles:
 - Single and batch embedding operations
 - Automatic batching for large requests (max 96 texts per batch)
 - Retry logic with exponential backoff for transient errors
-- Cost tracking via MongoDB persistence
+- Cost publishing via DAPR pub/sub (Story 13.7, ADR-016)
 
 Story 0.75.12: RAG Embedding Configuration (Pinecone Inference)
+Story 13.7: Refactored to publish costs via DAPR instead of persisting locally (ADR-016)
 """
 
 import asyncio
 import uuid
+from datetime import UTC, datetime
+from decimal import Decimal
 from typing import Any
 
 import structlog
 from ai_model.config import Settings
 from ai_model.domain.embedding import (
-    EmbeddingCostEvent,
     EmbeddingInputType,
     EmbeddingResult,
     EmbeddingUsage,
 )
-from ai_model.infrastructure.repositories.embedding_cost_repository import (
-    EmbeddingCostEventRepository,
-)
+from dapr.aio.clients import DaprClient
+from fp_common.events.cost_recorded import CostRecordedEvent, CostType, CostUnit
 from pinecone import Pinecone
 from tenacity import (
     retry,
@@ -65,7 +66,7 @@ class EmbeddingService:
     - Single query embedding
     - Batch passage embedding with automatic chunking
     - Retry logic for transient errors
-    - Cost event persistence for tracking
+    - Cost publishing via DAPR (Story 13.7, ADR-016)
 
     The service requires Pinecone API key to be configured in settings.
     All operations are async.
@@ -77,16 +78,22 @@ class EmbeddingService:
     def __init__(
         self,
         settings: Settings,
-        cost_repository: EmbeddingCostEventRepository | None = None,
+        dapr_client: DaprClient | None = None,
+        pubsub_name: str = "pubsub",
+        cost_topic: str = "platform.cost.recorded",
     ) -> None:
         """Initialize the embedding service.
 
         Args:
             settings: Service configuration.
-            cost_repository: Repository for cost event persistence (optional).
+            dapr_client: DAPR client for publishing cost events (Story 13.7, ADR-016).
+            pubsub_name: DAPR pub/sub component name (default: "pubsub").
+            cost_topic: Topic for cost events (default: "platform.cost.recorded").
         """
         self._settings = settings
-        self._cost_repository = cost_repository
+        self._dapr_client = dapr_client
+        self._pubsub_name = pubsub_name
+        self._cost_topic = cost_topic
         self._client: Pinecone | None = None
 
     def _get_client(self) -> Pinecone:
@@ -180,7 +187,7 @@ class EmbeddingService:
                     error=str(e),
                 )
                 # Record failure cost event
-                await self._record_cost_event(
+                await self._publish_cost_event(
                     request_id=request_id,
                     texts_count=len(texts),
                     tokens_total=total_tokens,
@@ -196,7 +203,7 @@ class EmbeddingService:
                 )
 
         # Record successful cost event
-        await self._record_cost_event(
+        await self._publish_cost_event(
             request_id=request_id,
             texts_count=len(texts),
             tokens_total=total_tokens,
@@ -349,7 +356,7 @@ class EmbeddingService:
         )
         return result.embeddings
 
-    async def _record_cost_event(
+    async def _publish_cost_event(
         self,
         request_id: str,
         texts_count: int,
@@ -359,7 +366,10 @@ class EmbeddingService:
         batch_count: int,
         retry_count: int,
     ) -> None:
-        """Record an embedding cost event to MongoDB.
+        """Publish embedding cost event to platform-cost service via DAPR (Story 13.7, ADR-016).
+
+        Cost publishing is best-effort - failures are logged but do not fail the
+        primary embedding operation.
 
         Args:
             request_id: Correlation ID for tracing.
@@ -370,33 +380,52 @@ class EmbeddingService:
             batch_count: Number of batches used.
             retry_count: Number of retries.
         """
-        if self._cost_repository is None:
-            logger.debug("Cost repository not configured, skipping cost event")
+        if self._dapr_client is None:
+            logger.debug("DAPR client not configured, skipping cost event")
             return
 
-        event = EmbeddingCostEvent(
-            id=str(uuid.uuid4()),
-            request_id=request_id,
-            model=self._settings.pinecone_embedding_model,
-            texts_count=texts_count,
-            tokens_total=tokens_total,
-            knowledge_domain=knowledge_domain,
-            success=success,
-            batch_count=max(1, batch_count),  # At least 1 for validation
-            retry_count=retry_count,
-        )
+        # Calculate USD cost using embedding_cost_per_1k_tokens setting
+        cost_per_1k = Decimal(str(self._settings.embedding_cost_per_1k_tokens))
+        cost_usd = cost_per_1k * Decimal(tokens_total) / Decimal(1000)
 
         try:
-            await self._cost_repository.insert(event)
+            event = CostRecordedEvent(
+                cost_type=CostType.EMBEDDING,
+                amount_usd=cost_usd,
+                quantity=texts_count,  # Use texts_count as quantity (queries)
+                unit=CostUnit.QUERIES,
+                timestamp=datetime.now(UTC),
+                source_service="ai-model",
+                success=success,
+                request_id=request_id,
+                metadata={
+                    "model": self._settings.pinecone_embedding_model,
+                    "texts_count": texts_count,
+                    "tokens_total": tokens_total,
+                    "batch_count": max(1, batch_count),
+                    "retry_count": retry_count,
+                    "knowledge_domain": knowledge_domain,
+                },
+            )
+
+            await self._dapr_client.publish_event(
+                pubsub_name=self._pubsub_name,
+                topic_name=self._cost_topic,
+                data=event.model_dump_json(),
+                data_content_type="application/json",
+            )
+
             logger.debug(
-                "Embedding cost event recorded",
-                event_id=event.id,
+                "Published embedding cost event",
+                cost_usd=str(cost_usd),
+                texts_count=texts_count,
                 request_id=request_id,
             )
+
         except Exception as e:
-            # Don't fail the embedding operation if cost recording fails
+            # Best-effort publishing - log warning but don't fail the embedding operation
             logger.warning(
-                "Failed to record embedding cost event",
+                "Failed to publish embedding cost event",
                 request_id=request_id,
                 error=str(e),
             )

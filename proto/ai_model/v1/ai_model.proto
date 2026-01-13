@@ -1,6 +1,7 @@
 // AI Model Service - gRPC API Definition
 // LLM extraction gateway for all domain models
 // Story 0.75.5: Added CostService for LLM cost observability
+// Story 13.7: CostService DEPRECATED - use platform-cost service instead (ADR-016)
 
 syntax = "proto3";
 
@@ -18,27 +19,21 @@ service AiModelService {
   rpc HealthCheck(HealthCheckRequest) returns (HealthCheckResponse);
 }
 
-// CostService provides LLM cost observability (Story 0.75.5)
-// Consumed by Epic 9 (Platform Admin Dashboard) for cost monitoring
-service CostService {
-  // Get daily cost summaries for a date range
-  rpc GetDailyCostSummary(DateRangeRequest) returns (DailyCostSummaryResponse);
-
-  // Get current day's running cost total
-  rpc GetCurrentDayCost(google.protobuf.Empty) returns (CostSummaryResponse);
-
-  // Get cost breakdown by agent type
-  rpc GetCostByAgentType(DateRangeRequest) returns (CostByAgentTypeResponse);
-
-  // Get cost breakdown by model
-  rpc GetCostByModel(DateRangeRequest) returns (CostByModelResponse);
-
-  // Get active cost alerts
-  rpc GetCostAlerts(google.protobuf.Empty) returns (CostAlertsResponse);
-
-  // Configure cost thresholds at runtime
-  rpc ConfigureCostThreshold(ThresholdConfigRequest) returns (google.protobuf.Empty);
-}
+// DEPRECATED: CostService has been removed from ai-model (Story 13.7, ADR-016).
+// Cost tracking is now handled by platform-cost service via DAPR pub/sub.
+// Use platform_cost.v1.UnifiedCostService for cost queries.
+//
+// Keeping these message definitions for backward compatibility with any
+// existing clients. The service implementation has been removed.
+//
+// service CostService {
+//   rpc GetDailyCostSummary(DateRangeRequest) returns (DailyCostSummaryResponse);
+//   rpc GetCurrentDayCost(google.protobuf.Empty) returns (CostSummaryResponse);
+//   rpc GetCostByAgentType(DateRangeRequest) returns (CostByAgentTypeResponse);
+//   rpc GetCostByModel(DateRangeRequest) returns (CostByModelResponse);
+//   rpc GetCostAlerts(google.protobuf.Empty) returns (CostAlertsResponse);
+//   rpc ConfigureCostThreshold(ThresholdConfigRequest) returns (google.protobuf.Empty);
+// }
 
 // ============================================
 // Extraction Service Messages
@@ -90,6 +85,8 @@ message HealthCheckResponse {
 
 // ============================================
 // Cost Service Messages (Story 0.75.5)
+// DEPRECATED: Use platform_cost.v1.UnifiedCostService instead (Story 13.7, ADR-016)
+// Kept for backward compatibility - may be removed in future version
 // ============================================
 
 message DateRangeRequest {

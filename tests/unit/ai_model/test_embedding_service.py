@@ -6,26 +6,21 @@ Tests cover:
 - Batch embedding exceeding limit (auto-chunking)
 - Passage vs query input types
 - Retry on transient errors
-- Cost event emission
 - Configuration validation
 
 Story 0.75.12: RAG Embedding Configuration (Pinecone Inference)
+Story 13.7: Removed cost repository tests - costs now published via DAPR (ADR-016)
 """
 
-import uuid
 from unittest.mock import MagicMock, patch
 
 import pytest
 from ai_model.config import Settings
 from ai_model.domain.embedding import (
-    EmbeddingCostEvent,
     EmbeddingInputType,
     EmbeddingRequest,
     EmbeddingResult,
     EmbeddingUsage,
-)
-from ai_model.infrastructure.repositories.embedding_cost_repository import (
-    EmbeddingCostEventRepository,
 )
 from ai_model.services.embedding_service import (
     EmbeddingBatchError,
@@ -80,13 +75,6 @@ def mock_pinecone_settings_disabled(monkeypatch) -> Settings:
         pinecone_index_name="test-index",
     )
     return settings
-
-
-@pytest.fixture
-def mock_cost_repository(mock_mongodb_client) -> EmbeddingCostEventRepository:
-    """Create mock cost repository."""
-    db = mock_mongodb_client["ai_model"]
-    return EmbeddingCostEventRepository(db)
 
 
 @pytest.fixture
@@ -193,58 +181,6 @@ class TestEmbeddingResult:
         assert result.count == 3
 
 
-class TestEmbeddingCostEvent:
-    """Tests for EmbeddingCostEvent model."""
-
-    def test_create_cost_event(self):
-        """Test creating embedding cost event."""
-        event = EmbeddingCostEvent(
-            id=str(uuid.uuid4()),
-            request_id="req-123",
-            model="multilingual-e5-large",
-            texts_count=10,
-            tokens_total=500,
-            knowledge_domain="agriculture",
-            success=True,
-            batch_count=1,
-            retry_count=0,
-        )
-        assert event.texts_count == 10
-        assert event.tokens_total == 500
-        assert event.success is True
-
-    def test_cost_event_model_dump_for_mongo(self):
-        """Test MongoDB serialization."""
-        event = EmbeddingCostEvent(
-            id="event-123",
-            request_id="req-123",
-            model="multilingual-e5-large",
-            texts_count=5,
-            tokens_total=250,
-        )
-        data = event.model_dump_for_mongo()
-        assert data["id"] == "event-123"
-        assert data["texts_count"] == 5
-
-    def test_cost_event_from_mongo(self):
-        """Test creating event from MongoDB document."""
-        doc = {
-            "_id": "event-123",
-            "id": "event-123",
-            "request_id": "req-123",
-            "model": "multilingual-e5-large",
-            "texts_count": 5,
-            "tokens_total": 250,
-            "success": True,
-            "batch_count": 1,
-            "retry_count": 0,
-            "timestamp": "2024-01-01T00:00:00Z",
-        }
-        event = EmbeddingCostEvent.from_mongo(doc)
-        assert event.id == "event-123"
-        assert event.texts_count == 5
-
-
 # ═══════════════════════════════════════════════════════════════════════════════
 # EMBEDDING SERVICE TESTS
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -253,22 +189,20 @@ class TestEmbeddingCostEvent:
 class TestEmbeddingServiceInitialization:
     """Tests for EmbeddingService initialization."""
 
-    def test_service_creation(self, mock_pinecone_settings, mock_cost_repository):
+    def test_service_creation(self, mock_pinecone_settings):
         """Test creating embedding service."""
         service = EmbeddingService(
             settings=mock_pinecone_settings,
-            cost_repository=mock_cost_repository,
         )
         assert service._settings == mock_pinecone_settings
-        assert service._cost_repository == mock_cost_repository
 
-    def test_service_without_cost_repository(self, mock_pinecone_settings):
-        """Test creating service without cost repository."""
+    def test_service_without_dapr_client(self, mock_pinecone_settings):
+        """Test creating service without DAPR client."""
         service = EmbeddingService(
             settings=mock_pinecone_settings,
-            cost_repository=None,
+            dapr_client=None,
         )
-        assert service._cost_repository is None
+        assert service._dapr_client is None
 
 
 class TestEmbeddingServiceConfiguration:
@@ -278,7 +212,6 @@ class TestEmbeddingServiceConfiguration:
         """Test that missing API key raises PineconeNotConfiguredError."""
         service = EmbeddingService(
             settings=mock_pinecone_settings_disabled,
-            cost_repository=None,
         )
         with pytest.raises(PineconeNotConfiguredError):
             service._get_client()
@@ -296,11 +229,10 @@ class TestEmbeddingServiceSingleText:
     """Tests for single text embedding."""
 
     @pytest.mark.asyncio
-    async def test_embed_single_query(self, mock_pinecone_settings, mock_cost_repository, mock_pinecone_client):
+    async def test_embed_single_query(self, mock_pinecone_settings, mock_pinecone_client):
         """Test embedding a single query text."""
         service = EmbeddingService(
             settings=mock_pinecone_settings,
-            cost_repository=mock_cost_repository,
         )
 
         # Mock single embedding response
@@ -317,11 +249,10 @@ class TestEmbeddingServiceSingleText:
         assert result[0] == 0.1
 
     @pytest.mark.asyncio
-    async def test_embed_single_passage(self, mock_pinecone_settings, mock_cost_repository, mock_pinecone_client):
+    async def test_embed_single_passage(self, mock_pinecone_settings, mock_pinecone_client):
         """Test embedding a single passage."""
         service = EmbeddingService(
             settings=mock_pinecone_settings,
-            cost_repository=mock_cost_repository,
         )
 
         mock_response = MagicMock()
@@ -341,11 +272,10 @@ class TestEmbeddingServiceBatchWithinLimit:
     """Tests for batch embedding within the 96-text limit."""
 
     @pytest.mark.asyncio
-    async def test_embed_batch_within_limit(self, mock_pinecone_settings, mock_cost_repository, mock_pinecone_client):
+    async def test_embed_batch_within_limit(self, mock_pinecone_settings, mock_pinecone_client):
         """Test embedding a batch within the limit."""
         service = EmbeddingService(
             settings=mock_pinecone_settings,
-            cost_repository=mock_cost_repository,
         )
 
         texts = ["Text 1", "Text 2", "Text 3"]
@@ -363,13 +293,10 @@ class TestEmbeddingServiceBatchWithinLimit:
         assert result.model == "multilingual-e5-large"
 
     @pytest.mark.asyncio
-    async def test_embed_batch_preserves_order(
-        self, mock_pinecone_settings, mock_cost_repository, mock_pinecone_client
-    ):
+    async def test_embed_batch_preserves_order(self, mock_pinecone_settings, mock_pinecone_client):
         """Test that batch embedding preserves text order."""
         service = EmbeddingService(
             settings=mock_pinecone_settings,
-            cost_repository=mock_cost_repository,
         )
 
         texts = ["A", "B", "C"]
@@ -391,11 +318,10 @@ class TestEmbeddingServiceBatchWithinLimit:
         assert result.embeddings[2][0] == 3.0
 
     @pytest.mark.asyncio
-    async def test_embed_empty_list_returns_empty_result(self, mock_pinecone_settings, mock_cost_repository):
+    async def test_embed_empty_list_returns_empty_result(self, mock_pinecone_settings):
         """Test that empty input returns empty result without API call."""
         service = EmbeddingService(
             settings=mock_pinecone_settings,
-            cost_repository=mock_cost_repository,
         )
 
         result = await service.embed_texts([])
@@ -409,14 +335,13 @@ class TestEmbeddingServiceBatchExceedingLimit:
     """Tests for batch embedding exceeding 96-text limit (auto-chunking)."""
 
     @pytest.mark.asyncio
-    async def test_embed_batch_auto_chunking(self, mock_pinecone_settings, mock_cost_repository, mock_pinecone_client):
+    async def test_embed_batch_auto_chunking(self, mock_pinecone_settings, mock_pinecone_client):
         """Test that batches exceeding limit are automatically chunked."""
         # Use small batch size for testing
         mock_pinecone_settings.embedding_batch_size = 10
 
         service = EmbeddingService(
             settings=mock_pinecone_settings,
-            cost_repository=mock_cost_repository,
         )
 
         # Create 25 texts (should create 3 batches: 10, 10, 5)
@@ -440,15 +365,12 @@ class TestEmbeddingServiceBatchExceedingLimit:
         assert mock_pinecone_client.inference.embed.call_count == 3
 
     @pytest.mark.asyncio
-    async def test_embed_batch_accumulates_tokens(
-        self, mock_pinecone_settings, mock_cost_repository, mock_pinecone_client
-    ):
+    async def test_embed_batch_accumulates_tokens(self, mock_pinecone_settings, mock_pinecone_client):
         """Test that token counts are accumulated across batches."""
         mock_pinecone_settings.embedding_batch_size = 5
 
         service = EmbeddingService(
             settings=mock_pinecone_settings,
-            cost_repository=mock_cost_repository,
         )
 
         texts = [f"Text {i}" for i in range(12)]  # 3 batches: 5, 5, 2
@@ -478,13 +400,10 @@ class TestEmbeddingServiceInputTypes:
     """Tests for passage vs query input type handling."""
 
     @pytest.mark.asyncio
-    async def test_passage_input_type_parameter(
-        self, mock_pinecone_settings, mock_cost_repository, mock_pinecone_client
-    ):
+    async def test_passage_input_type_parameter(self, mock_pinecone_settings, mock_pinecone_client):
         """Test that passage input type is passed correctly to Pinecone."""
         service = EmbeddingService(
             settings=mock_pinecone_settings,
-            cost_repository=mock_cost_repository,
         )
 
         mock_response = MagicMock()
@@ -504,11 +423,10 @@ class TestEmbeddingServiceInputTypes:
         assert call_kwargs.kwargs["parameters"]["input_type"] == "passage"
 
     @pytest.mark.asyncio
-    async def test_query_input_type_parameter(self, mock_pinecone_settings, mock_cost_repository, mock_pinecone_client):
+    async def test_query_input_type_parameter(self, mock_pinecone_settings, mock_pinecone_client):
         """Test that query input type is passed correctly to Pinecone."""
         service = EmbeddingService(
             settings=mock_pinecone_settings,
-            cost_repository=mock_cost_repository,
         )
 
         mock_response = MagicMock()
@@ -527,13 +445,10 @@ class TestEmbeddingServiceInputTypes:
         assert call_kwargs.kwargs["parameters"]["input_type"] == "query"
 
     @pytest.mark.asyncio
-    async def test_embed_query_convenience_uses_query_type(
-        self, mock_pinecone_settings, mock_cost_repository, mock_pinecone_client
-    ):
+    async def test_embed_query_convenience_uses_query_type(self, mock_pinecone_settings, mock_pinecone_client):
         """Test that embed_query convenience method uses query input type."""
         service = EmbeddingService(
             settings=mock_pinecone_settings,
-            cost_repository=mock_cost_repository,
         )
 
         mock_response = MagicMock()
@@ -549,106 +464,17 @@ class TestEmbeddingServiceInputTypes:
         assert call_kwargs.kwargs["parameters"]["input_type"] == "query"
 
 
-class TestEmbeddingServiceCostTracking:
-    """Tests for cost event emission."""
-
-    @pytest.mark.asyncio
-    async def test_cost_event_recorded_on_success(
-        self, mock_pinecone_settings, mock_mongodb_client, mock_pinecone_client
-    ):
-        """Test that cost event is recorded on successful embedding."""
-        db = mock_mongodb_client["ai_model"]
-        cost_repository = EmbeddingCostEventRepository(db)
-
-        service = EmbeddingService(
-            settings=mock_pinecone_settings,
-            cost_repository=cost_repository,
-        )
-
-        mock_response = MagicMock()
-        mock_response.data = [{"values": [0.1] * 1024}]
-        mock_response.usage = MagicMock()
-        mock_response.usage.total_tokens = 100
-        mock_pinecone_client.inference.embed.return_value = mock_response
-
-        with patch.object(service, "_get_client", return_value=mock_pinecone_client):
-            await service.embed_texts(
-                texts=["Test text"],
-                request_id="req-001",
-                knowledge_domain="agriculture",
-            )
-
-        # Check cost event was recorded
-        events = await cost_repository.get_by_request_id("req-001")
-        assert len(events) == 1
-        assert events[0].success is True
-        assert events[0].texts_count == 1
-        assert events[0].knowledge_domain == "agriculture"
-
-    @pytest.mark.asyncio
-    async def test_cost_event_recorded_on_failure(
-        self, mock_pinecone_settings, mock_mongodb_client, mock_pinecone_client
-    ):
-        """Test that cost event is recorded on failed embedding."""
-        db = mock_mongodb_client["ai_model"]
-        cost_repository = EmbeddingCostEventRepository(db)
-
-        service = EmbeddingService(
-            settings=mock_pinecone_settings,
-            cost_repository=cost_repository,
-        )
-
-        mock_pinecone_client.inference.embed.side_effect = ConnectionError("Network error")
-
-        with (
-            patch.object(service, "_get_client", return_value=mock_pinecone_client),
-            pytest.raises(EmbeddingBatchError),
-        ):
-            await service.embed_texts(
-                texts=["Test text"],
-                request_id="req-fail",
-            )
-
-        # Check failure event was recorded
-        events = await cost_repository.get_by_request_id("req-fail")
-        assert len(events) == 1
-        assert events[0].success is False
-
-    @pytest.mark.asyncio
-    async def test_no_cost_event_without_repository(self, mock_pinecone_settings, mock_pinecone_client):
-        """Test that no error occurs when cost repository is not configured."""
-        service = EmbeddingService(
-            settings=mock_pinecone_settings,
-            cost_repository=None,  # No repository
-        )
-
-        mock_response = MagicMock()
-        mock_response.data = [{"values": [0.1] * 1024}]
-        mock_response.usage = MagicMock()
-        mock_response.usage.total_tokens = 50
-        mock_pinecone_client.inference.embed.return_value = mock_response
-
-        with patch.object(service, "_get_client", return_value=mock_pinecone_client):
-            result = await service.embed_texts(["Test text"])
-
-        # Should succeed without error
-        assert result.count == 1
-
-
 class TestEmbeddingServiceErrorHandling:
     """Tests for error handling and retry logic."""
 
     @pytest.mark.asyncio
-    async def test_batch_error_includes_batch_index(
-        self, mock_pinecone_settings, mock_cost_repository, mock_pinecone_client
-    ):
+    async def test_batch_error_includes_batch_index(self, mock_pinecone_settings, mock_pinecone_client):
         """Test that batch errors include the batch index and original error."""
         mock_pinecone_settings.embedding_batch_size = 5
         mock_pinecone_settings.embedding_retry_max_attempts = 1  # No retries
 
         service = EmbeddingService(
             settings=mock_pinecone_settings,
-            cost_repository=mock_cost_repository,
         )
 
         # Track batch inputs to fail on specific batch
@@ -677,11 +503,10 @@ class TestEmbeddingServiceErrorHandling:
         assert "Simulated batch failure" in str(exc_info.value)
 
     @pytest.mark.asyncio
-    async def test_pinecone_not_configured_error(self, mock_pinecone_settings_disabled, mock_cost_repository):
+    async def test_pinecone_not_configured_error(self, mock_pinecone_settings_disabled):
         """Test error when Pinecone is not configured."""
         service = EmbeddingService(
             settings=mock_pinecone_settings_disabled,
-            cost_repository=mock_cost_repository,
         )
 
         # PineconeNotConfiguredError is wrapped in EmbeddingBatchError
@@ -690,63 +515,3 @@ class TestEmbeddingServiceErrorHandling:
 
         # Original error should be PineconeNotConfiguredError
         assert isinstance(exc_info.value.original_error, PineconeNotConfiguredError)
-
-
-# ═══════════════════════════════════════════════════════════════════════════════
-# EMBEDDING COST REPOSITORY TESTS
-# ═══════════════════════════════════════════════════════════════════════════════
-
-
-class TestEmbeddingCostEventRepository:
-    """Tests for EmbeddingCostEventRepository."""
-
-    @pytest.mark.asyncio
-    async def test_insert_and_get_by_id(self, mock_mongodb_client):
-        """Test inserting and retrieving a cost event."""
-        db = mock_mongodb_client["ai_model"]
-        repo = EmbeddingCostEventRepository(db)
-
-        event = EmbeddingCostEvent(
-            id="event-123",
-            request_id="req-123",
-            model="multilingual-e5-large",
-            texts_count=10,
-            tokens_total=500,
-            success=True,
-        )
-
-        await repo.insert(event)
-        retrieved = await repo.get_by_id("event-123")
-
-        assert retrieved is not None
-        assert retrieved.id == "event-123"
-        assert retrieved.texts_count == 10
-
-    @pytest.mark.asyncio
-    async def test_get_by_request_id(self, mock_mongodb_client):
-        """Test retrieving events by request ID."""
-        db = mock_mongodb_client["ai_model"]
-        repo = EmbeddingCostEventRepository(db)
-
-        # Insert multiple events with same request ID
-        for i in range(3):
-            event = EmbeddingCostEvent(
-                id=f"event-{i}",
-                request_id="req-multi",
-                model="multilingual-e5-large",
-                texts_count=i + 1,
-                tokens_total=(i + 1) * 50,
-            )
-            await repo.insert(event)
-
-        events = await repo.get_by_request_id("req-multi")
-        assert len(events) == 3
-
-    @pytest.mark.asyncio
-    async def test_ensure_indexes(self, mock_mongodb_client):
-        """Test that ensure_indexes runs without error."""
-        db = mock_mongodb_client["ai_model"]
-        repo = EmbeddingCostEventRepository(db)
-
-        # Should not raise
-        await repo.ensure_indexes()

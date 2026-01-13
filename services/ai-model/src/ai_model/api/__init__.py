@@ -1,6 +1,8 @@
-"""API layer for AI Model service."""
+"""API layer for AI Model service.
 
-from ai_model.api.cost_service import CostServiceServicer
+Story 13.7: Removed CostServiceServicer - cost tracking now via DAPR to platform-cost (ADR-016)
+"""
+
 from ai_model.api.grpc_server import (
     GrpcServer,
     get_grpc_server,
@@ -10,7 +12,6 @@ from ai_model.api.grpc_server import (
 from ai_model.api.rag_document_service import RAGDocumentServiceServicer
 
 __all__ = [
-    "CostServiceServicer",
     "GrpcServer",
     "RAGDocumentServiceServicer",
     "get_grpc_server",
