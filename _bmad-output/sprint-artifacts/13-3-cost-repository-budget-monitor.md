@@ -50,44 +50,44 @@ So that costs are persisted efficiently and metrics survive restarts.
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: Create domain models for cost events (AC: #2)
-  - [ ] 1.1: Create `platform_cost/domain/cost_event.py`
-  - [ ] 1.2: Create `CostType` enum (llm, document, embedding, sms)
-  - [ ] 1.3: Create `UnifiedCostEvent` storage model with Pydantic
-  - [ ] 1.4: Create `CostTypeSummary` response model
-  - [ ] 1.5: Create `DailyCostEntry` response model
-  - [ ] 1.6: Create `CurrentDayCost` response model
-  - [ ] 1.7: Create `AgentTypeCost` response model (for LLM breakdown)
-  - [ ] 1.8: Create `ModelCost` response model (for LLM breakdown)
-  - [ ] 1.9: Create `DomainCost` response model (for embedding breakdown)
-  - [ ] 1.10: Create `DocumentCostSummary` response model
-  - [ ] 1.11: Add `from_event()` factory method on `UnifiedCostEvent`
+- [x] Task 1: Create domain models for cost events (AC: #2)
+  - [x] 1.1: Create `platform_cost/domain/cost_event.py`
+  - [x] 1.2: Reuse `CostType` enum from `fp_common.events.cost_recorded`
+  - [x] 1.3: Create `UnifiedCostEvent` storage model with Pydantic
+  - [x] 1.4: Create `CostTypeSummary` response model
+  - [x] 1.5: Create `DailyCostEntry` response model
+  - [x] 1.6: Create `CurrentDayCost` response model
+  - [x] 1.7: Create `AgentTypeCost` response model (for LLM breakdown)
+  - [x] 1.8: Create `ModelCost` response model (for LLM breakdown)
+  - [x] 1.9: Create `DomainCost` response model (for embedding breakdown)
+  - [x] 1.10: Create `DocumentCostSummary` response model
+  - [x] 1.11: Add `from_event()` factory method on `UnifiedCostEvent`
 
-- [ ] Task 2: Create unified cost repository (AC: #1, #2)
-  - [ ] 2.1: Create `platform_cost/infrastructure/repositories/cost_repository.py`
-  - [ ] 2.2: Implement `__init__` with database and retention_days parameters
-  - [ ] 2.3: Implement `data_available_from` property for TTL-aware queries
-  - [ ] 2.4: Implement `ensure_indexes()` with all required indexes + TTL
-  - [ ] 2.5: Implement `insert()` method storing Decimal as string
-  - [ ] 2.6: Implement `get_summary_by_type()` returning typed models
-  - [ ] 2.7: Implement `get_daily_trend()` returning typed models
-  - [ ] 2.8: Implement `get_current_day_cost()` returning typed model
-  - [ ] 2.9: Implement `get_current_month_cost()` for warm-up
-  - [ ] 2.10: Implement `get_llm_cost_by_agent_type()` for LLM breakdown
-  - [ ] 2.11: Implement `get_llm_cost_by_model()` for LLM breakdown
+- [x] Task 2: Create unified cost repository (AC: #1, #2)
+  - [x] 2.1: Create `platform_cost/infrastructure/repositories/cost_repository.py`
+  - [x] 2.2: Implement `__init__` with database and retention_days parameters
+  - [x] 2.3: Implement `data_available_from` property for TTL-aware queries
+  - [x] 2.4: Implement `ensure_indexes()` with all required indexes + TTL
+  - [x] 2.5: Implement `insert()` method storing Decimal as string
+  - [x] 2.6: Implement `get_summary_by_type()` returning typed models
+  - [x] 2.7: Implement `get_daily_trend()` returning typed models
+  - [x] 2.8: Implement `get_current_day_cost()` returning typed model
+  - [x] 2.9: Implement `get_current_month_cost()` for warm-up
+  - [x] 2.10: Implement `get_llm_cost_by_agent_type()` for LLM breakdown
+  - [x] 2.11: Implement `get_llm_cost_by_model()` for LLM breakdown
 
-- [ ] Task 3: Create threshold repository (AC: #3)
-  - [ ] 3.1: Create `platform_cost/infrastructure/repositories/threshold_repository.py`
-  - [ ] 3.2: Create `ThresholdConfig` Pydantic model
-  - [ ] 3.3: Implement `get_thresholds()` method
-  - [ ] 3.4: Implement `set_thresholds()` method with upsert
+- [x] Task 3: Create threshold repository (AC: #3)
+  - [x] 3.1: Create `platform_cost/infrastructure/repositories/threshold_repository.py`
+  - [x] 3.2: Create `ThresholdConfig` Pydantic model
+  - [x] 3.3: Implement `get_thresholds()` method
+  - [x] 3.4: Implement `set_thresholds()` method with upsert
 
-- [ ] Task 4: Create budget monitor service (AC: #3, #4)
-  - [ ] 4.1: Create `platform_cost/services/budget_monitor.py`
-  - [ ] 4.2: Create `ThresholdType` enum (daily, monthly)
-  - [ ] 4.3: Create `BudgetStatus` Pydantic model
-  - [ ] 4.4: Implement `__init__` with threshold parameters
-  - [ ] 4.5: Implement OpenTelemetry observable gauges:
+- [x] Task 4: Create budget monitor service (AC: #3, #4)
+  - [x] 4.1: Create `platform_cost/services/budget_monitor.py`
+  - [x] 4.2: Create `ThresholdType` enum (daily, monthly)
+  - [x] 4.3: Create `BudgetStatus` Pydantic model
+  - [x] 4.4: Implement `__init__` with threshold parameters
+  - [x] 4.5: Implement OpenTelemetry observable gauges:
     - `platform_cost_daily_total_usd`
     - `platform_cost_monthly_total_usd`
     - `platform_cost_daily_threshold_usd`
@@ -95,85 +95,81 @@ So that costs are persisted efficiently and metrics survive restarts.
     - `platform_cost_daily_utilization_percent`
     - `platform_cost_monthly_utilization_percent`
     - `platform_cost_by_type_usd` (with cost_type label)
-  - [ ] 4.6: Implement `platform_cost_events_total` counter
-  - [ ] 4.7: Implement `_check_reset()` for day/month period boundaries
-  - [ ] 4.8: Implement `record_cost()` to update totals and metrics
-  - [ ] 4.9: Implement `get_status()` returning `BudgetStatus`
-  - [ ] 4.10: Implement `warm_up_from_repository()` for startup restore
-  - [ ] 4.11: Implement `update_thresholds()` for runtime updates
+  - [x] 4.6: Implement `platform_cost_events_total` counter
+  - [x] 4.7: Implement `_check_reset()` for day/month period boundaries
+  - [x] 4.8: Implement `record_cost()` to update totals and metrics
+  - [x] 4.9: Implement `get_status()` returning `BudgetStatus`
+  - [x] 4.10: Implement `warm_up_from_repository()` for startup restore
+  - [x] 4.11: Implement `update_thresholds()` for runtime updates
 
-- [ ] Task 5: Update main.py lifespan (AC: #3)
-  - [ ] 5.1: Import and instantiate `UnifiedCostRepository`
-  - [ ] 5.2: Call `cost_repository.ensure_indexes()`
-  - [ ] 5.3: Import and instantiate `ThresholdRepository`
-  - [ ] 5.4: Load thresholds (MongoDB first, then config defaults)
-  - [ ] 5.5: Instantiate `BudgetMonitor` with loaded thresholds
-  - [ ] 5.6: Call `budget_monitor.warm_up_from_repository()` (fail-fast)
-  - [ ] 5.7: Store references in `app.state` for handlers/servicers
+- [x] Task 5: Update main.py lifespan (AC: #3)
+  - [x] 5.1: Import and instantiate `UnifiedCostRepository`
+  - [x] 5.2: Call `cost_repository.ensure_indexes()`
+  - [x] 5.3: Import and instantiate `ThresholdRepository`
+  - [x] 5.4: Load thresholds (MongoDB first, then config defaults)
+  - [x] 5.5: Instantiate `BudgetMonitor` with loaded thresholds
+  - [x] 5.6: Call `budget_monitor.warm_up_from_repository()` (fail-fast)
+  - [x] 5.7: Store references in `app.state` for handlers/servicers
 
-- [ ] Task 6: Write unit tests for domain models
-  - [ ] 6.1: Create `tests/unit/platform_cost/test_domain_cost_event.py`
-  - [ ] 6.2: Test `UnifiedCostEvent.from_event()` factory method
-  - [ ] 6.3: Test all response model instantiation
-  - [ ] 6.4: Test model serialization (Decimal → string)
+- [x] Task 6: Write unit tests for domain models
+  - [x] 6.1: Create `tests/unit/platform_cost/test_domain_models.py`
+  - [x] 6.2: Test `UnifiedCostEvent.from_event()` factory method
+  - [x] 6.3: Test all response model instantiation
+  - [x] 6.4: Test model serialization (Decimal → string)
 
-- [ ] Task 7: Write unit tests for cost repository
-  - [ ] 7.1: Create `tests/unit/platform_cost/test_cost_repository.py`
-  - [ ] 7.2: Test `ensure_indexes()` creates all required indexes
-  - [ ] 7.3: Test `insert()` stores event correctly
-  - [ ] 7.4: Test `get_summary_by_type()` aggregation
-  - [ ] 7.5: Test `get_daily_trend()` aggregation
-  - [ ] 7.6: Test `get_current_day_cost()` aggregation
-  - [ ] 7.7: Test `get_llm_cost_by_agent_type()` aggregation
-  - [ ] 7.8: Test `get_llm_cost_by_model()` aggregation
-  - [ ] 7.9: Test `data_available_from` property
+- [x] Task 7: Write unit tests for cost repository
+  - [x] 7.1: Create `tests/unit/platform_cost/test_cost_repository.py`
+  - [x] 7.2: Test `ensure_indexes()` creates all required indexes
+  - [x] 7.3: Test `insert()` stores event correctly
+  - [x] 7.4: Test `get_summary_by_type()` aggregation
+  - [x] 7.5: Test `get_daily_trend()` aggregation
+  - [x] 7.6: Test `get_current_day_cost()` aggregation
+  - [x] 7.7: Test `get_llm_cost_by_agent_type()` aggregation
+  - [x] 7.8: Test `get_llm_cost_by_model()` aggregation
+  - [x] 7.9: Test `data_available_from` property
 
-- [ ] Task 8: Write unit tests for threshold repository
-  - [ ] 8.1: Create `tests/unit/platform_cost/test_threshold_repository.py`
-  - [ ] 8.2: Test `get_thresholds()` returns None when no config
-  - [ ] 8.3: Test `set_thresholds()` creates new config
-  - [ ] 8.4: Test `set_thresholds()` updates existing config
-  - [ ] 8.5: Test partial threshold updates (daily only, monthly only)
+- [x] Task 8: Write unit tests for threshold repository
+  - [x] 8.1: Create `tests/unit/platform_cost/test_threshold_repository.py`
+  - [x] 8.2: Test `get_thresholds()` returns None when no config
+  - [x] 8.3: Test `set_thresholds()` creates new config
+  - [x] 8.4: Test `set_thresholds()` updates existing config
+  - [x] 8.5: Test partial threshold updates (daily only, monthly only)
 
-- [ ] Task 9: Write unit tests for budget monitor
-  - [ ] 9.1: Create `tests/unit/platform_cost/test_budget_monitor.py`
-  - [ ] 9.2: Test initial state with zero totals
-  - [ ] 9.3: Test `record_cost()` updates totals
-  - [ ] 9.4: Test daily/monthly threshold detection
-  - [ ] 9.5: Test `_check_reset()` on day boundary
-  - [ ] 9.6: Test `_check_reset()` on month boundary
-  - [ ] 9.7: Test `warm_up_from_repository()` restores totals
-  - [ ] 9.8: Test `warm_up_from_repository()` sets alert state correctly
-  - [ ] 9.9: Test `get_status()` returns correct BudgetStatus
-  - [ ] 9.10: Test `update_thresholds()` resets alert if below new threshold
+- [x] Task 9: Write unit tests for budget monitor
+  - [x] 9.1: Create `tests/unit/platform_cost/test_budget_monitor.py`
+  - [x] 9.2: Test initial state with zero totals
+  - [x] 9.3: Test `record_cost()` updates totals
+  - [x] 9.4: Test daily/monthly threshold detection
+  - [x] 9.5: Test `_check_reset()` on day boundary
+  - [x] 9.6: Test `_check_reset()` on month boundary
+  - [x] 9.7: Test `warm_up_from_repository()` restores totals
+  - [x] 9.8: Test `warm_up_from_repository()` sets alert state correctly
+  - [x] 9.9: Test `get_status()` returns correct BudgetStatus
+  - [x] 9.10: Test `update_thresholds()` resets alert if below new threshold
 
-- [ ] Task 10: Run lint and format checks
-  - [ ] 10.1: Run `ruff check .` and fix any issues
-  - [ ] 10.2: Run `ruff format --check .` and fix any issues
+- [x] Task 10: Run lint and format checks
+  - [x] 10.1: Run `ruff check .` and fix any issues
+  - [x] 10.2: Run `ruff format --check .` and fix any issues
 
 ## Git Workflow (MANDATORY)
 
 **All story development MUST use feature branches.** Direct pushes to main are blocked.
 
 ### Story Start
-- [ ] GitHub Issue exists or created: `gh issue create --title "Story 13.3: Cost Repository and Budget Monitor"`
-- [ ] Feature branch created from main:
-  ```bash
-  git checkout main && git pull origin main
-  git checkout -b feature/13-3-cost-repository-budget-monitor
-  ```
+- [x] GitHub Issue exists or created: #167
+- [x] Feature branch created from main: `feature/13-3-cost-repository-budget-monitor`
 
 **Branch name:** `feature/13-3-cost-repository-budget-monitor`
 
 ### During Development
-- [ ] All commits reference GitHub issue: `Relates to #XX`
-- [ ] Commits are atomic by type (production, test, seed - not mixed)
-- [ ] Push to feature branch: `git push -u origin feature/13-3-cost-repository-budget-monitor`
+- [x] All commits reference GitHub issue: `Relates to #167`
+- [x] Commits are atomic by type (production, test, seed - not mixed)
+- [x] Push to feature branch: `git push -u origin feature/13-3-cost-repository-budget-monitor`
 
 ### Story Done
 - [ ] Create Pull Request: `gh pr create --title "Story 13.3: Cost Repository and Budget Monitor" --base main`
 - [ ] CI passes on PR (including E2E tests)
-- [ ] Code review completed (`/code-review` or human review)
+- [x] Code review completed (`/code-review`)
 - [ ] PR approved and merged (squash)
 - [ ] Local branch cleaned up: `git branch -d feature/13-3-cost-repository-budget-monitor`
 
@@ -429,6 +425,8 @@ N/A
 - warm_up_from_repository() implements fail-fast pattern on startup
 - Fixed Pydantic field naming collision (date -> entry_date, cost_date)
 - MockAggregationCursor limitation: complex $group keys not fully supported; adjusted test accordingly
+- **Code Review Fix:** Bug in `get_daily_trend()` - changed `=` to `+=` for cost type accumulation (line 324)
+- **Deferred:** `get_embedding_cost_by_domain()` and `get_document_cost_summary()` methods to Story 13.4 (models exist, queries for later)
 
 ### File List
 
@@ -441,6 +439,7 @@ N/A
 - `tests/unit/platform_cost/test_cost_repository.py` - Unit tests for cost repository
 - `tests/unit/platform_cost/test_threshold_repository.py` - Unit tests for threshold repository
 - `tests/unit/platform_cost/test_budget_monitor.py` - Unit tests for budget monitor
+- `tests/unit/platform_cost/test_config.py` - Unit tests for service configuration
 
 **Modified:**
 - `services/platform-cost/src/platform_cost/main.py` - Added repository and budget monitor initialization in lifespan

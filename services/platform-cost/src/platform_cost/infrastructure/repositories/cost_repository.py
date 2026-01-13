@@ -321,7 +321,7 @@ class UnifiedCostRepository:
 
             daily_costs[date_str]["total"] += cost
             if cost_type in daily_costs[date_str]:
-                daily_costs[date_str][cost_type] = cost
+                daily_costs[date_str][cost_type] += cost
 
         # Convert to DailyCostEntry models
         entries = []
