@@ -1,6 +1,6 @@
 # Story 13.7: AI Model Refactor - Publish Costs via DAPR
 
-**Status:** review
+**Status:** done
 **GitHub Issue:** #175
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
