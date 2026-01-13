@@ -151,9 +151,9 @@ git push origin story/13-6-bff-integration-layer
 # Wait ~30s, then check CI status
 gh run list --branch story/13-6-bff-integration-layer --limit 3
 ```
-**CI Run ID:** _______________
-**CI E2E Status:** [ ] Passed / [ ] Failed
-**Verification Date:** _______________
+**CI Run ID:** 20959872154 (CI), 20959932248 (E2E Tests)
+**CI E2E Status:** [x] Passed
+**Verification Date:** 2026-01-13
 
 ---
 
