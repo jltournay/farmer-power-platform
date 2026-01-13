@@ -60,6 +60,71 @@ class UnifiedCostServiceServicer(platform_cost_pb2_grpc.UnifiedCostServiceServic
         self._budget_monitor = budget_monitor
         self._threshold_repository = threshold_repository
 
+    async def _parse_date(
+        self,
+        date_str: str,
+        field_name: str,
+        context: grpc.aio.ServicerContext,
+    ) -> date:
+        """Parse and validate a date string.
+
+        Args:
+            date_str: ISO date string (YYYY-MM-DD).
+            field_name: Name of the field for error messages.
+            context: gRPC context for aborting on error.
+
+        Returns:
+            Parsed date object.
+
+        Raises:
+            grpc.RpcError: If date format is invalid.
+        """
+        try:
+            return date.fromisoformat(date_str)
+        except ValueError as e:
+            await context.abort(
+                grpc.StatusCode.INVALID_ARGUMENT,
+                f"Invalid {field_name} format: {e}. Use YYYY-MM-DD.",
+            )
+            raise  # pragma: no cover
+
+    async def _validate_date_range(
+        self,
+        start_date: date,
+        end_date: date,
+        context: grpc.aio.ServicerContext,
+    ) -> None:
+        """Validate that start_date <= end_date.
+
+        Args:
+            start_date: Start of date range.
+            end_date: End of date range.
+            context: gRPC context for aborting on error.
+
+        Raises:
+            grpc.RpcError: If start_date > end_date.
+        """
+        if start_date > end_date:
+            await context.abort(
+                grpc.StatusCode.INVALID_ARGUMENT,
+                "start_date must be <= end_date.",
+            )
+            raise ValueError("Invalid date range")  # pragma: no cover
+
+    def _get_default_date_range(self, days: int = 30) -> tuple[date, date]:
+        """Get default date range (today - days, today).
+
+        Args:
+            days: Number of days to include.
+
+        Returns:
+            Tuple of (start_date, end_date).
+        """
+        from datetime import timedelta
+
+        today = date.today()
+        return (today - timedelta(days=days - 1), today)
+
     async def GetCostSummary(
         self,
         request: platform_cost_pb2.CostSummaryRequest,
@@ -80,20 +145,17 @@ class UnifiedCostServiceServicer(platform_cost_pb2_grpc.UnifiedCostServiceServic
             end_date=request.end_date,
         )
 
-        try:
-            start_date = date.fromisoformat(request.start_date)
-            end_date = date.fromisoformat(request.end_date)
-        except ValueError as e:
-            await context.abort(
-                grpc.StatusCode.INVALID_ARGUMENT,
-                f"Invalid date format: {e}. Use YYYY-MM-DD.",
-            )
-            # Never reached but helps type checker
-            raise  # pragma: no cover
+        start_date = await self._parse_date(request.start_date, "start_date", context)
+        end_date = await self._parse_date(request.end_date, "end_date", context)
+        await self._validate_date_range(start_date, end_date, context)
+
+        # Extract optional factory_id
+        factory_id = request.factory_id if request.HasField("factory_id") else None
 
         summaries = await self._cost_repository.get_summary_by_type(
             start_date=start_date,
             end_date=end_date,
+            factory_id=factory_id,
         )
 
         # Calculate total
@@ -137,29 +199,19 @@ class UnifiedCostServiceServicer(platform_cost_pb2_grpc.UnifiedCostServiceServic
         logger.debug("GetDailyCostTrend called")
 
         # Parse optional dates
-        start_date = None
-        end_date = None
         days = request.days if request.HasField("days") else 30
+        start_date = (
+            await self._parse_date(request.start_date, "start_date", context)
+            if request.HasField("start_date")
+            else None
+        )
+        end_date = (
+            await self._parse_date(request.end_date, "end_date", context) if request.HasField("end_date") else None
+        )
 
-        if request.HasField("start_date"):
-            try:
-                start_date = date.fromisoformat(request.start_date)
-            except ValueError as e:
-                await context.abort(
-                    grpc.StatusCode.INVALID_ARGUMENT,
-                    f"Invalid start_date format: {e}. Use YYYY-MM-DD.",
-                )
-                raise  # pragma: no cover
-
-        if request.HasField("end_date"):
-            try:
-                end_date = date.fromisoformat(request.end_date)
-            except ValueError as e:
-                await context.abort(
-                    grpc.StatusCode.INVALID_ARGUMENT,
-                    f"Invalid end_date format: {e}. Use YYYY-MM-DD.",
-                )
-                raise  # pragma: no cover
+        # Validate date range if both provided
+        if start_date and end_date:
+            await self._validate_date_range(start_date, end_date, context)
 
         entries = await self._cost_repository.get_daily_trend(
             start_date=start_date,
@@ -229,28 +281,18 @@ class UnifiedCostServiceServicer(platform_cost_pb2_grpc.UnifiedCostServiceServic
         """
         logger.debug("GetLlmCostByAgentType called")
 
-        start_date = None
-        end_date = None
+        start_date = (
+            await self._parse_date(request.start_date, "start_date", context)
+            if request.HasField("start_date")
+            else None
+        )
+        end_date = (
+            await self._parse_date(request.end_date, "end_date", context) if request.HasField("end_date") else None
+        )
 
-        if request.HasField("start_date"):
-            try:
-                start_date = date.fromisoformat(request.start_date)
-            except ValueError as e:
-                await context.abort(
-                    grpc.StatusCode.INVALID_ARGUMENT,
-                    f"Invalid start_date format: {e}. Use YYYY-MM-DD.",
-                )
-                raise  # pragma: no cover
-
-        if request.HasField("end_date"):
-            try:
-                end_date = date.fromisoformat(request.end_date)
-            except ValueError as e:
-                await context.abort(
-                    grpc.StatusCode.INVALID_ARGUMENT,
-                    f"Invalid end_date format: {e}. Use YYYY-MM-DD.",
-                )
-                raise  # pragma: no cover
+        # Validate date range if both provided
+        if start_date and end_date:
+            await self._validate_date_range(start_date, end_date, context)
 
         agent_costs = await self._cost_repository.get_llm_cost_by_agent_type(
             start_date=start_date,
@@ -271,11 +313,15 @@ class UnifiedCostServiceServicer(platform_cost_pb2_grpc.UnifiedCostServiceServic
             for a in agent_costs
         ]
 
+        # Use actual queried range - defaults come from repository's data_available_from
+        effective_start = start_date or self._cost_repository.data_available_from.date()
+        effective_end = end_date or date.today()
+
         return platform_cost_pb2.LlmCostByAgentTypeResponse(
             agent_costs=proto_costs,
             total_llm_cost_usd=str(total_cost),
-            period_start=start_date.isoformat() if start_date else "",
-            period_end=end_date.isoformat() if end_date else "",
+            period_start=effective_start.isoformat(),
+            period_end=effective_end.isoformat(),
         )
 
     async def GetLlmCostByModel(
@@ -294,28 +340,18 @@ class UnifiedCostServiceServicer(platform_cost_pb2_grpc.UnifiedCostServiceServic
         """
         logger.debug("GetLlmCostByModel called")
 
-        start_date = None
-        end_date = None
+        start_date = (
+            await self._parse_date(request.start_date, "start_date", context)
+            if request.HasField("start_date")
+            else None
+        )
+        end_date = (
+            await self._parse_date(request.end_date, "end_date", context) if request.HasField("end_date") else None
+        )
 
-        if request.HasField("start_date"):
-            try:
-                start_date = date.fromisoformat(request.start_date)
-            except ValueError as e:
-                await context.abort(
-                    grpc.StatusCode.INVALID_ARGUMENT,
-                    f"Invalid start_date format: {e}. Use YYYY-MM-DD.",
-                )
-                raise  # pragma: no cover
-
-        if request.HasField("end_date"):
-            try:
-                end_date = date.fromisoformat(request.end_date)
-            except ValueError as e:
-                await context.abort(
-                    grpc.StatusCode.INVALID_ARGUMENT,
-                    f"Invalid end_date format: {e}. Use YYYY-MM-DD.",
-                )
-                raise  # pragma: no cover
+        # Validate date range if both provided
+        if start_date and end_date:
+            await self._validate_date_range(start_date, end_date, context)
 
         model_costs = await self._cost_repository.get_llm_cost_by_model(
             start_date=start_date,
@@ -336,11 +372,15 @@ class UnifiedCostServiceServicer(platform_cost_pb2_grpc.UnifiedCostServiceServic
             for m in model_costs
         ]
 
+        # Use actual queried range - defaults come from repository's data_available_from
+        effective_start = start_date or self._cost_repository.data_available_from.date()
+        effective_end = end_date or date.today()
+
         return platform_cost_pb2.LlmCostByModelResponse(
             model_costs=proto_costs,
             total_llm_cost_usd=str(total_cost),
-            period_start=start_date.isoformat() if start_date else "",
-            period_end=end_date.isoformat() if end_date else "",
+            period_start=effective_start.isoformat(),
+            period_end=effective_end.isoformat(),
         )
 
     async def GetDocumentCostSummary(
@@ -363,15 +403,9 @@ class UnifiedCostServiceServicer(platform_cost_pb2_grpc.UnifiedCostServiceServic
             end_date=request.end_date,
         )
 
-        try:
-            start_date = date.fromisoformat(request.start_date)
-            end_date = date.fromisoformat(request.end_date)
-        except ValueError as e:
-            await context.abort(
-                grpc.StatusCode.INVALID_ARGUMENT,
-                f"Invalid date format: {e}. Use YYYY-MM-DD.",
-            )
-            raise  # pragma: no cover
+        start_date = await self._parse_date(request.start_date, "start_date", context)
+        end_date = await self._parse_date(request.end_date, "end_date", context)
+        await self._validate_date_range(start_date, end_date, context)
 
         summary = await self._cost_repository.get_document_cost_summary(
             start_date=start_date,
@@ -403,28 +437,18 @@ class UnifiedCostServiceServicer(platform_cost_pb2_grpc.UnifiedCostServiceServic
         """
         logger.debug("GetEmbeddingCostByDomain called")
 
-        start_date = None
-        end_date = None
+        start_date = (
+            await self._parse_date(request.start_date, "start_date", context)
+            if request.HasField("start_date")
+            else None
+        )
+        end_date = (
+            await self._parse_date(request.end_date, "end_date", context) if request.HasField("end_date") else None
+        )
 
-        if request.HasField("start_date"):
-            try:
-                start_date = date.fromisoformat(request.start_date)
-            except ValueError as e:
-                await context.abort(
-                    grpc.StatusCode.INVALID_ARGUMENT,
-                    f"Invalid start_date format: {e}. Use YYYY-MM-DD.",
-                )
-                raise  # pragma: no cover
-
-        if request.HasField("end_date"):
-            try:
-                end_date = date.fromisoformat(request.end_date)
-            except ValueError as e:
-                await context.abort(
-                    grpc.StatusCode.INVALID_ARGUMENT,
-                    f"Invalid end_date format: {e}. Use YYYY-MM-DD.",
-                )
-                raise  # pragma: no cover
+        # Validate date range if both provided
+        if start_date and end_date:
+            await self._validate_date_range(start_date, end_date, context)
 
         domain_costs = await self._cost_repository.get_embedding_cost_by_domain(
             start_date=start_date,
@@ -444,11 +468,15 @@ class UnifiedCostServiceServicer(platform_cost_pb2_grpc.UnifiedCostServiceServic
             for d in domain_costs
         ]
 
+        # Use actual queried range - defaults come from repository's data_available_from
+        effective_start = start_date or self._cost_repository.data_available_from.date()
+        effective_end = end_date or date.today()
+
         return platform_cost_pb2.EmbeddingCostByDomainResponse(
             domain_costs=proto_costs,
             total_embedding_cost_usd=str(total_cost),
-            period_start=start_date.isoformat() if start_date else "",
-            period_end=end_date.isoformat() if end_date else "",
+            period_start=effective_start.isoformat(),
+            period_end=effective_end.isoformat(),
         )
 
     async def GetBudgetStatus(

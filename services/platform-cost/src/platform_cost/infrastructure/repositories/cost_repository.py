@@ -208,12 +208,14 @@ class UnifiedCostRepository:
         self,
         start_date: date | None = None,
         end_date: date | None = None,
+        factory_id: str | None = None,
     ) -> list[CostTypeSummary]:
         """Get cost summary grouped by cost type.
 
         Args:
             start_date: Start of date range (inclusive). None = data_available_from.
             end_date: End of date range (inclusive). None = today.
+            factory_id: Optional factory ID to filter costs by.
 
         Returns:
             List of CostTypeSummary models, sorted by total cost descending.
@@ -228,8 +230,13 @@ class UnifiedCostRepository:
             else datetime.now(UTC)
         )
 
+        # Build match filter
+        match_filter: dict[str, Any] = {"timestamp": {"$gte": start_dt, "$lt": end_dt}}
+        if factory_id:
+            match_filter["factory_id"] = factory_id
+
         pipeline: list[dict[str, Any]] = [
-            {"$match": {"timestamp": {"$gte": start_dt, "$lt": end_dt}}},
+            {"$match": match_filter},
             {
                 "$group": {
                     "_id": "$cost_type",

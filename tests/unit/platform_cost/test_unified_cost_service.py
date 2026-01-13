@@ -125,6 +125,40 @@ class TestGetCostSummary:
         with pytest.raises(Exception):  # Can be ValueError or grpc.RpcError
             await servicer.GetCostSummary(request, mock_context)
 
+    @pytest.mark.asyncio
+    async def test_invalid_date_range_aborts(self, servicer, mock_context) -> None:
+        """Test start_date > end_date returns INVALID_ARGUMENT."""
+        import grpc
+
+        mock_context.abort = AsyncMock(side_effect=grpc.RpcError())
+
+        request = platform_cost_pb2.CostSummaryRequest(
+            start_date="2024-12-31",
+            end_date="2024-01-01",  # end before start
+        )
+
+        with pytest.raises(Exception):
+            await servicer.GetCostSummary(request, mock_context)
+
+        mock_context.abort.assert_called_once()
+
+    @pytest.mark.asyncio
+    async def test_passes_factory_id_to_repository(self, servicer, mock_cost_repository, mock_context) -> None:
+        """Test factory_id is passed to repository when provided."""
+        mock_cost_repository.get_summary_by_type = AsyncMock(return_value=[])
+
+        request = platform_cost_pb2.CostSummaryRequest(
+            start_date="2024-01-01",
+            end_date="2024-01-31",
+            factory_id="FAC-001",
+        )
+
+        await servicer.GetCostSummary(request, mock_context)
+
+        mock_cost_repository.get_summary_by_type.assert_called_once()
+        call_kwargs = mock_cost_repository.get_summary_by_type.call_args.kwargs
+        assert call_kwargs["factory_id"] == "FAC-001"
+
 
 class TestGetDailyCostTrend:
     """Tests for GetDailyCostTrend RPC."""
