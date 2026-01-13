@@ -537,3 +537,258 @@ class CollectionServiceClient:
             return True
         except Exception:
             return False
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# Platform Cost Service gRPC Client (Story 13.8)
+# ═══════════════════════════════════════════════════════════════════════════════
+
+
+class PlatformCostServiceError(Exception):
+    """Exception raised when Platform Cost gRPC service returns an error."""
+
+    def __init__(self, operation: str, code: grpc.StatusCode, details: str):
+        self.operation = operation
+        self.code = code
+        self.details = details
+        super().__init__(f"{operation} failed: [{code.name}] {details}")
+
+
+class PlatformCostServiceClient:
+    """gRPC client for Platform Cost Service (Story 13.8).
+
+    This client connects directly to the Platform Cost gRPC service
+    (UnifiedCostService) for cost queries and budget management.
+    """
+
+    def __init__(self, host: str = "localhost", port: int = 50055):
+        self.address = f"{host}:{port}"
+        self._channel: grpc.aio.Channel | None = None
+        self._stub: Any | None = None
+
+    async def __aenter__(self) -> "PlatformCostServiceClient":
+        from fp_proto.platform_cost.v1 import platform_cost_pb2_grpc
+
+        self._channel = grpc.aio.insecure_channel(self.address)
+        self._stub = platform_cost_pb2_grpc.UnifiedCostServiceStub(self._channel)
+        return self
+
+    async def __aexit__(self, *args: Any) -> None:
+        if self._channel:
+            await self._channel.close()
+
+    @property
+    def stub(self) -> Any:
+        if self._stub is None:
+            raise RuntimeError("Client not initialized. Use async context manager.")
+        return self._stub
+
+    async def get_cost_summary(
+        self,
+        start_date: str,
+        end_date: str,
+        factory_id: str | None = None,
+    ) -> dict[str, Any]:
+        """Get cost summary for a date range via gRPC."""
+        from fp_proto.platform_cost.v1 import platform_cost_pb2
+
+        request = platform_cost_pb2.CostSummaryRequest(
+            start_date=start_date,
+            end_date=end_date,
+        )
+        if factory_id:
+            request.factory_id = factory_id
+
+        try:
+            response = await self.stub.GetCostSummary(request)
+            return MessageToDict(response, preserving_proto_field_name=True)
+        except grpc.RpcError as e:
+            raise PlatformCostServiceError(
+                operation="GetCostSummary",
+                code=e.code(),
+                details=e.details() or str(e),
+            ) from e
+
+    async def get_daily_cost_trend(
+        self,
+        start_date: str | None = None,
+        end_date: str | None = None,
+        days: int = 30,
+    ) -> dict[str, Any]:
+        """Get daily cost trend for visualization via gRPC."""
+        from fp_proto.platform_cost.v1 import platform_cost_pb2
+
+        request = platform_cost_pb2.DailyCostTrendRequest(days=days)
+        if start_date:
+            request.start_date = start_date
+        if end_date:
+            request.end_date = end_date
+
+        try:
+            response = await self.stub.GetDailyCostTrend(request)
+            return MessageToDict(response, preserving_proto_field_name=True)
+        except grpc.RpcError as e:
+            raise PlatformCostServiceError(
+                operation="GetDailyCostTrend",
+                code=e.code(),
+                details=e.details() or str(e),
+            ) from e
+
+    async def get_current_day_cost(self) -> dict[str, Any]:
+        """Get real-time today's running cost total via gRPC."""
+        from fp_proto.platform_cost.v1 import platform_cost_pb2
+
+        request = platform_cost_pb2.CurrentDayCostRequest()
+        try:
+            response = await self.stub.GetCurrentDayCost(request)
+            return MessageToDict(response, preserving_proto_field_name=True)
+        except grpc.RpcError as e:
+            raise PlatformCostServiceError(
+                operation="GetCurrentDayCost",
+                code=e.code(),
+                details=e.details() or str(e),
+            ) from e
+
+    async def get_llm_cost_by_agent_type(
+        self,
+        start_date: str | None = None,
+        end_date: str | None = None,
+    ) -> dict[str, Any]:
+        """Get LLM cost breakdown by agent type via gRPC."""
+        from fp_proto.platform_cost.v1 import platform_cost_pb2
+
+        request = platform_cost_pb2.LlmCostByAgentTypeRequest()
+        if start_date:
+            request.start_date = start_date
+        if end_date:
+            request.end_date = end_date
+
+        try:
+            response = await self.stub.GetLlmCostByAgentType(request)
+            return MessageToDict(response, preserving_proto_field_name=True)
+        except grpc.RpcError as e:
+            raise PlatformCostServiceError(
+                operation="GetLlmCostByAgentType",
+                code=e.code(),
+                details=e.details() or str(e),
+            ) from e
+
+    async def get_llm_cost_by_model(
+        self,
+        start_date: str | None = None,
+        end_date: str | None = None,
+    ) -> dict[str, Any]:
+        """Get LLM cost breakdown by model via gRPC."""
+        from fp_proto.platform_cost.v1 import platform_cost_pb2
+
+        request = platform_cost_pb2.LlmCostByModelRequest()
+        if start_date:
+            request.start_date = start_date
+        if end_date:
+            request.end_date = end_date
+
+        try:
+            response = await self.stub.GetLlmCostByModel(request)
+            return MessageToDict(response, preserving_proto_field_name=True)
+        except grpc.RpcError as e:
+            raise PlatformCostServiceError(
+                operation="GetLlmCostByModel",
+                code=e.code(),
+                details=e.details() or str(e),
+            ) from e
+
+    async def get_document_cost_summary(
+        self,
+        start_date: str,
+        end_date: str,
+    ) -> dict[str, Any]:
+        """Get document processing cost summary via gRPC."""
+        from fp_proto.platform_cost.v1 import platform_cost_pb2
+
+        request = platform_cost_pb2.DocumentCostSummaryRequest(
+            start_date=start_date,
+            end_date=end_date,
+        )
+        try:
+            response = await self.stub.GetDocumentCostSummary(request)
+            return MessageToDict(response, preserving_proto_field_name=True)
+        except grpc.RpcError as e:
+            raise PlatformCostServiceError(
+                operation="GetDocumentCostSummary",
+                code=e.code(),
+                details=e.details() or str(e),
+            ) from e
+
+    async def get_embedding_cost_by_domain(
+        self,
+        start_date: str | None = None,
+        end_date: str | None = None,
+    ) -> dict[str, Any]:
+        """Get embedding cost breakdown by domain via gRPC."""
+        from fp_proto.platform_cost.v1 import platform_cost_pb2
+
+        request = platform_cost_pb2.EmbeddingCostByDomainRequest()
+        if start_date:
+            request.start_date = start_date
+        if end_date:
+            request.end_date = end_date
+
+        try:
+            response = await self.stub.GetEmbeddingCostByDomain(request)
+            return MessageToDict(response, preserving_proto_field_name=True)
+        except grpc.RpcError as e:
+            raise PlatformCostServiceError(
+                operation="GetEmbeddingCostByDomain",
+                code=e.code(),
+                details=e.details() or str(e),
+            ) from e
+
+    async def get_budget_status(self) -> dict[str, Any]:
+        """Get current budget thresholds and utilization via gRPC."""
+        from fp_proto.platform_cost.v1 import platform_cost_pb2
+
+        request = platform_cost_pb2.BudgetStatusRequest()
+        try:
+            response = await self.stub.GetBudgetStatus(request)
+            return MessageToDict(response, preserving_proto_field_name=True)
+        except grpc.RpcError as e:
+            raise PlatformCostServiceError(
+                operation="GetBudgetStatus",
+                code=e.code(),
+                details=e.details() or str(e),
+            ) from e
+
+    async def configure_budget_threshold(
+        self,
+        daily_threshold_usd: str | None = None,
+        monthly_threshold_usd: str | None = None,
+    ) -> dict[str, Any]:
+        """Configure budget thresholds (persisted to MongoDB) via gRPC."""
+        from fp_proto.platform_cost.v1 import platform_cost_pb2
+
+        request = platform_cost_pb2.ConfigureBudgetThresholdRequest()
+        if daily_threshold_usd is not None:
+            request.daily_threshold_usd = daily_threshold_usd
+        if monthly_threshold_usd is not None:
+            request.monthly_threshold_usd = monthly_threshold_usd
+
+        try:
+            response = await self.stub.ConfigureBudgetThreshold(request)
+            return MessageToDict(response, preserving_proto_field_name=True)
+        except grpc.RpcError as e:
+            raise PlatformCostServiceError(
+                operation="ConfigureBudgetThreshold",
+                code=e.code(),
+                details=e.details() or str(e),
+            ) from e
+
+    async def check_connectivity(self) -> bool:
+        """Check if gRPC service is reachable."""
+        try:
+            await self.get_current_day_cost()
+            return True
+        except grpc.RpcError:
+            # Any response (even error) means the service is reachable
+            return True
+        except Exception:
+            return False

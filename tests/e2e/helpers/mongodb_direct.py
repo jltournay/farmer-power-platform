@@ -138,6 +138,7 @@ class MongoDBDirectClient:
         await self.drop_database("plantation_e2e")
         await self.drop_database("collection_e2e")
         await self.drop_database("ai_model_e2e")
+        await self.drop_database("platform_cost_e2e")  # Story 13.8
 
     async def list_databases(self) -> list[str]:
         """List all databases."""
@@ -406,3 +407,86 @@ class MongoDBDirectClient:
             The prompt if found, None otherwise.
         """
         return await self.ai_model_db.prompts.find_one({"prompt_id": prompt_id})
+
+    # =========================================================================
+    # Platform Cost Database Helpers (Story 13.8)
+    # =========================================================================
+
+    @property
+    def platform_cost_db(self) -> AsyncIOMotorDatabase:
+        """Get the Platform Cost E2E database."""
+        return self.get_database("platform_cost_e2e")
+
+    async def count_cost_events(
+        self,
+        cost_type: str | None = None,
+        agent_type: str | None = None,
+    ) -> int:
+        """Count cost events in platform_cost database.
+
+        Args:
+            cost_type: Optional filter by cost type (llm, document, embedding, sms).
+            agent_type: Optional filter by agent type.
+
+        Returns:
+            Count of cost events matching the filters.
+        """
+        query: dict[str, Any] = {}
+        if cost_type:
+            query["cost_type"] = cost_type
+        if agent_type:
+            query["agent_type"] = agent_type
+        return await self.platform_cost_db.cost_events.count_documents(query)
+
+    async def get_latest_cost_events(
+        self,
+        limit: int = 10,
+        cost_type: str | None = None,
+    ) -> list[dict[str, Any]]:
+        """Get latest cost events from platform_cost database.
+
+        Args:
+            limit: Maximum number of events to return.
+            cost_type: Optional filter by cost type.
+
+        Returns:
+            List of cost events sorted by timestamp descending.
+        """
+        query: dict[str, Any] = {}
+        if cost_type:
+            query["cost_type"] = cost_type
+        cursor = self.platform_cost_db.cost_events.find(query).sort("timestamp", -1).limit(limit)
+        return await cursor.to_list(length=limit)
+
+    async def get_cost_event_by_request_id(self, request_id: str) -> dict[str, Any] | None:
+        """Get a cost event by request_id.
+
+        Args:
+            request_id: The request_id to look up.
+
+        Returns:
+            The cost event if found, None otherwise.
+        """
+        return await self.platform_cost_db.cost_events.find_one({"request_id": request_id})
+
+    async def get_budget_thresholds(self) -> dict[str, Any] | None:
+        """Get current budget thresholds from platform_cost database.
+
+        Returns:
+            The threshold configuration if found, None otherwise.
+        """
+        return await self.platform_cost_db.budget_thresholds.find_one({})
+
+    async def seed_cost_events(self, cost_events: list[dict[str, Any]]) -> None:
+        """Seed cost events into platform_cost database.
+
+        Args:
+            cost_events: List of cost event documents to seed.
+        """
+        if cost_events:
+            for event in cost_events:
+                await self.platform_cost_db.cost_events.update_one(
+                    {"request_id": event["request_id"]},
+                    {"$set": event},
+                    upsert=True,
+                )
