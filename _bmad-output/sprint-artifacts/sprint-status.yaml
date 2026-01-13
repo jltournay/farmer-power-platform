@@ -204,7 +204,7 @@ development_status:
   13-2-platform-cost-service-scaffold: done  # github_issue: 165, FastAPI + DAPR + gRPC scaffold
   13-3-cost-repository-budget-monitor: done  # github_issue: 167, MongoDB repository + TTL + BudgetMonitor with warm-up, CODE REVIEW COMPLETED 2026-01-13
   13-4-grpc-unified-cost-service: review  # Proto + all RPC implementations, github_issue: 169
-  13-5-dapr-cost-event-subscription: backlog  # Subscribe to platform.cost.recorded
+  13-5-dapr-cost-event-subscription: done  # github_issue: 171, Subscribe to platform.cost.recorded, CODE REVIEW COMPLETED 2026-01-13
   13-6-bff-integration-layer: backlog  # fp-common models + converters + BFF client (ADR-016 Parts 4-6)
   13-7-ai-model-refactor-publish-costs: backlog  # ai-model publishes instead of persists, cleanup
   13-8-e2e-integration-tests: backlog  # Full pub/sub flow validation

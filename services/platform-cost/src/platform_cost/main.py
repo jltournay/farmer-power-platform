@@ -12,8 +12,11 @@ Architecture (ADR-011, ADR-016):
 Story 13.2: Service scaffold with FastAPI + DAPR + gRPC.
 Story 13.3: Add BudgetMonitor initialization with warm-up.
 Story 13.4: Add gRPC UnifiedCostService server.
+Story 13.5: Add DAPR streaming subscription for cost events.
 """
 
+import asyncio
+import threading
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 
@@ -25,6 +28,11 @@ from fp_common import configure_logging, create_admin_router
 from platform_cost.api import GrpcServer, health_router
 from platform_cost.api.health import set_mongodb_check
 from platform_cost.config import settings
+from platform_cost.handlers import (
+    run_cost_subscription,
+    set_handler_dependencies,
+    set_main_event_loop,
+)
 from platform_cost.infrastructure.mongodb import (
     check_mongodb_connection,
     close_mongodb_connection,
@@ -55,9 +63,10 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     Story 13.2: Basic scaffold lifespan - MongoDB connection only.
     Story 13.3: Add BudgetMonitor initialization with warm-up from MongoDB.
     Story 13.4: Add gRPC UnifiedCostService server.
-    Story 13.5: Will add DAPR streaming subscriptions.
+    Story 13.5: Add DAPR streaming subscription for cost events.
     """
     grpc_server: GrpcServer | None = None
+    subscription_thread: threading.Thread | None = None
 
     # Startup
     logger.info(
@@ -142,6 +151,26 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
         logger.info(
             "gRPC server started",
             port=settings.grpc_port,
+        )
+
+        # Story 13.5: Set up DAPR streaming subscription for cost events
+        # Set handler dependencies (repository, budget monitor)
+        set_handler_dependencies(cost_repository, budget_monitor)
+
+        # Capture main event loop for async operations in subscription handler
+        set_main_event_loop(asyncio.get_running_loop())
+
+        # Start subscription in daemon thread (won't block shutdown)
+        subscription_thread = threading.Thread(
+            target=run_cost_subscription,
+            daemon=True,
+            name="cost-subscription-thread",
+        )
+        subscription_thread.start()
+        logger.info(
+            "Cost event subscription thread started",
+            topic=settings.cost_event_topic,
+            sidecar_wait_seconds=settings.dapr_sidecar_wait_seconds,
         )
 
         logger.info("Service startup complete")

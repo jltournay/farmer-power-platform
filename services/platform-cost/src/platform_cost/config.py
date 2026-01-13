@@ -52,6 +52,10 @@ class Settings(BaseSettings):
     # Cost event topic (per ADR-016)
     cost_event_topic: str = "platform.cost.recorded"
 
+    # DAPR sidecar wait time (seconds before starting subscriptions)
+    # Story 13.5: Allow time for sidecar readiness before establishing subscription
+    dapr_sidecar_wait_seconds: int = 5
+
     # Budget thresholds (per ADR-016)
     budget_daily_threshold_usd: float = 10.0
     budget_monthly_threshold_usd: float = 100.0

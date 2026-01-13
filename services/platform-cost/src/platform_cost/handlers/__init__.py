@@ -1,5 +1,19 @@
 """DAPR event handlers for platform cost service.
 
-Story 13.5 will add:
-- CostEventHandler: Subscribes to platform.cost.recorded events
+Story 13.5: DAPR Cost Event Subscription
+- cost_event_handler module: Subscribes to platform.cost.recorded events
 """
+
+from platform_cost.handlers.cost_event_handler import (
+    handle_cost_event,
+    run_cost_subscription,
+    set_handler_dependencies,
+    set_main_event_loop,
+)
+
+__all__ = [
+    "handle_cost_event",
+    "run_cost_subscription",
+    "set_handler_dependencies",
+    "set_main_event_loop",
+]
