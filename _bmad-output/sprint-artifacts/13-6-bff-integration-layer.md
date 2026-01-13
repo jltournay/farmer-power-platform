@@ -77,7 +77,7 @@ so that the **Admin Dashboard can consume unified cost data via strongly-typed P
 - [ ] PR approved and merged (squash)
 - [ ] Local branch cleaned up: `git branch -d story/13-6-bff-integration-layer`
 
-**PR URL:** _______________ (fill in when created)
+**PR URL:** https://github.com/jltournay/farmer-power-platform/pull/174
 
 ---
 
