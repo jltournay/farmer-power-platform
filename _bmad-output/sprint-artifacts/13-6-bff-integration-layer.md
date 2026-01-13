@@ -21,9 +21,9 @@ so that the **Admin Dashboard can consume unified cost data via strongly-typed P
    - Proto → Pydantic converters (for BFF client to consume gRPC responses)
 5. **AC5: Update platform-cost to use converters** - Refactor `services/platform-cost/src/platform_cost/api/unified_cost_service.py` to use fp-common converters instead of inline proto construction
 6. **AC6: Converter Exports** - Update `libs/fp-common/fp_common/converters/__init__.py` to export all cost converters
-7. **AC7: BFF Client** - Create `services/bff/src/bff/infrastructure/clients/platform_cost_client.py` with 10 gRPC methods per ADR-016 Part 6
+7. **AC7: BFF Client** - Create `services/bff/src/bff/infrastructure/clients/platform_cost_client.py` with 9 gRPC methods per ADR-016 Part 6 (matching proto definition)
 8. **AC8: BFF Client Export** - Update `services/bff/src/bff/infrastructure/clients/__init__.py` to export `PlatformCostClient`
-9. **AC9: Unit Tests for Converters** - Create `tests/unit/fp_common/test_cost_converters.py` with tests for all converter functions
+9. **AC9: Unit Tests for Converters** - Create `tests/unit/fp_common/converters/test_cost_converters.py` with tests for all converter functions
 10. **AC10: Unit Tests for BFF Client** - Create `tests/unit/bff/test_platform_cost_client.py` with tests for all client methods
 
 ## Tasks / Subtasks
@@ -275,7 +275,7 @@ This story implements the **BFF integration layer** for the Platform Cost servic
 | `libs/fp-common/fp_common/models/cost.py` | Pydantic models MOVED from platform-cost + aggregate models |
 | `libs/fp-common/fp_common/converters/cost_converters.py` | Proto → Pydantic converters |
 | `services/bff/src/bff/infrastructure/clients/platform_cost_client.py` | gRPC client |
-| `tests/unit/fp_common/test_cost_converters.py` | Converter unit tests |
+| `tests/unit/fp_common/converters/test_cost_converters.py` | Converter unit tests |
 | `tests/unit/bff/test_platform_cost_client.py` | Client unit tests |
 
 ### Files to Modify
@@ -289,7 +289,7 @@ This story implements the **BFF integration layer** for the Platform Cost servic
 | `libs/fp-common/fp_common/converters/__init__.py` | Export cost converters |
 | `services/bff/src/bff/infrastructure/clients/__init__.py` | Export `PlatformCostClient` |
 
-### BFF Client Methods (10 total)
+### BFF Client Methods (9 total)
 
 | Method | gRPC RPC | Returns |
 |--------|----------|---------|
@@ -365,7 +365,7 @@ Claude Opus 4.5 (claude-opus-4-5-20251101)
 - `libs/fp-common/fp_common/models/cost.py` - Response models MOVED from platform-cost + new aggregate models
 - `libs/fp-common/fp_common/converters/cost_converters.py`
 - `services/bff/src/bff/infrastructure/clients/platform_cost_client.py`
-- `tests/unit/fp_common/test_cost_converters.py`
+- `tests/unit/fp_common/converters/test_cost_converters.py`
 - `tests/unit/bff/test_platform_cost_client.py`
 
 **Modified:**
