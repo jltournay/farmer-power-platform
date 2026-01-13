@@ -153,9 +153,11 @@ git push origin story/13-8-e2e-integration-tests
 # Wait ~30s, then check CI status
 gh run list --branch story/13-8-e2e-integration-tests --limit 3
 ```
-**CI Run ID:** _______________
-**CI E2E Status:** [ ] Passed / [ ] Failed
-**Verification Date:** _______________
+**CI Run ID:** 20968728825
+**E2E Run ID:** 20968747850
+**CI Status:** [x] Passed / [ ] Failed
+**E2E CI Status:** [x] Passed / [ ] Failed
+**Verification Date:** 2026-01-13
 
 ---
 
