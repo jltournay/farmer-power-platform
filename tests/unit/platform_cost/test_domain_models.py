@@ -313,12 +313,14 @@ class TestDomainCost:
         cost = DomainCost(
             knowledge_domain="tea-quality",
             cost_usd=Decimal("0.25"),
-            query_count=2500,
+            tokens_total=50000,
+            texts_count=100,
             percentage=50.0,
         )
 
         assert cost.knowledge_domain == "tea-quality"
-        assert cost.query_count == 2500
+        assert cost.tokens_total == 50000
+        assert cost.texts_count == 100
 
 
 class TestDocumentCostSummary:

@@ -1,0 +1,249 @@
+// Platform Cost Service - gRPC API Definition
+// Unified cost aggregation and budget monitoring for the Farmer Power Platform
+// Story 13.4: gRPC UnifiedCostService (ADR-016)
+
+syntax = "proto3";
+
+package farmer_power.platform_cost.v1;
+
+// UnifiedCostService provides cost aggregation, reporting, and budget management.
+// Consumes cost events from services via DAPR pub/sub and exposes query APIs.
+service UnifiedCostService {
+  // GetCostSummary returns total costs with breakdown by cost type for a date range.
+  rpc GetCostSummary(CostSummaryRequest) returns (CostSummaryResponse);
+
+  // GetDailyCostTrend returns daily costs for stacked chart visualization.
+  // Includes data_available_from field indicating TTL boundary.
+  rpc GetDailyCostTrend(DailyCostTrendRequest) returns (DailyCostTrendResponse);
+
+  // GetCurrentDayCost returns real-time today's running cost total.
+  rpc GetCurrentDayCost(CurrentDayCostRequest) returns (CurrentDayCostResponse);
+
+  // GetLlmCostByAgentType returns LLM cost breakdown by agent type.
+  rpc GetLlmCostByAgentType(LlmCostByAgentTypeRequest) returns (LlmCostByAgentTypeResponse);
+
+  // GetLlmCostByModel returns LLM cost breakdown by model.
+  rpc GetLlmCostByModel(LlmCostByModelRequest) returns (LlmCostByModelResponse);
+
+  // GetDocumentCostSummary returns document processing cost summary.
+  rpc GetDocumentCostSummary(DocumentCostSummaryRequest) returns (DocumentCostSummaryResponse);
+
+  // GetEmbeddingCostByDomain returns embedding costs grouped by knowledge domain.
+  rpc GetEmbeddingCostByDomain(EmbeddingCostByDomainRequest) returns (EmbeddingCostByDomainResponse);
+
+  // GetBudgetStatus returns current budget thresholds and utilization.
+  rpc GetBudgetStatus(BudgetStatusRequest) returns (BudgetStatusResponse);
+
+  // ConfigureBudgetThreshold updates budget thresholds (persisted to MongoDB).
+  rpc ConfigureBudgetThreshold(ConfigureBudgetThresholdRequest) returns (ConfigureBudgetThresholdResponse);
+}
+
+// ============================================================================
+// Common Types
+// ============================================================================
+
+// CostTypeBreakdown represents cost for a single cost type in a summary.
+message CostTypeBreakdown {
+  string cost_type = 1;          // llm, document, embedding, sms
+  string total_cost_usd = 2;     // Decimal as string for precision
+  int32 total_quantity = 3;      // Total units consumed
+  int32 request_count = 4;       // Number of operations
+  double percentage = 5;         // Percentage of total cost (0-100)
+}
+
+// DailyCostEntry represents costs for a single day with type breakdown.
+message DailyCostEntry {
+  string date = 1;               // ISO date YYYY-MM-DD
+  string total_cost_usd = 2;     // Decimal as string
+  string llm_cost_usd = 3;       // LLM portion
+  string document_cost_usd = 4;  // Document processing portion
+  string embedding_cost_usd = 5; // Embedding portion
+  string sms_cost_usd = 6;       // SMS portion
+}
+
+// ============================================================================
+// GetCostSummary - Total costs with type breakdown
+// ============================================================================
+
+message CostSummaryRequest {
+  string start_date = 1;              // ISO date YYYY-MM-DD (required)
+  string end_date = 2;                // ISO date YYYY-MM-DD (required)
+  optional string factory_id = 3;     // Optional filter by factory
+}
+
+message CostSummaryResponse {
+  string total_cost_usd = 1;                    // Total across all types
+  repeated CostTypeBreakdown by_type = 2;       // Breakdown by cost type
+  string period_start = 3;                      // Echo of request start_date
+  string period_end = 4;                        // Echo of request end_date
+  int32 total_requests = 5;                     // Total operations across all types
+}
+
+// ============================================================================
+// GetDailyCostTrend - Daily costs for stacked chart
+// ============================================================================
+
+message DailyCostTrendRequest {
+  optional string start_date = 1;     // ISO date YYYY-MM-DD (default: 30 days ago)
+  optional string end_date = 2;       // ISO date YYYY-MM-DD (default: today)
+  optional int32 days = 3;            // Alternative: number of days (default: 30)
+}
+
+message DailyCostTrendResponse {
+  repeated DailyCostEntry entries = 1;     // Daily cost entries, sorted by date
+  string data_available_from = 2;          // ISO date - earliest available due to TTL
+}
+
+// ============================================================================
+// GetCurrentDayCost - Real-time today's cost
+// ============================================================================
+
+message CurrentDayCostRequest {
+  // No parameters - always returns today's cost
+}
+
+message CurrentDayCostResponse {
+  string date = 1;                         // Today's date YYYY-MM-DD
+  string total_cost_usd = 2;               // Running total for today
+  map<string, string> by_type = 3;         // cost_type -> cost_usd
+  string updated_at = 4;                   // ISO timestamp of computation
+}
+
+// ============================================================================
+// GetLlmCostByAgentType - LLM breakdown by agent
+// ============================================================================
+
+message LlmCostByAgentTypeRequest {
+  optional string start_date = 1;     // ISO date YYYY-MM-DD
+  optional string end_date = 2;       // ISO date YYYY-MM-DD
+}
+
+message AgentTypeCost {
+  string agent_type = 1;              // extractor, explorer, generator, etc.
+  string cost_usd = 2;                // Decimal as string
+  int32 request_count = 3;
+  int32 tokens_in = 4;
+  int32 tokens_out = 5;
+  double percentage = 6;              // Percentage of total LLM cost
+}
+
+message LlmCostByAgentTypeResponse {
+  repeated AgentTypeCost agent_costs = 1;     // Sorted by cost descending
+  string total_llm_cost_usd = 2;              // Total LLM cost
+  string period_start = 3;
+  string period_end = 4;
+}
+
+// ============================================================================
+// GetLlmCostByModel - LLM breakdown by model
+// ============================================================================
+
+message LlmCostByModelRequest {
+  optional string start_date = 1;     // ISO date YYYY-MM-DD
+  optional string end_date = 2;       // ISO date YYYY-MM-DD
+}
+
+message ModelCost {
+  string model = 1;                   // e.g., anthropic/claude-3-haiku
+  string cost_usd = 2;                // Decimal as string
+  int32 request_count = 3;
+  int32 tokens_in = 4;
+  int32 tokens_out = 5;
+  double percentage = 6;              // Percentage of total LLM cost
+}
+
+message LlmCostByModelResponse {
+  repeated ModelCost model_costs = 1;     // Sorted by cost descending
+  string total_llm_cost_usd = 2;          // Total LLM cost
+  string period_start = 3;
+  string period_end = 4;
+}
+
+// ============================================================================
+// GetDocumentCostSummary - Document processing costs
+// ============================================================================
+
+message DocumentCostSummaryRequest {
+  string start_date = 1;              // ISO date YYYY-MM-DD (required)
+  string end_date = 2;                // ISO date YYYY-MM-DD (required)
+}
+
+message DocumentCostSummaryResponse {
+  string total_cost_usd = 1;          // Total document processing cost
+  int32 total_pages = 2;              // Total pages processed
+  string avg_cost_per_page_usd = 3;   // Average cost per page
+  int32 document_count = 4;           // Number of documents processed
+  string period_start = 5;
+  string period_end = 6;
+}
+
+// ============================================================================
+// GetEmbeddingCostByDomain - Embedding costs by knowledge domain
+// ============================================================================
+
+message EmbeddingCostByDomainRequest {
+  optional string start_date = 1;     // ISO date YYYY-MM-DD
+  optional string end_date = 2;       // ISO date YYYY-MM-DD
+}
+
+message DomainCost {
+  string knowledge_domain = 1;        // e.g., tea-quality, farming-practices
+  string cost_usd = 2;                // Decimal as string
+  int32 tokens_total = 3;             // Total embedding tokens
+  int32 texts_count = 4;              // Number of texts embedded
+  double percentage = 5;              // Percentage of total embedding cost
+}
+
+message EmbeddingCostByDomainResponse {
+  repeated DomainCost domain_costs = 1;     // Sorted by cost descending
+  string total_embedding_cost_usd = 2;      // Total embedding cost
+  string period_start = 3;
+  string period_end = 4;
+}
+
+// ============================================================================
+// GetBudgetStatus - Current thresholds and utilization
+// ============================================================================
+
+message BudgetStatusRequest {
+  // No parameters - returns current status
+}
+
+message BudgetStatusResponse {
+  // Daily metrics
+  string daily_threshold_usd = 1;
+  string daily_total_usd = 2;
+  bool daily_alert_triggered = 3;
+  string daily_remaining_usd = 4;
+  double daily_utilization_percent = 5;
+
+  // Monthly metrics
+  string monthly_threshold_usd = 6;
+  string monthly_total_usd = 7;
+  bool monthly_alert_triggered = 8;
+  string monthly_remaining_usd = 9;
+  double monthly_utilization_percent = 10;
+
+  // Per-type breakdown (current day)
+  map<string, string> by_type = 11;       // cost_type -> cost_usd
+
+  // Tracking period
+  string current_day = 12;                // ISO date
+  string current_month = 13;              // YYYY-MM
+}
+
+// ============================================================================
+// ConfigureBudgetThreshold - Update thresholds (persisted)
+// ============================================================================
+
+message ConfigureBudgetThresholdRequest {
+  optional string daily_threshold_usd = 1;    // New daily threshold (null = keep current)
+  optional string monthly_threshold_usd = 2;  // New monthly threshold (null = keep current)
+}
+
+message ConfigureBudgetThresholdResponse {
+  string daily_threshold_usd = 1;
+  string monthly_threshold_usd = 2;
+  string message = 3;                         // Confirmation message
+  string updated_at = 4;                      // ISO timestamp
+}

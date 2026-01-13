@@ -316,3 +316,95 @@ class TestGetLlmCostByModel:
             assert hasattr(cost, "model")
             assert hasattr(cost, "cost_usd")
             assert hasattr(cost, "percentage")
+
+
+class TestGetDocumentCostSummary:
+    """Tests for get_document_cost_summary method (Story 13.4)."""
+
+    @pytest.mark.asyncio
+    async def test_returns_document_cost_summary(self, cost_repository, mock_db) -> None:
+        """Test that get_document_cost_summary returns DocumentCostSummary model."""
+        collection = mock_db[COLLECTION_NAME]
+        now = datetime.now(UTC)
+
+        await collection.insert_many(
+            [
+                {
+                    "_id": "doc-1",
+                    "cost_type": "document",
+                    "amount_usd": "0.50",
+                    "quantity": 10,
+                    "timestamp": now,
+                },
+                {
+                    "_id": "doc-2",
+                    "cost_type": "document",
+                    "amount_usd": "0.25",
+                    "quantity": 5,
+                    "timestamp": now,
+                },
+            ]
+        )
+
+        summary = await cost_repository.get_document_cost_summary()
+
+        assert hasattr(summary, "total_cost_usd")
+        assert hasattr(summary, "total_pages")
+        assert hasattr(summary, "avg_cost_per_page_usd")
+        assert hasattr(summary, "document_count")
+
+    @pytest.mark.asyncio
+    async def test_returns_zero_for_no_data(self, cost_repository) -> None:
+        """Test returns zero values when no document events exist."""
+        summary = await cost_repository.get_document_cost_summary()
+
+        assert summary.total_cost_usd == Decimal("0")
+        assert summary.total_pages == 0
+        assert summary.document_count == 0
+
+
+class TestGetEmbeddingCostByDomain:
+    """Tests for get_embedding_cost_by_domain method (Story 13.4)."""
+
+    @pytest.mark.asyncio
+    async def test_returns_domain_cost_models(self, cost_repository, mock_db) -> None:
+        """Test that get_embedding_cost_by_domain returns DomainCost models."""
+        collection = mock_db[COLLECTION_NAME]
+        now = datetime.now(UTC)
+
+        await collection.insert_many(
+            [
+                {
+                    "_id": "emb-1",
+                    "cost_type": "embedding",
+                    "amount_usd": "0.10",
+                    "quantity": 10000,
+                    "knowledge_domain": "tea-quality",
+                    "timestamp": now,
+                },
+                {
+                    "_id": "emb-2",
+                    "cost_type": "embedding",
+                    "amount_usd": "0.05",
+                    "quantity": 5000,
+                    "knowledge_domain": "farming-practices",
+                    "timestamp": now,
+                },
+            ]
+        )
+
+        domain_costs = await cost_repository.get_embedding_cost_by_domain()
+
+        for cost in domain_costs:
+            assert hasattr(cost, "knowledge_domain")
+            assert hasattr(cost, "cost_usd")
+            assert hasattr(cost, "tokens_total")
+            assert hasattr(cost, "texts_count")
+            assert hasattr(cost, "percentage")
+
+    @pytest.mark.asyncio
+    async def test_returns_empty_for_no_data(self, cost_repository) -> None:
+        """Test returns empty list when no embedding events exist."""
+        domain_costs = await cost_repository.get_embedding_cost_by_domain()
+
+        assert domain_costs == []

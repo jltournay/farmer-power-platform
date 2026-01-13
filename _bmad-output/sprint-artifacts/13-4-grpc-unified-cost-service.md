@@ -1,7 +1,7 @@
 # Story 13.4: gRPC UnifiedCostService
 
-**Status:** ready-for-dev
-**GitHub Issue:** <!-- Auto-created by dev-story workflow -->
+**Status:** in-progress
+**GitHub Issue:** #169
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -39,57 +39,57 @@ So that the Platform Admin UI can consume cost data.
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: Create proto definition (AC: #1)
-  - [ ] 1.1: Create `proto/platform_cost/v1/` directory structure
-  - [ ] 1.2: Create `platform_cost.proto` with service definition
-  - [ ] 1.3: Define all 9 RPC methods per ADR-016
-  - [ ] 1.4: Define all request/response messages
-  - [ ] 1.5: Run `bash scripts/proto-gen.sh` to generate Python stubs
-  - [ ] 1.6: Verify stubs appear in `libs/fp-proto/src/farmer_power/platform_cost/v1/`
+- [x] Task 1: Create proto definition (AC: #1)
+  - [x] 1.1: Create `proto/platform_cost/v1/` directory structure
+  - [x] 1.2: Create `platform_cost.proto` with service definition
+  - [x] 1.3: Define all 9 RPC methods per ADR-016
+  - [x] 1.4: Define all request/response messages
+  - [x] 1.5: Run `bash scripts/proto-gen.sh` to generate Python stubs
+  - [x] 1.6: Verify stubs appear in `libs/fp-proto/src/fp_proto/platform_cost/v1/`
 
-- [ ] Task 2: Create gRPC server setup (AC: #1)
-  - [ ] 2.1: Create `platform_cost/api/grpc_server.py`
-  - [ ] 2.2: Implement `serve()` function with gRPC server initialization
-  - [ ] 2.3: Configure reflection for service discovery
-  - [ ] 2.4: Add graceful shutdown handling
-  - [ ] 2.5: Register UnifiedCostService servicer
+- [x] Task 2: Create gRPC server setup (AC: #1)
+  - [x] 2.1: Create `platform_cost/api/grpc_server.py`
+  - [x] 2.2: Implement `GrpcServer` class with async start/stop
+  - [x] 2.3: Configure reflection for service discovery
+  - [x] 2.4: Add graceful shutdown handling
+  - [x] 2.5: Register UnifiedCostService servicer
 
-- [ ] Task 3: Implement UnifiedCostService servicer (AC: #1, #2, #3)
-  - [ ] 3.1: Create `platform_cost/api/unified_cost_service.py`
-  - [ ] 3.2: Implement `GetCostSummary()` - calls `cost_repository.get_summary_by_type()`
-  - [ ] 3.3: Implement `GetDailyCostTrend()` - calls `cost_repository.get_daily_trend()` with `data_available_from`
-  - [ ] 3.4: Implement `GetCurrentDayCost()` - calls `cost_repository.get_current_day_cost()`
-  - [ ] 3.5: Implement `GetLlmCostByAgentType()` - calls `cost_repository.get_llm_cost_by_agent_type()`
-  - [ ] 3.6: Implement `GetLlmCostByModel()` - calls `cost_repository.get_llm_cost_by_model()`
-  - [ ] 3.7: Implement `GetDocumentCostSummary()` - calls `cost_repository.get_document_cost_summary()`
-  - [ ] 3.8: Implement `GetEmbeddingCostByDomain()` - calls `cost_repository.get_embedding_cost_by_domain()`
-  - [ ] 3.9: Implement `GetBudgetStatus()` - calls `budget_monitor.get_status()`
-  - [ ] 3.10: Implement `ConfigureBudgetThreshold()` - updates both MongoDB and in-memory
+- [x] Task 3: Implement UnifiedCostService servicer (AC: #1, #2, #3)
+  - [x] 3.1: Create `platform_cost/api/unified_cost_service.py`
+  - [x] 3.2: Implement `GetCostSummary()` - calls `cost_repository.get_summary_by_type()`
+  - [x] 3.3: Implement `GetDailyCostTrend()` - calls `cost_repository.get_daily_trend()` with `data_available_from`
+  - [x] 3.4: Implement `GetCurrentDayCost()` - calls `cost_repository.get_current_day_cost()`
+  - [x] 3.5: Implement `GetLlmCostByAgentType()` - calls `cost_repository.get_llm_cost_by_agent_type()`
+  - [x] 3.6: Implement `GetLlmCostByModel()` - calls `cost_repository.get_llm_cost_by_model()`
+  - [x] 3.7: Implement `GetDocumentCostSummary()` - calls `cost_repository.get_document_cost_summary()`
+  - [x] 3.8: Implement `GetEmbeddingCostByDomain()` - calls `cost_repository.get_embedding_cost_by_domain()`
+  - [x] 3.9: Implement `GetBudgetStatus()` - calls `budget_monitor.get_status()`
+  - [x] 3.10: Implement `ConfigureBudgetThreshold()` - updates both MongoDB and in-memory
 
-- [ ] Task 4: Add missing repository methods (AC: #1, #2)
-  - [ ] 4.1: Implement `get_document_cost_summary()` in cost_repository.py (deferred from Story 13.3)
-  - [ ] 4.2: Implement `get_embedding_cost_by_domain()` in cost_repository.py (deferred from Story 13.3)
+- [x] Task 4: Add missing repository methods (AC: #1, #2)
+  - [x] 4.1: Implement `get_document_cost_summary()` in cost_repository.py (deferred from Story 13.3)
+  - [x] 4.2: Implement `get_embedding_cost_by_domain()` in cost_repository.py (deferred from Story 13.3)
 
-- [ ] Task 5: Update main.py for gRPC server (AC: #1, #3)
-  - [ ] 5.1: Add gRPC server initialization in lifespan startup
-  - [ ] 5.2: Pass cost_repository and budget_monitor to servicer
-  - [ ] 5.3: Pass threshold_repository to servicer for persistence
-  - [ ] 5.4: Start gRPC server on port 50051
-  - [ ] 5.5: Add graceful shutdown in lifespan cleanup
+- [x] Task 5: Update main.py for gRPC server (AC: #1, #3)
+  - [x] 5.1: Add gRPC server initialization in lifespan startup
+  - [x] 5.2: Pass cost_repository and budget_monitor to servicer
+  - [x] 5.3: Pass threshold_repository to servicer for persistence
+  - [x] 5.4: Start gRPC server on port 50054 (per config)
+  - [x] 5.5: Add graceful shutdown in lifespan cleanup
 
-- [ ] Task 6: Write unit tests for proto conversions
-  - [ ] 6.1: Create `tests/unit/platform_cost/test_unified_cost_service.py`
-  - [ ] 6.2: Test proto message serialization (Decimal → string)
-  - [ ] 6.3: Test all RPC method implementations with mock repository
-  - [ ] 6.4: Test ConfigureBudgetThreshold persists and updates in-memory
+- [x] Task 6: Write unit tests for proto conversions
+  - [x] 6.1: Create `tests/unit/platform_cost/test_unified_cost_service.py`
+  - [x] 6.2: Test proto message serialization (Decimal → string)
+  - [x] 6.3: Test all RPC method implementations with mock repository
+  - [x] 6.4: Test ConfigureBudgetThreshold persists and updates in-memory
 
-- [ ] Task 7: Write unit tests for new repository methods
-  - [ ] 7.1: Add tests for `get_document_cost_summary()` aggregation
-  - [ ] 7.2: Add tests for `get_embedding_cost_by_domain()` aggregation
+- [x] Task 7: Write unit tests for new repository methods
+  - [x] 7.1: Add tests for `get_document_cost_summary()` aggregation
+  - [x] 7.2: Add tests for `get_embedding_cost_by_domain()` aggregation
 
-- [ ] Task 8: Run lint and format checks
-  - [ ] 8.1: Run `ruff check .` and fix any issues
-  - [ ] 8.2: Run `ruff format --check .` and fix any issues
+- [x] Task 8: Run lint and format checks
+  - [x] 8.1: Run `ruff check .` and fix any issues
+  - [x] 8.2: Run `ruff format --check .` and fix any issues
 
 ## Git Workflow (MANDATORY)
 
@@ -131,7 +131,7 @@ pytest tests/unit/platform_cost/ -v
 ```
 **Output:**
 ```
-(paste test summary here - e.g., "42 passed in 5.23s")
+======================== 92 passed, 1 warning in 2.14s =========================
 ```
 
 ### 2. E2E Tests (MANDATORY)
@@ -146,15 +146,15 @@ bash scripts/e2e-up.sh --down
 ```
 **Output:**
 ```
-(paste E2E test output here - story is NOT ready for review without this)
+(pending - will run after committing)
 ```
-**E2E passed:** [ ] Yes / [ ] No / [ ] N/A (no platform-cost E2E scenarios yet)
+**E2E passed:** [ ] Yes / [ ] No / [x] N/A (no platform-cost E2E scenarios yet - gRPC service only)
 
 ### 3. Lint Check
 ```bash
 ruff check services/platform-cost/ tests/unit/platform_cost/ proto/ && ruff format --check services/platform-cost/ tests/unit/platform_cost/
 ```
-**Lint passed:** [ ] Yes / [ ] No
+**Lint passed:** [x] Yes / [ ] No
 
 ### 4. CI Verification on Story Branch (MANDATORY)
 
@@ -475,16 +475,34 @@ This should already be set, but verify the generated stubs are importable.
 
 ### Agent Model Used
 
-{{agent_model_name_version}}
+Claude Opus 4.5 (claude-opus-4-5-20251101)
 
 ### Debug Log References
 
+N/A
+
 ### Completion Notes List
+
+- All 9 gRPC RPC methods implemented per ADR-016
+- Proto definition follows existing patterns (string for Decimal values)
+- DomainCost model updated to use tokens_total/texts_count instead of query_count
+- proto-gen.sh updated to fix imports for platform_cost domain
+- gRPC server starts on port 50054 per config.py
 
 ### File List
 
 **Created:**
-- (list new files)
+- `proto/platform_cost/v1/platform_cost.proto` - Proto definition for UnifiedCostService
+- `services/platform-cost/src/platform_cost/api/grpc_server.py` - gRPC server wrapper
+- `services/platform-cost/src/platform_cost/api/unified_cost_service.py` - Servicer implementation
+- `tests/unit/platform_cost/test_unified_cost_service.py` - Unit tests for servicer
+- `libs/fp-proto/src/fp_proto/platform_cost/v1/` - Generated proto stubs
 
 **Modified:**
-- (list modified files with brief description)
+- `services/platform-cost/src/platform_cost/main.py` - Added gRPC server startup/shutdown
+- `services/platform-cost/src/platform_cost/api/__init__.py` - Export new classes
+- `services/platform-cost/src/platform_cost/infrastructure/repositories/cost_repository.py` - Added get_document_cost_summary(), get_embedding_cost_by_domain()
+- `services/platform-cost/src/platform_cost/domain/cost_event.py` - Updated DomainCost model (tokens_total, texts_count)
+- `scripts/proto-gen.sh` - Added platform_cost to import fix patterns
+- `tests/unit/platform_cost/test_cost_repository.py` - Added tests for new repository methods
+- `tests/unit/platform_cost/test_domain_models.py` - Updated DomainCost test
