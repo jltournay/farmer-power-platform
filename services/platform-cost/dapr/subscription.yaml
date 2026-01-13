@@ -1,0 +1,49 @@
+# DAPR Pub/Sub Subscription Configuration for Platform Cost Service
+#
+# Story 13.5: DAPR Cost Event Subscription
+#
+# NOTE: This file is for DOCUMENTATION ONLY.
+# With streaming subscriptions (ADR-010), the actual subscription is created
+# programmatically via `subscribe_with_handler()` in cost_event_handler.py.
+#
+# This YAML shows the equivalent declarative configuration for reference.
+# It would be used if we were using HTTP callback-based subscriptions instead
+# of the streaming pattern.
+
+apiVersion: dapr.io/v1alpha1
+kind: Subscription
+metadata:
+  name: platform-cost-subscription
+spec:
+  pubsubname: pubsub
+  topic: platform.cost.recorded
+  route: /cost-event  # Not used with streaming subscriptions
+  deadLetterTopic: events.dlq
+
+# Event Flow (programmatic streaming subscription):
+#
+# 1. Services publish to `platform.cost.recorded` topic:
+#    - ai-model: LLM costs
+#    - collection-model: Document processing costs
+#    - notification-model: SMS costs (future)
+#
+# 2. platform-cost subscribes via subscribe_with_handler():
+#    ```python
+#    client.subscribe_with_handler(
+#        pubsub_name="pubsub",
+#        topic="platform.cost.recorded",
+#        handler_fn=handle_cost_event,
+#        dead_letter_topic="events.dlq",
+#    )
+#    ```
+#
+# 3. Handler receives CostRecordedEvent:
+#    - Validates payload using Pydantic
+#    - Converts to UnifiedCostEvent
+#    - Persists to MongoDB
+#    - Updates BudgetMonitor metrics
+#
+# 4. Returns TopicEventResponse:
+#    - "success": Event processed
+#    - "retry": Transient error, will retry
+#    - "drop": Permanent error, send to DLQ
