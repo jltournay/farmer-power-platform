@@ -1,6 +1,6 @@
 # Story 13.6: BFF Integration Layer
 
-**Status:** review
+**Status:** done
 **GitHub Issue:** #173
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
@@ -375,3 +375,30 @@ Claude Opus 4.5 (claude-opus-4-5-20251101)
 - `libs/fp-common/fp_common/models/__init__.py` - Add cost model exports
 - `libs/fp-common/fp_common/converters/__init__.py` - Add cost converter exports
 - `services/bff/src/bff/infrastructure/clients/__init__.py` - Add PlatformCostClient export
+
+---
+
+## Code Review Results
+
+**Review Date:** 2026-01-13
+**Reviewer:** Claude Opus 4.5 (adversarial review mode)
+
+### Findings
+
+| Severity | Issue | Resolution |
+|----------|-------|------------|
+| HIGH | AC5 NOT IMPLEMENTED - Task 2.2 marked [x] but `unified_cost_service.py` was NOT modified to use fp-common converters. Git showed no changes to this file. | FIXED - Added converter imports and updated 5 gRPC methods to use `cost_type_summary_to_proto()`, `daily_cost_entry_to_proto()`, `agent_type_cost_to_proto()`, `model_cost_to_proto()`, `domain_cost_to_proto()` |
+| MEDIUM | Test file path documented as `tests/unit/fp_common/test_cost_converters.py` but actual path is `tests/unit/fp_common/converters/test_cost_converters.py` | FIXED - Corrected story documentation |
+| MEDIUM | AC7 claims "10 gRPC methods" but proto defines 9 RPCs and implementation has 9 methods | FIXED - Corrected story documentation to "9 methods" |
+
+### Verification After Fixes
+
+- [x] ruff lint: All checks passed
+- [x] Platform-cost tests: 108 passed
+- [x] Unified cost service tests: 13 passed (verifies converter integration)
+- [x] Changes committed: `021a2ed`
+- [x] Pushed to branch: `story/13-6-bff-integration-layer`
+
+### Review Outcome
+
+**APPROVED** - All HIGH severity findings resolved, documentation corrected.
