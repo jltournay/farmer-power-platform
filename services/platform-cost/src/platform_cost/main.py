@@ -11,6 +11,7 @@ Architecture (ADR-011, ADR-016):
 
 Story 13.2: Service scaffold with FastAPI + DAPR + gRPC.
 Story 13.3: Add BudgetMonitor initialization with warm-up.
+Story 13.4: Add gRPC UnifiedCostService server.
 """
 
 from collections.abc import AsyncGenerator
@@ -21,7 +22,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fp_common import configure_logging, create_admin_router
 
-from platform_cost.api import health_router
+from platform_cost.api import GrpcServer, health_router
 from platform_cost.api.health import set_mongodb_check
 from platform_cost.config import settings
 from platform_cost.infrastructure.mongodb import (
@@ -53,9 +54,11 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
 
     Story 13.2: Basic scaffold lifespan - MongoDB connection only.
     Story 13.3: Add BudgetMonitor initialization with warm-up from MongoDB.
-    Story 13.4: Will add gRPC server initialization.
+    Story 13.4: Add gRPC UnifiedCostService server.
     Story 13.5: Will add DAPR streaming subscriptions.
     """
+    grpc_server: GrpcServer | None = None
+
     # Startup
     logger.info(
         "Starting Platform Cost service",
@@ -128,6 +131,19 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
         app.state.threshold_repository = threshold_repository
         app.state.budget_monitor = budget_monitor
 
+        # Story 13.4: Start gRPC server
+        grpc_server = GrpcServer(
+            cost_repository=cost_repository,
+            budget_monitor=budget_monitor,
+            threshold_repository=threshold_repository,
+        )
+        await grpc_server.start()
+        app.state.grpc_server = grpc_server
+        logger.info(
+            "gRPC server started",
+            port=settings.grpc_port,
+        )
+
         logger.info("Service startup complete")
 
     except Exception as e:
@@ -138,6 +154,11 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
 
     # Shutdown
     logger.info("Shutting down Platform Cost service")
+
+    # Stop gRPC server
+    if grpc_server is not None:
+        await grpc_server.stop()
+        logger.info("gRPC server stopped")
 
     await close_mongodb_connection()
     shutdown_tracing()

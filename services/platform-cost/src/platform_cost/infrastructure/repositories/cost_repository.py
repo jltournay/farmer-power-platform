@@ -34,6 +34,8 @@ from platform_cost.domain.cost_event import (
     CostTypeSummary,
     CurrentDayCost,
     DailyCostEntry,
+    DocumentCostSummary,
+    DomainCost,
     ModelCost,
     UnifiedCostEvent,
 )
@@ -206,12 +208,14 @@ class UnifiedCostRepository:
         self,
         start_date: date | None = None,
         end_date: date | None = None,
+        factory_id: str | None = None,
     ) -> list[CostTypeSummary]:
         """Get cost summary grouped by cost type.
 
         Args:
             start_date: Start of date range (inclusive). None = data_available_from.
             end_date: End of date range (inclusive). None = today.
+            factory_id: Optional factory ID to filter costs by.
 
         Returns:
             List of CostTypeSummary models, sorted by total cost descending.
@@ -226,8 +230,13 @@ class UnifiedCostRepository:
             else datetime.now(UTC)
         )
 
+        # Build match filter
+        match_filter: dict[str, Any] = {"timestamp": {"$gte": start_dt, "$lt": end_dt}}
+        if factory_id:
+            match_filter["factory_id"] = factory_id
+
         pipeline: list[dict[str, Any]] = [
-            {"$match": {"timestamp": {"$gte": start_dt, "$lt": end_dt}}},
+            {"$match": match_filter},
             {
                 "$group": {
                     "_id": "$cost_type",
@@ -543,3 +552,130 @@ class UnifiedCostRepository:
             )
 
         return model_costs
+
+    async def get_document_cost_summary(
+        self,
+        start_date: date | None = None,
+        end_date: date | None = None,
+    ) -> DocumentCostSummary:
+        """Get document processing cost summary.
+
+        Args:
+            start_date: Start of date range (inclusive). None = data_available_from.
+            end_date: End of date range (inclusive). None = today.
+
+        Returns:
+            DocumentCostSummary with total, pages, avg cost per page.
+        """
+        start_dt = (
+            datetime.combine(start_date, datetime.min.time(), tzinfo=UTC) if start_date else self.data_available_from
+        )
+        end_dt = (
+            datetime.combine(end_date, datetime.min.time(), tzinfo=UTC) + timedelta(days=1)
+            if end_date
+            else datetime.now(UTC)
+        )
+
+        pipeline: list[dict[str, Any]] = [
+            {
+                "$match": {
+                    "timestamp": {"$gte": start_dt, "$lt": end_dt},
+                    "cost_type": "document",
+                }
+            },
+            {
+                "$group": {
+                    "_id": None,
+                    "total_cost_usd": {"$sum": {"$toDecimal": "$amount_usd"}},
+                    "total_pages": {"$sum": "$quantity"},
+                    "document_count": {"$sum": 1},
+                }
+            },
+        ]
+
+        cursor = self._collection.aggregate(pipeline)
+        results = await cursor.to_list(length=1)
+
+        if not results:
+            return DocumentCostSummary(
+                total_cost_usd=Decimal("0"),
+                total_pages=0,
+                avg_cost_per_page_usd=Decimal("0"),
+                document_count=0,
+            )
+
+        result = results[0]
+        total_cost = Decimal(str(result.get("total_cost_usd", 0)))
+        total_pages = result.get("total_pages", 0)
+        avg_cost = total_cost / total_pages if total_pages > 0 else Decimal("0")
+
+        return DocumentCostSummary(
+            total_cost_usd=total_cost,
+            total_pages=total_pages,
+            avg_cost_per_page_usd=avg_cost,
+            document_count=result.get("document_count", 0),
+        )
+
+    async def get_embedding_cost_by_domain(
+        self,
+        start_date: date | None = None,
+        end_date: date | None = None,
+    ) -> list[DomainCost]:
+        """Get embedding cost breakdown by knowledge domain.
+
+        Args:
+            start_date: Start of date range (inclusive). None = data_available_from.
+            end_date: End of date range (inclusive). None = today.
+
+        Returns:
+            List of DomainCost models, sorted by cost descending.
+        """
+        start_dt = (
+            datetime.combine(start_date, datetime.min.time(), tzinfo=UTC) if start_date else self.data_available_from
+        )
+        end_dt = (
+            datetime.combine(end_date, datetime.min.time(), tzinfo=UTC) + timedelta(days=1)
+            if end_date
+            else datetime.now(UTC)
+        )
+
+        pipeline: list[dict[str, Any]] = [
+            {
+                "$match": {
+                    "timestamp": {"$gte": start_dt, "$lt": end_dt},
+                    "cost_type": "embedding",
+                    "knowledge_domain": {"$ne": None},
+                }
+            },
+            {
+                "$group": {
+                    "_id": "$knowledge_domain",
+                    "cost_usd": {"$sum": {"$toDecimal": "$amount_usd"}},
+                    "tokens_total": {"$sum": "$quantity"},
+                    "texts_count": {"$sum": 1},
+                }
+            },
+            {"$sort": {"cost_usd": -1}},
+        ]
+
+        cursor = self._collection.aggregate(pipeline)
+        results = await cursor.to_list(length=100)
+
+        # Calculate total for percentages
+        total_cost = sum(Decimal(str(r.get("cost_usd", 0))) for r in results)
+
+        domain_costs = []
+        for result in results:
+            cost = Decimal(str(result.get("cost_usd", 0)))
+            percentage = float(cost / total_cost * 100) if total_cost > 0 else 0.0
+            domain_costs.append(
+                DomainCost(
+                    knowledge_domain=result["_id"],
+                    cost_usd=cost,
+                    tokens_total=result.get("tokens_total", 0),
+                    texts_count=result.get("texts_count", 0),
+                    percentage=round(percentage, 2),
+                )
+            )
+
+        return domain_costs

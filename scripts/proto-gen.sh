@@ -102,12 +102,14 @@ for grpc_file in $(find "${OUTPUT_DIR}" -name "*_pb2_grpc.py"); do
         sed -i '' 's/from \(plantation\)\.\([a-z0-9]*\) import/from fp_proto.\1.\2 import/g' "${grpc_file}"
         sed -i '' 's/from \(common\)\.\([a-z0-9]*\) import/from fp_proto.\1.\2 import/g' "${grpc_file}"
         sed -i '' 's/from \(mcp\)\.\([a-z0-9]*\) import/from fp_proto.\1.\2 import/g' "${grpc_file}"
+        sed -i '' 's/from \(platform_cost\)\.\([a-z0-9]*\) import/from fp_proto.\1.\2 import/g' "${grpc_file}"
     else
         sed -i 's/from \(ai_model\)\.\([a-z0-9]*\) import/from fp_proto.\1.\2 import/g' "${grpc_file}"
         sed -i 's/from \(collection\)\.\([a-z0-9]*\) import/from fp_proto.\1.\2 import/g' "${grpc_file}"
         sed -i 's/from \(plantation\)\.\([a-z0-9]*\) import/from fp_proto.\1.\2 import/g' "${grpc_file}"
         sed -i 's/from \(common\)\.\([a-z0-9]*\) import/from fp_proto.\1.\2 import/g' "${grpc_file}"
         sed -i 's/from \(mcp\)\.\([a-z0-9]*\) import/from fp_proto.\1.\2 import/g' "${grpc_file}"
+        sed -i 's/from \(platform_cost\)\.\([a-z0-9]*\) import/from fp_proto.\1.\2 import/g' "${grpc_file}"
     fi
 done
 

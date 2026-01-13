@@ -236,13 +236,15 @@ class DomainCost(BaseModel):
     Attributes:
         knowledge_domain: The domain (e.g., tea-quality, farming-practices)
         cost_usd: Total cost for this domain
-        query_count: Number of embedding queries
+        tokens_total: Total embedding tokens
+        texts_count: Number of texts embedded
         percentage: Percentage of total embedding cost
     """
 
     knowledge_domain: str = Field(description="Knowledge domain name")
     cost_usd: DecimalStr = Field(description="Total cost in USD")
-    query_count: int = Field(default=0, description="Number of embedding queries")
+    tokens_total: int = Field(default=0, description="Total embedding tokens")
+    texts_count: int = Field(default=0, description="Number of texts embedded")
     percentage: float = Field(default=0.0, description="Percentage of total embedding cost")
 
 
