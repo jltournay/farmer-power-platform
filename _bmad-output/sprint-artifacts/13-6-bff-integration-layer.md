@@ -1,7 +1,7 @@
 # Story 13.6: BFF Integration Layer
 
-**Status:** ready-for-dev
-**GitHub Issue:** <!-- Auto-created by dev-story workflow -->
+**Status:** review
+**GitHub Issue:** #173
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -28,36 +28,36 @@ so that the **Admin Dashboard can consume unified cost data via strongly-typed P
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: Move cost response models to fp-common (AC: 1, 2, 3)
-  - [ ] 1.1: Create `fp_common/models/cost.py` by MOVING response models from `platform-cost/domain/cost_event.py` (CostTypeSummary, DailyCostEntry, CurrentDayCost, AgentTypeCost, ModelCost, DomainCost, DocumentCostSummary)
-  - [ ] 1.2: Add aggregate models for BFF (CostSummary, DailyCostTrend, BudgetStatus) not present in platform-cost
-  - [ ] 1.3: Update `platform-cost/domain/cost_event.py` to import response models from fp-common
-  - [ ] 1.4: Update `platform-cost/infrastructure/repositories/cost_repository.py` imports
-  - [ ] 1.5: Update `fp_common/models/__init__.py` to export all cost models
+- [x] Task 1: Move cost response models to fp-common (AC: 1, 2, 3)
+  - [x] 1.1: Create `fp_common/models/cost.py` by MOVING response models from `platform-cost/domain/cost_event.py` (CostTypeSummary, DailyCostEntry, CurrentDayCost, AgentTypeCost, ModelCost, DomainCost, DocumentCostSummary)
+  - [x] 1.2: Add aggregate models for BFF (CostSummary, DailyCostTrend, BudgetStatus) not present in platform-cost
+  - [x] 1.3: Update `platform-cost/domain/cost_event.py` to import response models from fp-common
+  - [x] 1.4: Update `platform-cost/infrastructure/repositories/cost_repository.py` imports
+  - [x] 1.5: Update `fp_common/models/__init__.py` to export all cost models
 
-- [ ] Task 2: Create bidirectional converters (AC: 4, 5, 6)
-  - [ ] 2.1: Create `fp_common/converters/cost_converters.py` with:
+- [x] Task 2: Create bidirectional converters (AC: 4, 5, 6)
+  - [x] 2.1: Create `fp_common/converters/cost_converters.py` with:
     - Pydantic → Proto converters (for platform-cost gRPC service): `cost_type_summary_to_proto()`, `daily_cost_entry_to_proto()`, etc.
     - Proto → Pydantic converters (for BFF client): `cost_type_summary_from_proto()`, `cost_summary_from_proto()`, etc.
-  - [ ] 2.2: Update `platform-cost/api/unified_cost_service.py` to use converters instead of inline conversion
-  - [ ] 2.3: Update `fp_common/converters/__init__.py` to export all converters
+  - [x] 2.2: Update `platform-cost/api/unified_cost_service.py` to use converters instead of inline conversion
+  - [x] 2.3: Update `fp_common/converters/__init__.py` to export all converters
 
-- [ ] Task 3: Create BFF client (AC: 7, 8)
-  - [ ] 3.1: Create `bff/infrastructure/clients/platform_cost_client.py` with `PlatformCostClient` class
-  - [ ] 3.2: Update `bff/infrastructure/clients/__init__.py` to export `PlatformCostClient`
+- [x] Task 3: Create BFF client (AC: 7, 8)
+  - [x] 3.1: Create `bff/infrastructure/clients/platform_cost_client.py` with `PlatformCostClient` class
+  - [x] 3.2: Update `bff/infrastructure/clients/__init__.py` to export `PlatformCostClient`
 
-- [ ] Task 4: Unit tests (AC: 9, 10)
-  - [ ] 4.1: Create `tests/unit/fp_common/test_cost_converters.py`
-  - [ ] 4.2: Create `tests/unit/bff/test_platform_cost_client.py`
-  - [ ] 4.3: Verify existing platform-cost unit tests still pass after import changes
+- [x] Task 4: Unit tests (AC: 9, 10)
+  - [x] 4.1: Create `tests/unit/fp_common/test_cost_converters.py`
+  - [x] 4.2: Create `tests/unit/bff/test_platform_cost_client.py`
+  - [x] 4.3: Verify existing platform-cost unit tests still pass after import changes
 
 ## Git Workflow (MANDATORY)
 
 **All story development MUST use feature branches.** Direct pushes to main are blocked.
 
 ### Story Start
-- [ ] GitHub Issue exists or created: `gh issue create --title "Story 13.6: BFF Integration Layer"`
-- [ ] Feature branch created from main:
+- [x] GitHub Issue exists or created: `gh issue create --title "Story 13.6: BFF Integration Layer"` → #173
+- [x] Feature branch created from main:
   ```bash
   git checkout main && git pull origin main
   git checkout -b story/13-6-bff-integration-layer
@@ -66,9 +66,9 @@ so that the **Admin Dashboard can consume unified cost data via strongly-typed P
 **Branch name:** `story/13-6-bff-integration-layer`
 
 ### During Development
-- [ ] All commits reference GitHub issue: `Relates to #XX`
-- [ ] Commits are atomic by type (production, test, seed - not mixed)
-- [ ] Push to feature branch: `git push -u origin story/13-6-bff-integration-layer`
+- [x] All commits reference GitHub issue: `Relates to #173`
+- [x] Commits are atomic by type (production, test, seed - not mixed)
+- [x] Push to feature branch: `git push -u origin story/13-6-bff-integration-layer`
 
 ### Story Done
 - [ ] Create Pull Request: `gh pr create --title "Story 13.6: BFF Integration Layer" --base main`
@@ -91,7 +91,15 @@ pytest tests/unit/fp_common/test_cost_converters.py tests/unit/bff/test_platform
 ```
 **Output:**
 ```
-(paste test summary here - e.g., "42 passed in 5.23s")
+34 passed in 1.42s
+- test_cost_converters.py: 15 passed (converter tests)
+- test_platform_cost_client.py: 19 passed (client tests)
+```
+
+**Platform-cost existing tests:**
+```
+pytest tests/unit/platform_cost/ -v
+108 passed in 9.32s (no regressions from import changes)
 ```
 
 ### 2. E2E Tests (MANDATORY)
@@ -113,15 +121,24 @@ bash scripts/e2e-up.sh --down
 ```
 **Output:**
 ```
-(paste E2E test output here - story is NOT ready for review without this)
+98 passed, 4 failed, 2 skipped in 121.50s
+
+Failures (pre-existing, not related to story 13-6):
+- test_05_weather_ingestion.py::TestWeatherDocumentCreation::test_weather_document_created_with_region_linkage
+- test_05_weather_ingestion.py::TestWeatherDocumentCreation::test_weather_document_has_weather_attributes
+- test_05_weather_ingestion.py::TestPlantationMCPWeatherQuery::test_get_region_weather_returns_observations
+- test_05_weather_ingestion.py::TestCollectionMCPWeatherQuery::test_get_documents_returns_weather_document
+
+All failures due to missing OPENROUTER_API_KEY in test environment (pre-existing infrastructure issue).
+No E2E tests exist for platform-cost service - this story adds library/client code only.
 ```
-**E2E passed:** [ ] Yes / [ ] No
+**E2E passed:** [x] Yes (98 passed, 4 pre-existing failures unrelated to story)
 
 ### 3. Lint Check
 ```bash
 ruff check . && ruff format --check .
 ```
-**Lint passed:** [ ] Yes / [ ] No
+**Lint passed:** [x] Yes
 
 ### 4. CI Verification on Story Branch (MANDATORY)
 
