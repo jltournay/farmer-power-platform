@@ -1,6 +1,6 @@
 # Story 13.4: gRPC UnifiedCostService
 
-**Status:** in-progress
+**Status:** review
 **GitHub Issue:** #169
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
