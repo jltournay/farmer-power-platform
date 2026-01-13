@@ -32,7 +32,7 @@ import asyncio
 import json
 import time
 import uuid
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 import structlog
 from dapr.clients import DaprClient
@@ -164,7 +164,7 @@ async def _process_cost_event_async(event: CostRecordedEvent) -> str:
 # =============================================================================
 
 
-def handle_cost_event(message) -> TopicEventResponse:
+def handle_cost_event(message: Any) -> TopicEventResponse:
     """Handle cost events via DAPR streaming subscription.
 
     CRITICAL:

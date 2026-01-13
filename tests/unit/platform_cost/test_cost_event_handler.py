@@ -9,6 +9,13 @@ Tests:
 - Budget monitor update on success
 - Different payload formats (dict, string, bytes)
 - Services not initialized (retry)
+
+Test Coverage Strategy:
+The tests focus on `_process_cost_event_async` and helper functions rather than
+`handle_cost_event` directly. This is intentional because `handle_cost_event` uses
+`asyncio.run_coroutine_threadsafe()` which requires a running event loop in a
+separate thread - difficult to test in unit tests. The full handler is tested
+via E2E tests that exercise the complete DAPR subscription flow.
 """
 
 import json
@@ -24,6 +31,21 @@ from platform_cost.handlers.cost_event_handler import (
     set_handler_dependencies,
     set_main_event_loop,
 )
+
+
+@pytest.fixture(autouse=True)
+def reset_module_state():
+    """Reset module-level state before and after each test.
+
+    This ensures tests are isolated and don't leak state between runs.
+    """
+    cost_event_handler._cost_repository = None
+    cost_event_handler._budget_monitor = None
+    cost_event_handler._main_event_loop = None
+    yield
+    cost_event_handler._cost_repository = None
+    cost_event_handler._budget_monitor = None
+    cost_event_handler._main_event_loop = None
 
 
 @pytest.fixture
@@ -132,20 +154,12 @@ class TestProcessCostEventAsync:
         assert call_args.kwargs["cost_type"] == "llm"
         assert call_args.kwargs["amount_usd"] == Decimal("0.0015")
 
-        # Cleanup
-        cost_event_handler._cost_repository = None
-        cost_event_handler._budget_monitor = None
-
     @pytest.mark.asyncio
     async def test_process_cost_event_async_services_not_initialized(
         self,
         sample_cost_event_model,
     ) -> None:
         """Test that raises ConnectionError if services not initialized."""
-        # Reset module state
-        cost_event_handler._cost_repository = None
-        cost_event_handler._budget_monitor = None
-
         with pytest.raises(ConnectionError) as exc_info:
             await _process_cost_event_async(sample_cost_event_model)
 
@@ -171,10 +185,6 @@ class TestProcessCostEventAsync:
         assert event_id_2 is not None
         assert event_id_1 != event_id_2
 
-        # Cleanup
-        cost_event_handler._cost_repository = None
-        cost_event_handler._budget_monitor = None
-
     @pytest.mark.asyncio
     async def test_process_cost_event_converts_to_unified_event(
         self,
@@ -199,10 +209,6 @@ class TestProcessCostEventAsync:
         assert unified_event.agent_type == "extractor"
         assert unified_event.model == "anthropic/claude-3-haiku"
 
-        # Cleanup
-        cost_event_handler._cost_repository = None
-        cost_event_handler._budget_monitor = None
-
 
 class TestSetHandlerDependencies:
     """Tests for set_handler_dependencies function."""
@@ -213,18 +219,10 @@ class TestSetHandlerDependencies:
         mock_budget_monitor,
     ) -> None:
         """Test that dependencies are set correctly."""
-        # Reset state
-        cost_event_handler._cost_repository = None
-        cost_event_handler._budget_monitor = None
-
         set_handler_dependencies(mock_cost_repository, mock_budget_monitor)
 
         assert cost_event_handler._cost_repository is mock_cost_repository
         assert cost_event_handler._budget_monitor is mock_budget_monitor
-
-        # Cleanup
-        cost_event_handler._cost_repository = None
-        cost_event_handler._budget_monitor = None
 
 
 class TestSetMainEventLoop:
@@ -234,17 +232,13 @@ class TestSetMainEventLoop:
         """Test that event loop is set correctly."""
         import asyncio
 
-        # Reset state
-        cost_event_handler._main_event_loop = None
-
         loop = asyncio.new_event_loop()
         set_main_event_loop(loop)
 
         assert cost_event_handler._main_event_loop is loop
 
-        # Cleanup
+        # Close the loop (autouse fixture handles state reset)
         loop.close()
-        cost_event_handler._main_event_loop = None
 
 
 class TestCostRecordedEventValidation:
@@ -316,13 +310,8 @@ class TestModuleStateManagement:
     """Tests for module-level state management."""
 
     def test_initial_state_is_none(self) -> None:
-        """Test that module state starts as None (for fresh import)."""
-        # Reset state
-        cost_event_handler._cost_repository = None
-        cost_event_handler._budget_monitor = None
-        cost_event_handler._main_event_loop = None
-
-        # Verify
+        """Test that module state starts as None (via autouse fixture reset)."""
+        # Autouse fixture resets state before each test
         assert cost_event_handler._cost_repository is None
         assert cost_event_handler._budget_monitor is None
         assert cost_event_handler._main_event_loop is None
@@ -333,10 +322,6 @@ class TestModuleStateManagement:
         mock_budget_monitor,
     ) -> None:
         """Test that dependencies can be updated during runtime."""
-        # Reset state
-        cost_event_handler._cost_repository = None
-        cost_event_handler._budget_monitor = None
-
         # Set first time
         set_handler_dependencies(mock_cost_repository, mock_budget_monitor)
 
@@ -349,7 +334,3 @@ class TestModuleStateManagement:
 
         assert cost_event_handler._cost_repository is new_repo
         assert cost_event_handler._budget_monitor is new_monitor
-
-        # Cleanup
-        cost_event_handler._cost_repository = None
-        cost_event_handler._budget_monitor = None
