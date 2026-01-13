@@ -10,6 +10,7 @@ Architecture (ADR-011, ADR-016):
 - Pub/sub: DAPR streaming subscriptions (outbound, no extra port)
 
 Story 13.2: Service scaffold with FastAPI + DAPR + gRPC.
+Story 13.3: Add BudgetMonitor initialization with warm-up.
 """
 
 from collections.abc import AsyncGenerator
@@ -26,13 +27,19 @@ from platform_cost.config import settings
 from platform_cost.infrastructure.mongodb import (
     check_mongodb_connection,
     close_mongodb_connection,
+    get_database,
     get_mongodb_client,
+)
+from platform_cost.infrastructure.repositories import (
+    ThresholdRepository,
+    UnifiedCostRepository,
 )
 from platform_cost.infrastructure.tracing import (
     instrument_fastapi,
     setup_tracing,
     shutdown_tracing,
 )
+from platform_cost.services import BudgetMonitor
 
 # Configure structured logging via fp_common (ADR-009)
 configure_logging("platform-cost")
@@ -45,7 +52,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     """Application lifespan handler for startup and shutdown events.
 
     Story 13.2: Basic scaffold lifespan - MongoDB connection only.
-    Story 13.3: Will add BudgetMonitor initialization.
+    Story 13.3: Add BudgetMonitor initialization with warm-up from MongoDB.
     Story 13.4: Will add gRPC server initialization.
     Story 13.5: Will add DAPR streaming subscriptions.
     """
@@ -66,11 +73,66 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
         set_mongodb_check(check_mongodb_connection)
         logger.info("MongoDB connection initialized")
 
-    except Exception as e:
-        logger.warning("MongoDB initialization failed at startup", error=str(e))
-        # Service can still start - readiness probe will report not ready
+        # Story 13.3: Initialize repositories and budget monitor
+        db = await get_database()
 
-    logger.info("Service startup complete")
+        # Initialize cost repository with configured retention
+        cost_repository = UnifiedCostRepository(
+            db=db,
+            retention_days=settings.cost_event_retention_days,
+        )
+        await cost_repository.ensure_indexes()
+        logger.info(
+            "Cost repository initialized",
+            retention_days=settings.cost_event_retention_days,
+        )
+
+        # Initialize threshold repository
+        threshold_repository = ThresholdRepository(db=db)
+
+        # Load thresholds: MongoDB first, then config defaults
+        threshold_config = await threshold_repository.get_thresholds()
+        if threshold_config:
+            daily_threshold = float(threshold_config.daily_threshold_usd)
+            monthly_threshold = float(threshold_config.monthly_threshold_usd)
+            logger.info(
+                "Loaded thresholds from MongoDB",
+                daily_threshold_usd=daily_threshold,
+                monthly_threshold_usd=monthly_threshold,
+            )
+        else:
+            daily_threshold = settings.budget_daily_threshold_usd
+            monthly_threshold = settings.budget_monthly_threshold_usd
+            logger.info(
+                "Using config default thresholds",
+                daily_threshold_usd=daily_threshold,
+                monthly_threshold_usd=monthly_threshold,
+            )
+
+        # Initialize budget monitor
+        budget_monitor = BudgetMonitor(
+            daily_threshold_usd=daily_threshold,
+            monthly_threshold_usd=monthly_threshold,
+        )
+
+        # Warm up from repository (CRITICAL - fail-fast if this fails)
+        try:
+            await budget_monitor.warm_up_from_repository(cost_repository)
+            logger.info("BudgetMonitor warmed up from MongoDB")
+        except Exception as e:
+            logger.error("Failed to warm up BudgetMonitor", error=str(e))
+            raise  # Fail-fast - better down than wrong metrics
+
+        # Store references in app.state for handlers/servicers
+        app.state.cost_repository = cost_repository
+        app.state.threshold_repository = threshold_repository
+        app.state.budget_monitor = budget_monitor
+
+        logger.info("Service startup complete")
+
+    except Exception as e:
+        logger.error("Service startup failed", error=str(e))
+        raise  # Fail-fast on critical startup errors
 
     yield
 
