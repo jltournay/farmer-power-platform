@@ -175,9 +175,9 @@ git push origin story/13-7-ai-model-refactor-publish-costs
 # Wait ~30s, then check CI status
 gh run list --branch story/13-7-ai-model-refactor-publish-costs --limit 3
 ```
-**CI Run ID:** _______________
-**CI E2E Status:** [ ] Passed / [ ] Failed
-**Verification Date:** _______________
+**CI Run ID:** 20965371782 (Quality CI), 20965677774 (E2E CI)
+**CI E2E Status:** [x] Passed / [ ] Failed
+**Verification Date:** 2026-01-13
 
 ---
 
