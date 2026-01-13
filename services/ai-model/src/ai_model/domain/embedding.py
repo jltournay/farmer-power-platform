@@ -4,14 +4,12 @@ This module defines Pydantic models for embedding operations:
 - EmbeddingInputType: Enum for passage vs query input types
 - EmbeddingRequest: Request model for batch embedding
 - EmbeddingResult: Response model with embeddings and usage stats
-- EmbeddingCostEvent: Cost tracking event for embedding operations
 
 Story 0.75.12: RAG Embedding Configuration (Pinecone Inference)
+Story 13.7: Removed EmbeddingCostEvent - cost tracking now via DAPR to platform-cost (ADR-016)
 """
 
-from datetime import UTC, datetime
 from enum import Enum
-from typing import Any
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -118,95 +116,3 @@ class EmbeddingResult(BaseModel):
     def count(self) -> int:
         """Return number of embeddings in result."""
         return len(self.embeddings)
-
-
-class EmbeddingCostEvent(BaseModel):
-    """Embedding cost event for tracking and attribution.
-
-    Stored in: ai_model.embedding_cost_events
-    Purpose: Visibility and attribution (not billing - Pinecone Inference
-             embedding cost is included in index pricing)
-
-    Note: Unlike LlmCostEvent, there is no cost_usd field because
-    Pinecone Inference API embedding is included in index pricing.
-
-    Attributes:
-        id: Unique event identifier (UUID).
-        timestamp: When the embedding completed (UTC).
-        request_id: Correlation ID for distributed tracing.
-        model: Embedding model used (e.g., multilingual-e5-large).
-        texts_count: Number of texts embedded in this request.
-        tokens_total: Estimated total tokens (from Pinecone usage).
-        knowledge_domain: Optional domain for cost attribution.
-        success: Whether the embedding operation succeeded.
-        batch_count: Number of batches used (for large requests).
-        retry_count: Number of retries before success/failure.
-    """
-
-    model_config = ConfigDict(
-        populate_by_name=True,
-        str_strip_whitespace=True,
-    )
-
-    id: str = Field(
-        ...,
-        description="Unique event identifier (UUID)",
-    )
-    timestamp: datetime = Field(
-        default_factory=lambda: datetime.now(UTC),
-        description="When the embedding completed (UTC)",
-    )
-    request_id: str = Field(
-        ...,
-        description="Correlation ID for distributed tracing",
-    )
-    model: str = Field(
-        ...,
-        description="Embedding model used (e.g., multilingual-e5-large)",
-    )
-    texts_count: int = Field(
-        default=0,
-        ge=0,
-        description="Number of texts embedded",
-    )
-    tokens_total: int = Field(
-        default=0,
-        ge=0,
-        description="Total tokens processed (from Pinecone usage)",
-    )
-    knowledge_domain: str | None = Field(
-        default=None,
-        description="Knowledge domain for per-domain attribution",
-    )
-    success: bool = Field(
-        default=True,
-        description="Whether the embedding operation succeeded",
-    )
-    batch_count: int = Field(
-        default=1,
-        ge=1,
-        description="Number of batches used for this request",
-    )
-    retry_count: int = Field(
-        default=0,
-        ge=0,
-        description="Number of retries before success/failure",
-    )
-
-    def model_dump_for_mongo(self) -> dict[str, Any]:
-        """Dump model for MongoDB storage.
-
-        Handles datetime serialization and sets _id.
-        """
-        data = self.model_dump()
-        return data
-
-    @classmethod
-    def from_mongo(cls, doc: dict[str, Any]) -> "EmbeddingCostEvent":
-        """Create instance from MongoDB document.
-
-        Removes MongoDB _id if present.
-        """
-        # Remove MongoDB _id if present
-        doc.pop("_id", None)
-        return cls.model_validate(doc)

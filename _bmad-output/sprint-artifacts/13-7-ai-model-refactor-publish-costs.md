@@ -1,6 +1,6 @@
 # Story 13.7: AI Model Refactor - Publish Costs via DAPR
 
-**Status:** ready-for-dev
+**Status:** review
 **GitHub Issue:** #175
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
@@ -132,7 +132,7 @@ pytest tests/unit/ai_model/ -v
 ```
 **Output:**
 ```
-(paste test summary here - e.g., "42 passed in 5.23s")
+838 passed, 16 warnings in 14.84s
 ```
 
 ### 2. E2E Tests (MANDATORY)
@@ -154,15 +154,15 @@ bash scripts/e2e-up.sh --down
 ```
 **Output:**
 ```
-(paste E2E test output here - story is NOT ready for review without this)
+107 passed, 1 skipped in 140.89s (0:02:20)
 ```
-**E2E passed:** [ ] Yes / [ ] No
+**E2E passed:** [x] Yes / [ ] No
 
 ### 3. Lint Check
 ```bash
 ruff check . && ruff format --check .
 ```
-**Lint passed:** [ ] Yes / [ ] No
+**Lint passed:** [x] Yes / [ ] No
 
 ### 4. CI Verification on Story Branch (MANDATORY)
 
@@ -451,11 +451,25 @@ If this story needs to be rolled back:
 
 ### Agent Model Used
 
-{{agent_model_name_version}}
+Claude Opus 4.5 (claude-opus-4-5-20251101)
 
 ### Debug Log References
 
 ### Completion Notes List
+
+**Implementation completed 2026-01-13:**
+
+1. Successfully refactored ai-model to publish cost events via DAPR pub/sub instead of persisting locally
+2. All 10 acceptance criteria met:
+   - AC1-3: LLMGateway, EmbeddingService, and AzureDocumentIntelligenceClient now publish CostRecordedEvent to platform.cost.recorded topic
+   - AC4-7: Deleted cost_service.py, cost_event_repository.py, embedding_cost_repository.py, budget_monitor.py
+   - AC8: CostService marked as deprecated in proto file (commented out with migration notice)
+   - AC9: Updated config.py with unified_cost_topic and embedding_cost_per_1k_tokens settings
+   - AC10: Updated main.py with DaprClient initialization and cleanup
+   - AC11: Removed CostService registration from grpc_server.py
+   - AC12: Best-effort publishing pattern - failures logged but don't fail primary operations
+   - AC13: All 838 unit tests pass
+   - AC14: All 107 E2E tests pass, no regressions
 
 ### File List
 
@@ -466,17 +480,24 @@ If this story needs to be rolled back:
 - `services/ai-model/src/ai_model/config.py`
 - `services/ai-model/src/ai_model/main.py`
 - `services/ai-model/src/ai_model/api/grpc_server.py`
+- `services/ai-model/src/ai_model/api/__init__.py`
 - `services/ai-model/src/ai_model/llm/gateway.py`
+- `services/ai-model/src/ai_model/llm/__init__.py`
 - `services/ai-model/src/ai_model/services/embedding_service.py`
 - `services/ai-model/src/ai_model/infrastructure/azure_doc_intel_client.py`
 - `services/ai-model/src/ai_model/infrastructure/repositories/__init__.py`
+- `services/ai-model/src/ai_model/domain/__init__.py`
+- `services/ai-model/src/ai_model/domain/embedding.py`
 - `proto/ai_model/v1/ai_model.proto`
+- `tests/unit/ai_model/llm/test_gateway.py`
+- `tests/unit/ai_model/test_embedding_service.py`
 
 **Deleted:**
 - `services/ai-model/src/ai_model/api/cost_service.py`
 - `services/ai-model/src/ai_model/infrastructure/repositories/cost_event_repository.py`
 - `services/ai-model/src/ai_model/infrastructure/repositories/embedding_cost_repository.py`
 - `services/ai-model/src/ai_model/llm/budget_monitor.py`
-- `tests/unit/ai_model/test_cost_service.py` (if exists)
-- `tests/unit/ai_model/test_budget_monitor.py` (if exists)
-- `tests/unit/ai_model/test_cost_event_repository.py` (if exists)
+- `services/ai-model/src/ai_model/domain/cost_event.py`
+- `tests/unit/ai_model/llm/test_budget_monitor.py`
+- `tests/unit/ai_model/infrastructure/repositories/test_cost_event_repository.py`
+- `tests/unit/ai_model/domain/test_cost_event.py`

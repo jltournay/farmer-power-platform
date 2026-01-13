@@ -1,6 +1,7 @@
 """Unit tests for LLMGateway.
 
 Story 0.75.5: OpenRouter LLM Gateway with Cost Observability
+Story 13.7: Updated to reflect DAPR-based cost publishing (ADR-016)
 """
 
 from decimal import Decimal
@@ -61,7 +62,8 @@ class TestLLMGatewayInitialization:
         assert gateway._fallback_models == []
         assert gateway._rate_limiter is None
         assert gateway._retry_max_attempts == DEFAULT_RETRY_MAX_ATTEMPTS
-        assert gateway._cost_tracking_enabled is True
+        # Story 13.7: No dapr_client means cost publishing is disabled
+        assert gateway._dapr_client is None
 
     def test_initialization_with_fallback_models(self) -> None:
         """Test gateway initializes with fallback models."""
@@ -92,6 +94,20 @@ class TestLLMGatewayInitialization:
 
         assert gateway._retry_max_attempts == 5
         assert gateway._retry_backoff_ms == [50, 100, 500]
+
+    def test_initialization_with_dapr_client(self) -> None:
+        """Test gateway initializes with DAPR client for cost publishing (Story 13.7)."""
+        mock_dapr_client = MagicMock()
+        gateway = LLMGateway(
+            api_key="test-key",
+            dapr_client=mock_dapr_client,
+            pubsub_name="my-pubsub",
+            cost_topic="cost.recorded",
+        )
+
+        assert gateway._dapr_client is mock_dapr_client
+        assert gateway._pubsub_name == "my-pubsub"
+        assert gateway._cost_topic == "cost.recorded"
 
 
 class TestLLMGatewayValidateModels:
@@ -152,11 +168,10 @@ class TestLLMGatewayComplete:
 
     @pytest.fixture
     def gateway(self) -> LLMGateway:
-        """Create a gateway for testing."""
+        """Create a gateway for testing (no DAPR client = no cost publishing)."""
         return LLMGateway(
             api_key="test-key",
             fallback_models=["openai/gpt-4o"],
-            cost_tracking_enabled=False,  # Disable for simpler tests
         )
 
     @pytest.fixture
@@ -219,7 +234,6 @@ class TestLLMGatewayComplete:
         gateway = LLMGateway(
             api_key="test-key",
             rate_limiter=mock_rate_limiter,
-            cost_tracking_enabled=False,
         )
 
         mock_chat_client = AsyncMock()
@@ -314,7 +328,6 @@ class TestLLMGatewayRetry:
             api_key="test-key",
             retry_max_attempts=3,
             retry_backoff_ms=[10, 20, 50],  # Fast for tests
-            cost_tracking_enabled=False,
         )
 
     @pytest.fixture
@@ -359,10 +372,11 @@ class TestLLMGatewayGenerationStats:
 
     @pytest.fixture
     def gateway(self) -> LLMGateway:
-        """Create a gateway for testing."""
+        """Create a gateway with DAPR client for cost publishing (Story 13.7)."""
+        mock_dapr_client = MagicMock()
         return LLMGateway(
             api_key="test-key",
-            cost_tracking_enabled=True,
+            dapr_client=mock_dapr_client,
         )
 
     @pytest.mark.asyncio
@@ -404,12 +418,9 @@ class TestLLMGatewayGenerationStats:
         assert stats is None
 
     @pytest.mark.asyncio
-    async def test_get_generation_stats_disabled(self) -> None:
-        """Test generation stats returns None when disabled."""
-        gateway = LLMGateway(
-            api_key="test-key",
-            cost_tracking_enabled=False,
-        )
+    async def test_get_generation_stats_no_dapr_client(self) -> None:
+        """Test generation stats returns None when no DAPR client (Story 13.7)."""
+        gateway = LLMGateway(api_key="test-key")  # No dapr_client
 
         stats = await gateway._get_generation_stats("gen-123")
 

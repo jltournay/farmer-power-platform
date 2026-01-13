@@ -90,14 +90,18 @@ class Settings(BaseSettings):
     llm_rate_limit_rpm: int = 60  # Requests per minute
     llm_rate_limit_tpm: int = 100000  # Tokens per minute
 
-    # Cost tracking and alerting
-    llm_cost_tracking_enabled: bool = True
-    llm_cost_alert_daily_usd: float = 10.0  # Daily threshold in USD (0 = disabled)
-    llm_cost_alert_monthly_usd: float = 100.0  # Monthly threshold in USD (0 = disabled)
+    # ========================================
+    # Cost Publishing Configuration (Story 13.7 - ADR-016)
+    # ========================================
+    # ai-model publishes cost events to platform-cost service via DAPR pub/sub.
+    # platform-cost is the single source of truth for all cost tracking.
 
-    # DAPR topics for cost events
-    llm_cost_event_topic: str = "ai.cost.recorded"
-    llm_cost_alert_topic: str = "ai.cost.threshold_exceeded"
+    # Unified cost topic for all cost events (LLM, embedding, document)
+    unified_cost_topic: str = "platform.cost.recorded"
+
+    # Embedding cost per 1K tokens (approximate)
+    # Source: Pinecone Inference API pricing ~$0.0001/1K tokens
+    embedding_cost_per_1k_tokens: float = 0.0001
 
     # ========================================
     # Event Handler Configuration (Story 0.75.8)

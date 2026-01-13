@@ -2,14 +2,13 @@
 
 This module provides the unified LLM gateway with:
 - OpenRouter integration via LangChain-compatible ChatOpenRouter
-- LLMGateway wrapper for retry, fallback, and cost tracking
+- LLMGateway wrapper for retry, fallback, and cost publishing via DAPR
 - Token bucket rate limiting for RPM and TPM
-- Cost event tracking and budget monitoring
 
 Story 0.75.5: OpenRouter LLM Gateway with Cost Observability
+Story 13.7: Removed BudgetMonitor - cost tracking now via DAPR to platform-cost (ADR-016)
 """
 
-from ai_model.llm.budget_monitor import BudgetMonitor
 from ai_model.llm.chat_openrouter import ChatOpenRouter
 from ai_model.llm.exceptions import (
     AllModelsUnavailableError,
@@ -23,7 +22,6 @@ from ai_model.llm.rate_limiter import RateLimiter
 
 __all__ = [
     "AllModelsUnavailableError",
-    "BudgetMonitor",
     "ChatOpenRouter",
     "LLMError",
     "LLMGateway",
