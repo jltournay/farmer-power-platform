@@ -472,6 +472,70 @@ services:
       redis:
         condition: service_healthy
 
+  # ==========================================================================
+  # Platform Cost Service + DAPR Sidecar (Story 13.8)
+  # Unified cost aggregation service - subscribes to platform.cost.recorded events
+  # ==========================================================================
+
+  platform-cost:
+    build:
+      context: ../../..
+      dockerfile: services/platform-cost/Dockerfile
+    container_name: e2e-platform-cost
+    ports:
+      - "8084:8000"  # FastAPI health/admin endpoints
+      - "50055:50054"  # gRPC UnifiedCostService
+    environment:
+      PLATFORM_COST_MONGODB_URI: mongodb://mongodb:27017/?replicaSet=rs0
+      PLATFORM_COST_MONGODB_DATABASE: platform_cost_e2e
+      PLATFORM_COST_LOG_LEVEL: DEBUG
+      PLATFORM_COST_OTEL_ENABLED: "false"
+      PLATFORM_COST_GRPC_PORT: "50054"
+      PLATFORM_COST_DAPR_HOST: localhost
+      PLATFORM_COST_DAPR_HTTP_PORT: "3500"
+      PLATFORM_COST_DAPR_GRPC_PORT: "50001"
+      # Budget thresholds for E2E testing (low values to trigger alerts)
+      PLATFORM_COST_BUDGET_DAILY_THRESHOLD_USD: "1.0"
+      PLATFORM_COST_BUDGET_MONTHLY_THRESHOLD_USD: "10.0"
+      # Short retention for TTL testing
+      PLATFORM_COST_COST_EVENT_RETENTION_DAYS: "7"
+    depends_on:
+      mongodb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 10s
+      timeout: 10s
+      retries: 10
+      start_period: 15s
+    networks:
+      - e2e-network
+
+  platform-cost-dapr:
+    image: daprio/daprd:1.14.0
+    container_name: e2e-platform-cost-dapr
+    # ADR-016: Platform Cost uses streaming pub/sub for cost events
+    # - app-port 8000: FastAPI for health probes
+    # - Pub/sub uses streaming subscriptions (outbound from app)
+    command: [
+      "./daprd",
+      "-app-id", "platform-cost",
+      "-app-port", "8000",
+      "-dapr-http-port", "3500",
+      "-dapr-grpc-port", "50001",
+      "-components-path", "/components"
+    ]
+    volumes:
+      - ./dapr-components:/components
+    network_mode: "service:platform-cost"
+    depends_on:
+      platform-cost:
+        condition: service_started
+      redis:
+        condition: service_healthy
+
 volumes:
   e2e_mongodb_data:
     driver: local

@@ -16,6 +16,12 @@ motor = "^3.3.0"
 structlog = "^24.1.0"
 tenacity = "^8.2.0"
 httpx = ">=0.26.0,<0.28.0"  # Required for DAPR health checks
+# gRPC for UnifiedCostService (Story 13.4)
+grpcio = "^1.60.0"
+grpcio-health-checking = "^1.60.0"
+grpcio-reflection = "^1.60.0"
+# DAPR SDK for streaming subscriptions (Story 13.5)
+dapr = "^1.14.0"
 # OpenTelemetry - use compatible versions (instrumentation versions = 0.XXb0 match SDK 1.XX)
 opentelemetry-api = "^1.29.0"
 opentelemetry-sdk = "^1.29.0"

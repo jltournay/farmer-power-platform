@@ -439,3 +439,149 @@ class BFFClient:
             f"/api/farmers/{farmer_id}",
             headers=self._get_auth_headers(role=role, factory_ids=factory_ids),
         )
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# Platform Cost API Client (Story 13.8)
+# Used for publishing cost events via DAPR and health checks
+# ═══════════════════════════════════════════════════════════════════════════════
+
+# DAPR HTTP port for platform-cost sidecar (not exposed in docker-compose, use AI model's)
+# Since platform-cost only subscribes (doesn't publish), we'll publish via ai-model's DAPR sidecar
+AI_MODEL_DAPR_HTTP_PORT = 3500  # ai-model's DAPR sidecar at localhost:3500 on port 8091
+
+
+class PlatformCostApiClient:
+    """HTTP client for Platform Cost service and DAPR event publishing.
+
+    This client provides:
+    - Health check endpoints
+    - DAPR pub/sub to platform.cost.recorded topic (via ai-model's DAPR sidecar)
+
+    Story 13.8: E2E Integration Tests for Platform Cost Service
+    """
+
+    def __init__(
+        self,
+        base_url: str = "http://localhost:8084",
+        dapr_http_port: int = AI_MODEL_DAPR_HTTP_PORT,
+    ):
+        """Initialize Platform Cost API client.
+
+        Args:
+            base_url: Platform Cost FastAPI URL (for health checks)
+            dapr_http_port: DAPR sidecar HTTP port for publishing events
+        """
+        self.base_url = base_url
+        # ai-model container exposes DAPR at port 8091 (mapped from 3500)
+        # Actually we need to use the internal Docker network for ai-model's DAPR
+        # Since we're running tests from host, we can publish via ai-model's exposed port
+        self.dapr_base_url = "http://localhost:8091"  # ai-model HTTP
+        self._client: httpx.AsyncClient | None = None
+        self._dapr_client: httpx.AsyncClient | None = None
+
+    async def __aenter__(self) -> "PlatformCostApiClient":
+        self._client = httpx.AsyncClient(base_url=self.base_url, timeout=30.0)
+        # Connect to ai-model's DAPR sidecar for publishing
+        # The sidecar is at localhost:3500 inside container, mapped to port exposed with container
+        self._dapr_client = httpx.AsyncClient(
+            base_url="http://localhost:3502",  # Collection model DAPR (exposed)
+            timeout=30.0,
+        )
+        return self
+
+    async def __aexit__(self, *args: Any) -> None:
+        if self._client:
+            await self._client.aclose()
+        if self._dapr_client:
+            await self._dapr_client.aclose()
+
+    @property
+    def client(self) -> httpx.AsyncClient:
+        if self._client is None:
+            raise RuntimeError("Client not initialized. Use async context manager.")
+        return self._client
+
+    @property
+    def dapr_client(self) -> httpx.AsyncClient:
+        if self._dapr_client is None:
+            raise RuntimeError("DAPR client not initialized. Use async context manager.")
+        return self._dapr_client
+
+    async def health(self) -> dict[str, Any]:
+        """Check Platform Cost service health."""
+        response = await self.client.get("/health")
+        response.raise_for_status()
+        return response.json()
+
+    async def ready(self) -> dict[str, Any]:
+        """Check Platform Cost service readiness."""
+        response = await self.client.get("/ready")
+        response.raise_for_status()
+        return response.json()
+
+    async def publish_cost_event(
+        self,
+        request_id: str,
+        cost_type: str,
+        amount_usd: str,
+        quantity: int = 1,
+        unit: str | None = None,
+        agent_type: str = "extractor",
+        metadata: dict[str, Any] | None = None,
+        success: bool = True,
+    ) -> bool:
+        """Publish a CostRecordedEvent to platform.cost.recorded topic via DAPR.
+
+        Args:
+            request_id: Unique request ID for idempotency
+            cost_type: Type of cost (llm, document, embedding, sms)
+            amount_usd: Cost amount as string (Decimal)
+            quantity: Number of units consumed
+            unit: Unit type (auto-mapped from cost_type if not provided)
+            agent_type: Agent type for LLM costs (stored in metadata)
+            metadata: Additional metadata (model, tokens_in, tokens_out, etc.)
+            success: Whether the operation succeeded
+
+        Returns:
+            True if event was published successfully
+        """
+        from datetime import UTC, datetime
+
+        # Auto-map cost_type to correct unit per CostRecordedEvent schema
+        unit_map = {
+            "llm": "tokens",
+            "document": "pages",
+            "embedding": "queries",
+            "sms": "messages",
+        }
+        resolved_unit = unit if unit else unit_map.get(cost_type, "tokens")
+
+        # Build metadata with agent_type for LLM costs
+        full_metadata = metadata.copy() if metadata else {}
+        if cost_type == "llm" and agent_type:
+            full_metadata["agent_type"] = agent_type
+
+        # Build CostRecordedEvent matching fp_common/events/cost_recorded.py
+        event = {
+            "cost_type": cost_type,
+            "amount_usd": amount_usd,
+            "quantity": quantity,
+            "unit": resolved_unit,
+            "timestamp": datetime.now(UTC).isoformat(),
+            "source_service": "ai-model",  # Simulating ai-model publishing
+            "success": success,
+            "metadata": full_metadata,
+            "request_id": request_id,
+        }
+
+        # Publish to DAPR pub/sub topic 'platform.cost.recorded'
+        # DAPR HTTP API: POST /v1.0/publish/{pubsub-name}/{topic}
+        response = await self.dapr_client.post(
+            "/v1.0/publish/pubsub/platform.cost.recorded",
+            json=event,
+            headers={"Content-Type": "application/json"},
+        )
+
+        # DAPR returns 204 No Content on successful publish
+        return response.status_code in (200, 204)

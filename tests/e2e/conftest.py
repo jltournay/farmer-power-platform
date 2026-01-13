@@ -27,7 +27,12 @@ import pytest_asyncio
 if TYPE_CHECKING:
     from tests.e2e.helpers.mcp_clients import CollectionMCPClient, PlantationMCPClient
 
-from tests.e2e.helpers.api_clients import BFFClient, CollectionClient, PlantationClient
+from tests.e2e.helpers.api_clients import (
+    BFFClient,
+    CollectionClient,
+    PlantationClient,
+    PlatformCostApiClient,
+)
 from tests.e2e.helpers.azure_blob import AZURITE_CONNECTION_STRING, AzuriteClient
 from tests.e2e.helpers.mcp_clients import PlantationServiceClient
 from tests.e2e.helpers.mongodb_direct import MongoDBDirectClient
@@ -45,6 +50,10 @@ E2E_CONFIG = {
     "collection_model_grpc_port": 50054,  # Story 0.5.1a
     "bff_url": "http://localhost:8083",  # Story 0.5.4b
     "ai_model_url": "http://localhost:8091",  # Story 0.75.18: AI Model HTTP port
+    # Story 13.8: Platform Cost service configuration
+    "platform_cost_url": "http://localhost:8084",
+    "platform_cost_grpc_host": "localhost",
+    "platform_cost_grpc_port": 50055,
     "plantation_mcp_host": "localhost",
     "plantation_mcp_port": 50052,
     "collection_mcp_host": "localhost",
@@ -95,6 +104,7 @@ async def wait_for_services(e2e_config: dict[str, Any]) -> None:
         ("Plantation Model", f"{e2e_config['plantation_model_url']}/health"),
         ("Collection Model", f"{e2e_config['collection_model_url']}/health"),
         ("BFF", f"{e2e_config['bff_url']}/health"),  # Story 0.5.4b
+        ("Platform Cost", f"{e2e_config['platform_cost_url']}/health"),  # Story 13.8
     ]
 
     timeout = e2e_config["health_check_timeout"]
@@ -240,6 +250,38 @@ async def collection_mcp(
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
+# PLATFORM COST SERVICE FIXTURES (Story 13.8)
+# ═══════════════════════════════════════════════════════════════════════════════
+
+
+@pytest_asyncio.fixture
+async def platform_cost_service(
+    e2e_config: dict[str, Any],
+    wait_for_services: None,
+) -> AsyncGenerator[Any, None]:
+    """Provide Platform Cost gRPC client for cost queries and budget management."""
+    from tests.e2e.helpers.mcp_clients import PlatformCostServiceClient
+
+    async with PlatformCostServiceClient(
+        host=e2e_config["platform_cost_grpc_host"],
+        port=e2e_config["platform_cost_grpc_port"],
+    ) as client:
+        yield client
+
+
+@pytest_asyncio.fixture
+async def platform_cost_api(
+    e2e_config: dict[str, Any],
+    wait_for_services: None,
+) -> AsyncGenerator[PlatformCostApiClient, None]:
+    """Provide Platform Cost API client for health checks and DAPR event publishing."""
+    async with PlatformCostApiClient(
+        base_url=e2e_config["platform_cost_url"],
+    ) as client:
+        yield client
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
 # SEED DATA FIXTURE (SESSION-SCOPED)
 # ═══════════════════════════════════════════════════════════════════════════════
 
@@ -270,6 +312,7 @@ async def seed_data_session(
             ("Plantation Model", f"{e2e_config['plantation_model_url']}/health"),
             ("Collection Model", f"{e2e_config['collection_model_url']}/health"),
             ("AI Model", f"{e2e_config['ai_model_url']}/health"),  # Story 0.75.18
+            ("Platform Cost", f"{e2e_config['platform_cost_url']}/health"),  # Story 13.8
         ]:
             for _ in range(60):
                 try:
