@@ -199,16 +199,16 @@ development_status:
   # Epic 13: Unified Platform Cost Service (NEW - 2026-01-12, ADR-016)
   # Dependencies: Epic 0.75. Blocks: Story 9.6 (LLM Cost Dashboard)
   # Unified cost aggregation via DAPR pub/sub, gRPC UnifiedCostService
-  epic-13: in-progress
+  epic-13: done
   13-1-shared-cost-event-model: done  # github_issue: 163, fp-common CostRecordedEvent, CODE REVIEW COMPLETED 2026-01-12
   13-2-platform-cost-service-scaffold: done  # github_issue: 165, FastAPI + DAPR + gRPC scaffold
   13-3-cost-repository-budget-monitor: done  # github_issue: 167, MongoDB repository + TTL + BudgetMonitor with warm-up, CODE REVIEW COMPLETED 2026-01-13
-  13-4-grpc-unified-cost-service: review  # Proto + all RPC implementations, github_issue: 169
+  13-4-grpc-unified-cost-service: done  # Proto + all RPC implementations, github_issue: 169
   13-5-dapr-cost-event-subscription: done  # github_issue: 171, Subscribe to platform.cost.recorded, CODE REVIEW COMPLETED 2026-01-13
   13-6-bff-integration-layer: done  # github_issue: 173  # fp-common models + converters + BFF client (ADR-016 Parts 4-6)
   13-7-ai-model-refactor-publish-costs: done  # github_issue: 175, ai-model publishes instead of persists, cleanup, CODE REVIEW COMPLETED 2026-01-13
   13-8-e2e-integration-tests: done  # github_issue: 177, Full pub/sub flow validation
-  epic-13-retrospective: optional
+  epic-13-retrospective: done  # 2026-01-14, epic-13-retro-2026-01-14.md
 
   # ═══════════════════════════════════════════════════════════════════════════
   # P2: FIRST FRONTEND APPS (Simple React validation)
