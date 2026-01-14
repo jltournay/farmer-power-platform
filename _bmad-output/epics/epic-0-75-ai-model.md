@@ -949,6 +949,102 @@ So that images can be analyzed with cost optimization.
 
 ---
 
+### Story 0.75.23: RAG Query Service with BFF Integration
+
+**Story File:** Not yet created | Status: Backlog
+
+As a **platform admin using the Document Review UI**,
+I want to query RAG documents with natural language questions through the Admin UI,
+So that I can validate document content before activation by testing if it answers expected questions correctly.
+
+**Context:**
+The RAGDocumentService currently supports document management (CRUD), chunking, and vectorization. However:
+1. There is NO retrieval endpoint for querying vectorized content
+2. RAG models are internal to ai-model service only (not in fp-common)
+3. No BFF client exists to call RAGDocumentService
+
+This story delivers a complete vertical slice: gRPC endpoint + shared models + BFF client.
+
+**Scope:**
+
+**Part 1: QueryKnowledge gRPC Endpoint**
+- Add `QueryKnowledge` RPC to `RAGDocumentService` in `proto/ai_model/v1/ai_model.proto`:
+  ```protobuf
+  rpc QueryKnowledge(QueryKnowledgeRequest) returns (QueryKnowledgeResponse);
+  ```
+- Implement in `RAGDocumentServiceServicer` using existing `RagRetrievalService` (Story 0.75.14) and `RagRankingService` (Story 0.75.15)
+- Support querying against `staged` namespace (for review) or `active` namespace (for production)
+
+**gRPC API Contract:**
+```protobuf
+message QueryKnowledgeRequest {
+  string query = 1;                    // Natural language question
+  string document_id = 2;              // Optional: filter to specific document
+  string namespace = 3;                // "staged" or "active" (default: "active")
+  int32 top_k = 4;                     // Max results (default: 5)
+  float min_score = 5;                 // Minimum relevance score (default: 0.7)
+}
+
+message QueryKnowledgeResponse {
+  repeated RetrievedChunk chunks = 1;
+  QueryMetadata metadata = 2;
+}
+
+message RetrievedChunk {
+  string chunk_id = 1;
+  string document_id = 2;
+  string document_title = 3;
+  string content = 4;
+  float score = 5;
+  string section_title = 6;
+}
+
+message QueryMetadata {
+  int32 total_matches = 1;
+  float query_time_ms = 2;
+  string namespace_queried = 3;
+}
+```
+
+**Part 2: Move Pydantic Models to fp-common**
+- Move models from `services/ai-model/src/ai_model/domain/rag_document.py` to `libs/fp-common/fp_common/models/rag.py`:
+  - `RagDocument`, `RagChunk`, `SourceFile`, `RagDocumentMetadata`
+  - `DocumentStatus` enum, `KnowledgeDomain` enum
+- Move retrieval models from `services/ai-model/src/ai_model/domain/retrieval.py`:
+  - `RetrievedChunk`, `RetrievalResult`
+- Update ai-model service to import from fp-common instead of local domain
+- Add `QueryResult` wrapper for BFF response formatting
+
+**Part 3: Extract Converters to fp-common**
+- Extract inline converters from `services/ai-model/src/ai_model/api/rag_document_service.py` to `libs/fp-common/fp_common/converters/rag_converters.py`:
+  - `_pydantic_to_proto()` → `rag_document_to_proto()`
+  - `_proto_metadata_to_pydantic()` → `rag_metadata_from_proto()`
+  - `_proto_source_file_to_pydantic()` → `source_file_from_proto()`
+- Add converters for query response:
+  - `rag_document_from_proto()`, `retrieved_chunk_from_proto()`, `query_result_from_proto()`
+- Update rag_document_service.py to import from fp_common.converters
+
+**Part 4: BFF Client**
+- Create `services/bff/src/bff/infrastructure/clients/ai_model_client.py`:
+  - Extend `BaseGrpcClient` pattern from existing clients
+  - DAPR service invocation to `ai-model` app-id
+  - Methods: `list_documents()`, `get_document()`, `create_document()`, `update_document()`, `delete_document()`, `stage_document()`, `activate_document()`, `query_knowledge()`
+
+**Dependencies:** Stories 0.75.14 (Retrieval), 0.75.15 (Ranking), 0.75.13b (Vectorization)
+
+**Acceptance Criteria:**
+1. `QueryKnowledge` RPC implemented and registered in gRPC server
+2. Queries against `staged`/`active` namespaces work correctly
+3. Document ID filter works correctly
+4. `RagDocument` and related models in fp-common with full type hints
+5. Proto ↔ Pydantic converters with unit tests
+6. `AiModelClient` in BFF with all CRUD + lifecycle + query methods
+7. Client uses DAPR service invocation (not direct gRPC)
+8. Unit tests for query logic, converters, and client methods
+9. Integration test: upload doc → chunk → vectorize → query via BFF
+
+---
+
 ## Story Summary
 
 | #    | Story                                                    | Type           | Status  |
@@ -982,6 +1078,7 @@ So that images can be analyzed with cost optimization.
 | 20   | Generator Agent Implementation                           | Agent          | Done    |
 | 21   | Conversational Agent Implementation                      | Agent          | Done    |
 | 22   | Tiered-Vision Agent Implementation                       | Agent          | Ready   |
+| 23   | RAG Query Service with BFF Integration                   | API            | Backlog |
 
 ---
 
