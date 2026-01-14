@@ -194,7 +194,7 @@ development_status:
   0-75-20-generator-agent-implementation: done  # github_issue: 156, LangGraph + RAG, multi-format, golden samples
   0-75-21-conversational-agent-implementation: done  # github_issue: 158, Two LLM calls, state management, golden samples, PR #159, CODE REVIEW COMPLETED 2026-01-11
   0-75-22-tiered-vision-agent-implementation: done  # github_issue: 161, CODE REVIEW COMPLETED 2026-01-11 - Cost-optimized image analysis, golden samples
-  0-75-23-rag-query-service-bff-integration: backlog  # QueryKnowledge gRPC + fp-common models/converters + BFF client (blocks Story 9.5)
+  0-75-23-rag-query-service-bff-integration: done  # github_issue: 179, QueryKnowledge gRPC + fp-common models/converters + BFF client (blocks Story 9.5)
   epic-0-75-retrospective: optional
 
   # Epic 13: Unified Platform Cost Service (NEW - 2026-01-12, ADR-016)

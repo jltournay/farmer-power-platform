@@ -5,6 +5,7 @@ Documents are versioned with lifecycle status: draft → staged → active → a
 
 Story 0.75.10: gRPC Model for RAG Document
 Story 0.75.13c: Added VectorizeDocument and GetVectorizationJob RPCs
+Story 0.75.23: Added QueryKnowledge RPC for RAG retrieval
 """
 
 import uuid
@@ -27,11 +28,16 @@ from ai_model.domain.rag_document import (
     SourceFile,
 )
 from ai_model.infrastructure.repositories import RagDocumentRepository
+from fp_common.converters import (
+    retrieval_query_from_proto,
+    retrieval_result_to_proto,
+)
 from fp_proto.ai_model.v1 import ai_model_pb2, ai_model_pb2_grpc
 from google.protobuf import timestamp_pb2
 
-# Lazy import type for VectorizationPipeline to avoid circular imports
+# Lazy import types to avoid circular imports
 if TYPE_CHECKING:
+    from ai_model.services.retrieval_service import RetrievalService
     from ai_model.services.vectorization_pipeline import VectorizationPipeline
 
 logger = structlog.get_logger(__name__)
@@ -134,12 +140,14 @@ class RAGDocumentServiceServicer(ai_model_pb2_grpc.RAGDocumentServiceServicer):
     - Listing and search (ListDocuments, SearchDocuments)
     - Lifecycle management (StageDocument, ActivateDocument, ArchiveDocument, RollbackDocument)
     - Vectorization operations (VectorizeDocument, GetVectorizationJob) - Story 0.75.13c
+    - Query operations (QueryKnowledge) - Story 0.75.23
     """
 
     def __init__(
         self,
         repository: RagDocumentRepository,
         vectorization_pipeline: "VectorizationPipeline | None" = None,
+        retrieval_service: "RetrievalService | None" = None,
     ) -> None:
         """Initialize the RAGDocumentService.
 
@@ -147,9 +155,12 @@ class RAGDocumentServiceServicer(ai_model_pb2_grpc.RAGDocumentServiceServicer):
             repository: Repository for RAG document persistence.
             vectorization_pipeline: Optional pipeline for vectorization operations.
                                     Story 0.75.13c: Added for VectorizeDocument/GetVectorizationJob.
+            retrieval_service: Optional service for RAG retrieval operations.
+                               Story 0.75.23: Added for QueryKnowledge.
         """
         self._repository = repository
         self._vectorization_pipeline = vectorization_pipeline
+        self._retrieval_service = retrieval_service
         logger.info("RAGDocumentService initialized")
 
     async def CreateDocument(
@@ -1684,6 +1695,102 @@ class RAGDocumentServiceServicer(ai_model_pb2_grpc.RAGDocumentServiceServicer):
                 "GetVectorizationJob failed",
                 error=str(e),
                 job_id=request.job_id,
+            )
+            await context.abort(grpc.StatusCode.INTERNAL, str(e))
+            raise
+
+    # ========================================
+    # Query Operations (Story 0.75.23)
+    # ========================================
+
+    def set_retrieval_service(self, service: "RetrievalService") -> None:
+        """Set the retrieval service for QueryKnowledge operations.
+
+        Called during service initialization to inject the retrieval service.
+
+        Args:
+            service: RetrievalService instance.
+        """
+        self._retrieval_service = service
+
+    async def _require_retrieval_service(self, context: grpc.aio.ServicerContext) -> bool:
+        """Check if retrieval service is available.
+
+        Args:
+            context: gRPC context for error reporting.
+
+        Returns:
+            True if service is available, False if aborted.
+        """
+        if self._retrieval_service is None:
+            await context.abort(
+                grpc.StatusCode.UNAVAILABLE,
+                "Retrieval service not configured",
+            )
+            return False
+        return True
+
+    async def QueryKnowledge(
+        self,
+        request: ai_model_pb2.QueryKnowledgeRequest,
+        context: grpc.aio.ServicerContext,
+    ) -> ai_model_pb2.QueryKnowledgeResponse:
+        """Query the RAG knowledge base with natural language.
+
+        Performs semantic search against vectorized document chunks
+        using Pinecone similarity search and returns ranked results.
+
+        Args:
+            request: QueryKnowledgeRequest with query and optional filters.
+            context: gRPC context.
+
+        Returns:
+            QueryKnowledgeResponse with matching chunks and metadata.
+
+        Story 0.75.23: RAG Query Service with BFF Integration
+        """
+        try:
+            if not request.query:
+                await context.abort(
+                    grpc.StatusCode.INVALID_ARGUMENT,
+                    "query is required",
+                )
+                return ai_model_pb2.QueryKnowledgeResponse()
+
+            # Check if retrieval service is available
+            if not await self._require_retrieval_service(context):
+                return ai_model_pb2.QueryKnowledgeResponse()
+
+            # Convert proto request to Pydantic model
+            query = retrieval_query_from_proto(request)
+
+            logger.info(
+                "QueryKnowledge started",
+                query_length=len(query.query),
+                domains=query.domains,
+                top_k=query.top_k,
+                confidence_threshold=query.confidence_threshold,
+                namespace=query.namespace,
+            )
+
+            # Execute retrieval
+            result = await self._retrieval_service.retrieve_from_query(query)
+
+            logger.info(
+                "QueryKnowledge completed",
+                query_length=len(query.query),
+                total_matches=result.total_matches,
+                returned_matches=len(result.matches),
+            )
+
+            # Convert Pydantic result to proto response
+            return retrieval_result_to_proto(result)
+
+        except Exception as e:
+            logger.error(
+                "QueryKnowledge failed",
+                error=str(e),
+                query=request.query[:100] if request.query else "",
             )
             await context.abort(grpc.StatusCode.INTERNAL, str(e))
             raise

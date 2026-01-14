@@ -206,6 +206,10 @@ service RAGDocumentService {
   // Vectorization Operations (Story 0.75.13b)
   rpc VectorizeDocument(VectorizeDocumentRequest) returns (VectorizeDocumentResponse);
   rpc GetVectorizationJob(GetVectorizationJobRequest) returns (VectorizationJobResponse);
+
+  // Query Operations (Story 0.75.23)
+  // Query knowledge base with natural language for RAG retrieval
+  rpc QueryKnowledge(QueryKnowledgeRequest) returns (QueryKnowledgeResponse);
 }
 
 // ============================================
@@ -616,4 +620,53 @@ message VectorizationJobResponse {
   // Timestamps
   google.protobuf.Timestamp started_at = 12;
   google.protobuf.Timestamp completed_at = 13;
+}
+
+// ============================================
+// Query Knowledge Messages (Story 0.75.23)
+// RAG-based knowledge retrieval
+// ============================================
+
+// Request for querying the knowledge base with natural language
+message QueryKnowledgeRequest {
+  // Natural language query text
+  string query = 1;
+  // Knowledge domains to search (empty = all domains)
+  repeated string domains = 2;
+  // Maximum number of results (default 5, max 100)
+  int32 top_k = 3;
+  // Minimum similarity threshold (0.0-1.0, default 0.0)
+  float confidence_threshold = 4;
+  // Pinecone namespace for version isolation (optional)
+  string namespace = 5;
+}
+
+// Response containing retrieval matches
+message QueryKnowledgeResponse {
+  // List of matching chunks ordered by similarity
+  repeated RetrievalMatch matches = 1;
+  // Original query echoed back
+  string query = 2;
+  // Namespace that was queried
+  string namespace = 3;
+  // Total matches before confidence filtering
+  int32 total_matches = 4;
+}
+
+// Single match from a retrieval query
+message RetrievalMatch {
+  // Unique chunk identifier
+  string chunk_id = 1;
+  // Full chunk text content
+  string content = 2;
+  // Similarity score (0-1, higher is more similar)
+  float score = 3;
+  // Parent document ID for attribution
+  string document_id = 4;
+  // Document title for display
+  string title = 5;
+  // Knowledge domain of the chunk
+  string domain = 6;
+  // Additional metadata as JSON string
+  string metadata_json = 7;
 }

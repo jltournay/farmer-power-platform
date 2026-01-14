@@ -84,6 +84,9 @@ from fp_common.models.grading_model import (
 # Performance summary model
 from fp_common.models.performance_summary import PerformanceSummary
 
+# RAG retrieval models (Story 0.75.23)
+from fp_common.models.rag import RetrievalMatch, RetrievalQuery, RetrievalResult
+
 # Region models
 from fp_common.models.region import Region, RegionCreate, RegionUpdate
 
@@ -215,6 +218,10 @@ __all__ = [
     # Weather
     "RegionalWeather",
     "RequestConfig",
+    # RAG retrieval models (Story 0.75.23)
+    "RetrievalMatch",
+    "RetrievalQuery",
+    "RetrievalResult",
     "RetryConfig",
     "SchemaDocument",
     "SearchResult",

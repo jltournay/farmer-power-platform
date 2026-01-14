@@ -586,3 +586,47 @@ class VectorizationJobResponse(_message.Message):
     started_at: _timestamp_pb2.Timestamp
     completed_at: _timestamp_pb2.Timestamp
     def __init__(self, job_id: _Optional[str] = ..., status: _Optional[str] = ..., document_id: _Optional[str] = ..., document_version: _Optional[int] = ..., namespace: _Optional[str] = ..., chunks_total: _Optional[int] = ..., chunks_embedded: _Optional[int] = ..., chunks_stored: _Optional[int] = ..., failed_count: _Optional[int] = ..., content_hash: _Optional[str] = ..., error_message: _Optional[str] = ..., started_at: _Optional[_Union[datetime.datetime, _timestamp_pb2.Timestamp, _Mapping]] = ..., completed_at: _Optional[_Union[datetime.datetime, _timestamp_pb2.Timestamp, _Mapping]] = ...) -> None: ...
+
+class QueryKnowledgeRequest(_message.Message):
+    __slots__ = ("query", "domains", "top_k", "confidence_threshold", "namespace")
+    QUERY_FIELD_NUMBER: _ClassVar[int]
+    DOMAINS_FIELD_NUMBER: _ClassVar[int]
+    TOP_K_FIELD_NUMBER: _ClassVar[int]
+    CONFIDENCE_THRESHOLD_FIELD_NUMBER: _ClassVar[int]
+    NAMESPACE_FIELD_NUMBER: _ClassVar[int]
+    query: str
+    domains: _containers.RepeatedScalarFieldContainer[str]
+    top_k: int
+    confidence_threshold: float
+    namespace: str
+    def __init__(self, query: _Optional[str] = ..., domains: _Optional[_Iterable[str]] = ..., top_k: _Optional[int] = ..., confidence_threshold: _Optional[float] = ..., namespace: _Optional[str] = ...) -> None: ...
+
+class QueryKnowledgeResponse(_message.Message):
+    __slots__ = ("matches", "query", "namespace", "total_matches")
+    MATCHES_FIELD_NUMBER: _ClassVar[int]
+    QUERY_FIELD_NUMBER: _ClassVar[int]
+    NAMESPACE_FIELD_NUMBER: _ClassVar[int]
+    TOTAL_MATCHES_FIELD_NUMBER: _ClassVar[int]
+    matches: _containers.RepeatedCompositeFieldContainer[RetrievalMatch]
+    query: str
+    namespace: str
+    total_matches: int
+    def __init__(self, matches: _Optional[_Iterable[_Union[RetrievalMatch, _Mapping]]] = ..., query: _Optional[str] = ..., namespace: _Optional[str] = ..., total_matches: _Optional[int] = ...) -> None: ...
+
+class RetrievalMatch(_message.Message):
+    __slots__ = ("chunk_id", "content", "score", "document_id", "title", "domain", "metadata_json")
+    CHUNK_ID_FIELD_NUMBER: _ClassVar[int]
+    CONTENT_FIELD_NUMBER: _ClassVar[int]
+    SCORE_FIELD_NUMBER: _ClassVar[int]
+    DOCUMENT_ID_FIELD_NUMBER: _ClassVar[int]
+    TITLE_FIELD_NUMBER: _ClassVar[int]
+    DOMAIN_FIELD_NUMBER: _ClassVar[int]
+    METADATA_JSON_FIELD_NUMBER: _ClassVar[int]
+    chunk_id: str
+    content: str
+    score: float
+    document_id: str
+    title: str
+    domain: str
+    metadata_json: str
+    def __init__(self, chunk_id: _Optional[str] = ..., content: _Optional[str] = ..., score: _Optional[float] = ..., document_id: _Optional[str] = ..., title: _Optional[str] = ..., domain: _Optional[str] = ..., metadata_json: _Optional[str] = ...) -> None: ...

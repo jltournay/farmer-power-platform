@@ -16,9 +16,9 @@ from datetime import UTC, datetime
 import structlog
 from ai_model.config import Settings
 from ai_model.domain.ranking import RankedMatch, RankingConfig, RankingResult
-from ai_model.domain.retrieval import RetrievalMatch
 from ai_model.services.deduplication import deduplicate_matches
 from ai_model.services.retrieval_service import RetrievalService
+from fp_common.models import RetrievalMatch
 from pinecone import Pinecone
 
 logger = structlog.get_logger(__name__)

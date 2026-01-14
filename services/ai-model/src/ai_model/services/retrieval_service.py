@@ -10,7 +10,6 @@ Story 0.75.14: RAG Retrieval Service
 """
 
 import structlog
-from ai_model.domain.retrieval import RetrievalMatch, RetrievalQuery, RetrievalResult
 from ai_model.infrastructure.pinecone_vector_store import (
     PineconeNotConfiguredError as VectorStoreNotConfiguredError,
     PineconeVectorStore,
@@ -20,6 +19,7 @@ from ai_model.services.embedding_service import (
     EmbeddingService,
     PineconeNotConfiguredError as EmbeddingNotConfiguredError,
 )
+from fp_common.models import RetrievalMatch, RetrievalQuery, RetrievalResult
 
 logger = structlog.get_logger(__name__)
 
