@@ -1,5 +1,7 @@
 # Story 9.1a: Platform Admin Application Scaffold
 
+**[📄 Story File](../../sprint-artifacts/9-1a-platform-admin-application-scaffold.md)** | Status: ready-for-dev
+
 As a **platform developer**,
 I want the Platform Admin React application scaffolded with routing, layout, and hierarchical navigation,
 So that all admin screens can be built on a consistent foundation.
