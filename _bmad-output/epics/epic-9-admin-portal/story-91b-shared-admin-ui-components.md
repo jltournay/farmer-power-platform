@@ -246,4 +246,14 @@ libs/ui-components/src/components/
 
 ## Story Points: 8
 
+## Human Validation Gate
+
+**⚠️ MANDATORY: This story requires human validation before acceptance.**
+
+| Validation Type | Requirement |
+|-----------------|-------------|
+| **Storybook Review** | Human must review and approve all 14 components in Storybook |
+| **Checklist** | Shell, DataTable, Forms, Map components - visual + interactive behavior |
+| **Approval** | Story cannot be marked "done" until human signs off |
+
 ---

@@ -131,4 +131,14 @@ So that I can configure which quality assessment standards each factory uses.
 
 ## Story Points: 3
 
+## Human Validation Gate
+
+**⚠️ MANDATORY: This story requires human validation before acceptance.**
+
+| Validation Type | Requirement |
+| --------------- | ----------- |
+| **Screen Review with Test Data** | Human must validate UI screens with realistic test data loaded |
+| **Checklist** | Grading model list, detail view, factory assignment flow |
+| **Approval** | Story cannot be marked "done" until human signs off |
+
 ---

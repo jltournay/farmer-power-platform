@@ -291,4 +291,14 @@ So that I can track total costs, understand cost drivers by service, and configu
 
 ## Story Points: 8
 
+## Human Validation Gate
+
+**⚠️ MANDATORY: This story requires human validation before acceptance.**
+
+| Validation Type | Requirement |
+| --------------- | ----------- |
+| **Screen Review with Test Data** | Human must validate UI screens with realistic test data loaded |
+| **Checklist** | Cost overview, service breakdowns (LLM/SMS/Voice tabs), trend charts, budget alert config |
+| **Approval** | Story cannot be marked "done" until human signs off |
+
 ---

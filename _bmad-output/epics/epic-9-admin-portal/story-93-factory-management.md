@@ -249,4 +249,14 @@ So that I can onboard tea processing facilities for the pilot.
 
 ## Story Points: 5
 
+## Human Validation Gate
+
+**⚠️ MANDATORY: This story requires human validation before acceptance.**
+
+| Validation Type | Requirement |
+| --------------- | ----------- |
+| **Screen Review with Test Data** | Human must validate UI screens with realistic test data loaded |
+| **Checklist** | Factory list view, detail view, create/edit forms, collection points display |
+| **Approval** | Story cannot be marked "done" until human signs off |
+
 ---

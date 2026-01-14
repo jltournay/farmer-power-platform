@@ -326,4 +326,14 @@ So that I can quickly find and maintain any farmer record regardless of where th
 
 ## Story Points: 8
 
+## Human Validation Gate
+
+**⚠️ MANDATORY: This story requires human validation before acceptance.**
+
+| Validation Type | Requirement |
+| --------------- | ----------- |
+| **Screen Review with Test Data** | Human must validate UI screens with realistic test data loaded |
+| **Checklist** | Farmer list with filters, detail view, create/edit forms, CSV import, performance summary |
+| **Approval** | Story cannot be marked "done" until human signs off |
+
 ---

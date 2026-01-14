@@ -70,4 +70,14 @@ So that I can support user administration tasks.
 
 ## Story Points: 5
 
+## Human Validation Gate
+
+**⚠️ MANDATORY: This story requires human validation before acceptance.**
+
+| Validation Type | Requirement |
+| --------------- | ----------- |
+| **Screen Review with Test Data** | Human must validate UI screens with realistic test data loaded |
+| **Checklist** | User list with filters, user creation, role assignment, password reset |
+| **Approval** | Story cannot be marked "done" until human signs off |
+
 ---

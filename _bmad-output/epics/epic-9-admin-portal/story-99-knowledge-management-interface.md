@@ -374,4 +374,14 @@ So that AI recommendations are powered by verified expert content.
 
 ## Story Points: 8
 
+## Human Validation Gate
+
+**⚠️ MANDATORY: This story requires human validation before acceptance.**
+
+| Validation Type | Requirement |
+| --------------- | ----------- |
+| **Screen Review with Test Data** | Human must validate UI screens with realistic test data loaded |
+| **Checklist** | Document library, upload flow, extraction preview, AI test queries, version history |
+| **Approval** | Story cannot be marked "done" until human signs off |
+
 ---
