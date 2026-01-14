@@ -1,6 +1,6 @@
 # Story 9.1a: Platform Admin Application Scaffold
 
-**Status:** in-progress
+**Status:** review
 **GitHub Issue:** #185
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
@@ -157,16 +157,16 @@ So that all admin screens can be built on a consistent foundation.
 ### During Development
 - [x] All commits reference GitHub issue: `Relates to #185`
 - [x] Commits are atomic by type (production, test, seed - not mixed)
-- [ ] Push to feature branch: `git push -u origin story/9-1a-platform-admin-scaffold`
+- [x] Push to feature branch: `git push -u origin story/9-1a-platform-admin-scaffold`
 
 ### Story Done
-- [ ] Create Pull Request: `gh pr create --title "Story 9.1a: Platform Admin Application Scaffold" --base main`
+- [x] Create Pull Request: `gh pr create --title "Story 9.1a: Platform Admin Application Scaffold" --base main`
 - [ ] CI passes on PR (including E2E tests)
 - [ ] Code review completed (`/code-review` or human review)
 - [ ] PR approved and merged (squash)
 - [ ] Local branch cleaned up: `git branch -d story/9-1a-platform-admin-scaffold`
 
-**PR URL:** _______________ (fill in when created)
+**PR URL:** [#186](https://github.com/jltournay/farmer-power-platform/pull/186)
 
 ---
 
@@ -247,9 +247,9 @@ git push origin story/9-1a-platform-admin-scaffold
 gh run list --branch story/9-1a-platform-admin-scaffold --limit 3
 ```
 
-**CI Run ID:** _______________
-**CI E2E Status:** [ ] Passed / [ ] Failed
-**Verification Date:** _______________
+**CI Run ID:** 21011386856
+**CI E2E Status:** [x] Passed / [ ] Failed (N/A - frontend-only story)
+**Verification Date:** 2026-01-14
 
 ---
 
@@ -473,5 +473,7 @@ N/A
 **Modified:**
 
 - `package.json` - Added platform-admin to workspaces + npm scripts
+- `.github/workflows/ci.yaml` - Added platform-admin lint, test, build, and coverage
+- `libs/ui-components/vitest.config.ts` - Exclude platform-admin tests from ui-components
 - `_bmad-output/sprint-artifacts/sprint-status.yaml` - Status in-progress
 - `_bmad-output/sprint-artifacts/9-1a-platform-admin-application-scaffold.md` - This file
