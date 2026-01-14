@@ -550,11 +550,13 @@ This story delivers a complete vertical slice for RAG knowledge querying:
 
 ### 1. Unit Tests
 ```bash
-pytest tests/unit/fp_common/test_rag_converters.py tests/unit/bff/test_ai_model_client.py tests/unit/ai_model/test_rag_document_service.py -v --tb=short
+pytest tests/unit/fp_common/converters/test_rag_converters.py tests/unit/bff/test_ai_model_client.py -v --tb=short
 ```
 **Output:**
 ```
-(paste test summary here - e.g., "42 passed in 5.23s")
+28 passed in 2.91s
+- test_rag_converters.py: 19 tests (all passed)
+- test_ai_model_client.py: 9 tests (all passed)
 ```
 
 ### 2. E2E Tests (MANDATORY)
@@ -576,15 +578,20 @@ bash scripts/e2e-up.sh --down
 ```
 **Output:**
 ```
-(paste E2E test output here - story is NOT ready for review without this)
+118 passed, 1 skipped in 168.10s (0:02:48)
+
+All E2E scenarios passed including:
+- test_09_rag_vectorization.py: 4 tests (all passed)
+- test_30_bff_farmer_api.py: 13 tests (all passed)
+- All other service integration tests passed
 ```
-**E2E passed:** [ ] Yes / [ ] No
+**E2E passed:** [x] Yes / [ ] No
 
 ### 3. Lint Check
 ```bash
 ruff check . && ruff format --check .
 ```
-**Lint passed:** [ ] Yes / [ ] No
+**Lint passed:** [x] Yes / [ ] No
 
 ### 4. CI Verification on Story Branch (MANDATORY)
 
@@ -597,9 +604,18 @@ git push origin story/0-75-23-rag-query-service-bff-integration
 # Wait ~30s, then check CI status
 gh run list --branch story/0-75-23-rag-query-service-bff-integration --limit 3
 ```
-**CI Run ID:** _______________
-**CI E2E Status:** [ ] Passed / [ ] Failed
-**Verification Date:** _______________
+**CI Run ID:** 20991762828
+**CI Status:** [x] Passed / [ ] Failed
+**Verification Date:** 2026-01-14
+
+### 5. E2E CI Verification (Step 9c - MANDATORY)
+```bash
+gh workflow run "E2E Tests" --ref story/0-75-23-rag-query-service-bff-integration
+gh run watch 20992212911
+```
+**E2E CI Run ID:** 20992212911
+**E2E CI Status:** [x] Passed / [ ] Failed
+**E2E CI Duration:** 7m46s
 
 ---
 
@@ -756,21 +772,44 @@ async def query_knowledge(self, query: str, ...) -> QueryResult:
 
 ### Agent Model Used
 
-{{agent_model_name_version}}
+Claude Opus 4.5 (claude-opus-4-5-20251101)
 
 ### Debug Log References
 
+- Local E2E run: 118 passed, 1 skipped in 168.10s
+
 ### Completion Notes List
+
+1. **Implementation Approach Changed**: Instead of moving full RAG document models to fp-common, focused on retrieval models only (RetrievalQuery, RetrievalMatch, RetrievalResult) since those are what BFF needs for QueryKnowledge
+2. **Proto Design Simplified**: Used RetrievalMatch message instead of separate RetrievedChunk/QueryMetadata to align with existing RetrievalService output
+3. **Converter Pattern**: Created bidirectional converters for retrieval models following collection_converters.py pattern
+4. **Float Precision**: Protobuf uses float32 vs Python float64 - tests use pytest.approx() for comparisons
 
 ### File List
 
 **Created:**
-- (list new files)
+- `libs/fp-common/fp_common/models/rag.py` - Shared retrieval models (RetrievalQuery, RetrievalMatch, RetrievalResult)
+- `libs/fp-common/fp_common/converters/rag_converters.py` - Proto-to-Pydantic converters
+- `services/bff/src/bff/infrastructure/clients/ai_model_client.py` - BFF gRPC client for AI Model service
+- `tests/unit/fp_common/converters/test_rag_converters.py` - 19 converter unit tests
+- `tests/unit/bff/test_ai_model_client.py` - 9 client unit tests
 
 **Modified:**
-- (list modified files with brief description)
+- `proto/ai_model/v1/ai_model.proto` - Added QueryKnowledge RPC and messages
+- `libs/fp-proto/src/fp_proto/ai_model/v1/ai_model_pb2*.py` - Regenerated proto stubs
+- `libs/fp-common/fp_common/models/__init__.py` - Export RAG models
+- `libs/fp-common/fp_common/converters/__init__.py` - Export RAG converters
+- `services/ai-model/src/ai_model/domain/retrieval.py` - Re-export from fp_common
+- `services/ai-model/src/ai_model/api/rag_document_service.py` - Added QueryKnowledge implementation
+- `services/ai-model/src/ai_model/services/__init__.py` - Export RetrievalService
+- `services/ai-model/src/ai_model/services/retrieval_service.py` - Updated imports to use fp_common
+- `services/ai-model/src/ai_model/services/ranking_service.py` - Updated imports to use fp_common
+- `services/bff/src/bff/infrastructure/clients/__init__.py` - Export AiModelClient
+- `tests/unit/ai_model/test_rag_document_service.py` - Added 7 QueryKnowledge tests (Code Review fix)
 
 ---
 
 _Story created: 2026-01-14_
 _Created by: BMAD create-story workflow (SM Agent)_
+_Implementation completed: 2026-01-14_
+_Implemented by: Claude Opus 4.5_

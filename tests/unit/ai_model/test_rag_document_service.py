@@ -2,12 +2,14 @@
 
 Story 0.75.10: gRPC Model for RAG Document
 Story 0.75.13c: VectorizeDocument and GetVectorizationJob RPCs
+Story 0.75.23: QueryKnowledge RPC for RAG retrieval
 
 Tests cover:
 - CRUD operations (CreateDocument, GetDocument, UpdateDocument, DeleteDocument)
 - Listing and search (ListDocuments, SearchDocuments)
 - Lifecycle management (StageDocument, ActivateDocument, ArchiveDocument, RollbackDocument)
 - Vectorization operations (VectorizeDocument, GetVectorizationJob)
+- Query operations (QueryKnowledge)
 """
 
 from datetime import UTC, datetime
@@ -836,3 +838,176 @@ async def test_set_vectorization_pipeline(service, mock_vectorization_pipeline):
     service.set_vectorization_pipeline(mock_vectorization_pipeline)
 
     assert service._vectorization_pipeline is mock_vectorization_pipeline
+
+
+# ============================================
+# QueryKnowledge Tests (Story 0.75.23)
+# ============================================
+
+
+@pytest.fixture
+def mock_retrieval_service():
+    """Create a mock RetrievalService."""
+    from fp_common.models import RetrievalMatch, RetrievalResult
+
+    mock_service = MagicMock()
+    mock_service.retrieve_from_query = AsyncMock(
+        return_value=RetrievalResult(
+            matches=[
+                RetrievalMatch(
+                    chunk_id="disease-guide-v1-chunk-0",
+                    content="Blister blight is caused by the fungus Exobasidium vexans...",
+                    score=0.95,
+                    document_id="disease-guide",
+                    title="Tea Disease Guide",
+                    domain="plant_diseases",
+                    metadata={"region": "Kenya", "tags": ["fungal", "tea"]},
+                ),
+                RetrievalMatch(
+                    chunk_id="disease-guide-v1-chunk-1",
+                    content="Treatment includes copper-based fungicides...",
+                    score=0.85,
+                    document_id="disease-guide",
+                    title="Tea Disease Guide",
+                    domain="plant_diseases",
+                    metadata={"region": "Kenya"},
+                ),
+            ],
+            query="What causes blister blight?",
+            namespace="knowledge-v1",
+            total_matches=10,
+        )
+    )
+    return mock_service
+
+
+@pytest.fixture
+def service_with_retrieval(mock_repository, mock_retrieval_service):
+    """Create RAGDocumentServiceServicer with mock retrieval service."""
+    servicer = RAGDocumentServiceServicer(mock_repository)
+    servicer.set_retrieval_service(mock_retrieval_service)
+    return servicer
+
+
+@pytest.mark.asyncio
+async def test_query_knowledge_success(service_with_retrieval, mock_context, mock_retrieval_service):
+    """Test successful knowledge query returns matches.
+
+    Story 0.75.23: QueryKnowledge returns retrieval results.
+    """
+    request = ai_model_pb2.QueryKnowledgeRequest(
+        query="What causes blister blight?",
+        domains=["plant_diseases"],
+        top_k=5,
+        confidence_threshold=0.7,
+        namespace="knowledge-v1",
+    )
+
+    response = await service_with_retrieval.QueryKnowledge(request, mock_context)
+
+    assert response.query == "What causes blister blight?"
+    assert response.namespace == "knowledge-v1"
+    assert response.total_matches == 10
+    assert len(response.matches) == 2
+    assert response.matches[0].chunk_id == "disease-guide-v1-chunk-0"
+    assert response.matches[0].domain == "plant_diseases"
+    assert response.matches[0].score == pytest.approx(0.95, rel=1e-5)
+
+
+@pytest.mark.asyncio
+async def test_query_knowledge_passes_parameters(service_with_retrieval, mock_context, mock_retrieval_service):
+    """Test QueryKnowledge passes correct parameters to retrieval service.
+
+    Story 0.75.23: Verify request parameters are forwarded correctly.
+    """
+    request = ai_model_pb2.QueryKnowledgeRequest(
+        query="How to treat blister blight?",
+        domains=["plant_diseases", "tea_cultivation"],
+        top_k=10,
+        confidence_threshold=0.8,
+        namespace="test-namespace",
+    )
+
+    await service_with_retrieval.QueryKnowledge(request, mock_context)
+
+    mock_retrieval_service.retrieve_from_query.assert_called_once()
+    call_args = mock_retrieval_service.retrieve_from_query.call_args
+    query = call_args[0][0]
+
+    assert query.query == "How to treat blister blight?"
+    assert query.domains == ["plant_diseases", "tea_cultivation"]
+    assert query.top_k == 10
+    assert query.confidence_threshold == pytest.approx(0.8, rel=1e-5)
+    assert query.namespace == "test-namespace"
+
+
+@pytest.mark.asyncio
+async def test_query_knowledge_empty_query_aborts(service_with_retrieval, mock_context):
+    """Test QueryKnowledge aborts with INVALID_ARGUMENT for empty query.
+
+    Story 0.75.23: Empty query should return error.
+    """
+    request = ai_model_pb2.QueryKnowledgeRequest(
+        query="",
+        domains=["plant_diseases"],
+    )
+
+    await service_with_retrieval.QueryKnowledge(request, mock_context)
+
+    mock_context.abort.assert_called_once()
+    call_args = mock_context.abort.call_args
+    assert call_args[0][0] == grpc.StatusCode.INVALID_ARGUMENT
+    assert "query is required" in call_args[0][1]
+
+
+@pytest.mark.asyncio
+async def test_query_knowledge_no_retrieval_service_aborts(service, mock_context):
+    """Test QueryKnowledge aborts with UNAVAILABLE when retrieval service not configured.
+
+    Story 0.75.23: Service unavailable if retrieval not configured.
+    """
+    request = ai_model_pb2.QueryKnowledgeRequest(
+        query="What causes blister blight?",
+        domains=["plant_diseases"],
+    )
+
+    await service.QueryKnowledge(request, mock_context)
+
+    mock_context.abort.assert_called_once()
+    call_args = mock_context.abort.call_args
+    assert call_args[0][0] == grpc.StatusCode.UNAVAILABLE
+
+
+@pytest.mark.asyncio
+async def test_query_knowledge_default_parameters(service_with_retrieval, mock_context, mock_retrieval_service):
+    """Test QueryKnowledge applies default parameters when not specified.
+
+    Story 0.75.23: Defaults: top_k=5, confidence_threshold=0.0.
+    """
+    request = ai_model_pb2.QueryKnowledgeRequest(
+        query="Test query",
+    )
+
+    await service_with_retrieval.QueryKnowledge(request, mock_context)
+
+    mock_retrieval_service.retrieve_from_query.assert_called_once()
+    call_args = mock_retrieval_service.retrieve_from_query.call_args
+    query = call_args[0][0]
+
+    assert query.top_k == 5  # Default
+    assert query.confidence_threshold == 0.0  # Default
+    assert query.namespace is None  # Default
+
+
+@pytest.mark.asyncio
+async def test_set_retrieval_service(service):
+    """Test that retrieval service can be set via setter method.
+
+    Story 0.75.23: Retrieval service is set via dependency injection.
+    """
+    mock_service = MagicMock()
+    assert service._retrieval_service is None
+
+    service.set_retrieval_service(mock_service)
+
+    assert service._retrieval_service is mock_service
