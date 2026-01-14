@@ -113,7 +113,7 @@ pytest tests/unit/bff/test_sse_infrastructure.py -v
 ```
 **Output:**
 ```
-(paste test summary here - e.g., "8 passed in 0.42s")
+======================== 19 passed, 3 warnings in 0.14s ========================
 ```
 
 ### 2. E2E Tests (MANDATORY)
@@ -124,30 +124,35 @@ pytest tests/unit/bff/test_sse_infrastructure.py -v
 > - BFF service starts successfully with new SSE module
 > - No import errors or startup failures
 
-```bash
-# Start infrastructure
-bash scripts/e2e-up.sh --build
-
-# Run pre-flight validation
-bash scripts/e2e-preflight.sh
-
-# Run E2E test suite
-bash scripts/e2e-test.sh --keep-up
-
-# Tear down
-bash scripts/e2e-up.sh --down
+**CI E2E Workflow (Step 9c):**
 ```
+gh workflow run "E2E Tests" --ref story/0-5-9-bff-sse-infrastructure
+```
+
+**E2E CI Run ID:** 21008829794
+**E2E CI Status:** ✓ PASSED (8m9s)
+
 **Output:**
 ```
-(paste E2E test output here - story is NOT ready for review without this)
+✓ E2E Tests in 8m9s (ID 60398244845)
+  ✓ Set up job
+  ✓ Checkout code
+  ✓ Build and start E2E stack
+  ✓ Wait for services to be ready
+  ✓ Run E2E tests
+  ✓ Upload test results
+  ✓ Cleanup E2E stack
+  ✓ Test Summary
+  ✓ Complete job
 ```
-**E2E passed:** [ ] Yes / [ ] No
+**E2E passed:** [x] Yes / [ ] No
 
 ### 3. Lint Check
 ```bash
 ruff check . && ruff format --check .
 ```
-**Lint passed:** [ ] Yes / [ ] No
+**Output:** `All checks passed! 607 files already formatted`
+**Lint passed:** [x] Yes / [ ] No
 
 ### 4. CI Verification on Story Branch (MANDATORY)
 
@@ -160,9 +165,11 @@ git push origin story/0-5-9-bff-sse-infrastructure
 # Wait ~30s, then check CI status
 gh run list --branch story/0-5-9-bff-sse-infrastructure --limit 3
 ```
-**CI Run ID:** _______________
-**CI E2E Status:** [ ] Passed / [ ] Failed
-**Verification Date:** _______________
+**CI Run ID:** 21008573173
+**CI Status:** ✓ All Tests Pass
+**E2E CI Run ID:** 21008829794
+**E2E Status:** ✓ Passed
+**Verification Date:** 2026-01-14
 
 ---
 
