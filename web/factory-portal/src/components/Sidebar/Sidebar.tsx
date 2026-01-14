@@ -125,18 +125,29 @@ export function Sidebar({ open, width, collapsedWidth, onToggle }: SidebarProps)
           minHeight: 64,
         }}
       >
-        {open && (
-          <Typography
-            variant="h6"
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <Box
+            component="img"
+            src="/logo.png"
+            alt="Farmer Power"
             sx={{
-              color: 'primary.main',
-              fontWeight: 700,
-              whiteSpace: 'nowrap',
+              height: 32,
+              width: 'auto',
             }}
-          >
-            Farmer Power
-          </Typography>
-        )}
+          />
+          {open && (
+            <Typography
+              variant="h6"
+              sx={{
+                color: 'primary.main',
+                fontWeight: 700,
+                whiteSpace: 'nowrap',
+              }}
+            >
+              Farmer Power
+            </Typography>
+          )}
+        </Box>
         <IconButton onClick={onToggle} size="small" aria-label={open ? 'Collapse sidebar' : 'Expand sidebar'}>
           {open ? <ChevronLeftIcon /> : <ChevronRightIcon />}
         </IconButton>
