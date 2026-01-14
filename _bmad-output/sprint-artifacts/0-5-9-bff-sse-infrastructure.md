@@ -1,6 +1,6 @@
 # Story 0.5.9: BFF SSE Infrastructure
 
-**Status:** in-progress
+**Status:** review
 **GitHub Issue:** #183
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
@@ -90,16 +90,16 @@ So that **real-time progress updates from backend gRPC streams can be pushed to 
 ### During Development
 - [x] All commits reference GitHub issue: `Relates to #183`
 - [x] Commits are atomic by type (production, test, seed - not mixed)
-- [ ] Push to feature branch: `git push -u origin story/0-5-9-bff-sse-infrastructure`
+- [x] Push to feature branch: `git push -u origin story/0-5-9-bff-sse-infrastructure`
 
 ### Story Done
-- [ ] Create Pull Request: `gh pr create --title "Story 0.5.9: BFF SSE Infrastructure" --base main`
-- [ ] CI passes on PR (including E2E tests)
+- [x] Create Pull Request: #184
+- [x] CI passes on PR (including E2E tests)
 - [ ] Code review completed (`/code-review` or human review)
 - [ ] PR approved and merged (squash)
 - [ ] Local branch cleaned up: `git branch -d story/0-5-9-bff-sse-infrastructure`
 
-**PR URL:** _______________ (fill in when created)
+**PR URL:** https://github.com/jltournay/farmer-power-platform/pull/184
 
 ---
 
