@@ -253,7 +253,7 @@ class TestRegionAssignment:
 
         # Create region with polygon centered at (0, 0)
         region = create_region(
-            "test-highland",
+            "meru-highland",
             center_lat=0.0,
             center_lng=0.0,
             min_alt=1800,
@@ -264,7 +264,7 @@ class TestRegionAssignment:
 
         # Point inside polygon with matching altitude
         result = service.assign_region(0.0, 0.0, 1900, [region])
-        assert result == "test-highland"
+        assert result == "meru-highland"
 
     def test_assign_polygon_altitude_mismatch(self) -> None:
         """Test polygon match but altitude mismatch falls back to nearest."""
@@ -272,7 +272,7 @@ class TestRegionAssignment:
 
         # Highland region with polygon
         highland = create_region(
-            "test-highland",
+            "meru-highland",
             center_lat=0.0,
             center_lng=0.0,
             min_alt=1800,
@@ -282,7 +282,7 @@ class TestRegionAssignment:
         )
         # Midland region nearby without polygon
         midland = create_region(
-            "test-midland",
+            "meru-midland",
             center_lat=0.1,
             center_lng=0.1,
             min_alt=1400,
@@ -294,7 +294,7 @@ class TestRegionAssignment:
         # Point inside highland polygon but midland altitude
         # Should fall back and match midland by altitude band + distance
         result = service.assign_region(0.0, 0.0, 1600, [highland, midland])
-        assert result == "test-midland"
+        assert result == "meru-midland"
 
     def test_assign_by_nearest_center(self) -> None:
         """Test assignment by nearest center when no polygon matches."""
@@ -302,7 +302,7 @@ class TestRegionAssignment:
 
         # Two regions without polygons, same altitude band
         region1 = create_region(
-            "near-highland",
+            "kiambu-highland",
             center_lat=0.0,
             center_lng=0.0,
             min_alt=1800,
@@ -311,7 +311,7 @@ class TestRegionAssignment:
             with_boundary=False,
         )
         region2 = create_region(
-            "far-highland",
+            "murang-highland",
             center_lat=10.0,
             center_lng=10.0,
             min_alt=1800,
@@ -322,7 +322,7 @@ class TestRegionAssignment:
 
         # Point closer to region1
         result = service.assign_region(0.5, 0.5, 1900, [region1, region2])
-        assert result == "near-highland"
+        assert result == "kiambu-highland"
 
     def test_assign_no_regions(self) -> None:
         """Test assignment with empty region list."""
@@ -335,7 +335,7 @@ class TestRegionAssignment:
         service = RegionAssignmentService()
 
         region = create_region(
-            "test-highland",
+            "embu-highland",
             center_lat=0.0,
             center_lng=0.0,
             min_alt=1800,
@@ -353,7 +353,7 @@ class TestRegionAssignment:
 
         # Only highland region, but lowland altitude
         highland = create_region(
-            "test-highland",
+            "nandi-highland",
             center_lat=0.0,
             center_lng=0.0,
             min_alt=1800,
@@ -364,7 +364,7 @@ class TestRegionAssignment:
 
         # Very low altitude - should still match nearest
         result = service.assign_region(0.0, 0.0, 500, [highland])
-        assert result == "test-highland"
+        assert result == "nandi-highland"
 
     def test_multiple_regions_polygon_priority(self) -> None:
         """Test that polygon match takes priority over center distance."""
@@ -372,7 +372,7 @@ class TestRegionAssignment:
 
         # Region with polygon, further center
         with_polygon = create_region(
-            "polygon-highland",
+            "kericho-highland",
             center_lat=1.0,
             center_lng=1.0,
             min_alt=1800,
@@ -382,7 +382,7 @@ class TestRegionAssignment:
         )
         # Region without polygon, closer center but no polygon
         without_polygon = create_region(
-            "no-polygon-highland",
+            "nyeri-highland",
             center_lat=0.5,
             center_lng=0.5,
             min_alt=1800,
@@ -393,4 +393,4 @@ class TestRegionAssignment:
 
         # Point inside polygon region's polygon
         result = service.assign_region(1.0, 1.0, 1900, [without_polygon, with_polygon])
-        assert result == "polygon-highland"
+        assert result == "kericho-highland"
