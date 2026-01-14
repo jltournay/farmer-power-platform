@@ -1,6 +1,6 @@
 # Story 0.75.23: RAG Query Service with BFF Integration
 
-**Status:** in-progress
+**Status:** done
 **GitHub Issue:** #179
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
