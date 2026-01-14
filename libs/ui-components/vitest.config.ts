@@ -25,6 +25,7 @@ export default defineConfig({
       '../../tests/unit/web/*protected*.test.{ts,tsx}',
       '../../tests/unit/web/*jwt*.test.{ts,tsx}',
       '../../tests/unit/web/factory-portal/**/*.test.{ts,tsx}',
+      '../../tests/unit/web/platform-admin/**/*.test.{ts,tsx}',
     ],
     coverage: {
       provider: 'v8',
