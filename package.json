@@ -5,7 +5,8 @@
   "workspaces": [
     "libs/ui-components",
     "libs/auth",
-    "web/factory-portal"
+    "web/factory-portal",
+    "web/platform-admin"
   ],
   "scripts": {
     "build:ui": "npm run build -w @fp/ui-components",
@@ -16,7 +17,10 @@
     "test:auth": "npm run test -w @fp/auth",
     "dev:factory-portal": "npm run dev -w @fp/factory-portal",
     "build:factory-portal": "npm run build -w @fp/factory-portal",
-    "test:factory-portal": "npm run test -w @fp/factory-portal"
+    "test:factory-portal": "npm run test -w @fp/factory-portal",
+    "dev:platform-admin": "npm run dev -w @fp/platform-admin",
+    "build:platform-admin": "npm run build -w @fp/platform-admin",
+    "test:platform-admin": "npm run test -w @fp/platform-admin"
   },
   "devDependencies": {}
 }

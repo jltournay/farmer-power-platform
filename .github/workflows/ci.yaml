@@ -224,6 +224,7 @@ jobs:
           npm run lint -w @fp/ui-components
           npm run lint -w @fp/auth
           npm run lint -w @fp/factory-portal
+          npm run lint -w @fp/platform-admin
 
       - name: Build libraries (required for factory-portal tests)
         run: |
@@ -235,6 +236,7 @@ jobs:
           npm run test -w @fp/auth -- --coverage
           npm run test -w @fp/ui-components -- --coverage
           npm run test -w @fp/factory-portal -- --coverage
+          npm run test -w @fp/platform-admin -- --coverage
 
       - name: Calculate combined frontend coverage
         id: coverage
@@ -243,21 +245,23 @@ jobs:
           AUTH_COV=$(node -e "const c=require('./libs/auth/coverage/coverage-summary.json'); console.log(c.total.lines.pct)")
           UI_COV=$(node -e "const c=require('./libs/ui-components/coverage/coverage-summary.json'); console.log(c.total.lines.pct)")
           PORTAL_COV=$(node -e "const c=require('./web/factory-portal/coverage/coverage-summary.json'); console.log(c.total.lines.pct)")
+          ADMIN_COV=$(node -e "const c=require('./web/platform-admin/coverage/coverage-summary.json'); console.log(c.total.lines.pct)")
 
           # Calculate weighted average based on total lines
           AUTH_LINES=$(node -e "const c=require('./libs/auth/coverage/coverage-summary.json'); console.log(c.total.lines.total)")
           UI_LINES=$(node -e "const c=require('./libs/ui-components/coverage/coverage-summary.json'); console.log(c.total.lines.total)")
           PORTAL_LINES=$(node -e "const c=require('./web/factory-portal/coverage/coverage-summary.json'); console.log(c.total.lines.total)")
+          ADMIN_LINES=$(node -e "const c=require('./web/platform-admin/coverage/coverage-summary.json'); console.log(c.total.lines.total)")
 
           COMBINED=$(node -e "
-            const authCov = $AUTH_COV, uiCov = $UI_COV, portalCov = $PORTAL_COV;
-            const authLines = $AUTH_LINES, uiLines = $UI_LINES, portalLines = $PORTAL_LINES;
-            const totalLines = authLines + uiLines + portalLines;
-            const weighted = (authCov * authLines + uiCov * uiLines + portalCov * portalLines) / totalLines;
+            const authCov = $AUTH_COV, uiCov = $UI_COV, portalCov = $PORTAL_COV, adminCov = $ADMIN_COV;
+            const authLines = $AUTH_LINES, uiLines = $UI_LINES, portalLines = $PORTAL_LINES, adminLines = $ADMIN_LINES;
+            const totalLines = authLines + uiLines + portalLines + adminLines;
+            const weighted = (authCov * authLines + uiCov * uiLines + portalCov * portalLines + adminCov * adminLines) / totalLines;
             console.log(weighted.toFixed(1));
           ")
           echo "percentage=$COMBINED" >> $GITHUB_OUTPUT
-          echo "Frontend Coverage: $COMBINED% (auth: $AUTH_COV%, ui: $UI_COV%, portal: $PORTAL_COV%)"
+          echo "Frontend Coverage: $COMBINED% (auth: $AUTH_COV%, ui: $UI_COV%, portal: $PORTAL_COV%, admin: $ADMIN_COV%)"
 
       - name: Update frontend coverage badge
         if: github.ref == 'refs/heads/main' && github.event_name == 'push'
@@ -274,6 +278,9 @@ jobs:
 
       - name: Build factory-portal
         run: npm run build -w @fp/factory-portal
+
+      - name: Build platform-admin
+        run: npm run build -w @fp/platform-admin
 
       - name: Build Storybook
         run: npm run build-storybook -w @fp/ui-components

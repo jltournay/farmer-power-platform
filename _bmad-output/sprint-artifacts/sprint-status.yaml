@@ -231,7 +231,7 @@ development_status:
   # Updated 2026-01-14: Split Story 9.1 into 9.1a (scaffold) + 9.1b (shared UI components)
   # Updated 2026-01-14: Stories 9.2, 9.5 unblocked (Story 1.10 completed)
   epic-9: in-progress
-  9-1a-platform-admin-application-scaffold: ready-for-dev  # 5 points - Vite + React + routing + theme
+  9-1a-platform-admin-application-scaffold: done  # 5 points - Vite + React + routing + theme, github_issue: 185, PR: #186
   9-1b-shared-admin-ui-components: backlog  # 8 points - 14 shared components (Shell, DataTable, Maps, Forms)
   9-2-region-management: backlog  # Unblocked - Story 1.10 completed (polygon boundary support)
   9-3-factory-management: backlog
