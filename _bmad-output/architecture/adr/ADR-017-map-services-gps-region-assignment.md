@@ -564,6 +564,195 @@ export function LocationPicker({
 // />
 ```
 
+#### 4.3b GPS Field with Map Assist (Two-Way Binding)
+
+**Use case:** Admin forms (Factory, Collection Point, Farmer) where users can EITHER type GPS manually OR click on map. The map is collapsible and acts as an optional assist.
+
+```typescript
+// components/GPSFieldWithMapAssist.tsx
+import { useState, useCallback, useEffect } from 'react';
+import { TextField, Button, Collapse, Box, IconButton, Typography } from '@mui/material';
+import { Map as MapIcon, Close as CloseIcon } from '@mui/icons-material';
+import { MapContainer, TileLayer, Marker, useMapEvents, useMap } from 'react-leaflet';
+import 'leaflet/dist/leaflet.css';
+
+interface GPSFieldWithMapAssistProps {
+  latitude: number | null;
+  longitude: number | null;
+  onLatitudeChange: (lat: number | null) => void;
+  onLongitudeChange: (lng: number | null) => void;
+  latitudeError?: string;
+  longitudeError?: string;
+  disabled?: boolean;
+}
+
+// Component to handle map click and center updates
+function MapEventHandler({
+  onLocationSelect,
+  externalPosition,
+}: {
+  onLocationSelect: (lat: number, lng: number) => void;
+  externalPosition: { lat: number; lng: number } | null;
+}) {
+  const map = useMap();
+
+  // Center map when external position changes (user typed coordinates)
+  useEffect(() => {
+    if (externalPosition) {
+      map.setView([externalPosition.lat, externalPosition.lng], map.getZoom());
+    }
+  }, [externalPosition, map]);
+
+  useMapEvents({
+    click: (e) => {
+      onLocationSelect(e.latlng.lat, e.latlng.lng);
+    },
+  });
+
+  return null;
+}
+
+export function GPSFieldWithMapAssist({
+  latitude,
+  longitude,
+  onLatitudeChange,
+  onLongitudeChange,
+  latitudeError,
+  longitudeError,
+  disabled = false,
+}: GPSFieldWithMapAssistProps) {
+  const [mapOpen, setMapOpen] = useState(false);
+
+  // Default center: Nyeri, Kenya
+  const defaultCenter = { lat: -0.4197, lng: 36.9553 };
+
+  const currentPosition =
+    latitude !== null && longitude !== null
+      ? { lat: latitude, lng: longitude }
+      : null;
+
+  const mapCenter = currentPosition || defaultCenter;
+
+  const handleMapClick = useCallback(
+    (lat: number, lng: number) => {
+      onLatitudeChange(parseFloat(lat.toFixed(6)));
+      onLongitudeChange(parseFloat(lng.toFixed(6)));
+    },
+    [onLatitudeChange, onLongitudeChange]
+  );
+
+  const handleLatitudeInput = (value: string) => {
+    const parsed = parseFloat(value);
+    if (!isNaN(parsed) && parsed >= -90 && parsed <= 90) {
+      onLatitudeChange(parsed);
+    } else if (value === '' || value === '-') {
+      onLatitudeChange(null);
+    }
+  };
+
+  const handleLongitudeInput = (value: string) => {
+    const parsed = parseFloat(value);
+    if (!isNaN(parsed) && parsed >= -180 && parsed <= 180) {
+      onLongitudeChange(parsed);
+    } else if (value === '' || value === '-') {
+      onLongitudeChange(null);
+    }
+  };
+
+  return (
+    <Box>
+      {/* GPS Text Fields */}
+      <Box sx={{ display: 'flex', gap: 2, alignItems: 'flex-start' }}>
+        <TextField
+          label="Latitude"
+          value={latitude ?? ''}
+          onChange={(e) => handleLatitudeInput(e.target.value)}
+          error={!!latitudeError}
+          helperText={latitudeError}
+          disabled={disabled}
+          size="small"
+          sx={{ flex: 1 }}
+          placeholder="-0.4197"
+        />
+        <TextField
+          label="Longitude"
+          value={longitude ?? ''}
+          onChange={(e) => handleLongitudeInput(e.target.value)}
+          error={!!longitudeError}
+          helperText={longitudeError}
+          disabled={disabled}
+          size="small"
+          sx={{ flex: 1 }}
+          placeholder="36.9553"
+        />
+        <Button
+          variant="outlined"
+          size="small"
+          startIcon={<MapIcon />}
+          onClick={() => setMapOpen(!mapOpen)}
+          disabled={disabled}
+          sx={{ whiteSpace: 'nowrap' }}
+        >
+          {mapOpen ? 'Hide Map' : 'Select on Map'}
+        </Button>
+      </Box>
+
+      {/* Collapsible Map */}
+      <Collapse in={mapOpen}>
+        <Box sx={{ mt: 2, position: 'relative' }}>
+          <IconButton
+            size="small"
+            onClick={() => setMapOpen(false)}
+            sx={{ position: 'absolute', top: 8, right: 8, zIndex: 1000, bgcolor: 'white' }}
+          >
+            <CloseIcon />
+          </IconButton>
+
+          <MapContainer
+            center={[mapCenter.lat, mapCenter.lng]}
+            zoom={13}
+            style={{ height: '250px', width: '100%', borderRadius: '4px' }}
+          >
+            <TileLayer
+              attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+              url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+            />
+            <MapEventHandler
+              onLocationSelect={handleMapClick}
+              externalPosition={currentPosition}
+            />
+            {currentPosition && (
+              <Marker position={[currentPosition.lat, currentPosition.lng]} />
+            )}
+          </MapContainer>
+
+          <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
+            Click on the map to set location, or type coordinates above. Changes sync both ways.
+          </Typography>
+        </Box>
+      </Collapse>
+    </Box>
+  );
+}
+
+// Usage in Factory/Farmer/CP forms:
+// <GPSFieldWithMapAssist
+//   latitude={watch('location.latitude')}
+//   longitude={watch('location.longitude')}
+//   onLatitudeChange={(lat) => setValue('location.latitude', lat)}
+//   onLongitudeChange={(lng) => setValue('location.longitude', lng)}
+//   latitudeError={errors.location?.latitude?.message}
+//   longitudeError={errors.location?.longitude?.message}
+// />
+```
+
+**Key Features:**
+- **Two-way sync**: Map ↔ Text fields stay synchronized
+- **Collapsible map**: Doesn't clutter the form when not needed
+- **Manual entry preserved**: Users can always type coordinates directly
+- **Validation-friendly**: Works with form validation (react-hook-form)
+- **Accessible**: Keyboard-navigable text fields as primary input
+
 #### 4.4 Draw Polygon for Region Boundary
 
 **Use case:** Region creation - draw boundary polygon
