@@ -100,13 +100,15 @@ TOOL_REGISTRY: dict[str, ToolDefinition] = {
         },
         category="query",
     ),
-    # Region tools (Story 1.8)
+    # Region tools (Story 1.8, enhanced in Story 1.10)
     "get_region": ToolDefinition(
         name="get_region",
         description=(
             "Get region details by ID. Returns name, county, country, geography "
-            "(center GPS, radius, altitude band), flush calendar, agronomic factors, "
-            "and weather configuration."
+            "(center GPS, radius, altitude band, optional polygon boundary, "
+            "area_km2, perimeter_km), flush calendar, agronomic factors, "
+            "and weather configuration. Polygon boundaries enable precise farmer "
+            "location assignment via point-in-polygon tests."
         ),
         input_schema={
             "type": "object",

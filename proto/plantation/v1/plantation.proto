@@ -125,6 +125,31 @@ message GPS {
   double lng = 2;   // Longitude (-180 to 180)
 }
 
+// ============================================================================
+// Polygon Boundary Messages (Story 1.10)
+// GeoJSON-compatible polygon definitions for precise region boundaries
+// ============================================================================
+
+// GeoJSON coordinate pair [longitude, latitude]
+// Note: GeoJSON standard uses [longitude, latitude] order
+message Coordinate {
+  double longitude = 1;  // -180 to 180
+  double latitude = 2;   // -90 to 90
+}
+
+// Closed sequence of coordinates forming a ring (Story 1.10)
+// Must have at least 4 points, first point == last point
+message PolygonRing {
+  repeated Coordinate points = 1;  // Min 4 points, first == last
+}
+
+// GeoJSON Polygon boundary for region definition (Story 1.10)
+// Used for point-in-polygon tests to accurately assign farmers to regions
+message RegionBoundary {
+  string type = 1;                  // "Polygon"
+  repeated PolygonRing rings = 2;   // Exterior ring + optional interior rings (holes)
+}
+
 // Altitude band with elevation range
 message AltitudeBand {
   int32 min_meters = 1;
@@ -133,10 +158,16 @@ message AltitudeBand {
 }
 
 // Geographic information for a region
+// Supports both circle (center+radius) and polygon (boundary) definitions
 message Geography {
   GPS center_gps = 1;
   double radius_km = 2;
   AltitudeBand altitude_band = 3;
+  // Story 1.10: Optional polygon boundary (takes precedence if provided)
+  optional RegionBoundary boundary = 4;
+  // Story 1.10: Computed values (set by Admin UI via Turf.js)
+  optional double area_km2 = 5;       // Area in km² (computed from boundary)
+  optional double perimeter_km = 6;   // Perimeter in km (computed from boundary)
 }
 
 // Tea flush period (seasonal growth period)

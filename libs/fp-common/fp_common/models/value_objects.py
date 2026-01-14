@@ -6,7 +6,7 @@ locations, contact information, payment policies, and region configuration.
 
 import re
 from enum import Enum
-from typing import ClassVar
+from typing import ClassVar, Literal
 
 from pydantic import BaseModel, Field, field_validator, model_validator
 
@@ -203,6 +203,71 @@ class GPS(BaseModel):
     lng: float = Field(ge=-180, le=180, description="Longitude in decimal degrees")
 
 
+# ============================================================================
+# Polygon Boundary Value Objects (Story 1.10)
+# ============================================================================
+
+
+class Coordinate(BaseModel):
+    """GeoJSON coordinate pair [longitude, latitude].
+
+    Note: GeoJSON uses [longitude, latitude] order, NOT [lat, lng].
+    This is the standard GeoJSON format used by mapping libraries.
+    """
+
+    longitude: float = Field(ge=-180, le=180, description="Longitude in degrees")
+    latitude: float = Field(ge=-90, le=90, description="Latitude in degrees")
+
+
+class PolygonRing(BaseModel):
+    """GeoJSON polygon ring (closed sequence of coordinates).
+
+    A valid polygon ring must:
+    - Have at least 4 points (minimum triangle + closing point)
+    - Be closed (first point equals last point)
+    """
+
+    points: list[Coordinate] = Field(min_length=4, description="Coordinates forming the ring")
+
+    @model_validator(mode="after")
+    def validate_closed_ring(self) -> "PolygonRing":
+        """Validate that the ring is closed (first point equals last point)."""
+        if len(self.points) >= 4:
+            first = self.points[0]
+            last = self.points[-1]
+            if first.longitude != last.longitude or first.latitude != last.latitude:
+                raise ValueError(
+                    f"Polygon ring must be closed (first point must equal last point). "
+                    f"First: ({first.longitude}, {first.latitude}), "
+                    f"Last: ({last.longitude}, {last.latitude})"
+                )
+        return self
+
+
+class RegionBoundary(BaseModel):
+    """GeoJSON Polygon boundary for precise region definition.
+
+    Represents a polygon boundary in GeoJSON format:
+    - type: Always "Polygon"
+    - rings: List of PolygonRing objects (first is exterior, rest are holes)
+
+    Used for point-in-polygon tests to accurately assign farmers to regions.
+    """
+
+    type: Literal["Polygon"] = Field(default="Polygon", description="GeoJSON geometry type")
+    rings: list[PolygonRing] = Field(min_length=1, description="Exterior ring + optional interior rings (holes)")
+
+    @property
+    def exterior(self) -> PolygonRing:
+        """The exterior ring (first ring)."""
+        return self.rings[0]
+
+    @property
+    def holes(self) -> list[PolygonRing]:
+        """Interior rings (holes), if any."""
+        return self.rings[1:]
+
+
 class AltitudeBand(BaseModel):
     """Altitude band definition for a region.
 
@@ -225,11 +290,37 @@ class AltitudeBand(BaseModel):
 
 
 class Geography(BaseModel):
-    """Geographic definition of a region."""
+    """Geographic definition of a region.
+
+    Supports two modes of region definition:
+    1. Circle: center_gps + radius_km (original, for backward compatibility)
+    2. Polygon: boundary (precise GeoJSON polygon for accurate point-in-polygon tests)
+
+    When boundary is provided, it takes precedence for region assignment.
+    Area and perimeter are computed by the Admin UI using Turf.js and stored here.
+    """
 
     center_gps: GPS = Field(description="Center point of the region")
     radius_km: float = Field(gt=0, le=100, description="Radius of region coverage in km")
     altitude_band: AltitudeBand = Field(description="Altitude band classification")
+
+    # Story 1.10: Optional polygon boundary (takes precedence if provided)
+    boundary: RegionBoundary | None = Field(
+        default=None,
+        description="Optional polygon boundary for precise region definition",
+    )
+
+    # Story 1.10: Computed values (set by Admin UI via Turf.js)
+    area_km2: float | None = Field(
+        default=None,
+        ge=0,
+        description="Area in square kilometers (computed from boundary by Admin UI)",
+    )
+    perimeter_km: float | None = Field(
+        default=None,
+        ge=0,
+        description="Perimeter in kilometers (computed from boundary by Admin UI)",
+    )
 
 
 class FlushPeriod(BaseModel):

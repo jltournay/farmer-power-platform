@@ -17,6 +17,7 @@ from plantation_model.domain.models import (
     CollectionPointCapacity,
     ConditionalReject,
     ContactInfo,
+    Coordinate,
     Factory,
     Farmer,
     FarmerPerformance,
@@ -34,15 +35,18 @@ from plantation_model.domain.models import (
     OperatingHours,
     PaymentPolicy,
     PaymentPolicyType,
+    PolygonRing,
     PreferredLanguage,
     QualityThresholds,
     Region,
     RegionalWeather,
+    RegionBoundary,
     RegionCreate,
     TrendDirection,
     WeatherConfig,
 )
 from plantation_model.domain.models.id_generator import IDGenerator
+from plantation_model.domain.services.region_assignment import RegionAssignmentService
 from plantation_model.events.publisher import publish_event
 from plantation_model.infrastructure.google_elevation import (
     GoogleElevationClient,
@@ -121,6 +125,7 @@ class PlantationServiceServicer(plantation_pb2_grpc.PlantationServiceServicer):
         farmer_performance_repo: FarmerPerformanceRepository | None = None,
         region_repo: RegionRepository | None = None,
         regional_weather_repo: RegionalWeatherRepository | None = None,
+        region_assignment_service: RegionAssignmentService | None = None,
     ) -> None:
         """Initialize the servicer.
 
@@ -134,6 +139,7 @@ class PlantationServiceServicer(plantation_pb2_grpc.PlantationServiceServicer):
             farmer_performance_repo: Optional farmer performance repository instance.
             region_repo: Optional region repository instance (Story 1.8).
             regional_weather_repo: Optional regional weather repository instance (Story 1.8).
+            region_assignment_service: Optional region assignment service (Story 1.10).
 
         Note:
             Story 0.6.14: DAPR publishing now uses module-level publish_event() function
@@ -148,6 +154,7 @@ class PlantationServiceServicer(plantation_pb2_grpc.PlantationServiceServicer):
         self._farmer_performance_repo = farmer_performance_repo
         self._region_repo = region_repo
         self._regional_weather_repo = regional_weather_repo
+        self._region_assignment_service = region_assignment_service or RegionAssignmentService()
 
     # =========================================================================
     # Factory Operations
@@ -217,6 +224,35 @@ class PlantationServiceServicer(plantation_pb2_grpc.PlantationServiceServicer):
         """
         altitude = await self._elevation_client.get_altitude(latitude, longitude)
         return altitude if altitude is not None else 0.0
+
+    async def _assign_region(self, latitude: float, longitude: float, altitude: float) -> str:
+        """Assign a region based on GPS coordinates and altitude (Story 1.10).
+
+        Uses polygon boundaries when available, falls back to bounding box logic.
+
+        Args:
+            latitude: Farm latitude in decimal degrees.
+            longitude: Farm longitude in decimal degrees.
+            altitude: Altitude in meters.
+
+        Returns:
+            region_id of the assigned region.
+        """
+        # Try polygon-based assignment if region repository is available
+        if self._region_repo is not None:
+            regions, _, _ = await self._region_repo.list_active(page_size=1000)
+            if regions:
+                region_id = self._region_assignment_service.assign_region(
+                    latitude=latitude,
+                    longitude=longitude,
+                    altitude=altitude,
+                    regions=regions,
+                )
+                if region_id is not None:
+                    return region_id
+
+        # Fall back to legacy bounding box assignment
+        return assign_region_from_altitude(latitude, longitude, altitude)
 
     async def GetFactory(
         self,
@@ -885,8 +921,8 @@ class PlantationServiceServicer(plantation_pb2_grpc.PlantationServiceServicer):
             request.farm_location.longitude,
         )
 
-        # Auto-assign region based on GPS + altitude
-        region_id = assign_region_from_altitude(
+        # Story 1.10: Auto-assign region based on GPS + altitude using polygon boundaries
+        region_id = await self._assign_region(
             request.farm_location.latitude,
             request.farm_location.longitude,
             altitude,
@@ -991,8 +1027,8 @@ class PlantationServiceServicer(plantation_pb2_grpc.PlantationServiceServicer):
                 longitude=request.farm_location.longitude,
                 altitude_meters=altitude,
             ).model_dump()
-            # Recalculate region if location changed
-            updates["region_id"] = assign_region_from_altitude(
+            # Story 1.10: Recalculate region using polygon boundaries
+            updates["region_id"] = await self._assign_region(
                 request.farm_location.latitude,
                 request.farm_location.longitude,
                 altitude,
@@ -1480,6 +1516,106 @@ class PlantationServiceServicer(plantation_pb2_grpc.PlantationServiceServicer):
     # Region Operations (Story 1.8)
     # =========================================================================
 
+    # =========================================================================
+    # Polygon Boundary Converters (Story 1.10)
+    # =========================================================================
+
+    def _coordinate_to_proto(self, coord: "Coordinate") -> plantation_pb2.Coordinate:
+        """Convert Coordinate value object to protobuf message."""
+        return plantation_pb2.Coordinate(
+            longitude=coord.longitude,
+            latitude=coord.latitude,
+        )
+
+    def _polygon_ring_to_proto(self, ring: "PolygonRing") -> plantation_pb2.PolygonRing:
+        """Convert PolygonRing value object to protobuf message."""
+        return plantation_pb2.PolygonRing(
+            points=[self._coordinate_to_proto(p) for p in ring.points],
+        )
+
+    def _region_boundary_to_proto(self, boundary: "RegionBoundary") -> plantation_pb2.RegionBoundary:
+        """Convert RegionBoundary value object to protobuf message."""
+        return plantation_pb2.RegionBoundary(
+            type=boundary.type,
+            rings=[self._polygon_ring_to_proto(r) for r in boundary.rings],
+        )
+
+    def _coordinate_from_proto(self, proto: plantation_pb2.Coordinate) -> Coordinate:
+        """Convert Coordinate proto message to value object (Story 1.10)."""
+        return Coordinate(
+            longitude=proto.longitude,
+            latitude=proto.latitude,
+        )
+
+    def _polygon_ring_from_proto(self, proto: plantation_pb2.PolygonRing) -> PolygonRing:
+        """Convert PolygonRing proto message to value object (Story 1.10)."""
+        return PolygonRing(
+            points=[self._coordinate_from_proto(p) for p in proto.points],
+        )
+
+    def _region_boundary_from_proto(self, proto: plantation_pb2.RegionBoundary) -> RegionBoundary:
+        """Convert RegionBoundary proto message to value object (Story 1.10)."""
+        return RegionBoundary(
+            type=proto.type if proto.type else "Polygon",
+            rings=[self._polygon_ring_from_proto(r) for r in proto.rings],
+        )
+
+    def _geography_from_proto(self, proto: plantation_pb2.Geography) -> Geography:
+        """Convert Geography proto message to value object (Story 1.10).
+
+        Handles optional boundary, area_km2, and perimeter_km fields.
+        """
+        # Build boundary if present
+        boundary = None
+        if proto.HasField("boundary") and len(proto.boundary.rings) > 0:
+            boundary = self._region_boundary_from_proto(proto.boundary)
+
+        return Geography(
+            center_gps=GPS(
+                lat=proto.center_gps.lat,
+                lng=proto.center_gps.lng,
+            ),
+            radius_km=proto.radius_km,
+            altitude_band=AltitudeBand(
+                min_meters=proto.altitude_band.min_meters,
+                max_meters=proto.altitude_band.max_meters,
+                label=self._altitude_band_label_from_proto(proto.altitude_band.label),
+            ),
+            boundary=boundary,
+            area_km2=proto.area_km2 if proto.HasField("area_km2") else None,
+            perimeter_km=proto.perimeter_km if proto.HasField("perimeter_km") else None,
+        )
+
+    def _geography_to_proto(self, geography: Geography) -> plantation_pb2.Geography:
+        """Convert Geography value object to protobuf message (Story 1.10).
+
+        Includes optional boundary, area_km2, and perimeter_km fields.
+        """
+        proto_geo = plantation_pb2.Geography(
+            center_gps=plantation_pb2.GPS(
+                lat=geography.center_gps.lat,
+                lng=geography.center_gps.lng,
+            ),
+            radius_km=geography.radius_km,
+            altitude_band=plantation_pb2.AltitudeBand(
+                min_meters=geography.altitude_band.min_meters,
+                max_meters=geography.altitude_band.max_meters,
+                label=self._altitude_band_label_to_proto(geography.altitude_band.label),
+            ),
+        )
+
+        # Story 1.10: Add optional polygon boundary
+        if geography.boundary is not None:
+            proto_geo.boundary.CopyFrom(self._region_boundary_to_proto(geography.boundary))
+
+        # Story 1.10: Add optional computed values
+        if geography.area_km2 is not None:
+            proto_geo.area_km2 = geography.area_km2
+        if geography.perimeter_km is not None:
+            proto_geo.perimeter_km = geography.perimeter_km
+
+        return proto_geo
+
     def _altitude_band_label_to_proto(self, label: AltitudeBandLabel) -> plantation_pb2.AltitudeBandLabel:
         """Convert AltitudeBandLabel domain enum to protobuf enum."""
         mapping = {
@@ -1505,18 +1641,7 @@ class PlantationServiceServicer(plantation_pb2_grpc.PlantationServiceServicer):
             name=region.name,
             county=region.county,
             country=region.country,
-            geography=plantation_pb2.Geography(
-                center_gps=plantation_pb2.GPS(
-                    lat=region.geography.center_gps.lat,
-                    lng=region.geography.center_gps.lng,
-                ),
-                radius_km=region.geography.radius_km,
-                altitude_band=plantation_pb2.AltitudeBand(
-                    min_meters=region.geography.altitude_band.min_meters,
-                    max_meters=region.geography.altitude_band.max_meters,
-                    label=self._altitude_band_label_to_proto(region.geography.altitude_band.label),
-                ),
-            ),
+            geography=self._geography_to_proto(region.geography),
             flush_calendar=plantation_pb2.FlushCalendar(
                 first_flush=plantation_pb2.FlushPeriod(
                     start=region.flush_calendar.first_flush.start,
@@ -1635,22 +1760,12 @@ class PlantationServiceServicer(plantation_pb2_grpc.PlantationServiceServicer):
 
         # Build RegionCreate from request
         try:
+            # Story 1.10: Use _geography_from_proto to handle boundary, area_km2, perimeter_km
             region_create = RegionCreate(
                 name=request.name,
                 county=request.county,
                 country=request.country if request.country else "Kenya",
-                geography=Geography(
-                    center_gps=GPS(
-                        lat=request.geography.center_gps.lat,
-                        lng=request.geography.center_gps.lng,
-                    ),
-                    radius_km=request.geography.radius_km,
-                    altitude_band=AltitudeBand(
-                        min_meters=request.geography.altitude_band.min_meters,
-                        max_meters=request.geography.altitude_band.max_meters,
-                        label=self._altitude_band_label_from_proto(request.geography.altitude_band.label),
-                    ),
-                ),
+                geography=self._geography_from_proto(request.geography),
                 flush_calendar=FlushCalendar(
                     first_flush=FlushPeriod(
                         start=request.flush_calendar.first_flush.start,
@@ -1730,18 +1845,8 @@ class PlantationServiceServicer(plantation_pb2_grpc.PlantationServiceServicer):
         if request.HasField("name"):
             updates["name"] = request.name
         if request.HasField("geography"):
-            updates["geography"] = Geography(
-                center_gps=GPS(
-                    lat=request.geography.center_gps.lat,
-                    lng=request.geography.center_gps.lng,
-                ),
-                radius_km=request.geography.radius_km,
-                altitude_band=AltitudeBand(
-                    min_meters=request.geography.altitude_band.min_meters,
-                    max_meters=request.geography.altitude_band.max_meters,
-                    label=self._altitude_band_label_from_proto(request.geography.altitude_band.label),
-                ),
-            ).model_dump()
+            # Story 1.10: Use _geography_from_proto to handle boundary, area_km2, perimeter_km
+            updates["geography"] = self._geography_from_proto(request.geography).model_dump()
         if request.HasField("flush_calendar"):
             updates["flush_calendar"] = FlushCalendar(
                 first_flush=FlushPeriod(

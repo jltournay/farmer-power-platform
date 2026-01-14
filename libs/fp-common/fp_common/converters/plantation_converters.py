@@ -41,12 +41,15 @@ from fp_common.models.value_objects import (
     AltitudeBandLabel,
     CollectionPointCapacity,
     ContactInfo,
+    Coordinate,
     FlushCalendar,
     FlushPeriod,
     Geography,
     OperatingHours,
     PaymentPolicy,
     PaymentPolicyType,
+    PolygonRing,
+    RegionBoundary,
     WeatherConfig,
 )
 
@@ -286,6 +289,29 @@ def collection_point_from_proto(proto: plantation_pb2.CollectionPoint) -> Collec
     )
 
 
+def _coordinate_from_proto(proto: plantation_pb2.Coordinate) -> Coordinate:
+    """Convert Coordinate proto message to value object (Story 1.10)."""
+    return Coordinate(
+        longitude=proto.longitude,
+        latitude=proto.latitude,
+    )
+
+
+def _polygon_ring_from_proto(proto: plantation_pb2.PolygonRing) -> PolygonRing:
+    """Convert PolygonRing proto message to value object (Story 1.10)."""
+    return PolygonRing(
+        points=[_coordinate_from_proto(p) for p in proto.points],
+    )
+
+
+def _region_boundary_from_proto(proto: plantation_pb2.RegionBoundary) -> RegionBoundary:
+    """Convert RegionBoundary proto message to value object (Story 1.10)."""
+    return RegionBoundary(
+        type=proto.type if proto.type else "Polygon",
+        rings=[_polygon_ring_from_proto(r) for r in proto.rings],
+    )
+
+
 def region_from_proto(proto: plantation_pb2.Region) -> Region:
     """Convert Region proto message to Pydantic model.
 
@@ -294,6 +320,9 @@ def region_from_proto(proto: plantation_pb2.Region) -> Region:
 
     Returns:
         Region Pydantic model with nested geography, flush_calendar, agronomic, and weather_config.
+
+    Note:
+        Story 1.10: Includes optional boundary, area_km2, and perimeter_km fields.
     """
     # Convert altitude band label enum
     altitude_label = _proto_enum_to_pydantic(
@@ -303,6 +332,20 @@ def region_from_proto(proto: plantation_pb2.Region) -> Region:
         AltitudeBandLabel,
         "altitude_band_",
     )
+
+    # Story 1.10: Build boundary if present
+    boundary = None
+    if proto.geography and proto.geography.HasField("boundary") and len(proto.geography.boundary.rings) > 0:
+        boundary = _region_boundary_from_proto(proto.geography.boundary)
+
+    # Story 1.10: Extract optional computed values
+    area_km2 = None
+    perimeter_km = None
+    if proto.geography:
+        if proto.geography.HasField("area_km2"):
+            area_km2 = proto.geography.area_km2
+        if proto.geography.HasField("perimeter_km"):
+            perimeter_km = proto.geography.perimeter_km
 
     # Build geography
     geography = Geography(
@@ -316,6 +359,9 @@ def region_from_proto(proto: plantation_pb2.Region) -> Region:
             max_meters=proto.geography.altitude_band.max_meters if proto.geography else 2500,
             label=altitude_label,
         ),
+        boundary=boundary,
+        area_km2=area_km2,
+        perimeter_km=perimeter_km,
     )
 
     # Build flush calendar
