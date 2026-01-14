@@ -123,6 +123,7 @@ from fp_common.models.value_objects import (
     AltitudeBandLabel,
     CollectionPointCapacity,
     ContactInfo,
+    Coordinate,
     FlushCalendar,
     FlushPeriod,
     Geography,
@@ -130,7 +131,9 @@ from fp_common.models.value_objects import (
     OperatingHours,
     PaymentPolicy,
     PaymentPolicyType,
+    PolygonRing,
     QualityThresholds,
+    RegionBoundary,
     WeatherConfig,
 )
 
@@ -154,6 +157,8 @@ __all__ = [
     # Grading
     "ConditionalReject",
     "ContactInfo",
+    # Story 1.10: Polygon boundary types
+    "Coordinate",
     "CostSummary",
     "CostTypeSummary",
     "CurrentDayCost",
@@ -206,6 +211,7 @@ __all__ = [
     # Performance Summary
     "PerformanceSummary",
     "PlantationEventTopic",
+    "PolygonRing",
     "PreferredChannel",
     "PreferredLanguage",
     "ProcessedFileConfig",
@@ -213,6 +219,7 @@ __all__ = [
     "RawDocumentRef",
     # Region
     "Region",
+    "RegionBoundary",
     "RegionCreate",
     "RegionUpdate",
     # Weather

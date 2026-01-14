@@ -73,7 +73,7 @@ development_status:
   1-7-quality-grading-event-subscription: done  # github_issue: 24
   1-8-region-entity-weather-configuration: done  # github_issue: 25
   1-9-payment-policy-configuration: done  # github_issue: 26
-  1-10-gps-region-assignment-polygon-boundaries: ready-for-dev  # ADR-017, Blocks: Epic 9 (Stories 9.2, 9.5)
+  1-10-gps-region-assignment-polygon-boundaries: in-progress  # github_issue: 181, ADR-017, Blocks: Epic 9 (Stories 9.2, 9.5)
   epic-1-retrospective: done
 
   # Epic 2: Quality Data Ingestion (REVISED - BLOB_TRIGGER architecture)

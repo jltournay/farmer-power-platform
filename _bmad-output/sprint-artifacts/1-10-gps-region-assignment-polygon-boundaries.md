@@ -1,7 +1,7 @@
 # Story 1.10: GPS-Based Region Assignment with Polygon Boundaries
 
-**Status:** ready-for-dev
-**GitHub Issue:** <!-- Auto-created by dev-story workflow -->
+**Status:** in-progress
+**GitHub Issue:** #181
 
 ## Story
 
