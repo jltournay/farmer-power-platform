@@ -3,7 +3,7 @@
 import grpc
 import warnings
 
-from plantation.v1 import plantation_pb2 as plantation_dot_v1_dot_plantation__pb2
+from fp_proto.plantation.v1 import plantation_pb2 as plantation_dot_v1_dot_plantation__pb2
 
 GRPC_GENERATED_VERSION = '1.76.0'
 GRPC_VERSION = grpc.__version__
