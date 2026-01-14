@@ -11,9 +11,10 @@ So that I can monitor operations and identify issues.
 **Given** I navigate to `/health`
 **When** the page loads
 **Then** I see:
-  - Total factories, total farmers, active users (24h)
-  - System health indicators: API latency, error rate, queue depth
-  - Map showing factory locations with status indicators
+
+- Total factories, total farmers
+- System health indicators: service latency, delivery success rates
+- Map showing factory locations with status indicators
 
 **AC 9.8.2: Factory Drill-down**
 
@@ -36,17 +37,19 @@ So that I can monitor operations and identify issues.
 ├─────────────────────────────────────────────────────────────────────────────────┤
 │                                                                                  │
 │  PLATFORM OVERVIEW                                                               │
-│  ┌──────────────────┐  ┌──────────────────┐  ┌──────────────────┐               │
-│  │  🏭 12           │  │  👨‍🌾 1,247        │  │  👤 45            │               │
-│  │  Active Factories│  │  Total Farmers   │  │  Active Users(24h)│               │
-│  └──────────────────┘  └──────────────────┘  └──────────────────┘               │
+│  ┌──────────────────┐  ┌──────────────────┐                                     │
+│  │  🏭 12           │  │  👨‍🌾 1,247        │                                     │
+│  │  Active Factories│  │  Total Farmers   │                                     │
+│  └──────────────────┘  └──────────────────┘                                     │
 │                                                                                  │
 │  SYSTEM HEALTH                                                                   │
 │  ┌───────────────────────────────────────────────────────────────────────────┐  │
-│  │  API Gateway    ✅ 45ms avg      │  Message Queue  ✅ 23 pending          │  │
-│  │  Plantation Svc ✅ 32ms avg      │  SMS Gateway    ✅ 99.2% delivered     │  │
-│  │  Collection Svc ✅ 28ms avg      │  Voice IVR      ✅ Operational         │  │
-│  │  AI Model Svc   ✅ 1.2s avg      │  Weather API    ✅ Connected           │  │
+│  │  SERVICES                         │  EXTERNAL & MCP                       │  │
+│  │  API Gateway    ✅ 45ms avg       │  SMS Gateway     ✅ 99.2% delivered   │  │
+│  │  Plantation Svc ✅ 32ms avg       │  Voice IVR       ✅ Operational       │  │
+│  │  Collection Svc ✅ 28ms avg       │  Plantation MCP  ✅ 12ms avg          │  │
+│  │  AI Model Svc   ✅ 1.2s avg       │  Collection MCP  ✅ 15ms avg          │  │
+│  │  Platform Cost  ✅ Operational    │  Knowledge MCP   ✅ 18ms avg          │  │
 │  └───────────────────────────────────────────────────────────────────────────┘  │
 │                                                                                  │
 │  FACTORY MAP                                                                     │

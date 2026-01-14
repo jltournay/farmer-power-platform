@@ -2,7 +2,8 @@
 
 | Story | Title | Points | Priority |
 |-------|-------|--------|----------|
-| 9.1 | Platform Admin Application Scaffold | 5 | P0 |
+| 9.1a | Platform Admin Application Scaffold | 5 | P0 |
+| 9.1b | Shared Admin UI Components | 8 | P0 |
 | 9.2 | Region Management | 5 | P0 |
 | 9.3 | Factory Management | 5 | P0 |
 | 9.4 | Collection Point Management | 5 | P0 |
@@ -13,10 +14,32 @@
 | 9.9 | Knowledge Management Interface | 8 | P2 |
 | 9.10 | Platform Cost Dashboard | 8 | P2 |
 
-**Total Story Points:** 59
+**Total Story Points:** 65
 
-**Pilot-Critical Stories (P0):** 9.1-9.5 = 28 points
-**Important Stories (P1):** 9.6-9.7 = 10 points
+**Pilot-Critical Stories (P0):** 9.1a-9.5 = 36 points
+**Important Stories (P1):** 9.6-9.7 = 8 points
 **Nice-to-Have Stories (P2):** 9.8-9.10 = 21 points
+
+---
+
+## Story 9.1b: Shared Admin UI Components
+
+**As a** platform developer,
+**I want** a library of reusable UI components for the Admin Portal,
+**So that** all Epic 9 screens are built consistently and efficiently.
+
+### Components to Build (14 total)
+
+| Category | Components | Est. Points |
+|----------|------------|-------------|
+| **Shell** | `AdminShell`, `Sidebar`, `Breadcrumb`, `PageHeader` | 2 |
+| **Data Display** | `DataTable`, `EntityCard`, `FilterBar`, `MetricCard` | 2 |
+| **Forms** | `InlineEditForm`, `ConfirmationDialog`, `FileDropzone` | 2 |
+| **Maps** | `MapDisplay`, `GPSFieldWithMapAssist`, `BoundaryDrawer` | 2 |
+
+### Dependencies
+- Story 9.1a: Platform Admin Application Scaffold
+- Story 1.10: GPS-Based Region Assignment (for map component contracts)
+- ADR-017: Map Services and GPS-Based Region Assignment
 
 ---

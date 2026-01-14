@@ -228,8 +228,10 @@ development_status:
   # Epic 9: Platform Admin Portal (2nd UI - Simple CRUD)
   # Dependencies: Epic 0.5, Epic 1
   # BLOCKED BY: Story 1.10 (GPS-based region assignment) for Stories 9.2, 9.5
+  # Updated 2026-01-14: Split Story 9.1 into 9.1a (scaffold) + 9.1b (shared UI components)
   epic-9: backlog
-  9-1-platform-admin-application-scaffold: backlog
+  9-1a-platform-admin-application-scaffold: backlog  # 5 points - Vite + React + routing + theme
+  9-1b-shared-admin-ui-components: backlog  # 8 points - 14 shared components (Shell, DataTable, Maps, Forms)
   9-2-region-management: blocked  # BLOCKED BY Story 1.10 (needs polygon boundary support in Plantation Model)
   9-3-factory-management: backlog
   9-4-collection-point-management: backlog

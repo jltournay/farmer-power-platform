@@ -1,4 +1,4 @@
-# Story 9.1: Platform Admin Application Scaffold
+# Story 9.1a: Platform Admin Application Scaffold
 
 As a **platform developer**,
 I want the Platform Admin React application scaffolded with routing, layout, and hierarchical navigation,
