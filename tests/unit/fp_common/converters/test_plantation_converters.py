@@ -606,6 +606,93 @@ class TestRegionFromProto:
         assert region.weather_config.altitude_for_api == 1950
         assert region.weather_config.collection_time == "07:00"
 
+    def test_geography_without_boundary(self):
+        """Geography without boundary is correctly handled (Story 1.10)."""
+        proto = plantation_pb2.Region(
+            region_id="nyeri-highland",
+            name="Nyeri Highland",
+            county="Nyeri",
+        )
+        proto.geography.center_gps.lat = -0.4197
+        proto.geography.center_gps.lng = 36.9553
+        proto.geography.radius_km = 25
+        proto.geography.altitude_band.min_meters = 1800
+        proto.geography.altitude_band.max_meters = 2200
+        proto.geography.altitude_band.label = plantation_pb2.ALTITUDE_BAND_HIGHLAND
+        proto.flush_calendar.first_flush.start = "03-15"
+        proto.flush_calendar.first_flush.end = "05-15"
+        proto.flush_calendar.monsoon_flush.start = "06-15"
+        proto.flush_calendar.monsoon_flush.end = "09-30"
+        proto.flush_calendar.autumn_flush.start = "10-15"
+        proto.flush_calendar.autumn_flush.end = "12-15"
+        proto.flush_calendar.dormant.start = "12-16"
+        proto.flush_calendar.dormant.end = "03-14"
+        proto.agronomic.soil_type = "volcanic_red"
+        proto.weather_config.api_location.lat = 0
+        proto.weather_config.api_location.lng = 0
+
+        region = region_from_proto(proto)
+
+        # Boundary should be None when not provided
+        assert region.geography.boundary is None
+        assert region.geography.area_km2 is None
+        assert region.geography.perimeter_km is None
+
+    def test_geography_with_boundary(self):
+        """Geography with boundary is correctly extracted (Story 1.10)."""
+        proto = plantation_pb2.Region(
+            region_id="nyeri-highland",
+            name="Nyeri Highland",
+            county="Nyeri",
+        )
+        proto.geography.center_gps.lat = -0.4197
+        proto.geography.center_gps.lng = 36.9553
+        proto.geography.radius_km = 25
+        proto.geography.altitude_band.min_meters = 1800
+        proto.geography.altitude_band.max_meters = 2200
+        proto.geography.altitude_band.label = plantation_pb2.ALTITUDE_BAND_HIGHLAND
+
+        # Add polygon boundary (Story 1.10)
+        proto.geography.boundary.type = "Polygon"
+        ring = proto.geography.boundary.rings.add()
+        # Add 4 points forming a closed triangle
+        for lng, lat in [(36.9, -0.4), (37.0, -0.4), (36.95, -0.3), (36.9, -0.4)]:
+            coord = ring.points.add()
+            coord.longitude = lng
+            coord.latitude = lat
+
+        # Add optional computed values
+        proto.geography.area_km2 = 150.5
+        proto.geography.perimeter_km = 50.2
+
+        proto.flush_calendar.first_flush.start = "03-15"
+        proto.flush_calendar.first_flush.end = "05-15"
+        proto.flush_calendar.monsoon_flush.start = "06-15"
+        proto.flush_calendar.monsoon_flush.end = "09-30"
+        proto.flush_calendar.autumn_flush.start = "10-15"
+        proto.flush_calendar.autumn_flush.end = "12-15"
+        proto.flush_calendar.dormant.start = "12-16"
+        proto.flush_calendar.dormant.end = "03-14"
+        proto.agronomic.soil_type = "volcanic_red"
+        proto.weather_config.api_location.lat = 0
+        proto.weather_config.api_location.lng = 0
+
+        region = region_from_proto(proto)
+
+        # Boundary should be present
+        assert region.geography.boundary is not None
+        assert region.geography.boundary.type == "Polygon"
+        assert len(region.geography.boundary.rings) == 1
+        assert len(region.geography.boundary.exterior.points) == 4
+
+        # First point should match
+        assert region.geography.boundary.exterior.points[0].longitude == 36.9
+        assert region.geography.boundary.exterior.points[0].latitude == -0.4
+
+        # Computed values should be present
+        assert region.geography.area_km2 == 150.5
+        assert region.geography.perimeter_km == 50.2
+
 
 class TestFarmerSummaryFromProto:
     """Tests for farmer_summary_from_proto converter."""

@@ -1540,6 +1540,52 @@ class PlantationServiceServicer(plantation_pb2_grpc.PlantationServiceServicer):
             rings=[self._polygon_ring_to_proto(r) for r in boundary.rings],
         )
 
+    def _coordinate_from_proto(self, proto: plantation_pb2.Coordinate) -> Coordinate:
+        """Convert Coordinate proto message to value object (Story 1.10)."""
+        return Coordinate(
+            longitude=proto.longitude,
+            latitude=proto.latitude,
+        )
+
+    def _polygon_ring_from_proto(self, proto: plantation_pb2.PolygonRing) -> PolygonRing:
+        """Convert PolygonRing proto message to value object (Story 1.10)."""
+        return PolygonRing(
+            points=[self._coordinate_from_proto(p) for p in proto.points],
+        )
+
+    def _region_boundary_from_proto(self, proto: plantation_pb2.RegionBoundary) -> RegionBoundary:
+        """Convert RegionBoundary proto message to value object (Story 1.10)."""
+        return RegionBoundary(
+            type=proto.type if proto.type else "Polygon",
+            rings=[self._polygon_ring_from_proto(r) for r in proto.rings],
+        )
+
+    def _geography_from_proto(self, proto: plantation_pb2.Geography) -> Geography:
+        """Convert Geography proto message to value object (Story 1.10).
+
+        Handles optional boundary, area_km2, and perimeter_km fields.
+        """
+        # Build boundary if present
+        boundary = None
+        if proto.HasField("boundary") and len(proto.boundary.rings) > 0:
+            boundary = self._region_boundary_from_proto(proto.boundary)
+
+        return Geography(
+            center_gps=GPS(
+                lat=proto.center_gps.lat,
+                lng=proto.center_gps.lng,
+            ),
+            radius_km=proto.radius_km,
+            altitude_band=AltitudeBand(
+                min_meters=proto.altitude_band.min_meters,
+                max_meters=proto.altitude_band.max_meters,
+                label=self._altitude_band_label_from_proto(proto.altitude_band.label),
+            ),
+            boundary=boundary,
+            area_km2=proto.area_km2 if proto.HasField("area_km2") else None,
+            perimeter_km=proto.perimeter_km if proto.HasField("perimeter_km") else None,
+        )
+
     def _geography_to_proto(self, geography: Geography) -> plantation_pb2.Geography:
         """Convert Geography value object to protobuf message (Story 1.10).
 
@@ -1714,22 +1760,12 @@ class PlantationServiceServicer(plantation_pb2_grpc.PlantationServiceServicer):
 
         # Build RegionCreate from request
         try:
+            # Story 1.10: Use _geography_from_proto to handle boundary, area_km2, perimeter_km
             region_create = RegionCreate(
                 name=request.name,
                 county=request.county,
                 country=request.country if request.country else "Kenya",
-                geography=Geography(
-                    center_gps=GPS(
-                        lat=request.geography.center_gps.lat,
-                        lng=request.geography.center_gps.lng,
-                    ),
-                    radius_km=request.geography.radius_km,
-                    altitude_band=AltitudeBand(
-                        min_meters=request.geography.altitude_band.min_meters,
-                        max_meters=request.geography.altitude_band.max_meters,
-                        label=self._altitude_band_label_from_proto(request.geography.altitude_band.label),
-                    ),
-                ),
+                geography=self._geography_from_proto(request.geography),
                 flush_calendar=FlushCalendar(
                     first_flush=FlushPeriod(
                         start=request.flush_calendar.first_flush.start,
@@ -1809,18 +1845,8 @@ class PlantationServiceServicer(plantation_pb2_grpc.PlantationServiceServicer):
         if request.HasField("name"):
             updates["name"] = request.name
         if request.HasField("geography"):
-            updates["geography"] = Geography(
-                center_gps=GPS(
-                    lat=request.geography.center_gps.lat,
-                    lng=request.geography.center_gps.lng,
-                ),
-                radius_km=request.geography.radius_km,
-                altitude_band=AltitudeBand(
-                    min_meters=request.geography.altitude_band.min_meters,
-                    max_meters=request.geography.altitude_band.max_meters,
-                    label=self._altitude_band_label_from_proto(request.geography.altitude_band.label),
-                ),
-            ).model_dump()
+            # Story 1.10: Use _geography_from_proto to handle boundary, area_km2, perimeter_km
+            updates["geography"] = self._geography_from_proto(request.geography).model_dump()
         if request.HasField("flush_calendar"):
             updates["flush_calendar"] = FlushCalendar(
                 first_flush=FlushPeriod(
