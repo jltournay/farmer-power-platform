@@ -76,6 +76,12 @@ Cross-cutting frontend and BFF infrastructure that enables all web applications.
 │  └───────────────────────────────────────────┘    Portal        │
 │                                                                 │
 │  DEFERRED: Story 0.5.8: Azure AD B2C (production prep)          │
+│                                                                 │
+│  PHASE 4: Real-Time Infrastructure                              │
+│  └── Story 0.5.9: BFF SSE Infrastructure ──► Story 9.9          │
+│           │         SSE Manager, gRPC-to-SSE adapter            │
+│           ▼                                                     │
+│       [Enables real-time progress bars in Admin Portal]         │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
@@ -97,8 +103,9 @@ Cross-cutting frontend and BFF infrastructure that enables all web applications.
 | [0.5.6](../sprint-artifacts/0-5-6-shared-auth-library.md) | Shared Auth Library | ✅ done | #84 | #85 | 3 |
 | [0.5.7](../sprint-artifacts/0-5-7-factory-portal-scaffold.md) | Factory Portal Scaffold | ✅ done | #86 | #87 | 3 |
 | 0.5.8 | Azure AD B2C Configuration | ⏸️ deferred | - | - | 5 |
+| [0.5.9](../sprint-artifacts/0-5-9-bff-sse-infrastructure.md) | BFF SSE Infrastructure | 📋 draft | - | - | 3 |
 
-**Total Points:** 37 (32 completed + 5 deferred)
+**Total Points:** 40 (32 completed + 5 deferred + 3 draft)
 
 ### Story 0.5.4 Split Rationale (ADR-012)
 
@@ -857,6 +864,80 @@ So that users can authenticate securely with role-based access control.
 - Stories 0.5.3 and 0.5.6 complete (interface compatibility)
 
 **Story Points:** 5
+
+---
+
+### Story 0.5.9: BFF SSE Infrastructure
+
+**Status:** 📋 Draft
+
+As a **frontend developer**,
+I want Server-Sent Events (SSE) infrastructure in the BFF,
+So that real-time progress updates from backend gRPC streams can be pushed to browser clients.
+
+**Reference:** ADR-018 (Real-Time Communication Patterns)
+
+**Context:**
+The RAG Model service exposes gRPC streaming for document processing progress. The frontend (Admin Portal, Story 9.9) needs to display progress bars during document processing. SSE provides a simpler, HTTP-native solution compared to WebSockets for unidirectional server-to-client streaming.
+
+**Acceptance Criteria:**
+
+**Given** I need to create an SSE endpoint
+**When** I use `SSEManager.create_response(event_generator)`
+**Then** A FastAPI `StreamingResponse` is returned with correct headers
+**And** Content-Type is `text/event-stream`
+**And** Cache-Control is `no-cache`
+**And** X-Accel-Buffering is `no` (nginx compatibility)
+
+**Given** I have a gRPC streaming response
+**When** I use `grpc_stream_to_sse(stream, transform_fn)`
+**Then** Each gRPC message is transformed to a dict via transform_fn
+**And** The async iterator yields SSE-compatible events
+
+**Given** An error occurs during stream processing
+**When** The error is caught by SSEManager
+**Then** An error event is sent before closing
+**And** The stream is closed gracefully
+
+**Given** the SSE infrastructure is created
+**When** I import from `bff.infrastructure.sse`
+**Then** `SSEManager` and `grpc_stream_to_sse` are available
+
+**Technical Notes:**
+- Location: `services/bff/src/bff/infrastructure/sse/`
+- Reference: ADR-018 (Real-Time Communication Patterns)
+- SSE is BFF-internal only (not shared library)
+- Connection-per-resource pattern (simpler than multiplexed)
+
+**Directory Structure:**
+```
+services/bff/src/bff/infrastructure/sse/
+├── __init__.py          # Exports SSEManager, grpc_stream_to_sse
+├── manager.py           # SSEManager class
+└── grpc_adapter.py      # grpc_stream_to_sse function
+```
+
+**Usage Example:**
+```python
+from bff.infrastructure.sse import SSEManager, grpc_stream_to_sse
+
+@router.get("/{document_id}/progress")
+async def get_progress(document_id: str):
+    grpc_stream = await rag_client.stream_document_progress(document_id)
+    sse_events = grpc_stream_to_sse(
+        grpc_stream,
+        lambda msg: {"percent": msg.progress_percent, "status": msg.status.name.lower()}
+    )
+    return SSEManager.create_response(sse_events, event_type="progress")
+```
+
+**Dependencies:**
+- Story 0.5.2: BFF Service Setup (BFF infrastructure exists)
+
+**Blocks:**
+- Story 9.9: Knowledge Management Interface (uses SSE for document progress)
+
+**Story Points:** 3
 
 ---
 

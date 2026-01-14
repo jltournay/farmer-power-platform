@@ -27,6 +27,8 @@ date: '2025-12-16'](#stepscompleted-1-inputdocuments-bmad-outputanalysisproduct-
     - [ADR-014: MongoDB Async Driver Migration (Motor → PyMongo Async)](./adr/ADR-014-mongodb-async-driver-migration.md)
     - [ADR-015: E2E Autonomous Debugging Infrastructure](./adr/ADR-015-e2e-autonomous-debugging-infrastructure.md)
     - [ADR-016: Unified Cost Model and Platform Cost Service](./adr/ADR-016-unified-cost-model.md)
+    - [ADR-017: Map Services and GPS Region Assignment](./adr/ADR-017-map-services-gps-region-assignment.md)
+    - [ADR-018: Real-Time Communication Patterns (SSE vs WebSocket)](./adr/ADR-018-real-time-communication-patterns.md)
   - [Source of Truth Declaration](./source-of-truth-declaration.md)
     - [Platform Model Overview (9 Models)](./source-of-truth-declaration.md#platform-model-overview-9-models)
   - [Collection Model Architecture](./collection-model-architecture.md)
