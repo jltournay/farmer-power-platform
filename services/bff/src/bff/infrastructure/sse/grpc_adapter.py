@@ -9,6 +9,7 @@ from typing import TypeVar
 import structlog
 
 # TypeVar for generic protobuf message type
+# Bound to object for flexibility - actual protobuf Message types vary
 T = TypeVar("T")
 
 logger = structlog.get_logger(__name__)
@@ -46,5 +47,9 @@ async def grpc_stream_to_sse(
                 }
             )
     """
+    logger.debug("gRPC stream adapter started")
+    message_count = 0
     async for message in grpc_stream:
+        message_count += 1
         yield transform(message)
+    logger.debug("gRPC stream adapter completed", message_count=message_count)
