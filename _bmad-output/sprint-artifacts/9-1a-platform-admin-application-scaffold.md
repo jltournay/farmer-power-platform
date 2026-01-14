@@ -1,6 +1,6 @@
 # Story 9.1a: Platform Admin Application Scaffold
 
-**Status:** review
+**Status:** done
 **GitHub Issue:** #185
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
