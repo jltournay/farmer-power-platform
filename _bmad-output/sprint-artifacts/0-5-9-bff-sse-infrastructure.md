@@ -1,7 +1,7 @@
 # Story 0.5.9: BFF SSE Infrastructure
 
-**Status:** ready-for-dev
-**GitHub Issue:** <!-- Auto-created by dev-story workflow -->
+**Status:** in-progress
+**GitHub Issue:** #183
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -44,56 +44,52 @@ So that **real-time progress updates from backend gRPC streams can be pushed to 
 
 ## Tasks / Subtasks
 
-- [ ] **Task 1: Create SSE Package Structure** (AC: #4)
-  - [ ] 1.1 Create `services/bff/src/bff/infrastructure/sse/` directory
-  - [ ] 1.2 Create `__init__.py` with exports
-  - [ ] 1.3 Verify import works: `from bff.infrastructure.sse import SSEManager, grpc_stream_to_sse`
+- [x] **Task 1: Create SSE Package Structure** (AC: #4)
+  - [x] 1.1 Create `services/bff/src/bff/infrastructure/sse/` directory
+  - [x] 1.2 Create `__init__.py` with exports
+  - [x] 1.3 Verify import works: `from bff.infrastructure.sse import SSEManager, grpc_stream_to_sse`
 
-- [ ] **Task 2: Implement SSEManager** (AC: #1, #3)
-  - [ ] 2.1 Create `manager.py` with SSEManager class
-  - [ ] 2.2 Implement `create_response()` class method
-  - [ ] 2.3 Implement `_format_events()` async generator
-  - [ ] 2.4 Add error event handling with try/except
-  - [ ] 2.5 Add type hints and docstrings
+- [x] **Task 2: Implement SSEManager** (AC: #1, #3)
+  - [x] 2.1 Create `manager.py` with SSEManager class
+  - [x] 2.2 Implement `create_response()` class method
+  - [x] 2.3 Implement `_format_events()` async generator
+  - [x] 2.4 Add error event handling with try/except
+  - [x] 2.5 Add type hints and docstrings
 
-- [ ] **Task 3: Implement gRPC Adapter** (AC: #2)
-  - [ ] 3.1 Create `grpc_adapter.py` with `grpc_stream_to_sse` function
-  - [ ] 3.2 Implement async iteration over gRPC stream
-  - [ ] 3.3 Apply transform function to each message
-  - [ ] 3.4 Add type hints using TypeVar for generic message type
+- [x] **Task 3: Implement gRPC Adapter** (AC: #2)
+  - [x] 3.1 Create `grpc_adapter.py` with `grpc_stream_to_sse` function
+  - [x] 3.2 Implement async iteration over gRPC stream
+  - [x] 3.3 Apply transform function to each message
+  - [x] 3.4 Add type hints using TypeVar for generic message type
 
-- [ ] **Task 4: Write Unit Tests** (AC: #5)
-  - [ ] 4.1 Create `tests/unit/bff/test_sse_infrastructure.py`
-  - [ ] 4.2 Test SSEManager.create_response headers
-  - [ ] 4.3 Test SSEManager event formatting
-  - [ ] 4.4 Test grpc_stream_to_sse with mock stream
-  - [ ] 4.5 Test error handling sends error event
-  - [ ] 4.6 Test gRPC stream error propagation in adapter
-  - [ ] 4.7 Test empty generator edge case
-  - [ ] 4.8 Run tests and verify all pass
+- [x] **Task 4: Write Unit Tests** (AC: #5)
+  - [x] 4.1 Create `tests/unit/bff/test_sse_infrastructure.py`
+  - [x] 4.2 Test SSEManager.create_response headers
+  - [x] 4.3 Test SSEManager event formatting
+  - [x] 4.4 Test grpc_stream_to_sse with mock stream
+  - [x] 4.5 Test error handling sends error event
+  - [x] 4.6 Test gRPC stream error propagation in adapter
+  - [x] 4.7 Test empty generator edge case
+  - [x] 4.8 Run tests and verify all pass
 
-- [ ] **Task 5: Verify Integration** (AC: #4)
-  - [ ] 5.1 Run ruff check and format
-  - [ ] 5.2 Run unit tests: `pytest tests/unit/bff/test_sse_infrastructure.py -v`
-  - [ ] 5.3 Verify no import errors in BFF service
+- [x] **Task 5: Verify Integration** (AC: #4)
+  - [x] 5.1 Run ruff check and format
+  - [x] 5.2 Run unit tests: `pytest tests/unit/bff/test_sse_infrastructure.py -v`
+  - [x] 5.3 Verify no import errors in BFF service
 
 ## Git Workflow (MANDATORY)
 
 **All story development MUST use feature branches.** Direct pushes to main are blocked.
 
 ### Story Start
-- [ ] GitHub Issue exists or created: `gh issue create --title "Story 0.5.9: BFF SSE Infrastructure"`
-- [ ] Feature branch created from main:
-  ```bash
-  git checkout main && git pull origin main
-  git checkout -b story/0-5-9-bff-sse-infrastructure
-  ```
+- [x] GitHub Issue exists or created: #183
+- [x] Feature branch created from main: `story/0-5-9-bff-sse-infrastructure`
 
 **Branch name:** `story/0-5-9-bff-sse-infrastructure`
 
 ### During Development
-- [ ] All commits reference GitHub issue: `Relates to #XX`
-- [ ] Commits are atomic by type (production, test, seed - not mixed)
+- [x] All commits reference GitHub issue: `Relates to #183`
+- [x] Commits are atomic by type (production, test, seed - not mixed)
 - [ ] Push to feature branch: `git push -u origin story/0-5-9-bff-sse-infrastructure`
 
 ### Story Done

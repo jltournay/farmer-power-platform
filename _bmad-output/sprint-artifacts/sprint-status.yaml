@@ -158,7 +158,7 @@ development_status:
   0-5-6-shared-auth-library: done  # 3 points - @fp/auth with mock provider, github_issue: 84
   0-5-7-factory-portal-scaffold: done  # 3 points - React app with routing and layout, github_issue: 86, pr: 87
   0-5-8-azure-ad-b2c-configuration: deferred  # 5 points - Production deployment only
-  0-5-9-bff-sse-infrastructure: ready-for-dev  # 3 points - SSE Manager, gRPC-to-SSE adapter (ADR-018), Blocks: Story 9.9
+  0-5-9-bff-sse-infrastructure: in-progress  # 3 points - SSE Manager, gRPC-to-SSE adapter (ADR-018), github_issue: 183, Blocks: Story 9.9
   epic-0-5-retrospective: optional
 
   # Epic 0.75: AI Model Foundation (REVISED - 2026-01-04, Party Mode Validated)
