@@ -63,7 +63,7 @@ development_status:
 
   # Epic 1: Farmer Registration & Data Foundation
   # Dependencies: Epic 0
-  epic-1: done  # All stories complete
+  epic-1: in-progress  # Reopened for Story 1.10 (GPS-based region assignment)
   1-1-plantation-model-service-setup: done
   1-2-factory-and-collection-point-management: done
   1-3-farmer-registration: done
@@ -73,6 +73,7 @@ development_status:
   1-7-quality-grading-event-subscription: done  # github_issue: 24
   1-8-region-entity-weather-configuration: done  # github_issue: 25
   1-9-payment-policy-configuration: done  # github_issue: 26
+  1-10-gps-region-assignment-polygon-boundaries: backlog  # ADR-017, Blocks: Epic 9 (Stories 9.2, 9.5)
   epic-1-retrospective: done
 
   # Epic 2: Quality Data Ingestion (REVISED - BLOB_TRIGGER architecture)
@@ -226,13 +227,18 @@ development_status:
 
   # Epic 9: Platform Admin Portal (2nd UI - Simple CRUD)
   # Dependencies: Epic 0.5, Epic 1
+  # BLOCKED BY: Story 1.10 (GPS-based region assignment) for Stories 9.2, 9.5
   epic-9: backlog
   9-1-platform-admin-application-scaffold: backlog
-  9-2-factory-onboarding-wizard: backlog
-  9-3-user-management-dashboard: backlog
-  9-4-platform-health-dashboard: backlog
-  9-5-knowledge-management-interface: backlog  # RAG document ingestion UI
-  9-6-llm-cost-dashboard: backlog  # Ops visibility, BLOCKED BY Epic 13 (platform-cost service)
+  9-2-region-management: blocked  # BLOCKED BY Story 1.10 (needs polygon boundary support in Plantation Model)
+  9-3-factory-management: backlog
+  9-4-collection-point-management: backlog
+  9-5-farmer-management: blocked  # BLOCKED BY Story 1.10 (needs GPS location picker with region assignment)
+  9-6-grading-model-management: backlog
+  9-7-user-management: backlog
+  9-8-platform-health-dashboard: backlog
+  9-9-knowledge-management-interface: backlog  # RAG document ingestion UI
+  9-10-llm-cost-dashboard: backlog  # Ops visibility, BLOCKED BY Epic 13 (platform-cost service)
   epic-9-retrospective: optional
 
   # ═══════════════════════════════════════════════════════════════════════════

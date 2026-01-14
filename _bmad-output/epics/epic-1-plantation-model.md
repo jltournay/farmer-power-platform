@@ -382,6 +382,111 @@ So that farmers receive quality-based payment adjustments according to our chose
 
 ---
 
+### Story 1.10: GPS-Based Region Assignment with Polygon Boundaries
+
+**Story File:** Backlog | Status: Backlog
+**Blocks:** Epic 9 (Admin Portal - Region boundary drawing in Story 9.2)
+**Related ADR:** [ADR-017: Map Services and GPS-Based Region Assignment](../architecture/adr/ADR-017-map-services-gps-region-assignment.md)
+
+As a **platform operator**,
+I want regions defined with polygon boundaries instead of hardcoded bounding boxes,
+So that farmers are accurately assigned to regions based on their farm GPS coordinates.
+
+**Problem Statement:**
+
+The current `assign_region_from_altitude()` function uses hardcoded rectangular bounding boxes to determine which county a farmer belongs to:
+
+```python
+# Current: Hardcoded boxes that overlap and cannot represent irregular boundaries
+if -0.6 <= latitude <= 0.0 and 36.5 <= longitude <= 37.5:
+    county = "nyeri"
+elif -0.8 <= latitude <= 0.0 and 35.0 <= longitude <= 36.0:
+    county = "kericho"
+```
+
+This approach:
+- Cannot represent irregular administrative boundaries
+- Causes incorrect assignments in overlapping areas
+- Requires code changes to add new regions
+- Provides no visual feedback for administrators
+
+**Acceptance Criteria:**
+
+**AC 1.10.1: RegionBoundary Value Object**
+
+**Given** the `fp_common.models.value_objects` module
+**When** the `RegionBoundary` Pydantic model is created
+**Then** it supports GeoJSON Polygon format with coordinates validation
+**And** it validates that polygons are closed (first point == last point)
+**And** it validates coordinate ranges (lng: -180 to 180, lat: -90 to 90)
+
+**AC 1.10.2: Geography Model Extended**
+
+**Given** the existing `Geography` value object
+**When** it is extended with boundary support
+**Then** it includes an optional `boundary: RegionBoundary | None` field
+**And** it includes optional `area_km2` and `perimeter_km` computed fields
+**And** existing regions without boundaries continue to work (backward compatible)
+
+**AC 1.10.3: Proto Definitions Updated**
+
+**Given** the `proto/plantation/v1/plantation.proto` file
+**When** boundary support is added
+**Then** `RegionBoundary` message is defined with type and coordinates
+**And** `Coordinate` message is defined with longitude and latitude
+**And** `Geography` message includes optional boundary field
+
+**AC 1.10.4: RegionAssignmentService Created**
+
+**Given** a new `RegionAssignmentService` class
+**When** `assign_region(latitude, longitude, altitude)` is called
+**Then** it loads all active regions from the repository
+**And** it checks each region's polygon boundary using point-in-polygon algorithm
+**And** it verifies the farm altitude matches the region's altitude band
+**And** it returns the matching `region_id` or falls back to nearest center by altitude band
+
+**AC 1.10.5: Point-in-Polygon Algorithm**
+
+**Given** a farm GPS coordinate and a region with polygon boundary
+**When** the point-in-polygon check is performed
+**Then** the ray casting algorithm correctly determines if the point is inside
+**And** edge cases (point on boundary, complex polygons) are handled correctly
+
+**AC 1.10.6: Backward Compatibility**
+
+**Given** existing regions without polygon boundaries
+**When** a farmer is registered in an area without boundary-defined regions
+**Then** the fallback algorithm matches by altitude band and nearest center
+**And** no data migration is required for existing regions
+
+**Technical Notes:**
+
+**Files to Modify:**
+
+| File | Change |
+|------|--------|
+| `libs/fp-common/fp_common/models/value_objects.py` | ADD `RegionBoundary`, MODIFY `Geography` |
+| `proto/plantation/v1/plantation.proto` | ADD `RegionBoundary`, `Coordinate`, MODIFY `Geography` |
+| `services/plantation-model/src/plantation_model/domain/region_assignment.py` | NEW file with `RegionAssignmentService` |
+| `services/plantation-model/src/plantation_model/infrastructure/google_elevation.py` | REMOVE `assign_region_from_altitude()` function (keep `GoogleElevationClient`) |
+
+**Note:** The `CreateFarmer` gRPC handler does NOT need modification. The map UI is purely for user convenience to click and get GPS coordinates - the service already accepts lat/lng inputs.
+
+**Point-in-Polygon Algorithm:**
+- Use ray casting algorithm (standard, well-tested)
+- Count intersections of horizontal ray from point to infinity
+- Odd count = inside, even count = outside
+
+**Dependencies:**
+- Story 1.8: Region Entity & Weather Configuration (Region model exists)
+- Google Elevation API integration (unchanged, continues to provide altitude)
+
+**Enables:**
+- Epic 9, Story 9.2: Region boundary drawing in Admin Portal UI
+- Epic 9, Story 9.5: Farm location picker in Farmer registration UI
+
+---
+
 ## Retrospective
 
 **[📋 Epic 1 Retrospective](../sprint-artifacts/epic-1-retrospective.md)** | Status: Done
