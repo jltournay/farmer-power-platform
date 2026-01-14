@@ -4,7 +4,6 @@ import grpc
 import warnings
 
 from fp_proto.ai_model.v1 import ai_model_pb2 as ai__model_dot_v1_dot_ai__model__pb2
-from google.protobuf import empty_pb2 as google_dot_protobuf_dot_empty__pb2
 
 GRPC_GENERATED_VERSION = '1.76.0'
 GRPC_VERSION = grpc.__version__
@@ -146,305 +145,6 @@ class AiModelService(object):
             _registered_method=True)
 
 
-class CostServiceStub(object):
-    """CostService provides LLM cost observability (Story 0.75.5)
-    Consumed by Epic 9 (Platform Admin Dashboard) for cost monitoring
-    """
-
-    def __init__(self, channel):
-        """Constructor.
-
-        Args:
-            channel: A grpc.Channel.
-        """
-        self.GetDailyCostSummary = channel.unary_unary(
-                '/farmer_power.ai_model.v1.CostService/GetDailyCostSummary',
-                request_serializer=ai__model_dot_v1_dot_ai__model__pb2.DateRangeRequest.SerializeToString,
-                response_deserializer=ai__model_dot_v1_dot_ai__model__pb2.DailyCostSummaryResponse.FromString,
-                _registered_method=True)
-        self.GetCurrentDayCost = channel.unary_unary(
-                '/farmer_power.ai_model.v1.CostService/GetCurrentDayCost',
-                request_serializer=google_dot_protobuf_dot_empty__pb2.Empty.SerializeToString,
-                response_deserializer=ai__model_dot_v1_dot_ai__model__pb2.CostSummaryResponse.FromString,
-                _registered_method=True)
-        self.GetCostByAgentType = channel.unary_unary(
-                '/farmer_power.ai_model.v1.CostService/GetCostByAgentType',
-                request_serializer=ai__model_dot_v1_dot_ai__model__pb2.DateRangeRequest.SerializeToString,
-                response_deserializer=ai__model_dot_v1_dot_ai__model__pb2.CostByAgentTypeResponse.FromString,
-                _registered_method=True)
-        self.GetCostByModel = channel.unary_unary(
-                '/farmer_power.ai_model.v1.CostService/GetCostByModel',
-                request_serializer=ai__model_dot_v1_dot_ai__model__pb2.DateRangeRequest.SerializeToString,
-                response_deserializer=ai__model_dot_v1_dot_ai__model__pb2.CostByModelResponse.FromString,
-                _registered_method=True)
-        self.GetCostAlerts = channel.unary_unary(
-                '/farmer_power.ai_model.v1.CostService/GetCostAlerts',
-                request_serializer=google_dot_protobuf_dot_empty__pb2.Empty.SerializeToString,
-                response_deserializer=ai__model_dot_v1_dot_ai__model__pb2.CostAlertsResponse.FromString,
-                _registered_method=True)
-        self.ConfigureCostThreshold = channel.unary_unary(
-                '/farmer_power.ai_model.v1.CostService/ConfigureCostThreshold',
-                request_serializer=ai__model_dot_v1_dot_ai__model__pb2.ThresholdConfigRequest.SerializeToString,
-                response_deserializer=google_dot_protobuf_dot_empty__pb2.Empty.FromString,
-                _registered_method=True)
-
-
-class CostServiceServicer(object):
-    """CostService provides LLM cost observability (Story 0.75.5)
-    Consumed by Epic 9 (Platform Admin Dashboard) for cost monitoring
-    """
-
-    def GetDailyCostSummary(self, request, context):
-        """Get daily cost summaries for a date range
-        """
-        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
-        context.set_details('Method not implemented!')
-        raise NotImplementedError('Method not implemented!')
-
-    def GetCurrentDayCost(self, request, context):
-        """Get current day's running cost total
-        """
-        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
-        context.set_details('Method not implemented!')
-        raise NotImplementedError('Method not implemented!')
-
-    def GetCostByAgentType(self, request, context):
-        """Get cost breakdown by agent type
-        """
-        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
-        context.set_details('Method not implemented!')
-        raise NotImplementedError('Method not implemented!')
-
-    def GetCostByModel(self, request, context):
-        """Get cost breakdown by model
-        """
-        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
-        context.set_details('Method not implemented!')
-        raise NotImplementedError('Method not implemented!')
-
-    def GetCostAlerts(self, request, context):
-        """Get active cost alerts
-        """
-        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
-        context.set_details('Method not implemented!')
-        raise NotImplementedError('Method not implemented!')
-
-    def ConfigureCostThreshold(self, request, context):
-        """Configure cost thresholds at runtime
-        """
-        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
-        context.set_details('Method not implemented!')
-        raise NotImplementedError('Method not implemented!')
-
-
-def add_CostServiceServicer_to_server(servicer, server):
-    rpc_method_handlers = {
-            'GetDailyCostSummary': grpc.unary_unary_rpc_method_handler(
-                    servicer.GetDailyCostSummary,
-                    request_deserializer=ai__model_dot_v1_dot_ai__model__pb2.DateRangeRequest.FromString,
-                    response_serializer=ai__model_dot_v1_dot_ai__model__pb2.DailyCostSummaryResponse.SerializeToString,
-            ),
-            'GetCurrentDayCost': grpc.unary_unary_rpc_method_handler(
-                    servicer.GetCurrentDayCost,
-                    request_deserializer=google_dot_protobuf_dot_empty__pb2.Empty.FromString,
-                    response_serializer=ai__model_dot_v1_dot_ai__model__pb2.CostSummaryResponse.SerializeToString,
-            ),
-            'GetCostByAgentType': grpc.unary_unary_rpc_method_handler(
-                    servicer.GetCostByAgentType,
-                    request_deserializer=ai__model_dot_v1_dot_ai__model__pb2.DateRangeRequest.FromString,
-                    response_serializer=ai__model_dot_v1_dot_ai__model__pb2.CostByAgentTypeResponse.SerializeToString,
-            ),
-            'GetCostByModel': grpc.unary_unary_rpc_method_handler(
-                    servicer.GetCostByModel,
-                    request_deserializer=ai__model_dot_v1_dot_ai__model__pb2.DateRangeRequest.FromString,
-                    response_serializer=ai__model_dot_v1_dot_ai__model__pb2.CostByModelResponse.SerializeToString,
-            ),
-            'GetCostAlerts': grpc.unary_unary_rpc_method_handler(
-                    servicer.GetCostAlerts,
-                    request_deserializer=google_dot_protobuf_dot_empty__pb2.Empty.FromString,
-                    response_serializer=ai__model_dot_v1_dot_ai__model__pb2.CostAlertsResponse.SerializeToString,
-            ),
-            'ConfigureCostThreshold': grpc.unary_unary_rpc_method_handler(
-                    servicer.ConfigureCostThreshold,
-                    request_deserializer=ai__model_dot_v1_dot_ai__model__pb2.ThresholdConfigRequest.FromString,
-                    response_serializer=google_dot_protobuf_dot_empty__pb2.Empty.SerializeToString,
-            ),
-    }
-    generic_handler = grpc.method_handlers_generic_handler(
-            'farmer_power.ai_model.v1.CostService', rpc_method_handlers)
-    server.add_generic_rpc_handlers((generic_handler,))
-    server.add_registered_method_handlers('farmer_power.ai_model.v1.CostService', rpc_method_handlers)
-
-
- # This class is part of an EXPERIMENTAL API.
-class CostService(object):
-    """CostService provides LLM cost observability (Story 0.75.5)
-    Consumed by Epic 9 (Platform Admin Dashboard) for cost monitoring
-    """
-
-    @staticmethod
-    def GetDailyCostSummary(request,
-            target,
-            options=(),
-            channel_credentials=None,
-            call_credentials=None,
-            insecure=False,
-            compression=None,
-            wait_for_ready=None,
-            timeout=None,
-            metadata=None):
-        return grpc.experimental.unary_unary(
-            request,
-            target,
-            '/farmer_power.ai_model.v1.CostService/GetDailyCostSummary',
-            ai__model_dot_v1_dot_ai__model__pb2.DateRangeRequest.SerializeToString,
-            ai__model_dot_v1_dot_ai__model__pb2.DailyCostSummaryResponse.FromString,
-            options,
-            channel_credentials,
-            insecure,
-            call_credentials,
-            compression,
-            wait_for_ready,
-            timeout,
-            metadata,
-            _registered_method=True)
-
-    @staticmethod
-    def GetCurrentDayCost(request,
-            target,
-            options=(),
-            channel_credentials=None,
-            call_credentials=None,
-            insecure=False,
-            compression=None,
-            wait_for_ready=None,
-            timeout=None,
-            metadata=None):
-        return grpc.experimental.unary_unary(
-            request,
-            target,
-            '/farmer_power.ai_model.v1.CostService/GetCurrentDayCost',
-            google_dot_protobuf_dot_empty__pb2.Empty.SerializeToString,
-            ai__model_dot_v1_dot_ai__model__pb2.CostSummaryResponse.FromString,
-            options,
-            channel_credentials,
-            insecure,
-            call_credentials,
-            compression,
-            wait_for_ready,
-            timeout,
-            metadata,
-            _registered_method=True)
-
-    @staticmethod
-    def GetCostByAgentType(request,
-            target,
-            options=(),
-            channel_credentials=None,
-            call_credentials=None,
-            insecure=False,
-            compression=None,
-            wait_for_ready=None,
-            timeout=None,
-            metadata=None):
-        return grpc.experimental.unary_unary(
-            request,
-            target,
-            '/farmer_power.ai_model.v1.CostService/GetCostByAgentType',
-            ai__model_dot_v1_dot_ai__model__pb2.DateRangeRequest.SerializeToString,
-            ai__model_dot_v1_dot_ai__model__pb2.CostByAgentTypeResponse.FromString,
-            options,
-            channel_credentials,
-            insecure,
-            call_credentials,
-            compression,
-            wait_for_ready,
-            timeout,
-            metadata,
-            _registered_method=True)
-
-    @staticmethod
-    def GetCostByModel(request,
-            target,
-            options=(),
-            channel_credentials=None,
-            call_credentials=None,
-            insecure=False,
-            compression=None,
-            wait_for_ready=None,
-            timeout=None,
-            metadata=None):
-        return grpc.experimental.unary_unary(
-            request,
-            target,
-            '/farmer_power.ai_model.v1.CostService/GetCostByModel',
-            ai__model_dot_v1_dot_ai__model__pb2.DateRangeRequest.SerializeToString,
-            ai__model_dot_v1_dot_ai__model__pb2.CostByModelResponse.FromString,
-            options,
-            channel_credentials,
-            insecure,
-            call_credentials,
-            compression,
-            wait_for_ready,
-            timeout,
-            metadata,
-            _registered_method=True)
-
-    @staticmethod
-    def GetCostAlerts(request,
-            target,
-            options=(),
-            channel_credentials=None,
-            call_credentials=None,
-            insecure=False,
-            compression=None,
-            wait_for_ready=None,
-            timeout=None,
-            metadata=None):
-        return grpc.experimental.unary_unary(
-            request,
-            target,
-            '/farmer_power.ai_model.v1.CostService/GetCostAlerts',
-            google_dot_protobuf_dot_empty__pb2.Empty.SerializeToString,
-            ai__model_dot_v1_dot_ai__model__pb2.CostAlertsResponse.FromString,
-            options,
-            channel_credentials,
-            insecure,
-            call_credentials,
-            compression,
-            wait_for_ready,
-            timeout,
-            metadata,
-            _registered_method=True)
-
-    @staticmethod
-    def ConfigureCostThreshold(request,
-            target,
-            options=(),
-            channel_credentials=None,
-            call_credentials=None,
-            insecure=False,
-            compression=None,
-            wait_for_ready=None,
-            timeout=None,
-            metadata=None):
-        return grpc.experimental.unary_unary(
-            request,
-            target,
-            '/farmer_power.ai_model.v1.CostService/ConfigureCostThreshold',
-            ai__model_dot_v1_dot_ai__model__pb2.ThresholdConfigRequest.SerializeToString,
-            google_dot_protobuf_dot_empty__pb2.Empty.FromString,
-            options,
-            channel_credentials,
-            insecure,
-            call_credentials,
-            compression,
-            wait_for_ready,
-            timeout,
-            metadata,
-            _registered_method=True)
-
-
 class RAGDocumentServiceStub(object):
     """============================================
     RAG Document Service (Story 0.75.10)
@@ -554,6 +254,11 @@ class RAGDocumentServiceStub(object):
                 '/farmer_power.ai_model.v1.RAGDocumentService/GetVectorizationJob',
                 request_serializer=ai__model_dot_v1_dot_ai__model__pb2.GetVectorizationJobRequest.SerializeToString,
                 response_deserializer=ai__model_dot_v1_dot_ai__model__pb2.VectorizationJobResponse.FromString,
+                _registered_method=True)
+        self.QueryKnowledge = channel.unary_unary(
+                '/farmer_power.ai_model.v1.RAGDocumentService/QueryKnowledge',
+                request_serializer=ai__model_dot_v1_dot_ai__model__pb2.QueryKnowledgeRequest.SerializeToString,
+                response_deserializer=ai__model_dot_v1_dot_ai__model__pb2.QueryKnowledgeResponse.FromString,
                 _registered_method=True)
 
 
@@ -686,6 +391,14 @@ class RAGDocumentServiceServicer(object):
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
+    def QueryKnowledge(self, request, context):
+        """Query Operations (Story 0.75.23)
+        Query knowledge base with natural language for RAG retrieval
+        """
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
 
 def add_RAGDocumentServiceServicer_to_server(servicer, server):
     rpc_method_handlers = {
@@ -783,6 +496,11 @@ def add_RAGDocumentServiceServicer_to_server(servicer, server):
                     servicer.GetVectorizationJob,
                     request_deserializer=ai__model_dot_v1_dot_ai__model__pb2.GetVectorizationJobRequest.FromString,
                     response_serializer=ai__model_dot_v1_dot_ai__model__pb2.VectorizationJobResponse.SerializeToString,
+            ),
+            'QueryKnowledge': grpc.unary_unary_rpc_method_handler(
+                    servicer.QueryKnowledge,
+                    request_deserializer=ai__model_dot_v1_dot_ai__model__pb2.QueryKnowledgeRequest.FromString,
+                    response_serializer=ai__model_dot_v1_dot_ai__model__pb2.QueryKnowledgeResponse.SerializeToString,
             ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
@@ -1304,6 +1022,33 @@ class RAGDocumentService(object):
             '/farmer_power.ai_model.v1.RAGDocumentService/GetVectorizationJob',
             ai__model_dot_v1_dot_ai__model__pb2.GetVectorizationJobRequest.SerializeToString,
             ai__model_dot_v1_dot_ai__model__pb2.VectorizationJobResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def QueryKnowledge(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/farmer_power.ai_model.v1.RAGDocumentService/QueryKnowledge',
+            ai__model_dot_v1_dot_ai__model__pb2.QueryKnowledgeRequest.SerializeToString,
+            ai__model_dot_v1_dot_ai__model__pb2.QueryKnowledgeResponse.FromString,
             options,
             channel_credentials,
             insecure,

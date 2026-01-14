@@ -5,6 +5,7 @@ Story 0.75.10b: Document extraction service and workflow.
 Story 0.75.10d: Semantic chunking service and workflow.
 Story 0.75.12: Embedding service using Pinecone Inference API.
 Story 0.75.13b: Vectorization pipeline orchestrating embed + store.
+Story 0.75.14: Retrieval service for RAG queries.
 Story 0.75.16b: AgentExecutor for workflow orchestration.
 """
 
@@ -40,6 +41,7 @@ from ai_model.services.extraction_workflow import (
     NoSourceFileError,
 )
 from ai_model.services.prompt_cache import PromptCache
+from ai_model.services.retrieval_service import RetrievalService
 from ai_model.services.semantic_chunker import ChunkResult, SemanticChunker
 from ai_model.services.vectorization_pipeline import VectorizationPipeline
 
@@ -65,6 +67,7 @@ __all__ = [
     "PasswordProtectedError",
     "PineconeNotConfiguredError",
     "PromptCache",
+    "RetrievalService",
     "SemanticChunker",
     "TooManyChunksError",
     "VectorizationDocumentNotFoundError",

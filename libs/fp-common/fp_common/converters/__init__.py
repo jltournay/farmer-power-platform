@@ -52,6 +52,16 @@ from fp_common.converters.plantation_converters import (
     region_from_proto,
 )
 
+# RAG converters (Story 0.75.23)
+from fp_common.converters.rag_converters import (
+    retrieval_match_from_proto,
+    retrieval_match_to_proto,
+    retrieval_query_from_proto,
+    retrieval_query_to_proto,
+    retrieval_result_from_proto,
+    retrieval_result_to_proto,
+)
+
 __all__ = [
     # Cost converters (proto-to-pydantic)
     "agent_type_cost_to_proto",
@@ -75,5 +85,12 @@ __all__ = [
     "llm_cost_by_model_from_proto",
     "model_cost_to_proto",
     "region_from_proto",
+    # RAG converters (Story 0.75.23)
+    "retrieval_match_from_proto",
+    "retrieval_match_to_proto",
+    "retrieval_query_from_proto",
+    "retrieval_query_to_proto",
+    "retrieval_result_from_proto",
+    "retrieval_result_to_proto",
     "search_result_from_dict",
 ]
