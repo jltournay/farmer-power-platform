@@ -17,6 +17,7 @@ import {
   IconButton,
   Divider,
   Typography,
+  Tooltip,
   useTheme,
 } from '@mui/material';
 import PublicIcon from '@mui/icons-material/Public';
@@ -200,38 +201,41 @@ export function Sidebar({ open, width, collapsedWidth, onToggle }: SidebarProps)
         {visibleItems.map((item, index) => (
           <Box key={item.path}>
             <ListItem disablePadding sx={{ mb: 0.5 }}>
-              <ListItemButton
-                selected={isActive(item.path)}
-                onClick={() => navigate(item.path)}
-                sx={{
-                  borderRadius: 1,
-                  minHeight: 48,
-                  justifyContent: open ? 'initial' : 'center',
-                  px: 2.5,
-                  '&.Mui-selected': {
-                    backgroundColor: 'primary.main',
-                    color: 'primary.contrastText',
-                    '&:hover': {
-                      backgroundColor: 'primary.dark',
-                    },
-                    '& .MuiListItemIcon-root': {
-                      color: 'primary.contrastText',
-                    },
-                  },
-                }}
-              >
-                <ListItemIcon
+              <Tooltip title={open ? '' : item.label} placement="right" arrow>
+                <ListItemButton
+                  selected={isActive(item.path)}
+                  onClick={() => navigate(item.path)}
+                  aria-label={item.label}
                   sx={{
-                    minWidth: 0,
-                    mr: open ? 2 : 'auto',
-                    justifyContent: 'center',
-                    color: isActive(item.path) ? 'inherit' : 'text.secondary',
+                    borderRadius: 1,
+                    minHeight: 48,
+                    justifyContent: open ? 'initial' : 'center',
+                    px: 2.5,
+                    '&.Mui-selected': {
+                      backgroundColor: 'primary.main',
+                      color: 'primary.contrastText',
+                      '&:hover': {
+                        backgroundColor: 'primary.dark',
+                      },
+                      '& .MuiListItemIcon-root': {
+                        color: 'primary.contrastText',
+                      },
+                    },
                   }}
                 >
-                  {item.icon}
-                </ListItemIcon>
-                {open && <ListItemText primary={item.label} />}
-              </ListItemButton>
+                  <ListItemIcon
+                    sx={{
+                      minWidth: 0,
+                      mr: open ? 2 : 'auto',
+                      justifyContent: 'center',
+                      color: isActive(item.path) ? 'inherit' : 'text.secondary',
+                    }}
+                  >
+                    {item.icon}
+                  </ListItemIcon>
+                  {open && <ListItemText primary={item.label} />}
+                </ListItemButton>
+              </Tooltip>
             </ListItem>
             {item.dividerAfter && index < visibleItems.length - 1 && (
               <Divider sx={{ my: 1 }} />

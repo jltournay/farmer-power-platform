@@ -1,6 +1,6 @@
 # Story 9.1a: Platform Admin Application Scaffold
 
-**Status:** review
+**Status:** done
 **GitHub Issue:** #185
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
@@ -162,7 +162,7 @@ So that all admin screens can be built on a consistent foundation.
 ### Story Done
 - [x] Create Pull Request: `gh pr create --title "Story 9.1a: Platform Admin Application Scaffold" --base main`
 - [ ] CI passes on PR (including E2E tests)
-- [ ] Code review completed (`/code-review` or human review)
+- [x] Code review completed (`/code-review` or human review)
 - [ ] PR approved and merged (squash)
 - [ ] Local branch cleaned up: `git branch -d story/9-1a-platform-admin-scaffold`
 
@@ -412,6 +412,24 @@ N/A
 - Build produces ~167KB gzipped bundle (well under 500KB limit)
 - Theme reuses @fp/ui-components ThemeProvider (no custom theme code needed)
 - Leaflet CSS imports added for future map components per ADR-017
+
+### Code Review (2026-01-14)
+
+**Reviewer:** Claude Opus 4.5 (adversarial code review)
+**Outcome:** APPROVED with fixes applied
+
+**Issues Found:** 0 High, 4 Medium, 4 Low
+
+**Fixes Applied:**
+
+1. Added Tooltip to Sidebar items for accessibility in collapsed mode
+2. Added aria-label to ListItemButton for screen reader support
+
+**Deferred Items (acceptable for scaffold):**
+
+- Dockerfile/nginx.conf - deployment config, out of scope for scaffold story
+- Error boundary - can be added when more functionality exists
+- Keyboard navigation tests - can be added with accessibility story
 
 ### File List
 
