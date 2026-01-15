@@ -262,3 +262,45 @@ def require_factory_access(factory_id_param: str = "factory_id") -> Callable:
         return user
 
     return Depends(checker)
+
+
+def require_platform_admin() -> Callable:
+    """Create a dependency that requires platform_admin role.
+
+    Use this on admin portal routes that should only be accessible
+    to platform administrators.
+
+    Example:
+        @router.get("/admin/regions")
+        async def list_regions(
+            user: TokenClaims = require_platform_admin(),
+        ):
+            ...
+
+    Returns:
+        A FastAPI dependency that validates platform_admin role.
+    """
+
+    async def checker(user: TokenClaims = Depends(get_current_user)) -> TokenClaims:
+        """Check if user has platform_admin role.
+
+        Args:
+            user: The authenticated user's token claims.
+
+        Returns:
+            The user's token claims if role is platform_admin.
+
+        Raises:
+            HTTPException: 403 if user is not a platform admin.
+        """
+        if user.role != "platform_admin":
+            raise HTTPException(
+                status_code=403,
+                detail={
+                    "code": AuthErrorCode.INSUFFICIENT_PERMISSIONS.value,
+                    "message": "Platform admin access required",
+                },
+            )
+        return user
+
+    return Depends(checker)

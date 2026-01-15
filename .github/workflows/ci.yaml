@@ -49,7 +49,7 @@ jobs:
             opentelemetry-instrumentation-fastapi opentelemetry-instrumentation-grpc opentelemetry-instrumentation-pymongo \
             structlog httpx aiohttp fastapi uvicorn dapr dapr-ext-grpc langchain-core>=1.2 langchain-openai>=1.1 jsonschema \
             typer rich pyyaml deepdiff azure-storage-blob python-jose[cryptography] pymupdf azure-ai-documentintelligence pinecone \
-            langgraph>=1.0.5 langgraph-checkpoint-mongodb>=0.3.0 "pymongo>=4.12,<4.16" Pillow
+            langgraph>=1.0.5 langgraph-checkpoint-mongodb>=0.3.0 "pymongo>=4.12,<4.16" Pillow python-multipart
 
       - name: Run unit tests with coverage
         run: |
