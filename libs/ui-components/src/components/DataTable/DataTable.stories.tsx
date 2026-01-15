@@ -69,16 +69,16 @@ type Story = StoryObj<typeof DataTable<Farmer>>;
 /** Basic table with data */
 export const Default: Story = {
   args: {
-    columns,
-    rows: sampleFarmers,
+    columns: [...columns],
+    rows: [...sampleFarmers],
   },
 };
 
 /** Table with row actions */
 export const WithActions: Story = {
   args: {
-    columns,
-    rows: sampleFarmers,
+    columns: [...columns],
+    rows: [...sampleFarmers],
     actions: [
       { id: 'view', label: 'View', icon: <VisibilityIcon />, onClick: fn() },
       { id: 'edit', label: 'Edit', icon: <EditIcon />, onClick: fn() },
@@ -90,8 +90,8 @@ export const WithActions: Story = {
 /** Table with clickable rows */
 export const ClickableRows: Story = {
   args: {
-    columns,
-    rows: sampleFarmers,
+    columns: [...columns],
+    rows: [...sampleFarmers],
     onRowClick: fn(),
   },
 };
@@ -99,8 +99,8 @@ export const ClickableRows: Story = {
 /** Table with checkbox selection */
 export const WithSelection: Story = {
   args: {
-    columns,
-    rows: sampleFarmers,
+    columns: [...columns],
+    rows: [...sampleFarmers],
     checkboxSelection: true,
     onRowSelectionChange: fn(),
   },
@@ -109,7 +109,7 @@ export const WithSelection: Story = {
 /** Loading state */
 export const Loading: Story = {
   args: {
-    columns,
+    columns: [...columns],
     rows: [],
     loading: true,
   },
@@ -118,7 +118,7 @@ export const Loading: Story = {
 /** Empty state */
 export const Empty: Story = {
   args: {
-    columns,
+    columns: [...columns],
     rows: [],
     noRowsText: 'No farmers found. Try adjusting your filters.',
   },
@@ -127,8 +127,8 @@ export const Empty: Story = {
 /** Compact density */
 export const CompactDensity: Story = {
   args: {
-    columns,
-    rows: sampleFarmers,
+    columns: [...columns],
+    rows: [...sampleFarmers],
     density: 'compact',
     actions: [
       { id: 'edit', label: 'Edit', icon: <EditIcon />, onClick: fn() },
