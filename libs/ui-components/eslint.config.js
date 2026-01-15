@@ -2,6 +2,7 @@ import js from '@eslint/js';
 import tseslint from '@typescript-eslint/eslint-plugin';
 import tsParser from '@typescript-eslint/parser';
 import reactHooks from 'eslint-plugin-react-hooks';
+import globals from 'globals';
 
 export default [
   js.configs.recommended,
@@ -18,6 +19,7 @@ export default [
         },
       },
       globals: {
+        ...globals.browser,
         React: 'readonly',
         JSX: 'readonly',
       },
