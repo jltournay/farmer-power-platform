@@ -136,7 +136,9 @@ So that I can set up farmer registration and delivery locations for the pilot.
 ```
 
 ## Technical Notes
-- BFF endpoints: `GET/POST /api/admin/collection-points`, `GET/PUT /api/admin/collection-points/:id`
+
+- **BFF endpoints** (provided by Story 9.1c): `GET/PUT /api/admin/collection-points/:id`
+- **This story is UI-only** - consumes APIs created in Story 9.1c
 - Backend: Plantation Service gRPC `ListCollectionPoints`, `CreateCollectionPoint`, `UpdateCollectionPoint`
 - Collection Point ID auto-generated from region: `{region_id}-cp-{sequence}`
 - Farmer list includes 30-day primary percentage from aggregated performance data
@@ -146,7 +148,10 @@ So that I can set up farmer registration and delivery locations for the pilot.
   - Two-way sync: clicking map updates text fields, editing text fields updates marker
 
 ## Dependencies
-- Story 9.1: Platform Admin Application Scaffold
+
+- Story 9.1a: Platform Admin Application Scaffold
+- Story 9.1b: Shared Admin UI Components
+- Story 9.1c: Admin Portal BFF Endpoints (provides `/api/admin/collection-points/*`)
 - Story 9.3: Factory Management
 - Story 1.2: Factory and Collection Point Management (Plantation Service)
 - ADR-017: Map Services and GPS-Based Region Assignment

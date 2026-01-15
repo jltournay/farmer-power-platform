@@ -4,6 +4,7 @@
 |-------|-------|--------|----------|
 | 9.1a | Platform Admin Application Scaffold | 5 | P0 |
 | 9.1b | Shared Admin UI Components | 8 | P0 |
+| 9.1c | Admin Portal BFF Endpoints | 8 | P0 |
 | 9.2 | Region Management | 5 | P0 |
 | 9.3 | Factory Management | 5 | P0 |
 | 9.4 | Collection Point Management | 5 | P0 |
@@ -14,9 +15,9 @@
 | 9.9 | Knowledge Management Interface | 8 | P2 |
 | 9.10 | Platform Cost Dashboard | 8 | P2 |
 
-**Total Story Points:** 65
+**Total Story Points:** 73
 
-**Pilot-Critical Stories (P0):** 9.1a-9.5 = 36 points
+**Pilot-Critical Stories (P0):** 9.1a-9.5 = 44 points
 **Important Stories (P1):** 9.6-9.7 = 8 points
 **Nice-to-Have Stories (P2):** 9.8-9.10 = 21 points
 

@@ -306,7 +306,9 @@ So that I can quickly find and maintain any farmer record regardless of where th
 ```
 
 ## Technical Notes
-- BFF endpoints: `GET/POST /api/admin/farmers`, `GET/PUT /api/admin/farmers/:id`, `POST /api/admin/farmers/import`
+
+- **BFF endpoints** (provided by Story 9.1c): `GET/POST /api/admin/farmers`, `GET/PUT /api/admin/farmers/:id`, `POST /api/admin/farmers/import`
+- **This story is UI-only** - consumes APIs created in Story 9.1c
 - Backend: Plantation Service gRPC `ListFarmers`, `CreateFarmer`, `UpdateFarmer`, `GetFarmer`, `GetFarmerByPhone`
 - Farmer ID auto-generated: `WM-{sequence}` (4-digit padded)
 - Farm scale auto-calculated: <1ha = Smallholder, 1-5ha = Medium, >5ha = Estate
@@ -319,7 +321,10 @@ So that I can quickly find and maintain any farmer record regardless of where th
 - CSV import uses streaming validation for large files
 
 ## Dependencies
-- Story 9.1: Platform Admin Application Scaffold
+
+- Story 9.1a: Platform Admin Application Scaffold
+- Story 9.1b: Shared Admin UI Components
+- Story 9.1c: Admin Portal BFF Endpoints (provides `/api/admin/farmers/*`)
 - Story 9.4: Collection Point Management
 - Story 1.3: Farmer Registration (Plantation Service)
 - ADR-017: Map Services and GPS-Based Region Assignment

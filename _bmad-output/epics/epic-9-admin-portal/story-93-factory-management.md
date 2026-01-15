@@ -232,7 +232,9 @@ So that I can onboard tea processing facilities for the pilot.
 ```
 
 ## Technical Notes
-- BFF endpoints: `GET/POST /api/admin/factories`, `GET/PUT /api/admin/factories/:id`
+
+- **BFF endpoints** (provided by Story 9.1c): `GET/POST /api/admin/factories`, `GET/PUT /api/admin/factories/:id`
+- **This story is UI-only** - consumes APIs created in Story 9.1c
 - Backend: Plantation Service gRPC `ListFactories`, `CreateFactory`, `UpdateFactory`, `GetFactory`
 - Quality threshold preview requires aggregating farmer performance data
 - Payment policy impact calculation uses historical delivery data
@@ -242,7 +244,10 @@ So that I can onboard tea processing facilities for the pilot.
   - Two-way sync: clicking map updates text fields, editing text fields updates marker
 
 ## Dependencies
-- Story 9.1: Platform Admin Application Scaffold
+
+- Story 9.1a: Platform Admin Application Scaffold
+- Story 9.1b: Shared Admin UI Components
+- Story 9.1c: Admin Portal BFF Endpoints (provides `/api/admin/factories/*`)
 - Story 9.2: Region Management
 - Story 1.2: Factory and Collection Point Management (Plantation Service)
 - ADR-017: Map Services and GPS-Based Region Assignment

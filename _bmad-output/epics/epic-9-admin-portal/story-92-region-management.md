@@ -359,7 +359,9 @@ STATE: Drawing Complete
 ```
 
 ## Technical Notes
-- BFF endpoints: `GET/POST /api/admin/regions`, `GET/PUT /api/admin/regions/:id`
+
+- **BFF endpoints** (provided by Story 9.1c): `GET/POST /api/admin/regions`, `GET/PUT /api/admin/regions/:id`
+- **This story is UI-only** - consumes APIs created in Story 9.1c
 - Backend: Plantation Service gRPC `ListRegions`, `CreateRegion`, `UpdateRegion`, `GetRegion`
 - Region ID auto-generated: `{county}-{altitude_band}` (e.g., `nyeri-highland`)
 - **Boundary Storage**: GeoJSON Polygon format in MongoDB
@@ -382,7 +384,10 @@ STATE: Drawing Complete
   - **Component**: Use `<BoundaryDrawer>` from ADR-017 Section 4.4
 
 ## Dependencies
-- Story 9.1: Platform Admin Application Scaffold
+
+- Story 9.1a: Platform Admin Application Scaffold
+- Story 9.1b: Shared Admin UI Components
+- Story 9.1c: Admin Portal BFF Endpoints (provides `/api/admin/regions/*`)
 - Story 1.8: Regional Weather Configuration (Plantation Service)
 - ADR-017: Map Services and GPS-Based Region Assignment
 

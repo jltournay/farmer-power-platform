@@ -230,13 +230,16 @@ development_status:
   # Dependencies: Epic 0.5, Epic 1
   # Updated 2026-01-14: Split Story 9.1 into 9.1a (scaffold) + 9.1b (shared UI components)
   # Updated 2026-01-14: Stories 9.2, 9.5 unblocked (Story 1.10 completed)
+  # Updated 2026-01-15: Added Story 9.1c (BFF endpoints) - API layer before UI stories
+  # Updated 2026-01-15: Story 9.1b completed (PR #188)
   epic-9: in-progress
   9-1a-platform-admin-application-scaffold: done  # 5 points - Vite + React + routing + theme, github_issue: 185, PR: #186
-  9-1b-shared-admin-ui-components: in-progress  # 8 points, github_issue: 187 - 14 shared components (Shell, DataTable, Maps, Forms)
-  9-2-region-management: backlog  # Unblocked - Story 1.10 completed (polygon boundary support)
-  9-3-factory-management: backlog
-  9-4-collection-point-management: backlog
-  9-5-farmer-management: backlog  # Unblocked - Story 1.10 completed (GPS region assignment)
+  9-1b-shared-admin-ui-components: done  # 8 points, github_issue: 187, PR: #188 - 14 shared components (Shell, DataTable, Maps, Forms)
+  9-1c-admin-portal-bff-endpoints: backlog  # 8 points - All /api/admin/* REST endpoints for Epic 9 (ADR-012 patterns)
+  9-2-region-management: backlog  # Unblocked - Story 1.10 completed (polygon boundary support). Depends on 9.1c
+  9-3-factory-management: backlog  # Depends on 9.1c
+  9-4-collection-point-management: backlog  # Depends on 9.1c
+  9-5-farmer-management: backlog  # Unblocked - Story 1.10 completed (GPS region assignment). Depends on 9.1c
   9-6-grading-model-management: backlog
   9-7-user-management: backlog
   9-8-platform-health-dashboard: backlog
