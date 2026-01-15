@@ -228,9 +228,9 @@ git push origin story/9-1b-shared-admin-ui-components
 gh run list --branch story/9-1b-shared-admin-ui-components --limit 3
 ```
 
-**CI Run ID:** _______________
-**CI Status:** [ ] Passed / [ ] Failed
-**Verification Date:** _______________
+**CI Run ID:** 21040473854
+**CI Status:** [x] Passed / [ ] Failed
+**Verification Date:** 2026-01-15
 
 ---
 
