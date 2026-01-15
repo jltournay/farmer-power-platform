@@ -12,6 +12,7 @@ from bff.api.schemas.admin.factory_schemas import (
     FactorySummary,
     FactoryUpdateRequest,
 )
+from bff.infrastructure.clients import NotFoundError
 from bff.infrastructure.clients.plantation_client import PlantationClient
 from bff.services.base_service import BaseService
 from bff.transformers.admin.factory_transformer import FactoryTransformer
@@ -105,9 +106,9 @@ class AdminFactoryService(BaseService):
 
         factory = await self._plantation.get_factory(factory_id)
 
-        # Get grading model and counts (grading model may not be assigned yet)
+        # Get grading model (may not be assigned yet - NotFoundError is expected)
         grading_model = None
-        with contextlib.suppress(Exception):
+        with contextlib.suppress(NotFoundError):
             grading_model = await self._plantation.get_factory_grading_model(factory_id)
 
         cp_count, farmer_count = await self._get_factory_counts(factory_id)
@@ -220,9 +221,9 @@ class AdminFactoryService(BaseService):
 
         factory = await self._plantation.update_factory(factory_id, update_data)
 
-        # Get updated counts and grading model
+        # Get updated counts and grading model (may not be assigned)
         grading_model = None
-        with contextlib.suppress(Exception):
+        with contextlib.suppress(NotFoundError):
             grading_model = await self._plantation.get_factory_grading_model(factory_id)
 
         cp_count, farmer_count = await self._get_factory_counts(factory_id)
@@ -266,6 +267,8 @@ class AdminFactoryService(BaseService):
     async def _get_factory_counts(self, factory_id: str) -> tuple[int, int]:
         """Get collection point and farmer counts for a factory.
 
+        Aggregates farmer counts by querying farmers filtered by factory_id.
+
         Args:
             factory_id: Factory ID.
 
@@ -279,8 +282,11 @@ class AdminFactoryService(BaseService):
         )
         cp_count = cp_response.pagination.total_count
 
-        # For farmer count, we'd need to aggregate across all CPs
-        # For now, return 0 as this requires more complex aggregation
-        farmer_count = 0
+        # Get farmer count for this factory directly
+        farmer_response = await self._plantation.list_farmers(
+            factory_id=factory_id,
+            page_size=1,  # Only need the count
+        )
+        farmer_count = farmer_response.pagination.total_count
 
         return cp_count, farmer_count
