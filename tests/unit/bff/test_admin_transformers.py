@@ -28,7 +28,7 @@ from fp_common.models.farmer_performance import (
     TodayMetrics,
     TrendDirection,
 )
-from fp_common.models.grading_model import Grade, GradingModel
+from fp_common.models.grading_model import GradingAttribute, GradingModel, GradingType
 from fp_common.models.region import Region
 from fp_common.models.value_objects import (
     GPS,
@@ -160,13 +160,18 @@ def sample_performance() -> FarmerPerformance:
 def sample_grading_model() -> GradingModel:
     """Create a sample GradingModel domain model."""
     return GradingModel(
-        id="tbk_kenya_tea_v1",
-        name="Kenya Tea Grading",
-        version="1.0.0",
-        grades=[
-            Grade(id="primary", name="Primary", weight=1.0),
-            Grade(id="secondary", name="Secondary", weight=0.5),
-        ],
+        model_id="tbk_kenya_tea_v1",
+        model_version="1.0.0",
+        crops_name="Tea",
+        market_name="Kenya_TBK",
+        grading_type=GradingType.BINARY,
+        attributes={
+            "leaf_type": GradingAttribute(
+                num_classes=2,
+                classes=["primary", "secondary"],
+            ),
+        },
+        grade_labels={"ACCEPT": "Primary", "REJECT": "Secondary"},
     )
 
 

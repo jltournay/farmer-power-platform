@@ -63,10 +63,10 @@ class FactoryTransformer:
         grading_model_summary = None
         if grading_model:
             grading_model_summary = GradingModelSummary(
-                id=grading_model.id,
-                name=grading_model.name,
-                version=grading_model.version,
-                grade_count=len(grading_model.grades),
+                id=grading_model.model_id,
+                name=f"{grading_model.crops_name} - {grading_model.market_name}",
+                version=grading_model.model_version,
+                grade_count=len(grading_model.grade_labels),
             )
 
         return FactoryDetail(
