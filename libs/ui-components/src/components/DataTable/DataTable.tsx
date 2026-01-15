@@ -128,6 +128,12 @@ export function DataTable<T extends { id: string | number }>({
 }: DataTableProps<T>): JSX.Element {
   const theme = useTheme();
 
+  // Ensure paginationModel uses a valid pageSize from pageSizeOptions
+  const effectivePaginationModel = paginationModel ?? {
+    page: 0,
+    pageSize: pageSizeOptions[0] ?? 10,
+  };
+
   // Build actions column if actions are provided
   const actionColumn: GridColDef | null =
     actions.length > 0
@@ -196,7 +202,7 @@ export function DataTable<T extends { id: string | number }>({
         loading={loading}
         rowCount={rowCount}
         paginationMode={rowCount !== undefined ? 'server' : 'client'}
-        paginationModel={paginationModel}
+        paginationModel={effectivePaginationModel}
         onPaginationModelChange={onPaginationChange}
         sortModel={sortModel}
         onSortModelChange={onSortChange}

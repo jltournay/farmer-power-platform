@@ -126,7 +126,7 @@ export function Sidebar({
 
   // Group items by their group property
   const groupedItems: Array<{ group: string | null; items: SidebarItem[] }> = [];
-  let currentGroup: string | undefined = undefined; // Use undefined as sentinel to distinguish from null group
+  let currentGroup: string | null | undefined = undefined; // Use undefined as sentinel to distinguish from null group
 
   items.forEach((item) => {
     const itemGroup = item.group ?? null;

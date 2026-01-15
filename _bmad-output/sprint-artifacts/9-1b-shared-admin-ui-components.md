@@ -85,7 +85,7 @@ So that all Epic 9 screens are built consistently and efficiently.
   - [x] Create `Breadcrumb` component (dynamic, clickable segments)
   - [x] Create `PageHeader` component (title, subtitle, action buttons)
   - [x] Write Storybook stories for all shell components
-  - [ ] Write unit tests for all shell components (Storybook serves as visual tests)
+  - [x] Write unit tests for all shell components
 
 - [x] Task 3: Build Data Display Components (AC: 9.1b.2)
   - [x] Create `DataTable` component (MUI DataGrid wrapper)
@@ -93,21 +93,21 @@ So that all Epic 9 screens are built consistently and efficiently.
   - [x] Create `FilterBar` component (MUI TextField + Select)
   - [x] Create `MetricCard` component (hero metric with TrendIndicator)
   - [x] Write Storybook stories for all data display components
-  - [ ] Write unit tests for all data display components (Storybook serves as visual tests)
+  - [x] Write unit tests for all data display components
 
 - [x] Task 4: Build Form Components (AC: 9.1b.3)
   - [x] Create `InlineEditForm` component (view/edit mode toggle)
   - [x] Create `ConfirmationDialog` component (MUI Dialog)
   - [x] Create `FileDropzone` component (drag-drop with validation)
   - [x] Write Storybook stories for all form components
-  - [ ] Write unit tests for all form components (Storybook serves as visual tests)
+  - [x] Write unit tests for all form components
 
 - [x] Task 5: Build Map Components (AC: 9.1b.4)
   - [x] Create `MapDisplay` component (read-only markers)
   - [x] Create `GPSFieldWithMapAssist` component (two-way binding)
   - [x] Create `BoundaryDrawer` component (polygon drawing + stats)
   - [x] Write Storybook stories for all map components
-  - [ ] Write unit tests for all map components (Storybook serves as visual tests)
+  - [x] Write unit tests for all map components
 
 - [x] Task 6: Export and Documentation (AC: 9.1b.5)
   - [x] Update `libs/ui-components/src/index.ts` with all new exports
@@ -166,13 +166,27 @@ npm run test
 
 **Output:**
 ```
- ✓ ../../tests/unit/web/test_trend_indicator.test.tsx (17 tests) 317ms
- ✓ ../../tests/unit/web/test_status_badge.test.tsx (19 tests) 565ms
- ✓ ../../tests/unit/web/test_leaf_type_tag.test.tsx (21 tests) 1279ms
+ ✓ ../../tests/unit/web/test_map_display.test.tsx (9 tests) 131ms
+ ✓ ../../tests/unit/web/test_boundary_drawer.test.tsx (16 tests) 309ms
+ ✓ ../../tests/unit/web/test_gps_field_with_map_assist.test.tsx (14 tests) 1199ms
+ ✓ ../../tests/unit/web/test_trend_indicator.test.tsx (17 tests) 550ms
+ ✓ ../../tests/unit/web/test_metric_card.test.tsx (12 tests) 584ms
+ ✓ ../../tests/unit/web/test_entity_card.test.tsx (10 tests) 622ms
+ ✓ ../../tests/unit/web/test_page_header.test.tsx (9 tests) 688ms
+ ✓ ../../tests/unit/web/test_status_badge.test.tsx (19 tests) 759ms
+ ✓ ../../tests/unit/web/test_file_dropzone.test.tsx (13 tests) 914ms
+ ✓ ../../tests/unit/web/test_sidebar.test.tsx (8 tests) 990ms
+ ✓ ../../tests/unit/web/test_confirmation_dialog.test.tsx (12 tests) 1233ms
+ ✓ ../../tests/unit/web/test_filter_bar.test.tsx (9 tests) 1328ms
+ ✓ ../../tests/unit/web/test_leaf_type_tag.test.tsx (21 tests) 1352ms
+ ✓ ../../tests/unit/web/test_inline_edit_form.test.tsx (9 tests) 1658ms
+ ✓ ../../tests/unit/web/test_data_table.test.tsx (6 tests) 1732ms
+ ✓ ../../tests/unit/web/test_admin_shell.test.tsx (6 tests) 115ms
+ ✓ ../../tests/unit/web/test_breadcrumb.test.tsx (7 tests) 169ms
 
- Test Files  3 passed (3)
-      Tests  57 passed (57)
-   Duration  7.96s
+ Test Files  17 passed (17)
+      Tests  197 passed (197)
+   Duration  11.31s
 ```
 
 ### 2. E2E Tests (MANDATORY)
@@ -845,3 +859,56 @@ N/A
 - `libs/ui-components/src/components/InlineEditForm/InlineEditForm.stories.tsx` - Removed unused import
 - `libs/ui-components/src/components/MetricCard/MetricCard.stories.tsx` - Removed unused import
 - `libs/ui-components/src/components/GPSFieldWithMapAssist/GPSFieldWithMapAssist.tsx` - Removed unused imports
+
+---
+
+## Code Review Record
+
+**Review Date:** 2026-01-15
+**Reviewer:** Claude Opus 4.5 (Adversarial Code Review)
+
+### Issues Found
+
+| ID | Severity | Issue | Resolution |
+|----|----------|-------|------------|
+| 1 | HIGH | CI failing - TypeScript error in Sidebar.tsx:135 (type mismatch `string \| null` vs `string \| undefined`) | Fixed type to `string \| null \| undefined` |
+| 2 | HIGH | Task 7 incomplete - Integration test with platform-admin not done | Noted - requires human action |
+| 3 | MEDIUM | Map component tests were placeholders (`expect(true).toBe(true)`) | Replaced with proper mocked tests (39 new tests) |
+| 4 | MEDIUM | DataTable MUI warning about pageSizeOptions | Added default paginationModel using first pageSizeOption |
+| 5 | MEDIUM | Story subtasks inconsistent with implementation | Updated story file to reflect actual completion |
+
+### Files Modified by Code Review
+
+- `libs/ui-components/src/components/Sidebar/Sidebar.tsx:129` - Fixed type annotation
+- `libs/ui-components/src/components/DataTable/DataTable.tsx:131-135` - Added effectivePaginationModel
+- `tests/unit/web/test_map_display.test.tsx` - Complete rewrite with mocks (9 tests)
+- `tests/unit/web/test_gps_field_with_map_assist.test.tsx` - Complete rewrite with mocks (14 tests)
+- `tests/unit/web/test_boundary_drawer.test.tsx` - Complete rewrite with mocks (16 tests)
+- `_bmad-output/sprint-artifacts/9-1b-shared-admin-ui-components.md` - Updated task checkboxes and evidence
+
+### Test Results After Review
+
+```
+Test Files  17 passed (17)
+Tests       197 passed (197)
+Duration    11.31s
+```
+
+### Build Verification After Review
+
+```
+vite v6.4.1 building for production...
+✓ 1375 modules transformed.
+dist/index.js  1,698.83 kB │ gzip: 399.08 kB
+dist/index.cjs  998.37 kB │ gzip: 288.37 kB
+✓ built in 10.20s
+```
+
+### Review Outcome
+
+**Status:** APPROVED with fixes applied
+
+**Action Required:**
+- [ ] CI must pass after pushing these fixes
+- [ ] Human validation of Storybook still required
+- [ ] Task 7 (platform-admin integration) to be completed separately
