@@ -32,10 +32,10 @@ const statuses: Array<'win' | 'watch' | 'action'> = ['win', 'watch', 'action'];
 
 const manyFarmers: Farmer[] = Array.from({ length: 50 }, (_, i) => ({
   id: String(i + 1),
-  name: `${firstNames[i % firstNames.length]} ${lastNames[i % lastNames.length]}`,
+  name: `${firstNames[i % firstNames.length]!} ${lastNames[i % lastNames.length]!}`,
   phone: `+2547${String(12345678 + i).padStart(8, '0')}`,
-  region: regions[i % regions.length],
-  status: statuses[i % statuses.length],
+  region: regions[i % regions.length]!,
+  status: statuses[i % statuses.length]!,
   primaryPct: 50 + Math.floor((i * 7) % 50),
 }));
 
