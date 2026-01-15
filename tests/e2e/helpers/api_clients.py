@@ -505,9 +505,7 @@ class BFFClient:
         response.raise_for_status()
         return response.json()
 
-    async def admin_update_region(
-        self, region_id: str, data: dict[str, Any]
-    ) -> dict[str, Any]:
+    async def admin_update_region(self, region_id: str, data: dict[str, Any]) -> dict[str, Any]:
         """Update a region (admin endpoint).
 
         Args:
@@ -590,9 +588,7 @@ class BFFClient:
         response.raise_for_status()
         return response.json()
 
-    async def admin_update_factory(
-        self, factory_id: str, data: dict[str, Any]
-    ) -> dict[str, Any]:
+    async def admin_update_factory(self, factory_id: str, data: dict[str, Any]) -> dict[str, Any]:
         """Update a factory (admin endpoint).
 
         Args:
@@ -610,9 +606,7 @@ class BFFClient:
         response.raise_for_status()
         return response.json()
 
-    async def admin_get_collection_point(
-        self, collection_point_id: str
-    ) -> dict[str, Any]:
+    async def admin_get_collection_point(self, collection_point_id: str) -> dict[str, Any]:
         """Get collection point details (admin endpoint).
 
         Args:
@@ -628,9 +622,7 @@ class BFFClient:
         response.raise_for_status()
         return response.json()
 
-    async def admin_update_collection_point(
-        self, collection_point_id: str, data: dict[str, Any]
-    ) -> dict[str, Any]:
+    async def admin_update_collection_point(self, collection_point_id: str, data: dict[str, Any]) -> dict[str, Any]:
         """Update a collection point (admin endpoint).
 
         Args:
@@ -717,9 +709,7 @@ class BFFClient:
         response.raise_for_status()
         return response.json()
 
-    async def admin_update_farmer(
-        self, farmer_id: str, data: dict[str, Any]
-    ) -> dict[str, Any]:
+    async def admin_update_farmer(self, farmer_id: str, data: dict[str, Any]) -> dict[str, Any]:
         """Update a farmer (admin endpoint).
 
         Args:
@@ -737,9 +727,7 @@ class BFFClient:
         response.raise_for_status()
         return response.json()
 
-    async def admin_import_farmers(
-        self, csv_content: bytes, factory_id: str
-    ) -> dict[str, Any]:
+    async def admin_import_farmers(self, csv_content: bytes, factory_id: str) -> dict[str, Any]:
         """Import farmers from CSV (admin endpoint).
 
         Args:
