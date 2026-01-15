@@ -2,6 +2,10 @@ import type { Preview } from '@storybook/react';
 import { ThemeProvider } from '../src/theme';
 import React from 'react';
 
+// Leaflet CSS required for map components
+import 'leaflet/dist/leaflet.css';
+import 'leaflet-draw/dist/leaflet.draw.css';
+
 const preview: Preview = {
   parameters: {
     actions: { argTypesRegex: '^on[A-Z].*' },
