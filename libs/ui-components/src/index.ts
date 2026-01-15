@@ -43,7 +43,7 @@ export { Breadcrumb } from './components/Breadcrumb';
 export type { BreadcrumbProps, BreadcrumbItem } from './components/Breadcrumb';
 
 export { PageHeader } from './components/PageHeader';
-export type { PageHeaderProps } from './components/PageHeader';
+export type { PageHeaderProps, PageHeaderAction } from './components/PageHeader';
 
 // ============================================
 // Data Display Components (Story 9.1b - AC 9.1b.2)
@@ -66,13 +66,13 @@ export type { MetricCardProps } from './components/MetricCard';
 // ============================================
 
 export { InlineEditForm } from './components/InlineEditForm';
-export type { InlineEditFormProps } from './components/InlineEditForm';
+export type { InlineEditFormProps, InlineEditField } from './components/InlineEditForm';
 
 export { ConfirmationDialog } from './components/ConfirmationDialog';
 export type { ConfirmationDialogProps } from './components/ConfirmationDialog';
 
 export { FileDropzone } from './components/FileDropzone';
-export type { FileDropzoneProps } from './components/FileDropzone';
+export type { FileDropzoneProps, UploadedFile } from './components/FileDropzone';
 
 // ============================================
 // Map Components (Story 9.1b - AC 9.1b.4)

@@ -11,14 +11,11 @@
 
 import { Box, useTheme } from '@mui/material';
 import type { ReactNode } from 'react';
-import type { BreadcrumbItem } from '../Breadcrumb';
 
 /** AdminShell component props */
 export interface AdminShellProps {
   /** Sidebar content (pass a Sidebar component) */
   sidebar: ReactNode;
-  /** Breadcrumb items for navigation trail */
-  breadcrumbs?: BreadcrumbItem[];
   /** Optional breadcrumb component to render */
   breadcrumbComponent?: ReactNode;
   /** Optional header component to render above content */
@@ -37,10 +34,10 @@ export interface AdminShellProps {
  * @example
  * ```tsx
  * <AdminShell
- *   sidebar={<Sidebar items={menuItems} open={isOpen} onToggle={toggle} />}
- *   breadcrumbs={[{ label: 'Home', href: '/' }, { label: 'Farmers' }]}
+ *   sidebar={<Sidebar items={menuItems} collapsed={collapsed} onCollapse={setCollapsed} />}
+ *   breadcrumbComponent={<Breadcrumb items={[{ label: 'Home', href: '/' }, { label: 'Farmers' }]} />}
  *   sidebarWidth={240}
- *   sidebarOpen={isOpen}
+ *   sidebarOpen={!collapsed}
  * >
  *   <PageContent />
  * </AdminShell>
