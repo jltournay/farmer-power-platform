@@ -440,6 +440,350 @@ class BFFClient:
             headers=self._get_auth_headers(role=role, factory_ids=factory_ids),
         )
 
+    # =========================================================================
+    # Admin API Endpoints (Story 9.1c)
+    # =========================================================================
+
+    async def admin_list_regions(
+        self,
+        page: int = 1,
+        page_size: int = 50,
+        is_active: bool | None = None,
+    ) -> dict[str, Any]:
+        """List regions (admin endpoint).
+
+        Args:
+            page: Page number (1-indexed)
+            page_size: Number of items per page
+            is_active: Filter by active status
+
+        Returns:
+            Paginated list of regions
+        """
+        params: dict[str, Any] = {"page": page, "page_size": page_size}
+        if is_active is not None:
+            params["is_active"] = is_active
+
+        response = await self.client.get(
+            "/api/admin/regions",
+            params=params,
+            headers=self._get_auth_headers(role="platform_admin"),
+        )
+        response.raise_for_status()
+        return response.json()
+
+    async def admin_get_region(self, region_id: str) -> dict[str, Any]:
+        """Get region details (admin endpoint).
+
+        Args:
+            region_id: Region ID to retrieve
+
+        Returns:
+            Region detail with factories
+        """
+        response = await self.client.get(
+            f"/api/admin/regions/{region_id}",
+            headers=self._get_auth_headers(role="platform_admin"),
+        )
+        response.raise_for_status()
+        return response.json()
+
+    async def admin_create_region(self, data: dict[str, Any]) -> dict[str, Any]:
+        """Create a new region (admin endpoint).
+
+        Args:
+            data: Region creation data
+
+        Returns:
+            Created region
+        """
+        response = await self.client.post(
+            "/api/admin/regions",
+            json=data,
+            headers=self._get_auth_headers(role="platform_admin"),
+        )
+        response.raise_for_status()
+        return response.json()
+
+    async def admin_update_region(
+        self, region_id: str, data: dict[str, Any]
+    ) -> dict[str, Any]:
+        """Update a region (admin endpoint).
+
+        Args:
+            region_id: Region ID to update
+            data: Region update data
+
+        Returns:
+            Updated region
+        """
+        response = await self.client.put(
+            f"/api/admin/regions/{region_id}",
+            json=data,
+            headers=self._get_auth_headers(role="platform_admin"),
+        )
+        response.raise_for_status()
+        return response.json()
+
+    async def admin_list_factories(
+        self,
+        page: int = 1,
+        page_size: int = 50,
+        region_id: str | None = None,
+        is_active: bool | None = None,
+    ) -> dict[str, Any]:
+        """List factories (admin endpoint).
+
+        Args:
+            page: Page number (1-indexed)
+            page_size: Number of items per page
+            region_id: Filter by region
+            is_active: Filter by active status
+
+        Returns:
+            Paginated list of factories
+        """
+        params: dict[str, Any] = {"page": page, "page_size": page_size}
+        if region_id is not None:
+            params["region_id"] = region_id
+        if is_active is not None:
+            params["is_active"] = is_active
+
+        response = await self.client.get(
+            "/api/admin/factories",
+            params=params,
+            headers=self._get_auth_headers(role="platform_admin"),
+        )
+        response.raise_for_status()
+        return response.json()
+
+    async def admin_get_factory(self, factory_id: str) -> dict[str, Any]:
+        """Get factory details (admin endpoint).
+
+        Args:
+            factory_id: Factory ID to retrieve
+
+        Returns:
+            Factory detail with collection points
+        """
+        response = await self.client.get(
+            f"/api/admin/factories/{factory_id}",
+            headers=self._get_auth_headers(role="platform_admin"),
+        )
+        response.raise_for_status()
+        return response.json()
+
+    async def admin_create_factory(self, data: dict[str, Any]) -> dict[str, Any]:
+        """Create a new factory (admin endpoint).
+
+        Args:
+            data: Factory creation data
+
+        Returns:
+            Created factory
+        """
+        response = await self.client.post(
+            "/api/admin/factories",
+            json=data,
+            headers=self._get_auth_headers(role="platform_admin"),
+        )
+        response.raise_for_status()
+        return response.json()
+
+    async def admin_update_factory(
+        self, factory_id: str, data: dict[str, Any]
+    ) -> dict[str, Any]:
+        """Update a factory (admin endpoint).
+
+        Args:
+            factory_id: Factory ID to update
+            data: Factory update data
+
+        Returns:
+            Updated factory
+        """
+        response = await self.client.put(
+            f"/api/admin/factories/{factory_id}",
+            json=data,
+            headers=self._get_auth_headers(role="platform_admin"),
+        )
+        response.raise_for_status()
+        return response.json()
+
+    async def admin_get_collection_point(
+        self, collection_point_id: str
+    ) -> dict[str, Any]:
+        """Get collection point details (admin endpoint).
+
+        Args:
+            collection_point_id: Collection point ID to retrieve
+
+        Returns:
+            Collection point detail with farmers
+        """
+        response = await self.client.get(
+            f"/api/admin/collection-points/{collection_point_id}",
+            headers=self._get_auth_headers(role="platform_admin"),
+        )
+        response.raise_for_status()
+        return response.json()
+
+    async def admin_update_collection_point(
+        self, collection_point_id: str, data: dict[str, Any]
+    ) -> dict[str, Any]:
+        """Update a collection point (admin endpoint).
+
+        Args:
+            collection_point_id: Collection point ID to update
+            data: Collection point update data
+
+        Returns:
+            Updated collection point
+        """
+        response = await self.client.put(
+            f"/api/admin/collection-points/{collection_point_id}",
+            json=data,
+            headers=self._get_auth_headers(role="platform_admin"),
+        )
+        response.raise_for_status()
+        return response.json()
+
+    async def admin_list_farmers(
+        self,
+        page: int = 1,
+        page_size: int = 50,
+        factory_id: str | None = None,
+        collection_point_id: str | None = None,
+        is_active: bool | None = None,
+    ) -> dict[str, Any]:
+        """List farmers (admin endpoint).
+
+        Args:
+            page: Page number (1-indexed)
+            page_size: Number of items per page
+            factory_id: Filter by factory
+            collection_point_id: Filter by collection point
+            is_active: Filter by active status
+
+        Returns:
+            Paginated list of farmers
+        """
+        params: dict[str, Any] = {"page": page, "page_size": page_size}
+        if factory_id is not None:
+            params["factory_id"] = factory_id
+        if collection_point_id is not None:
+            params["collection_point_id"] = collection_point_id
+        if is_active is not None:
+            params["is_active"] = is_active
+
+        response = await self.client.get(
+            "/api/admin/farmers",
+            params=params,
+            headers=self._get_auth_headers(role="platform_admin"),
+        )
+        response.raise_for_status()
+        return response.json()
+
+    async def admin_get_farmer(self, farmer_id: str) -> dict[str, Any]:
+        """Get farmer details (admin endpoint).
+
+        Args:
+            farmer_id: Farmer ID to retrieve
+
+        Returns:
+            Farmer detail
+        """
+        response = await self.client.get(
+            f"/api/admin/farmers/{farmer_id}",
+            headers=self._get_auth_headers(role="platform_admin"),
+        )
+        response.raise_for_status()
+        return response.json()
+
+    async def admin_create_farmer(self, data: dict[str, Any]) -> dict[str, Any]:
+        """Create a new farmer (admin endpoint).
+
+        Args:
+            data: Farmer creation data
+
+        Returns:
+            Created farmer
+        """
+        response = await self.client.post(
+            "/api/admin/farmers",
+            json=data,
+            headers=self._get_auth_headers(role="platform_admin"),
+        )
+        response.raise_for_status()
+        return response.json()
+
+    async def admin_update_farmer(
+        self, farmer_id: str, data: dict[str, Any]
+    ) -> dict[str, Any]:
+        """Update a farmer (admin endpoint).
+
+        Args:
+            farmer_id: Farmer ID to update
+            data: Farmer update data
+
+        Returns:
+            Updated farmer
+        """
+        response = await self.client.put(
+            f"/api/admin/farmers/{farmer_id}",
+            json=data,
+            headers=self._get_auth_headers(role="platform_admin"),
+        )
+        response.raise_for_status()
+        return response.json()
+
+    async def admin_import_farmers(
+        self, csv_content: bytes, factory_id: str
+    ) -> dict[str, Any]:
+        """Import farmers from CSV (admin endpoint).
+
+        Args:
+            csv_content: CSV file content
+            factory_id: Factory ID to import farmers to
+
+        Returns:
+            Import result with success/failure counts
+        """
+        files = {"file": ("farmers.csv", csv_content, "text/csv")}
+        response = await self.client.post(
+            "/api/admin/farmers/import",
+            files=files,
+            params={"factory_id": factory_id},
+            headers=self._get_auth_headers(role="platform_admin"),
+        )
+        response.raise_for_status()
+        return response.json()
+
+    async def admin_request_raw(
+        self,
+        method: str,
+        path: str,
+        role: str = "platform_admin",
+        **kwargs: Any,
+    ) -> httpx.Response:
+        """Make a raw admin request for error testing.
+
+        Args:
+            method: HTTP method (GET, POST, PUT, etc.)
+            path: Request path
+            role: User role for authorization
+            **kwargs: Additional request arguments
+
+        Returns:
+            Raw httpx.Response for status code inspection
+        """
+        return await self.client.request(
+            method,
+            path,
+            headers=self._get_auth_headers(role=role),
+            **kwargs,
+        )
+
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # Platform Cost API Client (Story 13.8)
