@@ -3,8 +3,6 @@
 Orchestrates PlantationClient calls for factory management.
 """
 
-import contextlib
-
 from bff.api.schemas.admin.factory_schemas import (
     FactoryCreateRequest,
     FactoryDetail,
@@ -12,7 +10,6 @@ from bff.api.schemas.admin.factory_schemas import (
     FactorySummary,
     FactoryUpdateRequest,
 )
-from bff.infrastructure.clients import NotFoundError
 from bff.infrastructure.clients.plantation_client import PlantationClient
 from bff.services.base_service import BaseService
 from bff.transformers.admin.factory_transformer import FactoryTransformer
@@ -106,16 +103,12 @@ class AdminFactoryService(BaseService):
 
         factory = await self._plantation.get_factory(factory_id)
 
-        # Get grading model (may not be assigned yet - NotFoundError is expected)
-        grading_model = None
-        with contextlib.suppress(NotFoundError):
-            grading_model = await self._plantation.get_factory_grading_model(factory_id)
-
         cp_count, farmer_count = await self._get_factory_counts(factory_id)
 
+        # Note: grading_model_id and grading_model_version are included in Factory
         detail = self._transformer.to_detail(
             factory=factory,
-            grading_model=grading_model,
+            grading_model=None,  # Full grading model details not available via this API
             collection_point_count=cp_count,
             farmer_count=farmer_count,
         )
@@ -221,16 +214,12 @@ class AdminFactoryService(BaseService):
 
         factory = await self._plantation.update_factory(factory_id, update_data)
 
-        # Get updated counts and grading model (may not be assigned)
-        grading_model = None
-        with contextlib.suppress(NotFoundError):
-            grading_model = await self._plantation.get_factory_grading_model(factory_id)
-
         cp_count, farmer_count = await self._get_factory_counts(factory_id)
 
+        # Note: grading_model_id and grading_model_version are included in Factory
         detail = self._transformer.to_detail(
             factory=factory,
-            grading_model=grading_model,
+            grading_model=None,  # Full grading model details not available via this API
             collection_point_count=cp_count,
             farmer_count=farmer_count,
         )
@@ -267,7 +256,7 @@ class AdminFactoryService(BaseService):
     async def _get_factory_counts(self, factory_id: str) -> tuple[int, int]:
         """Get collection point and farmer counts for a factory.
 
-        Aggregates farmer counts by querying farmers filtered by factory_id.
+        Aggregates farmer counts across all collection points in the factory.
 
         Args:
             factory_id: Factory ID.
@@ -278,15 +267,24 @@ class AdminFactoryService(BaseService):
         # Get collection points for this factory
         cp_response = await self._plantation.list_collection_points(
             factory_id=factory_id,
-            page_size=1,  # We only need the count
+            page_size=100,  # Get enough to aggregate farmer counts
         )
         cp_count = cp_response.pagination.total_count
 
-        # Get farmer count for this factory directly
-        farmer_response = await self._plantation.list_farmers(
-            factory_id=factory_id,
-            page_size=1,  # Only need the count
-        )
-        farmer_count = farmer_response.pagination.total_count
+        # Aggregate farmer counts across all collection points
+        farmer_count = 0
+        if cp_response.data:
+
+            async def get_cp_farmer_count(cp_id: str) -> int:
+                """Get farmer count for a single collection point."""
+                farmer_response = await self._plantation.list_farmers(
+                    collection_point_id=cp_id,
+                    page_size=1,  # Only need the count
+                )
+                return farmer_response.pagination.total_count
+
+            cp_ids = [cp.id for cp in cp_response.data]
+            counts = await self._parallel_map(cp_ids, get_cp_farmer_count)
+            farmer_count = sum(counts)
 
         return cp_count, farmer_count

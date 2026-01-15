@@ -227,7 +227,7 @@ class AdminRegionService(BaseService):
     async def _get_region_counts(self, region_id: str) -> tuple[int, int]:
         """Get factory and farmer counts for a region.
 
-        Aggregates farmer counts across all factories in the region.
+        Aggregates farmer counts by querying farmers directly by region_id.
 
         Args:
             region_id: Region ID.
@@ -235,27 +235,18 @@ class AdminRegionService(BaseService):
         Returns:
             Tuple of (factory_count, farmer_count).
         """
-        # Get all factories in this region (need full list for farmer aggregation)
+        # Get factory count for this region
         factory_response = await self._plantation.list_factories(
             region_id=region_id,
-            page_size=100,  # Get enough to aggregate
+            page_size=1,  # Only need the count
         )
         factory_count = factory_response.pagination.total_count
 
-        # Aggregate farmer counts across all factories
-        farmer_count = 0
-        if factory_response.data:
-
-            async def get_factory_farmer_count(factory_id: str) -> int:
-                """Get farmer count for a single factory."""
-                farmer_response = await self._plantation.list_farmers(
-                    factory_id=factory_id,
-                    page_size=1,  # Only need the count
-                )
-                return farmer_response.pagination.total_count
-
-            factory_ids = [f.id for f in factory_response.data]
-            counts = await self._parallel_map(factory_ids, get_factory_farmer_count)
-            farmer_count = sum(counts)
+        # Get farmer count for this region directly
+        farmer_response = await self._plantation.list_farmers(
+            region_id=region_id,
+            page_size=1,  # Only need the count
+        )
+        farmer_count = farmer_response.pagination.total_count
 
         return factory_count, farmer_count
