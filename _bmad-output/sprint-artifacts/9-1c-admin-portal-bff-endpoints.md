@@ -1,7 +1,7 @@
 # Story 9.1c: Admin Portal BFF Endpoints
 
-**Status:** ready-for-dev
-**GitHub Issue:** <!-- Auto-created by dev-story workflow -->
+**Status:** in-progress
+**GitHub Issue:** #189
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 

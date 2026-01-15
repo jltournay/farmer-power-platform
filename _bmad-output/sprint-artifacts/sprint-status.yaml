@@ -235,7 +235,7 @@ development_status:
   epic-9: in-progress
   9-1a-platform-admin-application-scaffold: done  # 5 points - Vite + React + routing + theme, github_issue: 185, PR: #186
   9-1b-shared-admin-ui-components: done  # 8 points, github_issue: 187, PR: #188 - 14 shared components (Shell, DataTable, Maps, Forms)
-  9-1c-admin-portal-bff-endpoints: ready-for-dev  # 8 points - All /api/admin/* REST endpoints for Epic 9 (ADR-012 patterns)
+  9-1c-admin-portal-bff-endpoints: in-progress  # 8 points, github_issue: 189 - All /api/admin/* REST endpoints for Epic 9 (ADR-012 patterns)
   9-2-region-management: backlog  # Unblocked - Story 1.10 completed (polygon boundary support). Depends on 9.1c
   9-3-factory-management: backlog  # Depends on 9.1c
   9-4-collection-point-management: backlog  # Depends on 9.1c

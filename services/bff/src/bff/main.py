@@ -8,6 +8,7 @@ from contextlib import asynccontextmanager
 
 import structlog
 from bff.api.routes import farmers, health
+from bff.api.routes.admin import router as admin_router
 from bff.config import get_settings
 from bff.infrastructure.tracing import instrument_fastapi, setup_tracing
 from fastapi import FastAPI
@@ -68,6 +69,7 @@ def create_app() -> FastAPI:
     # Include routers
     app.include_router(health.router)
     app.include_router(farmers.router)
+    app.include_router(admin_router)  # Story 9.1c: Admin portal BFF endpoints
     app.include_router(create_admin_router())  # Story 0.6.15: Runtime log level control
 
     return app
