@@ -24,6 +24,21 @@ const sampleFarmers: Farmer[] = [
   { id: '5', name: 'James Ochieng', phone: '+254712345682', region: 'Kisumu', status: 'watch', primaryPct: 72 },
 ];
 
+// Generate 50 farmers to demonstrate pagination
+const firstNames = ['John', 'Mary', 'Peter', 'Grace', 'James', 'Sarah', 'David', 'Anne', 'Joseph', 'Lucy'];
+const lastNames = ['Kamau', 'Wanjiku', 'Mwangi', 'Nyambura', 'Ochieng', 'Kimani', 'Njoroge', 'Wambui', 'Kariuki', 'Muthoni'];
+const regions = ['Nyeri', 'Kiambu', 'Meru', 'Kisumu', 'Nakuru', 'Eldoret', 'Machakos', 'Embu'];
+const statuses: Array<'win' | 'watch' | 'action'> = ['win', 'watch', 'action'];
+
+const manyFarmers: Farmer[] = Array.from({ length: 50 }, (_, i) => ({
+  id: String(i + 1),
+  name: `${firstNames[i % firstNames.length]} ${lastNames[i % lastNames.length]}`,
+  phone: `+2547${String(12345678 + i).padStart(8, '0')}`,
+  region: regions[i % regions.length],
+  status: statuses[i % statuses.length],
+  primaryPct: 50 + Math.floor((i * 7) % 50),
+}));
+
 const statusColorMap = {
   win: 'success',
   watch: 'warning',
@@ -133,5 +148,14 @@ export const CompactDensity: Story = {
     actions: [
       { id: 'edit', label: 'Edit', icon: <EditIcon />, onClick: fn() },
     ],
+  },
+};
+
+/** Table with pagination (50 rows) */
+export const WithPagination: Story = {
+  args: {
+    columns: [...columns],
+    rows: [...manyFarmers],
+    pageSizeOptions: [...[10, 25, 50]],
   },
 };
