@@ -1,7 +1,7 @@
 # Story 0.4.10: Frontend Portal NGINX Deployment for Human Validation
 
-**Status:** ready-for-dev
-**GitHub Issue:** <!-- Auto-created by dev-story workflow -->
+**Status:** in-progress
+**GitHub Issue:** #193
 
 ---
 

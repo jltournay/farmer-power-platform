@@ -76,6 +76,7 @@ check_containers() {
         "e2e-collection-mcp"
         "e2e-bff"
         "e2e-platform-cost"
+        "e2e-nginx"
     )
 
     local dapr_sidecars=(
@@ -123,6 +124,7 @@ check_health_endpoints() {
         "http://localhost:8091/health|AI Model"
         "http://localhost:8083/health|BFF"
         "http://localhost:8084/health|Platform Cost"
+        "http://localhost:8085/health|NGINX (Frontend Proxy)"
     )
 
     for endpoint_info in "${health_endpoints[@]}"; do

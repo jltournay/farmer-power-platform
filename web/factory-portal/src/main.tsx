@@ -17,9 +17,12 @@ if (!rootElement) {
   throw new Error('Root element not found');
 }
 
+// Get base URL from Vite env (e.g., "/factory/") and convert to basename (e.g., "/factory")
+const basename = (import.meta.env.VITE_BASE_URL || '/').replace(/\/$/, '') || '/';
+
 createRoot(rootElement).render(
   <StrictMode>
-    <BrowserRouter>
+    <BrowserRouter basename={basename}>
       <ThemeProvider>
         <AuthProvider>
           <App />

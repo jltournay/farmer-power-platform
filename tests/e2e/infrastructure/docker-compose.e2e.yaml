@@ -536,8 +536,73 @@ services:
       redis:
         condition: service_healthy
 
+  # ==========================================================================
+  # Frontend Portals + NGINX Reverse Proxy (Story 0.4.10)
+  # Builds React apps and serves them via unified NGINX for human validation
+  # Access: http://localhost:8085/admin or http://localhost:8085/factory
+  # ==========================================================================
+
+  platform-admin:
+    build:
+      context: ../../..
+      dockerfile: web/platform-admin/Dockerfile
+      args:
+        VITE_BASE_URL: /admin/
+        VITE_MOCK_JWT_SECRET: test-secret-for-e2e
+        VITE_AUTH_PROVIDER: mock
+    container_name: e2e-platform-admin
+    # Build-only service - NGINX copies assets, container exits after build
+    volumes:
+      - platform-admin-dist:/app/web/platform-admin/dist
+    networks:
+      - e2e-network
+
+  factory-portal:
+    build:
+      context: ../../..
+      dockerfile: web/factory-portal/Dockerfile
+      args:
+        VITE_BASE_URL: /factory/
+        VITE_MOCK_JWT_SECRET: test-secret-for-e2e
+        VITE_AUTH_PROVIDER: mock
+    container_name: e2e-factory-portal
+    # Build-only service - NGINX copies assets, container exits after build
+    volumes:
+      - factory-portal-dist:/app/web/factory-portal/dist
+    networks:
+      - e2e-network
+
+  nginx:
+    build:
+      context: ../../..
+      dockerfile: deploy/docker/nginx/Dockerfile
+    container_name: e2e-nginx
+    ports:
+      - "8085:80"
+    volumes:
+      - platform-admin-dist:/usr/share/nginx/html/admin:ro
+      - factory-portal-dist:/usr/share/nginx/html/factory:ro
+    depends_on:
+      platform-admin:
+        condition: service_completed_successfully
+      factory-portal:
+        condition: service_completed_successfully
+      bff:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - e2e-network
+
 volumes:
   e2e_mongodb_data:
+    driver: local
+  platform-admin-dist:
+    driver: local
+  factory-portal-dist:
     driver: local
 
 networks:
