@@ -454,7 +454,7 @@ Create unit tests for factory management components:
 
 Update E2E tests for factory UI flows:
 
-- [ ] 9.1 Create `tests/e2e/scenarios/test_33_platform_admin_factories.py`:
+- [x] 9.1 Create `tests/e2e/scenarios/test_33_platform_admin_factories.py`:
   - Test factory list loads with seed data
   - Test navigation to factory detail
   - Test factory creation flow
@@ -1165,8 +1165,9 @@ Claude Opus 4.5 (claude-opus-4-5-20251101)
 ### Completion Notes List
 
 - Tasks 1-8 completed: API types, API client, List/Detail/Create/Edit pages, CP Quick-Add Modal, routes, unit tests
-- Task 9 (E2E tests) pending
+- Task 9 completed: E2E tests created (test_33_platform_admin_factories.py)
 - Unit tests: 19 new tests for factories API client and type conversion helpers
+- E2E tests: 15 tests covering factory list, detail, create, edit, CP quick-add, error handling
 - All lint and TypeScript checks pass
 
 ### File List
@@ -1178,6 +1179,7 @@ Claude Opus 4.5 (claude-opus-4-5-20251101)
 - `web/platform-admin/src/pages/factories/components/CollectionPointQuickAddModal.tsx` - CP quick-add modal
 - `tests/unit/web/platform-admin/api/factories.test.ts` - API client unit tests
 - `tests/unit/web/platform-admin/types/factories.test.ts` - Type conversion helper tests
+- `tests/e2e/scenarios/test_33_platform_admin_factories.py` - E2E tests for factory management UI flows
 
 **Modified:**
 - `web/platform-admin/src/api/types.ts` - Added factory types, form types, conversion helpers (~340 lines)
