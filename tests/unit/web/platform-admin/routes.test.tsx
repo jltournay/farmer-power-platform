@@ -18,8 +18,14 @@ function Dashboard() {
 function RegionList() {
   return <div><h1>Regions</h1></div>;
 }
+function RegionCreate() {
+  return <div data-testid="region-create">Create Region</div>;
+}
 function RegionDetail() {
   return <div data-testid="region-detail">Region Detail</div>;
+}
+function RegionEdit() {
+  return <div data-testid="region-edit">Edit Region</div>;
 }
 function FarmerList() {
   return <div><h1>Farmers</h1></div>;
@@ -61,7 +67,9 @@ const testRoutes = (
     <Route index element={<Navigate to="/dashboard" replace />} />
     <Route path="/dashboard" element={<Dashboard />} />
     <Route path="/regions" element={<RegionList />} />
+    <Route path="/regions/new" element={<RegionCreate />} />
     <Route path="/regions/:regionId" element={<RegionDetail />} />
+    <Route path="/regions/:regionId/edit" element={<RegionEdit />} />
     <Route path="/farmers" element={<FarmerList />} />
     <Route path="/farmers/:farmerId" element={<FarmerDetail />} />
     <Route path="/factories" element={<FactoryList />} />
@@ -104,9 +112,19 @@ describe('Routes', () => {
       expect(screen.getByRole('heading', { name: /regions/i })).toBeInTheDocument();
     });
 
+    it('renders region create at /regions/new', () => {
+      renderRoute('/regions/new');
+      expect(screen.getByTestId('region-create')).toBeInTheDocument();
+    });
+
     it('renders region detail at /regions/:id', () => {
       renderRoute('/regions/test-region');
       expect(screen.getByTestId('region-detail')).toBeInTheDocument();
+    });
+
+    it('renders region edit at /regions/:id/edit', () => {
+      renderRoute('/regions/test-region/edit');
+      expect(screen.getByTestId('region-edit')).toBeInTheDocument();
     });
 
     it('renders farmers list at /farmers', () => {
@@ -171,13 +189,13 @@ describe('Routes', () => {
   });
 
   describe('route count verification', () => {
-    it('has 14 defined routes plus 404 fallback', () => {
+    it('has 16 defined routes plus 404 fallback', () => {
       // This test documents the expected route count
-      // Routes: dashboard, regions(2), farmers(2), factories(3), grading-models(2),
-      // users, health, knowledge, costs = 14
+      // Routes: dashboard, regions(4: list, new, detail, edit), farmers(2), factories(3), grading-models(2),
+      // users, health, knowledge, costs = 16
       // Plus 404 and index redirect
-      const routeCount = 14;
-      expect(routeCount).toBe(14);
+      const routeCount = 16;
+      expect(routeCount).toBe(16);
     });
   });
 });

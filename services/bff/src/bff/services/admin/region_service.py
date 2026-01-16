@@ -10,6 +10,7 @@ from bff.api.schemas.admin.region_schemas import (
     RegionSummary,
     RegionUpdateRequest,
 )
+from bff.api.schemas.admin.weather_schemas import RegionWeatherResponse
 from bff.infrastructure.clients.plantation_client import PlantationClient
 from bff.services.base_service import BaseService
 from bff.transformers.admin.region_transformer import RegionTransformer
@@ -198,6 +199,41 @@ class AdminRegionService(BaseService):
         self._logger.info("updated_region", region_id=region_id)
 
         return detail
+
+    async def get_region_weather(
+        self,
+        region_id: str,
+        days: int = 7,
+    ) -> RegionWeatherResponse:
+        """Get weather observations for a region (AC 9.2.5).
+
+        Args:
+            region_id: Region ID (e.g., "nyeri-highland").
+            days: Number of days of history (default: 7).
+
+        Returns:
+            RegionWeatherResponse with observations and alerts.
+
+        Raises:
+            NotFoundError: If region not found.
+        """
+        self._logger.info("getting_region_weather", region_id=region_id, days=days)
+
+        # Fetch weather observations from Plantation service
+        observations = await self._plantation.get_region_weather(region_id, days)
+
+        response = RegionWeatherResponse.from_domain_models(
+            region_id=region_id,
+            observations=observations,
+        )
+
+        self._logger.info(
+            "got_region_weather",
+            region_id=region_id,
+            observation_count=len(observations),
+        )
+
+        return response
 
     async def _enrich_regions_to_summaries(
         self,

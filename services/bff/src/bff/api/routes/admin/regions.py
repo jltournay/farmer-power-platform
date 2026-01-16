@@ -3,6 +3,7 @@
 Implements AC1 - Region Management Endpoints:
 - GET /api/admin/regions - List all regions with pagination
 - GET /api/admin/regions/{region_id} - Get region detail
+- GET /api/admin/regions/{region_id}/weather - Get weather observations (AC 9.2.5)
 - POST /api/admin/regions - Create new region
 - PUT /api/admin/regions/{region_id} - Update region
 """
@@ -17,6 +18,7 @@ from bff.api.schemas.admin.region_schemas import (
     RegionListResponse,
     RegionUpdateRequest,
 )
+from bff.api.schemas.admin.weather_schemas import RegionWeatherResponse
 from bff.infrastructure.clients import NotFoundError, ServiceUnavailableError
 from bff.infrastructure.clients.plantation_client import PlantationClient
 from bff.services.admin.region_service import AdminRegionService
@@ -100,6 +102,51 @@ async def get_region(
     """Get region detail by ID."""
     try:
         return await service.get_region(region_id)
+    except NotFoundError as e:
+        raise HTTPException(
+            status_code=404,
+            detail=ApiError.not_found("Region", region_id).model_dump(),
+        ) from e
+    except ServiceUnavailableError as e:
+        raise HTTPException(
+            status_code=503,
+            detail=ApiError.service_unavailable("Plantation Model").model_dump(),
+        ) from e
+
+
+@router.get(
+    "/{region_id}/weather",
+    response_model=RegionWeatherResponse,
+    responses={
+        200: {"description": "Weather observations for region"},
+        401: {"description": "Authentication required", "model": ApiError},
+        403: {"description": "Platform admin access required", "model": ApiError},
+        404: {"description": "Region not found", "model": ApiError},
+        503: {"description": "Service unavailable", "model": ApiError},
+    },
+    summary="Get region weather observations",
+    description="Get last 7 days of weather observations for a region (AC 9.2.5).",
+)
+async def get_region_weather(
+    region_id: str = Path(
+        ...,
+        description="Region ID",
+        pattern=r"^[a-z][a-z0-9-]*-(highland|midland|lowland)$",
+        examples=["nyeri-highland", "murang-a-midland"],
+    ),
+    days: int = Query(default=7, ge=1, le=30, description="Number of days of history"),
+    user: TokenClaims = require_platform_admin(),
+    service: AdminRegionService = Depends(get_region_service),
+) -> RegionWeatherResponse:
+    """Get weather observations for a region.
+
+    Returns the last N days of weather data with computed alerts for:
+    - Heavy rain (>10mm)
+    - Frost risk (<2°C)
+    - High humidity (>90%)
+    """
+    try:
+        return await service.get_region_weather(region_id, days)
     except NotFoundError as e:
         raise HTTPException(
             status_code=404,
