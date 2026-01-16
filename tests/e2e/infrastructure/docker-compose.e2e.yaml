@@ -548,7 +548,7 @@ services:
       dockerfile: web/platform-admin/Dockerfile
       args:
         VITE_BASE_URL: /admin/
-        VITE_MOCK_JWT_SECRET: test-secret-for-e2e
+        VITE_MOCK_JWT_SECRET: default-test-secret-for-development-32-chars
         VITE_AUTH_PROVIDER: mock
     container_name: e2e-platform-admin
     # Build-only service - NGINX copies assets, container exits after build
@@ -563,7 +563,7 @@ services:
       dockerfile: web/factory-portal/Dockerfile
       args:
         VITE_BASE_URL: /factory/
-        VITE_MOCK_JWT_SECRET: test-secret-for-e2e
+        VITE_MOCK_JWT_SECRET: default-test-secret-for-development-32-chars
         VITE_AUTH_PROVIDER: mock
     container_name: e2e-factory-portal
     # Build-only service - NGINX copies assets, container exits after build

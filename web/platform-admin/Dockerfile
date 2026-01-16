@@ -8,7 +8,7 @@ WORKDIR /app
 
 # Build args for Vite (available at BUILD time only)
 ARG VITE_BASE_URL=/admin/
-ARG VITE_MOCK_JWT_SECRET=test-secret-for-e2e
+ARG VITE_MOCK_JWT_SECRET=default-test-secret-for-development-32-chars
 ARG VITE_AUTH_PROVIDER=mock
 
 # Make build args available as env vars for Vite build

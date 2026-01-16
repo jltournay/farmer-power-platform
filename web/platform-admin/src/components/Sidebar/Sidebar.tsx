@@ -169,7 +169,7 @@ export function Sidebar({ open, width, collapsedWidth, onToggle }: SidebarProps)
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
           <Box
             component="img"
-            src="/logo.png"
+            src={`${import.meta.env.VITE_BASE_URL || '/'}logo.png`}
             alt="Farmer Power"
             sx={{
               height: 32,

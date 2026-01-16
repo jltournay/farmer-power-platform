@@ -46,7 +46,10 @@ class ApiClient {
   private async handleResponse<T>(response: Response): Promise<T> {
     if (response.status === 401) {
       localStorage.removeItem('fp_auth_token');
-      window.location.href = '/login';
+      // Reload page to trigger auth flow (MockAuthProvider will show login selector)
+      // Use base URL from Vite env to handle subpath deployments
+      const baseUrl = import.meta.env.VITE_BASE_URL || '/';
+      window.location.href = baseUrl;
       throw new Error('Unauthorized');
     }
 
