@@ -1,6 +1,6 @@
 # Story 9.2: Region Management
 
-**Status:** in-progress
+**Status:** done
 **GitHub Issue:** #191
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
@@ -751,8 +751,21 @@ Claude Opus 4.5 (claude-opus-4-5-20251101)
 - Uses MUI Grid2 component for responsive layouts
 - Forms use react-hook-form with Zod validation
 - BoundaryDrawer component for polygon boundary editing (ADR-017)
-- All unit tests passing (51 tests)
+- All unit tests passing (55 tests)
 - TypeScript and lint checks pass
+
+### Code Review Findings (Resolved)
+
+| # | Severity | Finding | Resolution |
+|---|----------|---------|------------|
+| 1 | HIGH | API params wrapped incorrectly in listRegions | Fixed: removed object wrapper |
+| 2 | MEDIUM | AC1 search disabled (showSearch={false}) | Fixed: enabled search with client-side name/county filtering |
+| 3 | MEDIUM | No validation that altitude_min < altitude_max | Fixed: added Zod refine validation |
+| 4 | LOW | Missing tests for formDataToUpdateRequest | Fixed: added 4 test cases |
+| 5 | LOW | Missing page component tests | Documented for future enhancement |
+
+**Code Review Outcome:** APPROVED
+**Review Date:** 2026-01-16
 
 ### File List
 
