@@ -15,7 +15,7 @@ import httpx
 COLLECTION_DAPR_HTTP_PORT = 3502
 
 # Default E2E JWT secret (matches docker-compose.e2e.yaml)
-E2E_JWT_SECRET = "test-secret-for-e2e"
+E2E_JWT_SECRET = "default-test-secret-for-development-32-chars"
 
 
 class PlantationClient:
@@ -297,6 +297,8 @@ class BFFClient:
             "factory_ids": factory_ids,
             "exp": int(time.time()) + 3600,  # 1 hour from now
             "iat": int(time.time()),
+            "aud": "farmer-power-bff",  # Required by auth middleware
+            "iss": "mock-auth",  # Required by auth middleware
         }
 
         return jwt.encode(payload, self.jwt_secret, algorithm="HS256")
