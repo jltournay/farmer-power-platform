@@ -550,6 +550,74 @@ Any changes to production code must be documented with:
 
 ---
 
-**Total Story Points:** 25
+---
+
+#### Story 0.4.10: Frontend Portal NGINX Deployment for Human Validation
+
+**Status:** To Do
+**Priority:** P0 (Blocks Epic 9 feature stories)
+
+As a **platform developer**,
+I want the admin portal and factory portal deployed via NGINX in docker-compose,
+So that I can perform human validation of UI features with proper API routing and JWT auth.
+
+**Background:**
+Story 9.2 validation revealed pain points:
+- Manual NPM dev server connection to API ports
+- Token authorization header issues through dev proxy
+- Difficulty validating real data display (e.g., last 7 days weather observations)
+
+**Acceptance Criteria:**
+
+**Given** docker-compose E2E stack is running
+**When** I navigate to `http://localhost:8085/admin`
+**Then** the platform-admin portal is served via NGINX
+
+**Given** docker-compose E2E stack is running
+**When** I navigate to `http://localhost:8085/factory`
+**Then** the factory-portal is served via NGINX
+
+**Given** NGINX is configured as reverse proxy
+**When** the frontend makes API calls to `/api/*`
+**Then** requests are proxied to `bff-service:8000` with headers preserved
+
+**Given** a valid JWT token is obtained
+**When** API requests include `Authorization: Bearer <token>` header
+**Then** the BFF validates the token and returns data correctly
+
+**Given** I want to validate a UI feature
+**When** I run `bash scripts/e2e-up.sh --build`
+**Then** I can access both portals at `http://localhost:8085/{admin|factory}` for human validation
+
+**Technical Scope:**
+
+1. **NGINX Configuration** (`deploy/docker/nginx/nginx.conf`)
+   - Upstream to `bff-service:8000` for `/api/*` routes
+   - Static file serving for React builds (Vite output)
+   - `proxy_set_header` for Authorization passthrough
+   - Location blocks for `/admin` and `/factory`
+
+2. **Multi-stage Dockerfiles**
+   - `apps/platform-admin/Dockerfile` - `npm run build` (Vite) → copy dist to nginx
+   - `apps/factory-portal/Dockerfile` - `npm run build` (Vite) → copy dist to nginx
+
+3. **Docker Compose Updates** (`docker-compose.e2e.yaml`)
+   - `nginx` service with port 8085 exposed (follows 808x HTTP pattern: 8083 BFF, 8084 Platform Cost)
+   - `platform-admin` and `factory-portal` build services
+   - Network connectivity to existing DAPR sidecars
+
+4. **E2E Script Updates**
+   - `scripts/e2e-up.sh` includes frontend builds
+   - `scripts/e2e-preflight.sh` validates NGINX health
+
+**Dependencies:**
+- Story 0.5.7: Factory Portal Scaffold (Done)
+- Story 9.1a: Platform Admin Application Scaffold (Done)
+
+**Story Points:** 5
+
+---
+
+**Total Story Points:** 30
 
 **Estimated Duration:** 2 sprints

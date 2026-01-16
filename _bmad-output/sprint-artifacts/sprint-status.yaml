@@ -107,6 +107,7 @@ development_status:
   0-4-7-cross-model-dapr-event-flow: done  # 5 tests passed, github_issue: 37
   0-4-8-tbk-ktda-grading-validation: done  # 6 tests, github_issue: 39, PR: #40, xfail fix: PR #62
   0-4-9-zip-processor-ingestion: done  # 9 tests, github_issue: 63, PR: #64
+  0-4-10-frontend-portal-nginx-deployment: done  # github_issue: 193, 5 points - NGINX + portal docker-compose for human validation. UNBLOCKS: Epic 9 feature stories (9.3+)
   epic-0-4-retrospective: optional
 
   # Epic 0.6: Infrastructure Hardening (ADR Implementation)
@@ -235,16 +236,16 @@ development_status:
   epic-9: in-progress
   9-1a-platform-admin-application-scaffold: done  # 5 points - Vite + React + routing + theme, github_issue: 185, PR: #186
   9-1b-shared-admin-ui-components: done  # 8 points, github_issue: 187, PR: #188 - 14 shared components (Shell, DataTable, Maps, Forms)
-  9-1c-admin-portal-bff-endpoints: in-progress  # 8 points, github_issue: 189 - All /api/admin/* REST endpoints for Epic 9 (ADR-012 patterns)
-  9-2-region-management: backlog  # Unblocked - Story 1.10 completed (polygon boundary support). Depends on 9.1c
-  9-3-factory-management: backlog  # Depends on 9.1c
-  9-4-collection-point-management: backlog  # Depends on 9.1c
-  9-5-farmer-management: backlog  # Unblocked - Story 1.10 completed (GPS region assignment). Depends on 9.1c
-  9-6-grading-model-management: backlog
-  9-7-user-management: backlog
-  9-8-platform-health-dashboard: backlog
-  9-9-knowledge-management-interface: backlog  # RAG document ingestion UI
-  9-10-llm-cost-dashboard: backlog  # Ops visibility - Epic 13 completed
+  9-1c-admin-portal-bff-endpoints: done  # 8 points, github_issue: 189, PR: #190 - All /api/admin/* REST endpoints for Epic 9 (ADR-012 patterns)
+  9-2-region-management: done  # 5 points - Region CRUD UI with map/polygon support (ADR-017), github_issue: 191, PR: merged
+  9-3-factory-management: backlog  # UNBLOCKED by 0-4-10 (NGINX deployment complete)
+  9-4-collection-point-management: backlog  # UNBLOCKED by 0-4-10 (NGINX deployment complete)
+  9-5-farmer-management: backlog  # UNBLOCKED by 0-4-10 (NGINX deployment complete)
+  9-6-grading-model-management: backlog  # UNBLOCKED by 0-4-10 (NGINX deployment complete)
+  9-7-user-management: backlog  # UNBLOCKED by 0-4-10 (NGINX deployment complete)
+  9-8-platform-health-dashboard: backlog  # UNBLOCKED by 0-4-10 (NGINX deployment complete)
+  9-9-knowledge-management-interface: backlog  # UNBLOCKED by 0-4-10 (NGINX deployment complete)
+  9-10-llm-cost-dashboard: backlog  # UNBLOCKED by 0-4-10 (NGINX deployment complete)
   epic-9-retrospective: optional
 
   # ═══════════════════════════════════════════════════════════════════════════

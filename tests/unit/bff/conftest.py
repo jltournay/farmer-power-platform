@@ -101,6 +101,8 @@ def create_mock_jwt_token(
         **user_data,
         "iat": now,
         "exp": now + expires_delta,
+        "aud": "farmer-power-bff",  # Required by auth middleware
+        "iss": "mock-auth",  # Required by auth middleware
     }
     return jwt.encode(payload, secret, algorithm="HS256")
 

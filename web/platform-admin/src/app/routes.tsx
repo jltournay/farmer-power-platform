@@ -9,8 +9,7 @@ import { Navigate, type RouteObject } from 'react-router-dom';
 import { ProtectedRoute } from '@fp/auth';
 import { Layout } from '@/components/Layout';
 import { Dashboard } from '@/pages/Dashboard';
-import { RegionList } from '@/pages/regions/RegionList';
-import { RegionDetail } from '@/pages/regions/RegionDetail';
+import { RegionList, RegionDetail, RegionCreate, RegionEdit } from '@/pages/regions';
 import { FarmerList } from '@/pages/farmers/FarmerList';
 import { FarmerDetail } from '@/pages/farmers/FarmerDetail';
 import { FactoryList } from '@/pages/factories/FactoryList';
@@ -30,7 +29,9 @@ import { NotFound } from '@/pages/NotFound';
  * Routes:
  * - / -> redirects to /dashboard (Platform overview)
  * - /regions - All regions (top-level)
- * - /regions/:regionId - Region configuration
+ * - /regions/new - Create new region
+ * - /regions/:regionId - Region detail view
+ * - /regions/:regionId/edit - Edit region
  * - /farmers - All farmers with filters (top-level)
  * - /farmers/:farmerId - Full farmer edit
  * - /factories - All factories (top-level)
@@ -72,10 +73,26 @@ export const routes: RouteObject[] = [
         ),
       },
       {
+        path: 'regions/new',
+        element: (
+          <ProtectedRoute roles={['platform_admin']}>
+            <RegionCreate />
+          </ProtectedRoute>
+        ),
+      },
+      {
         path: 'regions/:regionId',
         element: (
           <ProtectedRoute roles={['platform_admin']}>
             <RegionDetail />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: 'regions/:regionId/edit',
+        element: (
+          <ProtectedRoute roles={['platform_admin']}>
+            <RegionEdit />
           </ProtectedRoute>
         ),
       },

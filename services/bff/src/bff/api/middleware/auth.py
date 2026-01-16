@@ -50,7 +50,13 @@ def _validate_mock_token(token: str, secret: str) -> dict:
         ExpiredSignatureError: If token is expired.
         JWTError: If token is invalid.
     """
-    return jwt.decode(token, secret, algorithms=["HS256"])
+    return jwt.decode(
+        token,
+        secret,
+        algorithms=["HS256"],
+        audience="farmer-power-bff",
+        issuer="mock-auth",
+    )
 
 
 async def _validate_azure_b2c_token(token: str, settings: Settings) -> dict:
