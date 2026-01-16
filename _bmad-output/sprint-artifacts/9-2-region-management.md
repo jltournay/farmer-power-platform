@@ -1,7 +1,7 @@
 # Story 9.2: Region Management
 
-**Status:** ready-for-dev
-**GitHub Issue:** <!-- Auto-created by dev-story workflow -->
+**Status:** in-progress
+**GitHub Issue:** #191
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -745,10 +745,30 @@ Claude Opus 4.5 (claude-opus-4-5-20251101)
 
 ### Completion Notes List
 
+- Implemented full Region CRUD UI in platform-admin portal
+- API client uses native fetch (not axios) for BFF communication
+- TypeScript types match BFF schemas with boundary format conversion helpers
+- Uses MUI Grid2 component for responsive layouts
+- Forms use react-hook-form with Zod validation
+- BoundaryDrawer component for polygon boundary editing (ADR-017)
+- All unit tests passing (51 tests)
+- TypeScript and lint checks pass
+
 ### File List
 
 **Created:**
-- (list new files)
+- `web/platform-admin/src/api/client.ts` - Fetch-based API client with JWT auth
+- `web/platform-admin/src/api/regions.ts` - Region API functions (list, get, create, update)
+- `web/platform-admin/src/api/types.ts` - TypeScript types and conversion helpers
+- `web/platform-admin/src/api/index.ts` - Barrel exports
+- `web/platform-admin/src/pages/regions/RegionCreate.tsx` - Create region form
+- `web/platform-admin/src/pages/regions/RegionEdit.tsx` - Edit region form
+- `tests/unit/web/platform-admin/api/types.test.ts` - Type conversion tests
 
 **Modified:**
-- (list modified files with brief description)
+- `web/platform-admin/src/pages/regions/RegionList.tsx` - Full implementation with DataTable, filters
+- `web/platform-admin/src/pages/regions/RegionDetail.tsx` - Full implementation with map, cards
+- `web/platform-admin/src/pages/regions/index.ts` - Export new components
+- `web/platform-admin/src/app/routes.tsx` - Added /regions/new and /regions/:id/edit routes
+- `web/platform-admin/package.json` - Added react-hook-form, zod, @hookform/resolvers
+- `tests/unit/web/platform-admin/routes.test.tsx` - Added tests for new routes
