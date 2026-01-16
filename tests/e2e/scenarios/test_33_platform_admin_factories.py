@@ -338,16 +338,12 @@ class TestFactoryEditFlow:
 
         # Update capacity
         new_capacity = original_capacity + 1000
-        result = await bff_api.admin_update_factory(
-            factory_id, {"processing_capacity_kg": new_capacity}
-        )
+        result = await bff_api.admin_update_factory(factory_id, {"processing_capacity_kg": new_capacity})
 
         assert result["processing_capacity_kg"] == new_capacity
 
         # Restore original
-        await bff_api.admin_update_factory(
-            factory_id, {"processing_capacity_kg": original_capacity}
-        )
+        await bff_api.admin_update_factory(factory_id, {"processing_capacity_kg": original_capacity})
 
     @pytest.mark.asyncio
     async def test_factory_edit_update_quality_thresholds(
@@ -366,18 +362,14 @@ class TestFactoryEditFlow:
 
         # Update thresholds
         new_thresholds = {"tier_1": 90, "tier_2": 75, "tier_3": 55}
-        result = await bff_api.admin_update_factory(
-            factory_id, {"quality_thresholds": new_thresholds}
-        )
+        result = await bff_api.admin_update_factory(factory_id, {"quality_thresholds": new_thresholds})
 
         assert result["quality_thresholds"]["tier_1"] == 90
         assert result["quality_thresholds"]["tier_2"] == 75
         assert result["quality_thresholds"]["tier_3"] == 55
 
         # Restore original
-        await bff_api.admin_update_factory(
-            factory_id, {"quality_thresholds": original_thresholds}
-        )
+        await bff_api.admin_update_factory(factory_id, {"quality_thresholds": original_thresholds})
 
     @pytest.mark.asyncio
     async def test_factory_deactivate(
