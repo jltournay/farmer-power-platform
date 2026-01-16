@@ -23,7 +23,7 @@ const BASE_PATH = '/admin/regions';
  * @returns Paginated list of region summaries
  */
 export async function listRegions(params: RegionListParams = {}): Promise<RegionListResponse> {
-  const { data } = await apiClient.get<RegionListResponse>(BASE_PATH, { params });
+  const { data } = await apiClient.get<RegionListResponse>(BASE_PATH, params as Record<string, unknown>);
   return data;
 }
 

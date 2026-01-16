@@ -10,6 +10,7 @@ import {
   geoJSONToRegionBoundary,
   regionDetailToFormData,
   formDataToCreateRequest,
+  formDataToUpdateRequest,
   type RegionBoundary,
   type GeoJSONPolygon,
   type RegionDetail,
@@ -280,6 +281,84 @@ describe('API Types', () => {
       const result = formDataToCreateRequest(formData);
 
       expect(result.agronomic.typical_diseases).toEqual([]);
+    });
+  });
+
+  describe('formDataToUpdateRequest', () => {
+    it('converts partial RegionFormData to RegionUpdateRequest', () => {
+      const formData: Partial<RegionFormData> = {
+        name: 'Updated Region',
+        is_active: false,
+        center_lat: -0.5,
+        center_lng: 36.5,
+        radius_km: 20,
+        altitude_band: 'midland',
+        altitude_min: 1400,
+        altitude_max: 1800,
+        first_flush_start: '03-20',
+        first_flush_end: '06-20',
+        monsoon_flush_start: '06-21',
+        monsoon_flush_end: '09-30',
+        autumn_flush_start: '10-01',
+        autumn_flush_end: '12-15',
+        dormant_start: '12-16',
+        dormant_end: '03-19',
+        soil_type: 'clay',
+        typical_diseases: 'blister_blight',
+        harvest_peak_hours: '07:00-11:00',
+        frost_risk: true,
+        weather_api_lat: -0.5,
+        weather_api_lng: 36.5,
+        weather_api_altitude: 1600,
+        weather_collection_time: '08:00',
+      };
+
+      const result = formDataToUpdateRequest(formData);
+
+      expect(result.name).toBe('Updated Region');
+      expect(result.is_active).toBe(false);
+      expect(result.geography?.center_gps).toEqual({ lat: -0.5, lng: 36.5 });
+      expect(result.geography?.altitude_band.label).toBe('midland');
+      expect(result.flush_calendar?.first_flush.start).toBe('03-20');
+      expect(result.agronomic?.soil_type).toBe('clay');
+      expect(result.weather_config?.collection_time).toBe('08:00');
+    });
+
+    it('handles name-only updates', () => {
+      const formData: Partial<RegionFormData> = {
+        name: 'New Name Only',
+      };
+
+      const result = formDataToUpdateRequest(formData, false);
+
+      expect(result.name).toBe('New Name Only');
+      expect(result.geography).toBeUndefined();
+      expect(result.flush_calendar).toBeUndefined();
+      expect(result.agronomic).toBeUndefined();
+      expect(result.weather_config).toBeUndefined();
+    });
+
+    it('handles is_active toggle', () => {
+      const formData: Partial<RegionFormData> = {
+        is_active: false,
+      };
+
+      const result = formDataToUpdateRequest(formData, false);
+
+      expect(result.is_active).toBe(false);
+    });
+
+    it('parses diseases string correctly', () => {
+      const formData: Partial<RegionFormData> = {
+        soil_type: 'loam',
+        typical_diseases: ' disease1 , disease2 ',
+        harvest_peak_hours: '06:00-10:00',
+        frost_risk: false,
+      };
+
+      const result = formDataToUpdateRequest(formData);
+
+      expect(result.agronomic?.typical_diseases).toEqual(['disease1', 'disease2']);
     });
   });
 });

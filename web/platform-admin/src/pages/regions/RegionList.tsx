@@ -62,6 +62,7 @@ export function RegionList(): JSX.Element {
     pageSize: 25,
   });
   const [filters, setFilters] = useState<FilterValues>({});
+  const [searchQuery, setSearchQuery] = useState('');
 
   // Data fetching
   const fetchData = useCallback(async () => {
@@ -85,10 +86,20 @@ export function RegionList(): JSX.Element {
     fetchData();
   }, [fetchData]);
 
-  // Filter client-side by altitude band
+  // Filter client-side by altitude band and search query
   const filteredRows = data?.data.filter((region) => {
+    // Filter by altitude band
     if (filters.altitude_band && region.altitude_band !== filters.altitude_band) {
       return false;
+    }
+    // Filter by search query (name or county)
+    if (searchQuery) {
+      const query = searchQuery.toLowerCase();
+      const matchesName = region.name.toLowerCase().includes(query);
+      const matchesCounty = region.county.toLowerCase().includes(query);
+      if (!matchesName && !matchesCounty) {
+        return false;
+      }
     }
     return true;
   }) ?? [];
@@ -189,7 +200,10 @@ export function RegionList(): JSX.Element {
         onFilterChange={(filterId, value) => {
           setFilters((prev) => ({ ...prev, [filterId]: value }));
         }}
-        showSearch={false}
+        showSearch={true}
+        searchTerm={searchQuery}
+        onSearchChange={setSearchQuery}
+        searchPlaceholder="Search by name or county..."
       />
 
       {error && (

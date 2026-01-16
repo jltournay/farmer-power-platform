@@ -74,6 +74,9 @@ const regionFormSchema = z.object({
   typical_diseases: z.string().max(500),
   harvest_peak_hours: z.string().regex(timeRangePattern, 'Format: HH:MM-HH:MM'),
   frost_risk: z.boolean(),
+}).refine((data) => data.altitude_min < data.altitude_max, {
+  message: 'Min altitude must be less than max altitude',
+  path: ['altitude_max'],
 });
 
 type FormValues = z.infer<typeof regionFormSchema>;
