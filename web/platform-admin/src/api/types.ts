@@ -445,3 +445,322 @@ export function geoJSONToRegionBoundary(geoJson: GeoJSONPolygon | null): RegionB
     })),
   };
 }
+
+// ============================================================================
+// Factory Types
+// ============================================================================
+
+/** Payment policy type enum */
+export type PaymentPolicyType = 'feedback_only' | 'split_payment' | 'weekly_bonus' | 'delayed_payment';
+
+/** Geographic location (altitude auto-populated from Google Elevation API) */
+export interface GeoLocation {
+  latitude: number;
+  longitude: number;
+  altitude_meters?: number; // READ-ONLY: Auto-populated by backend from Google Elevation API
+}
+
+/** Contact information */
+export interface ContactInfo {
+  phone: string;
+  email: string;
+  address: string;
+}
+
+/** Quality tier thresholds */
+export interface QualityThresholdsAPI {
+  tier_1: number; // Default 85
+  tier_2: number; // Default 70
+  tier_3: number; // Default 50
+}
+
+/** Payment policy configuration */
+export interface PaymentPolicyAPI {
+  policy_type: PaymentPolicyType;
+  tier_1_adjustment: number;
+  tier_2_adjustment: number;
+  tier_3_adjustment: number;
+  below_tier_3_adjustment: number;
+}
+
+/** Grading model summary */
+export interface GradingModelSummary {
+  id: string;
+  name: string;
+  version: string;
+  grade_count: number;
+}
+
+/** Factory summary for list views */
+export interface FactorySummary {
+  id: string;
+  name: string;
+  code: string;
+  region_id: string;
+  collection_point_count: number;
+  farmer_count: number;
+  is_active: boolean;
+}
+
+/** Full factory detail */
+export interface FactoryDetail extends FactorySummary {
+  location: GeoLocation;
+  contact: ContactInfo;
+  processing_capacity_kg: number;
+  quality_thresholds: QualityThresholdsAPI;
+  payment_policy: PaymentPolicyAPI;
+  grading_model: GradingModelSummary | null;
+  created_at: string; // ISO datetime
+  updated_at: string; // ISO datetime
+}
+
+/** Factory list API response */
+export interface FactoryListResponse {
+  data: FactorySummary[];
+  pagination: PaginationMeta;
+}
+
+/** Factory list query parameters */
+export interface FactoryListParams {
+  region_id?: string;
+  page_size?: number;
+  page_token?: string;
+  active_only?: boolean;
+}
+
+/** Factory create request */
+export interface FactoryCreateRequest {
+  name: string;
+  code: string;
+  region_id: string;
+  location: GeoLocation;
+  contact?: ContactInfo;
+  processing_capacity_kg?: number;
+  quality_thresholds?: QualityThresholdsAPI;
+  payment_policy?: PaymentPolicyAPI;
+}
+
+/** Factory update request */
+export interface FactoryUpdateRequest {
+  name?: string;
+  code?: string;
+  location?: GeoLocation;
+  contact?: ContactInfo;
+  processing_capacity_kg?: number;
+  quality_thresholds?: QualityThresholdsAPI;
+  payment_policy?: PaymentPolicyAPI;
+  is_active?: boolean;
+}
+
+// ============================================================================
+// Collection Point Types (for factory detail embedded list)
+// ============================================================================
+
+/** Collection point summary for embedded list */
+export interface CollectionPointSummary {
+  id: string;
+  name: string;
+  factory_id: string;
+  region_id: string;
+  farmer_count: number;
+  status: 'active' | 'inactive' | 'seasonal';
+  clerk_id?: string | null;
+  clerk_phone?: string | null;
+}
+
+/** Collection point create request (for quick-add) */
+export interface CollectionPointCreateRequest {
+  name: string;
+  location: GeoLocation;
+  region_id: string;
+  clerk_id?: string;
+  clerk_phone?: string;
+  status?: string;
+}
+
+/** Collection point detail (returned from create) */
+export interface CollectionPointDetail {
+  id: string;
+  name: string;
+  factory_id: string;
+  region_id: string;
+  location: GeoLocation;
+  clerk_id: string | null;
+  clerk_phone: string | null;
+  farmer_count: number;
+  status: string;
+  created_at: string;
+  updated_at: string;
+}
+
+// ============================================================================
+// Factory Form Types
+// ============================================================================
+
+/** Form data for factory create/edit (flat structure for react-hook-form) */
+export interface FactoryFormData {
+  // Basic info
+  name: string;
+  code: string;
+  region_id: string;
+  // Location (user inputs lat/lng, altitude is display-only from API response)
+  latitude: number;
+  longitude: number;
+  // NOTE: altitude_meters is NOT in form data - it's auto-populated by backend
+  // Contact
+  phone: string;
+  email: string;
+  address: string;
+  // Capacity
+  processing_capacity_kg: number;
+  // Quality thresholds
+  tier_1: number;
+  tier_2: number;
+  tier_3: number;
+  // Payment policy
+  policy_type: PaymentPolicyType;
+  tier_1_adjustment: number;
+  tier_2_adjustment: number;
+  tier_3_adjustment: number;
+  below_tier_3_adjustment: number;
+  // Status
+  is_active: boolean;
+}
+
+/** Default values for factory form */
+export const FACTORY_FORM_DEFAULTS: FactoryFormData = {
+  name: '',
+  code: '',
+  region_id: '',
+  latitude: -1.0, // Default to Kenya
+  longitude: 37.0,
+  // altitude_meters NOT included - auto-populated by backend from Google Elevation API
+  phone: '',
+  email: '',
+  address: '',
+  processing_capacity_kg: 0,
+  tier_1: 85,
+  tier_2: 70,
+  tier_3: 50,
+  policy_type: 'feedback_only',
+  tier_1_adjustment: 0,
+  tier_2_adjustment: 0,
+  tier_3_adjustment: 0,
+  below_tier_3_adjustment: 0,
+  is_active: true,
+};
+
+// ============================================================================
+// Factory Conversion Helpers
+// ============================================================================
+
+/** Convert FactoryDetail to form data */
+export function factoryDetailToFormData(detail: FactoryDetail): FactoryFormData {
+  return {
+    name: detail.name,
+    code: detail.code,
+    region_id: detail.region_id,
+    latitude: detail.location.latitude,
+    longitude: detail.location.longitude,
+    phone: detail.contact.phone ?? '',
+    email: detail.contact.email ?? '',
+    address: detail.contact.address ?? '',
+    processing_capacity_kg: detail.processing_capacity_kg,
+    tier_1: detail.quality_thresholds.tier_1,
+    tier_2: detail.quality_thresholds.tier_2,
+    tier_3: detail.quality_thresholds.tier_3,
+    policy_type: detail.payment_policy.policy_type,
+    tier_1_adjustment: detail.payment_policy.tier_1_adjustment,
+    tier_2_adjustment: detail.payment_policy.tier_2_adjustment,
+    tier_3_adjustment: detail.payment_policy.tier_3_adjustment,
+    below_tier_3_adjustment: detail.payment_policy.below_tier_3_adjustment,
+    is_active: detail.is_active,
+  };
+}
+
+/** Convert form data to FactoryCreateRequest */
+export function factoryFormDataToCreateRequest(data: FactoryFormData): FactoryCreateRequest {
+  return {
+    name: data.name,
+    code: data.code,
+    region_id: data.region_id,
+    location: {
+      latitude: data.latitude,
+      longitude: data.longitude,
+    },
+    contact: {
+      phone: data.phone,
+      email: data.email,
+      address: data.address,
+    },
+    processing_capacity_kg: data.processing_capacity_kg,
+    quality_thresholds: {
+      tier_1: data.tier_1,
+      tier_2: data.tier_2,
+      tier_3: data.tier_3,
+    },
+    payment_policy: {
+      policy_type: data.policy_type,
+      tier_1_adjustment: data.tier_1_adjustment,
+      tier_2_adjustment: data.tier_2_adjustment,
+      tier_3_adjustment: data.tier_3_adjustment,
+      below_tier_3_adjustment: data.below_tier_3_adjustment,
+    },
+  };
+}
+
+/** Convert form data to FactoryUpdateRequest */
+export function factoryFormDataToUpdateRequest(data: Partial<FactoryFormData>): FactoryUpdateRequest {
+  const request: FactoryUpdateRequest = {};
+
+  if (data.name !== undefined) {
+    request.name = data.name;
+  }
+
+  if (data.code !== undefined) {
+    request.code = data.code;
+  }
+
+  if (data.latitude !== undefined && data.longitude !== undefined) {
+    request.location = {
+      latitude: data.latitude,
+      longitude: data.longitude,
+    };
+  }
+
+  if (data.phone !== undefined || data.email !== undefined || data.address !== undefined) {
+    request.contact = {
+      phone: data.phone ?? '',
+      email: data.email ?? '',
+      address: data.address ?? '',
+    };
+  }
+
+  if (data.processing_capacity_kg !== undefined) {
+    request.processing_capacity_kg = data.processing_capacity_kg;
+  }
+
+  if (data.tier_1 !== undefined && data.tier_2 !== undefined && data.tier_3 !== undefined) {
+    request.quality_thresholds = {
+      tier_1: data.tier_1,
+      tier_2: data.tier_2,
+      tier_3: data.tier_3,
+    };
+  }
+
+  if (data.policy_type !== undefined) {
+    request.payment_policy = {
+      policy_type: data.policy_type,
+      tier_1_adjustment: data.tier_1_adjustment ?? 0,
+      tier_2_adjustment: data.tier_2_adjustment ?? 0,
+      tier_3_adjustment: data.tier_3_adjustment ?? 0,
+      below_tier_3_adjustment: data.below_tier_3_adjustment ?? 0,
+    };
+  }
+
+  if (data.is_active !== undefined) {
+    request.is_active = data.is_active;
+  }
+
+  return request;
+}

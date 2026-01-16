@@ -12,9 +12,7 @@ import { Dashboard } from '@/pages/Dashboard';
 import { RegionList, RegionDetail, RegionCreate, RegionEdit } from '@/pages/regions';
 import { FarmerList } from '@/pages/farmers/FarmerList';
 import { FarmerDetail } from '@/pages/farmers/FarmerDetail';
-import { FactoryList } from '@/pages/factories/FactoryList';
-import { FactoryDetail } from '@/pages/factories/FactoryDetail';
-import { CollectionPointDetail } from '@/pages/factories/CollectionPointDetail';
+import { FactoryList, FactoryDetail, FactoryCreate, FactoryEdit, CollectionPointDetail } from '@/pages/factories';
 import { GradingModelList } from '@/pages/grading-models/GradingModelList';
 import { GradingModelDetail } from '@/pages/grading-models/GradingModelDetail';
 import { UserList } from '@/pages/users/UserList';
@@ -121,10 +119,26 @@ export const routes: RouteObject[] = [
         ),
       },
       {
+        path: 'factories/new',
+        element: (
+          <ProtectedRoute roles={['platform_admin']}>
+            <FactoryCreate />
+          </ProtectedRoute>
+        ),
+      },
+      {
         path: 'factories/:factoryId',
         element: (
           <ProtectedRoute roles={['platform_admin']}>
             <FactoryDetail />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: 'factories/:factoryId/edit',
+        element: (
+          <ProtectedRoute roles={['platform_admin']}>
+            <FactoryEdit />
           </ProtectedRoute>
         ),
       },
