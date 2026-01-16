@@ -75,6 +75,7 @@ check_containers() {
         "e2e-plantation-mcp"
         "e2e-collection-mcp"
         "e2e-bff"
+        "e2e-platform-cost"
     )
 
     local dapr_sidecars=(
@@ -84,6 +85,7 @@ check_containers() {
         "e2e-plantation-mcp-dapr"
         "e2e-collection-mcp-dapr"
         "e2e-bff-dapr"
+        "e2e-platform-cost-dapr"
     )
 
     local running_containers
@@ -120,6 +122,7 @@ check_health_endpoints() {
         "http://localhost:8002/health|Collection Model"
         "http://localhost:8091/health|AI Model"
         "http://localhost:8083/health|BFF"
+        "http://localhost:8084/health|Platform Cost"
     )
 
     for endpoint_info in "${health_endpoints[@]}"; do
@@ -142,6 +145,7 @@ check_health_endpoints() {
         "localhost:50052|Plantation MCP gRPC"
         "localhost:50053|Collection MCP gRPC"
         "localhost:50054|Collection Model gRPC"
+        "localhost:50055|Platform Cost gRPC"
         "localhost:8090|AI Model gRPC"
     )
 
