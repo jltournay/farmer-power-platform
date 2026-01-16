@@ -107,7 +107,7 @@ development_status:
   0-4-7-cross-model-dapr-event-flow: done  # 5 tests passed, github_issue: 37
   0-4-8-tbk-ktda-grading-validation: done  # 6 tests, github_issue: 39, PR: #40, xfail fix: PR #62
   0-4-9-zip-processor-ingestion: done  # 9 tests, github_issue: 63, PR: #64
-  0-4-10-frontend-portal-nginx-deployment: backlog  # 5 points - NGINX + portal docker-compose for human validation. BLOCKS: Epic 9 feature stories (9-3+)
+  0-4-10-frontend-portal-nginx-deployment: ready-for-dev  # 5 points - NGINX + portal docker-compose for human validation. BLOCKS: Epic 9 feature stories (9-3+)
   epic-0-4-retrospective: optional
 
   # Epic 0.6: Infrastructure Hardening (ADR Implementation)
