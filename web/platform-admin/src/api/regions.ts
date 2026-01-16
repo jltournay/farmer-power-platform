@@ -12,6 +12,7 @@ import type {
   RegionListParams,
   RegionListResponse,
   RegionUpdateRequest,
+  RegionWeatherResponse,
 } from './types';
 
 const BASE_PATH = '/admin/regions';
@@ -64,6 +65,24 @@ export async function updateRegion(
   return data;
 }
 
+/**
+ * Get weather observations for a region (AC 9.2.5).
+ *
+ * @param regionId - Region ID (format: {county}-{altitude_band})
+ * @param days - Number of days of history (default: 7, max: 30)
+ * @returns Weather observations with alerts
+ */
+export async function getRegionWeather(
+  regionId: string,
+  days: number = 7
+): Promise<RegionWeatherResponse> {
+  const { data } = await apiClient.get<RegionWeatherResponse>(
+    `${BASE_PATH}/${regionId}/weather`,
+    { days }
+  );
+  return data;
+}
+
 /** Re-export types for convenience */
 export type {
   RegionCreateRequest,
@@ -71,4 +90,8 @@ export type {
   RegionListParams,
   RegionListResponse,
   RegionUpdateRequest,
+  RegionWeatherResponse,
+  WeatherAlert,
+  WeatherAlertType,
+  WeatherObservation,
 } from './types';

@@ -32,7 +32,7 @@ class ApiClient {
       'Content-Type': 'application/json',
     };
 
-    const token = localStorage.getItem('auth_token');
+    const token = localStorage.getItem('fp_auth_token');
     if (token) {
       headers['Authorization'] = `Bearer ${token}`;
     }
@@ -45,7 +45,7 @@ class ApiClient {
    */
   private async handleResponse<T>(response: Response): Promise<T> {
     if (response.status === 401) {
-      localStorage.removeItem('auth_token');
+      localStorage.removeItem('fp_auth_token');
       window.location.href = '/login';
       throw new Error('Unauthorized');
     }

@@ -992,20 +992,44 @@ class PlantationClient(BaseGrpcClient):
                 country=region_data.country,
             )
             # Build geography
-            request.geography.CopyFrom(
-                plantation_pb2.Geography(
-                    center_gps=plantation_pb2.GPS(
-                        lat=region_data.geography.center_gps.lat,
-                        lng=region_data.geography.center_gps.lng,
-                    ),
-                    radius_km=region_data.geography.radius_km,
-                    altitude_band=plantation_pb2.AltitudeBand(
-                        min_meters=region_data.geography.altitude_band.min_meters,
-                        max_meters=region_data.geography.altitude_band.max_meters,
-                        label=self._altitude_band_to_proto(region_data.geography.altitude_band.label),
-                    ),
-                )
+            geography_proto = plantation_pb2.Geography(
+                center_gps=plantation_pb2.GPS(
+                    lat=region_data.geography.center_gps.lat,
+                    lng=region_data.geography.center_gps.lng,
+                ),
+                radius_km=region_data.geography.radius_km,
+                altitude_band=plantation_pb2.AltitudeBand(
+                    min_meters=region_data.geography.altitude_band.min_meters,
+                    max_meters=region_data.geography.altitude_band.max_meters,
+                    label=self._altitude_band_to_proto(region_data.geography.altitude_band.label),
+                ),
             )
+            # Story 9.2: Include polygon boundary if provided
+            if region_data.geography.boundary is not None:
+                boundary = region_data.geography.boundary
+                geography_proto.boundary.CopyFrom(
+                    plantation_pb2.RegionBoundary(
+                        type=boundary.type,
+                        rings=[
+                            plantation_pb2.PolygonRing(
+                                points=[
+                                    plantation_pb2.Coordinate(
+                                        longitude=coord.longitude,
+                                        latitude=coord.latitude,
+                                    )
+                                    for coord in ring.points
+                                ]
+                            )
+                            for ring in boundary.rings
+                        ],
+                    )
+                )
+            # Story 9.2: Include computed area and perimeter if provided
+            if region_data.geography.area_km2 is not None:
+                geography_proto.area_km2 = region_data.geography.area_km2
+            if region_data.geography.perimeter_km is not None:
+                geography_proto.perimeter_km = region_data.geography.perimeter_km
+            request.geography.CopyFrom(geography_proto)
             # Build flush calendar
             request.flush_calendar.CopyFrom(
                 plantation_pb2.FlushCalendar(
@@ -1080,20 +1104,44 @@ class PlantationClient(BaseGrpcClient):
             if region_data.name is not None:
                 request.name = region_data.name
             if region_data.geography is not None:
-                request.geography.CopyFrom(
-                    plantation_pb2.Geography(
-                        center_gps=plantation_pb2.GPS(
-                            lat=region_data.geography.center_gps.lat,
-                            lng=region_data.geography.center_gps.lng,
-                        ),
-                        radius_km=region_data.geography.radius_km,
-                        altitude_band=plantation_pb2.AltitudeBand(
-                            min_meters=region_data.geography.altitude_band.min_meters,
-                            max_meters=region_data.geography.altitude_band.max_meters,
-                            label=self._altitude_band_to_proto(region_data.geography.altitude_band.label),
-                        ),
-                    )
+                geography_proto = plantation_pb2.Geography(
+                    center_gps=plantation_pb2.GPS(
+                        lat=region_data.geography.center_gps.lat,
+                        lng=region_data.geography.center_gps.lng,
+                    ),
+                    radius_km=region_data.geography.radius_km,
+                    altitude_band=plantation_pb2.AltitudeBand(
+                        min_meters=region_data.geography.altitude_band.min_meters,
+                        max_meters=region_data.geography.altitude_band.max_meters,
+                        label=self._altitude_band_to_proto(region_data.geography.altitude_band.label),
+                    ),
                 )
+                # Story 9.2: Include polygon boundary if provided
+                if region_data.geography.boundary is not None:
+                    boundary = region_data.geography.boundary
+                    geography_proto.boundary.CopyFrom(
+                        plantation_pb2.RegionBoundary(
+                            type=boundary.type,
+                            rings=[
+                                plantation_pb2.PolygonRing(
+                                    points=[
+                                        plantation_pb2.Coordinate(
+                                            longitude=coord.longitude,
+                                            latitude=coord.latitude,
+                                        )
+                                        for coord in ring.points
+                                    ]
+                                )
+                                for ring in boundary.rings
+                            ],
+                        )
+                    )
+                # Story 9.2: Include computed area and perimeter if provided
+                if region_data.geography.area_km2 is not None:
+                    geography_proto.area_km2 = region_data.geography.area_km2
+                if region_data.geography.perimeter_km is not None:
+                    geography_proto.perimeter_km = region_data.geography.perimeter_km
+                request.geography.CopyFrom(geography_proto)
             if region_data.flush_calendar is not None:
                 request.flush_calendar.CopyFrom(
                     plantation_pb2.FlushCalendar(
@@ -1401,6 +1449,27 @@ class PlantationClient(BaseGrpcClient):
             ),
         )
 
+        # Story 9.2: Convert boundary if present
+        boundary = None
+        if proto.HasField("geography") and proto.geography.HasField("boundary"):
+            from fp_common.models.value_objects import Coordinate, PolygonRing, RegionBoundary
+
+            boundary = RegionBoundary(
+                type=proto.geography.boundary.type or "Polygon",
+                rings=[
+                    PolygonRing(
+                        points=[
+                            Coordinate(
+                                longitude=coord.longitude,
+                                latitude=coord.latitude,
+                            )
+                            for coord in ring.points
+                        ]
+                    )
+                    for ring in proto.geography.boundary.rings
+                ],
+            )
+
         return Region(
             region_id=proto.region_id,
             name=proto.name,
@@ -1425,6 +1494,10 @@ class PlantationClient(BaseGrpcClient):
                     else 0,
                     label=AltitudeBandLabel(altitude_label_str) if altitude_label_str else AltitudeBandLabel.HIGHLAND,
                 ),
+                # Story 9.2: Include boundary and computed values
+                boundary=boundary,
+                area_km2=proto.geography.area_km2 if proto.HasField("geography") and proto.geography.HasField("area_km2") else None,
+                perimeter_km=proto.geography.perimeter_km if proto.HasField("geography") and proto.geography.HasField("perimeter_km") else None,
             ),
             flush_calendar=flush_calendar,
             agronomic=Agronomic(

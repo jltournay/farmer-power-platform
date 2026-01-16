@@ -136,6 +136,38 @@ export interface RegionListParams {
   active_only?: boolean;
 }
 
+// ============================================================================
+// Weather Observation Types (AC 9.2.5)
+// ============================================================================
+
+/** Weather alert type */
+export type WeatherAlertType = 'heavy_rain' | 'frost_risk' | 'high_humidity' | 'drought';
+
+/** Weather alert with icon and impact */
+export interface WeatherAlert {
+  alert_type: WeatherAlertType;
+  icon: string;
+  impact: string;
+}
+
+/** Single day's weather observation */
+export interface WeatherObservation {
+  date: string; // ISO date string
+  temp_min: number;
+  temp_max: number;
+  precipitation_mm: number;
+  humidity_avg: number;
+  source: string;
+  alerts: WeatherAlert[];
+}
+
+/** Region weather response */
+export interface RegionWeatherResponse {
+  region_id: string;
+  observations: WeatherObservation[];
+  last_updated: string | null; // ISO datetime string
+}
+
 /** Region create request payload */
 export interface RegionCreateRequest {
   name: string;

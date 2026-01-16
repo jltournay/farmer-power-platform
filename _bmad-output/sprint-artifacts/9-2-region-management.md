@@ -1,6 +1,6 @@
 # Story 9.2: Region Management
 
-**Status:** done
+**Status:** review
 **GitHub Issue:** #191
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->

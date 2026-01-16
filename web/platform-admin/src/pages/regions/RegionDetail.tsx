@@ -18,14 +18,31 @@ import {
   Divider,
   Card,
   CardContent,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  IconButton,
+  Tooltip,
+  Skeleton,
 } from '@mui/material';
 import EditIcon from '@mui/icons-material/Edit';
 import PublicIcon from '@mui/icons-material/Public';
 import WbSunnyIcon from '@mui/icons-material/WbSunny';
 import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
 import GrassIcon from '@mui/icons-material/Grass';
+import RefreshIcon from '@mui/icons-material/Refresh';
+import CloudIcon from '@mui/icons-material/Cloud';
 import { PageHeader, BoundaryDrawer, type GeoJSONPolygon, type BoundaryStats } from '@fp/ui-components';
-import { getRegion, regionBoundaryToGeoJSON, type RegionDetail as RegionDetailType } from '@/api';
+import {
+  getRegion,
+  getRegionWeather,
+  regionBoundaryToGeoJSON,
+  type RegionDetail as RegionDetailType,
+  type RegionWeatherResponse,
+} from '@/api';
 
 /**
  * Format date from MM-DD to readable format.
@@ -94,7 +111,12 @@ export function RegionDetail(): JSX.Element {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Data fetching
+  // Weather observations state (AC 9.2.5)
+  const [weather, setWeather] = useState<RegionWeatherResponse | null>(null);
+  const [weatherLoading, setWeatherLoading] = useState(false);
+  const [weatherError, setWeatherError] = useState<string | null>(null);
+
+  // Fetch region data
   const fetchData = useCallback(async () => {
     if (!regionId) return;
 
@@ -111,9 +133,27 @@ export function RegionDetail(): JSX.Element {
     }
   }, [regionId]);
 
+  // Fetch weather data (AC 9.2.5)
+  const fetchWeather = useCallback(async () => {
+    if (!regionId) return;
+
+    setWeatherLoading(true);
+    setWeatherError(null);
+
+    try {
+      const data = await getRegionWeather(regionId, 7);
+      setWeather(data);
+    } catch (err) {
+      setWeatherError(err instanceof Error ? err.message : 'Failed to load weather data');
+    } finally {
+      setWeatherLoading(false);
+    }
+  }, [regionId]);
+
   useEffect(() => {
     fetchData();
-  }, [fetchData]);
+    fetchWeather();
+  }, [fetchData, fetchWeather]);
 
   // Convert region boundary to GeoJSON format for BoundaryDrawer
   const existingBoundary = regionBoundaryToGeoJSON(region?.geography.boundary);
@@ -373,6 +413,133 @@ export function RegionDetail(): JSX.Element {
               </Grid>
             </Grid>
           </SectionCard>
+        </Grid>
+
+        {/* Weather Observations (AC 9.2.5) */}
+        <Grid size={12}>
+          <Card variant="outlined">
+            <CardContent>
+              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <CloudIcon color="primary" />
+                  <Typography variant="h6" component="h2">
+                    Recent Weather (Last 7 Days)
+                  </Typography>
+                </Box>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                  {weather?.last_updated && (
+                    <Typography variant="caption" color="text.secondary">
+                      Last updated: {new Date(weather.last_updated).toLocaleString()}
+                    </Typography>
+                  )}
+                  <Tooltip title="Refresh weather data">
+                    <IconButton
+                      onClick={fetchWeather}
+                      disabled={weatherLoading}
+                      size="small"
+                    >
+                      <RefreshIcon />
+                    </IconButton>
+                  </Tooltip>
+                </Box>
+              </Box>
+
+              {weatherLoading && !weather && (
+                <Box>
+                  {[...Array(5)].map((_, i) => (
+                    <Skeleton key={i} variant="rectangular" height={40} sx={{ mb: 1 }} />
+                  ))}
+                </Box>
+              )}
+
+              {weatherError && (
+                <Alert severity="error" sx={{ mb: 2 }}>
+                  {weatherError}
+                </Alert>
+              )}
+
+              {weather && weather.observations.length > 0 && (
+                <>
+                  <TableContainer>
+                    <Table size="small">
+                      <TableHead>
+                        <TableRow>
+                          <TableCell>Date</TableCell>
+                          <TableCell align="center">Temperature (°C)</TableCell>
+                          <TableCell align="center">Rain (mm)</TableCell>
+                          <TableCell align="center">Humidity (%)</TableCell>
+                          <TableCell align="center">Alerts</TableCell>
+                        </TableRow>
+                      </TableHead>
+                      <TableBody>
+                        {weather.observations.map((obs) => (
+                          <TableRow key={obs.date}>
+                            <TableCell>
+                              {new Date(obs.date).toLocaleDateString('en-US', {
+                                month: 'short',
+                                day: 'numeric',
+                              })}
+                            </TableCell>
+                            <TableCell align="center">
+                              {obs.temp_min.toFixed(0)}° / {obs.temp_max.toFixed(0)}°
+                            </TableCell>
+                            <TableCell align="center">
+                              {obs.precipitation_mm.toFixed(1)}
+                            </TableCell>
+                            <TableCell align="center">
+                              {obs.humidity_avg.toFixed(0)}%
+                            </TableCell>
+                            <TableCell align="center">
+                              {obs.alerts.length > 0 ? (
+                                <Box sx={{ display: 'flex', gap: 0.5, justifyContent: 'center' }}>
+                                  {obs.alerts.map((alert, idx) => (
+                                    <Tooltip key={idx} title={alert.impact}>
+                                      <span style={{ cursor: 'help' }}>{alert.icon}</span>
+                                    </Tooltip>
+                                  ))}
+                                </Box>
+                              ) : (
+                                <Typography variant="body2" color="text.secondary">
+                                  —
+                                </Typography>
+                              )}
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </TableContainer>
+
+                  {/* Alert Legend */}
+                  <Box sx={{ mt: 2, p: 1.5, bgcolor: 'grey.50', borderRadius: 1 }}>
+                    <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1 }}>
+                      <strong>LEGEND</strong>
+                    </Typography>
+                    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2 }}>
+                      <Typography variant="caption" color="text.secondary">
+                        ⚠️ Heavy rain (&gt;10mm)
+                      </Typography>
+                      <Typography variant="caption" color="text.secondary">
+                        ❄️ Frost risk (&lt;2°C)
+                      </Typography>
+                      <Typography variant="caption" color="text.secondary">
+                        💧 High humidity (&gt;90%)
+                      </Typography>
+                      <Typography variant="caption" color="text.secondary">
+                        ☀️ Drought (5+ days no rain)
+                      </Typography>
+                    </Box>
+                  </Box>
+                </>
+              )}
+
+              {weather && weather.observations.length === 0 && (
+                <Alert severity="info">
+                  No weather observations available for this region.
+                </Alert>
+              )}
+            </CardContent>
+          </Card>
         </Grid>
       </Grid>
     </Box>
