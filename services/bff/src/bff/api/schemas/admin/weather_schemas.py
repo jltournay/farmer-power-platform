@@ -90,12 +90,8 @@ class RegionWeatherResponse(BaseModel):
     """
 
     region_id: str = Field(description="Region ID")
-    observations: list[WeatherObservation] = Field(
-        description="Weather observations (most recent first)"
-    )
-    last_updated: dt.datetime | None = Field(
-        default=None, description="Timestamp of most recent observation"
-    )
+    observations: list[WeatherObservation] = Field(description="Weather observations (most recent first)")
+    last_updated: dt.datetime | None = Field(default=None, description="Timestamp of most recent observation")
 
     @classmethod
     def from_domain_models(

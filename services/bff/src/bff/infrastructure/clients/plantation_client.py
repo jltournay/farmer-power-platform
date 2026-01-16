@@ -1496,8 +1496,12 @@ class PlantationClient(BaseGrpcClient):
                 ),
                 # Story 9.2: Include boundary and computed values
                 boundary=boundary,
-                area_km2=proto.geography.area_km2 if proto.HasField("geography") and proto.geography.HasField("area_km2") else None,
-                perimeter_km=proto.geography.perimeter_km if proto.HasField("geography") and proto.geography.HasField("perimeter_km") else None,
+                area_km2=proto.geography.area_km2
+                if proto.HasField("geography") and proto.geography.HasField("area_km2")
+                else None,
+                perimeter_km=proto.geography.perimeter_km
+                if proto.HasField("geography") and proto.geography.HasField("perimeter_km")
+                else None,
             ),
             flush_calendar=flush_calendar,
             agronomic=Agronomic(
