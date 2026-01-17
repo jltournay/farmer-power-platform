@@ -1,6 +1,6 @@
 # Story 9.4: Collection Point Management
 
-**Status:** ready-for-dev
+**Status:** review
 **GitHub Issue:** #197
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
@@ -384,9 +384,34 @@ bash scripts/e2e-up.sh --down
 ```
 **Output:**
 ```
-(paste E2E test output here - story is NOT ready for review without this)
+============================= test session starts ==============================
+platform darwin -- Python 3.11.12, pytest-9.0.2
+
+tests/e2e/scenarios/test_34_platform_admin_collection_points.py::TestCollectionPointList::test_list_collection_points_for_factory PASSED [  6%]
+tests/e2e/scenarios/test_34_platform_admin_collection_points.py::TestCollectionPointList::test_collection_points_have_valid_status PASSED [ 12%]
+tests/e2e/scenarios/test_34_platform_admin_collection_points.py::TestCollectionPointDetail::test_collection_point_detail_loads PASSED [ 18%]
+tests/e2e/scenarios/test_34_platform_admin_collection_points.py::TestCollectionPointDetail::test_collection_point_detail_operating_hours_structure PASSED [ 25%]
+tests/e2e/scenarios/test_34_platform_admin_collection_points.py::TestCollectionPointDetail::test_collection_point_detail_capacity_structure PASSED [ 31%]
+tests/e2e/scenarios/test_34_platform_admin_collection_points.py::TestCollectionPointDetail::test_collection_point_detail_collection_days PASSED [ 37%]
+tests/e2e/scenarios/test_34_platform_admin_collection_points.py::TestCollectionPointDetail::test_collection_point_404_not_found PASSED [ 43%]
+tests/e2e/scenarios/test_34_platform_admin_collection_points.py::TestCollectionPointEdit::test_update_collection_point_name PASSED [ 50%]
+tests/e2e/scenarios/test_34_platform_admin_collection_points.py::TestCollectionPointEdit::test_update_collection_point_operating_hours PASSED [ 56%]
+tests/e2e/scenarios/test_34_platform_admin_collection_points.py::TestCollectionPointEdit::test_update_collection_point_capacity PASSED [ 62%]
+tests/e2e/scenarios/test_34_platform_admin_collection_points.py::TestCollectionPointStatusManagement::test_change_status_to_inactive PASSED [ 68%]
+tests/e2e/scenarios/test_34_platform_admin_collection_points.py::TestCollectionPointStatusManagement::test_change_status_to_seasonal PASSED [ 75%]
+tests/e2e/scenarios/test_34_platform_admin_collection_points.py::TestCollectionPointUIUpdates::test_successful_update_returns_updated_data PASSED [ 81%]
+tests/e2e/scenarios/test_34_platform_admin_collection_points.py::TestCollectionPointErrorHandling::test_get_nonexistent_collection_point_returns_404 PASSED [ 87%]
+tests/e2e/scenarios/test_34_platform_admin_collection_points.py::TestCollectionPointErrorHandling::test_update_nonexistent_collection_point_returns_404 PASSED [ 93%]
+tests/e2e/scenarios/test_34_platform_admin_collection_points.py::TestCollectionPointErrorHandling::test_list_collection_points_missing_factory_id_returns_422 PASSED [100%]
+
+============================== 16 passed in 2.59s ==============================
 ```
-**E2E passed:** [ ] Yes / [ ] No
+**E2E passed:** [x] Yes
+
+### 4. CI E2E Workflow
+**Workflow Run ID:** 21092668976
+**Status:** Success
+**Command used:** `gh workflow run "E2E Tests" --ref story/9-4-collection-point-management`
 
 ### 3. Lint Check
 ```bash
