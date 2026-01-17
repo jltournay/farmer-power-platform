@@ -103,7 +103,7 @@ async def wait_for_document_count(
 def create_quality_event(
     event_id: str | None = None,
     farmer_id: str = FARMER_ID,
-    collection_point_id: str = "CP-E2E-001",
+    collection_point_id: str = "kericho-highland-cp-100",
     weight_kg: float = 15.0,
     grade: str = "Primary",
 ) -> dict[str, Any]:

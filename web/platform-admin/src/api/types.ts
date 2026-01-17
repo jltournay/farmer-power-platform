@@ -553,32 +553,101 @@ export interface FactoryUpdateRequest {
 }
 
 // ============================================================================
-// Collection Point Types (for factory detail embedded list)
+// Collection Point Types
 // ============================================================================
 
-/** Collection point summary for embedded list */
+/** Operating hours for collection points (HH:MM-HH:MM format) */
+export interface OperatingHours {
+  weekdays: string; // e.g., "06:00-10:00"
+  weekends: string; // e.g., "07:00-09:00"
+}
+
+/** Collection point capacity and equipment info */
+export interface CollectionPointCapacity {
+  max_daily_kg: number;
+  storage_type: string; // 'open_air' | 'covered_shed' | 'refrigerated'
+  has_weighing_scale: boolean;
+  has_qc_device: boolean;
+}
+
+/** Lead farmer summary for collection point */
+export interface LeadFarmerSummary {
+  id: string;
+  name: string;
+  phone: string;
+}
+
+/** Collection point status type */
+export type CollectionPointStatus = 'active' | 'inactive' | 'seasonal';
+
+/** Collection point summary for list views */
 export interface CollectionPointSummary {
   id: string;
   name: string;
   factory_id: string;
   region_id: string;
   farmer_count: number;
-  status: 'active' | 'inactive' | 'seasonal';
-  clerk_id?: string | null;
-  clerk_phone?: string | null;
+  status: CollectionPointStatus;
 }
 
-/** Collection point create request (for quick-add) */
+/** Full collection point detail (for detail/edit pages) */
+export interface CollectionPointDetailFull {
+  id: string;
+  name: string;
+  factory_id: string;
+  region_id: string;
+  location: GeoLocation;
+  clerk_id: string | null;
+  clerk_phone: string | null;
+  operating_hours: OperatingHours;
+  collection_days: string[]; // ['mon', 'tue', 'wed', ...]
+  capacity: CollectionPointCapacity;
+  lead_farmer: LeadFarmerSummary | null;
+  farmer_count: number;
+  status: CollectionPointStatus;
+  created_at: string; // ISO datetime
+  updated_at: string; // ISO datetime
+}
+
+/** Collection point create request (for quick-add from factory) */
 export interface CollectionPointCreateRequest {
   name: string;
   location: GeoLocation;
   region_id: string;
-  clerk_id?: string;
-  clerk_phone?: string;
+  clerk_id?: string | null;
+  clerk_phone?: string | null;
+  operating_hours?: OperatingHours;
+  collection_days?: string[];
+  capacity?: CollectionPointCapacity;
   status?: string;
 }
 
-/** Collection point detail (returned from create) */
+/** Collection point update request */
+export interface CollectionPointUpdateRequest {
+  name?: string;
+  clerk_id?: string | null;
+  clerk_phone?: string | null;
+  operating_hours?: OperatingHours;
+  collection_days?: string[];
+  capacity?: CollectionPointCapacity;
+  status?: string;
+}
+
+/** Collection point list API response */
+export interface CollectionPointListResponse {
+  data: CollectionPointSummary[];
+  pagination: PaginationMeta;
+}
+
+/** Collection point list query parameters */
+export interface CollectionPointListParams {
+  factory_id: string; // Required
+  page_size?: number;
+  page_token?: string;
+  active_only?: boolean;
+}
+
+/** Collection point detail (legacy - for backwards compatibility with create response) */
 export interface CollectionPointDetail {
   id: string;
   name: string;
@@ -763,4 +832,104 @@ export function factoryFormDataToUpdateRequest(data: Partial<FactoryFormData>): 
   }
 
   return request;
+}
+
+// ============================================================================
+// Collection Point Form Types and Helpers
+// ============================================================================
+
+/** Storage type options for collection point */
+export const STORAGE_TYPE_OPTIONS = [
+  { value: 'open_air', label: 'Open Air' },
+  { value: 'covered_shed', label: 'Covered Shed' },
+  { value: 'refrigerated', label: 'Refrigerated' },
+] as const;
+
+/** Collection days options */
+export const COLLECTION_DAYS = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'] as const;
+export type CollectionDay = (typeof COLLECTION_DAYS)[number];
+
+/** Form data for collection point edit (flat structure for react-hook-form) */
+export interface CollectionPointFormData {
+  name: string;
+  status: CollectionPointStatus;
+  latitude: number;
+  longitude: number;
+  clerk_id: string;
+  clerk_phone: string;
+  weekday_hours: string; // "HH:MM-HH:MM" format
+  weekend_hours: string; // "HH:MM-HH:MM" format
+  collection_days: CollectionDay[];
+  max_daily_kg: number;
+  storage_type: string;
+  has_weighing_scale: boolean;
+  has_qc_device: boolean;
+}
+
+/** Default values for collection point form */
+export const CP_FORM_DEFAULTS: CollectionPointFormData = {
+  name: '',
+  status: 'active',
+  latitude: -1.0, // Default to Kenya
+  longitude: 37.0,
+  clerk_id: '',
+  clerk_phone: '',
+  weekday_hours: '06:00-10:00',
+  weekend_hours: '07:00-09:00',
+  collection_days: ['mon', 'tue', 'wed', 'thu', 'fri', 'sat'],
+  max_daily_kg: 500,
+  storage_type: 'covered_shed',
+  has_weighing_scale: true,
+  has_qc_device: true,
+};
+
+/** Convert CollectionPointDetailFull to form data */
+export function cpDetailToFormData(detail: CollectionPointDetailFull): CollectionPointFormData {
+  return {
+    name: detail.name,
+    status: detail.status,
+    latitude: detail.location.latitude,
+    longitude: detail.location.longitude,
+    clerk_id: detail.clerk_id ?? '',
+    clerk_phone: detail.clerk_phone ?? '',
+    weekday_hours: detail.operating_hours.weekdays,
+    weekend_hours: detail.operating_hours.weekends,
+    collection_days: detail.collection_days as CollectionDay[],
+    max_daily_kg: detail.capacity.max_daily_kg,
+    storage_type: detail.capacity.storage_type,
+    has_weighing_scale: detail.capacity.has_weighing_scale,
+    has_qc_device: detail.capacity.has_qc_device,
+  };
+}
+
+/** Convert form data to CollectionPointUpdateRequest */
+export function cpFormDataToUpdateRequest(data: CollectionPointFormData): CollectionPointUpdateRequest {
+  return {
+    name: data.name,
+    clerk_id: data.clerk_id || null,
+    clerk_phone: data.clerk_phone || null,
+    operating_hours: {
+      weekdays: data.weekday_hours,
+      weekends: data.weekend_hours,
+    },
+    collection_days: data.collection_days,
+    capacity: {
+      max_daily_kg: data.max_daily_kg,
+      storage_type: data.storage_type,
+      has_weighing_scale: data.has_weighing_scale,
+      has_qc_device: data.has_qc_device,
+    },
+    status: data.status,
+  };
+}
+
+/** Parse time range string (HH:MM-HH:MM) into start and end times */
+export function parseTimeRange(timeRange: string): { start: string; end: string } {
+  const [start, end] = timeRange.split('-');
+  return { start: start ?? '06:00', end: end ?? '10:00' };
+}
+
+/** Format start and end times into time range string */
+export function formatTimeRange(start: string, end: string): string {
+  return `${start}-${end}`;
 }

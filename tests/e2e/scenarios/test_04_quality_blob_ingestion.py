@@ -82,7 +82,7 @@ async def wait_for_document_count(
 def create_quality_event(
     event_id: str | None = None,
     farmer_id: str = "FRM-E2E-001",
-    collection_point_id: str = "CP-E2E-001",
+    collection_point_id: str = "kericho-highland-cp-100",
 ) -> dict:
     """Create a quality event JSON payload for blob ingestion."""
     return {
