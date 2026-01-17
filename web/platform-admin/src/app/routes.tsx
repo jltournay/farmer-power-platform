@@ -10,8 +10,7 @@ import { ProtectedRoute } from '@fp/auth';
 import { Layout } from '@/components/Layout';
 import { Dashboard } from '@/pages/Dashboard';
 import { RegionList, RegionDetail, RegionCreate, RegionEdit } from '@/pages/regions';
-import { FarmerList } from '@/pages/farmers/FarmerList';
-import { FarmerDetail } from '@/pages/farmers/FarmerDetail';
+import { FarmerList, FarmerDetail, FarmerCreate, FarmerEdit, FarmerImport } from '@/pages/farmers';
 import { FactoryList, FactoryDetail, FactoryCreate, FactoryEdit, CollectionPointDetail, CollectionPointEdit } from '@/pages/factories';
 import { GradingModelList } from '@/pages/grading-models/GradingModelList';
 import { GradingModelDetail } from '@/pages/grading-models/GradingModelDetail';
@@ -103,10 +102,34 @@ export const routes: RouteObject[] = [
         ),
       },
       {
+        path: 'farmers/new',
+        element: (
+          <ProtectedRoute roles={['platform_admin']}>
+            <FarmerCreate />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: 'farmers/import',
+        element: (
+          <ProtectedRoute roles={['platform_admin']}>
+            <FarmerImport />
+          </ProtectedRoute>
+        ),
+      },
+      {
         path: 'farmers/:farmerId',
         element: (
           <ProtectedRoute roles={['platform_admin']}>
             <FarmerDetail />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: 'farmers/:farmerId/edit',
+        element: (
+          <ProtectedRoute roles={['platform_admin']}>
+            <FarmerEdit />
           </ProtectedRoute>
         ),
       },
