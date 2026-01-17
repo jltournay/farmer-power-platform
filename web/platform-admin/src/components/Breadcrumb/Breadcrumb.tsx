@@ -68,18 +68,30 @@ export function Breadcrumb(): JSX.Element {
     return <Box sx={{ height: 8 }} />; // Small spacer for consistent layout
   }
 
+  // Path segments that are not navigable (no standalone page exists)
+  const skipSegments = ['collection-points'];
+
   // Build breadcrumb items
-  const breadcrumbItems: Array<{ label: string; path: string; isLast: boolean }> = [];
+  const breadcrumbItems: Array<{ label: string; path: string }> = [];
 
   let currentPath = '';
-  pathSegments.forEach((segment, index) => {
+  pathSegments.forEach((segment) => {
     currentPath += `/${segment}`;
+    // Skip segments that don't have their own page
+    if (skipSegments.includes(segment)) {
+      return;
+    }
     breadcrumbItems.push({
       label: getLabel(segment),
       path: currentPath,
-      isLast: index === pathSegments.length - 1,
     });
   });
+
+  // Mark last item
+  const itemsWithLast = breadcrumbItems.map((item, index) => ({
+    ...item,
+    isLast: index === breadcrumbItems.length - 1,
+  }));
 
   return (
     <Box
@@ -115,7 +127,7 @@ export function Breadcrumb(): JSX.Element {
         </Link>
 
         {/* Path segments */}
-        {breadcrumbItems
+        {itemsWithLast
           .filter((item) => item.label !== 'Dashboard') // Don't duplicate dashboard
           .map((item) =>
             item.isLast ? (

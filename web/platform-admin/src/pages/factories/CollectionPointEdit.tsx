@@ -401,7 +401,7 @@ export function CollectionPointEdit(): JSX.Element {
                       fullWidth
                       placeholder="06:00-10:00"
                       error={!!errors.weekday_hours}
-                      helperText={errors.weekday_hours?.message || 'Format: HH:MM-HH:MM'}
+                      helperText={errors.weekday_hours?.message || 'Format: HH:MM-HH:MM (24-hour)'}
                     />
                   )}
                 />
@@ -418,7 +418,7 @@ export function CollectionPointEdit(): JSX.Element {
                       fullWidth
                       placeholder="07:00-09:00"
                       error={!!errors.weekend_hours}
-                      helperText={errors.weekend_hours?.message || 'Format: HH:MM-HH:MM'}
+                      helperText={errors.weekend_hours?.message || 'Format: HH:MM-HH:MM (24-hour)'}
                     />
                   )}
                 />

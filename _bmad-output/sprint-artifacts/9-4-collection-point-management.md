@@ -55,8 +55,8 @@ So that **I can set up farmer registration and delivery locations for the pilot*
 **When** the edit page/modal loads
 **Then**:
 - Pre-populate all fields from existing CP data
-- All fields editable except ID and factory_id
-- GPSFieldWithMapAssist with existing location marker
+- All fields editable except ID, factory_id, and **location** (see note below)
+- ~~GPSFieldWithMapAssist with existing location marker~~ → **Location displayed as read-only** (API design decision: `CollectionPointUpdateRequest` does not support location updates; to change location, recreate the CP)
 - Clerk assignment can be added/changed/removed
 - Operating hours and collection days editable
 - Capacity and equipment editable
@@ -206,102 +206,100 @@ So that **I can set up farmer registration and delivery locations for the pilot*
 
 Create typed API client for collection point endpoints:
 
-- [ ] 1.1 Add/extend collection point types to `web/platform-admin/src/api/types.ts`:
+- [x] 1.1 Add/extend collection point types to `web/platform-admin/src/api/types.ts`:
   - `CollectionPointDetailFull` (extend existing types with operating_hours, collection_days, capacity, lead_farmer)
   - `CollectionPointUpdateRequest` matching BFF schema
   - `OperatingHours`, `CollectionPointCapacity` interfaces
   - `CollectionPointFormData` for react-hook-form
   - Helper functions: `cpDetailToFormData()`, `cpFormDataToUpdateRequest()`
-- [ ] 1.2 Create `web/platform-admin/src/api/collectionPoints.ts`:
+- [x] 1.2 Create `web/platform-admin/src/api/collectionPoints.ts`:
   - `getCollectionPoint(cpId: string): Promise<CollectionPointDetailFull>`
   - `updateCollectionPoint(cpId: string, data: CollectionPointUpdateRequest): Promise<CollectionPointDetailFull>`
   - `listCollectionPointsByFactory(factoryId: string, params?): Promise<CollectionPointListResponse>`
   - Note: `createCollectionPoint` already exists in factories.ts
-- [ ] 1.3 Update `web/platform-admin/src/api/index.ts` with collection point exports
+- [x] 1.3 Update `web/platform-admin/src/api/index.ts` with collection point exports
 
 ### Task 2: Collection Point Detail Page (AC: 1, 5, 6, 7)
 
 Implement CP detail view:
 
-- [ ] 2.1 Create `web/platform-admin/src/pages/collectionPoints/CollectionPointDetail.tsx`:
+- [x] 2.1 Create `web/platform-admin/src/pages/collectionPoints/CollectionPointDetail.tsx`:
   - Route: `/factories/:factoryId/collection-points/:cpId`
   - Fetch CP: `getCollectionPoint(cpId)`
   - PageHeader with CP name, breadcrumb (Factories › Factory › CP), "Edit" button
   - StatusBadge showing active/inactive/seasonal
-- [ ] 2.2 Create CP info section:
+- [x] 2.2 Create CP info section:
   - MapDisplay showing CP location (point marker)
   - Basic info card: ID, Factory (linked), Region (linked)
   - Clerk info card: Clerk ID, Clerk Phone
-- [ ] 2.3 Create operating hours section:
+- [x] 2.3 Create operating hours section:
   - Weekday hours display
   - Weekend hours display
   - Collection days as badges (Mon, Tue, Wed, etc.)
-- [ ] 2.4 Create capacity & equipment section:
+- [x] 2.4 Create capacity & equipment section:
   - Max daily capacity
   - Storage type
   - Equipment flags (weighing scale, QC device)
-- [ ] 2.5 Create related data section:
+- [x] 2.5 Create related data section:
   - Farmer count summary: "{N} farmers have this as primary CP"
   - "View Farmers" button linking to Farmers page with `?collection_point_id={cpId}` filter
-- [ ] 2.6 Handle 404 error with "Collection Point not found" UI
+- [x] 2.6 Handle 404 error with "Collection Point not found" UI
 
 ### Task 3: Collection Point Edit Page (AC: 3, 4, 6, 7)
 
 Implement CP editing:
 
-- [ ] 3.1 Create `web/platform-admin/src/pages/collectionPoints/CollectionPointEdit.tsx`:
+- [x] 3.1 Create `web/platform-admin/src/pages/collectionPoints/CollectionPointEdit.tsx`:
   - Route: `/factories/:factoryId/collection-points/:cpId/edit`
   - Fetch existing CP to pre-populate
   - React Hook Form + Zod validation
-- [ ] 3.2 Basic info section:
+- [x] 3.2 Basic info section:
   - Name (required, max 100 chars)
   - Status dropdown (Active, Inactive, Seasonal) with confirmation dialog
-- [ ] 3.3 Location section with GPSFieldWithMapAssist:
-  - Latitude/Longitude inputs with map picker
-  - Pre-populated with existing location
-- [ ] 3.4 Clerk assignment section:
+- [x] 3.3 Location section (**Note: Location is read-only on edit** - API `CollectionPointUpdateRequest` does not support location updates; location displayed in read-only section)
+- [x] 3.4 Clerk assignment section:
   - Clerk ID (optional)
   - Clerk Phone (optional, +254 format validation)
-- [ ] 3.5 Operating hours section:
+- [x] 3.5 Operating hours section:
   - Time pickers for weekday start/end
   - Time pickers for weekend start/end
-- [ ] 3.6 Collection days section:
+- [x] 3.6 Collection days section:
   - Checkboxes for Mon-Sun
-- [ ] 3.7 Capacity & equipment section:
+- [x] 3.7 Capacity & equipment section:
   - Max daily capacity (numeric, kg)
   - Storage type dropdown
   - Equipment checkboxes (weighing scale, QC device)
-- [ ] 3.8 Form submission:
+- [x] 3.8 Form submission:
   - Transform form data to UpdateRequest
   - Show loading state on button
   - Show success snackbar
   - Navigate to detail on success
   - Show field-level validation errors on failure
-- [ ] 3.9 Cancel button returns to detail view
-- [ ] 3.10 Status change confirmation dialog
+- [x] 3.9 Cancel button returns to detail view
+- [x] 3.10 Status change confirmation dialog
 
 ### Task 4: Route Registration and Navigation (AC: 1-5)
 
 Register routes and update factory detail:
 
-- [ ] 4.1 Update `web/platform-admin/src/app/routes.tsx`:
+- [x] 4.1 Update `web/platform-admin/src/app/routes.tsx`:
   - Add `/factories/:factoryId/collection-points/:cpId` → `CollectionPointDetail`
   - Add `/factories/:factoryId/collection-points/:cpId/edit` → `CollectionPointEdit`
-- [ ] 4.2 Create `web/platform-admin/src/pages/collectionPoints/index.ts` with exports
-- [ ] 4.3 Update FactoryDetail to navigate to CP detail on row click
-- [ ] 4.4 Verify CP quick-add modal from Story 9.3 still works
+- [x] 4.2 Create `web/platform-admin/src/pages/collectionPoints/index.ts` with exports
+- [x] 4.3 Update FactoryDetail to navigate to CP detail on row click
+- [x] 4.4 Verify CP quick-add modal from Story 9.3 still works
 
 ### Task 5: Unit Tests
 
 Create unit tests for collection point management:
 
-- [ ] 5.1 Create `tests/unit/web/platform-admin/api/collectionPoints.test.ts`:
+- [x] 5.1 Create `tests/unit/web/platform-admin/api/collectionPoints.test.ts`:
   - Test API client methods with mocked responses
   - Test error handling (401, 403, 404, 503)
-- [ ] 5.2 Create `tests/unit/web/platform-admin/types/collectionPoints.test.ts`:
+- [x] 5.2 Create `tests/unit/web/platform-admin/types/collectionPoints.test.ts`:
   - Test cpDetailToFormData conversion
   - Test cpFormDataToUpdateRequest conversion
-- [ ] 5.3 Component tests (optional, follow Story 9.3 pattern):
+- [x] 5.3 Component tests (optional, follow Story 9.3 pattern):
   - CollectionPointDetail renders correctly
   - CollectionPointEdit form validation
 
@@ -309,7 +307,7 @@ Create unit tests for collection point management:
 
 Create E2E tests for CP UI flows:
 
-- [ ] 6.1 Create `tests/e2e/scenarios/test_34_platform_admin_collection_points.py`:
+- [x] 6.1 Create `tests/e2e/scenarios/test_34_platform_admin_collection_points.py`:
   - Test CP detail page loads with seed data
   - Test navigation from factory detail to CP detail
   - Test CP edit flow (update name, status, operating hours)
@@ -323,8 +321,8 @@ Create E2E tests for CP UI flows:
 **All story development MUST use feature branches.** Direct pushes to main are blocked.
 
 ### Story Start
-- [ ] GitHub Issue exists or created: `gh issue create --title "Story 9.4: Collection Point Management"`
-- [ ] Feature branch created from main:
+- [x] GitHub Issue exists or created: `gh issue create --title "Story 9.4: Collection Point Management"` → **#197**
+- [x] Feature branch created from main:
   ```bash
   git checkout main && git pull origin main
   git checkout -b story/9-4-collection-point-management
@@ -333,19 +331,19 @@ Create E2E tests for CP UI flows:
 **Branch name:** `story/9-4-collection-point-management`
 
 ### During Development
-- [ ] All commits reference GitHub issue: `Relates to #XX`
-- [ ] Commits are atomic by type (production, test, seed - not mixed)
-- [ ] Push to feature branch: `git push -u origin story/9-4-collection-point-management`
+- [x] All commits reference GitHub issue: `Relates to #197`
+- [x] Commits are atomic by type (production, test, seed - not mixed)
+- [x] Push to feature branch: `git push -u origin story/9-4-collection-point-management`
 
 ### Story Done
 - [ ] Create Pull Request: `gh pr create --title "Story 9.4: Collection Point Management" --base main`
 - [ ] CI passes on PR (including E2E tests)
-- [ ] Human verification completed
-- [ ] Code review completed (`/code-review` or human review)
+- [x] Human verification completed (2026-01-17)
+- [x] Code review completed (`/code-review`)
 - [ ] PR approved and merged (squash)
 - [ ] Local branch cleaned up: `git branch -d story/9-4-collection-point-management`
 
-**PR URL:** _______________ (fill in when created)
+**PR URL:** _______________ (fill in when PR is created)
 
 ---
 
@@ -418,7 +416,7 @@ tests/e2e/scenarios/test_34_platform_admin_collection_points.py::TestCollectionP
 cd web/platform-admin && npm run lint
 ruff check . && ruff format --check .
 ```
-**Lint passed:** [ ] Yes / [ ] No
+**Lint passed:** [x] Yes
 
 ### 4. CI Verification on Story Branch (MANDATORY)
 
@@ -431,9 +429,9 @@ git push origin story/9-4-collection-point-management
 # Wait ~30s, then check CI status
 gh run list --branch story/9-4-collection-point-management --limit 3
 ```
-**CI Run ID:** _______________
-**CI E2E Status:** [ ] Passed / [ ] Failed
-**Verification Date:** _______________
+**CI Run ID:** 21092668976 (E2E Tests workflow)
+**CI E2E Status:** [x] Passed
+**Verification Date:** 2026-01-17
 
 ---
 
@@ -461,42 +459,45 @@ npm run dev
 ### Manual Test Checklist
 
 #### AC1: Collection Point Detail View
-- [ ] Navigate from factory detail → click CP row → loads CP detail page
-- [ ] Header shows CP name and status badge
-- [ ] Map displays with CP location marker
-- [ ] Info sections show: Name, ID, Factory, Region, Clerk, Hours, Capacity
-- [ ] Farmer count summary displays
-- [ ] "View Farmers" link works
-- [ ] Breadcrumb shows: Factories › {Factory} › {CP}
-- [ ] "Edit" and "Back" buttons visible
+- [x] Navigate from factory detail → click CP row → loads CP detail page
+- [x] Header shows CP name and status badge
+- [x] Map displays with CP location marker
+- [x] Info sections show: Name, ID, Factory, Region, Clerk, Hours, Capacity
+- [x] Farmer count summary displays
+- [x] "View Farmers" link works
+- [x] Breadcrumb shows: Factories › {Factory} › {CP} (Note: "Collection Points" segment removed from breadcrumb as it has no standalone page)
+- [x] "Edit" and "Back" buttons visible
 
 #### AC2: Collection Point Creation (via Factory)
-- [ ] From factory detail, click "Add Collection Point"
-- [ ] Modal opens with factory ID pre-filled
-- [ ] GPSFieldWithMapAssist loads with map
-- [ ] Fill required fields and submit
-- [ ] CP created, modal closes, list refreshes
-- [ ] Success snackbar appears
+- [x] From factory detail, click "Add Collection Point"
+- [x] Modal opens with factory ID pre-filled
+- [x] GPSFieldWithMapAssist loads with map
+- [x] Fill required fields and submit
+- [x] CP created, modal closes, list refreshes
+- [x] Success snackbar appears
 
 #### AC3: Collection Point Editing
-- [ ] Click "Edit" on CP detail → edit page loads
-- [ ] All fields pre-populated with existing data
-- [ ] Modify fields (name, hours, capacity)
-- [ ] Save → changes persisted
-- [ ] Cancel → returns without saving
+- [x] Click "Edit" on CP detail → edit page loads
+- [x] All fields pre-populated with existing data
+- [x] Modify fields (name, hours, capacity)
+- [x] Save → changes persisted
+- [x] Cancel → returns without saving
 
 #### AC4: Status Management
-- [ ] Change status dropdown (Active → Inactive)
-- [ ] Confirmation dialog appears
-- [ ] Confirm → status updated
-- [ ] Status badge reflects change
+- [x] Change status dropdown (Active → Inactive)
+- [x] Confirmation dialog appears
+- [x] Confirm → status updated
+- [x] Status badge reflects change
 
 #### AC5: Navigation from Factory
-- [ ] Factory detail shows CP list
-- [ ] Click CP row → navigates to CP detail
-- [ ] "Add CP" button opens modal
+- [x] Factory detail shows CP list
+- [x] Click CP row → navigates to CP detail
+- [x] "Add CP" button opens modal
 
-**Human Verification Passed:** [ ] Yes / [ ] No
+**Human Verification Passed:** [x] Yes
+
+**Bug Found & Fixed During Verification:**
+- Clicking "Collection Points" in breadcrumb → 404. Fixed by removing non-navigable segment from breadcrumb (`Breadcrumb.tsx`)
 
 ---
 
