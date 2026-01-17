@@ -33,8 +33,16 @@ import SettingsIcon from '@mui/icons-material/Settings';
 import PaymentIcon from '@mui/icons-material/Payment';
 import GradingIcon from '@mui/icons-material/Grading';
 import PlaceIcon from '@mui/icons-material/Place';
+import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import { PageHeader, GPSFieldWithMapAssist } from '@fp/ui-components';
-import { getFactory, listRegions, type FactoryDetail as FactoryDetailType, type RegionSummary } from '@/api';
+import {
+  getFactory,
+  listRegions,
+  listCollectionPoints,
+  type FactoryDetail as FactoryDetailType,
+  type RegionSummary,
+  type CollectionPointSummary,
+} from '@/api';
 import { CollectionPointQuickAddModal } from './components/CollectionPointQuickAddModal';
 
 /**
@@ -110,6 +118,7 @@ export function FactoryDetail(): JSX.Element {
   // State
   const [factory, setFactory] = useState<FactoryDetailType | null>(null);
   const [regions, setRegions] = useState<RegionSummary[]>([]);
+  const [collectionPoints, setCollectionPoints] = useState<CollectionPointSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [quickAddOpen, setQuickAddOpen] = useState(false);
@@ -130,6 +139,16 @@ export function FactoryDetail(): JSX.Element {
     try {
       const data = await getFactory(factoryId);
       setFactory(data);
+
+      // Fetch collection points if factory has any
+      if (data.collection_point_count > 0) {
+        try {
+          const cpResponse = await listCollectionPoints({ factory_id: factoryId });
+          setCollectionPoints(cpResponse.data);
+        } catch {
+          console.warn('Failed to load collection points');
+        }
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load factory');
     } finally {
@@ -434,18 +453,55 @@ export function FactoryDetail(): JSX.Element {
                         <TableCell>ID</TableCell>
                         <TableCell align="center">Farmers</TableCell>
                         <TableCell align="center">Status</TableCell>
-                        <TableCell>Actions</TableCell>
+                        <TableCell align="right">Actions</TableCell>
                       </TableRow>
                     </TableHead>
                     <TableBody>
-                      {/* Placeholder - would fetch CPs separately in real impl */}
-                      <TableRow>
-                        <TableCell colSpan={5} sx={{ textAlign: 'center', py: 3 }}>
-                          <Typography variant="body2" color="text.secondary">
-                            Collection points will be listed here. View count: {factory.collection_point_count}
-                          </Typography>
-                        </TableCell>
-                      </TableRow>
+                      {collectionPoints.length === 0 ? (
+                        <TableRow>
+                          <TableCell colSpan={5} sx={{ textAlign: 'center', py: 3 }}>
+                            <Typography variant="body2" color="text.secondary">
+                              Loading collection points...
+                            </Typography>
+                          </TableCell>
+                        </TableRow>
+                      ) : (
+                        collectionPoints.map((cp) => (
+                          <TableRow
+                            key={cp.id}
+                            hover
+                            sx={{ cursor: 'pointer' }}
+                            onClick={() => navigate(`/factories/${factoryId}/collection-points/${cp.id}`)}
+                          >
+                            <TableCell>{cp.name}</TableCell>
+                            <TableCell>
+                              <Typography variant="body2" fontFamily="monospace" fontSize="0.75rem">
+                                {cp.id}
+                              </Typography>
+                            </TableCell>
+                            <TableCell align="center">{cp.farmer_count}</TableCell>
+                            <TableCell align="center">
+                              <Chip
+                                label={cp.status}
+                                size="small"
+                                color={cp.status === 'active' ? 'success' : cp.status === 'seasonal' ? 'warning' : 'default'}
+                              />
+                            </TableCell>
+                            <TableCell align="right">
+                              <Button
+                                size="small"
+                                endIcon={<OpenInNewIcon fontSize="small" />}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  navigate(`/factories/${factoryId}/collection-points/${cp.id}`);
+                                }}
+                              >
+                                View
+                              </Button>
+                            </TableCell>
+                          </TableRow>
+                        ))
+                      )}
                     </TableBody>
                   </Table>
                 </TableContainer>
