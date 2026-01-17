@@ -658,14 +658,42 @@ dist/assets/index-Du92BYFj.js         1,139.08 kB
 ```bash
 # Start infrastructure
 bash scripts/e2e-up.sh --build
+
+# Run farmer E2E tests
+PYTHONPATH="${PYTHONPATH}:.:libs/fp-proto/src" pytest tests/e2e/scenarios/test_35_platform_admin_farmers.py -v
 ```
 **Output:**
 ```
-Docker daemon not running - E2E tests require Docker to be started.
-```
-**Note:** This is a frontend-only story implementing React components. The backend API endpoints tested by E2E tests (test_31_bff_admin_api.py) already exist and pass. The frontend components call these existing APIs. E2E infrastructure validation will be done via CI E2E workflow.
+============================= test session starts ==============================
+tests/e2e/scenarios/test_35_platform_admin_farmers.py::TestFarmerList::test_list_farmers_structure PASSED
+tests/e2e/scenarios/test_35_platform_admin_farmers.py::TestFarmerList::test_list_farmers_with_seed_data PASSED
+tests/e2e/scenarios/test_35_platform_admin_farmers.py::TestFarmerList::test_list_farmers_filter_by_collection_point PASSED
+tests/e2e/scenarios/test_35_platform_admin_farmers.py::TestFarmerList::test_list_farmers_filter_by_active_status PASSED
+tests/e2e/scenarios/test_35_platform_admin_farmers.py::TestFarmerList::test_list_farmers_pagination PASSED
+tests/e2e/scenarios/test_35_platform_admin_farmers.py::TestFarmerDetail::test_farmer_detail_loads PASSED
+tests/e2e/scenarios/test_35_platform_admin_farmers.py::TestFarmerDetail::test_farmer_detail_has_farm_info PASSED
+tests/e2e/scenarios/test_35_platform_admin_farmers.py::TestFarmerDetail::test_farmer_detail_has_performance_metrics PASSED
+tests/e2e/scenarios/test_35_platform_admin_farmers.py::TestFarmerDetail::test_farmer_detail_has_communication_prefs PASSED
+tests/e2e/scenarios/test_35_platform_admin_farmers.py::TestFarmerDetail::test_farmer_detail_404_not_found PASSED
+tests/e2e/scenarios/test_35_platform_admin_farmers.py::TestFarmerCreate::test_create_farmer_success PASSED
+tests/e2e/scenarios/test_35_platform_admin_farmers.py::TestFarmerCreate::test_create_farmer_with_grower_number PASSED
+tests/e2e/scenarios/test_35_platform_admin_farmers.py::TestFarmerCreate::test_create_farmer_validation_missing_required PASSED
+tests/e2e/scenarios/test_35_platform_admin_farmers.py::TestFarmerEdit::test_update_farmer_name PASSED
+tests/e2e/scenarios/test_35_platform_admin_farmers.py::TestFarmerEdit::test_update_farmer_communication_prefs PASSED
+tests/e2e/scenarios/test_35_platform_admin_farmers.py::TestFarmerEdit::test_update_farmer_farm_size PASSED
+tests/e2e/scenarios/test_35_platform_admin_farmers.py::TestFarmerEdit::test_update_nonexistent_farmer_returns_404 PASSED
+tests/e2e/scenarios/test_35_platform_admin_farmers.py::TestFarmerDeactivation::test_deactivate_farmer PASSED
+tests/e2e/scenarios/test_35_platform_admin_farmers.py::TestFarmerDeactivation::test_reactivate_farmer PASSED
+tests/e2e/scenarios/test_35_platform_admin_farmers.py::TestFarmerErrorHandling::test_get_farmer_invalid_id_format_returns_422 PASSED
+tests/e2e/scenarios/test_35_platform_admin_farmers.py::TestFarmerErrorHandling::test_non_admin_cannot_access_farmer_endpoints PASSED
+tests/e2e/scenarios/test_35_platform_admin_farmers.py::TestFarmerUIIntegration::test_farmer_list_to_detail_flow PASSED
+tests/e2e/scenarios/test_35_platform_admin_farmers.py::TestFarmerUIIntegration::test_farmer_detail_to_edit_flow PASSED
+tests/e2e/scenarios/test_35_platform_admin_farmers.py::TestFarmerUIIntegration::test_successful_update_returns_full_entity PASSED
 
-**E2E Local:** [ ] Skipped (Docker not available) - Will validate via CI E2E
+============================== 24 passed in 2.84s ==============================
+```
+
+**E2E Local:** [x] Passed (24 tests)
 
 ### 4. Lint Check
 ```bash
