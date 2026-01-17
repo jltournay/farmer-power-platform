@@ -1,7 +1,7 @@
 # Story 9.4: Collection Point Management
 
 **Status:** ready-for-dev
-**GitHub Issue:** <!-- Auto-created by dev-story workflow -->
+**GitHub Issue:** #197
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -359,8 +359,11 @@ cd web/platform-admin && npm test
 ```
 **Output:**
 ```
-(paste test summary here - e.g., "42 passed in 5.23s")
+ Test Files  11 passed (11)
+      Tests  100 passed (100)
+   Duration  6.28s
 ```
+**Unit tests passed:** [x] Yes
 
 ### 2. E2E Tests (MANDATORY)
 
@@ -712,16 +715,34 @@ This story builds on Story 9.3 (Factory Management):
 
 ### Agent Model Used
 
-{{agent_model_name_version}}
+Claude Opus 4.5 (claude-opus-4-5-20251101)
 
 ### Debug Log References
 
 ### Completion Notes List
 
+1. **Task 1 Complete (2026-01-17):** Added collection point types to `api/types.ts` - OperatingHours, CollectionPointCapacity, CollectionPointDetailFull, form helpers
+2. **Task 1.2 Complete:** Created `api/collectionPoints.ts` with getCollectionPoint, updateCollectionPoint, listCollectionPoints
+3. **Task 2 Complete:** Created `CollectionPointDetail.tsx` page with all AC1 requirements
+4. **Task 3 Complete:** Created `CollectionPointEdit.tsx` page with form validation, status confirmation dialog
+5. **Task 4 Complete:** Routes registered, navigation from FactoryDetail updated with clickable CP table rows
+6. **Task 5 Complete:** Unit tests created and passing (100 tests)
+7. **Task 6 Complete:** E2E tests created in `test_34_platform_admin_collection_points.py`
+
 ### File List
 
 **Created:**
-- (list new files)
+- `web/platform-admin/src/api/collectionPoints.ts` - API client for collection points
+- `web/platform-admin/src/pages/factories/CollectionPointEdit.tsx` - Edit page component
+- `tests/unit/web/platform-admin/api/collectionPoints.test.ts` - API client unit tests
+- `tests/unit/web/platform-admin/types/collectionPoints.test.ts` - Type helper unit tests
+- `tests/e2e/scenarios/test_34_platform_admin_collection_points.py` - E2E tests for CP flows
 
 **Modified:**
-- (list modified files with brief description)
+- `web/platform-admin/src/api/types.ts` - Added CP types, form data, and helper functions
+- `web/platform-admin/src/api/index.ts` - Added collectionPoints export
+- `web/platform-admin/src/pages/factories/CollectionPointDetail.tsx` - Replaced placeholder with full detail page
+- `web/platform-admin/src/pages/factories/FactoryDetail.tsx` - Added CP list with clickable rows, navigation
+- `web/platform-admin/src/pages/factories/index.ts` - Added CollectionPointEdit export
+- `web/platform-admin/src/app/routes.tsx` - Added CP edit route
+- `tests/e2e/helpers/api_clients.py` - Added admin_list_collection_points method
