@@ -44,8 +44,11 @@ describe('Breadcrumb', () => {
     // Factory ID should be a link
     expect(screen.getByRole('link', { name: /factory-123/i })).toBeInTheDocument();
 
-    // Collection Points should be a link
-    expect(screen.getByRole('link', { name: /collection points/i })).toBeInTheDocument();
+    // Collection Points is skipped (not a navigable page)
+    expect(screen.queryByRole('link', { name: /collection points/i })).not.toBeInTheDocument();
+
+    // CP ID should be text (last segment)
+    expect(screen.getByText('cp-456')).toBeInTheDocument();
   });
 
   it('displays minimal content on dashboard', () => {
