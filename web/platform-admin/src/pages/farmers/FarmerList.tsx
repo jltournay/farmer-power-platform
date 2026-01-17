@@ -107,6 +107,7 @@ export function FarmerList(): JSX.Element {
   });
   const [filters, setFilters] = useState<FilterValues>({});
   const [searchQuery, setSearchQuery] = useState('');
+  const [pageTokens, setPageTokens] = useState<Record<number, string | null>>({ 0: null });
 
   // Region lookup map for display
   const regionMap = regions.reduce<Record<string, string>>((acc, r) => {
@@ -148,8 +149,12 @@ export function FarmerList(): JSX.Element {
     setError(null);
 
     try {
+      // Get page token for current page (null for first page)
+      const currentPageToken = pageTokens[paginationModel.page] ?? null;
+
       const response = await listFarmers({
         page_size: paginationModel.pageSize,
+        page_token: currentPageToken ?? undefined,
         region_id: filters.region_id as string | undefined,
         collection_point_id: filters.collection_point_id as string | undefined,
         farm_scale: filters.farm_scale as 'smallholder' | 'medium' | 'large' | 'estate' | undefined,
@@ -158,13 +163,23 @@ export function FarmerList(): JSX.Element {
         search: searchQuery || undefined,
       });
       setData(response);
+
+      // Store the next page token for the next page
+      if (response.pagination.next_page_token) {
+        setPageTokens((prev) => ({
+          ...prev,
+          [paginationModel.page + 1]: response.pagination.next_page_token,
+        }));
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load farmers');
     } finally {
       setLoading(false);
     }
   }, [
+    paginationModel.page,
     paginationModel.pageSize,
+    pageTokens,
     filters.region_id,
     filters.collection_point_id,
     filters.farm_scale,
@@ -309,10 +324,18 @@ export function FarmerList(): JSX.Element {
         filterValues={filters}
         onFilterChange={(filterId, value) => {
           setFilters((prev) => ({ ...prev, [filterId]: value }));
+          // Reset pagination when filters change
+          setPaginationModel((prev) => ({ ...prev, page: 0 }));
+          setPageTokens({ 0: null });
         }}
         showSearch={true}
         searchTerm={searchQuery}
-        onSearchChange={setSearchQuery}
+        onSearchChange={(value) => {
+          setSearchQuery(value);
+          // Reset pagination when search changes
+          setPaginationModel((prev) => ({ ...prev, page: 0 }));
+          setPageTokens({ 0: null });
+        }}
         searchPlaceholder="Search by name or phone..."
       />
 
@@ -334,7 +357,15 @@ export function FarmerList(): JSX.Element {
           loading={loading}
           rowCount={data?.pagination.total_count ?? filteredRows.length}
           paginationModel={paginationModel}
-          onPaginationChange={setPaginationModel}
+          onPaginationChange={(newModel) => {
+            // Reset page tokens if page size changed
+            if (newModel.pageSize !== paginationModel.pageSize) {
+              setPageTokens({ 0: null });
+              setPaginationModel({ ...newModel, page: 0 });
+            } else {
+              setPaginationModel(newModel);
+            }
+          }}
           pageSizeOptions={[10, 25, 50, 100]}
           onRowClick={(row) => navigate(`/farmers/${row.id}`)}
           noRowsText="No farmers found"

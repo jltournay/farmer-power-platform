@@ -142,7 +142,7 @@ describe('Farmers API Client', () => {
         communication_prefs: {
           notification_channel: 'sms',
           interaction_pref: 'text',
-          pref_lang: 'swahili',
+          pref_lang: 'sw',
         },
         is_active: true,
         registration_date: '2025-01-15T00:00:00Z',
@@ -157,7 +157,7 @@ describe('Farmers API Client', () => {
       expect(apiClient.get).toHaveBeenCalledWith('/admin/farmers/WM-0001');
       expect(result).toEqual(mockFarmer);
       expect(result.performance.tier).toBe('premium');
-      expect(result.communication_prefs.pref_lang).toBe('swahili');
+      expect(result.communication_prefs.pref_lang).toBe('sw');
     });
 
     it('should handle farmer without grower number', async () => {
@@ -186,7 +186,7 @@ describe('Farmers API Client', () => {
         communication_prefs: {
           notification_channel: 'whatsapp',
           interaction_pref: 'voice',
-          pref_lang: 'english',
+          pref_lang: 'en',
         },
         is_active: true,
         registration_date: '2025-02-01T00:00:00Z',
@@ -243,7 +243,7 @@ describe('Farmers API Client', () => {
         communication_prefs: {
           notification_channel: 'sms',
           interaction_pref: 'text',
-          pref_lang: 'swahili',
+          pref_lang: 'sw',
         },
         is_active: true,
         registration_date: '2026-01-17T00:00:00Z',
@@ -298,7 +298,7 @@ describe('Farmers API Client', () => {
         communication_prefs: {
           notification_channel: 'sms',
           interaction_pref: 'text',
-          pref_lang: 'swahili',
+          pref_lang: 'sw',
         },
         is_active: true,
         registration_date: '2026-01-17T00:00:00Z',
@@ -347,7 +347,7 @@ describe('Farmers API Client', () => {
         communication_prefs: {
           notification_channel: 'sms',
           interaction_pref: 'text',
-          pref_lang: 'swahili',
+          pref_lang: 'sw',
         },
         is_active: true,
         registration_date: '2025-01-15T00:00:00Z',
@@ -394,7 +394,7 @@ describe('Farmers API Client', () => {
         communication_prefs: {
           notification_channel: 'sms',
           interaction_pref: 'text',
-          pref_lang: 'swahili',
+          pref_lang: 'sw',
         },
         is_active: false,
         registration_date: '2025-01-15T00:00:00Z',
@@ -441,7 +441,7 @@ describe('Farmers API Client', () => {
         communication_prefs: {
           notification_channel: 'whatsapp',
           interaction_pref: 'voice',
-          pref_lang: 'english',
+          pref_lang: 'en',
         },
         is_active: true,
         registration_date: '2025-01-15T00:00:00Z',
@@ -455,7 +455,7 @@ describe('Farmers API Client', () => {
 
       expect(result.communication_prefs.notification_channel).toBe('whatsapp');
       expect(result.communication_prefs.interaction_pref).toBe('voice');
-      expect(result.communication_prefs.pref_lang).toBe('english');
+      expect(result.communication_prefs.pref_lang).toBe('en');
     });
   });
 
