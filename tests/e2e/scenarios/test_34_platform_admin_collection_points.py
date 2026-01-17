@@ -9,8 +9,8 @@ Prerequisites:
 Test Data Relationships (from seed):
     - REG-E2E-001 (Kericho Highland): FAC-E2E-001
     - REG-E2E-002 (Nandi Hills): FAC-E2E-002
-    - FAC-E2E-001: CP-E2E-001, CP-E2E-002
-    - FAC-E2E-002: CP-E2E-003
+    - FAC-E2E-001: kericho-highland-cp-001, kericho-highland-cp-002
+    - FAC-E2E-002: nandi-highland-cp-001
 """
 
 from typing import Any
@@ -240,9 +240,10 @@ class TestCollectionPointDetail:
         bff_api: BFFClient,
     ):
         """Test 404 error when collection point not found (AC7)."""
+        # Use a valid format ID that doesn't exist in seed data
         response = await bff_api.admin_request_raw(
             "GET",
-            "/api/admin/collection-points/nonexistent-cp-999",
+            "/api/admin/collection-points/nonexistent-region-cp-999",
         )
 
         # Should return 404 for non-existent collection point
@@ -495,9 +496,10 @@ class TestCollectionPointErrorHandling:
         bff_api: BFFClient,
     ):
         """Test 404 when collection point doesn't exist (AC7)."""
+        # Use valid format ID that doesn't exist in seed data
         response = await bff_api.admin_request_raw(
             "GET",
-            "/api/admin/collection-points/NONEXISTENT-CP-999",
+            "/api/admin/collection-points/nonexistent-region-cp-999",
         )
         assert response.status_code == 404
 
@@ -507,9 +509,10 @@ class TestCollectionPointErrorHandling:
         bff_api: BFFClient,
     ):
         """Test 404 when updating non-existent collection point (AC7)."""
+        # Use valid format ID that doesn't exist in seed data
         response = await bff_api.admin_request_raw(
             "PUT",
-            "/api/admin/collection-points/NONEXISTENT-CP-999",
+            "/api/admin/collection-points/nonexistent-region-cp-999",
             json={"name": "Updated Name"},
         )
         assert response.status_code == 404

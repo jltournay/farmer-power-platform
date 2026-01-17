@@ -21,7 +21,7 @@
           "fiber": 3.5
         }
       },
-      "collection_point_id": "CP-E2E-001",
+      "collection_point_id": "kericho-highland-cp-001",
       "operator_id": "OP-001",
       "device_id": "QC-ANALYZER-001"
     }
@@ -48,7 +48,7 @@
           "fiber": 3.8
         }
       },
-      "collection_point_id": "CP-E2E-001",
+      "collection_point_id": "kericho-highland-cp-001",
       "operator_id": "OP-001",
       "device_id": "QC-ANALYZER-001"
     }
@@ -75,7 +75,7 @@
           "fiber": 3.8
         }
       },
-      "collection_point_id": "CP-E2E-001",
+      "collection_point_id": "kericho-highland-cp-001",
       "operator_id": "OP-002",
       "device_id": "QC-ANALYZER-001",
       "notes": "Higher coarse leaf content - quality improvement advice given"
