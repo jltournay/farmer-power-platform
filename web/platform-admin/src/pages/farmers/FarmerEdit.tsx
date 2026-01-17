@@ -67,7 +67,7 @@ const farmerEditSchema = z.object({
   farm_size_hectares: z.coerce.number().min(0.01, 'Minimum 0.01 hectares').max(1000),
   notification_channel: z.enum(['sms', 'whatsapp', 'push', 'voice']),
   interaction_pref: z.enum(['text', 'voice', 'visual']),
-  pref_lang: z.enum(['swahili', 'english', 'kikuyu', 'luo']),
+  pref_lang: z.enum(['sw', 'en', 'ki', 'luo']),
   is_active: z.boolean(),
 });
 

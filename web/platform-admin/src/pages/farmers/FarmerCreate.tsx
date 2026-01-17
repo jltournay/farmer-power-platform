@@ -65,7 +65,7 @@ const farmerFormSchema = z.object({
   grower_number: z.string().max(50).optional(),
   notification_channel: z.enum(['sms', 'whatsapp', 'push', 'voice']),
   interaction_pref: z.enum(['text', 'voice', 'visual']),
-  pref_lang: z.enum(['swahili', 'english', 'kikuyu', 'luo']),
+  pref_lang: z.enum(['sw', 'en', 'ki', 'luo']),
 });
 
 type FormValues = z.infer<typeof farmerFormSchema>;
@@ -82,7 +82,7 @@ const defaultValues: FormValues = {
   grower_number: '',
   notification_channel: 'sms',
   interaction_pref: 'text',
-  pref_lang: 'swahili',
+  pref_lang: 'sw',
 };
 
 // ============================================================================

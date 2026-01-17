@@ -954,7 +954,7 @@ export type NotificationChannel = 'sms' | 'whatsapp' | 'push' | 'voice';
 export type InteractionPreference = 'text' | 'voice' | 'visual';
 
 /** Preferred language */
-export type PreferredLanguage = 'swahili' | 'english' | 'kikuyu' | 'luo';
+export type PreferredLanguage = 'sw' | 'en' | 'ki' | 'luo';
 
 /** Farmer summary for admin list views */
 export interface FarmerSummary {
@@ -1103,7 +1103,7 @@ export const FARMER_FORM_DEFAULTS: FarmerFormData = {
   grower_number: '',
   notification_channel: 'sms',
   interaction_pref: 'text',
-  pref_lang: 'swahili',
+  pref_lang: 'sw',
 };
 
 /** Convert form data to FarmerCreateRequest */
@@ -1210,9 +1210,9 @@ export const INTERACTION_PREF_OPTIONS = [
 
 /** Language options */
 export const LANGUAGE_OPTIONS = [
-  { value: 'swahili', label: 'Swahili' },
-  { value: 'english', label: 'English' },
-  { value: 'kikuyu', label: 'Kikuyu' },
+  { value: 'sw', label: 'Swahili' },
+  { value: 'en', label: 'English' },
+  { value: 'ki', label: 'Kikuyu' },
   { value: 'luo', label: 'Luo' },
 ] as const;
 

@@ -24,7 +24,7 @@ describe('Farmer Type Helpers', () => {
       expect(FARMER_FORM_DEFAULTS.phone).toBe('+254');
       expect(FARMER_FORM_DEFAULTS.notification_channel).toBe('sms');
       expect(FARMER_FORM_DEFAULTS.interaction_pref).toBe('text');
-      expect(FARMER_FORM_DEFAULTS.pref_lang).toBe('swahili');
+      expect(FARMER_FORM_DEFAULTS.pref_lang).toBe('sw');
       expect(FARMER_FORM_DEFAULTS.farm_size_hectares).toBe(0.5);
     });
   });
@@ -43,7 +43,7 @@ describe('Farmer Type Helpers', () => {
         grower_number: 'GRW001',
         notification_channel: 'sms',
         interaction_pref: 'text',
-        pref_lang: 'swahili',
+        pref_lang: 'sw',
       };
 
       const result = farmerFormDataToCreateRequest(formData);
@@ -73,7 +73,7 @@ describe('Farmer Type Helpers', () => {
         grower_number: '',
         notification_channel: 'whatsapp',
         interaction_pref: 'voice',
-        pref_lang: 'english',
+        pref_lang: 'en',
       };
 
       const result = farmerFormDataToCreateRequest(formData);
@@ -109,7 +109,7 @@ describe('Farmer Type Helpers', () => {
         communication_prefs: {
           notification_channel: 'sms',
           interaction_pref: 'text',
-          pref_lang: 'swahili',
+          pref_lang: 'sw',
         },
         is_active: true,
         registration_date: '2025-01-15T00:00:00Z',
@@ -130,7 +130,7 @@ describe('Farmer Type Helpers', () => {
       expect(result.grower_number).toBe('GRW001');
       expect(result.notification_channel).toBe('sms');
       expect(result.interaction_pref).toBe('text');
-      expect(result.pref_lang).toBe('swahili');
+      expect(result.pref_lang).toBe('sw');
     });
 
     it('should handle null grower_number', () => {
@@ -159,7 +159,7 @@ describe('Farmer Type Helpers', () => {
         communication_prefs: {
           notification_channel: 'whatsapp',
           interaction_pref: 'voice',
-          pref_lang: 'english',
+          pref_lang: 'en',
         },
         is_active: true,
         registration_date: '2025-02-01T00:00:00Z',
@@ -193,14 +193,14 @@ describe('Farmer Type Helpers', () => {
       const partialData: Partial<FarmerFormData> = {
         notification_channel: 'whatsapp',
         interaction_pref: 'voice',
-        pref_lang: 'english',
+        pref_lang: 'en',
       };
 
       const result = farmerFormDataToUpdateRequest(partialData);
 
       expect(result.notification_channel).toBe('whatsapp');
       expect(result.interaction_pref).toBe('voice');
-      expect(result.pref_lang).toBe('english');
+      expect(result.pref_lang).toBe('en');
     });
 
     it('should include farm size when provided', () => {
