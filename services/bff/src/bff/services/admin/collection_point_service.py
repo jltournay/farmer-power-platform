@@ -162,7 +162,7 @@ class AdminCollectionPointService(BaseService):
             status=data.status,
         )
 
-        cp = await self._plantation.create_collection_point(factory_id, create_data)
+        cp = await self._plantation.create_collection_point(create_data)
 
         detail = self._transformer.to_detail(
             cp=cp,

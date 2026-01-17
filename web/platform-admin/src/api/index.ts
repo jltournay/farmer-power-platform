@@ -8,4 +8,5 @@ export { apiClient, createApiClient } from './client';
 export type { ApiErrorResponse } from './client';
 
 export * from './regions';
+export * from './factories';
 export * from './types';
