@@ -20,6 +20,7 @@ import {
   Alert,
   CircularProgress,
   Typography,
+  Snackbar,
 } from '@mui/material';
 import { GPSFieldWithMapAssist, type GPSCoordinates } from '@fp/ui-components';
 import { createCollectionPoint, type CollectionPointCreateRequest, type GeoLocation } from '@/api';
@@ -70,6 +71,7 @@ export function CollectionPointQuickAddModal({
   regionId,
 }: CollectionPointQuickAddModalProps): JSX.Element {
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const [successSnackbar, setSuccessSnackbar] = useState(false);
 
   const {
     control,
@@ -119,8 +121,13 @@ export function CollectionPointQuickAddModal({
       };
 
       await createCollectionPoint(factoryId, request);
+      setSuccessSnackbar(true);
       reset(DEFAULT_VALUES);
-      onSuccess();
+      // Call onSuccess after brief delay to show snackbar
+      setTimeout(() => {
+        setSuccessSnackbar(false);
+        onSuccess();
+      }, 1000);
     } catch (err) {
       setSubmitError(err instanceof Error ? err.message : 'Failed to create collection point');
     }
@@ -217,6 +224,15 @@ export function CollectionPointQuickAddModal({
           </Button>
         </DialogActions>
       </form>
+
+      {/* Success Snackbar (AC7) */}
+      <Snackbar
+        open={successSnackbar}
+        autoHideDuration={3000}
+        onClose={() => setSuccessSnackbar(false)}
+        message="Collection point created successfully"
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      />
     </Dialog>
   );
 }

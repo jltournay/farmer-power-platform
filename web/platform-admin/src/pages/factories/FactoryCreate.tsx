@@ -24,6 +24,7 @@ import {
   AccordionSummary,
   AccordionDetails,
   InputAdornment,
+  Snackbar,
 } from '@mui/material';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import SaveIcon from '@mui/icons-material/Save';
@@ -104,6 +105,7 @@ export function FactoryCreate(): JSX.Element {
   // State
   const [regions, setRegions] = useState<RegionSummary[]>([]);
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const [successSnackbar, setSuccessSnackbar] = useState(false);
 
   // Form state
   const {
@@ -175,7 +177,9 @@ export function FactoryCreate(): JSX.Element {
       };
 
       const created = await createFactory(request);
-      navigate(`/factories/${created.id}`);
+      setSuccessSnackbar(true);
+      // Navigate after brief delay to show snackbar
+      setTimeout(() => navigate(`/factories/${created.id}`), 1000);
     } catch (err) {
       setSubmitError(err instanceof Error ? err.message : 'Failed to create factory');
     }
@@ -572,6 +576,15 @@ export function FactoryCreate(): JSX.Element {
           </Box>
         </Grid>
       </Grid>
+
+      {/* Success Snackbar (AC7) */}
+      <Snackbar
+        open={successSnackbar}
+        autoHideDuration={3000}
+        onClose={() => setSuccessSnackbar(false)}
+        message="Factory created successfully"
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      />
     </Box>
   );
 }

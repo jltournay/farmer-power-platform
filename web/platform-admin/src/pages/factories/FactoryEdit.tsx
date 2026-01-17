@@ -27,6 +27,12 @@ import {
   FormControlLabel,
   Switch,
   Chip,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogContentText,
+  DialogActions,
+  Snackbar,
 } from '@mui/material';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import SaveIcon from '@mui/icons-material/Save';
@@ -91,6 +97,8 @@ export function FactoryEdit(): JSX.Element {
   const [loading, setLoading] = useState(true);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [deactivateDialogOpen, setDeactivateDialogOpen] = useState(false);
+  const [successSnackbar, setSuccessSnackbar] = useState(false);
 
   // Form state
   const {
@@ -174,6 +182,28 @@ export function FactoryEdit(): JSX.Element {
     if (coords.lng !== null) setValue('longitude', coords.lng, { shouldDirty: true });
   };
 
+  // Handle deactivation toggle - show confirmation dialog
+  const handleActiveToggle = (newValue: boolean) => {
+    if (!newValue && factory?.is_active) {
+      // Deactivating - show confirmation dialog
+      setDeactivateDialogOpen(true);
+    } else {
+      // Activating - no confirmation needed
+      setValue('is_active', newValue, { shouldDirty: true });
+    }
+  };
+
+  // Confirm deactivation
+  const handleConfirmDeactivate = () => {
+    setValue('is_active', false, { shouldDirty: true });
+    setDeactivateDialogOpen(false);
+  };
+
+  // Cancel deactivation
+  const handleCancelDeactivate = () => {
+    setDeactivateDialogOpen(false);
+  };
+
   // Form submission
   const onSubmit = async (data: FormValues) => {
     if (!factoryId) return;
@@ -209,7 +239,9 @@ export function FactoryEdit(): JSX.Element {
       };
 
       await updateFactory(factoryId, request);
-      navigate(`/factories/${factoryId}`);
+      setSuccessSnackbar(true);
+      // Navigate after brief delay to show snackbar
+      setTimeout(() => navigate(`/factories/${factoryId}`), 1000);
     } catch (err) {
       setSubmitError(err instanceof Error ? err.message : 'Failed to update factory');
     }
@@ -360,13 +392,19 @@ export function FactoryEdit(): JSX.Element {
                       control={
                         <Switch
                           checked={field.value}
-                          onChange={(e) => field.onChange(e.target.checked)}
+                          onChange={(e) => handleActiveToggle(e.target.checked)}
                         />
                       }
                       label="Factory Active"
                     />
                   )}
                 />
+                {factory && factory.collection_point_count > 0 && !watch('is_active') && (
+                  <Typography variant="caption" color="warning.main" sx={{ display: 'block', mt: 0.5 }}>
+                    Warning: This factory has {factory.collection_point_count} collection point(s).
+                    Deactivating will affect associated operations.
+                  </Typography>
+                )}
               </Grid>
             </Grid>
           </Paper>
@@ -658,6 +696,38 @@ export function FactoryEdit(): JSX.Element {
           </Box>
         </Grid>
       </Grid>
+
+      {/* Deactivation Confirmation Dialog (AC5) */}
+      <Dialog open={deactivateDialogOpen} onClose={handleCancelDeactivate}>
+        <DialogTitle>Deactivate Factory?</DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            Are you sure you want to deactivate this factory?
+            {factory && factory.collection_point_count > 0 && (
+              <>
+                <br /><br />
+                <strong>Warning:</strong> This factory has {factory.collection_point_count} collection point(s).
+                Deactivating the factory will affect all associated collection points and operations.
+              </>
+            )}
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCancelDeactivate}>Cancel</Button>
+          <Button onClick={handleConfirmDeactivate} color="warning" variant="contained">
+            Deactivate
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Success Snackbar (AC7) */}
+      <Snackbar
+        open={successSnackbar}
+        autoHideDuration={3000}
+        onClose={() => setSuccessSnackbar(false)}
+        message="Factory updated successfully"
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      />
     </Box>
   );
 }

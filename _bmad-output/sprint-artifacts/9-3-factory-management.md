@@ -541,21 +541,22 @@ tests/e2e/scenarios/test_33_platform_admin_factories.py::TestFactoryDetailView::
 tests/e2e/scenarios/test_33_platform_admin_factories.py::TestFactoryDetailView::test_factory_detail_quality_thresholds PASSED
 tests/e2e/scenarios/test_33_platform_admin_factories.py::TestFactoryDetailView::test_factory_detail_payment_policy PASSED
 tests/e2e/scenarios/test_33_platform_admin_factories.py::TestFactoryDetailView::test_factory_detail_404_not_found PASSED
+tests/e2e/scenarios/test_33_platform_admin_factories.py::TestFactoryCreateFlow::test_factory_create_success PASSED
+tests/e2e/scenarios/test_33_platform_admin_factories.py::TestFactoryCreateFlow::test_factory_create_with_defaults PASSED
 tests/e2e/scenarios/test_33_platform_admin_factories.py::TestFactoryEditFlow::test_factory_edit_update_name PASSED
 tests/e2e/scenarios/test_33_platform_admin_factories.py::TestFactoryEditFlow::test_factory_edit_update_capacity PASSED
 tests/e2e/scenarios/test_33_platform_admin_factories.py::TestFactoryEditFlow::test_factory_edit_update_quality_thresholds PASSED
 tests/e2e/scenarios/test_33_platform_admin_factories.py::TestFactoryEditFlow::test_factory_deactivate PASSED
-tests/e2e/scenarios/test_33_platform_admin_factories.py::TestCollectionPointQuickAdd::test_create_collection_point_under_factory FAILED (500 backend error - not frontend)
+tests/e2e/scenarios/test_33_platform_admin_factories.py::TestCollectionPointQuickAdd::test_create_collection_point_under_factory PASSED
 tests/e2e/scenarios/test_33_platform_admin_factories.py::TestErrorHandling::test_invalid_factory_id_format PASSED
 tests/e2e/scenarios/test_33_platform_admin_factories.py::TestErrorHandling::test_factory_create_missing_required_fields PASSED
 tests/e2e/scenarios/test_33_platform_admin_factories.py::TestErrorHandling::test_factory_update_nonexistent PASSED
 
-============= 1 failed, 153 passed, 1 skipped in 173.52s (0:02:53) =============
+============= 16 passed in 45.32s =============
 
-Note: The 1 failed test is due to backend returning 500 for POST /api/admin/factories/{id}/collection-points
-This is a backend issue (Story 9.1c endpoint), not a frontend issue (Story 9.3).
+All 16 factory management E2E tests pass.
 ```
-**E2E passed:** [x] Yes (14/15 factory tests passed, 1 backend endpoint issue) / [ ] No
+**E2E passed:** [x] Yes (16/16 factory tests passed) / [ ] No
 
 ### 3. Lint Check
 ```bash
@@ -605,7 +606,7 @@ If you modified ANY production code (`services/`, `mcp-servers/`, `libs/`), docu
 
 | File:Lines | What Changed | Why (with evidence) | Type |
 |------------|--------------|---------------------|------|
-| (none) | | | |
+| `services/bff/src/bff/services/admin/collection_point_service.py:165` | Removed extra `factory_id` argument from `create_collection_point` call | PlantationClient method signature takes only `cp_data` (which already contains factory_id), but service was passing two arguments. Evidence: E2E test `test_create_collection_point_under_factory` was returning 500 error | Bug fix |
 
 **Rules:**
 - "To pass tests" is NOT a valid reason
@@ -1205,6 +1206,15 @@ Claude Opus 4.5 (claude-opus-4-5-20251101)
 - `web/platform-admin/src/api/types.ts` - Added factory types, form types, conversion helpers (~340 lines)
 - `web/platform-admin/src/api/index.ts` - Added factory exports
 - `web/platform-admin/src/pages/factories/FactoryList.tsx` - Full implementation with DataTable, filters, pagination
-- `web/platform-admin/src/pages/factories/FactoryDetail.tsx` - Full implementation with quality thresholds, payment policy, CP list
+- `web/platform-admin/src/pages/factories/FactoryDetail.tsx` - Full implementation with quality thresholds, payment policy, CP count display
 - `web/platform-admin/src/pages/factories/index.ts` - Added exports for new pages
 - `web/platform-admin/src/app/routes.tsx` - Added routes for /factories/new and /factories/:factoryId/edit
+- `services/bff/src/bff/services/admin/collection_point_service.py` - Bug fix: removed extra argument from create_collection_point call
+
+**Code Review Fixes (2026-01-17):**
+- `web/platform-admin/src/pages/factories/FactoryEdit.tsx` - Added deactivation confirmation dialog (AC5), CP warning, success snackbar (AC7)
+- `web/platform-admin/src/pages/factories/FactoryCreate.tsx` - Added success snackbar (AC7)
+- `web/platform-admin/src/pages/factories/components/CollectionPointQuickAddModal.tsx` - Added success snackbar (AC7)
+
+**Notes:**
+- AC2 Collection Points section shows count only (not full CP list) - API does not include CP array in FactoryDetail response. This is an API design limitation; full CP list would require additional endpoint or schema change.
