@@ -608,6 +608,38 @@ class BFFClient:
         response.raise_for_status()
         return response.json()
 
+    async def admin_list_collection_points(
+        self,
+        factory_id: str,
+        page_size: int = 50,
+        page_token: str | None = None,
+        active_only: bool | None = None,
+    ) -> dict[str, Any]:
+        """List collection points for a factory (admin endpoint).
+
+        Args:
+            factory_id: Factory ID to list collection points for
+            page_size: Number of items per page
+            page_token: Pagination token
+            active_only: Filter to active collection points only
+
+        Returns:
+            Paginated list of collection point summaries
+        """
+        params: dict[str, Any] = {"factory_id": factory_id, "page_size": page_size}
+        if page_token is not None:
+            params["page_token"] = page_token
+        if active_only is not None:
+            params["active_only"] = active_only
+
+        response = await self.client.get(
+            "/api/admin/collection-points",
+            params=params,
+            headers=self._get_auth_headers(role="platform_admin"),
+        )
+        response.raise_for_status()
+        return response.json()
+
     async def admin_get_collection_point(self, collection_point_id: str) -> dict[str, Any]:
         """Get collection point details (admin endpoint).
 
