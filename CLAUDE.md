@@ -78,13 +78,13 @@ When running any BMAD workflow (dev-story, code-review, create-story, etc.):
 
 **Correct behavior:**
 ```
-Workflow says: Step 7 → Step 7b (Local E2E) → Step 8 → Step 9 → Step 9b (Quality CI) → Step 9c (E2E CI) → Step 9d (GitHub) → Step 9e (Code Review) → Step 10
-You execute:    Step 7 → Step 7b (Local E2E) → Step 8 → Step 9 → Step 9b (Quality CI) → Step 9c (E2E CI) → Step 9d (GitHub) → Step 9e (Code Review) → Step 10
+Workflow says: Step 8 → Step 9 (Local E2E) → Step 10 → Step 11 → Step 12 (Quality CI) → Step 13 (E2E CI) → Step 14 (GitHub) → Step 15 (Code Review) → Step 16
+You execute:    Step 8 → Step 9 (Local E2E) → Step 10 → Step 11 → Step 12 (Quality CI) → Step 13 (E2E CI) → Step 14 (GitHub) → Step 15 (Code Review) → Step 16
 ```
 
 **Incorrect behavior:**
 ```
-Workflow says: Step 7 → Step 7b (Local E2E) → ... → Step 9c (E2E CI) → ... → Step 9e (Code Review) → Step 10
+Workflow says: Step 8 → Step 9 (Local E2E) → ... → Step 13 (E2E CI) → ... → Step 15 (Code Review) → Step 16
 You create:    Own todo: Unit tests → Lint → Push → Done  ← WRONG! (skipped Local E2E, E2E CI, and Code Review)
 ```
 
@@ -108,10 +108,10 @@ You create:    Own todo: Unit tests → Lint → Push → Done  ← WRONG! (skip
 
 | Step   | What      | When                                                                                         | Command                                               |
 |--------|-----------|----------------------------------------------------------------------------------------------|-------------------------------------------------------|
-| **7b** | Local E2E | Before marking tasks complete                                                                | `bash scripts/e2e-up.sh --build`                      |
-| **9c** | CI E2E    | After push in the story branch, run the e2e workflow in the story branch, before code review | `gh workflow run e2e-tests.yaml --ref <story branch>` |
+| **9**  | Local E2E | Before marking tasks complete                                                                | `bash scripts/e2e-up.sh --build`                      |
+| **13** | CI E2E    | After push in the story branch, run the e2e workflow in the story branch, before code review | `gh workflow run e2e-tests.yaml --ref <story branch>` |
 
-#### Step 7b: Local E2E (MANDATORY)
+#### Step 9: Local E2E (MANDATORY)
 
 **BEFORE marking ANY story complete or pushing final commits:**
 
@@ -151,7 +151,7 @@ You create:    Own todo: Unit tests → Lint → Push → Done  ← WRONG! (skip
    bash scripts/e2e-up.sh --down
    ```
 
-#### Step 9c: E2E CI (MANDATORY - SEPARATE FROM LOCAL)
+#### Step 13: E2E CI (MANDATORY - SEPARATE FROM LOCAL)
 
 **AFTER pushing to story branch, BEFORE code review:**
 
@@ -183,8 +183,8 @@ You create:    Own todo: Unit tests → Lint → Push → Done  ← WRONG! (skip
 
 **If either E2E gate fails:** HALT immediately and fix before proceeding.
 
-This corresponds to **Steps 7b and 9c** in the dev-story workflow - both are NON-NEGOTIABLE.
-Remember the Step 9d to update the GitHub issue. 
+This corresponds to **Steps 9 and 13** in the dev-story workflow - both are NON-NEGOTIABLE.
+Remember Step 14 to update the GitHub issue. 
 
 ### CI Validation (MANDATORY before marking story done)
 
@@ -201,24 +201,30 @@ Remember the Step 9d to update the GitHub issue.
 
 3. **Story is NOT done until CI passes** - Definition of Done includes green CI
 
-### Code Review Gate (MANDATORY - NO EXCEPTIONS)
+### Code Review Gate (MANDATORY - FRESH SESSION REQUIRED)
 
 > **⛔ CRITICAL: This gate CANNOT be skipped, deferred, or worked around.**
+> **⚠️ CRITICAL: Code review MUST run in a SEPARATE SESSION from implementation.**
 
-**AFTER dev-story workflow completes (status = "review"):**
+**AFTER dev-story workflow reaches Step 15 (status = "review"):**
 
-1. **Run code review workflow:**
+1. **EXIT the current session** (the implementation session)
+
+2. **Start a NEW Claude Code session**
+
+3. **Run code review with the story path:**
    ```bash
-   # In Claude Code, run:
-   /code-review
+   /code-review path/to/story-file.md
    ```
 
-2. **Address ALL review findings:**
+**Why a fresh session?** The same agent that implemented the code will have the same blind spots when reviewing it in the same context. A fresh session ensures objective review.
+
+4. **Address ALL review findings:**
    - High severity: MUST be fixed before proceeding
    - Medium severity: MUST be fixed or explicitly justified
    - Low severity: Should be fixed or documented for future
 
-3. **Capture review evidence in story file:**
+5. **Capture review evidence in story file:**
    - Review outcome (Approve/Changes Requested/Blocked)
    - Action items with checkboxes
    - Resolution notes for each finding
@@ -229,11 +235,11 @@ Remember the Step 9d to update the GitHub issue.
 - Do NOT close the GitHub issue
 - Do NOT declare story complete
 
-**If code review requests changes:** Address findings, then re-run code-review until approved.
+**If code review requests changes:** Address findings in a new session, then re-run `/code-review`.
 
-This corresponds to **Step 9e** in the dev-story workflow - it is NON-NEGOTIABLE.
+**After code review APPROVED:** Run `/dev-story <story-path>` to complete Step 16.
 
-**Best Practice:** Run code-review using a **different LLM** than the one that implemented the story for unbiased review.
+This corresponds to **Step 15** in the dev-story workflow - it is NON-NEGOTIABLE.
 
 ### New Service Checklist
 
