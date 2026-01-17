@@ -239,7 +239,7 @@ development_status:
   9-1c-admin-portal-bff-endpoints: done  # 8 points, github_issue: 189, PR: #190 - All /api/admin/* REST endpoints for Epic 9 (ADR-012 patterns)
   9-2-region-management: done  # 5 points - Region CRUD UI with map/polygon support (ADR-017), github_issue: 191, PR: merged
   9-3-factory-management: in-progress  # github_issue: 195, Story 9.3 created 2026-01-16
-  9-4-collection-point-management: backlog  # UNBLOCKED by 0-4-10 (NGINX deployment complete)
+  9-4-collection-point-management: ready-for-dev  # Story file created 2026-01-17
   9-5-farmer-management: backlog  # UNBLOCKED by 0-4-10 (NGINX deployment complete)
   9-6-grading-model-management: backlog  # UNBLOCKED by 0-4-10 (NGINX deployment complete)
   9-7-user-management: backlog  # UNBLOCKED by 0-4-10 (NGINX deployment complete)
