@@ -336,14 +336,14 @@ Create E2E tests for CP UI flows:
 - [x] Push to feature branch: `git push -u origin story/9-4-collection-point-management`
 
 ### Story Done
-- [ ] Create Pull Request: `gh pr create --title "Story 9.4: Collection Point Management" --base main`
+- [x] Create Pull Request: `gh pr create --title "Story 9.4: Collection Point Management" --base main`
 - [ ] CI passes on PR (including E2E tests)
 - [x] Human verification completed (2026-01-17)
 - [x] Code review completed (`/code-review`)
 - [ ] PR approved and merged (squash)
 - [ ] Local branch cleaned up: `git branch -d story/9-4-collection-point-management`
 
-**PR URL:** _______________ (fill in when PR is created)
+**PR URL:** https://github.com/jltournay/farmer-power-platform/pull/198
 
 ---
 
