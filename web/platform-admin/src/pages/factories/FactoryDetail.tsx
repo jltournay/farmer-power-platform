@@ -216,7 +216,37 @@ export function FactoryDetail(): JSX.Element {
       />
 
       <Grid container spacing={3}>
-        {/* Left Column - Map */}
+        {/* Factory Information - Full Width */}
+        <Grid size={12}>
+          <SectionCard title="Factory Information" icon={<LocationOnIcon color="primary" />}>
+            <Grid container spacing={2}>
+              <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+                <InfoRow label="Factory ID" value={factory.id} />
+                <InfoRow label="Name" value={factory.name} />
+              </Grid>
+              <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+                <InfoRow label="Code" value={factory.code} />
+                <InfoRow label="Region" value={regionMap[factory.region_id] ?? factory.region_id} />
+              </Grid>
+              <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+                <InfoRow
+                  label="Processing Capacity"
+                  value={`${factory.processing_capacity_kg.toLocaleString()} kg/day`}
+                />
+                <InfoRow
+                  label="Location"
+                  value={`${factory.location.latitude.toFixed(4)}, ${factory.location.longitude.toFixed(4)}`}
+                />
+              </Grid>
+              <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+                <InfoRow label="Collection Points" value={factory.collection_point_count} />
+                <InfoRow label="Farmers" value={factory.farmer_count} />
+              </Grid>
+            </Grid>
+          </SectionCard>
+        </Grid>
+
+        {/* Map - Left Column */}
         <Grid size={{ xs: 12, lg: 8 }}>
           <Paper sx={{ p: 2 }}>
             <Typography variant="h6" gutterBottom>
@@ -238,36 +268,13 @@ export function FactoryDetail(): JSX.Element {
           </Paper>
         </Grid>
 
-        {/* Right Column - Details */}
+        {/* Contact Info - Right Column */}
         <Grid size={{ xs: 12, lg: 4 }}>
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-            {/* Basic Info */}
-            <SectionCard title="Factory Information" icon={<LocationOnIcon color="primary" />}>
-              <InfoRow label="Factory ID" value={factory.id} />
-              <InfoRow label="Name" value={factory.name} />
-              <InfoRow label="Code" value={factory.code} />
-              <InfoRow label="Region" value={regionMap[factory.region_id] ?? factory.region_id} />
-              <Divider sx={{ my: 1 }} />
-              <InfoRow
-                label="Location"
-                value={`${factory.location.latitude.toFixed(4)}, ${factory.location.longitude.toFixed(4)}`}
-              />
-              <InfoRow
-                label="Processing Capacity"
-                value={`${factory.processing_capacity_kg.toLocaleString()} kg/day`}
-              />
-              <Divider sx={{ my: 1 }} />
-              <InfoRow label="Collection Points" value={factory.collection_point_count} />
-              <InfoRow label="Farmers" value={factory.farmer_count} />
-            </SectionCard>
-
-            {/* Contact Info */}
-            <SectionCard title="Contact" icon={<SettingsIcon color="primary" />}>
-              <InfoRow label="Phone" value={factory.contact.phone || '—'} />
-              <InfoRow label="Email" value={factory.contact.email || '—'} />
-              <InfoRow label="Address" value={factory.contact.address || '—'} />
-            </SectionCard>
-          </Box>
+          <SectionCard title="Contact" icon={<SettingsIcon color="primary" />}>
+            <InfoRow label="Phone" value={factory.contact.phone || '—'} />
+            <InfoRow label="Email" value={factory.contact.email || '—'} />
+            <InfoRow label="Address" value={factory.contact.address || '—'} />
+          </SectionCard>
         </Grid>
 
         {/* Quality Thresholds */}
