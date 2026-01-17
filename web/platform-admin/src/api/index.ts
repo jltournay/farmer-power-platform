@@ -9,4 +9,5 @@ export type { ApiErrorResponse } from './client';
 
 export * from './regions';
 export * from './factories';
+export * from './collectionPoints';
 export * from './types';
