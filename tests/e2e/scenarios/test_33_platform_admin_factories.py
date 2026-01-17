@@ -9,8 +9,8 @@ Prerequisites:
 Test Data Relationships:
     - REG-E2E-001 (Kericho Highland): FAC-E2E-001
     - REG-E2E-002 (Nandi Hills): FAC-E2E-002
-    - FAC-E2E-001: CP-E2E-001, CP-E2E-002
-    - FAC-E2E-002: CP-E2E-003
+    - FAC-E2E-001: kericho-highland-cp-100, kericho-highland-cp-101
+    - FAC-E2E-002: nandi-highland-cp-100
 """
 
 import uuid

@@ -5,7 +5,7 @@
     "first_name": "James",
     "last_name": "Kiprop",
     "region_id": "kericho-highland",
-    "collection_point_id": "kericho-highland-cp-001",
+    "collection_point_id": "kericho-highland-cp-100",
     "farm_location": {
       "latitude": 0.29,
       "longitude": 35.29,
@@ -33,7 +33,7 @@
     "first_name": "Grace",
     "last_name": "Cheruiyot",
     "region_id": "kericho-highland",
-    "collection_point_id": "kericho-highland-cp-001",
+    "collection_point_id": "kericho-highland-cp-100",
     "farm_location": {
       "latitude": 0.27,
       "longitude": 35.27,
@@ -61,7 +61,7 @@
     "first_name": "Daniel",
     "last_name": "Bett",
     "region_id": "kericho-highland",
-    "collection_point_id": "kericho-highland-cp-002",
+    "collection_point_id": "kericho-highland-cp-101",
     "farm_location": {
       "latitude": 0.33,
       "longitude": 35.33,
@@ -89,7 +89,7 @@
     "first_name": "Sarah",
     "last_name": "Kosgei",
     "region_id": "nandi-highland",
-    "collection_point_id": "nandi-highland-cp-001",
+    "collection_point_id": "nandi-highland-cp-100",
     "farm_location": {
       "latitude": 0.11,
       "longitude": 35.11,

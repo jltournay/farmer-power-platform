@@ -21,8 +21,8 @@ Grading Model Architecture:
     5. FarmerPerformance.today.grade_counts is updated (real-time)
 
 Test Data Mapping:
-    - TBK tests: FRM-E2E-001 → CP-E2E-001 → FAC-E2E-001 → tbk_kenya_tea_v1
-    - KTDA tests: FRM-E2E-004 → CP-E2E-003 → FAC-E2E-002 → ktda_ternary_v1
+    - TBK tests: FRM-E2E-001 → kericho-highland-cp-100 → FAC-E2E-001 → tbk_kenya_tea_v1
+    - KTDA tests: FRM-E2E-004 → nandi-highland-cp-100 → FAC-E2E-002 → ktda_ternary_v1
 
 Grading Models (from seed/grading_models.json):
     TBK (binary):
@@ -69,11 +69,11 @@ import pytest
 
 # TBK grading model test farmer (FAC-E2E-001)
 TBK_FARMER_ID = "FRM-E2E-001"
-TBK_COLLECTION_POINT_ID = "CP-E2E-001"
+TBK_COLLECTION_POINT_ID = "kericho-highland-cp-100"
 
 # KTDA grading model test farmer (FAC-E2E-002)
 KTDA_FARMER_ID = "FRM-E2E-004"
-KTDA_COLLECTION_POINT_ID = "CP-E2E-003"
+KTDA_COLLECTION_POINT_ID = "nandi-highland-cp-100"
 
 CONTAINER_NAME = "quality-events-e2e"
 SOURCE_ID = "e2e-qc-direct-json"

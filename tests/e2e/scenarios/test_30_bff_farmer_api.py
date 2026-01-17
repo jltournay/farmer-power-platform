@@ -206,7 +206,7 @@ class TestGetFarmerEndpoint:
         assert profile["last_name"] == "Kiprop"
         assert profile["phone"] == "+254712100001"
         assert profile["region_id"] == "kericho-highland"
-        assert profile["collection_point_id"] == "CP-E2E-001"
+        assert profile["collection_point_id"] == "kericho-highland-cp-100"
         assert profile["is_active"] is True
 
     @pytest.mark.asyncio
@@ -384,8 +384,8 @@ class TestBFFIntegration:
         """Verify BFF aggregates farmers from multiple collection points.
 
         FAC-E2E-001 has 2 collection points:
-        - CP-E2E-001: FRM-E2E-001, FRM-E2E-002
-        - CP-E2E-002: FRM-E2E-003
+        - kericho-highland-cp-100: FRM-E2E-001, FRM-E2E-002
+        - kericho-highland-cp-101: FRM-E2E-003
         """
         result = await bff_api.list_farmers(
             factory_id="FAC-E2E-001",

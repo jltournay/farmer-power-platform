@@ -20,7 +20,7 @@ Prerequisites:
 
 Seed Data Required (from tests/e2e/infrastructure/seed/):
     - factories.json: FAC-E2E-001, FAC-E2E-002
-    - collection_points.json: CP-E2E-001, CP-E2E-002, CP-E2E-003
+    - collection_points.json: kericho-highland-cp-100, kericho-highland-cp-101, nandi-highland-cp-100
     - farmers.json: FRM-E2E-001 to FRM-E2E-004
     - farmer_performance.json: Performance summaries for all farmers
     - weather_observations.json: 7 days for kericho-highland, nandi-highland
@@ -155,7 +155,7 @@ class TestGetCollectionPoints:
         seed_data,
     ):
         """Given factory has CPs, returns all collection points."""
-        factory_id = "FAC-E2E-001"  # Has 2 CPs: CP-E2E-001, CP-E2E-002
+        factory_id = "FAC-E2E-001"  # Has 2 CPs: kericho-highland-cp-100, kericho-highland-cp-101
 
         result = await plantation_mcp.call_tool(
             "get_collection_points",
@@ -168,7 +168,7 @@ class TestGetCollectionPoints:
 
         result_str = str(result.get("result_json", ""))
         # Should contain at least one of the CP IDs or names
-        assert any(cp in result_str for cp in ["CP-E2E-001", "CP-E2E-002", "Ainamoi", "Kapsoit"])
+        assert any(cp in result_str for cp in ["kericho-highland-cp-100", "kericho-highland-cp-101", "Ainamoi", "Kapsoit"])
 
 
 @pytest.mark.e2e
@@ -182,7 +182,7 @@ class TestGetFarmersByCollectionPoint:
         seed_data,
     ):
         """Given CP has farmers, returns list of farmers."""
-        collection_point_id = "CP-E2E-001"  # Has FRM-E2E-001, FRM-E2E-002
+        collection_point_id = "kericho-highland-cp-100"  # Has FRM-E2E-001, FRM-E2E-002
 
         result = await plantation_mcp.call_tool(
             "get_farmers_by_collection_point",

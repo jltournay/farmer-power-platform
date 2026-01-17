@@ -9,8 +9,8 @@ Prerequisites:
 Test Data Relationships (from seed):
     - REG-E2E-001 (Kericho Highland): FAC-E2E-001
     - REG-E2E-002 (Nandi Hills): FAC-E2E-002
-    - FAC-E2E-001: kericho-highland-cp-001, kericho-highland-cp-002
-    - FAC-E2E-002: nandi-highland-cp-001
+    - FAC-E2E-001: kericho-highland-cp-100, kericho-highland-cp-101
+    - FAC-E2E-002: nandi-highland-cp-100
 """
 
 from typing import Any

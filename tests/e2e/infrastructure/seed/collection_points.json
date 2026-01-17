@@ -1,6 +1,6 @@
 [
   {
-    "id": "kericho-highland-cp-001",
+    "id": "kericho-highland-cp-100",
     "name": "Ainamoi Collection Point",
     "factory_id": "FAC-E2E-001",
     "location": {
@@ -27,7 +27,7 @@
     "updated_at": "2025-01-01T00:00:00Z"
   },
   {
-    "id": "kericho-highland-cp-002",
+    "id": "kericho-highland-cp-101",
     "name": "Kapsoit Collection Point",
     "factory_id": "FAC-E2E-001",
     "location": {
@@ -54,7 +54,7 @@
     "updated_at": "2025-01-01T00:00:00Z"
   },
   {
-    "id": "nandi-highland-cp-001",
+    "id": "nandi-highland-cp-100",
     "name": "Nandi Hills Central CP",
     "factory_id": "FAC-E2E-002",
     "location": {
