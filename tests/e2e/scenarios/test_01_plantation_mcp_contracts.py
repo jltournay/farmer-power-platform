@@ -168,7 +168,9 @@ class TestGetCollectionPoints:
 
         result_str = str(result.get("result_json", ""))
         # Should contain at least one of the CP IDs or names
-        assert any(cp in result_str for cp in ["kericho-highland-cp-100", "kericho-highland-cp-101", "Ainamoi", "Kapsoit"])
+        assert any(
+            cp in result_str for cp in ["kericho-highland-cp-100", "kericho-highland-cp-101", "Ainamoi", "Kapsoit"]
+        )
 
 
 @pytest.mark.e2e
