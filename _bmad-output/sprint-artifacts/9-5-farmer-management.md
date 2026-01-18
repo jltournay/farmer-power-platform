@@ -811,28 +811,12 @@ npm run dev
 > **Context:** Story 9.5a (merged to main) changed the Farmer-CollectionPoint relationship from N:1 to N:M.
 > The original 9.5 implementation used the old model. This plan adapts the code to use the new model.
 
-### Phase 1: Merge Main into Branch
+### Phase 1: Merge Main into Branch - COMPLETED
 
-#### Step 1.1: Merge and Resolve Conflicts
-
-```bash
-git checkout story/9-5-farmer-management
-git merge main
-```
-
-**Conflicts to resolve:**
-
-| File | Resolution Strategy |
-|------|---------------------|
-| `sprint-status.yaml` | Accept main's version (9.5a marked done) + keep 9.5 status |
-| `farmer_service.py` | Accept main's version (N:M logic) |
-
-#### Step 1.2: Verify Merge
-
-```bash
-ruff check . && ruff format --check .
-pytest tests/unit/ -x -q  # Quick sanity check
-```
+- [x] Merged main into story/9-5-farmer-management
+- [x] Resolved `sprint-status.yaml` conflict (kept in_progress status)
+- [x] Resolved `farmer_service.py` conflict (accepted N:M logic from main)
+- [x] Lint passes
 
 ---
 
