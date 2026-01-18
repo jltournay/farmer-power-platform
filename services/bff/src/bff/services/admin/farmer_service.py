@@ -475,10 +475,18 @@ class AdminFarmerService(BaseService):
                     grading_model_version="1.0.0",
                 )
 
+            # Story 9.5a: Get CP count for N:M model
+            try:
+                cps_response = await self._plantation.get_collection_points_for_farmer(farmer.id)
+                cp_count = len(cps_response.data)
+            except Exception:
+                cp_count = 0
+
             return self._transformer.to_summary(
                 farmer=farmer,
                 performance=performance,
                 thresholds=thresholds,
+                cp_count=cp_count,
             )
 
         return await self._parallel_map(farmers, enrich_single)
