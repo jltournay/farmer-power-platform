@@ -78,7 +78,8 @@ class AdminFarmerService(BaseService):
             active_only=active_only,
         )
 
-        # Determine which CP to use for listing
+        # Story 9.5a: N:M Farmer-CP relationship
+        # Filter by collection_point_id using CP.farmer_ids
         cp_id = collection_point_id
         if not cp_id and factory_id:
             # Get first CP for this factory
@@ -90,46 +91,102 @@ class AdminFarmerService(BaseService):
             if cp_response.data:
                 cp_id = cp_response.data[0].id
 
-        if not cp_id:
-            # Return empty response if no CP found
-            return AdminFarmerListResponse.from_summaries(
-                summaries=[],
-                total_count=0,
+        if cp_id:
+            # Get farmers assigned to this CP using N:M relationship
+            farmers = await self._plantation.get_farmers_for_collection_point(cp_id)
+
+            # Filter by active_only if needed
+            if active_only:
+                farmers = [f for f in farmers if f.is_active]
+
+            if not farmers:
+                from bff.api.schemas.responses import PaginationMeta
+
+                return AdminFarmerListResponse(
+                    data=[],
+                    pagination=PaginationMeta(
+                        page=1,
+                        page_size=page_size,
+                        total_count=0,
+                        total_pages=0,
+                    ),
+                )
+
+            # Get factory for quality thresholds
+            cp = await self._plantation.get_collection_point(cp_id)
+            factory = await self._plantation.get_factory(cp.factory_id)
+        else:
+            # No CP filter - use region or return empty
+            if not region_id:
+                from bff.api.schemas.responses import PaginationMeta
+
+                return AdminFarmerListResponse(
+                    data=[],
+                    pagination=PaginationMeta(
+                        page=1,
+                        page_size=page_size,
+                        total_count=0,
+                        total_pages=0,
+                    ),
+                )
+
+            # List farmers by region
+            response = await self._plantation.list_farmers(
+                region_id=region_id,
                 page_size=page_size,
+                page_token=page_token,
+                active_only=active_only,
             )
+            farmers = response.data
 
-        response = await self._plantation.list_farmers(
-            collection_point_id=cp_id,
-            page_size=page_size,
-            page_token=page_token,
-            active_only=active_only,
-        )
+            if not farmers:
+                return AdminFarmerListResponse(
+                    data=[],
+                    pagination=response.pagination,
+                )
 
-        if not response.data:
-            return AdminFarmerListResponse(
-                data=[],
-                pagination=response.pagination,
-            )
-
-        # Get factory for quality thresholds
-        cp = await self._plantation.get_collection_point(cp_id)
-        factory = await self._plantation.get_factory(cp.factory_id)
+            # Get first farmer's factory for thresholds (or use defaults)
+            try:
+                # Get CP for first farmer to get factory
+                first_farmer = farmers[0]
+                cps_response = await self._plantation.get_collection_points_for_farmer(first_farmer.id)
+                if cps_response.data:
+                    factory = await self._plantation.get_factory(cps_response.data[0].factory_id)
+                else:
+                    factory = None
+            except Exception:
+                factory = None
 
         # Enrich with performance data using parallel fetch
+        # Use factory thresholds if available, otherwise use defaults
+        from bff.api.schemas.responses import PaginationMeta
+        from fp_common.models.value_objects import QualityThresholds
+
+        thresholds = factory.quality_thresholds if factory else QualityThresholds()
         summaries = await self._enrich_farmers_to_summaries(
-            farmers=response.data,
-            thresholds=factory.quality_thresholds,
+            farmers=farmers,
+            thresholds=thresholds,
+        )
+
+        # Build pagination info
+        total_count = len(farmers)
+        total_pages = (total_count + page_size - 1) // page_size if page_size > 0 else 1
+        pagination = PaginationMeta(
+            page=1,  # CP filter returns all, so always page 1
+            page_size=page_size,
+            total_count=total_count,
+            total_pages=total_pages,
         )
 
         self._logger.info(
             "listed_farmers",
             count=len(summaries),
-            total_count=response.pagination.total_count,
+            total_count=total_count,
         )
 
         return AdminFarmerListResponse(
             data=summaries,
-            pagination=response.pagination,
+            pagination=pagination,
         )
 
     async def get_farmer(self, farmer_id: str) -> AdminFarmerDetail:
@@ -148,9 +205,13 @@ class AdminFarmerService(BaseService):
 
         farmer = await self._plantation.get_farmer(farmer_id)
 
-        # Get factory for quality thresholds
-        cp = await self._plantation.get_collection_point(farmer.collection_point_id)
-        factory = await self._plantation.get_factory(cp.factory_id)
+        # Story 9.5a: Get factory via N:M relationship (farmer -> CPs -> factory)
+        cps_response = await self._plantation.get_collection_points_for_farmer(farmer_id)
+        if cps_response.data:
+            factory = await self._plantation.get_factory(cps_response.data[0].factory_id)
+        else:
+            # Farmer not assigned to any CP - use default thresholds
+            factory = None
 
         # Get performance data
         try:
@@ -165,10 +226,14 @@ class AdminFarmerService(BaseService):
                 grading_model_version="1.0.0",
             )
 
+        # Use factory thresholds if available, otherwise use defaults
+        from fp_common.models.value_objects import QualityThresholds
+
+        thresholds = factory.quality_thresholds if factory else QualityThresholds()
         detail = self._transformer.to_detail(
             farmer=farmer,
             performance=performance,
-            thresholds=factory.quality_thresholds,
+            thresholds=thresholds,
         )
 
         self._logger.info(
@@ -199,7 +264,7 @@ class AdminFarmerService(BaseService):
             collection_point_id=data.collection_point_id,
         )
 
-        # Create domain model for creation
+        # Story 9.5a: Create farmer without CP, then assign separately
         create_data = FarmerCreate(
             first_name=data.first_name,
             last_name=data.last_name,
@@ -208,15 +273,21 @@ class AdminFarmerService(BaseService):
             farm_size_hectares=data.farm_size_hectares,
             latitude=data.latitude,
             longitude=data.longitude,
-            collection_point_id=data.collection_point_id,
             grower_number=data.grower_number,
         )
 
         farmer = await self._plantation.create_farmer(create_data)
 
-        # Get factory for quality thresholds
-        cp = await self._plantation.get_collection_point(farmer.collection_point_id)
-        factory = await self._plantation.get_factory(cp.factory_id)
+        # Story 9.5a: Assign farmer to CP after creation
+        if data.collection_point_id:
+            await self._plantation.assign_farmer_to_collection_point(
+                collection_point_id=data.collection_point_id,
+                farmer_id=farmer.id,
+            )
+            cp = await self._plantation.get_collection_point(data.collection_point_id)
+            factory = await self._plantation.get_factory(cp.factory_id)
+        else:
+            factory = None
 
         # New farmer has no performance data
         performance = FarmerPerformance.initialize_for_farmer(
@@ -227,10 +298,14 @@ class AdminFarmerService(BaseService):
             grading_model_version="1.0.0",
         )
 
+        # Use factory thresholds if available, otherwise use defaults
+        from fp_common.models.value_objects import QualityThresholds
+
+        thresholds = factory.quality_thresholds if factory else QualityThresholds()
         detail = self._transformer.to_detail(
             farmer=farmer,
             performance=performance,
-            thresholds=factory.quality_thresholds,
+            thresholds=thresholds,
         )
 
         self._logger.info("created_farmer", farmer_id=farmer.id)
@@ -271,9 +346,12 @@ class AdminFarmerService(BaseService):
 
         farmer = await self._plantation.update_farmer(farmer_id, update_data)
 
-        # Get factory for quality thresholds
-        cp = await self._plantation.get_collection_point(farmer.collection_point_id)
-        factory = await self._plantation.get_factory(cp.factory_id)
+        # Story 9.5a: Get factory via N:M relationship
+        cps = await self._plantation.get_collection_points_for_farmer(farmer_id)
+        if cps:
+            factory = await self._plantation.get_factory(cps[0].factory_id)
+        else:
+            factory = None
 
         # Get performance data
         try:
@@ -287,10 +365,14 @@ class AdminFarmerService(BaseService):
                 grading_model_version="1.0.0",
             )
 
+        # Use factory thresholds if available, otherwise use defaults
+        from fp_common.models.value_objects import QualityThresholds
+
+        thresholds = factory.quality_thresholds if factory else QualityThresholds()
         detail = self._transformer.to_detail(
             farmer=farmer,
             performance=performance,
-            thresholds=factory.quality_thresholds,
+            thresholds=thresholds,
         )
 
         self._logger.info("updated_farmer", farmer_id=farmer_id)

@@ -134,10 +134,7 @@ class FarmerTransformer:
         trend = self.map_trend(performance.historical.improvement_trend)
 
         # Story 9.5a: Convert CPs to CollectionPointRef list
-        cp_refs = [
-            CollectionPointRef(id=cp.id, name=cp.name)
-            for cp in (collection_points or [])
-        ]
+        cp_refs = [CollectionPointRef(id=cp.id, name=cp.name) for cp in (collection_points or [])]
 
         profile = FarmerProfile(
             id=farmer.id,

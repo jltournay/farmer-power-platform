@@ -4,6 +4,7 @@ import logging
 from datetime import UTC, datetime
 
 import grpc
+from fp_common.converters import collection_point_to_proto
 from fp_proto.plantation.v1 import plantation_pb2, plantation_pb2_grpc
 from google.protobuf.timestamp_pb2 import Timestamp
 from plantation_model.config import settings
@@ -461,36 +462,6 @@ class PlantationServiceServicer(plantation_pb2_grpc.PlantationServiceServicer):
     # Collection Point Operations
     # =========================================================================
 
-    def _cp_to_proto(self, cp: CollectionPoint) -> plantation_pb2.CollectionPoint:
-        """Convert CollectionPoint domain model to protobuf message."""
-        return plantation_pb2.CollectionPoint(
-            id=cp.id,
-            name=cp.name,
-            factory_id=cp.factory_id,
-            location=plantation_pb2.GeoLocation(
-                latitude=cp.location.latitude,
-                longitude=cp.location.longitude,
-                altitude_meters=cp.location.altitude_meters,
-            ),
-            region_id=cp.region_id,
-            clerk_id=cp.clerk_id or "",
-            clerk_phone=cp.clerk_phone or "",
-            operating_hours=plantation_pb2.OperatingHours(
-                weekdays=cp.operating_hours.weekdays,
-                weekends=cp.operating_hours.weekends,
-            ),
-            collection_days=cp.collection_days,
-            capacity=plantation_pb2.CollectionPointCapacity(
-                max_daily_kg=cp.capacity.max_daily_kg,
-                storage_type=cp.capacity.storage_type,
-                has_weighing_scale=cp.capacity.has_weighing_scale,
-                has_qc_device=cp.capacity.has_qc_device,
-            ),
-            status=cp.status,
-            created_at=datetime_to_timestamp(cp.created_at),
-            updated_at=datetime_to_timestamp(cp.updated_at),
-        )
-
     async def GetCollectionPoint(
         self,
         request: plantation_pb2.GetCollectionPointRequest,
@@ -503,7 +474,7 @@ class PlantationServiceServicer(plantation_pb2_grpc.PlantationServiceServicer):
                 grpc.StatusCode.NOT_FOUND,
                 f"Collection point {request.id} not found",
             )
-        return self._cp_to_proto(cp)
+        return collection_point_to_proto(cp)
 
     async def ListCollectionPoints(
         self,
@@ -531,7 +502,7 @@ class PlantationServiceServicer(plantation_pb2_grpc.PlantationServiceServicer):
         )
 
         return plantation_pb2.ListCollectionPointsResponse(
-            collection_points=[self._cp_to_proto(cp) for cp in cps],
+            collection_points=[collection_point_to_proto(cp) for cp in cps],
             next_page_token=next_token or "",
             total_count=total,
         )
@@ -629,7 +600,7 @@ class PlantationServiceServicer(plantation_pb2_grpc.PlantationServiceServicer):
         await self._cp_repo.create(cp)
         logger.info("Created collection point %s (%s)", cp.id, cp.name)
 
-        return self._cp_to_proto(cp)
+        return collection_point_to_proto(cp)
 
     async def UpdateCollectionPoint(
         self,
@@ -694,7 +665,7 @@ class PlantationServiceServicer(plantation_pb2_grpc.PlantationServiceServicer):
                     grpc.StatusCode.NOT_FOUND,
                     f"Collection point {request.id} not found",
                 )
-            return self._cp_to_proto(cp)
+            return collection_point_to_proto(cp)
 
         cp = await self._cp_repo.update(request.id, updates)
         if cp is None:
@@ -704,7 +675,7 @@ class PlantationServiceServicer(plantation_pb2_grpc.PlantationServiceServicer):
             )
 
         logger.info("Updated collection point %s", cp.id)
-        return self._cp_to_proto(cp)
+        return collection_point_to_proto(cp)
 
     async def DeleteCollectionPoint(
         self,
@@ -1545,7 +1516,7 @@ class PlantationServiceServicer(plantation_pb2_grpc.PlantationServiceServicer):
             request.collection_point_id,
         )
 
-        return self._collection_point_to_proto(updated_cp)
+        return collection_point_to_proto(updated_cp)
 
     async def UnassignFarmerFromCollectionPoint(
         self,
@@ -1589,7 +1560,7 @@ class PlantationServiceServicer(plantation_pb2_grpc.PlantationServiceServicer):
             request.collection_point_id,
         )
 
-        return self._collection_point_to_proto(updated_cp)
+        return collection_point_to_proto(updated_cp)
 
     async def GetCollectionPointsForFarmer(
         self,
@@ -1612,7 +1583,7 @@ class PlantationServiceServicer(plantation_pb2_grpc.PlantationServiceServicer):
         cps, next_token, total = await self._cp_repo.list_by_farmer(request.farmer_id)
 
         return plantation_pb2.ListCollectionPointsResponse(
-            collection_points=[self._collection_point_to_proto(cp) for cp in cps],
+            collection_points=[collection_point_to_proto(cp) for cp in cps],
             next_page_token=next_token or "",
             total_count=total,
         )

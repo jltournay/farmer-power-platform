@@ -680,7 +680,11 @@ class TestFarmerWriteOperations:
         self,
         plantation_client_with_mock_stub: tuple[PlantationClient, MagicMock],
     ) -> None:
-        """Test successful farmer creation."""
+        """Test successful farmer creation.
+
+        Story 9.5a: collection_point_id removed from FarmerCreate.
+        Use separate AssignFarmerToCollectionPoint RPC after creation.
+        """
         client, stub = plantation_client_with_mock_stub
         stub.CreateFarmer.return_value = create_farmer_proto(farmer_id="WM-0002")
 
@@ -692,7 +696,7 @@ class TestFarmerWriteOperations:
             farm_size_hectares=0.8,
             latitude=-0.4200,
             longitude=36.9560,
-            collection_point_id="nyeri-highland-cp-001",
+            # Story 9.5a: collection_point_id removed - use separate assignment API
         )
 
         farmer = await client.create_farmer(farmer_data)
@@ -703,7 +707,7 @@ class TestFarmerWriteOperations:
         request = call_args[0][0]
         assert request.first_name == "Wambui"
         assert request.last_name == "Ndungu"
-        assert request.collection_point_id == "nyeri-highland-cp-001"
+        # Story 9.5a: collection_point_id no longer in CreateFarmer request
 
     @pytest.mark.asyncio
     async def test_update_farmer_success(

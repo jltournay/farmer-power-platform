@@ -166,6 +166,41 @@ class PlantationClient:
         wait=wait_exponential(multiplier=1, min=1, max=10),
         reraise=True,
     )
+    async def get_collection_point(self, collection_point_id: str) -> CollectionPoint:
+        """Get collection point by ID.
+
+        Args:
+            collection_point_id: The collection point ID.
+
+        Returns:
+            CollectionPoint Pydantic model.
+
+        Raises:
+            NotFoundError: If collection point not found.
+            ServiceUnavailableError: If service is unavailable.
+
+        """
+        try:
+            stub = await self._get_stub()
+            request = plantation_pb2.GetCollectionPointRequest(id=collection_point_id)
+
+            response = await stub.GetCollectionPoint(request, metadata=self._get_metadata())
+
+            return collection_point_from_proto(response)
+
+        except grpc.aio.AioRpcError as e:
+            if e.code() == grpc.StatusCode.NOT_FOUND:
+                raise NotFoundError(f"Collection point not found: {collection_point_id}") from e
+            if e.code() == grpc.StatusCode.UNAVAILABLE:
+                raise ServiceUnavailableError(f"Plantation service unavailable: {e.details()}") from e
+            raise
+
+    @retry(
+        retry=retry_if_exception_type(grpc.aio.AioRpcError),
+        stop=stop_after_attempt(3),
+        wait=wait_exponential(multiplier=1, min=1, max=10),
+        reraise=True,
+    )
     async def get_collection_points(self, factory_id: str) -> list[CollectionPoint]:
         """Get collection points for a factory.
 
@@ -192,14 +227,11 @@ class PlantationClient:
                 raise ServiceUnavailableError(f"Plantation service unavailable: {e.details()}") from e
             raise
 
-    @retry(
-        retry=retry_if_exception_type(grpc.aio.AioRpcError),
-        stop=stop_after_attempt(3),
-        wait=wait_exponential(multiplier=1, min=1, max=10),
-        reraise=True,
-    )
     async def get_farmers_by_collection_point(self, collection_point_id: str) -> list[Farmer]:
         """Get farmers at a collection point.
+
+        Story 9.5a: Farmer-CP relationship is now N:M via CollectionPoint.farmer_ids.
+        This method gets the CP first, then fetches each farmer by ID.
 
         Args:
             collection_point_id: The collection point ID.
@@ -208,21 +240,32 @@ class PlantationClient:
             List of Farmer Pydantic models.
 
         Raises:
+            NotFoundError: If collection point not found.
             ServiceUnavailableError: If service is unavailable.
 
         """
-        try:
-            stub = await self._get_stub()
-            request = plantation_pb2.ListFarmersRequest(collection_point_id=collection_point_id)
+        # Get the collection point to access farmer_ids (Story 9.5a)
+        cp = await self.get_collection_point(collection_point_id)
 
-            response = await stub.ListFarmers(request, metadata=self._get_metadata())
+        if not cp.farmer_ids:
+            return []
 
-            return [farmer_from_proto(f) for f in response.farmers]
+        # Fetch each farmer by ID
+        farmers = []
+        for farmer_id in cp.farmer_ids:
+            try:
+                farmer = await self.get_farmer(farmer_id)
+                farmers.append(farmer)
+            except NotFoundError:
+                # Skip farmers that no longer exist (data consistency issue)
+                logger.warning(
+                    "Farmer in CP farmer_ids not found",
+                    farmer_id=farmer_id,
+                    collection_point_id=collection_point_id,
+                )
+                continue
 
-        except grpc.aio.AioRpcError as e:
-            if e.code() == grpc.StatusCode.UNAVAILABLE:
-                raise ServiceUnavailableError(f"Plantation service unavailable: {e.details()}") from e
-            raise
+        return farmers
 
     @retry(
         retry=retry_if_exception_type(grpc.aio.AioRpcError),

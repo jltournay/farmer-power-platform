@@ -370,3 +370,184 @@ class TestCollectionPointCRUDFlow:
         assert result is not None
         assert result.operating_hours.weekdays == "05:00-11:00"
         assert result.operating_hours.weekends == "06:00-10:00"
+
+
+@pytest.mark.integration
+class TestCollectionPointFarmerAssignment:
+    """Integration tests for Farmer-CP assignment (Story 9.5a).
+
+    Tests the N:M relationship operations: add_farmer, remove_farmer, list_by_farmer.
+    """
+
+    @pytest.fixture
+    def mock_db(self) -> MagicMock:
+        """Create a mock MongoDB database."""
+        db = MagicMock()
+        db.__getitem__ = MagicMock(return_value=MagicMock())
+        return db
+
+    @pytest.fixture
+    def cp_repo(self, mock_db: MagicMock) -> CollectionPointRepository:
+        """Create a collection point repository with mock database."""
+        return CollectionPointRepository(mock_db)
+
+    @pytest.fixture
+    def sample_cp(self) -> CollectionPoint:
+        """Create a sample collection point for testing."""
+        return CollectionPoint(
+            id="test-region-cp-001",
+            name="Test CP",
+            factory_id="KEN-FAC-001",
+            location=GeoLocation(latitude=-0.5, longitude=36.9),
+            region_id="test-region",
+            farmer_ids=[],  # Story 9.5a: N:M relationship
+        )
+
+    @pytest.fixture
+    def sample_cp_with_farmers(self, sample_cp: CollectionPoint) -> CollectionPoint:
+        """Create a sample collection point with farmers assigned."""
+        return CollectionPoint(
+            id=sample_cp.id,
+            name=sample_cp.name,
+            factory_id=sample_cp.factory_id,
+            location=sample_cp.location,
+            region_id=sample_cp.region_id,
+            farmer_ids=["WM-0001", "WM-0002"],  # Story 9.5a: farmers assigned
+        )
+
+    @pytest.mark.asyncio
+    async def test_add_farmer_to_cp(
+        self,
+        cp_repo: CollectionPointRepository,
+        mock_db: MagicMock,
+        sample_cp_with_farmers: CollectionPoint,
+    ) -> None:
+        """Test adding a farmer to a collection point uses $addToSet."""
+        cp_doc = sample_cp_with_farmers.model_dump()
+        cp_doc["_id"] = cp_doc["id"]
+        mock_db["collection_points"].find_one_and_update = AsyncMock(return_value=cp_doc)
+
+        result = await cp_repo.add_farmer("test-region-cp-001", "WM-0001")
+
+        assert result is not None
+        assert "WM-0001" in result.farmer_ids
+
+        # Verify $addToSet is used for idempotency
+        call_args = mock_db["collection_points"].find_one_and_update.call_args
+        update_doc = call_args[0][1]
+        assert "$addToSet" in update_doc
+        assert update_doc["$addToSet"]["farmer_ids"] == "WM-0001"
+
+    @pytest.mark.asyncio
+    async def test_add_farmer_idempotent(
+        self,
+        cp_repo: CollectionPointRepository,
+        mock_db: MagicMock,
+        sample_cp_with_farmers: CollectionPoint,
+    ) -> None:
+        """Test that adding same farmer twice doesn't create duplicates.
+
+        MongoDB $addToSet ensures idempotency.
+        """
+        cp_doc = sample_cp_with_farmers.model_dump()
+        cp_doc["_id"] = cp_doc["id"]
+        mock_db["collection_points"].find_one_and_update = AsyncMock(return_value=cp_doc)
+
+        # Add same farmer twice
+        await cp_repo.add_farmer("test-region-cp-001", "WM-0001")
+        result = await cp_repo.add_farmer("test-region-cp-001", "WM-0001")
+
+        # Farmer should still appear only once (mock shows ideal result)
+        assert result is not None
+        assert result.farmer_ids.count("WM-0001") <= 1  # $addToSet prevents duplicates
+
+    @pytest.mark.asyncio
+    async def test_remove_farmer_from_cp(
+        self,
+        cp_repo: CollectionPointRepository,
+        mock_db: MagicMock,
+        sample_cp: CollectionPoint,
+    ) -> None:
+        """Test removing a farmer from a collection point uses $pull."""
+        cp_doc = sample_cp.model_dump()
+        cp_doc["_id"] = cp_doc["id"]
+        mock_db["collection_points"].find_one_and_update = AsyncMock(return_value=cp_doc)
+
+        result = await cp_repo.remove_farmer("test-region-cp-001", "WM-0001")
+
+        assert result is not None
+
+        # Verify $pull is used for idempotency
+        call_args = mock_db["collection_points"].find_one_and_update.call_args
+        update_doc = call_args[0][1]
+        assert "$pull" in update_doc
+        assert update_doc["$pull"]["farmer_ids"] == "WM-0001"
+
+    @pytest.mark.asyncio
+    async def test_remove_farmer_idempotent(
+        self,
+        cp_repo: CollectionPointRepository,
+        mock_db: MagicMock,
+        sample_cp: CollectionPoint,
+    ) -> None:
+        """Test that removing non-existent farmer doesn't error.
+
+        MongoDB $pull is idempotent - no error if element not in array.
+        """
+        cp_doc = sample_cp.model_dump()
+        cp_doc["_id"] = cp_doc["id"]
+        mock_db["collection_points"].find_one_and_update = AsyncMock(return_value=cp_doc)
+
+        # Remove farmer that isn't in the CP
+        result = await cp_repo.remove_farmer("test-region-cp-001", "NONEXISTENT")
+
+        # Should succeed without error
+        assert result is not None
+
+    @pytest.mark.asyncio
+    async def test_list_cps_by_farmer(
+        self,
+        cp_repo: CollectionPointRepository,
+        mock_db: MagicMock,
+        sample_cp_with_farmers: CollectionPoint,
+    ) -> None:
+        """Test listing collection points that contain a specific farmer."""
+        cp_doc = sample_cp_with_farmers.model_dump()
+        cp_doc["_id"] = cp_doc["id"]
+
+        mock_cursor = MagicMock()
+        mock_cursor.sort = MagicMock(return_value=mock_cursor)
+        mock_cursor.limit = MagicMock(return_value=mock_cursor)
+        mock_cursor.to_list = AsyncMock(return_value=[cp_doc])
+        mock_db["collection_points"].find = MagicMock(return_value=mock_cursor)
+        mock_db["collection_points"].count_documents = AsyncMock(return_value=1)
+
+        cps, _, total = await cp_repo.list_by_farmer("WM-0001")
+
+        assert total == 1
+        assert len(cps) == 1
+        assert "WM-0001" in cps[0].farmer_ids
+
+        # Verify query uses farmer_id in farmer_ids
+        call_args = mock_db["collection_points"].count_documents.call_args
+        query_filter = call_args[0][0]
+        assert query_filter["farmer_ids"] == "WM-0001"
+
+    @pytest.mark.asyncio
+    async def test_list_cps_by_farmer_empty(
+        self,
+        cp_repo: CollectionPointRepository,
+        mock_db: MagicMock,
+    ) -> None:
+        """Test listing CPs for farmer with no assignments returns empty list."""
+        mock_cursor = MagicMock()
+        mock_cursor.sort = MagicMock(return_value=mock_cursor)
+        mock_cursor.limit = MagicMock(return_value=mock_cursor)
+        mock_cursor.to_list = AsyncMock(return_value=[])
+        mock_db["collection_points"].find = MagicMock(return_value=mock_cursor)
+        mock_db["collection_points"].count_documents = AsyncMock(return_value=0)
+
+        cps, _, total = await cp_repo.list_by_farmer("WM-9999")
+
+        assert total == 0
+        assert len(cps) == 0

@@ -200,6 +200,7 @@ class FarmerService(BaseService):
         else:
             # No CPs assigned, use default thresholds
             from fp_common.models import QualityThresholds
+
             thresholds = QualityThresholds()
 
         # Fetch performance data

@@ -12,6 +12,8 @@ from plantation_model.domain.models import (
     CollectionPointCapacity,
     ContactInfo,
     Factory,
+    Farmer,
+    FarmScale,
     GeoLocation,
     OperatingHours,
 )
@@ -595,3 +597,339 @@ class TestCollectionPointGrpcService:
         call_args = mock_context.abort.call_args
         assert call_args[0][0] == grpc.StatusCode.INVALID_ARGUMENT
         assert "Invalid collection_days" in call_args[0][1]
+
+
+# =========================================================================
+# Farmer-CollectionPoint Assignment Tests (Story 9.5a)
+# =========================================================================
+
+
+class TestFarmerCollectionPointAssignment:
+    """Tests for Farmer-CP assignment gRPC methods (Story 9.5a)."""
+
+    @pytest.fixture
+    def mock_factory_repo(self) -> MagicMock:
+        """Create a mock factory repository."""
+        return MagicMock(spec=FactoryRepository)
+
+    @pytest.fixture
+    def mock_cp_repo(self) -> MagicMock:
+        """Create a mock collection point repository."""
+        return MagicMock(spec=CollectionPointRepository)
+
+    @pytest.fixture
+    def mock_id_generator(self) -> MagicMock:
+        """Create a mock ID generator."""
+        return MagicMock(spec=IDGenerator)
+
+    @pytest.fixture
+    def mock_elevation_client(self) -> MagicMock:
+        """Create a mock elevation client."""
+        return MagicMock(spec=GoogleElevationClient)
+
+    @pytest.fixture
+    def mock_farmer_repo(self) -> MagicMock:
+        """Create a mock farmer repository."""
+        return MagicMock(spec=FarmerRepository)
+
+    @pytest.fixture
+    def mock_context(self) -> MagicMock:
+        """Create a mock gRPC context."""
+        context = MagicMock(spec=grpc.aio.ServicerContext)
+        context.abort = AsyncMock(side_effect=grpc.RpcError())
+        return context
+
+    @pytest.fixture
+    def servicer(
+        self,
+        mock_factory_repo: MagicMock,
+        mock_cp_repo: MagicMock,
+        mock_farmer_repo: MagicMock,
+        mock_id_generator: MagicMock,
+        mock_elevation_client: MagicMock,
+    ) -> PlantationServiceServicer:
+        """Create a servicer with mock dependencies."""
+        return PlantationServiceServicer(
+            factory_repo=mock_factory_repo,
+            collection_point_repo=mock_cp_repo,
+            farmer_repo=mock_farmer_repo,
+            id_generator=mock_id_generator,
+            elevation_client=mock_elevation_client,
+        )
+
+    @pytest.fixture
+    def sample_farmer(self) -> Farmer:
+        """Create a sample farmer for testing."""
+        return Farmer(
+            id="WM-0001",
+            first_name="Test",
+            last_name="Farmer",
+            region_id="test-region",
+            farm_location=GeoLocation(latitude=-0.5, longitude=36.5, altitude_meters=1500.0),
+            contact=ContactInfo(phone="+254700000001"),
+            farm_size_hectares=1.0,
+            farm_scale=FarmScale.MEDIUM,
+            national_id="12345678",
+        )
+
+    @pytest.fixture
+    def sample_cp(self) -> CollectionPoint:
+        """Create a sample collection point for testing."""
+        return CollectionPoint(
+            id="test-region-cp-001",
+            name="Test Collection Point",
+            factory_id="KEN-FAC-001",
+            location=GeoLocation(latitude=-0.45, longitude=36.55, altitude_meters=1600.0),
+            region_id="test-region",
+            clerk_id="CLK-001",
+            clerk_phone="+254700111222",
+            operating_hours=OperatingHours(weekdays="06:00-10:00", weekends="07:00-09:00"),
+            collection_days=["mon", "wed", "fri"],
+            capacity=CollectionPointCapacity(
+                max_daily_kg=5000,
+                storage_type="covered_shed",
+                has_weighing_scale=True,
+                has_qc_device=False,
+            ),
+            status="active",
+            farmer_ids=[],  # Story 9.5a: N:M relationship
+            created_at=datetime.now(UTC),
+            updated_at=datetime.now(UTC),
+        )
+
+    @pytest.fixture
+    def sample_cp_with_farmers(self, sample_cp: CollectionPoint) -> CollectionPoint:
+        """Create a sample collection point with farmers assigned."""
+        return CollectionPoint(
+            id=sample_cp.id,
+            name=sample_cp.name,
+            factory_id=sample_cp.factory_id,
+            location=sample_cp.location,
+            region_id=sample_cp.region_id,
+            clerk_id=sample_cp.clerk_id,
+            clerk_phone=sample_cp.clerk_phone,
+            operating_hours=sample_cp.operating_hours,
+            collection_days=sample_cp.collection_days,
+            capacity=sample_cp.capacity,
+            status=sample_cp.status,
+            farmer_ids=["WM-0001"],  # Story 9.5a: farmer assigned
+            created_at=sample_cp.created_at,
+            updated_at=datetime.now(UTC),
+        )
+
+    # -------------------------------------------------------------------------
+    # AssignFarmerToCollectionPoint Tests
+    # -------------------------------------------------------------------------
+
+    @pytest.mark.asyncio
+    async def test_assign_farmer_success(
+        self,
+        servicer: PlantationServiceServicer,
+        mock_farmer_repo: MagicMock,
+        mock_cp_repo: MagicMock,
+        mock_context: MagicMock,
+        sample_farmer: Farmer,
+        sample_cp_with_farmers: CollectionPoint,
+    ) -> None:
+        """Test AssignFarmerToCollectionPoint assigns farmer successfully."""
+        mock_farmer_repo.get_by_id = AsyncMock(return_value=sample_farmer)
+        mock_cp_repo.get_by_id = AsyncMock(return_value=sample_cp_with_farmers)
+        mock_cp_repo.add_farmer = AsyncMock(return_value=sample_cp_with_farmers)
+
+        request = plantation_pb2.AssignFarmerRequest(
+            collection_point_id="test-region-cp-001",
+            farmer_id="WM-0001",
+        )
+        result = await servicer.AssignFarmerToCollectionPoint(request, mock_context)
+
+        assert result.id == "test-region-cp-001"
+        assert "WM-0001" in result.farmer_ids
+        mock_cp_repo.add_farmer.assert_called_once_with("test-region-cp-001", "WM-0001")
+
+    @pytest.mark.asyncio
+    async def test_assign_farmer_farmer_not_found(
+        self,
+        servicer: PlantationServiceServicer,
+        mock_farmer_repo: MagicMock,
+        mock_context: MagicMock,
+    ) -> None:
+        """Test AssignFarmerToCollectionPoint aborts when farmer not found."""
+        mock_farmer_repo.get_by_id = AsyncMock(return_value=None)
+
+        request = plantation_pb2.AssignFarmerRequest(
+            collection_point_id="test-region-cp-001",
+            farmer_id="NONEXISTENT",
+        )
+
+        with pytest.raises(grpc.RpcError):
+            await servicer.AssignFarmerToCollectionPoint(request, mock_context)
+
+        mock_context.abort.assert_called_once()
+        call_args = mock_context.abort.call_args
+        assert call_args[0][0] == grpc.StatusCode.NOT_FOUND
+        assert "Farmer NONEXISTENT not found" in call_args[0][1]
+
+    @pytest.mark.asyncio
+    async def test_assign_farmer_cp_not_found(
+        self,
+        servicer: PlantationServiceServicer,
+        mock_farmer_repo: MagicMock,
+        mock_cp_repo: MagicMock,
+        mock_context: MagicMock,
+        sample_farmer: Farmer,
+    ) -> None:
+        """Test AssignFarmerToCollectionPoint aborts when CP not found."""
+        mock_farmer_repo.get_by_id = AsyncMock(return_value=sample_farmer)
+        mock_cp_repo.get_by_id = AsyncMock(return_value=None)
+
+        request = plantation_pb2.AssignFarmerRequest(
+            collection_point_id="NONEXISTENT-CP",
+            farmer_id="WM-0001",
+        )
+
+        with pytest.raises(grpc.RpcError):
+            await servicer.AssignFarmerToCollectionPoint(request, mock_context)
+
+        mock_context.abort.assert_called_once()
+        call_args = mock_context.abort.call_args
+        assert call_args[0][0] == grpc.StatusCode.NOT_FOUND
+        assert "Collection point NONEXISTENT-CP not found" in call_args[0][1]
+
+    # -------------------------------------------------------------------------
+    # UnassignFarmerFromCollectionPoint Tests
+    # -------------------------------------------------------------------------
+
+    @pytest.mark.asyncio
+    async def test_unassign_farmer_success(
+        self,
+        servicer: PlantationServiceServicer,
+        mock_farmer_repo: MagicMock,
+        mock_cp_repo: MagicMock,
+        mock_context: MagicMock,
+        sample_farmer: Farmer,
+        sample_cp: CollectionPoint,
+    ) -> None:
+        """Test UnassignFarmerFromCollectionPoint removes farmer successfully."""
+        mock_farmer_repo.get_by_id = AsyncMock(return_value=sample_farmer)
+        mock_cp_repo.get_by_id = AsyncMock(return_value=sample_cp)
+        mock_cp_repo.remove_farmer = AsyncMock(return_value=sample_cp)
+
+        request = plantation_pb2.UnassignFarmerRequest(
+            collection_point_id="test-region-cp-001",
+            farmer_id="WM-0001",
+        )
+        result = await servicer.UnassignFarmerFromCollectionPoint(request, mock_context)
+
+        assert result.id == "test-region-cp-001"
+        mock_cp_repo.remove_farmer.assert_called_once_with("test-region-cp-001", "WM-0001")
+
+    @pytest.mark.asyncio
+    async def test_unassign_farmer_farmer_not_found(
+        self,
+        servicer: PlantationServiceServicer,
+        mock_farmer_repo: MagicMock,
+        mock_context: MagicMock,
+    ) -> None:
+        """Test UnassignFarmerFromCollectionPoint aborts when farmer not found."""
+        mock_farmer_repo.get_by_id = AsyncMock(return_value=None)
+
+        request = plantation_pb2.UnassignFarmerRequest(
+            collection_point_id="test-region-cp-001",
+            farmer_id="NONEXISTENT",
+        )
+
+        with pytest.raises(grpc.RpcError):
+            await servicer.UnassignFarmerFromCollectionPoint(request, mock_context)
+
+        mock_context.abort.assert_called_once()
+        call_args = mock_context.abort.call_args
+        assert call_args[0][0] == grpc.StatusCode.NOT_FOUND
+
+    @pytest.mark.asyncio
+    async def test_unassign_farmer_cp_not_found(
+        self,
+        servicer: PlantationServiceServicer,
+        mock_farmer_repo: MagicMock,
+        mock_cp_repo: MagicMock,
+        mock_context: MagicMock,
+        sample_farmer: Farmer,
+    ) -> None:
+        """Test UnassignFarmerFromCollectionPoint aborts when CP not found."""
+        mock_farmer_repo.get_by_id = AsyncMock(return_value=sample_farmer)
+        mock_cp_repo.get_by_id = AsyncMock(return_value=None)
+
+        request = plantation_pb2.UnassignFarmerRequest(
+            collection_point_id="NONEXISTENT-CP",
+            farmer_id="WM-0001",
+        )
+
+        with pytest.raises(grpc.RpcError):
+            await servicer.UnassignFarmerFromCollectionPoint(request, mock_context)
+
+        mock_context.abort.assert_called_once()
+        call_args = mock_context.abort.call_args
+        assert call_args[0][0] == grpc.StatusCode.NOT_FOUND
+
+    # -------------------------------------------------------------------------
+    # GetCollectionPointsForFarmer Tests
+    # -------------------------------------------------------------------------
+
+    @pytest.mark.asyncio
+    async def test_get_cps_for_farmer_success(
+        self,
+        servicer: PlantationServiceServicer,
+        mock_farmer_repo: MagicMock,
+        mock_cp_repo: MagicMock,
+        mock_context: MagicMock,
+        sample_farmer: Farmer,
+        sample_cp_with_farmers: CollectionPoint,
+    ) -> None:
+        """Test GetCollectionPointsForFarmer returns CPs for farmer."""
+        mock_farmer_repo.get_by_id = AsyncMock(return_value=sample_farmer)
+        mock_cp_repo.list_by_farmer = AsyncMock(return_value=([sample_cp_with_farmers], None, 1))
+
+        request = plantation_pb2.GetCollectionPointsForFarmerRequest(farmer_id="WM-0001")
+        result = await servicer.GetCollectionPointsForFarmer(request, mock_context)
+
+        assert len(result.collection_points) == 1
+        assert result.collection_points[0].id == "test-region-cp-001"
+        assert result.total_count == 1
+        mock_cp_repo.list_by_farmer.assert_called_once_with("WM-0001")
+
+    @pytest.mark.asyncio
+    async def test_get_cps_for_farmer_empty_list(
+        self,
+        servicer: PlantationServiceServicer,
+        mock_farmer_repo: MagicMock,
+        mock_cp_repo: MagicMock,
+        mock_context: MagicMock,
+        sample_farmer: Farmer,
+    ) -> None:
+        """Test GetCollectionPointsForFarmer returns empty list when no CPs assigned."""
+        mock_farmer_repo.get_by_id = AsyncMock(return_value=sample_farmer)
+        mock_cp_repo.list_by_farmer = AsyncMock(return_value=([], None, 0))
+
+        request = plantation_pb2.GetCollectionPointsForFarmerRequest(farmer_id="WM-0001")
+        result = await servicer.GetCollectionPointsForFarmer(request, mock_context)
+
+        assert len(result.collection_points) == 0
+        assert result.total_count == 0
+
+    @pytest.mark.asyncio
+    async def test_get_cps_for_farmer_farmer_not_found(
+        self,
+        servicer: PlantationServiceServicer,
+        mock_farmer_repo: MagicMock,
+        mock_context: MagicMock,
+    ) -> None:
+        """Test GetCollectionPointsForFarmer aborts when farmer not found."""
+        mock_farmer_repo.get_by_id = AsyncMock(return_value=None)
+
+        request = plantation_pb2.GetCollectionPointsForFarmerRequest(farmer_id="NONEXISTENT")
+
+        with pytest.raises(grpc.RpcError):
+            await servicer.GetCollectionPointsForFarmer(request, mock_context)
+
+        mock_context.abort.assert_called_once()
+        call_args = mock_context.abort.call_args
+        assert call_args[0][0] == grpc.StatusCode.NOT_FOUND

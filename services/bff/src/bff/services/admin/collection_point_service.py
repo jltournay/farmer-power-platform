@@ -247,6 +247,8 @@ class AdminCollectionPointService(BaseService):
     async def _get_cp_farmer_count(self, cp_id: str) -> int:
         """Get farmer count for a collection point.
 
+        Story 9.5a: Use CP.farmer_ids for N:M relationship.
+
         Args:
             cp_id: Collection point ID.
 
@@ -254,10 +256,7 @@ class AdminCollectionPointService(BaseService):
             Number of farmers at this CP.
         """
         try:
-            response = await self._plantation.list_farmers(
-                collection_point_id=cp_id,
-                page_size=1,  # We only need the count
-            )
-            return response.pagination.total_count
+            cp = await self._plantation.get_collection_point(cp_id)
+            return len(cp.farmer_ids)
         except Exception:
             return 0

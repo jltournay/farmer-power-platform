@@ -206,7 +206,10 @@ class TestGetFarmerEndpoint:
         assert profile["last_name"] == "Kiprop"
         assert profile["phone"] == "+254712100001"
         assert profile["region_id"] == "kericho-highland"
-        assert profile["collection_point_id"] == "kericho-highland-cp-100"
+        # Story 9.5a: collection_point_id replaced with collection_points list
+        assert "collection_points" in profile
+        cp_ids = [cp["id"] for cp in profile["collection_points"]]
+        assert "kericho-highland-cp-100" in cp_ids
         assert profile["is_active"] is True
 
     @pytest.mark.asyncio

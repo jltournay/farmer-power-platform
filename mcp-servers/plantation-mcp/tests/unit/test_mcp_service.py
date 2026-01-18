@@ -33,7 +33,10 @@ def servicer(mock_plantation_client: MagicMock) -> McpToolServiceServicer:
 
 @pytest.fixture
 def sample_farmer() -> dict:
-    """Sample farmer data."""
+    """Sample farmer data.
+
+    Story 9.5a: collection_point_id removed - N:M relationship via CP.farmer_ids.
+    """
     return {
         "farmer_id": "WM-0001",
         "first_name": "John",
@@ -42,7 +45,6 @@ def sample_farmer() -> dict:
         "farm_size_hectares": 1.5,
         "farm_scale": "FARM_SCALE_MEDIUM",
         "region_id": "nyeri-highland",
-        "collection_point_id": "nyeri-highland-cp-001",
         "notification_channel": "NOTIFICATION_CHANNEL_SMS",
         "interaction_pref": "INTERACTION_PREFERENCE_TEXT",
         "pref_lang": "PREFERRED_LANGUAGE_SW",
@@ -52,13 +54,15 @@ def sample_farmer() -> dict:
 
 @pytest.fixture
 def sample_farmer_summary() -> dict:
-    """Sample farmer summary data."""
+    """Sample farmer summary data.
+
+    Story 9.5a: collection_point_id removed - N:M relationship via CP.farmer_ids.
+    """
     return {
         "farmer_id": "WM-0001",
         "first_name": "John",
         "last_name": "Mwangi",
         "phone": "+254712345678",
-        "collection_point_id": "nyeri-highland-cp-001",
         "farm_size_hectares": 1.5,
         "farm_scale": "FARM_SCALE_MEDIUM",
         "grading_model_id": "tbk_kenya_tea_v1",
@@ -413,21 +417,23 @@ class TestGetCollectionPointsTool:
         """AC #3: get_collection_points returns factory collection points."""
         sample_cps = [
             {
-                "collection_point_id": "nyeri-cp-001",
+                "id": "nyeri-cp-001",
                 "name": "Nyeri Central CP",
                 "code": "NCP001",
                 "factory_id": "nyeri-factory-001",
                 "region_id": "nyeri-highland",
                 "location": {"latitude": -0.4, "longitude": 36.9},
+                "farmer_ids": ["WM-0001"],  # Story 9.5a: N:M relationship
                 "is_active": True,
             },
             {
-                "collection_point_id": "nyeri-cp-002",
+                "id": "nyeri-cp-002",
                 "name": "Nyeri West CP",
                 "code": "NCP002",
                 "factory_id": "nyeri-factory-001",
                 "region_id": "nyeri-highland",
                 "location": {"latitude": -0.42, "longitude": 36.88},
+                "farmer_ids": ["WM-0002"],  # Story 9.5a: N:M relationship
                 "is_active": True,
             },
         ]

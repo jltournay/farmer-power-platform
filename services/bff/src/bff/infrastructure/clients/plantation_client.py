@@ -256,6 +256,43 @@ class PlantationClient(BaseGrpcClient):
             self._handle_grpc_error(e, "Farmers list")
             raise
 
+    async def get_farmers_for_collection_point(
+        self,
+        collection_point_id: str,
+    ) -> list[Farmer]:
+        """Get farmers assigned to a collection point (Story 9.5a).
+
+        Uses the N:M relationship via CollectionPoint.farmer_ids.
+        Fetches the CP first, then retrieves each farmer.
+
+        Args:
+            collection_point_id: The collection point ID.
+
+        Returns:
+            List of Farmer domain models assigned to this CP.
+
+        Raises:
+            NotFoundError: If collection point not found.
+            ServiceUnavailableError: If service is unavailable.
+        """
+        # Get the CP to get farmer_ids
+        cp = await self.get_collection_point(collection_point_id)
+
+        if not cp.farmer_ids:
+            return []
+
+        # Fetch each farmer
+        farmers = []
+        for farmer_id in cp.farmer_ids:
+            try:
+                farmer = await self.get_farmer(farmer_id)
+                farmers.append(farmer)
+            except Exception:
+                # Skip farmers that can't be found (data integrity issue)
+                pass
+
+        return farmers
+
     @grpc_retry
     async def get_farmer_summary(self, farmer_id: str) -> FarmerPerformance:
         """Get farmer with performance metrics.
@@ -971,9 +1008,7 @@ class PlantationClient(BaseGrpcClient):
     # =========================================================================
 
     @grpc_retry
-    async def assign_farmer_to_collection_point(
-        self, collection_point_id: str, farmer_id: str
-    ) -> CollectionPoint:
+    async def assign_farmer_to_collection_point(self, collection_point_id: str, farmer_id: str) -> CollectionPoint:
         """Assign a farmer to a collection point.
 
         Story 9.5a: New RPC for N:M farmer-CP relationship.
@@ -1002,9 +1037,7 @@ class PlantationClient(BaseGrpcClient):
             raise
 
     @grpc_retry
-    async def unassign_farmer_from_collection_point(
-        self, collection_point_id: str, farmer_id: str
-    ) -> CollectionPoint:
+    async def unassign_farmer_from_collection_point(self, collection_point_id: str, farmer_id: str) -> CollectionPoint:
         """Unassign a farmer from a collection point.
 
         Story 9.5a: New RPC for N:M farmer-CP relationship.
@@ -1033,9 +1066,7 @@ class PlantationClient(BaseGrpcClient):
             raise
 
     @grpc_retry
-    async def get_collection_points_for_farmer(
-        self, farmer_id: str
-    ) -> PaginatedResponse[CollectionPoint]:
+    async def get_collection_points_for_farmer(self, farmer_id: str) -> PaginatedResponse[CollectionPoint]:
         """Get collection points where a farmer is assigned.
 
         Story 9.5a: New RPC for N:M farmer-CP relationship.

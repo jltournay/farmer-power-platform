@@ -349,6 +349,7 @@
   </step>
 
   <step n="9" goal="Run E2E tests locally (MANDATORY)">
+    <critical> Before proceeding, reload the story and ensure that every task has been completed. </critical>
     <critical>E2E tests MUST pass locally before marking story ready for review - NO EXCEPTIONS</critical>
     <critical>This step CANNOT be skipped - story will be rejected without E2E evidence</critical>
     <critical>Per ADR-015: Use E2E scripts instead of raw docker-compose commands</critical>
@@ -602,7 +603,7 @@
   </step>
 
   <step n="13" goal="Trigger and verify E2E CI passes (MANDATORY - MANUAL TRIGGER)">
-    <critical>E2E CI (e2e.yaml) MUST be MANUALLY TRIGGERED - it does NOT auto-run on push</critical>
+    <critical>E2E CI (e2e-tests.yaml) MUST be MANUALLY TRIGGERED - it does NOT auto-run on push</critical>
     <critical>You MUST trigger, wait, and verify E2E CI passes before proceeding</critical>
     <critical>This step CANNOT be skipped - story will be rejected without E2E CI evidence</critical>
 
@@ -613,11 +614,11 @@
 
     <!-- Step 1: Trigger E2E workflow -->
     <action>Trigger E2E CI workflow on current branch:
-      gh workflow run e2e.yaml --ref {{story_branch}}
+      gh workflow run e2e-tests.yaml --ref {{story_branch}}
     </action>
 
     <output>🚀 **E2E CI Triggered**
-      Workflow: e2e.yaml
+      Workflow: e2e-tests.yaml
       Branch: {{story_branch}}
       Waiting for workflow to start...
     </output>
@@ -625,13 +626,13 @@
     <!-- Step 2: Wait for workflow to appear and get run ID -->
     <action>Wait for E2E workflow run to appear (~5-10 seconds):
       sleep 10
-      gh run list --workflow=e2e.yaml --branch {{story_branch}} --limit 1 --json databaseId,status,conclusion
+      gh run list --workflow=e2e-tests.yaml --branch {{story_branch}} --limit 1 --json databaseId,status,conclusion
     </action>
 
     <!-- Step 3: Monitor until completion -->
     <check if="E2E CI run is in progress">
       <output>⏳ **E2E CI Running**
-        Workflow: e2e.yaml
+        Workflow: e2e-tests.yaml
         Run: {{e2e_run_id}}
         Status: In Progress
         Expected duration: 3-5 minutes
@@ -649,7 +650,7 @@
         gh run view {{e2e_run_id}}
       </action>
       <output>✅ **E2E CI Passed**
-        Workflow: e2e.yaml
+        Workflow: e2e-tests.yaml
         Branch: {{story_branch}}
         Run: {{e2e_run_id}}
         Status: PASSED
@@ -664,7 +665,7 @@
         gh run view {{e2e_run_id}} --log-failed
       </action>
       <output>❌ **E2E CI Failed**
-        Workflow: e2e.yaml
+        Workflow: e2e-tests.yaml
         Branch: {{story_branch}}
         Run: {{e2e_run_id}}
 
@@ -673,15 +674,15 @@
 
         HALT: Fix E2E CI failures before story can proceed.
       </output>
-      <action>HALT: "E2E CI (e2e.yaml) failed - fix before proceeding"</action>
+      <action>HALT: "E2E CI (e2e-tests.yaml) failed - fix before proceeding"</action>
     </check>
 
     <check if="E2E workflow trigger failed">
       <output>❌ **E2E CI Trigger Failed**
-        Could not trigger e2e.yaml workflow.
+        Could not trigger e2e-tests.yaml workflow.
 
         **Possible causes:**
-        - Workflow file does not exist at .github/workflows/e2e.yaml
+        - Workflow file does not exist at .github/workflows/e2e-tests.yaml
         - Workflow missing `workflow_dispatch` trigger
         - Insufficient permissions
 
@@ -693,7 +694,7 @@
     <!-- Update story file with E2E CI evidence -->
     <action>Add E2E CI verification evidence to story file:
       - Branch: {{story_branch}}
-      - Workflow: e2e.yaml
+      - Workflow: e2e-tests.yaml
       - E2E CI Run ID: {{e2e_run_id}}
       - E2E CI Status: PASSED
       - Verification Date: {{date}}
@@ -740,8 +741,8 @@
         Code review CANNOT proceed without E2E CI passing.
 
         **Required action:** Return to Step 13 and:
-        1. Trigger: `gh workflow run e2e.yaml --ref {{story_branch}}`
-        2. Wait: `sleep 10 && gh run list --workflow=e2e.yaml --branch {{story_branch}} --limit 1`
+        1. Trigger: `gh workflow run e2e-tests.yaml --ref {{story_branch}}`
+        2. Wait: `sleep 10 && gh run list --workflow=e2e-tests.yaml --branch {{story_branch}} --limit 1`
         3. Monitor: `gh run watch <run-id>`
         4. Record E2E CI Run ID and PASSED status in story file
 

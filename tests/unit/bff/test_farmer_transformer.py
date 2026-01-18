@@ -32,13 +32,13 @@ def transformer() -> FarmerTransformer:
 @pytest.fixture
 def sample_farmer() -> Farmer:
     """Create a sample Farmer domain model."""
+    # Story 9.5a: collection_point_id removed from Farmer
     return Farmer(
         id="WM-0001",
         grower_number="GN-001",
         first_name="Wanjiku",
         last_name="Muthoni",
         region_id="nyeri-highland",
-        collection_point_id="nyeri-highland-cp-001",
         farm_location=GeoLocation(
             latitude=-0.4197,
             longitude=36.9553,
@@ -252,7 +252,8 @@ class TestToDetail:
         assert detail.profile.last_name == "Muthoni"
         assert detail.profile.phone == "+254712345678"
         assert detail.profile.region_id == "nyeri-highland"
-        assert detail.profile.collection_point_id == "nyeri-highland-cp-001"
+        # Story 9.5a: collection_point_id replaced with collection_points list
+        assert detail.profile.collection_points == []  # No CPs passed to to_detail
         assert detail.profile.farm_size_hectares == 1.5
         assert detail.profile.is_active is True
 
