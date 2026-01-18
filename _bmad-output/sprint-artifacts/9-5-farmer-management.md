@@ -1,6 +1,6 @@
 # Story 9.5: Farmer Management
 
-**Status:** review
+**Status:** done
 **GitHub Issue:** #199
 
 > **Migration Notice:** Story 9.5a (Farmer-CP Data Model Refactor) has been completed and merged to main.
