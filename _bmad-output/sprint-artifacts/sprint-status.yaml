@@ -240,7 +240,8 @@ development_status:
   9-2-region-management: done  # 5 points - Region CRUD UI with map/polygon support (ADR-017), github_issue: 191, PR: merged
   9-3-factory-management: done  # github_issue: 195, PR merged 2026-01-16
   9-4-collection-point-management: done  # github_issue: 197, PR merged 2026-01-17
-  9-5-farmer-management: review  # github_issue: 199, E2E passed, awaiting code review
+  9-5a-farmer-cp-data-model: done  # github_issue: 200, PR: #201, N:M data model refactor
+  9-5-farmer-management: in_progress  # github_issue: 199, adapting to N:M data model after 9.5a merge
   9-6-grading-model-management: backlog  # UNBLOCKED by 0-4-10 (NGINX deployment complete)
   9-7-user-management: backlog  # UNBLOCKED by 0-4-10 (NGINX deployment complete)
   9-8-platform-health-dashboard: backlog  # UNBLOCKED by 0-4-10 (NGINX deployment complete)
