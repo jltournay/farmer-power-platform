@@ -243,7 +243,7 @@ development_status:
   9-3-factory-management: done  # github_issue: 195, PR: #196 MERGED
   9-4-collection-point-management: done  # github_issue: 197, PR: #198 MERGED 2026-01-17
   9-5a-farmer-cp-data-model: done  # github_issue: 200, PR: #201 MERGED 2026-01-18, Data model refactor: N:M Farmer-CP relationship
-  9-5-farmer-management: review  # github_issue: 199, N:M migration complete, CI E2E passed (21115736620)
+  9-5-farmer-management: done  # github_issue: 199, PR: #202, E2E CI: 21117120990
   9-6-grading-model-management: backlog  # UNBLOCKED by 0-4-10 (NGINX deployment complete)
   9-7-user-management: backlog  # UNBLOCKED by 0-4-10 (NGINX deployment complete)
   9-8-platform-health-dashboard: backlog  # UNBLOCKED by 0-4-10 (NGINX deployment complete)
