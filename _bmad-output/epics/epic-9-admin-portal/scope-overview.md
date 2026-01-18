@@ -16,10 +16,16 @@
 └─────────────────────────────────────────────────────────────────────────────┘
 
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│  FARMERS are independent entities                                           │
-│  - Have a PRIMARY collection point (for registration)                       │
-│  - Can DELIVER to ANY collection point (tracked in deliveries)              │
+│  FARMERS are independent entities (N:M with Collection Points)              │
+│  - Farmer creation does NOT require a collection point                      │
+│  - Factories ASSIGN farmers to their collection points                      │
+│  - Same farmer can be assigned to CPs from DIFFERENT factories              │
+│  - Assignment is: manual (admin UI) OR automatic (on quality result)        │
 │  - Region based on FARM GPS, not factory location                           │
+│                                                                             │
+│  Relationship ownership:                                                    │
+│    CollectionPoint.farmer_ids[] → list of assigned farmer IDs               │
+│    (NOT Farmer.collection_point_id - this is REMOVED)                       │
 └─────────────────────────────────────────────────────────────────────────────┘
 ```
 

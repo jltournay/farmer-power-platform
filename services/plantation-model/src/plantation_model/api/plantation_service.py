@@ -4,6 +4,7 @@ import logging
 from datetime import UTC, datetime
 
 import grpc
+from fp_common.converters import collection_point_to_proto
 from fp_proto.plantation.v1 import plantation_pb2, plantation_pb2_grpc
 from google.protobuf.timestamp_pb2 import Timestamp
 from plantation_model.config import settings
@@ -461,36 +462,6 @@ class PlantationServiceServicer(plantation_pb2_grpc.PlantationServiceServicer):
     # Collection Point Operations
     # =========================================================================
 
-    def _cp_to_proto(self, cp: CollectionPoint) -> plantation_pb2.CollectionPoint:
-        """Convert CollectionPoint domain model to protobuf message."""
-        return plantation_pb2.CollectionPoint(
-            id=cp.id,
-            name=cp.name,
-            factory_id=cp.factory_id,
-            location=plantation_pb2.GeoLocation(
-                latitude=cp.location.latitude,
-                longitude=cp.location.longitude,
-                altitude_meters=cp.location.altitude_meters,
-            ),
-            region_id=cp.region_id,
-            clerk_id=cp.clerk_id or "",
-            clerk_phone=cp.clerk_phone or "",
-            operating_hours=plantation_pb2.OperatingHours(
-                weekdays=cp.operating_hours.weekdays,
-                weekends=cp.operating_hours.weekends,
-            ),
-            collection_days=cp.collection_days,
-            capacity=plantation_pb2.CollectionPointCapacity(
-                max_daily_kg=cp.capacity.max_daily_kg,
-                storage_type=cp.capacity.storage_type,
-                has_weighing_scale=cp.capacity.has_weighing_scale,
-                has_qc_device=cp.capacity.has_qc_device,
-            ),
-            status=cp.status,
-            created_at=datetime_to_timestamp(cp.created_at),
-            updated_at=datetime_to_timestamp(cp.updated_at),
-        )
-
     async def GetCollectionPoint(
         self,
         request: plantation_pb2.GetCollectionPointRequest,
@@ -503,7 +474,7 @@ class PlantationServiceServicer(plantation_pb2_grpc.PlantationServiceServicer):
                 grpc.StatusCode.NOT_FOUND,
                 f"Collection point {request.id} not found",
             )
-        return self._cp_to_proto(cp)
+        return collection_point_to_proto(cp)
 
     async def ListCollectionPoints(
         self,
@@ -531,7 +502,7 @@ class PlantationServiceServicer(plantation_pb2_grpc.PlantationServiceServicer):
         )
 
         return plantation_pb2.ListCollectionPointsResponse(
-            collection_points=[self._cp_to_proto(cp) for cp in cps],
+            collection_points=[collection_point_to_proto(cp) for cp in cps],
             next_page_token=next_token or "",
             total_count=total,
         )
@@ -629,7 +600,7 @@ class PlantationServiceServicer(plantation_pb2_grpc.PlantationServiceServicer):
         await self._cp_repo.create(cp)
         logger.info("Created collection point %s (%s)", cp.id, cp.name)
 
-        return self._cp_to_proto(cp)
+        return collection_point_to_proto(cp)
 
     async def UpdateCollectionPoint(
         self,
@@ -694,7 +665,7 @@ class PlantationServiceServicer(plantation_pb2_grpc.PlantationServiceServicer):
                     grpc.StatusCode.NOT_FOUND,
                     f"Collection point {request.id} not found",
                 )
-            return self._cp_to_proto(cp)
+            return collection_point_to_proto(cp)
 
         cp = await self._cp_repo.update(request.id, updates)
         if cp is None:
@@ -704,7 +675,7 @@ class PlantationServiceServicer(plantation_pb2_grpc.PlantationServiceServicer):
             )
 
         logger.info("Updated collection point %s", cp.id)
-        return self._cp_to_proto(cp)
+        return collection_point_to_proto(cp)
 
     async def DeleteCollectionPoint(
         self,
@@ -788,14 +759,17 @@ class PlantationServiceServicer(plantation_pb2_grpc.PlantationServiceServicer):
         return mapping.get(lang, PreferredLanguage.SWAHILI)
 
     def _farmer_to_proto(self, farmer: Farmer) -> plantation_pb2.Farmer:
-        """Convert Farmer domain model to protobuf message."""
+        """Convert Farmer domain model to protobuf message.
+
+        Story 9.5a: collection_point_id removed - use CP.farmer_ids.
+        """
         return plantation_pb2.Farmer(
             id=farmer.id,
             grower_number=farmer.grower_number or "",
             first_name=farmer.first_name,
             last_name=farmer.last_name,
             region_id=farmer.region_id,
-            collection_point_id=farmer.collection_point_id,
+            # Story 9.5a: collection_point_id removed
             farm_location=plantation_pb2.GeoLocation(
                 latitude=farmer.farm_location.latitude,
                 longitude=farmer.farm_location.longitude,
@@ -854,12 +828,14 @@ class PlantationServiceServicer(plantation_pb2_grpc.PlantationServiceServicer):
         request: plantation_pb2.ListFarmersRequest,
         context: grpc.aio.ServicerContext,
     ) -> plantation_pb2.ListFarmersResponse:
-        """List farmers with optional filtering."""
+        """List farmers with optional filtering.
+
+        Story 9.5a: collection_point_id filter removed - filter via CP.farmer_ids.
+        """
         filters = {}
         if request.region_id:
             filters["region_id"] = request.region_id
-        if request.collection_point_id:
-            filters["collection_point_id"] = request.collection_point_id
+        # Story 9.5a: collection_point_id filter removed
         if request.active_only:
             filters["is_active"] = True
 
@@ -904,13 +880,7 @@ class PlantationServiceServicer(plantation_pb2_grpc.PlantationServiceServicer):
                 f"National ID already registered. Existing farmer_id: {existing_by_national_id.id}",
             )
 
-        # Validate collection point exists
-        cp = await self._cp_repo.get_by_id(request.collection_point_id)
-        if cp is None:
-            await context.abort(
-                grpc.StatusCode.INVALID_ARGUMENT,
-                f"Collection point {request.collection_point_id} not found",
-            )
+        # Story 9.5a: collection_point_id validation removed - use separate assignment API
 
         # Generate unique farmer ID (format: WM-XXXX)
         farmer_id = await self._id_generator.generate_farmer_id()
@@ -932,6 +902,7 @@ class PlantationServiceServicer(plantation_pb2_grpc.PlantationServiceServicer):
         farm_scale = FarmScale.from_hectares(request.farm_size_hectares)
 
         # Create farmer
+        # Story 9.5a: collection_point_id removed - use separate assignment API
         now = datetime.now(UTC)
         farmer = Farmer(
             id=farmer_id,
@@ -939,7 +910,6 @@ class PlantationServiceServicer(plantation_pb2_grpc.PlantationServiceServicer):
             first_name=request.first_name,
             last_name=request.last_name,
             region_id=region_id,
-            collection_point_id=request.collection_point_id,
             farm_location=GeoLocation(
                 latitude=request.farm_location.latitude,
                 longitude=request.farm_location.longitude,
@@ -961,20 +931,19 @@ class PlantationServiceServicer(plantation_pb2_grpc.PlantationServiceServicer):
 
         await self._farmer_repo.create(farmer)
         logger.info(
-            "Created farmer %s (%s %s) at collection point %s",
+            "Created farmer %s (%s %s) in region %s",
             farmer.id,
             farmer.first_name,
             farmer.last_name,
-            farmer.collection_point_id,
+            farmer.region_id,
         )
 
         # Publish farmer registered event (AC #4)
         # Story 0.6.14: Uses module-level publish_event() per ADR-010
+        # Story 9.5a: collection_point_id and factory_id removed from event
         event = FarmerRegisteredEvent(
             farmer_id=farmer.id,
             phone=farmer.contact.phone,
-            collection_point_id=farmer.collection_point_id,
-            factory_id=cp.factory_id,  # Derived from collection point
             region_id=farmer.region_id,
             farm_scale=farmer.farm_scale.value,
         )
@@ -984,22 +953,8 @@ class PlantationServiceServicer(plantation_pb2_grpc.PlantationServiceServicer):
             data=event,
         )
 
-        # Auto-initialize farmer performance (Story 1.4, AC #3)
-        if self._grading_model_repo and self._farmer_performance_repo:
-            grading_model = await self._grading_model_repo.get_by_factory(cp.factory_id)
-            if grading_model:
-                await self._farmer_performance_repo.initialize_for_farmer(
-                    farmer_id=farmer.id,
-                    farm_size_hectares=farmer.farm_size_hectares,
-                    farm_scale=farmer.farm_scale,
-                    grading_model_id=grading_model.model_id,
-                    grading_model_version=grading_model.model_version,
-                )
-                logger.info(
-                    "Initialized performance for farmer %s with grading model %s",
-                    farmer.id,
-                    grading_model.model_id,
-                )
+        # Story 9.5a: Auto-initialization of farmer performance deferred until CP assignment
+        # (requires factory_id from CP, which is now assigned separately)
 
         return self._farmer_to_proto(farmer)
 
@@ -1347,12 +1302,12 @@ class PlantationServiceServicer(plantation_pb2_grpc.PlantationServiceServicer):
             metrics_date=today.metrics_date.isoformat(),
         )
 
+        # Story 9.5a: collection_point_id removed from FarmerSummary
         return plantation_pb2.FarmerSummary(
             farmer_id=farmer.id,
             first_name=farmer.first_name,
             last_name=farmer.last_name,
             phone=farmer.contact.phone,
-            collection_point_id=farmer.collection_point_id,
             farm_size_hectares=farmer.farm_size_hectares,
             farm_scale=self._farm_scale_to_proto(farmer.farm_scale),
             grading_model_id=performance.grading_model_id,
@@ -1395,15 +1350,17 @@ class PlantationServiceServicer(plantation_pb2_grpc.PlantationServiceServicer):
         performance = await self._farmer_performance_repo.get_by_farmer_id(request.farmer_id)
         if performance is None:
             # Return default empty performance metrics
-            # Get grading model from farmer's collection point's factory
-            cp = await self._cp_repo.get_by_id(farmer.collection_point_id)
+            # Story 9.5a: Get grading model from any assigned CP's factory
             grading_model_id = ""
             grading_model_version = ""
-            if cp and self._grading_model_repo:
-                grading_model = await self._grading_model_repo.get_by_factory(cp.factory_id)
-                if grading_model:
-                    grading_model_id = grading_model.model_id
-                    grading_model_version = grading_model.model_version
+            if self._grading_model_repo:
+                # Get first CP where farmer is assigned
+                cps, _, _ = await self._cp_repo.list_by_farmer(farmer.id, page_size=1)
+                if cps:
+                    grading_model = await self._grading_model_repo.get_by_factory(cps[0].factory_id)
+                    if grading_model:
+                        grading_model_id = grading_model.model_id
+                        grading_model_version = grading_model.model_version
 
             performance = FarmerPerformance.initialize_for_farmer(
                 farmer_id=farmer.id,
@@ -1510,6 +1467,125 @@ class PlantationServiceServicer(plantation_pb2_grpc.PlantationServiceServicer):
 
         return plantation_pb2.UpdateCommunicationPreferencesResponse(
             farmer=self._farmer_to_proto(updated_farmer),
+        )
+
+    # =========================================================================
+    # Farmer-CollectionPoint Assignment Operations (Story 9.5a)
+    # =========================================================================
+
+    async def AssignFarmerToCollectionPoint(
+        self,
+        request: plantation_pb2.AssignFarmerRequest,
+        context: grpc.aio.ServicerContext,
+    ) -> plantation_pb2.CollectionPoint:
+        """Assign a farmer to a collection point.
+
+        Story 9.5a: N:M relationship - farmers can be assigned to multiple CPs.
+        Uses $addToSet for idempotency.
+        """
+        # Validate farmer exists
+        farmer = await self._farmer_repo.get_by_id(request.farmer_id)
+        if farmer is None:
+            await context.abort(
+                grpc.StatusCode.NOT_FOUND,
+                f"Farmer {request.farmer_id} not found",
+            )
+
+        # Validate collection point exists
+        cp = await self._cp_repo.get_by_id(request.collection_point_id)
+        if cp is None:
+            await context.abort(
+                grpc.StatusCode.NOT_FOUND,
+                f"Collection point {request.collection_point_id} not found",
+            )
+
+        # Add farmer to CP
+        updated_cp = await self._cp_repo.add_farmer(
+            request.collection_point_id,
+            request.farmer_id,
+        )
+        if updated_cp is None:
+            await context.abort(
+                grpc.StatusCode.INTERNAL,
+                f"Failed to assign farmer {request.farmer_id} to CP {request.collection_point_id}",
+            )
+
+        logger.info(
+            "Assigned farmer %s to collection point %s",
+            request.farmer_id,
+            request.collection_point_id,
+        )
+
+        return collection_point_to_proto(updated_cp)
+
+    async def UnassignFarmerFromCollectionPoint(
+        self,
+        request: plantation_pb2.UnassignFarmerRequest,
+        context: grpc.aio.ServicerContext,
+    ) -> plantation_pb2.CollectionPoint:
+        """Unassign a farmer from a collection point.
+
+        Story 9.5a: Uses $pull for idempotency.
+        """
+        # Validate farmer exists
+        farmer = await self._farmer_repo.get_by_id(request.farmer_id)
+        if farmer is None:
+            await context.abort(
+                grpc.StatusCode.NOT_FOUND,
+                f"Farmer {request.farmer_id} not found",
+            )
+
+        # Validate collection point exists
+        cp = await self._cp_repo.get_by_id(request.collection_point_id)
+        if cp is None:
+            await context.abort(
+                grpc.StatusCode.NOT_FOUND,
+                f"Collection point {request.collection_point_id} not found",
+            )
+
+        # Remove farmer from CP
+        updated_cp = await self._cp_repo.remove_farmer(
+            request.collection_point_id,
+            request.farmer_id,
+        )
+        if updated_cp is None:
+            await context.abort(
+                grpc.StatusCode.INTERNAL,
+                f"Failed to unassign farmer {request.farmer_id} from CP {request.collection_point_id}",
+            )
+
+        logger.info(
+            "Unassigned farmer %s from collection point %s",
+            request.farmer_id,
+            request.collection_point_id,
+        )
+
+        return collection_point_to_proto(updated_cp)
+
+    async def GetCollectionPointsForFarmer(
+        self,
+        request: plantation_pb2.GetCollectionPointsForFarmerRequest,
+        context: grpc.aio.ServicerContext,
+    ) -> plantation_pb2.ListCollectionPointsResponse:
+        """Get all collection points where a farmer is assigned.
+
+        Story 9.5a: N:M relationship query.
+        """
+        # Validate farmer exists
+        farmer = await self._farmer_repo.get_by_id(request.farmer_id)
+        if farmer is None:
+            await context.abort(
+                grpc.StatusCode.NOT_FOUND,
+                f"Farmer {request.farmer_id} not found",
+            )
+
+        # Get all CPs for farmer
+        cps, next_token, total = await self._cp_repo.list_by_farmer(request.farmer_id)
+
+        return plantation_pb2.ListCollectionPointsResponse(
+            collection_points=[collection_point_to_proto(cp) for cp in cps],
+            next_page_token=next_token or "",
+            total_count=total,
         )
 
     # =========================================================================

@@ -4,6 +4,11 @@ Tests the complete registration flow: Factory → Collection Point → Farmer,
 validating that GPS-based region assignment works correctly via the
 Google Elevation mock.
 
+Story 9.5a: Farmer-CP relationship is now N:M. Farmers are created without
+collection_point_id and assigned to CPs separately via assign_farmer_to_cp().
+The helper create_farmer() accepts collection_point_id for backward compatibility
+but internally uses the new assignment pattern.
+
 Acceptance Criteria:
 1. AC1: Factory Creation - Create factory with TBK grading model
 2. AC2: Collection Point Creation - Create CP linked to factory
@@ -223,10 +228,10 @@ class TestFarmerRegistrationWithGPS:
 
         # Register farmer with GPS coordinates
         # lat=1.0 triggers elevation mock to return 1400m (midland range)
+        # Story 9.5a: Create farmer first, then assign to CP
         farmer = await plantation_service.create_farmer(
             first_name="Test",
             last_name="Farmer",
-            collection_point_id=cp_id,
             farm_location={
                 "latitude": 1.0,  # Elevation mock returns 1400m for lat >= 1.0
                 "longitude": 35.0,
@@ -246,6 +251,9 @@ class TestFarmerRegistrationWithGPS:
         assert farmer is not None
         farmer_id = farmer.get("id")
         assert farmer_id is not None
+
+        # Story 9.5a: Assign farmer to CP after creation
+        await plantation_service.assign_farmer_to_cp(cp_id, farmer_id)
 
         # Verify farmer via MCP
         result = await plantation_mcp.call_tool(
@@ -311,10 +319,10 @@ class TestFarmerRegistrationWithGPS:
         cp_id = cp.get("id")
 
         # Create farmer at lat=1.0 (elevation mock returns 1400m → midland)
+        # Story 9.5a: Create farmer first, then assign to CP
         farmer = await plantation_service.create_farmer(
             first_name="Altitude",
             last_name="Test",
-            collection_point_id=cp_id,
             farm_location={
                 "latitude": 1.0,  # Elevation mock returns 1400m
                 "longitude": 35.0,
@@ -328,6 +336,9 @@ class TestFarmerRegistrationWithGPS:
 
         farmer_id = farmer.get("id")
         assert farmer_id is not None
+
+        # Story 9.5a: Assign farmer to CP after creation
+        await plantation_service.assign_farmer_to_cp(cp_id, farmer_id)
 
         # Verify farmer via MCP - check region assignment
         result = await plantation_mcp.call_tool(
@@ -392,10 +403,10 @@ class TestMCPQueryVerification:
         cp_id = cp.get("id")
 
         # Create a farmer for this test
+        # Story 9.5a: Create farmer first, then assign to CP
         farmer = await plantation_service.create_farmer(
             first_name="Query",
             last_name="Test",
-            collection_point_id=cp_id,
             farm_location={"latitude": 0.9, "longitude": 35.0, "altitude_meters": 0.0},
             contact={
                 "phone": "+254712000401",
@@ -408,6 +419,9 @@ class TestMCPQueryVerification:
         )
 
         farmer_id = farmer.get("id")
+
+        # Story 9.5a: Assign farmer to CP after creation
+        await plantation_service.assign_farmer_to_cp(cp_id, farmer_id)
 
         # Query via MCP
         result = await plantation_mcp.call_tool(
@@ -465,11 +479,11 @@ class TestMCPQueryVerification:
         )
         cp_id = cp.get("id")
 
-        # Create farmer linked to this CP
+        # Create farmer and assign to CP
+        # Story 9.5a: Create farmer first, then assign to CP
         farmer = await plantation_service.create_farmer(
             first_name="CPQuery",
             last_name="Farmer",
-            collection_point_id=cp_id,
             farm_location={"latitude": 0.9, "longitude": 35.0, "altitude_meters": 0.0},
             contact={
                 "phone": "+254712000501",
@@ -481,6 +495,9 @@ class TestMCPQueryVerification:
             grower_number="GN-FLOW-CPQ",
         )
         farmer_id = farmer.get("id")
+
+        # Story 9.5a: Assign farmer to CP after creation
+        await plantation_service.assign_farmer_to_cp(cp_id, farmer_id)
 
         # Query farmers by collection point
         result = await plantation_mcp.call_tool(

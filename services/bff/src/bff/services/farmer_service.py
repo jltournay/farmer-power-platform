@@ -58,8 +58,8 @@ class FarmerService(BaseService):
     ) -> FarmerListResponse:
         """List farmers for a factory with enriched summaries.
 
-        Fetches farmers, enriches with performance data in parallel,
-        and transforms to API summaries with tier computation.
+        Story 9.5a: Updated to use N:M farmer-CP relationship.
+        Fetches CPs for factory, collects farmer IDs, then fetches farmers.
 
         Args:
             factory_id: Factory ID to filter farmers by.
@@ -83,7 +83,8 @@ class FarmerService(BaseService):
         # Fetch factory for thresholds (needed for tier computation)
         factory = await self._plantation.get_factory(factory_id)
 
-        # List collection points for this factory to find farmers
+        # List collection points for this factory
+        # Story 9.5a: CPs now contain farmer_ids list
         cp_response = await self._plantation.list_collection_points(
             factory_id=factory_id,
             page_size=100,  # Fetch all CPs for this factory
@@ -104,19 +105,36 @@ class FarmerService(BaseService):
                 ),
             )
 
-        # Get the first collection point to list farmers
-        # In production, we'd aggregate across all CPs
-        first_cp = cp_response.data[0]
+        # Story 9.5a: Collect all farmer IDs from CPs
+        farmer_ids: set[str] = set()
+        for cp in cp_response.data:
+            farmer_ids.update(cp.farmer_ids)
 
-        # List farmers for this collection point
+        if not farmer_ids:
+            return FarmerListResponse(
+                data=[],
+                pagination=PaginationMeta(
+                    page=1,
+                    page_size=page_size,
+                    total_count=0,
+                    total_pages=0,
+                    has_next=False,
+                    has_prev=False,
+                ),
+            )
+
+        # Fetch farmers by region (using first CP's region for now)
+        # In future, we could fetch specific farmers by ID if we have a bulk get RPC
+        first_cp = cp_response.data[0]
         farmers_response = await self._plantation.list_farmers(
-            collection_point_id=first_cp.id,
+            region_id=first_cp.region_id,
             page_size=page_size,
             page_token=page_token,
             active_only=True,
         )
 
-        farmers = farmers_response.data
+        # Filter to only farmers in our set (from CPs)
+        farmers = [f for f in farmers_response.data if f.id in farmer_ids]
 
         if not farmers:
             return FarmerListResponse(
@@ -134,12 +152,16 @@ class FarmerService(BaseService):
             "listed_farmers",
             factory_id=factory_id,
             count=len(summaries),
-            total_count=farmers_response.pagination.total_count,
+            total_count=len(farmer_ids),
         )
 
         return FarmerListResponse(
             data=summaries,
-            pagination=farmers_response.pagination,
+            pagination=PaginationMeta.from_client_response(
+                total_count=len(farmer_ids),
+                page_size=page_size,
+                next_page_token=farmers_response.pagination.next_page_token,
+            ),
         )
 
     async def get_farmer(
@@ -148,8 +170,8 @@ class FarmerService(BaseService):
     ) -> FarmerDetailResponse:
         """Get farmer detail with performance and tier.
 
-        Fetches farmer, collection point (for factory_id), factory (for thresholds),
-        and performance data, then transforms to detail response.
+        Story 9.5a: Updated to use N:M farmer-CP relationship.
+        Now fetches collection points via get_collection_points_for_farmer RPC.
 
         Args:
             farmer_id: Farmer ID (e.g., "WM-0001").
@@ -166,11 +188,20 @@ class FarmerService(BaseService):
         # Fetch farmer
         farmer = await self._plantation.get_farmer(farmer_id)
 
-        # Fetch collection point to get factory_id
-        collection_point = await self._plantation.get_collection_point(farmer.collection_point_id)
+        # Story 9.5a: Fetch collection points for farmer (N:M)
+        cps_response = await self._plantation.get_collection_points_for_farmer(farmer_id)
+        collection_points = cps_response.data
 
-        # Fetch factory for quality thresholds
-        factory = await self._plantation.get_factory(collection_point.factory_id)
+        # Get factory from first CP (or use default thresholds if no CPs)
+        if collection_points:
+            first_cp = collection_points[0]
+            factory = await self._plantation.get_factory(first_cp.factory_id)
+            thresholds = factory.quality_thresholds
+        else:
+            # No CPs assigned, use default thresholds
+            from fp_common.models import QualityThresholds
+
+            thresholds = QualityThresholds()
 
         # Fetch performance data
         performance = await self._plantation.get_farmer_summary(farmer_id)
@@ -179,13 +210,15 @@ class FarmerService(BaseService):
         detail = self._transformer.to_detail(
             farmer=farmer,
             performance=performance,
-            thresholds=factory.quality_thresholds,
+            thresholds=thresholds,
+            collection_points=collection_points,  # Story 9.5a: Pass CPs for N:M
         )
 
         self._logger.info(
             "got_farmer",
             farmer_id=farmer_id,
             tier=detail.tier.value,
+            cp_count=len(collection_points),
         )
 
         return detail

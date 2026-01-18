@@ -1,4 +1,7 @@
-"""Unit tests for GetFarmerSummary gRPC service method and auto-init."""
+"""Unit tests for GetFarmerSummary gRPC service method and auto-init.
+
+Story 9.5a: collection_point_id removed from Farmer and CreateFarmerRequest.
+"""
 
 from datetime import UTC, datetime
 from unittest.mock import AsyncMock, MagicMock
@@ -42,7 +45,10 @@ from plantation_model.infrastructure.repositories.grading_model_repository impor
 
 
 class TestFarmerSummaryGrpcService:
-    """Tests for GetFarmerSummary gRPC service method (Task 8.7)."""
+    """Tests for GetFarmerSummary gRPC service method (Task 8.7).
+
+    Story 9.5a: collection_point_id removed - N:M relationship via CP.farmer_ids.
+    """
 
     @pytest.fixture
     def mock_factory_repo(self) -> MagicMock:
@@ -113,12 +119,14 @@ class TestFarmerSummaryGrpcService:
 
     @pytest.fixture
     def sample_farmer(self) -> Farmer:
-        """Create a sample farmer for testing."""
+        """Create a sample farmer for testing.
+
+        Story 9.5a: collection_point_id removed - N:M via CP.farmer_ids.
+        """
         return Farmer(
             id="WM-0001",
             first_name="John",
             last_name="Mwangi",
-            collection_point_id="nyeri-highland-cp-001",
             region_id="nyeri-highland",
             farm_location=GeoLocation(latitude=-0.4, longitude=36.9, altitude_meters=1800.0),
             contact=ContactInfo(phone="+254712345678"),
@@ -132,7 +140,10 @@ class TestFarmerSummaryGrpcService:
 
     @pytest.fixture
     def sample_collection_point(self) -> CollectionPoint:
-        """Create a sample collection point for testing."""
+        """Create a sample collection point for testing.
+
+        Story 9.5a: Now includes farmer_ids for N:M relationship.
+        """
         return CollectionPoint(
             id="nyeri-highland-cp-001",
             name="Test CP",
@@ -141,6 +152,7 @@ class TestFarmerSummaryGrpcService:
             region_id="nyeri-highland",
             operating_hours=OperatingHours(),
             collection_days=["mon", "wed", "fri"],
+            farmer_ids=["WM-0001"],  # Story 9.5a: N:M relationship
         )
 
     @pytest.fixture
@@ -249,10 +261,14 @@ class TestFarmerSummaryGrpcService:
         sample_collection_point: CollectionPoint,
         sample_grading_model: GradingModel,
     ) -> None:
-        """Test GetFarmerSummary returns default metrics when no performance exists."""
+        """Test GetFarmerSummary returns default metrics when no performance exists.
+
+        Story 9.5a: Uses list_by_farmer instead of get_by_id for CP lookup.
+        """
         mock_farmer_repo.get_by_id = AsyncMock(return_value=sample_farmer)
         mock_farmer_performance_repo.get_by_farmer_id = AsyncMock(return_value=None)
-        mock_cp_repo.get_by_id = AsyncMock(return_value=sample_collection_point)
+        # Story 9.5a: list_by_farmer returns (list, next_token, total_count)
+        mock_cp_repo.list_by_farmer = AsyncMock(return_value=([sample_collection_point], None, 1))
         mock_grading_model_repo.get_by_factory = AsyncMock(return_value=sample_grading_model)
 
         request = plantation_pb2.GetFarmerSummaryRequest(farmer_id="WM-0001")
@@ -308,7 +324,11 @@ class TestFarmerSummaryGrpcService:
 
 
 class TestFarmerPerformanceAutoInit:
-    """Tests for auto-initialization of performance on farmer registration (Task 8.8)."""
+    """Tests for auto-initialization of performance on farmer registration (Task 8.8).
+
+    Story 9.5a: collection_point_id removed from CreateFarmerRequest.
+    Now uses region_id for determining factory/grading model.
+    """
 
     @pytest.fixture
     def mock_factory_repo(self) -> MagicMock:
@@ -363,10 +383,7 @@ class TestFarmerPerformanceAutoInit:
         mock_id_generator: MagicMock,
         mock_elevation_client: MagicMock,
     ) -> PlantationServiceServicer:
-        """Create a servicer with mock dependencies.
-
-        Story 0.6.14: No longer requires dapr_client - uses module-level publish_event().
-        """
+        """Create a servicer with mock dependencies."""
         return PlantationServiceServicer(
             factory_repo=mock_factory_repo,
             collection_point_repo=mock_cp_repo,
@@ -379,7 +396,10 @@ class TestFarmerPerformanceAutoInit:
 
     @pytest.fixture
     def sample_collection_point(self) -> CollectionPoint:
-        """Create a sample collection point for testing."""
+        """Create a sample collection point for testing.
+
+        Story 9.5a: Now includes farmer_ids for N:M relationship.
+        """
         return CollectionPoint(
             id="nyeri-highland-cp-001",
             name="Test CP",
@@ -388,6 +408,7 @@ class TestFarmerPerformanceAutoInit:
             region_id="nyeri-highland",
             operating_hours=OperatingHours(),
             collection_days=["mon", "wed", "fri"],
+            farmer_ids=[],  # Story 9.5a: N:M relationship
         )
 
     @pytest.fixture
@@ -410,7 +431,7 @@ class TestFarmerPerformanceAutoInit:
         )
 
     @pytest.mark.asyncio
-    async def test_create_farmer_initializes_performance(
+    async def test_create_farmer_defers_performance_init_to_cp_assignment(
         self,
         servicer: PlantationServiceServicer,
         mock_cp_repo: MagicMock,
@@ -423,22 +444,22 @@ class TestFarmerPerformanceAutoInit:
         sample_collection_point: CollectionPoint,
         sample_grading_model: GradingModel,
     ) -> None:
-        """Test CreateFarmer auto-initializes performance with grading model (AC #3)."""
+        """Test CreateFarmer defers performance init until CP assignment (Story 9.5a).
+
+        Story 9.5a: Performance auto-initialization is deferred until CP assignment
+        because factory_id (needed for grading model lookup) is now on CP, not on Farmer.
+        """
         # Setup mocks
-        mock_cp_repo.get_by_id = AsyncMock(return_value=sample_collection_point)
         mock_farmer_repo.get_by_phone = AsyncMock(return_value=None)
         mock_farmer_repo.get_by_national_id = AsyncMock(return_value=None)
         mock_farmer_repo.create = AsyncMock()
         mock_id_generator.generate_farmer_id = AsyncMock(return_value="WM-0001")
         mock_elevation_client.get_altitude = AsyncMock(return_value=1800.0)
-        mock_grading_model_repo.get_by_factory = AsyncMock(return_value=sample_grading_model)
-        mock_farmer_performance_repo.initialize_for_farmer = AsyncMock()
 
-        # Create farmer request
+        # Create farmer request - Story 9.5a: no collection_point_id
         request = plantation_pb2.CreateFarmerRequest(
             first_name="John",
             last_name="Mwangi",
-            collection_point_id="nyeri-highland-cp-001",
             farm_location=plantation_pb2.GeoLocation(latitude=-0.4, longitude=36.9),
             contact=plantation_pb2.ContactInfo(phone="+254712345678"),
             farm_size_hectares=1.5,
@@ -451,21 +472,12 @@ class TestFarmerPerformanceAutoInit:
         assert result.id == "WM-0001"
         mock_farmer_repo.create.assert_called_once()
 
-        # Verify performance was auto-initialized (Task 7, AC #3)
-        mock_farmer_performance_repo.initialize_for_farmer.assert_called_once()
-        call_args = mock_farmer_performance_repo.initialize_for_farmer.call_args
-        # Check positional or keyword args
-        if call_args.kwargs:
-            assert call_args.kwargs["farmer_id"] == "WM-0001"
-            assert call_args.kwargs["grading_model_id"] == "tbk_kenya_tea_v1"
-            assert call_args.kwargs["grading_model_version"] == "1.0.0"
-            assert call_args.kwargs["farm_size_hectares"] == 1.5
-        else:
-            # Positional args: farmer_id, farm_size_hectares, farm_scale, grading_model_id, grading_model_version
-            assert call_args.args[0] == "WM-0001"  # farmer_id
+        # Story 9.5a: Performance is NOT initialized on creation
+        # It will be initialized when farmer is assigned to a CP
+        mock_farmer_performance_repo.initialize_for_farmer.assert_not_called()
 
     @pytest.mark.asyncio
-    async def test_create_farmer_no_grading_model_skips_performance_init(
+    async def test_create_farmer_smallholder_scale_defers_performance_init(
         self,
         servicer: PlantationServiceServicer,
         mock_cp_repo: MagicMock,
@@ -477,32 +489,34 @@ class TestFarmerPerformanceAutoInit:
         mock_context: MagicMock,
         sample_collection_point: CollectionPoint,
     ) -> None:
-        """Test CreateFarmer skips performance init when no grading model exists."""
-        # Setup mocks - no grading model assigned to factory
-        mock_cp_repo.get_by_id = AsyncMock(return_value=sample_collection_point)
+        """Test CreateFarmer for smallholder also defers performance init (Story 9.5a).
+
+        Story 9.5a: Performance init is always deferred to CP assignment,
+        regardless of farm scale or grading model availability.
+        """
+        # Setup mocks
         mock_farmer_repo.get_by_phone = AsyncMock(return_value=None)
         mock_farmer_repo.get_by_national_id = AsyncMock(return_value=None)
         mock_farmer_repo.create = AsyncMock()
         mock_id_generator.generate_farmer_id = AsyncMock(return_value="WM-0002")
         mock_elevation_client.get_altitude = AsyncMock(return_value=1800.0)
-        mock_grading_model_repo.get_by_factory = AsyncMock(return_value=None)
 
-        # Create farmer request
+        # Create farmer request - smallholder (< 1 ha)
         request = plantation_pb2.CreateFarmerRequest(
             first_name="Jane",
             last_name="Wanjiku",
-            collection_point_id="nyeri-highland-cp-001",
             farm_location=plantation_pb2.GeoLocation(latitude=-0.4, longitude=36.9),
             contact=plantation_pb2.ContactInfo(phone="+254712345679"),
-            farm_size_hectares=0.5,
+            farm_size_hectares=0.5,  # smallholder
             national_id="87654321",
         )
 
         result = await servicer.CreateFarmer(request, mock_context)
 
-        # Farmer should still be created
+        # Farmer should be created with smallholder scale
         assert result.id == "WM-0002"
+        assert result.farm_scale == plantation_pb2.FARM_SCALE_SMALLHOLDER
         mock_farmer_repo.create.assert_called_once()
 
-        # Performance should NOT be initialized (no grading model)
+        # Story 9.5a: Performance is NOT initialized on creation
         mock_farmer_performance_repo.initialize_for_farmer.assert_not_called()

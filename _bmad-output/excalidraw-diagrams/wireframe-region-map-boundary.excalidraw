@@ -1,7 +1,7 @@
 {
   "type": "excalidraw",
   "version": 2,
-  "source": "https://excalidraw.com",
+  "source": "https://excalidraw-jetbrains-plugin",
   "elements": [
     {
       "id": "title-text",
@@ -51,7 +51,10 @@
       "fillStyle": "solid",
       "strokeWidth": 2,
       "roughness": 0,
-      "roundness": { "type": 3, "value": 8 },
+      "roundness": {
+        "type": 3,
+        "value": 8
+      },
       "boundElements": [],
       "groupIds": []
     },
@@ -67,9 +70,19 @@
       "fillStyle": "solid",
       "strokeWidth": 1,
       "roughness": 0,
-      "roundness": { "type": 3, "value": 8 },
-      "boundElements": [{ "type": "text", "id": "header-text" }],
-      "groupIds": ["header-group"]
+      "roundness": {
+        "type": 3,
+        "value": 8
+      },
+      "boundElements": [
+        {
+          "type": "text",
+          "id": "header-text"
+        }
+      ],
+      "groupIds": [
+        "header-group"
+      ]
     },
     {
       "id": "header-text",
@@ -89,7 +102,9 @@
       "strokeWidth": 1,
       "roughness": 0,
       "containerId": "screen1-header",
-      "groupIds": ["header-group"]
+      "groupIds": [
+        "header-group"
+      ]
     },
     {
       "id": "step1-section",
@@ -103,7 +118,10 @@
       "fillStyle": "solid",
       "strokeWidth": 1,
       "roughness": 0,
-      "roundness": { "type": 3, "value": 4 },
+      "roundness": {
+        "type": 3,
+        "value": 4
+      },
       "boundElements": [],
       "groupIds": []
     },
@@ -155,7 +173,10 @@
       "fillStyle": "solid",
       "strokeWidth": 1,
       "roughness": 0,
-      "roundness": { "type": 3, "value": 4 },
+      "roundness": {
+        "type": 3,
+        "value": 4
+      },
       "boundElements": [],
       "groupIds": []
     },
@@ -189,9 +210,19 @@
       "fillStyle": "solid",
       "strokeWidth": 1,
       "roughness": 0,
-      "roundness": { "type": 3, "value": 4 },
-      "boundElements": [{ "type": "text", "id": "county-text" }],
-      "groupIds": ["county-group"]
+      "roundness": {
+        "type": 3,
+        "value": 4
+      },
+      "boundElements": [
+        {
+          "type": "text",
+          "id": "county-text"
+        }
+      ],
+      "groupIds": [
+        "county-group"
+      ]
     },
     {
       "id": "county-text",
@@ -211,7 +242,9 @@
       "strokeWidth": 1,
       "roughness": 0,
       "containerId": "county-dropdown",
-      "groupIds": ["county-group"]
+      "groupIds": [
+        "county-group"
+      ]
     },
     {
       "id": "altitude-label",
@@ -243,9 +276,19 @@
       "fillStyle": "solid",
       "strokeWidth": 1,
       "roughness": 0,
-      "roundness": { "type": 3, "value": 4 },
-      "boundElements": [{ "type": "text", "id": "altitude-text" }],
-      "groupIds": ["altitude-group"]
+      "roundness": {
+        "type": 3,
+        "value": 4
+      },
+      "boundElements": [
+        {
+          "type": "text",
+          "id": "altitude-text"
+        }
+      ],
+      "groupIds": [
+        "altitude-group"
+      ]
     },
     {
       "id": "altitude-text",
@@ -265,7 +308,9 @@
       "strokeWidth": 1,
       "roughness": 0,
       "containerId": "altitude-dropdown",
-      "groupIds": ["altitude-group"]
+      "groupIds": [
+        "altitude-group"
+      ]
     },
     {
       "id": "step2-section",
@@ -279,7 +324,10 @@
       "fillStyle": "solid",
       "strokeWidth": 2,
       "roughness": 0,
-      "roundness": { "type": 3, "value": 4 },
+      "roundness": {
+        "type": 3,
+        "value": 4
+      },
       "boundElements": [],
       "groupIds": []
     },
@@ -313,7 +361,10 @@
       "fillStyle": "solid",
       "strokeWidth": 1,
       "roughness": 0,
-      "roundness": { "type": 3, "value": 4 },
+      "roundness": {
+        "type": 3,
+        "value": 4
+      },
       "boundElements": [],
       "groupIds": []
     },
@@ -329,9 +380,19 @@
       "fillStyle": "solid",
       "strokeWidth": 1,
       "roughness": 0,
-      "roundness": { "type": 3, "value": 4 },
-      "boundElements": [{ "type": "text", "id": "btn-polygon-text" }],
-      "groupIds": ["btn-polygon-group"]
+      "roundness": {
+        "type": 3,
+        "value": 4
+      },
+      "boundElements": [
+        {
+          "type": "text",
+          "id": "btn-polygon-text"
+        }
+      ],
+      "groupIds": [
+        "btn-polygon-group"
+      ]
     },
     {
       "id": "btn-polygon-text",
@@ -351,7 +412,9 @@
       "strokeWidth": 1,
       "roughness": 0,
       "containerId": "btn-polygon",
-      "groupIds": ["btn-polygon-group"]
+      "groupIds": [
+        "btn-polygon-group"
+      ]
     },
     {
       "id": "btn-circle",
@@ -365,9 +428,19 @@
       "fillStyle": "solid",
       "strokeWidth": 1,
       "roughness": 0,
-      "roundness": { "type": 3, "value": 4 },
-      "boundElements": [{ "type": "text", "id": "btn-circle-text" }],
-      "groupIds": ["btn-circle-group"]
+      "roundness": {
+        "type": 3,
+        "value": 4
+      },
+      "boundElements": [
+        {
+          "type": "text",
+          "id": "btn-circle-text"
+        }
+      ],
+      "groupIds": [
+        "btn-circle-group"
+      ]
     },
     {
       "id": "btn-circle-text",
@@ -387,7 +460,9 @@
       "strokeWidth": 1,
       "roughness": 0,
       "containerId": "btn-circle",
-      "groupIds": ["btn-circle-group"]
+      "groupIds": [
+        "btn-circle-group"
+      ]
     },
     {
       "id": "btn-import",
@@ -401,9 +476,19 @@
       "fillStyle": "solid",
       "strokeWidth": 1,
       "roughness": 0,
-      "roundness": { "type": 3, "value": 4 },
-      "boundElements": [{ "type": "text", "id": "btn-import-text" }],
-      "groupIds": ["btn-import-group"]
+      "roundness": {
+        "type": 3,
+        "value": 4
+      },
+      "boundElements": [
+        {
+          "type": "text",
+          "id": "btn-import-text"
+        }
+      ],
+      "groupIds": [
+        "btn-import-group"
+      ]
     },
     {
       "id": "btn-import-text",
@@ -423,7 +508,9 @@
       "strokeWidth": 1,
       "roughness": 0,
       "containerId": "btn-import",
-      "groupIds": ["btn-import-group"]
+      "groupIds": [
+        "btn-import-group"
+      ]
     },
     {
       "id": "btn-clear",
@@ -437,9 +524,19 @@
       "fillStyle": "solid",
       "strokeWidth": 1,
       "roughness": 0,
-      "roundness": { "type": 3, "value": 4 },
-      "boundElements": [{ "type": "text", "id": "btn-clear-text" }],
-      "groupIds": ["btn-clear-group"]
+      "roundness": {
+        "type": 3,
+        "value": 4
+      },
+      "boundElements": [
+        {
+          "type": "text",
+          "id": "btn-clear-text"
+        }
+      ],
+      "groupIds": [
+        "btn-clear-group"
+      ]
     },
     {
       "id": "btn-clear-text",
@@ -459,7 +556,9 @@
       "strokeWidth": 1,
       "roughness": 0,
       "containerId": "btn-clear",
-      "groupIds": ["btn-clear-group"]
+      "groupIds": [
+        "btn-clear-group"
+      ]
     },
     {
       "id": "map-container",
@@ -473,7 +572,10 @@
       "fillStyle": "solid",
       "strokeWidth": 2,
       "roughness": 0,
-      "roundness": { "type": 3, "value": 4 },
+      "roundness": {
+        "type": 3,
+        "value": 4
+      },
       "boundElements": [],
       "groupIds": []
     },
@@ -507,9 +609,19 @@
       "fillStyle": "solid",
       "strokeWidth": 1,
       "roughness": 0,
-      "roundness": { "type": 3, "value": 4 },
-      "boundElements": [{ "type": "text", "id": "search-text" }],
-      "groupIds": ["search-group"]
+      "roundness": {
+        "type": 3,
+        "value": 4
+      },
+      "boundElements": [
+        {
+          "type": "text",
+          "id": "search-text"
+        }
+      ],
+      "groupIds": [
+        "search-group"
+      ]
     },
     {
       "id": "search-text",
@@ -529,7 +641,9 @@
       "strokeWidth": 1,
       "roughness": 0,
       "containerId": "search-bar",
-      "groupIds": ["search-group"]
+      "groupIds": [
+        "search-group"
+      ]
     },
     {
       "id": "factory-marker1",
@@ -633,9 +747,19 @@
       "fillStyle": "solid",
       "strokeWidth": 1,
       "roughness": 0,
-      "roundness": { "type": 3, "value": 4 },
-      "boundElements": [{ "type": "text", "id": "zoom-text" }],
-      "groupIds": ["zoom-group"]
+      "roundness": {
+        "type": 3,
+        "value": 4
+      },
+      "boundElements": [
+        {
+          "type": "text",
+          "id": "zoom-text"
+        }
+      ],
+      "groupIds": [
+        "zoom-group"
+      ]
     },
     {
       "id": "zoom-text",
@@ -655,7 +779,9 @@
       "strokeWidth": 1,
       "roughness": 0,
       "containerId": "zoom-controls",
-      "groupIds": ["zoom-group"]
+      "groupIds": [
+        "zoom-group"
+      ]
     },
     {
       "id": "map-type-toggle",
@@ -669,9 +795,19 @@
       "fillStyle": "solid",
       "strokeWidth": 1,
       "roughness": 0,
-      "roundness": { "type": 3, "value": 4 },
-      "boundElements": [{ "type": "text", "id": "map-type-text" }],
-      "groupIds": ["maptype-group"]
+      "roundness": {
+        "type": 3,
+        "value": 4
+      },
+      "boundElements": [
+        {
+          "type": "text",
+          "id": "map-type-text"
+        }
+      ],
+      "groupIds": [
+        "maptype-group"
+      ]
     },
     {
       "id": "map-type-text",
@@ -691,7 +827,9 @@
       "strokeWidth": 1,
       "roughness": 0,
       "containerId": "map-type-toggle",
-      "groupIds": ["maptype-group"]
+      "groupIds": [
+        "maptype-group"
+      ]
     },
     {
       "id": "stats-bar",
@@ -705,7 +843,10 @@
       "fillStyle": "solid",
       "strokeWidth": 1,
       "roughness": 0,
-      "roundness": { "type": 3, "value": 4 },
+      "roundness": {
+        "type": 3,
+        "value": 4
+      },
       "boundElements": [],
       "groupIds": []
     },
@@ -757,9 +898,19 @@
       "fillStyle": "solid",
       "strokeWidth": 1,
       "roughness": 0,
-      "roundness": { "type": 3, "value": 4 },
-      "boundElements": [{ "type": "text", "id": "cancel-text" }],
-      "groupIds": ["cancel-group"]
+      "roundness": {
+        "type": 3,
+        "value": 4
+      },
+      "boundElements": [
+        {
+          "type": "text",
+          "id": "cancel-text"
+        }
+      ],
+      "groupIds": [
+        "cancel-group"
+      ]
     },
     {
       "id": "cancel-text",
@@ -779,7 +930,9 @@
       "strokeWidth": 1,
       "roughness": 0,
       "containerId": "btn-cancel",
-      "groupIds": ["cancel-group"]
+      "groupIds": [
+        "cancel-group"
+      ]
     },
     {
       "id": "btn-save",
@@ -793,9 +946,19 @@
       "fillStyle": "solid",
       "strokeWidth": 1,
       "roughness": 0,
-      "roundness": { "type": 3, "value": 4 },
-      "boundElements": [{ "type": "text", "id": "save-text" }],
-      "groupIds": ["save-group"]
+      "roundness": {
+        "type": 3,
+        "value": 4
+      },
+      "boundElements": [
+        {
+          "type": "text",
+          "id": "save-text"
+        }
+      ],
+      "groupIds": [
+        "save-group"
+      ]
     },
     {
       "id": "save-text",
@@ -815,7 +978,9 @@
       "strokeWidth": 1,
       "roughness": 0,
       "containerId": "btn-save",
-      "groupIds": ["save-group"]
+      "groupIds": [
+        "save-group"
+      ]
     },
     {
       "id": "screen2-label",
@@ -847,7 +1012,10 @@
       "fillStyle": "solid",
       "strokeWidth": 2,
       "roughness": 0,
-      "roundness": { "type": 3, "value": 8 },
+      "roundness": {
+        "type": 3,
+        "value": 8
+      },
       "boundElements": [],
       "groupIds": []
     },
@@ -863,9 +1031,19 @@
       "fillStyle": "solid",
       "strokeWidth": 1,
       "roughness": 0,
-      "roundness": { "type": 3, "value": 8 },
-      "boundElements": [{ "type": "text", "id": "header2-text" }],
-      "groupIds": ["header2-group"]
+      "roundness": {
+        "type": 3,
+        "value": 8
+      },
+      "boundElements": [
+        {
+          "type": "text",
+          "id": "header2-text"
+        }
+      ],
+      "groupIds": [
+        "header2-group"
+      ]
     },
     {
       "id": "header2-text",
@@ -885,7 +1063,9 @@
       "strokeWidth": 1,
       "roughness": 0,
       "containerId": "screen2-header",
-      "groupIds": ["header2-group"]
+      "groupIds": [
+        "header2-group"
+      ]
     },
     {
       "id": "s2-step1-section",
@@ -899,7 +1079,10 @@
       "fillStyle": "solid",
       "strokeWidth": 1,
       "roughness": 0,
-      "roundness": { "type": 3, "value": 4 },
+      "roundness": {
+        "type": 3,
+        "value": 4
+      },
       "boundElements": [],
       "groupIds": []
     },
@@ -951,9 +1134,19 @@
       "fillStyle": "solid",
       "strokeWidth": 1,
       "roughness": 0,
-      "roundness": { "type": 3, "value": 4 },
-      "boundElements": [{ "type": "text", "id": "s2-name-value" }],
-      "groupIds": ["s2-name-group"]
+      "roundness": {
+        "type": 3,
+        "value": 4
+      },
+      "boundElements": [
+        {
+          "type": "text",
+          "id": "s2-name-value"
+        }
+      ],
+      "groupIds": [
+        "s2-name-group"
+      ]
     },
     {
       "id": "s2-name-value",
@@ -973,7 +1166,9 @@
       "strokeWidth": 1,
       "roughness": 0,
       "containerId": "s2-name-input",
-      "groupIds": ["s2-name-group"]
+      "groupIds": [
+        "s2-name-group"
+      ]
     },
     {
       "id": "s2-county-label",
@@ -1005,9 +1200,19 @@
       "fillStyle": "solid",
       "strokeWidth": 1,
       "roughness": 0,
-      "roundness": { "type": 3, "value": 4 },
-      "boundElements": [{ "type": "text", "id": "s2-county-text" }],
-      "groupIds": ["s2-county-group"]
+      "roundness": {
+        "type": 3,
+        "value": 4
+      },
+      "boundElements": [
+        {
+          "type": "text",
+          "id": "s2-county-text"
+        }
+      ],
+      "groupIds": [
+        "s2-county-group"
+      ]
     },
     {
       "id": "s2-county-text",
@@ -1027,7 +1232,9 @@
       "strokeWidth": 1,
       "roughness": 0,
       "containerId": "s2-county-dropdown",
-      "groupIds": ["s2-county-group"]
+      "groupIds": [
+        "s2-county-group"
+      ]
     },
     {
       "id": "s2-altitude-label",
@@ -1059,9 +1266,19 @@
       "fillStyle": "solid",
       "strokeWidth": 1,
       "roughness": 0,
-      "roundness": { "type": 3, "value": 4 },
-      "boundElements": [{ "type": "text", "id": "s2-altitude-text" }],
-      "groupIds": ["s2-altitude-group"]
+      "roundness": {
+        "type": 3,
+        "value": 4
+      },
+      "boundElements": [
+        {
+          "type": "text",
+          "id": "s2-altitude-text"
+        }
+      ],
+      "groupIds": [
+        "s2-altitude-group"
+      ]
     },
     {
       "id": "s2-altitude-text",
@@ -1081,7 +1298,9 @@
       "strokeWidth": 1,
       "roughness": 0,
       "containerId": "s2-altitude-dropdown",
-      "groupIds": ["s2-altitude-group"]
+      "groupIds": [
+        "s2-altitude-group"
+      ]
     },
     {
       "id": "s2-step2-section",
@@ -1095,7 +1314,10 @@
       "fillStyle": "solid",
       "strokeWidth": 2,
       "roughness": 0,
-      "roundness": { "type": 3, "value": 4 },
+      "roundness": {
+        "type": 3,
+        "value": 4
+      },
       "boundElements": [],
       "groupIds": []
     },
@@ -1129,7 +1351,10 @@
       "fillStyle": "solid",
       "strokeWidth": 1,
       "roughness": 0,
-      "roundness": { "type": 3, "value": 4 },
+      "roundness": {
+        "type": 3,
+        "value": 4
+      },
       "boundElements": [],
       "groupIds": []
     },
@@ -1145,9 +1370,19 @@
       "fillStyle": "solid",
       "strokeWidth": 1,
       "roughness": 0,
-      "roundness": { "type": 3, "value": 4 },
-      "boundElements": [{ "type": "text", "id": "s2-btn-edit-text" }],
-      "groupIds": ["s2-btn-edit-group"]
+      "roundness": {
+        "type": 3,
+        "value": 4
+      },
+      "boundElements": [
+        {
+          "type": "text",
+          "id": "s2-btn-edit-text"
+        }
+      ],
+      "groupIds": [
+        "s2-btn-edit-group"
+      ]
     },
     {
       "id": "s2-btn-edit-text",
@@ -1167,7 +1402,9 @@
       "strokeWidth": 1,
       "roughness": 0,
       "containerId": "s2-btn-edit",
-      "groupIds": ["s2-btn-edit-group"]
+      "groupIds": [
+        "s2-btn-edit-group"
+      ]
     },
     {
       "id": "s2-btn-redraw",
@@ -1181,9 +1418,19 @@
       "fillStyle": "solid",
       "strokeWidth": 1,
       "roughness": 0,
-      "roundness": { "type": 3, "value": 4 },
-      "boundElements": [{ "type": "text", "id": "s2-btn-redraw-text" }],
-      "groupIds": ["s2-btn-redraw-group"]
+      "roundness": {
+        "type": 3,
+        "value": 4
+      },
+      "boundElements": [
+        {
+          "type": "text",
+          "id": "s2-btn-redraw-text"
+        }
+      ],
+      "groupIds": [
+        "s2-btn-redraw-group"
+      ]
     },
     {
       "id": "s2-btn-redraw-text",
@@ -1203,7 +1450,9 @@
       "strokeWidth": 1,
       "roughness": 0,
       "containerId": "s2-btn-redraw",
-      "groupIds": ["s2-btn-redraw-group"]
+      "groupIds": [
+        "s2-btn-redraw-group"
+      ]
     },
     {
       "id": "s2-map-container",
@@ -1217,7 +1466,10 @@
       "fillStyle": "solid",
       "strokeWidth": 2,
       "roughness": 0,
-      "roundness": { "type": 3, "value": 4 },
+      "roundness": {
+        "type": 3,
+        "value": 4
+      },
       "boundElements": [],
       "groupIds": []
     },
@@ -1369,17 +1621,48 @@
       "strokeWidth": 3,
       "roughness": 0,
       "points": [
-        [0, 0],
-        [100, -10],
-        [200, 0],
-        [270, 40],
-        [300, 100],
-        [250, 150],
-        [150, 170],
-        [50, 150],
-        [-20, 90],
-        [0, 0]
-      ]
+        [
+          0,
+          0
+        ],
+        [
+          100,
+          -10
+        ],
+        [
+          200,
+          0
+        ],
+        [
+          270,
+          40
+        ],
+        [
+          300,
+          100
+        ],
+        [
+          250,
+          150
+        ],
+        [
+          150,
+          170
+        ],
+        [
+          50,
+          150
+        ],
+        [
+          -20,
+          90
+        ],
+        [
+          0,
+          0
+        ]
+      ],
+      "lastCommittedPoint": null
     },
     {
       "id": "s2-factory-marker1",
@@ -1465,9 +1748,19 @@
       "fillStyle": "solid",
       "strokeWidth": 2,
       "roughness": 0,
-      "roundness": { "type": 3, "value": 8 },
-      "boundElements": [{ "type": "text", "id": "s2-valid-text" }],
-      "groupIds": ["valid-group"]
+      "roundness": {
+        "type": 3,
+        "value": 8
+      },
+      "boundElements": [
+        {
+          "type": "text",
+          "id": "s2-valid-text"
+        }
+      ],
+      "groupIds": [
+        "valid-group"
+      ]
     },
     {
       "id": "s2-valid-text",
@@ -1487,7 +1780,9 @@
       "strokeWidth": 1,
       "roughness": 0,
       "containerId": "s2-valid-badge",
-      "groupIds": ["valid-group"]
+      "groupIds": [
+        "valid-group"
+      ]
     },
     {
       "id": "s2-drag-hint",
@@ -1519,7 +1814,10 @@
       "fillStyle": "solid",
       "strokeWidth": 1,
       "roughness": 0,
-      "roundness": { "type": 3, "value": 4 },
+      "roundness": {
+        "type": 3,
+        "value": 4
+      },
       "boundElements": [],
       "groupIds": []
     },
@@ -1553,9 +1851,19 @@
       "fillStyle": "solid",
       "strokeWidth": 1,
       "roughness": 0,
-      "roundness": { "type": 3, "value": 4 },
-      "boundElements": [{ "type": "text", "id": "s2-cancel-text" }],
-      "groupIds": ["s2-cancel-group"]
+      "roundness": {
+        "type": 3,
+        "value": 4
+      },
+      "boundElements": [
+        {
+          "type": "text",
+          "id": "s2-cancel-text"
+        }
+      ],
+      "groupIds": [
+        "s2-cancel-group"
+      ]
     },
     {
       "id": "s2-cancel-text",
@@ -1575,7 +1883,9 @@
       "strokeWidth": 1,
       "roughness": 0,
       "containerId": "s2-btn-cancel",
-      "groupIds": ["s2-cancel-group"]
+      "groupIds": [
+        "s2-cancel-group"
+      ]
     },
     {
       "id": "s2-btn-save",
@@ -1589,9 +1899,19 @@
       "fillStyle": "solid",
       "strokeWidth": 1,
       "roughness": 0,
-      "roundness": { "type": 3, "value": 4 },
-      "boundElements": [{ "type": "text", "id": "s2-save-text" }],
-      "groupIds": ["s2-save-group"]
+      "roundness": {
+        "type": 3,
+        "value": 4
+      },
+      "boundElements": [
+        {
+          "type": "text",
+          "id": "s2-save-text"
+        }
+      ],
+      "groupIds": [
+        "s2-save-group"
+      ]
     },
     {
       "id": "s2-save-text",
@@ -1611,7 +1931,9 @@
       "strokeWidth": 1,
       "roughness": 0,
       "containerId": "s2-btn-save",
-      "groupIds": ["s2-save-group"]
+      "groupIds": [
+        "s2-save-group"
+      ]
     },
     {
       "id": "flow-arrow",
@@ -1625,9 +1947,19 @@
       "fillStyle": "solid",
       "strokeWidth": 3,
       "roughness": 0,
-      "points": [[0, 0], [20, 0]],
+      "points": [
+        [
+          0,
+          0
+        ],
+        [
+          20,
+          0
+        ]
+      ],
       "startArrowhead": null,
-      "endArrowhead": "arrow"
+      "endArrowhead": "arrow",
+      "lastCommittedPoint": null
     },
     {
       "id": "flow-label",
@@ -1667,7 +1999,8 @@
     }
   ],
   "appState": {
-    "gridSize": 20,
+    "gridSize": null,
     "viewBackgroundColor": "#ffffff"
-  }
+  },
+  "files": {}
 }

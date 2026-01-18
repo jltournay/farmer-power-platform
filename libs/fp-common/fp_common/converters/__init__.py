@@ -46,6 +46,7 @@ from fp_common.converters.cost_converters import (
 )
 from fp_common.converters.plantation_converters import (
     collection_point_from_proto,
+    collection_point_to_proto,
     factory_from_proto,
     farmer_from_proto,
     farmer_summary_from_proto,
@@ -68,6 +69,7 @@ __all__ = [
     "budget_status_from_proto",
     "budget_threshold_config_from_proto",
     "collection_point_from_proto",
+    "collection_point_to_proto",
     "cost_summary_from_proto",
     "cost_type_summary_to_proto",
     "current_day_cost_from_proto",

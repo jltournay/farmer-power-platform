@@ -45,7 +45,11 @@
     - [Technical Notes](./story-94-collection-point-management.md#technical-notes)
     - [Dependencies](./story-94-collection-point-management.md#dependencies)
     - [Story Points: 5](./story-94-collection-point-management.md#story-points-5)
-  - [Story 9.5: Farmer Management](./story-95-farmer-management.md)
+  - [Story 9.5a: Farmer-CP Data Model Refactor](./story-95a-farmer-cp-data-model.md) **(PREREQUISITE - Blocks 9.5)**
+    - [Acceptance Criteria](./story-95a-farmer-cp-data-model.md#acceptance-criteria)
+    - [Technical Notes](./story-95a-farmer-cp-data-model.md#technical-notes)
+    - [Story Points: 5](./story-95a-farmer-cp-data-model.md#story-points-5)
+  - [Story 9.5: Farmer Management](./story-95-farmer-management.md) *(Blocked by 9.5a)*
     - [Acceptance Criteria](./story-95-farmer-management.md#acceptance-criteria)
     - [Wireframe: Farmer List (Top-Level)](./story-95-farmer-management.md#wireframe-farmer-list-top-level)
     - [Wireframe: Farmer Detail View](./story-95-farmer-management.md#wireframe-farmer-detail-view)

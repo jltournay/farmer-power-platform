@@ -60,6 +60,11 @@ service PlantationService {
 
   // Communication Preferences operations (Story 1.5)
   rpc UpdateCommunicationPreferences(UpdateCommunicationPreferencesRequest) returns (UpdateCommunicationPreferencesResponse);
+
+  // Farmer-CollectionPoint assignment operations (Story 9.5a)
+  rpc AssignFarmerToCollectionPoint(AssignFarmerRequest) returns (CollectionPoint);
+  rpc UnassignFarmerFromCollectionPoint(UnassignFarmerRequest) returns (CollectionPoint);
+  rpc GetCollectionPointsForFarmer(GetCollectionPointsForFarmerRequest) returns (ListCollectionPointsResponse);
 }
 
 // ============================================================================
@@ -403,6 +408,7 @@ message CollectionPoint {
   string status = 11;                              // "active", "inactive", "seasonal"
   google.protobuf.Timestamp created_at = 12;
   google.protobuf.Timestamp updated_at = 13;
+  repeated string farmer_ids = 14;                 // Story 9.5a: N:M Farmer-CP relationship
 }
 
 message GetCollectionPointRequest {
@@ -499,7 +505,7 @@ message Farmer {
   string first_name = 3;
   string last_name = 4;
   string region_id = 5;                             // Auto-assigned based on GPS + altitude
-  string collection_point_id = 6;                   // Primary registration collection point
+  // Field 6 removed (was collection_point_id) - Story 9.5a: N:M relationship via CP.farmer_ids
   GeoLocation farm_location = 7;
   ContactInfo contact = 8;
   double farm_size_hectares = 9;
@@ -526,7 +532,7 @@ message ListFarmersRequest {
   int32 page_size = 1;
   string page_token = 2;
   string region_id = 3;
-  string collection_point_id = 4;
+  // Field 4 removed (was collection_point_id) - Story 9.5a: Filter via CP.farmer_ids
   bool active_only = 5;
 }
 
@@ -539,7 +545,7 @@ message ListFarmersResponse {
 message CreateFarmerRequest {
   string first_name = 1;
   string last_name = 2;
-  string collection_point_id = 3;                   // Primary registration collection point
+  // Field 3 removed (was collection_point_id) - Story 9.5a: CP assignment via separate API
   GeoLocation farm_location = 4;
   ContactInfo contact = 5;
   double farm_size_hectares = 6;
@@ -732,7 +738,7 @@ message FarmerSummary {
   string first_name = 2;
   string last_name = 3;
   string phone = 4;
-  string collection_point_id = 5;
+  // Field 5 removed (was collection_point_id) - Story 9.5a: CPs fetched separately
   double farm_size_hectares = 6;
   FarmScale farm_scale = 7;
 
@@ -773,4 +779,22 @@ message UpdateCommunicationPreferencesRequest {
 
 message UpdateCommunicationPreferencesResponse {
   Farmer farmer = 1;
+}
+
+// ============================================================================
+// Farmer-CollectionPoint Assignment Messages (Story 9.5a)
+// ============================================================================
+
+message AssignFarmerRequest {
+  string collection_point_id = 1;
+  string farmer_id = 2;
+}
+
+message UnassignFarmerRequest {
+  string collection_point_id = 1;
+  string farmer_id = 2;
+}
+
+message GetCollectionPointsForFarmerRequest {
+  string farmer_id = 1;
 }

@@ -71,7 +71,7 @@ class TestFarmerRegistrationFlow:
             first_name="Wanjiku",
             last_name="Kamau",
             region_id=region_id,
-            collection_point_id="nyeri-highland-cp-001",
+            # Story 9.5a: collection_point_id removed
             farm_location=GeoLocation(
                 latitude=latitude,
                 longitude=longitude,
@@ -117,7 +117,7 @@ class TestFarmerRegistrationFlow:
             first_name="Existing",
             last_name="Farmer",
             region_id="nyeri-highland",
-            collection_point_id="nyeri-highland-cp-001",
+            # Story 9.5a: collection_point_id removed
             farm_location=GeoLocation(latitude=-0.4, longitude=36.9, altitude_meters=1900),
             contact=ContactInfo(phone="+254712345678"),
             farm_size_hectares=1.0,
@@ -153,7 +153,7 @@ class TestFarmerRegistrationFlow:
             first_name="Existing",
             last_name="Farmer",
             region_id="nyeri-highland",
-            collection_point_id="nyeri-highland-cp-001",
+            # Story 9.5a: collection_point_id removed
             farm_location=GeoLocation(latitude=-0.4, longitude=36.9, altitude_meters=1900),
             contact=ContactInfo(phone="+254712345678"),
             farm_size_hectares=1.0,
@@ -239,12 +239,12 @@ class TestFarmerRegistrationFlow:
         """Test FarmerRegisteredEvent publishing via DAPR SDK.
 
         Story 0.6.14: Updated to use module-level publish_event() per ADR-010.
+        Story 9.5a: collection_point_id and factory_id removed from event.
         """
         event = FarmerRegisteredEvent(
             farmer_id="WM-0001",
             phone="+254712345678",
-            collection_point_id="nyeri-highland-cp-001",
-            factory_id="KEN-FAC-001",
+            # Story 9.5a: collection_point_id and factory_id removed
             region_id="nyeri-highland",
             farm_scale="medium",
         )
@@ -268,18 +268,21 @@ class TestFarmerRegistrationFlow:
             assert call_kwargs["pubsub_name"] == "pubsub"
 
     @pytest.mark.asyncio
-    async def test_farmer_list_by_collection_point(
+    async def test_farmer_list_by_region(
         self,
         farmer_repo: FarmerRepository,
         mock_db: MagicMock,
     ) -> None:
-        """Test listing farmers by collection point."""
+        """Test listing farmers by region.
+
+        Story 9.5a: list_by_collection_point removed - use list_by_region instead.
+        """
         farmer1 = Farmer(
             id="WM-0001",
             first_name="Farmer",
             last_name="One",
             region_id="nyeri-highland",
-            collection_point_id="nyeri-highland-cp-001",
+            # Story 9.5a: collection_point_id removed
             farm_location=GeoLocation(latitude=-0.4, longitude=36.9, altitude_meters=1900),
             contact=ContactInfo(phone="+254711111111"),
             farm_size_hectares=1.0,
@@ -291,7 +294,7 @@ class TestFarmerRegistrationFlow:
             first_name="Farmer",
             last_name="Two",
             region_id="nyeri-highland",
-            collection_point_id="nyeri-highland-cp-001",
+            # Story 9.5a: collection_point_id removed
             farm_location=GeoLocation(latitude=-0.5, longitude=36.9, altitude_meters=1850),
             contact=ContactInfo(phone="+254722222222"),
             farm_size_hectares=2.0,
@@ -314,11 +317,11 @@ class TestFarmerRegistrationFlow:
         mock_db["farmers"].find = MagicMock(return_value=mock_cursor)
         mock_db["farmers"].count_documents = AsyncMock(return_value=2)
 
-        farmers, _, total = await farmer_repo.list_by_collection_point("nyeri-highland-cp-001")
+        farmers, _, total = await farmer_repo.list_by_region("nyeri-highland")
 
         assert total == 2
         assert len(farmers) == 2
-        assert all(f.collection_point_id == "nyeri-highland-cp-001" for f in farmers)
+        assert all(f.region_id == "nyeri-highland" for f in farmers)
 
     @pytest.mark.asyncio
     async def test_farmer_update_flow(
@@ -333,7 +336,7 @@ class TestFarmerRegistrationFlow:
             first_name="Original",
             last_name="Farmer",
             region_id="nyeri-highland",
-            collection_point_id="nyeri-highland-cp-001",
+            # Story 9.5a: collection_point_id removed
             farm_location=GeoLocation(latitude=-0.4, longitude=36.9, altitude_meters=1900),
             contact=ContactInfo(phone="+254712345678"),
             farm_size_hectares=1.0,

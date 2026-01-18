@@ -98,6 +98,22 @@ def _timestamp_to_datetime(proto_ts: Any) -> datetime | None:
     return None
 
 
+def _datetime_to_timestamp(dt: datetime) -> Any:
+    """Convert Python datetime to Proto Timestamp.
+
+    Args:
+        dt: Python datetime object.
+
+    Returns:
+        Proto Timestamp message.
+    """
+    from google.protobuf.timestamp_pb2 import Timestamp
+
+    ts = Timestamp()
+    ts.FromDatetime(dt)
+    return ts
+
+
 def farmer_from_proto(proto: plantation_pb2.Farmer) -> Farmer:
     """Convert Farmer proto message to Pydantic model.
 
@@ -138,13 +154,13 @@ def farmer_from_proto(proto: plantation_pb2.Farmer) -> Farmer:
     updated_at = _timestamp_to_datetime(proto.updated_at)
     registration_date = _timestamp_to_datetime(proto.registration_date)
 
+    # Story 9.5a: collection_point_id removed from Farmer
     return Farmer(
         id=proto.id,
         grower_number=proto.grower_number if proto.grower_number else None,
         first_name=proto.first_name,
         last_name=proto.last_name,
         region_id=proto.region_id,
-        collection_point_id=proto.collection_point_id,
         contact=ContactInfo(
             phone=proto.contact.phone if proto.contact else "",
             email=proto.contact.email if proto.contact else "",
@@ -268,6 +284,7 @@ def collection_point_from_proto(proto: plantation_pb2.CollectionPoint) -> Collec
     created_at = _timestamp_to_datetime(proto.created_at)
     updated_at = _timestamp_to_datetime(proto.updated_at)
 
+    # Story 9.5a: Add farmer_ids for N:M relationship
     return CollectionPoint(
         id=proto.id,
         name=proto.name,
@@ -284,8 +301,50 @@ def collection_point_from_proto(proto: plantation_pb2.CollectionPoint) -> Collec
         collection_days=list(proto.collection_days) if proto.collection_days else ["mon", "wed", "fri", "sat"],
         capacity=capacity,
         status=proto.status if proto.status else "active",
+        farmer_ids=list(proto.farmer_ids) if proto.farmer_ids else [],
         created_at=created_at if created_at else datetime.now(),
         updated_at=updated_at if updated_at else datetime.now(),
+    )
+
+
+def collection_point_to_proto(cp: CollectionPoint) -> plantation_pb2.CollectionPoint:
+    """Convert CollectionPoint Pydantic model to proto message.
+
+    Story 9.5a: Includes farmer_ids for N:M relationship.
+
+    Args:
+        cp: The CollectionPoint Pydantic model.
+
+    Returns:
+        CollectionPoint proto message for gRPC response.
+    """
+    return plantation_pb2.CollectionPoint(
+        id=cp.id,
+        name=cp.name,
+        factory_id=cp.factory_id,
+        location=plantation_pb2.GeoLocation(
+            latitude=cp.location.latitude,
+            longitude=cp.location.longitude,
+            altitude_meters=cp.location.altitude_meters,
+        ),
+        region_id=cp.region_id,
+        clerk_id=cp.clerk_id or "",
+        clerk_phone=cp.clerk_phone or "",
+        operating_hours=plantation_pb2.OperatingHours(
+            weekdays=cp.operating_hours.weekdays,
+            weekends=cp.operating_hours.weekends,
+        ),
+        collection_days=cp.collection_days,
+        capacity=plantation_pb2.CollectionPointCapacity(
+            max_daily_kg=cp.capacity.max_daily_kg,
+            storage_type=cp.capacity.storage_type,
+            has_weighing_scale=cp.capacity.has_weighing_scale,
+            has_qc_device=cp.capacity.has_qc_device,
+        ),
+        status=cp.status,
+        farmer_ids=cp.farmer_ids,
+        created_at=_datetime_to_timestamp(cp.created_at),
+        updated_at=_datetime_to_timestamp(cp.updated_at),
     )
 
 
@@ -529,12 +588,12 @@ def farmer_summary_from_proto(proto: plantation_pb2.FarmerSummary) -> dict[str, 
     created_at = _timestamp_to_datetime(proto.created_at)
     updated_at = _timestamp_to_datetime(proto.updated_at)
 
+    # Story 9.5a: collection_point_id removed from FarmerSummary
     return {
         "farmer_id": proto.farmer_id,
         "first_name": proto.first_name,
         "last_name": proto.last_name,
         "phone": proto.phone,
-        "collection_point_id": proto.collection_point_id,
         "farm_size_hectares": proto.farm_size_hectares,
         "farm_scale": farm_scale,
         "grading_model_id": proto.grading_model_id,

@@ -150,6 +150,28 @@ class GPS(_message.Message):
     lng: float
     def __init__(self, lat: _Optional[float] = ..., lng: _Optional[float] = ...) -> None: ...
 
+class Coordinate(_message.Message):
+    __slots__ = ("longitude", "latitude")
+    LONGITUDE_FIELD_NUMBER: _ClassVar[int]
+    LATITUDE_FIELD_NUMBER: _ClassVar[int]
+    longitude: float
+    latitude: float
+    def __init__(self, longitude: _Optional[float] = ..., latitude: _Optional[float] = ...) -> None: ...
+
+class PolygonRing(_message.Message):
+    __slots__ = ("points",)
+    POINTS_FIELD_NUMBER: _ClassVar[int]
+    points: _containers.RepeatedCompositeFieldContainer[Coordinate]
+    def __init__(self, points: _Optional[_Iterable[_Union[Coordinate, _Mapping]]] = ...) -> None: ...
+
+class RegionBoundary(_message.Message):
+    __slots__ = ("type", "rings")
+    TYPE_FIELD_NUMBER: _ClassVar[int]
+    RINGS_FIELD_NUMBER: _ClassVar[int]
+    type: str
+    rings: _containers.RepeatedCompositeFieldContainer[PolygonRing]
+    def __init__(self, type: _Optional[str] = ..., rings: _Optional[_Iterable[_Union[PolygonRing, _Mapping]]] = ...) -> None: ...
+
 class AltitudeBand(_message.Message):
     __slots__ = ("min_meters", "max_meters", "label")
     MIN_METERS_FIELD_NUMBER: _ClassVar[int]
@@ -161,14 +183,20 @@ class AltitudeBand(_message.Message):
     def __init__(self, min_meters: _Optional[int] = ..., max_meters: _Optional[int] = ..., label: _Optional[_Union[AltitudeBandLabel, str]] = ...) -> None: ...
 
 class Geography(_message.Message):
-    __slots__ = ("center_gps", "radius_km", "altitude_band")
+    __slots__ = ("center_gps", "radius_km", "altitude_band", "boundary", "area_km2", "perimeter_km")
     CENTER_GPS_FIELD_NUMBER: _ClassVar[int]
     RADIUS_KM_FIELD_NUMBER: _ClassVar[int]
     ALTITUDE_BAND_FIELD_NUMBER: _ClassVar[int]
+    BOUNDARY_FIELD_NUMBER: _ClassVar[int]
+    AREA_KM2_FIELD_NUMBER: _ClassVar[int]
+    PERIMETER_KM_FIELD_NUMBER: _ClassVar[int]
     center_gps: GPS
     radius_km: float
     altitude_band: AltitudeBand
-    def __init__(self, center_gps: _Optional[_Union[GPS, _Mapping]] = ..., radius_km: _Optional[float] = ..., altitude_band: _Optional[_Union[AltitudeBand, _Mapping]] = ...) -> None: ...
+    boundary: RegionBoundary
+    area_km2: float
+    perimeter_km: float
+    def __init__(self, center_gps: _Optional[_Union[GPS, _Mapping]] = ..., radius_km: _Optional[float] = ..., altitude_band: _Optional[_Union[AltitudeBand, _Mapping]] = ..., boundary: _Optional[_Union[RegionBoundary, _Mapping]] = ..., area_km2: _Optional[float] = ..., perimeter_km: _Optional[float] = ...) -> None: ...
 
 class FlushPeriod(_message.Message):
     __slots__ = ("start", "end", "characteristics")
@@ -513,7 +541,7 @@ class CollectionPointCapacity(_message.Message):
     def __init__(self, max_daily_kg: _Optional[int] = ..., storage_type: _Optional[str] = ..., has_weighing_scale: bool = ..., has_qc_device: bool = ...) -> None: ...
 
 class CollectionPoint(_message.Message):
-    __slots__ = ("id", "name", "factory_id", "location", "region_id", "clerk_id", "clerk_phone", "operating_hours", "collection_days", "capacity", "status", "created_at", "updated_at")
+    __slots__ = ("id", "name", "factory_id", "location", "region_id", "clerk_id", "clerk_phone", "operating_hours", "collection_days", "capacity", "status", "created_at", "updated_at", "farmer_ids")
     ID_FIELD_NUMBER: _ClassVar[int]
     NAME_FIELD_NUMBER: _ClassVar[int]
     FACTORY_ID_FIELD_NUMBER: _ClassVar[int]
@@ -527,6 +555,7 @@ class CollectionPoint(_message.Message):
     STATUS_FIELD_NUMBER: _ClassVar[int]
     CREATED_AT_FIELD_NUMBER: _ClassVar[int]
     UPDATED_AT_FIELD_NUMBER: _ClassVar[int]
+    FARMER_IDS_FIELD_NUMBER: _ClassVar[int]
     id: str
     name: str
     factory_id: str
@@ -540,7 +569,8 @@ class CollectionPoint(_message.Message):
     status: str
     created_at: _timestamp_pb2.Timestamp
     updated_at: _timestamp_pb2.Timestamp
-    def __init__(self, id: _Optional[str] = ..., name: _Optional[str] = ..., factory_id: _Optional[str] = ..., location: _Optional[_Union[GeoLocation, _Mapping]] = ..., region_id: _Optional[str] = ..., clerk_id: _Optional[str] = ..., clerk_phone: _Optional[str] = ..., operating_hours: _Optional[_Union[OperatingHours, _Mapping]] = ..., collection_days: _Optional[_Iterable[str]] = ..., capacity: _Optional[_Union[CollectionPointCapacity, _Mapping]] = ..., status: _Optional[str] = ..., created_at: _Optional[_Union[datetime.datetime, _timestamp_pb2.Timestamp, _Mapping]] = ..., updated_at: _Optional[_Union[datetime.datetime, _timestamp_pb2.Timestamp, _Mapping]] = ...) -> None: ...
+    farmer_ids: _containers.RepeatedScalarFieldContainer[str]
+    def __init__(self, id: _Optional[str] = ..., name: _Optional[str] = ..., factory_id: _Optional[str] = ..., location: _Optional[_Union[GeoLocation, _Mapping]] = ..., region_id: _Optional[str] = ..., clerk_id: _Optional[str] = ..., clerk_phone: _Optional[str] = ..., operating_hours: _Optional[_Union[OperatingHours, _Mapping]] = ..., collection_days: _Optional[_Iterable[str]] = ..., capacity: _Optional[_Union[CollectionPointCapacity, _Mapping]] = ..., status: _Optional[str] = ..., created_at: _Optional[_Union[datetime.datetime, _timestamp_pb2.Timestamp, _Mapping]] = ..., updated_at: _Optional[_Union[datetime.datetime, _timestamp_pb2.Timestamp, _Mapping]] = ..., farmer_ids: _Optional[_Iterable[str]] = ...) -> None: ...
 
 class GetCollectionPointRequest(_message.Message):
     __slots__ = ("id",)
@@ -631,13 +661,12 @@ class DeleteCollectionPointResponse(_message.Message):
     def __init__(self, success: bool = ...) -> None: ...
 
 class Farmer(_message.Message):
-    __slots__ = ("id", "grower_number", "first_name", "last_name", "region_id", "collection_point_id", "farm_location", "contact", "farm_size_hectares", "farm_scale", "national_id", "registration_date", "is_active", "created_at", "updated_at", "notification_channel", "interaction_pref", "pref_lang")
+    __slots__ = ("id", "grower_number", "first_name", "last_name", "region_id", "farm_location", "contact", "farm_size_hectares", "farm_scale", "national_id", "registration_date", "is_active", "created_at", "updated_at", "notification_channel", "interaction_pref", "pref_lang")
     ID_FIELD_NUMBER: _ClassVar[int]
     GROWER_NUMBER_FIELD_NUMBER: _ClassVar[int]
     FIRST_NAME_FIELD_NUMBER: _ClassVar[int]
     LAST_NAME_FIELD_NUMBER: _ClassVar[int]
     REGION_ID_FIELD_NUMBER: _ClassVar[int]
-    COLLECTION_POINT_ID_FIELD_NUMBER: _ClassVar[int]
     FARM_LOCATION_FIELD_NUMBER: _ClassVar[int]
     CONTACT_FIELD_NUMBER: _ClassVar[int]
     FARM_SIZE_HECTARES_FIELD_NUMBER: _ClassVar[int]
@@ -655,7 +684,6 @@ class Farmer(_message.Message):
     first_name: str
     last_name: str
     region_id: str
-    collection_point_id: str
     farm_location: GeoLocation
     contact: ContactInfo
     farm_size_hectares: float
@@ -668,7 +696,7 @@ class Farmer(_message.Message):
     notification_channel: NotificationChannel
     interaction_pref: InteractionPreference
     pref_lang: PreferredLanguage
-    def __init__(self, id: _Optional[str] = ..., grower_number: _Optional[str] = ..., first_name: _Optional[str] = ..., last_name: _Optional[str] = ..., region_id: _Optional[str] = ..., collection_point_id: _Optional[str] = ..., farm_location: _Optional[_Union[GeoLocation, _Mapping]] = ..., contact: _Optional[_Union[ContactInfo, _Mapping]] = ..., farm_size_hectares: _Optional[float] = ..., farm_scale: _Optional[_Union[FarmScale, str]] = ..., national_id: _Optional[str] = ..., registration_date: _Optional[_Union[datetime.datetime, _timestamp_pb2.Timestamp, _Mapping]] = ..., is_active: bool = ..., created_at: _Optional[_Union[datetime.datetime, _timestamp_pb2.Timestamp, _Mapping]] = ..., updated_at: _Optional[_Union[datetime.datetime, _timestamp_pb2.Timestamp, _Mapping]] = ..., notification_channel: _Optional[_Union[NotificationChannel, str]] = ..., interaction_pref: _Optional[_Union[InteractionPreference, str]] = ..., pref_lang: _Optional[_Union[PreferredLanguage, str]] = ...) -> None: ...
+    def __init__(self, id: _Optional[str] = ..., grower_number: _Optional[str] = ..., first_name: _Optional[str] = ..., last_name: _Optional[str] = ..., region_id: _Optional[str] = ..., farm_location: _Optional[_Union[GeoLocation, _Mapping]] = ..., contact: _Optional[_Union[ContactInfo, _Mapping]] = ..., farm_size_hectares: _Optional[float] = ..., farm_scale: _Optional[_Union[FarmScale, str]] = ..., national_id: _Optional[str] = ..., registration_date: _Optional[_Union[datetime.datetime, _timestamp_pb2.Timestamp, _Mapping]] = ..., is_active: bool = ..., created_at: _Optional[_Union[datetime.datetime, _timestamp_pb2.Timestamp, _Mapping]] = ..., updated_at: _Optional[_Union[datetime.datetime, _timestamp_pb2.Timestamp, _Mapping]] = ..., notification_channel: _Optional[_Union[NotificationChannel, str]] = ..., interaction_pref: _Optional[_Union[InteractionPreference, str]] = ..., pref_lang: _Optional[_Union[PreferredLanguage, str]] = ...) -> None: ...
 
 class GetFarmerRequest(_message.Message):
     __slots__ = ("id",)
@@ -683,18 +711,16 @@ class GetFarmerByPhoneRequest(_message.Message):
     def __init__(self, phone: _Optional[str] = ...) -> None: ...
 
 class ListFarmersRequest(_message.Message):
-    __slots__ = ("page_size", "page_token", "region_id", "collection_point_id", "active_only")
+    __slots__ = ("page_size", "page_token", "region_id", "active_only")
     PAGE_SIZE_FIELD_NUMBER: _ClassVar[int]
     PAGE_TOKEN_FIELD_NUMBER: _ClassVar[int]
     REGION_ID_FIELD_NUMBER: _ClassVar[int]
-    COLLECTION_POINT_ID_FIELD_NUMBER: _ClassVar[int]
     ACTIVE_ONLY_FIELD_NUMBER: _ClassVar[int]
     page_size: int
     page_token: str
     region_id: str
-    collection_point_id: str
     active_only: bool
-    def __init__(self, page_size: _Optional[int] = ..., page_token: _Optional[str] = ..., region_id: _Optional[str] = ..., collection_point_id: _Optional[str] = ..., active_only: bool = ...) -> None: ...
+    def __init__(self, page_size: _Optional[int] = ..., page_token: _Optional[str] = ..., region_id: _Optional[str] = ..., active_only: bool = ...) -> None: ...
 
 class ListFarmersResponse(_message.Message):
     __slots__ = ("farmers", "next_page_token", "total_count")
@@ -707,10 +733,9 @@ class ListFarmersResponse(_message.Message):
     def __init__(self, farmers: _Optional[_Iterable[_Union[Farmer, _Mapping]]] = ..., next_page_token: _Optional[str] = ..., total_count: _Optional[int] = ...) -> None: ...
 
 class CreateFarmerRequest(_message.Message):
-    __slots__ = ("first_name", "last_name", "collection_point_id", "farm_location", "contact", "farm_size_hectares", "national_id", "grower_number")
+    __slots__ = ("first_name", "last_name", "farm_location", "contact", "farm_size_hectares", "national_id", "grower_number")
     FIRST_NAME_FIELD_NUMBER: _ClassVar[int]
     LAST_NAME_FIELD_NUMBER: _ClassVar[int]
-    COLLECTION_POINT_ID_FIELD_NUMBER: _ClassVar[int]
     FARM_LOCATION_FIELD_NUMBER: _ClassVar[int]
     CONTACT_FIELD_NUMBER: _ClassVar[int]
     FARM_SIZE_HECTARES_FIELD_NUMBER: _ClassVar[int]
@@ -718,13 +743,12 @@ class CreateFarmerRequest(_message.Message):
     GROWER_NUMBER_FIELD_NUMBER: _ClassVar[int]
     first_name: str
     last_name: str
-    collection_point_id: str
     farm_location: GeoLocation
     contact: ContactInfo
     farm_size_hectares: float
     national_id: str
     grower_number: str
-    def __init__(self, first_name: _Optional[str] = ..., last_name: _Optional[str] = ..., collection_point_id: _Optional[str] = ..., farm_location: _Optional[_Union[GeoLocation, _Mapping]] = ..., contact: _Optional[_Union[ContactInfo, _Mapping]] = ..., farm_size_hectares: _Optional[float] = ..., national_id: _Optional[str] = ..., grower_number: _Optional[str] = ...) -> None: ...
+    def __init__(self, first_name: _Optional[str] = ..., last_name: _Optional[str] = ..., farm_location: _Optional[_Union[GeoLocation, _Mapping]] = ..., contact: _Optional[_Union[ContactInfo, _Mapping]] = ..., farm_size_hectares: _Optional[float] = ..., national_id: _Optional[str] = ..., grower_number: _Optional[str] = ...) -> None: ...
 
 class UpdateFarmerRequest(_message.Message):
     __slots__ = ("id", "first_name", "last_name", "farm_location", "contact", "farm_size_hectares", "is_active")
@@ -1049,12 +1073,11 @@ class TodayMetrics(_message.Message):
     def __init__(self, deliveries: _Optional[int] = ..., total_kg: _Optional[float] = ..., grade_counts: _Optional[_Mapping[str, int]] = ..., attribute_counts: _Optional[_Mapping[str, DistributionCounts]] = ..., last_delivery: _Optional[_Union[datetime.datetime, _timestamp_pb2.Timestamp, _Mapping]] = ..., metrics_date: _Optional[str] = ...) -> None: ...
 
 class FarmerSummary(_message.Message):
-    __slots__ = ("farmer_id", "first_name", "last_name", "phone", "collection_point_id", "farm_size_hectares", "farm_scale", "grading_model_id", "grading_model_version", "historical", "today", "trend_direction", "created_at", "updated_at", "notification_channel", "interaction_pref", "pref_lang")
+    __slots__ = ("farmer_id", "first_name", "last_name", "phone", "farm_size_hectares", "farm_scale", "grading_model_id", "grading_model_version", "historical", "today", "trend_direction", "created_at", "updated_at", "notification_channel", "interaction_pref", "pref_lang")
     FARMER_ID_FIELD_NUMBER: _ClassVar[int]
     FIRST_NAME_FIELD_NUMBER: _ClassVar[int]
     LAST_NAME_FIELD_NUMBER: _ClassVar[int]
     PHONE_FIELD_NUMBER: _ClassVar[int]
-    COLLECTION_POINT_ID_FIELD_NUMBER: _ClassVar[int]
     FARM_SIZE_HECTARES_FIELD_NUMBER: _ClassVar[int]
     FARM_SCALE_FIELD_NUMBER: _ClassVar[int]
     GRADING_MODEL_ID_FIELD_NUMBER: _ClassVar[int]
@@ -1071,7 +1094,6 @@ class FarmerSummary(_message.Message):
     first_name: str
     last_name: str
     phone: str
-    collection_point_id: str
     farm_size_hectares: float
     farm_scale: FarmScale
     grading_model_id: str
@@ -1084,7 +1106,7 @@ class FarmerSummary(_message.Message):
     notification_channel: NotificationChannel
     interaction_pref: InteractionPreference
     pref_lang: PreferredLanguage
-    def __init__(self, farmer_id: _Optional[str] = ..., first_name: _Optional[str] = ..., last_name: _Optional[str] = ..., phone: _Optional[str] = ..., collection_point_id: _Optional[str] = ..., farm_size_hectares: _Optional[float] = ..., farm_scale: _Optional[_Union[FarmScale, str]] = ..., grading_model_id: _Optional[str] = ..., grading_model_version: _Optional[str] = ..., historical: _Optional[_Union[HistoricalMetrics, _Mapping]] = ..., today: _Optional[_Union[TodayMetrics, _Mapping]] = ..., trend_direction: _Optional[_Union[TrendDirection, str]] = ..., created_at: _Optional[_Union[datetime.datetime, _timestamp_pb2.Timestamp, _Mapping]] = ..., updated_at: _Optional[_Union[datetime.datetime, _timestamp_pb2.Timestamp, _Mapping]] = ..., notification_channel: _Optional[_Union[NotificationChannel, str]] = ..., interaction_pref: _Optional[_Union[InteractionPreference, str]] = ..., pref_lang: _Optional[_Union[PreferredLanguage, str]] = ...) -> None: ...
+    def __init__(self, farmer_id: _Optional[str] = ..., first_name: _Optional[str] = ..., last_name: _Optional[str] = ..., phone: _Optional[str] = ..., farm_size_hectares: _Optional[float] = ..., farm_scale: _Optional[_Union[FarmScale, str]] = ..., grading_model_id: _Optional[str] = ..., grading_model_version: _Optional[str] = ..., historical: _Optional[_Union[HistoricalMetrics, _Mapping]] = ..., today: _Optional[_Union[TodayMetrics, _Mapping]] = ..., trend_direction: _Optional[_Union[TrendDirection, str]] = ..., created_at: _Optional[_Union[datetime.datetime, _timestamp_pb2.Timestamp, _Mapping]] = ..., updated_at: _Optional[_Union[datetime.datetime, _timestamp_pb2.Timestamp, _Mapping]] = ..., notification_channel: _Optional[_Union[NotificationChannel, str]] = ..., interaction_pref: _Optional[_Union[InteractionPreference, str]] = ..., pref_lang: _Optional[_Union[PreferredLanguage, str]] = ...) -> None: ...
 
 class GetFarmerSummaryRequest(_message.Message):
     __slots__ = ("farmer_id",)
@@ -1109,3 +1131,25 @@ class UpdateCommunicationPreferencesResponse(_message.Message):
     FARMER_FIELD_NUMBER: _ClassVar[int]
     farmer: Farmer
     def __init__(self, farmer: _Optional[_Union[Farmer, _Mapping]] = ...) -> None: ...
+
+class AssignFarmerRequest(_message.Message):
+    __slots__ = ("collection_point_id", "farmer_id")
+    COLLECTION_POINT_ID_FIELD_NUMBER: _ClassVar[int]
+    FARMER_ID_FIELD_NUMBER: _ClassVar[int]
+    collection_point_id: str
+    farmer_id: str
+    def __init__(self, collection_point_id: _Optional[str] = ..., farmer_id: _Optional[str] = ...) -> None: ...
+
+class UnassignFarmerRequest(_message.Message):
+    __slots__ = ("collection_point_id", "farmer_id")
+    COLLECTION_POINT_ID_FIELD_NUMBER: _ClassVar[int]
+    FARMER_ID_FIELD_NUMBER: _ClassVar[int]
+    collection_point_id: str
+    farmer_id: str
+    def __init__(self, collection_point_id: _Optional[str] = ..., farmer_id: _Optional[str] = ...) -> None: ...
+
+class GetCollectionPointsForFarmerRequest(_message.Message):
+    __slots__ = ("farmer_id",)
+    FARMER_ID_FIELD_NUMBER: _ClassVar[int]
+    farmer_id: str
+    def __init__(self, farmer_id: _Optional[str] = ...) -> None: ...

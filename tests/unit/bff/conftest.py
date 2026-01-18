@@ -204,18 +204,19 @@ def create_farmer_proto(
     last_name: str = "Kamau",
     phone: str = "+254712345678",
     region_id: str = "nyeri-highland",
-    collection_point_id: str = "nyeri-highland-cp-001",
     farm_size_hectares: float = 1.5,
     national_id: str = "12345678",
     is_active: bool = True,
 ) -> plantation_pb2.Farmer:
-    """Create a Farmer proto message for testing."""
+    """Create a Farmer proto message for testing.
+
+    Story 9.5a: collection_point_id removed from Farmer proto.
+    """
     farmer = plantation_pb2.Farmer(
         id=farmer_id,
         first_name=first_name,
         last_name=last_name,
         region_id=region_id,
-        collection_point_id=collection_point_id,
         farm_location=plantation_pb2.GeoLocation(
             latitude=-0.4197,
             longitude=36.9553,
@@ -281,8 +282,12 @@ def create_collection_point_proto(
     factory_id: str = "KEN-FAC-001",
     region_id: str = "nyeri-highland",
     status: str = "active",
+    farmer_ids: list[str] | None = None,
 ) -> plantation_pb2.CollectionPoint:
-    """Create a CollectionPoint proto message for testing."""
+    """Create a CollectionPoint proto message for testing.
+
+    Story 9.5a: Added farmer_ids for N:M relationship.
+    """
     cp = plantation_pb2.CollectionPoint(
         id=cp_id,
         name=name,
@@ -307,6 +312,7 @@ def create_collection_point_proto(
             has_qc_device=False,
         ),
         status=status,
+        farmer_ids=farmer_ids or ["WM-0001"],  # Story 9.5a: N:M relationship
     )
     return cp
 
@@ -418,13 +424,15 @@ def create_farmer_summary_proto(
     last_name: str = "Kamau",
     farm_size_hectares: float = 1.5,
 ) -> plantation_pb2.FarmerSummary:
-    """Create a FarmerSummary proto message for testing."""
+    """Create a FarmerSummary proto message for testing.
+
+    Story 9.5a: collection_point_id removed from FarmerSummary proto.
+    """
     summary = plantation_pb2.FarmerSummary(
         farmer_id=farmer_id,
         first_name=first_name,
         last_name=last_name,
         phone="+254712345678",
-        collection_point_id="nyeri-highland-cp-001",
         farm_size_hectares=farm_size_hectares,
         farm_scale=plantation_pb2.FarmScale.FARM_SCALE_MEDIUM,
         grading_model_id="tbk_kenya_tea_v1",

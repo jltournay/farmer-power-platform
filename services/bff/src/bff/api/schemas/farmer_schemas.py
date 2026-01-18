@@ -106,10 +106,18 @@ class FarmerPerformanceAPI(BaseModel):
     )
 
 
+class CollectionPointRef(BaseModel):
+    """Reference to a collection point for farmer profile (Story 9.5a)."""
+
+    id: str = Field(description="Collection point ID")
+    name: str = Field(description="Collection point name")
+
+
 class FarmerProfile(BaseModel):
     """Farmer profile information for detail endpoint.
 
     Includes identity, contact, and farm information.
+    Story 9.5a: collection_point_id replaced with collection_points list for N:M.
     """
 
     id: str = Field(description="Unique farmer ID")
@@ -117,7 +125,10 @@ class FarmerProfile(BaseModel):
     last_name: str = Field(description="Last name")
     phone: str = Field(description="Contact phone number")
     region_id: str = Field(description="Region ID")
-    collection_point_id: str = Field(description="Collection point ID")
+    collection_points: list[CollectionPointRef] = Field(
+        default_factory=list,
+        description="Collection points where farmer delivers (Story 9.5a)",
+    )
     farm_size_hectares: float = Field(description="Farm size in hectares")
     registration_date: datetime = Field(description="Registration date")
     is_active: bool = Field(description="Whether farmer is active")
@@ -143,7 +154,9 @@ class FarmerDetailResponse(BaseModel):
                     "last_name": "Muthoni",
                     "phone": "+254712345678",
                     "region_id": "nyeri-highland",
-                    "collection_point_id": "nyeri-highland-cp-001",
+                    "collection_points": [
+                        {"id": "nyeri-highland-cp-001", "name": "Nyeri Central CP"},
+                    ],
                     "farm_size_hectares": 1.5,
                     "registration_date": "2024-06-15T10:30:00Z",
                     "is_active": True,
