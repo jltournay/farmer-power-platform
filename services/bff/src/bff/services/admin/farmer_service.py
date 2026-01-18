@@ -177,9 +177,9 @@ class AdminFarmerService(BaseService):
             farmers = [
                 f
                 for f in farmers
-                if search_lower in f.id.lower()
-                or search_lower in f.first_name.lower()
-                or search_lower in f.last_name.lower()
+                if search_lower in (f.id or "").lower()
+                or search_lower in (f.first_name or "").lower()
+                or search_lower in (f.last_name or "").lower()
                 or search_lower in (f.phone or "").lower()
             ]
 
