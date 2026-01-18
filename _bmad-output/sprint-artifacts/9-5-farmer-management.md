@@ -1397,7 +1397,8 @@ None
 5. CSV import with drag-and-drop and validation feedback
 6. Unit tests created for API client and type helpers (76 tests passing)
 7. Frontend build compiles successfully
-8. Local E2E skipped due to Docker not running - will validate via CI E2E
+8. E2E CI passed (Run ID: 21117120990) - 214 tests passing including 29 farmer management tests
+9. Code review fixes applied: search filter now uses `f.contact.phone` instead of `f.phone`
 
 ### Known Limitations (Code Review Notes)
 
@@ -1420,7 +1421,7 @@ See [Migration Plan](#migration-plan-adapting-to-nm-data-model) above for detail
 - `web/platform-admin/src/pages/farmers/FarmerImport.tsx` - CSV import page
 - `tests/unit/web/platform-admin/api/farmers.test.ts` - API client unit tests
 - `tests/unit/web/platform-admin/types/farmers.test.ts` - Type helper unit tests
-- `tests/e2e/scenarios/test_35_platform_admin_farmers.py` - E2E tests for farmer management (24 tests)
+- `tests/e2e/scenarios/test_35_platform_admin_farmers.py` - E2E tests for farmer management (29 tests, includes filter tests)
 
 **Modified:**
 - `web/platform-admin/src/api/types.ts` - Added farmer types (~320 lines)
