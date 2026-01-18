@@ -487,6 +487,116 @@ This approach:
 
 ---
 
+### Story 1.11: Auto-Assignment of Farmer to Collection Point on Quality Result
+
+**Story File:** Backlog | Status: Backlog
+**Depends on:** Story 9.5a (Farmer-CP Data Model Refactor)
+**Related:** GitHub Issue #200
+
+As a **platform operator**,
+I want farmers to be automatically assigned to a collection point when their first quality result is received there,
+So that the farmer-CP relationship is established without manual intervention.
+
+**Problem Statement:**
+
+After Story 9.5a refactors the data model to N:M (farmer_ids on CollectionPoint), we need a mechanism to populate this relationship. While manual assignment is supported via admin UI, most assignments should happen automatically when a farmer delivers tea to a collection point.
+
+**Acceptance Criteria:**
+
+**AC 1.11.1: Auto-Assignment on Quality Result**
+
+**Given** a `collection.quality_result.received` event is received
+**And** the event contains `farmer_id` and `collection_point_id`
+**When** the quality event processor validates the farmer
+**Then** if the farmer is NOT already in the CP's `farmer_ids` list
+**And** the system calls `AssignFarmerToCollectionPoint(farmer_id, cp_id)`
+**And** the farmer is added to the CP's `farmer_ids` list
+
+**AC 1.11.2: Idempotent Assignment**
+
+**Given** a farmer is already assigned to a collection point
+**When** another quality result arrives for the same farmer at the same CP
+**Then** no duplicate assignment occurs (idempotent)
+**And** no error is raised
+**And** quality processing continues normally
+
+**AC 1.11.3: Cross-Factory Assignment**
+
+**Given** a farmer is assigned to CP-A (Factory 1)
+**When** a quality result arrives for the same farmer at CP-B (Factory 2)
+**Then** the farmer is ALSO assigned to CP-B
+**And** the farmer now appears in both CP-A and CP-B's `farmer_ids` lists
+**And** the farmer's "factory count" is now 2
+
+**AC 1.11.4: Event Emission**
+
+**Given** a farmer is auto-assigned to a new collection point
+**When** the assignment completes
+**Then** a `plantation.farmer.assigned` event is emitted
+**And** the event payload includes: `farmer_id`, `collection_point_id`, `factory_id`, `assignment_type: "auto"`
+
+**AC 1.11.5: Logging and Metrics**
+
+**Given** auto-assignment occurs
+**When** the assignment completes or fails
+**Then** structured logs capture: farmer_id, cp_id, success/failure, duration
+**And** metrics are emitted for monitoring auto-assignment rate
+
+**Technical Notes:**
+
+**Wiring Point:**
+
+The auto-assignment logic wires into `quality_event_processor.py`:
+
+```python
+# services/plantation-model/src/plantation_model/domain/services/quality_event_processor.py
+# After farmer validation (around line 191)
+
+async def process_quality_event(self, event: QualityResultEvent) -> None:
+    # ... existing validation ...
+    farmer = await self._validate_farmer_id(document_id, farmer_id)
+
+    # NEW: Auto-assign farmer to CP if not already assigned
+    cp_id = document.collection_point_id
+    await self._ensure_farmer_assigned_to_cp(farmer.id, cp_id)
+
+    # ... continue with performance update ...
+```
+
+**New Method in QualityEventProcessor:**
+
+```python
+async def _ensure_farmer_assigned_to_cp(self, farmer_id: str, cp_id: str) -> None:
+    """Auto-assign farmer to CP if not already assigned (idempotent)."""
+    cp = await self._cp_repo.get_by_id(cp_id)
+    if cp is None:
+        # CP validation should have caught this earlier
+        return
+
+    if farmer_id not in cp.farmer_ids:
+        # Use the gRPC method from Story 9.5a
+        await self._cp_repo.add_farmer(cp_id, farmer_id)
+
+        # Emit assignment event
+        await self._publish_farmer_assigned_event(farmer_id, cp_id, cp.factory_id)
+```
+
+**Files to Modify:**
+
+| File | Change |
+|------|--------|
+| `services/plantation-model/.../domain/services/quality_event_processor.py` | Add `_ensure_farmer_assigned_to_cp()` method |
+| `services/plantation-model/.../infrastructure/repositories/collection_point_repository.py` | Use `add_farmer()` method from Story 9.5a |
+| `services/plantation-model/.../events/publisher.py` | Add `plantation.farmer.assigned` event |
+| `proto/plantation/v1/events.proto` | Add `FarmerAssignedEvent` message |
+
+**Dependencies:**
+- Story 9.5a: Farmer-CP Data Model Refactor (provides `farmer_ids` on CP and `add_farmer()` method)
+
+**Story Points:** 3
+
+---
+
 ## Retrospective
 
 **[📋 Epic 1 Retrospective](../sprint-artifacts/epic-1-retrospective.md)** | Status: Done

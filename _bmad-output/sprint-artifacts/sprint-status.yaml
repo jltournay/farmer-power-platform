@@ -63,7 +63,8 @@ development_status:
 
   # Epic 1: Farmer Registration & Data Foundation
   # Dependencies: Epic 0
-  epic-1: done  # Completed 2026-01-14 with Story 1.10
+  # Reopened 2026-01-18: Added Story 1.11 for auto-assignment (depends on 9.5a)
+  epic-1: in-progress
   1-1-plantation-model-service-setup: done
   1-2-factory-and-collection-point-management: done
   1-3-farmer-registration: done
@@ -74,6 +75,7 @@ development_status:
   1-8-region-entity-weather-configuration: done  # github_issue: 25
   1-9-payment-policy-configuration: done  # github_issue: 26
   1-10-gps-region-assignment-polygon-boundaries: done  # github_issue: 181, ADR-017, PR: #182 MERGED 2026-01-14
+  1-11-auto-assign-farmer-to-cp-on-quality: backlog  # github_issue: 200, Depends on 9-5a (N:M data model)
   epic-1-retrospective: done
 
   # Epic 2: Quality Data Ingestion (REVISED - BLOB_TRIGGER architecture)

@@ -140,7 +140,7 @@ class CollectionPoint(BaseModel):
 
 ### Future: Auto-Assignment
 
-When a quality result is received (via Collection Model), the system should auto-assign the farmer to the CP if not already assigned. This auto-assignment logic will be implemented in a future story (likely Epic 2 or a new Epic 1 story), not in this story.
+    When a quality result is received (via Collection Model), the system should auto-assign the farmer to the CP if not already assigned. This auto-assignment logic will be implemented in a future story (likely Epic 2 or a new Epic 1 story), not in this story.
 
 This story only implements the **manual assignment** via admin UI endpoints.
 
@@ -148,7 +148,11 @@ This story only implements the **manual assignment** via admin UI endpoints.
 
 ## Dependencies
 
-- **Blocks:** Story 9.5 (Farmer Management)
+- **Blocks:** Story 9.5 (Farmer Management), Story 1.11 (Auto-Assignment on Quality Result)
 - **Related:** GitHub Issue #200
+
+**Enables:**
+- Story 9.5: Farmer Management UI (manual assignment via admin)
+- Story 1.11: Auto-assignment when quality result received (Epic 1)
 
 ## Story Points: 5
