@@ -933,3 +933,332 @@ export function parseTimeRange(timeRange: string): { start: string; end: string 
 export function formatTimeRange(start: string, end: string): string {
   return `${start}-${end}`;
 }
+
+// ============================================================================
+// Farmer Types (Story 9.5)
+// ============================================================================
+
+/** Farm scale classification */
+export type FarmScale = 'smallholder' | 'medium' | 'large' | 'estate';
+
+/** Quality tier level */
+export type TierLevel = 'premium' | 'standard' | 'acceptable' | 'below';
+
+/** Performance trend indicator */
+export type TrendIndicator = 'improving' | 'stable' | 'declining';
+
+/** Notification channel preference */
+export type NotificationChannel = 'sms' | 'whatsapp' | 'push' | 'voice';
+
+/** Interaction preference mode */
+export type InteractionPreference = 'text' | 'voice' | 'visual';
+
+/** Preferred language */
+export type PreferredLanguage = 'sw' | 'en' | 'ki' | 'luo';
+
+/** Farmer summary for admin list views (Story 9.5a: N:M model) */
+export interface FarmerSummary {
+  id: string;
+  name: string;
+  phone: string;
+  cp_count: number; // Story 9.5a: replaced collection_point_id with cp_count
+  region_id: string;
+  farm_scale: FarmScale;
+  tier: TierLevel;
+  trend: TrendIndicator;
+  is_active: boolean;
+}
+
+/** Communication preferences */
+export interface CommunicationPreferences {
+  notification_channel: NotificationChannel;
+  interaction_pref: InteractionPreference;
+  pref_lang: PreferredLanguage;
+}
+
+/** Performance metrics for farmer detail view */
+export interface FarmerPerformanceMetrics {
+  primary_percentage_30d: number;
+  primary_percentage_90d: number;
+  total_kg_30d: number;
+  total_kg_90d: number;
+  tier: TierLevel;
+  trend: TrendIndicator;
+  deliveries_today: number;
+  kg_today: number;
+}
+
+/** Collection point summary for farmer detail view (Story 9.5a: N:M model) */
+export interface CollectionPointSummaryForFarmer {
+  id: string;
+  name: string;
+  factory_id: string;
+}
+
+/** Full farmer detail for admin single-entity views (Story 9.5a: N:M model) */
+export interface FarmerDetail {
+  id: string;
+  grower_number: string | null;
+  first_name: string;
+  last_name: string;
+  phone: string;
+  national_id: string;
+  region_id: string;
+  collection_points: CollectionPointSummaryForFarmer[]; // Story 9.5a: N:M model
+  farm_location: GeoLocation;
+  farm_size_hectares: number;
+  farm_scale: FarmScale;
+  performance: FarmerPerformanceMetrics;
+  communication_prefs: CommunicationPreferences;
+  is_active: boolean;
+  registration_date: string; // ISO datetime
+  created_at: string; // ISO datetime
+  updated_at: string; // ISO datetime
+}
+
+/** Farmer list API response */
+export interface FarmerListResponse {
+  data: FarmerSummary[];
+  pagination: PaginationMeta;
+}
+
+/** Farmer list query parameters */
+export interface FarmerListParams {
+  page_size?: number;
+  page_token?: string;
+  region_id?: string;
+  collection_point_id?: string;
+  farm_scale?: FarmScale;
+  tier?: TierLevel;
+  active_only?: boolean;
+  search?: string;
+}
+
+/** Farmer create request (Story 9.5a: collection_point_id removed - use separate assignment API) */
+export interface FarmerCreateRequest {
+  first_name: string;
+  last_name: string;
+  phone: string;
+  national_id: string;
+  // Story 9.5a: collection_point_id removed - CP assignment via delivery or separate API
+  farm_size_hectares: number;
+  latitude: number;
+  longitude: number;
+  grower_number?: string | null;
+  notification_channel?: NotificationChannel;
+  interaction_pref?: InteractionPreference;
+  pref_lang?: PreferredLanguage;
+}
+
+/** Farmer update request */
+export interface FarmerUpdateRequest {
+  first_name?: string;
+  last_name?: string;
+  phone?: string;
+  farm_size_hectares?: number;
+  notification_channel?: NotificationChannel;
+  interaction_pref?: InteractionPreference;
+  pref_lang?: PreferredLanguage;
+  is_active?: boolean;
+}
+
+/** Import error row */
+export interface ImportErrorRow {
+  row: number;
+  error: string;
+  data: Record<string, unknown> | null;
+}
+
+/** Farmer import response */
+export interface FarmerImportResponse {
+  created_count: number;
+  error_count: number;
+  error_rows: ImportErrorRow[];
+  total_rows: number;
+}
+
+// ============================================================================
+// Farmer Form Types and Helpers
+// ============================================================================
+
+/** Form data for farmer create (flat structure for react-hook-form)
+ * Story 9.5a: collection_point_id removed - CP assignment via delivery or separate API
+ */
+export interface FarmerFormData {
+  first_name: string;
+  last_name: string;
+  phone: string;
+  national_id: string;
+  // Story 9.5a: collection_point_id removed
+  farm_size_hectares: number;
+  latitude: number;
+  longitude: number;
+  grower_number: string;
+  notification_channel: NotificationChannel;
+  interaction_pref: InteractionPreference;
+  pref_lang: PreferredLanguage;
+}
+
+/** Default values for farmer form */
+export const FARMER_FORM_DEFAULTS: FarmerFormData = {
+  first_name: '',
+  last_name: '',
+  phone: '+254',
+  national_id: '',
+  // Story 9.5a: collection_point_id removed
+  farm_size_hectares: 0.5,
+  latitude: -1.0, // Default to Kenya
+  longitude: 37.0,
+  grower_number: '',
+  notification_channel: 'sms',
+  interaction_pref: 'text',
+  pref_lang: 'sw',
+};
+
+/** Convert form data to FarmerCreateRequest (Story 9.5a: collection_point_id removed) */
+export function farmerFormDataToCreateRequest(data: FarmerFormData): FarmerCreateRequest {
+  return {
+    first_name: data.first_name,
+    last_name: data.last_name,
+    phone: data.phone,
+    national_id: data.national_id,
+    // Story 9.5a: collection_point_id removed
+    farm_size_hectares: data.farm_size_hectares,
+    latitude: data.latitude,
+    longitude: data.longitude,
+    grower_number: data.grower_number || null,
+    notification_channel: data.notification_channel,
+    interaction_pref: data.interaction_pref,
+    pref_lang: data.pref_lang,
+  };
+}
+
+/** Convert FarmerDetail to form data for editing (Story 9.5a: collection_point_id removed) */
+export function farmerDetailToFormData(detail: FarmerDetail): FarmerFormData {
+  return {
+    first_name: detail.first_name,
+    last_name: detail.last_name,
+    phone: detail.phone,
+    national_id: detail.national_id,
+    // Story 9.5a: collection_point_id removed - use collection_points array on FarmerDetail
+    farm_size_hectares: detail.farm_size_hectares,
+    latitude: detail.farm_location.latitude,
+    longitude: detail.farm_location.longitude,
+    grower_number: detail.grower_number ?? '',
+    notification_channel: detail.communication_prefs.notification_channel,
+    interaction_pref: detail.communication_prefs.interaction_pref,
+    pref_lang: detail.communication_prefs.pref_lang,
+  };
+}
+
+/** Convert form data to FarmerUpdateRequest */
+export function farmerFormDataToUpdateRequest(data: Partial<FarmerFormData>): FarmerUpdateRequest {
+  const request: FarmerUpdateRequest = {};
+
+  if (data.first_name !== undefined) {
+    request.first_name = data.first_name;
+  }
+
+  if (data.last_name !== undefined) {
+    request.last_name = data.last_name;
+  }
+
+  if (data.phone !== undefined) {
+    request.phone = data.phone;
+  }
+
+  if (data.farm_size_hectares !== undefined) {
+    request.farm_size_hectares = data.farm_size_hectares;
+  }
+
+  if (data.notification_channel !== undefined) {
+    request.notification_channel = data.notification_channel;
+  }
+
+  if (data.interaction_pref !== undefined) {
+    request.interaction_pref = data.interaction_pref;
+  }
+
+  if (data.pref_lang !== undefined) {
+    request.pref_lang = data.pref_lang;
+  }
+
+  return request;
+}
+
+/** Farm scale display options */
+export const FARM_SCALE_OPTIONS = [
+  { value: 'smallholder', label: 'Smallholder (<0.5 ha)' },
+  { value: 'medium', label: 'Medium (0.5-2 ha)' },
+  { value: 'large', label: 'Large (2-5 ha)' },
+  { value: 'estate', label: 'Estate (>5 ha)' },
+] as const;
+
+/** Tier level display options */
+export const TIER_LEVEL_OPTIONS = [
+  { value: 'premium', label: 'Premium', color: 'success' as const },
+  { value: 'standard', label: 'Standard', color: 'warning' as const },
+  { value: 'acceptable', label: 'Acceptable', color: 'info' as const },
+  { value: 'below', label: 'Below', color: 'default' as const },
+] as const;
+
+/** Notification channel options */
+export const NOTIFICATION_CHANNEL_OPTIONS = [
+  { value: 'sms', label: 'SMS' },
+  { value: 'whatsapp', label: 'WhatsApp' },
+  { value: 'push', label: 'Push Notification' },
+  { value: 'voice', label: 'Voice Call' },
+] as const;
+
+/** Interaction preference options */
+export const INTERACTION_PREF_OPTIONS = [
+  { value: 'text', label: 'Text Messages' },
+  { value: 'voice', label: 'Voice Messages' },
+  { value: 'visual', label: 'Visual/Images' },
+] as const;
+
+/** Language options */
+export const LANGUAGE_OPTIONS = [
+  { value: 'sw', label: 'Swahili' },
+  { value: 'en', label: 'English' },
+  { value: 'ki', label: 'Kikuyu' },
+  { value: 'luo', label: 'Luo' },
+] as const;
+
+/** Get tier color for Chip display */
+export function getTierColor(tier: TierLevel): 'success' | 'warning' | 'info' | 'default' {
+  switch (tier) {
+    case 'premium':
+      return 'success';
+    case 'standard':
+      return 'warning';
+    case 'acceptable':
+      return 'info';
+    default:
+      return 'default';
+  }
+}
+
+/** Get trend icon name */
+export function getTrendIcon(trend: TrendIndicator): string {
+  switch (trend) {
+    case 'improving':
+      return 'TrendingUp';
+    case 'declining':
+      return 'TrendingDown';
+    default:
+      return 'TrendingFlat';
+  }
+}
+
+/** Get trend color */
+export function getTrendColor(trend: TrendIndicator): 'success' | 'error' | 'default' {
+  switch (trend) {
+    case 'improving':
+      return 'success';
+    case 'declining':
+      return 'error';
+    default:
+      return 'default';
+  }
+}

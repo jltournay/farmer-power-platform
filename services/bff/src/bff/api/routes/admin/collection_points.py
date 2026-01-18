@@ -213,7 +213,7 @@ async def assign_farmer_to_collection_point(
         503: {"description": "Service unavailable", "model": ApiError},
     },
     summary="Unassign farmer from collection point",
-    description="Unassign a farmer from a collection point. Idempotent - unassigning non-member has no effect. (Story 9.5a)",
+    description="Unassign a farmer from a collection point. Idempotent - non-member unassign is no-op.",
 )
 async def unassign_farmer_from_collection_point(
     cp_id: str = Path(

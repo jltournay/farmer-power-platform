@@ -15,13 +15,15 @@ from bff.api.schemas.admin.farmer_schemas import (
     FarmerImportResponse,
     ImportErrorRow,
 )
+from bff.api.schemas.farmer_schemas import TierLevel
 from bff.infrastructure.clients import NotFoundError
 from bff.infrastructure.clients.plantation_client import PlantationClient
 from bff.services.base_service import BaseService
 from bff.transformers.admin.farmer_transformer import AdminFarmerTransformer
-from fp_common.models import Farmer, QualityThresholds
-from fp_common.models.farmer import FarmerCreate, FarmerUpdate
+from fp_common.models import Farmer
+from fp_common.models.farmer import FarmerCreate, FarmerUpdate, FarmScale
 from fp_common.models.farmer_performance import FarmerPerformance
+from fp_common.models.value_objects import QualityThresholds
 
 
 class AdminFarmerService(BaseService):
@@ -51,6 +53,9 @@ class AdminFarmerService(BaseService):
         region_id: str | None = None,
         factory_id: str | None = None,
         collection_point_id: str | None = None,
+        farm_scale: FarmScale | None = None,
+        tier: TierLevel | None = None,
+        search: str | None = None,
         page_size: int = 50,
         page_token: str | None = None,
         active_only: bool = False,
@@ -61,6 +66,9 @@ class AdminFarmerService(BaseService):
             region_id: Optional region ID to filter by.
             factory_id: Optional factory ID to filter by.
             collection_point_id: Optional CP ID to filter by.
+            farm_scale: Optional farm scale to filter by.
+            tier: Optional quality tier to filter by.
+            search: Optional search term (name, phone, or farmer ID).
             page_size: Number of farmers per page.
             page_token: Pagination token for next page.
             active_only: If True, only return active farmers.
@@ -73,6 +81,9 @@ class AdminFarmerService(BaseService):
             region_id=region_id,
             factory_id=factory_id,
             collection_point_id=collection_point_id,
+            farm_scale=farm_scale.value if farm_scale else None,
+            tier=tier.value if tier else None,
+            search=search,
             page_size=page_size,
             has_page_token=page_token is not None,
             active_only=active_only,
@@ -157,10 +168,37 @@ class AdminFarmerService(BaseService):
             except Exception:
                 factory = None
 
+        # Pre-enrichment filtering: farm_scale and search (AC 9.5.1)
+        if farm_scale:
+            farmers = [f for f in farmers if f.farm_scale == farm_scale]
+
+        if search:
+            search_lower = search.lower()
+            farmers = [
+                f
+                for f in farmers
+                if search_lower in (f.id or "").lower()
+                or search_lower in (f.first_name or "").lower()
+                or search_lower in (f.last_name or "").lower()
+                or search_lower in (f.contact.phone or "").lower()
+            ]
+
+        if not farmers:
+            from bff.api.schemas.responses import PaginationMeta
+
+            return AdminFarmerListResponse(
+                data=[],
+                pagination=PaginationMeta(
+                    page=1,
+                    page_size=page_size,
+                    total_count=0,
+                    total_pages=0,
+                ),
+            )
+
         # Enrich with performance data using parallel fetch
         # Use factory thresholds if available, otherwise use defaults
         from bff.api.schemas.responses import PaginationMeta
-        from fp_common.models.value_objects import QualityThresholds
 
         thresholds = factory.quality_thresholds if factory else QualityThresholds()
         summaries = await self._enrich_farmers_to_summaries(
@@ -168,8 +206,12 @@ class AdminFarmerService(BaseService):
             thresholds=thresholds,
         )
 
+        # Post-enrichment filtering: tier (computed from performance data)
+        if tier:
+            summaries = [s for s in summaries if s.tier == tier]
+
         # Build pagination info
-        total_count = len(farmers)
+        total_count = len(summaries)
         total_pages = (total_count + page_size - 1) // page_size if page_size > 0 else 1
         pagination = PaginationMeta(
             page=1,  # CP filter returns all, so always page 1
@@ -227,8 +269,6 @@ class AdminFarmerService(BaseService):
             )
 
         # Use factory thresholds if available, otherwise use defaults
-        from fp_common.models.value_objects import QualityThresholds
-
         thresholds = factory.quality_thresholds if factory else QualityThresholds()
         detail = self._transformer.to_detail(
             farmer=farmer,
@@ -255,16 +295,15 @@ class AdminFarmerService(BaseService):
 
         Raises:
             ValidationError: If farmer data is invalid.
-            NotFoundError: If collection_point_id doesn't exist.
         """
+        # Story 9.5a: collection_point_id removed - CP assignment via delivery
         self._logger.info(
             "creating_farmer",
             first_name=data.first_name,
             last_name=data.last_name,
-            collection_point_id=data.collection_point_id,
         )
 
-        # Story 9.5a: Create farmer without CP, then assign separately
+        # Story 9.5a: Create farmer without CP - CP assignment happens on first delivery
         create_data = FarmerCreate(
             first_name=data.first_name,
             last_name=data.last_name,
@@ -278,17 +317,6 @@ class AdminFarmerService(BaseService):
 
         farmer = await self._plantation.create_farmer(create_data)
 
-        # Story 9.5a: Assign farmer to CP after creation
-        if data.collection_point_id:
-            await self._plantation.assign_farmer_to_collection_point(
-                collection_point_id=data.collection_point_id,
-                farmer_id=farmer.id,
-            )
-            cp = await self._plantation.get_collection_point(data.collection_point_id)
-            factory = await self._plantation.get_factory(cp.factory_id)
-        else:
-            factory = None
-
         # New farmer has no performance data
         performance = FarmerPerformance.initialize_for_farmer(
             farmer_id=farmer.id,
@@ -298,10 +326,8 @@ class AdminFarmerService(BaseService):
             grading_model_version="1.0.0",
         )
 
-        # Use factory thresholds if available, otherwise use defaults
-        from fp_common.models.value_objects import QualityThresholds
-
-        thresholds = factory.quality_thresholds if factory else QualityThresholds()
+        # Story 9.5a: Use default thresholds for new farmers (no factory association yet)
+        thresholds = QualityThresholds()
         detail = self._transformer.to_detail(
             farmer=farmer,
             performance=performance,
@@ -347,9 +373,9 @@ class AdminFarmerService(BaseService):
         farmer = await self._plantation.update_farmer(farmer_id, update_data)
 
         # Story 9.5a: Get factory via N:M relationship
-        cps = await self._plantation.get_collection_points_for_farmer(farmer_id)
-        if cps:
-            factory = await self._plantation.get_factory(cps[0].factory_id)
+        cps_response = await self._plantation.get_collection_points_for_farmer(farmer_id)
+        if cps_response.data:
+            factory = await self._plantation.get_factory(cps_response.data[0].factory_id)
         else:
             factory = None
 
@@ -366,8 +392,6 @@ class AdminFarmerService(BaseService):
             )
 
         # Use factory thresholds if available, otherwise use defaults
-        from fp_common.models.value_objects import QualityThresholds
-
         thresholds = factory.quality_thresholds if factory else QualityThresholds()
         detail = self._transformer.to_detail(
             farmer=farmer,
@@ -382,18 +406,18 @@ class AdminFarmerService(BaseService):
     async def import_farmers(
         self,
         csv_content: str,
-        default_collection_point_id: str | None = None,
         skip_header: bool = True,
     ) -> FarmerImportResponse:
         """Bulk import farmers from CSV content.
 
         Expected CSV columns:
-        - first_name, last_name, phone, national_id, collection_point_id
+        - first_name, last_name, phone, national_id
         - farm_size_hectares, latitude, longitude, grower_number (optional)
+
+        Story 9.5a: collection_point_id removed - CP assignment via delivery.
 
         Args:
             csv_content: CSV content as string.
-            default_collection_point_id: Default CP ID if not in CSV.
             skip_header: Whether to skip the first row.
 
         Returns:
@@ -401,7 +425,6 @@ class AdminFarmerService(BaseService):
         """
         self._logger.info(
             "importing_farmers",
-            default_cp_id=default_collection_point_id,
             skip_header=skip_header,
         )
 
@@ -414,10 +437,7 @@ class AdminFarmerService(BaseService):
         async def process_row(row_num: int, row: dict) -> bool:
             """Process a single row. Returns True if successful."""
             try:
-                cp_id = row.get("collection_point_id") or default_collection_point_id
-                if not cp_id:
-                    raise ValueError("collection_point_id is required")
-
+                # Story 9.5a: collection_point_id removed - CP assignment via delivery
                 create_data = FarmerCreate(
                     first_name=row["first_name"],
                     last_name=row["last_name"],
@@ -426,7 +446,6 @@ class AdminFarmerService(BaseService):
                     farm_size_hectares=float(row["farm_size_hectares"]),
                     latitude=float(row["latitude"]),
                     longitude=float(row["longitude"]),
-                    collection_point_id=cp_id,
                     grower_number=row.get("grower_number"),
                 )
 
@@ -492,10 +511,18 @@ class AdminFarmerService(BaseService):
                     grading_model_version="1.0.0",
                 )
 
+            # Story 9.5a: Get CP count for N:M model
+            try:
+                cps_response = await self._plantation.get_collection_points_for_farmer(farmer.id)
+                cp_count = len(cps_response.data)
+            except Exception:
+                cp_count = 0
+
             return self._transformer.to_summary(
                 farmer=farmer,
                 performance=performance,
                 thresholds=thresholds,
+                cp_count=cp_count,
             )
 
         return await self._parallel_map(farmers, enrich_single)
