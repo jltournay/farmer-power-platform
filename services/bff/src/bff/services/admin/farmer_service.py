@@ -255,16 +255,15 @@ class AdminFarmerService(BaseService):
 
         Raises:
             ValidationError: If farmer data is invalid.
-            NotFoundError: If collection_point_id doesn't exist.
         """
+        # Story 9.5a: collection_point_id removed - CP assignment via delivery
         self._logger.info(
             "creating_farmer",
             first_name=data.first_name,
             last_name=data.last_name,
-            collection_point_id=data.collection_point_id,
         )
 
-        # Story 9.5a: Create farmer without CP, then assign separately
+        # Story 9.5a: Create farmer without CP - CP assignment happens on first delivery
         create_data = FarmerCreate(
             first_name=data.first_name,
             last_name=data.last_name,
@@ -278,17 +277,6 @@ class AdminFarmerService(BaseService):
 
         farmer = await self._plantation.create_farmer(create_data)
 
-        # Story 9.5a: Assign farmer to CP after creation
-        if data.collection_point_id:
-            await self._plantation.assign_farmer_to_collection_point(
-                collection_point_id=data.collection_point_id,
-                farmer_id=farmer.id,
-            )
-            cp = await self._plantation.get_collection_point(data.collection_point_id)
-            factory = await self._plantation.get_factory(cp.factory_id)
-        else:
-            factory = None
-
         # New farmer has no performance data
         performance = FarmerPerformance.initialize_for_farmer(
             farmer_id=farmer.id,
@@ -298,10 +286,10 @@ class AdminFarmerService(BaseService):
             grading_model_version="1.0.0",
         )
 
-        # Use factory thresholds if available, otherwise use defaults
+        # Story 9.5a: Use default thresholds for new farmers (no factory association yet)
         from fp_common.models.value_objects import QualityThresholds
 
-        thresholds = factory.quality_thresholds if factory else QualityThresholds()
+        thresholds = QualityThresholds()
         detail = self._transformer.to_detail(
             farmer=farmer,
             performance=performance,
@@ -382,18 +370,18 @@ class AdminFarmerService(BaseService):
     async def import_farmers(
         self,
         csv_content: str,
-        default_collection_point_id: str | None = None,
         skip_header: bool = True,
     ) -> FarmerImportResponse:
         """Bulk import farmers from CSV content.
 
         Expected CSV columns:
-        - first_name, last_name, phone, national_id, collection_point_id
+        - first_name, last_name, phone, national_id
         - farm_size_hectares, latitude, longitude, grower_number (optional)
+
+        Story 9.5a: collection_point_id removed - CP assignment via delivery.
 
         Args:
             csv_content: CSV content as string.
-            default_collection_point_id: Default CP ID if not in CSV.
             skip_header: Whether to skip the first row.
 
         Returns:
@@ -401,7 +389,6 @@ class AdminFarmerService(BaseService):
         """
         self._logger.info(
             "importing_farmers",
-            default_cp_id=default_collection_point_id,
             skip_header=skip_header,
         )
 
@@ -414,10 +401,7 @@ class AdminFarmerService(BaseService):
         async def process_row(row_num: int, row: dict) -> bool:
             """Process a single row. Returns True if successful."""
             try:
-                cp_id = row.get("collection_point_id") or default_collection_point_id
-                if not cp_id:
-                    raise ValueError("collection_point_id is required")
-
+                # Story 9.5a: collection_point_id removed - CP assignment via delivery
                 create_data = FarmerCreate(
                     first_name=row["first_name"],
                     last_name=row["last_name"],
@@ -426,7 +410,6 @@ class AdminFarmerService(BaseService):
                     farm_size_hectares=float(row["farm_size_hectares"]),
                     latitude=float(row["latitude"]),
                     longitude=float(row["longitude"]),
-                    collection_point_id=cp_id,
                     grower_number=row.get("grower_number"),
                 )
 

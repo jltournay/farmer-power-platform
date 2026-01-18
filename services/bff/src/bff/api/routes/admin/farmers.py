@@ -201,16 +201,14 @@ async def update_farmer(
     summary="Bulk import farmers from CSV",
     description="""
     Import farmers from CSV file. Expected columns:
-    - first_name, last_name, phone, national_id, collection_point_id
+    - first_name, last_name, phone, national_id
     - farm_size_hectares, latitude, longitude, grower_number (optional)
+
+    Story 9.5a: collection_point_id removed - CP is assigned via delivery or separate API.
     """,
 )
 async def import_farmers(
     file: UploadFile = File(..., description="CSV file with farmer data"),
-    default_collection_point_id: str | None = Form(
-        default=None,
-        description="Default collection point ID if not in CSV",
-    ),
     skip_header: bool = Form(default=True, description="Skip header row"),
     user: TokenClaims = require_platform_admin(),
     service: AdminFarmerService = Depends(get_farmer_service),
@@ -223,7 +221,6 @@ async def import_farmers(
 
         return await service.import_farmers(
             csv_content=csv_content,
-            default_collection_point_id=default_collection_point_id,
             skip_header=skip_header,
         )
     except UnicodeDecodeError as e:
