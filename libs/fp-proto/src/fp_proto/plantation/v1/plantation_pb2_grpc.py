@@ -181,6 +181,21 @@ class PlantationServiceStub(object):
                 request_serializer=plantation_dot_v1_dot_plantation__pb2.UpdateCommunicationPreferencesRequest.SerializeToString,
                 response_deserializer=plantation_dot_v1_dot_plantation__pb2.UpdateCommunicationPreferencesResponse.FromString,
                 _registered_method=True)
+        self.AssignFarmerToCollectionPoint = channel.unary_unary(
+                '/farmer_power.plantation.v1.PlantationService/AssignFarmerToCollectionPoint',
+                request_serializer=plantation_dot_v1_dot_plantation__pb2.AssignFarmerRequest.SerializeToString,
+                response_deserializer=plantation_dot_v1_dot_plantation__pb2.CollectionPoint.FromString,
+                _registered_method=True)
+        self.UnassignFarmerFromCollectionPoint = channel.unary_unary(
+                '/farmer_power.plantation.v1.PlantationService/UnassignFarmerFromCollectionPoint',
+                request_serializer=plantation_dot_v1_dot_plantation__pb2.UnassignFarmerRequest.SerializeToString,
+                response_deserializer=plantation_dot_v1_dot_plantation__pb2.CollectionPoint.FromString,
+                _registered_method=True)
+        self.GetCollectionPointsForFarmer = channel.unary_unary(
+                '/farmer_power.plantation.v1.PlantationService/GetCollectionPointsForFarmer',
+                request_serializer=plantation_dot_v1_dot_plantation__pb2.GetCollectionPointsForFarmerRequest.SerializeToString,
+                response_deserializer=plantation_dot_v1_dot_plantation__pb2.ListCollectionPointsResponse.FromString,
+                _registered_method=True)
 
 
 class PlantationServiceServicer(object):
@@ -370,6 +385,25 @@ class PlantationServiceServicer(object):
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
+    def AssignFarmerToCollectionPoint(self, request, context):
+        """Farmer-CollectionPoint assignment operations (Story 9.5a)
+        """
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def UnassignFarmerFromCollectionPoint(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def GetCollectionPointsForFarmer(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
 
 def add_PlantationServiceServicer_to_server(servicer, server):
     rpc_method_handlers = {
@@ -512,6 +546,21 @@ def add_PlantationServiceServicer_to_server(servicer, server):
                     servicer.UpdateCommunicationPreferences,
                     request_deserializer=plantation_dot_v1_dot_plantation__pb2.UpdateCommunicationPreferencesRequest.FromString,
                     response_serializer=plantation_dot_v1_dot_plantation__pb2.UpdateCommunicationPreferencesResponse.SerializeToString,
+            ),
+            'AssignFarmerToCollectionPoint': grpc.unary_unary_rpc_method_handler(
+                    servicer.AssignFarmerToCollectionPoint,
+                    request_deserializer=plantation_dot_v1_dot_plantation__pb2.AssignFarmerRequest.FromString,
+                    response_serializer=plantation_dot_v1_dot_plantation__pb2.CollectionPoint.SerializeToString,
+            ),
+            'UnassignFarmerFromCollectionPoint': grpc.unary_unary_rpc_method_handler(
+                    servicer.UnassignFarmerFromCollectionPoint,
+                    request_deserializer=plantation_dot_v1_dot_plantation__pb2.UnassignFarmerRequest.FromString,
+                    response_serializer=plantation_dot_v1_dot_plantation__pb2.CollectionPoint.SerializeToString,
+            ),
+            'GetCollectionPointsForFarmer': grpc.unary_unary_rpc_method_handler(
+                    servicer.GetCollectionPointsForFarmer,
+                    request_deserializer=plantation_dot_v1_dot_plantation__pb2.GetCollectionPointsForFarmerRequest.FromString,
+                    response_serializer=plantation_dot_v1_dot_plantation__pb2.ListCollectionPointsResponse.SerializeToString,
             ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
@@ -1277,6 +1326,87 @@ class PlantationService(object):
             '/farmer_power.plantation.v1.PlantationService/UpdateCommunicationPreferences',
             plantation_dot_v1_dot_plantation__pb2.UpdateCommunicationPreferencesRequest.SerializeToString,
             plantation_dot_v1_dot_plantation__pb2.UpdateCommunicationPreferencesResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def AssignFarmerToCollectionPoint(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/farmer_power.plantation.v1.PlantationService/AssignFarmerToCollectionPoint',
+            plantation_dot_v1_dot_plantation__pb2.AssignFarmerRequest.SerializeToString,
+            plantation_dot_v1_dot_plantation__pb2.CollectionPoint.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def UnassignFarmerFromCollectionPoint(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/farmer_power.plantation.v1.PlantationService/UnassignFarmerFromCollectionPoint',
+            plantation_dot_v1_dot_plantation__pb2.UnassignFarmerRequest.SerializeToString,
+            plantation_dot_v1_dot_plantation__pb2.CollectionPoint.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def GetCollectionPointsForFarmer(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/farmer_power.plantation.v1.PlantationService/GetCollectionPointsForFarmer',
+            plantation_dot_v1_dot_plantation__pb2.GetCollectionPointsForFarmerRequest.SerializeToString,
+            plantation_dot_v1_dot_plantation__pb2.ListCollectionPointsResponse.FromString,
             options,
             channel_credentials,
             insecure,

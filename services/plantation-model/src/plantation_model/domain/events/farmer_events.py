@@ -18,6 +18,8 @@ class FarmerRegisteredEvent(BaseModel):
 
     Topic: farmer-events
     Event Type: plantation.farmer.registered
+
+    Story 9.5a: collection_point_id and factory_id removed - farmers assigned via separate API
     """
 
     event_type: str = Field(
@@ -26,8 +28,7 @@ class FarmerRegisteredEvent(BaseModel):
     )
     farmer_id: str = Field(description="Unique farmer ID (WM-XXXX format)")
     phone: str = Field(description="Farmer's phone number")
-    collection_point_id: str = Field(description="Collection point where farmer registered")
-    factory_id: str = Field(description="Factory ID (derived from collection point's parent factory)")
+    # Story 9.5a: collection_point_id and factory_id removed
     region_id: str = Field(description="Assigned region based on GPS + altitude")
     farm_scale: str = Field(description="Farm scale classification (smallholder/medium/estate)")
     timestamp: datetime = Field(
@@ -41,8 +42,6 @@ class FarmerRegisteredEvent(BaseModel):
                 "event_type": "plantation.farmer.registered",
                 "farmer_id": "WM-0001",
                 "phone": "+254712345678",
-                "collection_point_id": "nyeri-highland-cp-001",
-                "factory_id": "KEN-FAC-001",
                 "region_id": "nyeri-highland",
                 "farm_scale": "medium",
                 "timestamp": "2025-12-23T10:30:00Z",

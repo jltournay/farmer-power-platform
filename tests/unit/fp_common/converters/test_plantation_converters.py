@@ -33,13 +33,15 @@ class TestFarmerFromProto:
     """Tests for farmer_from_proto converter."""
 
     def test_basic_fields_mapped(self):
-        """Basic fields are correctly mapped."""
+        """Basic fields are correctly mapped.
+
+        Story 9.5a: collection_point_id removed from Farmer
+        """
         proto = plantation_pb2.Farmer(
             id="WM-0001",
             first_name="Wanjiku",
             last_name="Kamau",
             region_id="nyeri-highland",
-            collection_point_id="cp-001",
             farm_size_hectares=1.5,
             farm_scale=plantation_pb2.FARM_SCALE_MEDIUM,
             national_id="12345678",
@@ -53,7 +55,6 @@ class TestFarmerFromProto:
         assert farmer.first_name == "Wanjiku"
         assert farmer.last_name == "Kamau"
         assert farmer.region_id == "nyeri-highland"
-        assert farmer.collection_point_id == "cp-001"
         assert farmer.farm_size_hectares == 1.5
         assert farmer.farm_scale == FarmScale.MEDIUM
         assert farmer.national_id == "12345678"
@@ -400,6 +401,33 @@ class TestCollectionPointFromProto:
         assert cp.clerk_id == "CLK-001"
         assert cp.clerk_phone == "+254712345679"
 
+    def test_farmer_ids_mapped(self):
+        """Farmer IDs are correctly extracted (Story 9.5a)."""
+        proto = plantation_pb2.CollectionPoint(
+            id="cp-001",
+            name="Test CP",
+            factory_id="fac-001",
+            region_id="test-highland",
+            farmer_ids=["WM-0001", "WM-0002", "WM-0003"],
+        )
+
+        cp = collection_point_from_proto(proto)
+
+        assert cp.farmer_ids == ["WM-0001", "WM-0002", "WM-0003"]
+
+    def test_farmer_ids_empty_default(self):
+        """Farmer IDs defaults to empty list when not set (Story 9.5a)."""
+        proto = plantation_pb2.CollectionPoint(
+            id="cp-001",
+            name="Test CP",
+            factory_id="fac-001",
+            region_id="test-highland",
+        )
+
+        cp = collection_point_from_proto(proto)
+
+        assert cp.farmer_ids == []
+
 
 class TestRegionFromProto:
     """Tests for region_from_proto converter."""
@@ -698,13 +726,15 @@ class TestFarmerSummaryFromProto:
     """Tests for farmer_summary_from_proto converter."""
 
     def test_basic_fields_mapped(self):
-        """Basic fields are correctly mapped."""
+        """Basic fields are correctly mapped.
+
+        Story 9.5a: collection_point_id removed from FarmerSummary
+        """
         proto = plantation_pb2.FarmerSummary(
             farmer_id="WM-0001",
             first_name="Wanjiku",
             last_name="Kamau",
             phone="+254712345678",
-            collection_point_id="cp-001",
             farm_size_hectares=1.5,
             farm_scale=plantation_pb2.FARM_SCALE_MEDIUM,
             grading_model_id="tbk_kenya_tea_v1",
@@ -718,7 +748,6 @@ class TestFarmerSummaryFromProto:
         assert summary["first_name"] == "Wanjiku"
         assert summary["last_name"] == "Kamau"
         assert summary["phone"] == "+254712345678"
-        assert summary["collection_point_id"] == "cp-001"
         assert summary["farm_size_hectares"] == 1.5
         assert summary["farm_scale"] == FarmScale.MEDIUM
         assert summary["grading_model_id"] == "tbk_kenya_tea_v1"
@@ -790,13 +819,15 @@ class TestRoundTrip:
     """Tests for round-trip conversion."""
 
     def test_farmer_round_trip(self):
-        """Proto -> Pydantic -> dict produces expected structure."""
+        """Proto -> Pydantic -> dict produces expected structure.
+
+        Story 9.5a: collection_point_id removed from Farmer
+        """
         proto = plantation_pb2.Farmer(
             id="WM-0001",
             first_name="Wanjiku",
             last_name="Kamau",
             region_id="nyeri-highland",
-            collection_point_id="cp-001",
             farm_size_hectares=1.5,
             farm_scale=plantation_pb2.FARM_SCALE_MEDIUM,
             national_id="12345678",

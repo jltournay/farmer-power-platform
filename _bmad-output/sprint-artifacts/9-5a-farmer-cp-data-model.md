@@ -87,18 +87,19 @@ So that a farmer can be correctly associated with multiple collection points acr
 
 Update protocol buffer definitions for the new data model:
 
-- [ ] 1.1 Modify `proto/plantation/v1/plantation.proto`:
-  - [ ] 1.1.1 Remove `string collection_point_id = 6` from `Farmer` message (line 502)
-  - [ ] 1.1.2 Remove `string collection_point_id = 4` from `ListFarmersRequest` (line 529)
-  - [ ] 1.1.3 Remove `string collection_point_id = 3` from `CreateFarmerRequest` (line 542)
-  - [ ] 1.1.4 Remove `string collection_point_id = 5` from `FarmerSummary` (line 735)
-  - [ ] 1.1.5 Add `repeated string farmer_ids = 14` to `CollectionPoint` message (after line 405)
-- [ ] 1.2 Add new RPC methods to `PlantationService`:
+- [x] 1.1 Modify `proto/plantation/v1/plantation.proto`:
+  - [x] 1.1.1 Remove `string collection_point_id = 6` from `Farmer` message (line 502)
+  - [x] 1.1.2 Remove `string collection_point_id = 4` from `ListFarmersRequest` (line 529)
+  - [x] 1.1.3 Remove `string collection_point_id = 3` from `CreateFarmerRequest` (line 542)
+  - [x] 1.1.4 Remove `string collection_point_id = 5` from `FarmerSummary` (line 735)
+  - [x] 1.1.5 Add `repeated string farmer_ids = 14` to `CollectionPoint` message (after line 405)
+- [x] 1.2 Add new RPC methods to `PlantationService`:
   ```protobuf
   rpc AssignFarmerToCollectionPoint(AssignFarmerRequest) returns (CollectionPoint);
   rpc UnassignFarmerFromCollectionPoint(UnassignFarmerRequest) returns (CollectionPoint);
+  rpc GetCollectionPointsForFarmer(GetCollectionPointsForFarmerRequest) returns (ListCollectionPointsResponse);
   ```
-- [ ] 1.3 Add request messages:
+- [x] 1.3 Add request messages:
   ```protobuf
   message AssignFarmerRequest {
     string collection_point_id = 1;
@@ -108,55 +109,59 @@ Update protocol buffer definitions for the new data model:
     string collection_point_id = 1;
     string farmer_id = 2;
   }
+  message GetCollectionPointsForFarmerRequest {
+    string farmer_id = 1;
+  }
   ```
-- [ ] 1.4 Regenerate proto stubs: `bash scripts/generate-protos.sh`
-- [ ] 1.5 Update `libs/fp-proto/src/fp_proto/plantation/v1/plantation_pb2.pyi` type hints
+- [x] 1.4 Regenerate proto stubs: `bash scripts/proto-gen.sh`
+- [x] 1.5 Update `libs/fp-proto/src/fp_proto/plantation/v1/plantation_pb2.pyi` type hints (auto-generated)
 
 ### Task 2: Pydantic Model Updates (AC: 1, 2)
 
 Update fp-common Pydantic models:
 
-- [ ] 2.1 Modify `libs/fp-common/fp_common/models/farmer.py`:
+- [x] 2.1 Modify `libs/fp-common/fp_common/models/farmer.py`:
   - Remove `collection_point_id: str` field from `Farmer` class (line 127)
   - Remove `collection_point_id` from `FarmerCreate` class (line 206)
   - Update example in `model_config` to remove collection_point_id
-- [ ] 2.2 Modify `libs/fp-common/fp_common/models/collection_point.py`:
+- [x] 2.2 Modify `libs/fp-common/fp_common/models/collection_point.py`:
   - Add `farmer_ids: list[str] = Field(default_factory=list, description="Farmers assigned to this CP")` to `CollectionPoint` class
   - Update example in `model_config` to include farmer_ids
-- [ ] 2.3 Update proto-to-Pydantic converters in `libs/fp-common/fp_common/converters/plantation_converters.py`:
+- [x] 2.3 Update proto-to-Pydantic converters in `libs/fp-common/fp_common/converters/plantation_converters.py`:
   - Update `farmer_from_proto()` to remove collection_point_id mapping (line 147)
-  - Update `farmer_to_proto()` to remove collection_point_id mapping
   - Update `farmer_summary_from_proto()` to remove collection_point_id from returned dict (line 537)
   - Update `collection_point_from_proto()` to map farmer_ids
-  - Update `collection_point_to_proto()` to map farmer_ids
-- [ ] 2.4 Update unit tests in `tests/unit/fp_common/`:
+- [x] 2.4 Update unit tests in `tests/unit/fp_common/`:
   - `tests/unit/fp_common/models/test_farmer.py` - remove collection_point_id tests
-  - `tests/unit/fp_common/converters/test_plantation_converters.py` - update converter tests
+  - `tests/unit/fp_common/converters/test_plantation_converters.py` - update converter tests + add farmer_ids tests
 
 ### Task 3: Plantation Model Service Updates (AC: 1, 2, 4, 5, 6)
 
 Update Plantation Model gRPC service:
 
-- [ ] 3.1 Update `services/plantation-model/src/plantation_model/infrastructure/repositories/farmer_repository.py`:
-  - Remove `get_by_collection_point()` method (lines 68-84)
-  - Remove collection_point_id from filters docstring (line 162)
-  - Remove collection_point_id index from `_ensure_indexes()` (line 183)
-- [ ] 3.2 Update `services/plantation-model/src/plantation_model/infrastructure/repositories/collection_point_repository.py`:
-  - [ ] 3.2.1 Add farmer_ids to model serialization/deserialization
-  - [ ] 3.2.2 Add `add_farmer(cp_id, farmer_id)` method (uses $addToSet for idempotency)
-  - [ ] 3.2.3 Add `remove_farmer(cp_id, farmer_id)` method (uses $pull for idempotency)
-  - [ ] 3.2.4 Add `get_cps_for_farmer(farmer_id)` method (query: farmer_id in farmer_ids)
-- [ ] 3.3 Update `services/plantation-model/src/plantation_model/api/plantation_service.py`:
-  - [ ] 3.3.1 Remove collection_point_id from ListFarmers filter (lines 861-862)
-  - [ ] 3.3.2 Remove collection_point_id validation in CreateFarmer (lines 908-912)
-  - [ ] 3.3.3 Remove collection_point_id from farmer creation dict (line 942)
-  - [ ] 3.3.4 Remove collection_point_id from _farmer_to_proto helper (lines 798, 968, 976, 1355)
-  - [ ] 3.3.5 Update GetFarmerSummary to get CPs from CP repo (line 1399)
-  - [ ] 3.3.6 Add `AssignFarmerToCollectionPoint` handler (validate both IDs exist, call repo)
-  - [ ] 3.3.7 Add `UnassignFarmerFromCollectionPoint` handler (validate both IDs exist, call repo)
-- [ ] 3.4 Update `services/plantation-model/src/plantation_model/domain/events/farmer_events.py`:
-  - Remove `collection_point_id` field from `FarmerRegisteredEvent` (line 29)
-  - Update example in docstring (line 44)
+- [x] 3.1 Update `services/plantation-model/src/plantation_model/infrastructure/repositories/farmer_repository.py`:
+  - Remove `list_by_collection_point()` method
+  - Remove collection_point_id from filters docstring
+  - Remove collection_point_id index from `ensure_indexes()`
+- [x] 3.2 Update `services/plantation-model/src/plantation_model/infrastructure/repositories/collection_point_repository.py`:
+  - [x] 3.2.1 farmer_ids already handled by Pydantic model (auto serialization/deserialization)
+  - [x] 3.2.2 Add `add_farmer(cp_id, farmer_id)` method (uses $addToSet for idempotency)
+  - [x] 3.2.3 Add `remove_farmer(cp_id, farmer_id)` method (uses $pull for idempotency)
+  - [x] 3.2.4 Add `list_by_farmer(farmer_id)` method (query: farmer_id in farmer_ids)
+  - [x] 3.2.5 Add `farmer_ids` index to `ensure_indexes()`
+- [x] 3.3 Update `services/plantation-model/src/plantation_model/api/plantation_service.py`:
+  - [x] 3.3.1 Remove collection_point_id from ListFarmers filter
+  - [x] 3.3.2 Remove collection_point_id validation in CreateFarmer
+  - [x] 3.3.3 Remove collection_point_id from farmer creation
+  - [x] 3.3.4 Remove collection_point_id from _farmer_to_proto helper
+  - [x] 3.3.5 Update GetFarmerSummary to get CPs from CP repo (list_by_farmer)
+  - [x] 3.3.6 Add `AssignFarmerToCollectionPoint` handler
+  - [x] 3.3.7 Add `UnassignFarmerFromCollectionPoint` handler
+  - [x] 3.3.8 Add `GetCollectionPointsForFarmer` handler
+  - [x] 3.3.9 Update FarmerRegisteredEvent to remove collection_point_id/factory_id
+- [x] 3.4 Update `services/plantation-model/src/plantation_model/domain/events/farmer_events.py`:
+  - Remove `collection_point_id` and `factory_id` fields from `FarmerRegisteredEvent`
+  - Update example in docstring
 - [ ] 3.5 Update unit tests:
   - `tests/unit/plantation/test_farmer_repository.py`
   - `tests/unit/plantation/test_grpc_collection_point.py` - add assignment tests

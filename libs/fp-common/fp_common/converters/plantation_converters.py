@@ -138,13 +138,13 @@ def farmer_from_proto(proto: plantation_pb2.Farmer) -> Farmer:
     updated_at = _timestamp_to_datetime(proto.updated_at)
     registration_date = _timestamp_to_datetime(proto.registration_date)
 
+    # Story 9.5a: collection_point_id removed from Farmer
     return Farmer(
         id=proto.id,
         grower_number=proto.grower_number if proto.grower_number else None,
         first_name=proto.first_name,
         last_name=proto.last_name,
         region_id=proto.region_id,
-        collection_point_id=proto.collection_point_id,
         contact=ContactInfo(
             phone=proto.contact.phone if proto.contact else "",
             email=proto.contact.email if proto.contact else "",
@@ -268,6 +268,7 @@ def collection_point_from_proto(proto: plantation_pb2.CollectionPoint) -> Collec
     created_at = _timestamp_to_datetime(proto.created_at)
     updated_at = _timestamp_to_datetime(proto.updated_at)
 
+    # Story 9.5a: Add farmer_ids for N:M relationship
     return CollectionPoint(
         id=proto.id,
         name=proto.name,
@@ -284,6 +285,7 @@ def collection_point_from_proto(proto: plantation_pb2.CollectionPoint) -> Collec
         collection_days=list(proto.collection_days) if proto.collection_days else ["mon", "wed", "fri", "sat"],
         capacity=capacity,
         status=proto.status if proto.status else "active",
+        farmer_ids=list(proto.farmer_ids) if proto.farmer_ids else [],
         created_at=created_at if created_at else datetime.now(),
         updated_at=updated_at if updated_at else datetime.now(),
     )
@@ -529,12 +531,12 @@ def farmer_summary_from_proto(proto: plantation_pb2.FarmerSummary) -> dict[str, 
     created_at = _timestamp_to_datetime(proto.created_at)
     updated_at = _timestamp_to_datetime(proto.updated_at)
 
+    # Story 9.5a: collection_point_id removed from FarmerSummary
     return {
         "farmer_id": proto.farmer_id,
         "first_name": proto.first_name,
         "last_name": proto.last_name,
         "phone": proto.phone,
-        "collection_point_id": proto.collection_point_id,
         "farm_size_hectares": proto.farm_size_hectares,
         "farm_scale": farm_scale,
         "grading_model_id": proto.grading_model_id,
