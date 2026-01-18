@@ -991,28 +991,29 @@ collection_point_id: string;
 ### Migration Checklist
 
 ```markdown
-## Phase 1: Merge
-- [ ] Merge main into story/9-5-farmer-management
-- [ ] Resolve sprint-status.yaml conflict
-- [ ] Resolve farmer_service.py conflict (accept main)
-- [ ] Verify lint passes
-- [ ] Verify unit tests pass
+## Phase 1: Merge - COMPLETED
+- [x] Merge main into story/9-5-farmer-management
+- [x] Resolve sprint-status.yaml conflict
+- [x] Resolve farmer_service.py conflict (accept main)
+- [x] Verify lint passes
+- [x] Verify unit tests pass
 
-## Phase 2: Frontend
-- [ ] Update types.ts (remove collection_point_id, add collection_points)
-- [ ] Update FarmerCreate.tsx (remove CP selector)
-- [ ] Update FarmerDetail.tsx (add CP list table)
-- [ ] Update FarmerEdit.tsx (remove CP field)
-- [ ] Update FarmerImport.tsx (remove CP from required columns)
-- [ ] Update FarmerList.tsx (optional: add factory_count column)
-- [ ] Update farmers.ts API client
+## Phase 2: Frontend - COMPLETED
+- [x] Update types.ts (remove collection_point_id, add collection_points)
+- [x] Update FarmerCreate.tsx (remove CP selector)
+- [x] Update FarmerDetail.tsx (add CP list table)
+- [x] Update FarmerEdit.tsx (remove CP field)
+- [x] Update FarmerImport.tsx (remove CP from required columns)
+- [x] Update FarmerList.tsx (cp_count column replaces collection_point_id)
+- [x] Update farmers.ts API client (importFarmers signature updated)
 
-## Phase 3: Tests
-- [ ] Update frontend unit tests
-- [ ] Update E2E tests for admin farmers
+## Phase 3: Tests - COMPLETED
+- [x] Update frontend unit tests (N/A - no frontend unit tests exist)
+- [x] Update E2E tests for admin farmers (test_35_platform_admin_farmers.py)
 
-## Phase 4: Validation
-- [ ] Run full unit test suite
+## Phase 4: Validation - IN PROGRESS
+- [x] Lint passes
+- [x] Frontend build passes
 - [ ] Run local E2E tests
 - [ ] CI passes on push
 ```

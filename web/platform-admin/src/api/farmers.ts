@@ -80,21 +80,19 @@ export async function updateFarmer(
 /**
  * Import farmers from CSV file.
  *
+ * Story 9.5a: defaultCollectionPointId removed - CP assigned on first delivery
+ *
  * @param file - CSV file to import
- * @param defaultCollectionPointId - Optional default collection point
  * @param skipHeader - Whether to skip the first row (default: true)
  * @returns Import results with success/error counts
  */
 export async function importFarmers(
   file: File,
-  defaultCollectionPointId?: string,
   skipHeader: boolean = true
 ): Promise<FarmerImportResponse> {
   const formData = new FormData();
   formData.append('file', file);
-  if (defaultCollectionPointId) {
-    formData.append('collection_point_id', defaultCollectionPointId);
-  }
+  // Story 9.5a: collection_point_id removed - CP assigned on first delivery
   formData.append('skip_header', String(skipHeader));
 
   // Use native fetch for multipart/form-data
@@ -120,6 +118,7 @@ export async function importFarmers(
 
 /** Re-export types for convenience */
 export type {
+  CollectionPointSummaryForFarmer,
   CommunicationPreferences,
   FarmerCreateRequest,
   FarmerDetail,

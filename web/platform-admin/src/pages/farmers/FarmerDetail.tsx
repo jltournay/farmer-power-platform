@@ -4,9 +4,12 @@
  * Displays farmer profile, farm info, collection points, and performance summary.
  * Implements Story 9.5 - Farmer Management (AC 9.5.2).
  *
+ * Story 9.5a: Updated to show collection_points list (N:M model) instead of single CP.
+ *
  * Features:
  * - Personal info section
  * - Farm info section with GPS
+ * - Collection points table (read-only, assigned by delivery)
  * - Performance metrics (30d/90d)
  * - Communication preferences
  * - Deactivation action (AC 9.5.6)
@@ -32,10 +35,17 @@ import {
   DialogContentText,
   DialogActions,
   Snackbar,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
 } from '@mui/material';
 import EditIcon from '@mui/icons-material/Edit';
 import PersonIcon from '@mui/icons-material/Person';
 import AgricultureIcon from '@mui/icons-material/Agriculture';
+import LocalShippingIcon from '@mui/icons-material/LocalShipping';
 import TrendingUpIcon from '@mui/icons-material/TrendingUp';
 import TrendingDownIcon from '@mui/icons-material/TrendingDown';
 import TrendingFlatIcon from '@mui/icons-material/TrendingFlat';
@@ -348,7 +358,7 @@ export function FarmerDetail(): JSX.Element {
         <Grid size={{ xs: 12, md: 6 }}>
           <SectionCard title="Farm Information" icon={<AgricultureIcon color="primary" />}>
             <InfoRow label="Region" value={regionMap[farmer.region_id] ?? farmer.region_id} />
-            <InfoRow label="Collection Point" value={farmer.collection_point_id} />
+            {/* Story 9.5a: collection_point_id removed - see Collection Points section below */}
             <InfoRow label="Farm Size" value={`${farmer.farm_size_hectares.toFixed(2)} hectares`} />
             <InfoRow label="Farm Scale" value={getFarmScaleLabel(farmer.farm_scale)} />
             <Divider sx={{ my: 1 }} />
@@ -356,6 +366,39 @@ export function FarmerDetail(): JSX.Element {
               label="Location"
               value={`${farmer.farm_location.latitude.toFixed(4)}, ${farmer.farm_location.longitude.toFixed(4)}`}
             />
+          </SectionCard>
+        </Grid>
+
+        {/* Collection Points (Story 9.5a: N:M model) */}
+        <Grid size={12}>
+          <SectionCard title="Collection Points" icon={<LocalShippingIcon color="primary" />}>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+              Assigned by delivery history (read-only)
+            </Typography>
+            {farmer.collection_points.length > 0 ? (
+              <TableContainer>
+                <Table size="small">
+                  <TableHead>
+                    <TableRow>
+                      <TableCell>Collection Point</TableCell>
+                      <TableCell>Factory</TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {farmer.collection_points.map((cp) => (
+                      <TableRow key={cp.id}>
+                        <TableCell>{cp.name}</TableCell>
+                        <TableCell>{cp.factory_id}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </TableContainer>
+            ) : (
+              <Typography variant="body2" color="text.secondary" sx={{ fontStyle: 'italic' }}>
+                No delivery history - farmer has not delivered to any collection points yet
+              </Typography>
+            )}
           </SectionCard>
         </Grid>
 

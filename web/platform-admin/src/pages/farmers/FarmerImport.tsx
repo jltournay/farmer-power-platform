@@ -4,9 +4,11 @@
  * CSV bulk import with validation and error reporting.
  * Implements Story 9.5 - Farmer Management (AC 9.5.5).
  *
+ * Story 9.5a: collection_point_id removed from required columns.
+ * Farmers are assigned to CPs automatically on first delivery.
+ *
  * Features:
  * - CSV file upload with drag-and-drop
- * - Default collection point selection
  * - Validation preview
  * - Error reporting per row
  * - Success/failure summary
@@ -151,14 +153,14 @@ export function FarmerImport(): JSX.Element {
     });
   };
 
-  // Download sample CSV
+  // Download sample CSV (Story 9.5a: collection_point_id removed)
   const handleDownloadSample = () => {
     const headers = [
       'first_name',
       'last_name',
       'phone',
       'national_id',
-      'collection_point_id',
+      // Story 9.5a: collection_point_id removed - CP assigned on first delivery
       'farm_size_hectares',
       'latitude',
       'longitude',
@@ -169,7 +171,7 @@ export function FarmerImport(): JSX.Element {
       'Doe',
       '+254712345678',
       '12345678',
-      'ken-cp-001',
+      // Story 9.5a: collection_point_id removed
       '1.5',
       '-1.2345',
       '36.8765',
@@ -339,13 +341,7 @@ export function FarmerImport(): JSX.Element {
                     </TableCell>
                     <TableCell>12345678</TableCell>
                   </TableRow>
-                  <TableRow>
-                    <TableCell>collection_point_id</TableCell>
-                    <TableCell>
-                      <Chip label="Required" size="small" color="error" variant="outlined" />
-                    </TableCell>
-                    <TableCell>ken-cp-001</TableCell>
-                  </TableRow>
+                  {/* Story 9.5a: collection_point_id row removed - CP assigned on first delivery */}
                   <TableRow>
                     <TableCell>farm_size_hectares</TableCell>
                     <TableCell>
@@ -503,14 +499,15 @@ export function FarmerImport(): JSX.Element {
                 <Typography component="li" variant="body2" sx={{ mb: 1 }}>
                   Phone numbers must be in E.164 format (+254...)
                 </Typography>
-                <Typography component="li" variant="body2" sx={{ mb: 1 }}>
-                  Collection point IDs must reference existing collection points
-                </Typography>
+                {/* Story 9.5a: collection_point_id note removed */}
                 <Typography component="li" variant="body2" sx={{ mb: 1 }}>
                   GPS coordinates should be in decimal degrees format
                 </Typography>
-                <Typography component="li" variant="body2">
+                <Typography component="li" variant="body2" sx={{ mb: 1 }}>
                   Duplicate phone numbers or national IDs will be rejected
+                </Typography>
+                <Typography component="li" variant="body2">
+                  Collection points are assigned automatically on first delivery
                 </Typography>
               </Box>
             </Paper>

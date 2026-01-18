@@ -3,13 +3,18 @@
 Story 9.5: Tests for farmer management UI flows via BFF admin endpoints.
 These tests verify the API operations that the platform-admin frontend relies on.
 
+Story 9.5a: Updated to test N:M data model:
+    - Summary shows cp_count instead of collection_point_id
+    - Detail shows collection_points array instead of collection_point_id
+    - Create does NOT include collection_point_id (assigned via delivery)
+
 Prerequisites:
     docker-compose -f tests/e2e/infrastructure/docker-compose.e2e.yaml up -d
 
 Test Data Relationships (from seed):
-    - FRM-E2E-001: Test farmer in kericho-highland-cp-100
-    - FRM-E2E-002: Test farmer in kericho-highland-cp-101
-    - FRM-E2E-003: Test farmer in nandi-highland-cp-100
+    - FRM-E2E-001: Test farmer (may have multiple CPs from delivery history)
+    - FRM-E2E-002: Test farmer (may have multiple CPs from delivery history)
+    - FRM-E2E-003: Test farmer (may have multiple CPs from delivery history)
 """
 
 from typing import Any
@@ -57,11 +62,12 @@ class TestFarmerList:
         assert len(farmers) >= 1, "Expected at least 1 farmer in seed data"
 
         # Verify farmer summary structure matches what frontend expects
+        # Story 9.5a: collection_point_id replaced with cp_count
         for farmer in farmers:
             assert "id" in farmer
             assert "name" in farmer
             assert "phone" in farmer
-            assert "collection_point_id" in farmer
+            assert "cp_count" in farmer  # Story 9.5a: N:M model
             assert "is_active" in farmer
 
     @pytest.mark.asyncio
@@ -70,13 +76,20 @@ class TestFarmerList:
         bff_api: BFFClient,
         seed_data: dict[str, Any],
     ):
-        """Test filtering farmers by collection point (AC 9.5.1)."""
+        """Test filtering farmers by collection point (AC 9.5.1).
+
+        Story 9.5a: Filter still works (returns farmers who deliver to this CP),
+        but farmers may also deliver to other CPs (N:M model).
+        """
         cp_id = "kericho-highland-cp-100"
         result = await bff_api.admin_list_farmers(collection_point_id=cp_id)
 
-        # All returned farmers should belong to the specified collection point
+        # Story 9.5a: Returned farmers deliver to this CP (among possibly others)
+        # We can verify they exist and have cp_count >= 1
         for farmer in result["data"]:
-            assert farmer["collection_point_id"] == cp_id
+            assert "cp_count" in farmer
+            # If filtered by CP, farmer should have at least 1 CP
+            assert farmer["cp_count"] >= 1
 
     @pytest.mark.asyncio
     async def test_list_farmers_filter_by_active_status(
@@ -116,7 +129,10 @@ class TestFarmerDetail:
         bff_api: BFFClient,
         seed_data: dict[str, Any],
     ):
-        """Test farmer detail page loads with full data (AC 9.5.2)."""
+        """Test farmer detail page loads with full data (AC 9.5.2).
+
+        Story 9.5a: collection_point_id replaced with collection_points array.
+        """
         # Use known seed data farmer
         farmer_id = "FRM-E2E-001"
         result = await bff_api.admin_get_farmer(farmer_id)
@@ -127,7 +143,8 @@ class TestFarmerDetail:
         assert "last_name" in result
         assert "phone" in result
         assert "national_id" in result
-        assert "collection_point_id" in result
+        assert "collection_points" in result  # Story 9.5a: N:M model
+        assert isinstance(result["collection_points"], list)
         assert "is_active" in result
 
     @pytest.mark.asyncio
@@ -209,15 +226,19 @@ class TestFarmerCreate:
         bff_api: BFFClient,
         seed_data: dict[str, Any],
     ):
-        """Test creating a new farmer (AC 9.5.3)."""
+        """Test creating a new farmer (AC 9.5.3).
+
+        Story 9.5a: collection_point_id removed - CP is assigned via delivery.
+        """
         # Create farmer data
         # Note: pref_lang uses language codes: sw, en, ki, luo
+        # Story 9.5a: collection_point_id removed
         farmer_data = {
             "first_name": "E2E",
             "last_name": "TestFarmer",
             "phone": "+254799000001",
             "national_id": "E2E000001",
-            "collection_point_id": "kericho-highland-cp-100",
+            # Story 9.5a: collection_point_id removed - assigned on first delivery
             "farm_size_hectares": 1.5,
             "latitude": -0.3654,
             "longitude": 35.2863,
@@ -233,7 +254,9 @@ class TestFarmerCreate:
         assert result["first_name"] == "E2E"
         assert result["last_name"] == "TestFarmer"
         assert result["phone"] == "+254799000001"
-        assert result["collection_point_id"] == "kericho-highland-cp-100"
+        # Story 9.5a: collection_points is an empty list for new farmers
+        assert "collection_points" in result
+        assert result["collection_points"] == []
         assert result["is_active"] is True
 
         # Clean up - deactivate the farmer (can't delete)
@@ -245,13 +268,16 @@ class TestFarmerCreate:
         bff_api: BFFClient,
         seed_data: dict[str, Any],
     ):
-        """Test creating a farmer with optional grower number (AC 9.5.3)."""
+        """Test creating a farmer with optional grower number (AC 9.5.3).
+
+        Story 9.5a: collection_point_id removed - CP is assigned via delivery.
+        """
         farmer_data = {
             "first_name": "E2E",
             "last_name": "WithGrower",
             "phone": "+254799000002",
             "national_id": "E2E000002",
-            "collection_point_id": "kericho-highland-cp-100",
+            # Story 9.5a: collection_point_id removed
             "farm_size_hectares": 2.0,
             "latitude": -0.3655,
             "longitude": 35.2864,
@@ -402,14 +428,17 @@ class TestFarmerDeactivation:
         bff_api: BFFClient,
         seed_data: dict[str, Any],
     ):
-        """Test deactivating a farmer (AC 9.5.6)."""
+        """Test deactivating a farmer (AC 9.5.6).
+
+        Story 9.5a: collection_point_id removed - CP is assigned via delivery.
+        """
         # First create a farmer to deactivate
         farmer_data = {
             "first_name": "E2E",
             "last_name": "ToDeactivate",
             "phone": "+254799000003",
             "national_id": "E2E000003",
-            "collection_point_id": "kericho-highland-cp-100",
+            # Story 9.5a: collection_point_id removed
             "farm_size_hectares": 1.0,
             "latitude": -0.3656,
             "longitude": 35.2865,
@@ -437,14 +466,17 @@ class TestFarmerDeactivation:
         bff_api: BFFClient,
         seed_data: dict[str, Any],
     ):
-        """Test reactivating a deactivated farmer (AC 9.5.6)."""
+        """Test reactivating a deactivated farmer (AC 9.5.6).
+
+        Story 9.5a: collection_point_id removed - CP is assigned via delivery.
+        """
         # Create and deactivate a farmer
         farmer_data = {
             "first_name": "E2E",
             "last_name": "ToReactivate",
             "phone": "+254799000004",
             "national_id": "E2E000004",
-            "collection_point_id": "kericho-highland-cp-100",
+            # Story 9.5a: collection_point_id removed
             "farm_size_hectares": 1.0,
             "latitude": -0.3657,
             "longitude": 35.2866,

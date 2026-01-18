@@ -4,9 +4,12 @@
  * Form for editing an existing farmer with editable/read-only field separation.
  * Implements Story 9.5 - Farmer Management (AC 9.5.4).
  *
+ * Story 9.5a: collection_point_id replaced with collection_points array (N:M model).
+ *
  * Features:
  * - Editable fields: name, phone, farm size, communication preferences
- * - Read-only fields: national_id, collection_point_id, region_id, farm_location
+ * - Read-only fields: national_id, region_id, farm_location
+ * - Collection points shown as read-only (assigned via delivery)
  * - Deactivation toggle (AC 9.5.6)
  * - Validation and error handling (AC 9.5.7)
  */
@@ -419,11 +422,17 @@ export function FarmerEdit(): JSX.Element {
                 />
               </Grid>
               <Grid size={{ xs: 12, sm: 6 }}>
+                {/* Story 9.5a: collection_point_id → collection_points (N:M model) */}
                 <TextField
-                  label="Collection Point"
+                  label="Collection Points"
                   fullWidth
-                  value={farmer.collection_point_id}
+                  value={
+                    farmer.collection_points.length > 0
+                      ? farmer.collection_points.map((cp) => cp.name).join(', ')
+                      : 'None assigned (assigned on delivery)'
+                  }
                   disabled
+                  helperText="Assigned automatically on delivery"
                 />
               </Grid>
             </Grid>

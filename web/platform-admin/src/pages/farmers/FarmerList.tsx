@@ -4,6 +4,8 @@
  * Displays all farmers in the platform with CRUD operations.
  * Implements Story 9.5 - Farmer Management (AC 9.5.1).
  *
+ * Story 9.5a: Updated to show cp_count (N:M model) instead of collection_point_id.
+ *
  * Features:
  * - Top-level farmer table with search and filters
  * - Filter by region, collection point, farm scale, tier, status
@@ -115,11 +117,7 @@ export function FarmerList(): JSX.Element {
     return acc;
   }, {});
 
-  // Collection point lookup map for display
-  const cpMap = collectionPoints.reduce<Record<string, string>>((acc, cp) => {
-    acc[cp.id] = cp.name;
-    return acc;
-  }, {});
+  // Story 9.5a: cpMap removed - now showing cp_count instead of collection_point names
 
   // Fetch regions for filter dropdown
   const fetchRegions = useCallback(async () => {
@@ -221,11 +219,13 @@ export function FarmerList(): JSX.Element {
       valueGetter: (value: string) => regionMap[value] ?? value,
     },
     {
-      field: 'collection_point_id',
-      headerName: 'Collection Point',
-      flex: 1,
-      minWidth: 150,
-      valueGetter: (value: string) => cpMap[value] ?? value,
+      // Story 9.5a: collection_point_id → cp_count (N:M model)
+      field: 'cp_count',
+      headerName: 'CPs',
+      width: 80,
+      align: 'center',
+      headerAlign: 'center',
+      description: 'Number of collection points where farmer has delivered',
     },
     {
       field: 'farm_scale',
@@ -300,7 +300,7 @@ export function FarmerList(): JSX.Element {
     <Box>
       <PageHeader
         title="Farmers"
-        subtitle="Manage registered farmers and their collection point assignments"
+        subtitle="Manage registered farmers and view their delivery history"
         actions={[
           {
             id: 'import',

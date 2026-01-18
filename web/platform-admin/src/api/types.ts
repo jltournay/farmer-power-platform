@@ -956,12 +956,12 @@ export type InteractionPreference = 'text' | 'voice' | 'visual';
 /** Preferred language */
 export type PreferredLanguage = 'sw' | 'en' | 'ki' | 'luo';
 
-/** Farmer summary for admin list views */
+/** Farmer summary for admin list views (Story 9.5a: N:M model) */
 export interface FarmerSummary {
   id: string;
   name: string;
   phone: string;
-  collection_point_id: string;
+  cp_count: number; // Story 9.5a: replaced collection_point_id with cp_count
   region_id: string;
   farm_scale: FarmScale;
   tier: TierLevel;
@@ -988,7 +988,14 @@ export interface FarmerPerformanceMetrics {
   kg_today: number;
 }
 
-/** Full farmer detail for admin single-entity views */
+/** Collection point summary for farmer detail view (Story 9.5a: N:M model) */
+export interface CollectionPointSummaryForFarmer {
+  id: string;
+  name: string;
+  factory_id: string;
+}
+
+/** Full farmer detail for admin single-entity views (Story 9.5a: N:M model) */
 export interface FarmerDetail {
   id: string;
   grower_number: string | null;
@@ -997,7 +1004,7 @@ export interface FarmerDetail {
   phone: string;
   national_id: string;
   region_id: string;
-  collection_point_id: string;
+  collection_points: CollectionPointSummaryForFarmer[]; // Story 9.5a: N:M model
   farm_location: GeoLocation;
   farm_size_hectares: number;
   farm_scale: FarmScale;
@@ -1027,13 +1034,13 @@ export interface FarmerListParams {
   search?: string;
 }
 
-/** Farmer create request */
+/** Farmer create request (Story 9.5a: collection_point_id removed - use separate assignment API) */
 export interface FarmerCreateRequest {
   first_name: string;
   last_name: string;
   phone: string;
   national_id: string;
-  collection_point_id: string;
+  // Story 9.5a: collection_point_id removed - CP assignment via delivery or separate API
   farm_size_hectares: number;
   latitude: number;
   longitude: number;
@@ -1074,13 +1081,15 @@ export interface FarmerImportResponse {
 // Farmer Form Types and Helpers
 // ============================================================================
 
-/** Form data for farmer create (flat structure for react-hook-form) */
+/** Form data for farmer create (flat structure for react-hook-form)
+ * Story 9.5a: collection_point_id removed - CP assignment via delivery or separate API
+ */
 export interface FarmerFormData {
   first_name: string;
   last_name: string;
   phone: string;
   national_id: string;
-  collection_point_id: string;
+  // Story 9.5a: collection_point_id removed
   farm_size_hectares: number;
   latitude: number;
   longitude: number;
@@ -1096,7 +1105,7 @@ export const FARMER_FORM_DEFAULTS: FarmerFormData = {
   last_name: '',
   phone: '+254',
   national_id: '',
-  collection_point_id: '',
+  // Story 9.5a: collection_point_id removed
   farm_size_hectares: 0.5,
   latitude: -1.0, // Default to Kenya
   longitude: 37.0,
@@ -1106,14 +1115,14 @@ export const FARMER_FORM_DEFAULTS: FarmerFormData = {
   pref_lang: 'sw',
 };
 
-/** Convert form data to FarmerCreateRequest */
+/** Convert form data to FarmerCreateRequest (Story 9.5a: collection_point_id removed) */
 export function farmerFormDataToCreateRequest(data: FarmerFormData): FarmerCreateRequest {
   return {
     first_name: data.first_name,
     last_name: data.last_name,
     phone: data.phone,
     national_id: data.national_id,
-    collection_point_id: data.collection_point_id,
+    // Story 9.5a: collection_point_id removed
     farm_size_hectares: data.farm_size_hectares,
     latitude: data.latitude,
     longitude: data.longitude,
@@ -1124,14 +1133,14 @@ export function farmerFormDataToCreateRequest(data: FarmerFormData): FarmerCreat
   };
 }
 
-/** Convert FarmerDetail to form data for editing */
+/** Convert FarmerDetail to form data for editing (Story 9.5a: collection_point_id removed) */
 export function farmerDetailToFormData(detail: FarmerDetail): FarmerFormData {
   return {
     first_name: detail.first_name,
     last_name: detail.last_name,
     phone: detail.phone,
     national_id: detail.national_id,
-    collection_point_id: detail.collection_point_id,
+    // Story 9.5a: collection_point_id removed - use collection_points array on FarmerDetail
     farm_size_hectares: detail.farm_size_hectares,
     latitude: detail.farm_location.latitude,
     longitude: detail.farm_location.longitude,

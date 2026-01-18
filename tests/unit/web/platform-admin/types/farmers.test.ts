@@ -31,12 +31,12 @@ describe('Farmer Type Helpers', () => {
 
   describe('farmerFormDataToCreateRequest', () => {
     it('should convert form data to create request', () => {
+      // Story 9.5a: collection_point_id removed from form data (N:M model)
       const formData: FarmerFormData = {
         first_name: 'John',
         last_name: 'Doe',
         phone: '+254712345678',
         national_id: '12345678',
-        collection_point_id: 'nyeri-highland-cp-001',
         farm_size_hectares: 1.5,
         latitude: -0.42,
         longitude: 36.95,
@@ -52,7 +52,7 @@ describe('Farmer Type Helpers', () => {
       expect(result.last_name).toBe('Doe');
       expect(result.phone).toBe('+254712345678');
       expect(result.national_id).toBe('12345678');
-      expect(result.collection_point_id).toBe('nyeri-highland-cp-001');
+      // Story 9.5a: collection_point_id removed - assigned via delivery or separate API
       expect(result.farm_size_hectares).toBe(1.5);
       expect(result.latitude).toBe(-0.42);
       expect(result.longitude).toBe(36.95);
@@ -61,12 +61,12 @@ describe('Farmer Type Helpers', () => {
     });
 
     it('should set grower_number to null when empty string', () => {
+      // Story 9.5a: collection_point_id removed from form data (N:M model)
       const formData: FarmerFormData = {
         first_name: 'Jane',
         last_name: 'Smith',
         phone: '+254712345679',
         national_id: '87654321',
-        collection_point_id: 'nyeri-highland-cp-001',
         farm_size_hectares: 2.0,
         latitude: -0.43,
         longitude: 36.96,
@@ -84,6 +84,7 @@ describe('Farmer Type Helpers', () => {
 
   describe('farmerDetailToFormData', () => {
     it('should convert farmer detail to form data', () => {
+      // Story 9.5a: FarmerDetail uses collection_points array instead of collection_point_id
       const detail: FarmerDetail = {
         id: 'WM-0001',
         grower_number: 'GRW001',
@@ -92,7 +93,10 @@ describe('Farmer Type Helpers', () => {
         phone: '+254712345678',
         national_id: '12345678',
         region_id: 'nyeri-highland',
-        collection_point_id: 'nyeri-highland-cp-001',
+        collection_points: [
+          { id: 'nyeri-highland-cp-001', name: 'Nyeri Central CP', factory_id: 'NTF-001' },
+        ],
+        cp_count: 1,
         farm_location: { latitude: -0.42, longitude: 36.95 },
         farm_size_hectares: 1.5,
         farm_scale: 'smallholder',
@@ -123,7 +127,7 @@ describe('Farmer Type Helpers', () => {
       expect(result.last_name).toBe('Doe');
       expect(result.phone).toBe('+254712345678');
       expect(result.national_id).toBe('12345678');
-      expect(result.collection_point_id).toBe('nyeri-highland-cp-001');
+      // Story 9.5a: collection_point_id removed from form data - use collection_points on detail
       expect(result.farm_size_hectares).toBe(1.5);
       expect(result.latitude).toBe(-0.42);
       expect(result.longitude).toBe(36.95);
@@ -134,6 +138,7 @@ describe('Farmer Type Helpers', () => {
     });
 
     it('should handle null grower_number', () => {
+      // Story 9.5a: FarmerDetail uses collection_points array instead of collection_point_id
       const detail: FarmerDetail = {
         id: 'WM-0002',
         grower_number: null,
@@ -142,7 +147,8 @@ describe('Farmer Type Helpers', () => {
         phone: '+254712345679',
         national_id: '87654321',
         region_id: 'nyeri-highland',
-        collection_point_id: 'nyeri-highland-cp-001',
+        collection_points: [], // No delivery history yet
+        cp_count: 0,
         farm_location: { latitude: -0.43, longitude: 36.96 },
         farm_size_hectares: 2.0,
         farm_scale: 'medium',
