@@ -1,6 +1,6 @@
 # Story 9.5a: Farmer-CollectionPoint Data Model Refactor
 
-**Status:** review
+**Status:** done
 **GitHub Issue:** #200
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
@@ -330,13 +330,13 @@ Update integration tests:
 - [ ] Push to feature branch: `git push -u origin story/9-5a-farmer-cp-data-model`
 
 ### Story Done
-- [ ] Create Pull Request: `gh pr create --title "Story 9.5a: Farmer-CP Data Model Refactor" --base main`
-- [ ] CI passes on PR (including E2E tests)
+- [x] Create Pull Request: `gh pr create --title "Story 9.5a: Farmer-CP Data Model Refactor" --base main`
+- [x] CI passes on PR (including E2E tests) - CI: 21112520701, E2E: 21112645085
 - [x] Code review completed (`/code-review`) - 2026-01-18
 - [ ] PR approved and merged (squash)
 - [ ] Local branch cleaned up: `git branch -d story/9-5a-farmer-cp-data-model`
 
-**PR URL:** _______________ (fill in when created)
+**PR URL:** https://github.com/jltournay/farmer-power-platform/pull/201
 
 ---
 
