@@ -180,7 +180,7 @@ class AdminFarmerService(BaseService):
                 if search_lower in (f.id or "").lower()
                 or search_lower in (f.first_name or "").lower()
                 or search_lower in (f.last_name or "").lower()
-                or search_lower in (f.phone or "").lower()
+                or search_lower in (f.contact.phone or "").lower()
             ]
 
         if not farmers:
