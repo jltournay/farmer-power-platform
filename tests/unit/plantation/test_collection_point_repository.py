@@ -271,5 +271,5 @@ class TestCollectionPointRepository:
 
         await repository.ensure_indexes()
 
-        # Should create 5 indexes
-        assert mock_db["collection_points"].create_index.call_count == 5
+        # Should create 6 indexes (Story 9.5a: added farmer_ids index)
+        assert mock_db["collection_points"].create_index.call_count == 6

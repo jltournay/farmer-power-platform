@@ -1,9 +1,11 @@
 """Farmer transformer for domain model to API schema conversion.
 
 Handles tier computation and trend mapping per ADR-012 Decision 2.
+Story 9.5a: Updated to handle N:M farmer-CP relationship.
 """
 
 from bff.api.schemas.farmer_schemas import (
+    CollectionPointRef,
     FarmerDetailResponse,
     FarmerPerformanceAPI,
     FarmerProfile,
@@ -11,7 +13,7 @@ from bff.api.schemas.farmer_schemas import (
     TierLevel,
     TrendIndicator,
 )
-from fp_common.models import Farmer, QualityThresholds
+from fp_common.models import CollectionPoint, Farmer, QualityThresholds
 from fp_common.models.farmer_performance import FarmerPerformance, TrendDirection
 
 
@@ -111,15 +113,18 @@ class FarmerTransformer:
         farmer: Farmer,
         performance: FarmerPerformance,
         thresholds: QualityThresholds,
+        collection_points: list[CollectionPoint] | None = None,
     ) -> FarmerDetailResponse:
         """Transform farmer and performance to detail schema.
 
         Used for single farmer detail endpoint with full profile and performance.
+        Story 9.5a: Updated to accept collection_points list for N:M relationship.
 
         Args:
             farmer: Farmer domain model.
             performance: FarmerPerformance with historical and today metrics.
             thresholds: Factory quality thresholds for tier computation.
+            collection_points: List of collection points where farmer delivers (Story 9.5a).
 
         Returns:
             FarmerDetailResponse for API response.
@@ -128,13 +133,19 @@ class FarmerTransformer:
         tier = self.compute_tier(primary_pct, thresholds)
         trend = self.map_trend(performance.historical.improvement_trend)
 
+        # Story 9.5a: Convert CPs to CollectionPointRef list
+        cp_refs = [
+            CollectionPointRef(id=cp.id, name=cp.name)
+            for cp in (collection_points or [])
+        ]
+
         profile = FarmerProfile(
             id=farmer.id,
             first_name=farmer.first_name,
             last_name=farmer.last_name,
             phone=farmer.contact.phone,
             region_id=farmer.region_id,
-            collection_point_id=farmer.collection_point_id,
+            collection_points=cp_refs,  # Story 9.5a: N:M relationship
             farm_size_hectares=farmer.farm_size_hectares,
             registration_date=farmer.registration_date,
             is_active=farmer.is_active,

@@ -25,13 +25,14 @@ from pydantic import BaseModel, Field, field_validator
 class AdminFarmerSummary(BaseModel):
     """Farmer summary for admin list views.
 
-    Includes admin-relevant fields like phone and collection point.
+    Includes admin-relevant fields like phone and CP count.
+    Story 9.5a: collection_point_id replaced with cp_count for N:M relationship.
     """
 
     id: str = Field(description="Farmer ID (format: WM-XXXX)")
     name: str = Field(description="Full name (first + last)")
     phone: str = Field(description="Phone number (E.164 format)")
-    collection_point_id: str = Field(description="Primary collection point")
+    cp_count: int = Field(default=0, description="Number of collection points assigned")
     region_id: str = Field(description="Region ID")
     farm_scale: FarmScale = Field(description="Farm scale classification")
     tier: TierLevel = Field(description="Current quality tier")
@@ -60,10 +61,19 @@ class FarmerPerformanceMetrics(BaseModel):
     kg_today: float = Field(description="Kg delivered today")
 
 
+class CollectionPointSummaryForFarmer(BaseModel):
+    """Summary of a collection point for farmer detail view (Story 9.5a)."""
+
+    id: str = Field(description="Collection point ID")
+    name: str = Field(description="Collection point name")
+    factory_id: str = Field(description="Parent factory ID")
+
+
 class AdminFarmerDetail(BaseModel):
     """Full farmer detail for admin single-entity views.
 
     Includes profile, performance metrics, and communication preferences.
+    Story 9.5a: collection_point_id replaced with collection_points list.
     """
 
     id: str = Field(description="Farmer ID")
@@ -73,7 +83,10 @@ class AdminFarmerDetail(BaseModel):
     phone: str = Field(description="Phone number")
     national_id: str = Field(description="Government-issued national ID")
     region_id: str = Field(description="Region ID")
-    collection_point_id: str = Field(description="Primary collection point")
+    collection_points: list[CollectionPointSummaryForFarmer] = Field(
+        default_factory=list,
+        description="Collection points where farmer is assigned (Story 9.5a)",
+    )
     farm_location: GeoLocation = Field(description="Farm GPS location")
     farm_size_hectares: float = Field(description="Farm size in hectares")
     farm_scale: FarmScale = Field(description="Farm scale classification")
@@ -89,13 +102,14 @@ class AdminFarmerCreateRequest(BaseModel):
     """Request payload for creating a new farmer.
 
     Farmer ID is auto-generated. Region and farm_scale are auto-calculated.
+    Story 9.5a: collection_point_id removed - use separate assignment API.
     """
 
     first_name: str = Field(min_length=1, max_length=100, description="First name")
     last_name: str = Field(min_length=1, max_length=100, description="Last name")
     phone: str = Field(min_length=10, max_length=15, description="Phone number (E.164)")
     national_id: str = Field(min_length=1, max_length=20, description="National ID")
-    collection_point_id: str = Field(description="Primary collection point (must exist)")
+    # Story 9.5a: collection_point_id removed - use separate assignment API
     farm_size_hectares: float = Field(ge=0.01, le=1000.0, description="Farm size in hectares")
     latitude: float = Field(ge=-90, le=90, description="Farm latitude")
     longitude: float = Field(ge=-180, le=180, description="Farm longitude")

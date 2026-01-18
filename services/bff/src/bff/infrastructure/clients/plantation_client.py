@@ -215,16 +215,16 @@ class PlantationClient(BaseGrpcClient):
     async def list_farmers(
         self,
         region_id: str | None = None,
-        collection_point_id: str | None = None,
         page_size: int = 50,
         page_token: str | None = None,
         active_only: bool = True,
     ) -> PaginatedResponse[Farmer]:
         """List farmers with optional filtering.
 
+        Story 9.5a: collection_point_id filter removed - use get_farmers_for_collection_point.
+
         Args:
             region_id: Optional filter by region.
-            collection_point_id: Optional filter by collection point.
             page_size: Number of results per page (default: 50).
             page_token: Token for pagination.
             active_only: Only return active farmers (default: True).
@@ -239,7 +239,6 @@ class PlantationClient(BaseGrpcClient):
             stub = await self._get_plantation_stub()
             request = plantation_pb2.ListFarmersRequest(
                 region_id=region_id or "",
-                collection_point_id=collection_point_id or "",
                 page_size=page_size,
                 page_token=page_token or "",
                 active_only=active_only,
@@ -603,6 +602,8 @@ class PlantationClient(BaseGrpcClient):
     async def create_farmer(self, farmer_data: FarmerCreate) -> Farmer:
         """Create a new farmer.
 
+        Story 9.5a: collection_point_id removed - use assign_farmer_to_collection_point.
+
         Args:
             farmer_data: FarmerCreate model with required farmer information.
 
@@ -618,7 +619,6 @@ class PlantationClient(BaseGrpcClient):
             request = plantation_pb2.CreateFarmerRequest(
                 first_name=farmer_data.first_name,
                 last_name=farmer_data.last_name,
-                collection_point_id=farmer_data.collection_point_id,
                 farm_location=plantation_pb2.GeoLocation(
                     latitude=farmer_data.latitude,
                     longitude=farmer_data.longitude,
@@ -967,6 +967,106 @@ class PlantationClient(BaseGrpcClient):
             raise
 
     # =========================================================================
+    # Farmer-Collection Point Assignment Operations (Story 9.5a)
+    # =========================================================================
+
+    @grpc_retry
+    async def assign_farmer_to_collection_point(
+        self, collection_point_id: str, farmer_id: str
+    ) -> CollectionPoint:
+        """Assign a farmer to a collection point.
+
+        Story 9.5a: New RPC for N:M farmer-CP relationship.
+
+        Args:
+            collection_point_id: The collection point ID.
+            farmer_id: The farmer ID to assign.
+
+        Returns:
+            Updated CollectionPoint domain model with farmer in farmer_ids.
+
+        Raises:
+            NotFoundError: If collection point or farmer not found.
+            ServiceUnavailableError: If service is unavailable.
+        """
+        try:
+            stub = await self._get_plantation_stub()
+            request = plantation_pb2.AssignFarmerRequest(
+                collection_point_id=collection_point_id,
+                farmer_id=farmer_id,
+            )
+            response = await stub.AssignFarmerToCollectionPoint(request, metadata=self._get_metadata())
+            return self._proto_to_collection_point(response)
+        except grpc.aio.AioRpcError as e:
+            self._handle_grpc_error(e, f"Assign farmer {farmer_id} to CP {collection_point_id}")
+            raise
+
+    @grpc_retry
+    async def unassign_farmer_from_collection_point(
+        self, collection_point_id: str, farmer_id: str
+    ) -> CollectionPoint:
+        """Unassign a farmer from a collection point.
+
+        Story 9.5a: New RPC for N:M farmer-CP relationship.
+
+        Args:
+            collection_point_id: The collection point ID.
+            farmer_id: The farmer ID to unassign.
+
+        Returns:
+            Updated CollectionPoint domain model without farmer in farmer_ids.
+
+        Raises:
+            NotFoundError: If collection point not found.
+            ServiceUnavailableError: If service is unavailable.
+        """
+        try:
+            stub = await self._get_plantation_stub()
+            request = plantation_pb2.UnassignFarmerRequest(
+                collection_point_id=collection_point_id,
+                farmer_id=farmer_id,
+            )
+            response = await stub.UnassignFarmerFromCollectionPoint(request, metadata=self._get_metadata())
+            return self._proto_to_collection_point(response)
+        except grpc.aio.AioRpcError as e:
+            self._handle_grpc_error(e, f"Unassign farmer {farmer_id} from CP {collection_point_id}")
+            raise
+
+    @grpc_retry
+    async def get_collection_points_for_farmer(
+        self, farmer_id: str
+    ) -> PaginatedResponse[CollectionPoint]:
+        """Get collection points where a farmer is assigned.
+
+        Story 9.5a: New RPC for N:M farmer-CP relationship.
+
+        Args:
+            farmer_id: The farmer ID.
+
+        Returns:
+            PaginatedResponse containing collection points list.
+
+        Raises:
+            NotFoundError: If farmer not found.
+            ServiceUnavailableError: If service is unavailable.
+        """
+        try:
+            stub = await self._get_plantation_stub()
+            request = plantation_pb2.GetCollectionPointsForFarmerRequest(farmer_id=farmer_id)
+            response = await stub.GetCollectionPointsForFarmer(request, metadata=self._get_metadata())
+            collection_points = [self._proto_to_collection_point(cp) for cp in response.collection_points]
+            next_token = response.next_page_token if response.next_page_token else None
+            return PaginatedResponse.from_client_response(
+                items=collection_points,
+                total_count=response.total_count,
+                page_size=len(collection_points) or 50,
+                next_page_token=next_token,
+            )
+        except grpc.aio.AioRpcError as e:
+            self._handle_grpc_error(e, f"Collection points for farmer {farmer_id}")
+            raise
+
+    # =========================================================================
     # Region Write Operations (2 methods)
     # =========================================================================
 
@@ -1296,7 +1396,10 @@ class PlantationClient(BaseGrpcClient):
     # =========================================================================
 
     def _proto_to_farmer(self, proto: plantation_pb2.Farmer) -> Farmer:
-        """Convert Farmer proto to domain model."""
+        """Convert Farmer proto to domain model.
+
+        Story 9.5a: collection_point_id removed - use CollectionPoint.farmer_ids.
+        """
         # Map proto enum to Python enum
         farm_scale_str = _proto_enum_to_str(proto.farm_scale, plantation_pb2.FarmScale)
         notification_channel_str = _proto_enum_to_str(proto.notification_channel, plantation_pb2.NotificationChannel)
@@ -1309,7 +1412,7 @@ class PlantationClient(BaseGrpcClient):
             first_name=proto.first_name,
             last_name=proto.last_name,
             region_id=proto.region_id,
-            collection_point_id=proto.collection_point_id,
+            # Story 9.5a: collection_point_id removed - use CollectionPoint.farmer_ids
             farm_location=GeoLocation(
                 latitude=proto.farm_location.latitude if proto.farm_location else 0,
                 longitude=proto.farm_location.longitude if proto.farm_location else 0,
@@ -1378,7 +1481,10 @@ class PlantationClient(BaseGrpcClient):
         )
 
     def _proto_to_collection_point(self, proto: plantation_pb2.CollectionPoint) -> CollectionPoint:
-        """Convert CollectionPoint proto to domain model."""
+        """Convert CollectionPoint proto to domain model.
+
+        Story 9.5a: Now includes farmer_ids for N:M relationship.
+        """
         return CollectionPoint(
             id=proto.id,
             name=proto.name,
@@ -1402,6 +1508,7 @@ class PlantationClient(BaseGrpcClient):
                 has_weighing_scale=proto.capacity.has_weighing_scale if proto.HasField("capacity") else True,
                 has_qc_device=proto.capacity.has_qc_device if proto.HasField("capacity") else False,
             ),
+            farmer_ids=list(proto.farmer_ids) if proto.farmer_ids else [],
             status=proto.status if proto.status else "active",
             created_at=_timestamp_to_datetime(proto.created_at) or datetime.now(),
             updated_at=_timestamp_to_datetime(proto.updated_at) or datetime.now(),

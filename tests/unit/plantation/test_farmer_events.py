@@ -1,4 +1,7 @@
-"""Unit tests for Farmer domain events."""
+"""Unit tests for Farmer domain events.
+
+Story 9.5a: collection_point_id and factory_id removed from FarmerRegisteredEvent.
+"""
 
 from datetime import UTC, datetime
 
@@ -6,23 +9,23 @@ from plantation_model.domain.events.farmer_events import FarmerRegisteredEvent
 
 
 class TestFarmerRegisteredEvent:
-    """Tests for FarmerRegisteredEvent model."""
+    """Tests for FarmerRegisteredEvent model.
+
+    Story 9.5a: collection_point_id and factory_id removed - farmers assigned via separate API.
+    """
 
     def test_event_creation_with_all_fields(self) -> None:
         """Test creating FarmerRegisteredEvent with all required fields."""
         event = FarmerRegisteredEvent(
             farmer_id="WM-0001",
             phone="+254712345678",
-            collection_point_id="nyeri-highland-cp-001",
-            factory_id="KEN-FAC-001",
             region_id="nyeri-highland",
             farm_scale="medium",
         )
 
         assert event.farmer_id == "WM-0001"
         assert event.phone == "+254712345678"
-        assert event.collection_point_id == "nyeri-highland-cp-001"
-        assert event.factory_id == "KEN-FAC-001"
+        # Story 9.5a: collection_point_id and factory_id removed
         assert event.region_id == "nyeri-highland"
         assert event.farm_scale == "medium"
 
@@ -31,8 +34,6 @@ class TestFarmerRegisteredEvent:
         event = FarmerRegisteredEvent(
             farmer_id="WM-0001",
             phone="+254712345678",
-            collection_point_id="nyeri-highland-cp-001",
-            factory_id="KEN-FAC-001",
             region_id="nyeri-highland",
             farm_scale="medium",
         )
@@ -46,8 +47,6 @@ class TestFarmerRegisteredEvent:
         event = FarmerRegisteredEvent(
             farmer_id="WM-0001",
             phone="+254712345678",
-            collection_point_id="nyeri-highland-cp-001",
-            factory_id="KEN-FAC-001",
             region_id="nyeri-highland",
             farm_scale="medium",
         )
@@ -62,8 +61,6 @@ class TestFarmerRegisteredEvent:
         event = FarmerRegisteredEvent(
             farmer_id="WM-0001",
             phone="+254712345678",
-            collection_point_id="nyeri-highland-cp-001",
-            factory_id="KEN-FAC-001",
             region_id="nyeri-highland",
             farm_scale="medium",
         )
@@ -81,8 +78,6 @@ class TestFarmerRegisteredEvent:
             event = FarmerRegisteredEvent(
                 farmer_id="WM-0001",
                 phone="+254712345678",
-                collection_point_id="test-cp",
-                factory_id="KEN-FAC-001",
                 region_id="test-region",
                 farm_scale=scale,
             )
