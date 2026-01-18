@@ -1,15 +1,10 @@
 # Story 9.5: Farmer Management
 
-**Status:** review
+**Status:** in_progress
 **GitHub Issue:** #199
-**Blocked By:** #200 (Data Model Bug: Farmer-CollectionPoint N:M relationship)
 
-> ⚠️ **Code Review Finding:** The current implementation does not fully match the specification due to a data model limitation. Issue #200 tracks the required changes to support:
-> - Factory filter (missing)
-> - "X factories" column in list view (shows single CP instead)
-> - List of CPs in detail view (shows single CP instead)
->
-> The implementation is functional but deviates from the wireframe until #200 is resolved.
+> **Migration Notice:** Story 9.5a (Farmer-CP Data Model Refactor) has been completed and merged to main.
+> This story is now being adapted to use the new N:M data model. See [Migration Plan](#migration-plan-adapting-to-nm-data-model) below.
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -811,6 +806,235 @@ npm run dev
 
 ---
 
+## Migration Plan: Adapting to N:M Data Model
+
+> **Context:** Story 9.5a (merged to main) changed the Farmer-CollectionPoint relationship from N:1 to N:M.
+> The original 9.5 implementation used the old model. This plan adapts the code to use the new model.
+
+### Phase 1: Merge Main into Branch
+
+#### Step 1.1: Merge and Resolve Conflicts
+
+```bash
+git checkout story/9-5-farmer-management
+git merge main
+```
+
+**Conflicts to resolve:**
+
+| File | Resolution Strategy |
+|------|---------------------|
+| `sprint-status.yaml` | Accept main's version (9.5a marked done) + keep 9.5 status |
+| `farmer_service.py` | Accept main's version (N:M logic) |
+
+#### Step 1.2: Verify Merge
+
+```bash
+ruff check . && ruff format --check .
+pytest tests/unit/ -x -q  # Quick sanity check
+```
+
+---
+
+### Phase 2: Frontend Adaptations
+
+#### Task 2.1: Update API Types (`web/platform-admin/src/api/types.ts`)
+
+**Remove from `FarmerCreateRequest`:**
+```typescript
+// DELETE this field
+collection_point_id: string;
+```
+
+**Remove from `FarmerDetail`:**
+```typescript
+// DELETE this field
+collection_point_id: string;
+```
+
+**Add to `FarmerDetail`:**
+```typescript
+// ADD: List of CPs farmer delivers to
+collection_points: CollectionPointSummaryForFarmer[];
+cp_count: number;
+```
+
+**Add new type:**
+```typescript
+interface CollectionPointSummaryForFarmer {
+  id: string;
+  name: string;
+  factory_id: string;
+  factory_name: string;
+}
+```
+
+**Remove from `FarmerImportRow`:**
+```typescript
+// DELETE this field
+collection_point_id: string;
+```
+
+---
+
+#### Task 2.2: Update FarmerCreate.tsx (~100 lines change)
+
+**Remove:**
+1. `collection_point_id` from Zod schema
+2. `collection_point_id` from form default values
+3. `collectionPoints` state and `fetchCollectionPoints` function
+4. Collection Point dropdown entirely (the cascading Region → Factory → CP selector)
+5. `collection_point_id` from form submission
+
+**Keep:**
+- Region → Factory cascade (for context only, not required for farmer creation)
+- All other form fields
+
+---
+
+#### Task 2.3: Update FarmerDetail.tsx (~80 lines change)
+
+**Remove:**
+```tsx
+<InfoRow label="Collection Point" value={farmer.collection_point_id} />
+```
+
+**Add:** Collection Points table section (as per wireframe):
+```tsx
+<SectionCard title="Collection Points" icon={<LocalShippingIcon />}>
+  <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+    Assigned by delivery history (read-only)
+  </Typography>
+  <Table size="small">
+    <TableHead>
+      <TableRow>
+        <TableCell>Collection Point</TableCell>
+        <TableCell>Factory</TableCell>
+      </TableRow>
+    </TableHead>
+    <TableBody>
+      {farmer.collection_points?.map((cp) => (
+        <TableRow key={cp.id}>
+          <TableCell>{cp.name}</TableCell>
+          <TableCell>{cp.factory_name}</TableCell>
+        </TableRow>
+      ))}
+    </TableBody>
+  </Table>
+</SectionCard>
+```
+
+---
+
+#### Task 2.4: Update FarmerEdit.tsx (~20 lines change)
+
+**Remove:**
+```tsx
+<TextField
+  label="Collection Point"
+  value={farmer.collection_point_id}
+  disabled
+/>
+```
+
+---
+
+#### Task 2.5: Update FarmerImport.tsx (~40 lines change)
+
+**Remove from required columns:**
+```typescript
+// Before
+'phone', 'national_id', 'collection_point_id', 'farm_size_hectares', ...
+
+// After
+'phone', 'national_id', 'farm_size_hectares', ...
+```
+
+**Update help text:** "Collection point will be assigned on first delivery"
+
+---
+
+#### Task 2.6: Update FarmerList.tsx (~30 lines change)
+
+**Keep:** `collection_point_id` filter - still valid (queries "farmers at this CP")
+
+**Optional enhancement:** Add "Factories" column showing count instead of single CP
+
+---
+
+#### Task 2.7: Update farmers.ts API Client
+
+**Update `createFarmer`:** Remove `collection_point_id` from request body
+
+**Update `importFarmers`:** Remove `collection_point_id` from import payload
+
+---
+
+### Phase 3: Test Updates
+
+#### Task 3.1: Update Unit Tests
+
+**Files:**
+- `tests/unit/web/platform-admin/api/farmers.test.ts`
+- `tests/unit/web/platform-admin/types/farmers.test.ts`
+
+**Changes:**
+- Remove `collection_point_id` from test fixtures
+- Update assertions for `collection_points` array
+
+---
+
+#### Task 3.2: Update E2E Tests
+
+**File:** `tests/e2e/scenarios/test_35_platform_admin_farmers.py`
+
+**Changes:**
+- Remove `collection_point_id` from farmer creation test data
+- Update farmer detail assertions to check `collection_points` list
+- Verify import works without `collection_point_id`
+
+---
+
+### Phase 4: Validation
+
+- [ ] Run full unit test suite
+- [ ] Run local E2E tests (`bash scripts/e2e-up.sh --build`)
+- [ ] Verify all scenarios pass
+- [ ] Push and trigger CI
+
+---
+
+### Migration Checklist
+
+```markdown
+## Phase 1: Merge
+- [ ] Merge main into story/9-5-farmer-management
+- [ ] Resolve sprint-status.yaml conflict
+- [ ] Resolve farmer_service.py conflict (accept main)
+- [ ] Verify lint passes
+- [ ] Verify unit tests pass
+
+## Phase 2: Frontend
+- [ ] Update types.ts (remove collection_point_id, add collection_points)
+- [ ] Update FarmerCreate.tsx (remove CP selector)
+- [ ] Update FarmerDetail.tsx (add CP list table)
+- [ ] Update FarmerEdit.tsx (remove CP field)
+- [ ] Update FarmerImport.tsx (remove CP from required columns)
+- [ ] Update FarmerList.tsx (optional: add factory_count column)
+- [ ] Update farmers.ts API client
+
+## Phase 3: Tests
+- [ ] Update frontend unit tests
+- [ ] Update E2E tests for admin farmers
+
+## Phase 4: Validation
+- [ ] Run full unit test suite
+- [ ] Run local E2E tests
+- [ ] CI passes on push
+```
+
+---
+
 ## Dev Notes
 
 ### Frontend Technology Stack
@@ -1186,19 +1410,15 @@ None
 
 ### Known Limitations (Code Review Notes)
 
-> ⚠️ **Data Model Issue:** See [#200](https://github.com/jltournay/farmer-power-platform/issues/200) for root cause.
+> ✅ **Data Model Issue RESOLVED:** Story 9.5a (#200) has been completed and merged to main.
+> The N:M Farmer-CollectionPoint relationship is now implemented.
 
-The following deviations from the specification are due to the data model having a single `collection_point_id` FK on Farmer instead of an N:M relationship:
+**Migration Required:** The frontend code needs to be updated to use the new data model:
+- Remove `collection_point_id` from farmer create/edit forms
+- Add `collection_points` list display in farmer detail
+- Update tests to use new API response format
 
-1. **Factory Filter Missing**: The wireframe shows a Factory filter, but this cannot be implemented until the Farmer-CollectionPoint relationship is fixed.
-
-2. **"X Factories" Column Missing**: The wireframe shows "2 factories", "1 factory" counts. Currently shows single collection_point_id instead.
-
-3. **Collection Points List Missing**: AC 9.5.2 specifies "Collection Points (read-only): List of CPs where farmer has delivered". Currently shows single CP.
-
-4. **Collection Points Filter Empty**: Cannot be populated without the N:M relationship.
-
-**Resolution:** Issue #200 must be completed before this story fully meets the specification.
+See [Migration Plan](#migration-plan-adapting-to-nm-data-model) above for detailed steps.
 
 ### File List
 
