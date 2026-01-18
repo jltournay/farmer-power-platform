@@ -2,6 +2,14 @@
 
 **Status:** review
 **GitHub Issue:** #199
+**Blocked By:** #200 (Data Model Bug: Farmer-CollectionPoint N:M relationship)
+
+> ⚠️ **Code Review Finding:** The current implementation does not fully match the specification due to a data model limitation. Issue #200 tracks the required changes to support:
+> - Factory filter (missing)
+> - "X factories" column in list view (shows single CP instead)
+> - List of CPs in detail view (shows single CP instead)
+>
+> The implementation is functional but deviates from the wireframe until #200 is resolved.
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -1178,9 +1186,19 @@ None
 
 ### Known Limitations (Code Review Notes)
 
-1. **Collection Points Filter**: The collection points filter dropdown in FarmerList is intentionally empty. The implementation relies on server-side filtering via the `collection_point_id` query param. This is a deliberate design choice - populating the dropdown would require an additional API call and the filter works via direct ID input or Region cascade.
+> ⚠️ **Data Model Issue:** See [#200](https://github.com/jltournay/farmer-power-platform/issues/200) for root cause.
 
-2. **CSV Import defaultCollectionPointId**: The `importFarmers` API supports an optional `defaultCollectionPointId` parameter, but the UI does not expose this. Per AC 9.5.5, collection point is assigned at first delivery, so pre-selecting a default CP was deemed unnecessary for the MVP. The API supports it for future enhancement if needed.
+The following deviations from the specification are due to the data model having a single `collection_point_id` FK on Farmer instead of an N:M relationship:
+
+1. **Factory Filter Missing**: The wireframe shows a Factory filter, but this cannot be implemented until the Farmer-CollectionPoint relationship is fixed.
+
+2. **"X Factories" Column Missing**: The wireframe shows "2 factories", "1 factory" counts. Currently shows single collection_point_id instead.
+
+3. **Collection Points List Missing**: AC 9.5.2 specifies "Collection Points (read-only): List of CPs where farmer has delivered". Currently shows single CP.
+
+4. **Collection Points Filter Empty**: Cannot be populated without the N:M relationship.
+
+**Resolution:** Issue #200 must be completed before this story fully meets the specification.
 
 ### File List
 
