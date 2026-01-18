@@ -335,9 +335,9 @@ class AdminFarmerService(BaseService):
         farmer = await self._plantation.update_farmer(farmer_id, update_data)
 
         # Story 9.5a: Get factory via N:M relationship
-        cps = await self._plantation.get_collection_points_for_farmer(farmer_id)
-        if cps:
-            factory = await self._plantation.get_factory(cps[0].factory_id)
+        cps_response = await self._plantation.get_collection_points_for_farmer(farmer_id)
+        if cps_response.data:
+            factory = await self._plantation.get_factory(cps_response.data[0].factory_id)
         else:
             factory = None
 
