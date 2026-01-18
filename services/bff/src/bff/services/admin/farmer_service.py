@@ -78,7 +78,7 @@ class AdminFarmerService(BaseService):
             active_only=active_only,
         )
 
-        # Determine which CP to use for listing
+        # Determine which CP to use for listing (if any filter is specified)
         cp_id = collection_point_id
         if not cp_id and factory_id:
             # Get first CP for this factory
@@ -90,15 +90,9 @@ class AdminFarmerService(BaseService):
             if cp_response.data:
                 cp_id = cp_response.data[0].id
 
-        if not cp_id:
-            # Return empty response if no CP found
-            return AdminFarmerListResponse.from_summaries(
-                summaries=[],
-                total_count=0,
-                page_size=page_size,
-            )
-
+        # List farmers - PlantationClient handles empty filters (returns all)
         response = await self._plantation.list_farmers(
+            region_id=region_id,
             collection_point_id=cp_id,
             page_size=page_size,
             page_token=page_token,
@@ -112,13 +106,20 @@ class AdminFarmerService(BaseService):
             )
 
         # Get factory for quality thresholds
-        cp = await self._plantation.get_collection_point(cp_id)
-        factory = await self._plantation.get_factory(cp.factory_id)
+        # If we have a specific CP, use its factory thresholds for all farmers
+        # Otherwise, use default thresholds (farmers may span multiple factories)
+        if cp_id:
+            cp = await self._plantation.get_collection_point(cp_id)
+            factory = await self._plantation.get_factory(cp.factory_id)
+            thresholds = factory.quality_thresholds
+        else:
+            # Default thresholds when listing all farmers (no filter)
+            thresholds = QualityThresholds()
 
         # Enrich with performance data using parallel fetch
         summaries = await self._enrich_farmers_to_summaries(
             farmers=response.data,
-            thresholds=factory.quality_thresholds,
+            thresholds=thresholds,
         )
 
         self._logger.info(
