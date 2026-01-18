@@ -428,9 +428,11 @@ git push origin story/9-5a-farmer-cp-data-model
 # Wait ~30s, then check CI status
 gh run list --branch story/9-5a-farmer-cp-data-model --limit 3
 ```
-**CI Run ID:** _______________
-**CI E2E Status:** [ ] Passed / [ ] Failed
-**Verification Date:** _______________
+**Quality CI Run ID:** 21111772859
+**Quality CI Status:** [x] Passed / [ ] Failed
+**E2E CI Run ID:** 21111952440
+**E2E CI Status:** [x] Passed / [ ] Failed
+**Verification Date:** 2026-01-18
 
 ---
 
