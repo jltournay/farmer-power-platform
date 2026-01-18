@@ -19,11 +19,13 @@ from bff.api.schemas.admin.farmer_schemas import (
     AdminFarmerUpdateRequest,
     FarmerImportResponse,
 )
+from bff.api.schemas.farmer_schemas import TierLevel
 from bff.infrastructure.clients import NotFoundError, ServiceUnavailableError
 from bff.infrastructure.clients.plantation_client import PlantationClient
 from bff.services.admin.farmer_service import AdminFarmerService
 from bff.transformers.admin.farmer_transformer import AdminFarmerTransformer
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Path, Query, UploadFile
+from fp_common.models.farmer import FarmScale
 
 router = APIRouter(prefix="/farmers", tags=["admin-farmers"])
 
@@ -47,12 +49,15 @@ def get_farmer_service() -> AdminFarmerService:
         503: {"description": "Service unavailable", "model": ApiError},
     },
     summary="List farmers",
-    description="List farmers with optional filters (region_id, factory_id, collection_point_id).",
+    description="List farmers with optional filters (region_id, factory_id, collection_point_id, farm_scale, tier, search).",
 )
 async def list_farmers(
     region_id: str | None = Query(default=None, description="Filter by region ID"),
     factory_id: str | None = Query(default=None, description="Filter by factory ID"),
     collection_point_id: str | None = Query(default=None, description="Filter by CP ID"),
+    farm_scale: FarmScale | None = Query(default=None, description="Filter by farm scale"),
+    tier: TierLevel | None = Query(default=None, description="Filter by quality tier"),
+    search: str | None = Query(default=None, description="Search by name, phone, or farmer ID"),
     page_size: int = Query(default=50, ge=1, le=100, description="Number per page"),
     page_token: str | None = Query(default=None, description="Pagination token"),
     active_only: bool = Query(default=False, description="Only return active farmers"),
@@ -65,6 +70,9 @@ async def list_farmers(
             region_id=region_id,
             factory_id=factory_id,
             collection_point_id=collection_point_id,
+            farm_scale=farm_scale,
+            tier=tier,
+            search=search,
             page_size=page_size,
             page_token=page_token,
             active_only=active_only,
@@ -137,11 +145,7 @@ async def create_farmer(
     """Create a new farmer."""
     try:
         return await service.create_farmer(data)
-    except NotFoundError as e:
-        raise HTTPException(
-            status_code=404,
-            detail=ApiError.not_found("Collection Point", data.collection_point_id).model_dump(),
-        ) from e
+    # Story 9.5a: NotFoundError handler removed - collection_point_id no longer in request
     except ServiceUnavailableError as e:
         raise HTTPException(
             status_code=503,

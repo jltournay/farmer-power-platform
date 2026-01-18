@@ -715,6 +715,9 @@ class BFFClient:
         factory_id: str | None = None,
         collection_point_id: str | None = None,
         is_active: bool | None = None,
+        farm_scale: str | None = None,
+        tier: str | None = None,
+        search: str | None = None,
     ) -> dict[str, Any]:
         """List farmers (admin endpoint).
 
@@ -724,6 +727,9 @@ class BFFClient:
             factory_id: Filter by factory
             collection_point_id: Filter by collection point
             is_active: Filter by active status
+            farm_scale: Filter by farm scale (smallholder, medium, estate)
+            tier: Filter by quality tier (tier_1, tier_2, tier_3, below_tier_3)
+            search: Search by name, phone, or farmer ID
 
         Returns:
             Paginated list of farmers
@@ -735,6 +741,12 @@ class BFFClient:
             params["collection_point_id"] = collection_point_id
         if is_active is not None:
             params["is_active"] = is_active
+        if farm_scale is not None:
+            params["farm_scale"] = farm_scale
+        if tier is not None:
+            params["tier"] = tier
+        if search is not None:
+            params["search"] = search
 
         response = await self.client.get(
             "/api/admin/farmers",

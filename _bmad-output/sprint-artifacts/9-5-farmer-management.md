@@ -24,10 +24,10 @@ So that I can quickly find and maintain any farmer record regardless of where th
   - Farmer ID and name
   - Phone number
   - Region (based on farm GPS)
-  - Collection point (primary CP)
+  - ~~Collection point (primary CP)~~ → **CP count** (Story 9.5a: N:M model - shows number of CPs farmer delivers to)
   - 30-day primary percentage with tier indicator
   - Status (Active/Inactive)
-**And** I can filter by region, factory, collection point, and status
+**And** I can filter by region, factory, collection point, farm scale, tier, and status
 **And** I can search by name, phone, or farmer ID
 **And** filters can be combined (e.g., Region=Nyeri AND Factory=NTF-001)
 
@@ -52,7 +52,7 @@ So that I can quickly find and maintain any farmer record regardless of where th
   - First name, Last name
   - Phone number (with duplicate check)
   - National ID (required)
-  - Collection point (required - dropdown)
+  - ~~Collection point (required - dropdown)~~ (Story 9.5a: Removed - CP assigned automatically on first delivery)
   - Farm location (GPS via GPSFieldWithMapAssist)
   - Farm size (hectares)
   - Grower number (optional legacy ID)
@@ -81,10 +81,10 @@ So that I can quickly find and maintain any farmer record regardless of where th
 **Given** I click "Import" on the farmer list
 **When** I upload a CSV file
 **Then** the system validates:
-  - Required columns (first_name, last_name, phone, national_id, collection_point_id, farm_lat, farm_lng, farm_size)
+  - Required columns (first_name, last_name, phone, national_id, ~~collection_point_id,~~ farm_lat, farm_lng, farm_size) (Story 9.5a: collection_point_id removed)
   - Phone number uniqueness
   - GPS coordinates validity
-  - Collection point existence
+  - ~~Collection point existence~~ (Story 9.5a: Removed - CP assigned on first delivery)
 **And** shows preview with validation status
 **And** imports valid records and reports errors for invalid ones
 
@@ -1429,3 +1429,6 @@ See [Migration Plan](#migration-plan-adapting-to-nm-data-model) above for detail
 - `web/platform-admin/src/pages/farmers/FarmerDetail.tsx` - Replaced placeholder with full implementation
 - `web/platform-admin/src/pages/farmers/index.ts` - Updated exports
 - `web/platform-admin/src/app/routes.tsx` - Added farmer routes
+- `services/bff/src/bff/api/routes/admin/farmers.py` - Story 9.5a: Removed dead NotFoundError handler (collection_point_id removed)
+- `services/bff/src/bff/services/admin/farmer_service.py` - Story 9.5a: N:M relationship handling, cleaned up duplicate imports
+- `services/bff/src/bff/api/routes/admin/collection_points.py` - Story 9.5a: Updated for N:M model

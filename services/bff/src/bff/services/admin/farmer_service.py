@@ -15,13 +15,15 @@ from bff.api.schemas.admin.farmer_schemas import (
     FarmerImportResponse,
     ImportErrorRow,
 )
+from bff.api.schemas.farmer_schemas import TierLevel
 from bff.infrastructure.clients import NotFoundError
 from bff.infrastructure.clients.plantation_client import PlantationClient
 from bff.services.base_service import BaseService
 from bff.transformers.admin.farmer_transformer import AdminFarmerTransformer
-from fp_common.models import Farmer, QualityThresholds
-from fp_common.models.farmer import FarmerCreate, FarmerUpdate
+from fp_common.models import Farmer
+from fp_common.models.farmer import FarmerCreate, FarmerUpdate, FarmScale
 from fp_common.models.farmer_performance import FarmerPerformance
+from fp_common.models.value_objects import QualityThresholds
 
 
 class AdminFarmerService(BaseService):
@@ -51,6 +53,9 @@ class AdminFarmerService(BaseService):
         region_id: str | None = None,
         factory_id: str | None = None,
         collection_point_id: str | None = None,
+        farm_scale: FarmScale | None = None,
+        tier: TierLevel | None = None,
+        search: str | None = None,
         page_size: int = 50,
         page_token: str | None = None,
         active_only: bool = False,
@@ -61,6 +66,9 @@ class AdminFarmerService(BaseService):
             region_id: Optional region ID to filter by.
             factory_id: Optional factory ID to filter by.
             collection_point_id: Optional CP ID to filter by.
+            farm_scale: Optional farm scale to filter by.
+            tier: Optional quality tier to filter by.
+            search: Optional search term (name, phone, or farmer ID).
             page_size: Number of farmers per page.
             page_token: Pagination token for next page.
             active_only: If True, only return active farmers.
@@ -73,6 +81,9 @@ class AdminFarmerService(BaseService):
             region_id=region_id,
             factory_id=factory_id,
             collection_point_id=collection_point_id,
+            farm_scale=farm_scale.value if farm_scale else None,
+            tier=tier.value if tier else None,
+            search=search,
             page_size=page_size,
             has_page_token=page_token is not None,
             active_only=active_only,
@@ -157,10 +168,37 @@ class AdminFarmerService(BaseService):
             except Exception:
                 factory = None
 
+        # Pre-enrichment filtering: farm_scale and search (AC 9.5.1)
+        if farm_scale:
+            farmers = [f for f in farmers if f.farm_scale == farm_scale]
+
+        if search:
+            search_lower = search.lower()
+            farmers = [
+                f
+                for f in farmers
+                if search_lower in f.id.lower()
+                or search_lower in f.first_name.lower()
+                or search_lower in f.last_name.lower()
+                or search_lower in (f.phone or "").lower()
+            ]
+
+        if not farmers:
+            from bff.api.schemas.responses import PaginationMeta
+
+            return AdminFarmerListResponse(
+                data=[],
+                pagination=PaginationMeta(
+                    page=1,
+                    page_size=page_size,
+                    total_count=0,
+                    total_pages=0,
+                ),
+            )
+
         # Enrich with performance data using parallel fetch
         # Use factory thresholds if available, otherwise use defaults
         from bff.api.schemas.responses import PaginationMeta
-        from fp_common.models.value_objects import QualityThresholds
 
         thresholds = factory.quality_thresholds if factory else QualityThresholds()
         summaries = await self._enrich_farmers_to_summaries(
@@ -168,8 +206,12 @@ class AdminFarmerService(BaseService):
             thresholds=thresholds,
         )
 
+        # Post-enrichment filtering: tier (computed from performance data)
+        if tier:
+            summaries = [s for s in summaries if s.tier == tier]
+
         # Build pagination info
-        total_count = len(farmers)
+        total_count = len(summaries)
         total_pages = (total_count + page_size - 1) // page_size if page_size > 0 else 1
         pagination = PaginationMeta(
             page=1,  # CP filter returns all, so always page 1
@@ -227,8 +269,6 @@ class AdminFarmerService(BaseService):
             )
 
         # Use factory thresholds if available, otherwise use defaults
-        from fp_common.models.value_objects import QualityThresholds
-
         thresholds = factory.quality_thresholds if factory else QualityThresholds()
         detail = self._transformer.to_detail(
             farmer=farmer,
@@ -287,8 +327,6 @@ class AdminFarmerService(BaseService):
         )
 
         # Story 9.5a: Use default thresholds for new farmers (no factory association yet)
-        from fp_common.models.value_objects import QualityThresholds
-
         thresholds = QualityThresholds()
         detail = self._transformer.to_detail(
             farmer=farmer,
@@ -354,8 +392,6 @@ class AdminFarmerService(BaseService):
             )
 
         # Use factory thresholds if available, otherwise use defaults
-        from fp_common.models.value_objects import QualityThresholds
-
         thresholds = factory.quality_thresholds if factory else QualityThresholds()
         detail = self._transformer.to_detail(
             farmer=farmer,

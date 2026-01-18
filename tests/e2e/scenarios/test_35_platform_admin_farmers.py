@@ -118,6 +118,103 @@ class TestFarmerList:
         assert pagination["page_size"] == 10
         assert len(result["data"]) <= 10
 
+    @pytest.mark.asyncio
+    async def test_list_farmers_filter_by_farm_scale(
+        self,
+        bff_api: BFFClient,
+        seed_data: dict[str, Any],
+    ):
+        """Test filtering farmers by farm scale (AC 9.5.1).
+
+        Verifies that farm_scale filter returns only farmers with matching scale.
+        """
+        # Filter by smallholder farm scale
+        result = await bff_api.admin_list_farmers(
+            collection_point_id="kericho-highland-cp-100",
+            farm_scale="smallholder",
+        )
+
+        # All returned farmers should have smallholder farm scale
+        for farmer in result["data"]:
+            assert farmer["farm_scale"] == "smallholder"
+
+    @pytest.mark.asyncio
+    async def test_list_farmers_filter_by_tier(
+        self,
+        bff_api: BFFClient,
+        seed_data: dict[str, Any],
+    ):
+        """Test filtering farmers by quality tier (AC 9.5.1).
+
+        Verifies that tier filter returns only farmers with matching tier.
+        Note: Tier is computed from performance data, so results depend on seed data.
+        """
+        # Filter by tier_1 (best quality)
+        result = await bff_api.admin_list_farmers(
+            collection_point_id="kericho-highland-cp-100",
+            tier="tier_1",
+        )
+
+        # All returned farmers should have tier_1
+        for farmer in result["data"]:
+            assert farmer["tier"] == "tier_1"
+
+    @pytest.mark.asyncio
+    async def test_list_farmers_search_by_name(
+        self,
+        bff_api: BFFClient,
+        seed_data: dict[str, Any],
+    ):
+        """Test searching farmers by name (AC 9.5.1).
+
+        Verifies that search filter finds farmers by partial name match.
+        """
+        # Search for a farmer by partial name (case-insensitive)
+        result = await bff_api.admin_list_farmers(
+            collection_point_id="kericho-highland-cp-100",
+            search="FRM-E2E",  # Search by ID pattern
+        )
+
+        # All returned farmers should match the search pattern
+        for farmer in result["data"]:
+            assert "FRM-E2E" in farmer["id"]
+
+    @pytest.mark.asyncio
+    async def test_list_farmers_search_returns_empty_for_no_match(
+        self,
+        bff_api: BFFClient,
+        seed_data: dict[str, Any],
+    ):
+        """Test search returns empty when no match found (AC 9.5.1)."""
+        result = await bff_api.admin_list_farmers(
+            collection_point_id="kericho-highland-cp-100",
+            search="NONEXISTENT_FARMER_XYZ123",
+        )
+
+        # Should return empty list
+        assert len(result["data"]) == 0
+
+    @pytest.mark.asyncio
+    async def test_list_farmers_combined_filters(
+        self,
+        bff_api: BFFClient,
+        seed_data: dict[str, Any],
+    ):
+        """Test combining multiple filters (AC 9.5.1).
+
+        Verifies that filters can be combined (e.g., farm_scale AND active_only).
+        """
+        result = await bff_api.admin_list_farmers(
+            collection_point_id="kericho-highland-cp-100",
+            is_active=True,
+            farm_scale="smallholder",
+        )
+
+        # All returned farmers should match both filters
+        for farmer in result["data"]:
+            assert farmer["is_active"] is True
+            assert farmer["farm_scale"] == "smallholder"
+
 
 @pytest.mark.e2e
 class TestFarmerDetail:
