@@ -1,6 +1,6 @@
 # Story 9.5: Farmer Management
 
-**Status:** in_progress
+**Status:** review
 **GitHub Issue:** #199
 
 > **Migration Notice:** Story 9.5a (Farmer-CP Data Model Refactor) has been completed and merged to main.
@@ -716,10 +716,16 @@ git push origin story/9-5-farmer-management
 # Wait ~30s, then check CI status
 gh run list --branch story/9-5-farmer-management --limit 3
 ```
-**CI Run IDs:** 21096462930, 21096818049, 21096830435 (all passed)
-**CI E2E Run ID:** 21096991690
-**CI E2E Status:** [x] Passed
-**Verification Date:** 2026-01-17
+**CI Run IDs:** 21115604429 (latest - all passed)
+**CI E2E Run ID:** 21115736620
+**CI E2E Status:** [x] Passed (209 tests passed, 1 skipped)
+**Verification Date:** 2026-01-18
+
+### N:M Migration Commits (Story 9.5a adaptation)
+- `17418af`: Complete N:M migration for farmer management
+- `c925465`: Remove collection_point_id from farmer create/import
+- `75a162c`: Fix cps_response.data usage in update_farmer
+- `90165a9`: Add cp_count to farmer summaries for N:M model
 
 ---
 
