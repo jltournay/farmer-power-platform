@@ -2,16 +2,21 @@
 
 Transforms Farmer domain models to admin API schemas.
 Handles tier computation and trend mapping per ADR-012.
+
+Story 9.5a: Updated for N:M farmer-CP relationship.
+- to_summary: now accepts cp_count instead of using farmer.collection_point_id
+- to_detail: now accepts collection_points list
 """
 
 from bff.api.schemas.admin.farmer_schemas import (
     AdminFarmerDetail,
     AdminFarmerSummary,
+    CollectionPointSummaryForFarmer,
     CommunicationPreferencesAPI,
     FarmerPerformanceMetrics,
 )
 from bff.api.schemas.farmer_schemas import TierLevel, TrendIndicator
-from fp_common.models import Farmer, QualityThresholds
+from fp_common.models import CollectionPoint, Farmer, QualityThresholds
 from fp_common.models.farmer_performance import FarmerPerformance, TrendDirection
 
 
@@ -62,13 +67,17 @@ class AdminFarmerTransformer:
         farmer: Farmer,
         performance: FarmerPerformance,
         thresholds: QualityThresholds,
+        cp_count: int = 0,
     ) -> AdminFarmerSummary:
         """Transform Farmer to admin summary schema.
+
+        Story 9.5a: cp_count parameter replaces farmer.collection_point_id.
 
         Args:
             farmer: Farmer domain model.
             performance: FarmerPerformance with historical metrics.
             thresholds: Factory quality thresholds for tier computation.
+            cp_count: Number of collection points the farmer is assigned to (Story 9.5a).
 
         Returns:
             AdminFarmerSummary for API response.
@@ -81,7 +90,7 @@ class AdminFarmerTransformer:
             id=farmer.id,
             name=f"{farmer.first_name} {farmer.last_name}",
             phone=farmer.contact.phone,
-            collection_point_id=farmer.collection_point_id,
+            cp_count=cp_count,  # Story 9.5a: N:M relationship
             region_id=farmer.region_id,
             farm_scale=farmer.farm_scale,
             tier=tier,
@@ -94,13 +103,17 @@ class AdminFarmerTransformer:
         farmer: Farmer,
         performance: FarmerPerformance,
         thresholds: QualityThresholds,
+        collection_points: list[CollectionPoint] | None = None,
     ) -> AdminFarmerDetail:
         """Transform Farmer to admin detail schema.
+
+        Story 9.5a: collection_points parameter replaces farmer.collection_point_id.
 
         Args:
             farmer: Farmer domain model.
             performance: FarmerPerformance with historical and today metrics.
             thresholds: Factory quality thresholds for tier computation.
+            collection_points: List of CPs the farmer is assigned to (Story 9.5a).
 
         Returns:
             AdminFarmerDetail for API response.
@@ -126,6 +139,16 @@ class AdminFarmerTransformer:
             pref_lang=farmer.pref_lang,
         )
 
+        # Story 9.5a: Transform CPs to API schema
+        cp_summaries = [
+            CollectionPointSummaryForFarmer(
+                id=cp.id,
+                name=cp.name,
+                factory_id=cp.factory_id,
+            )
+            for cp in (collection_points or [])
+        ]
+
         return AdminFarmerDetail(
             id=farmer.id,
             grower_number=farmer.grower_number,
@@ -134,7 +157,7 @@ class AdminFarmerTransformer:
             phone=farmer.contact.phone,
             national_id=farmer.national_id,
             region_id=farmer.region_id,
-            collection_point_id=farmer.collection_point_id,
+            collection_points=cp_summaries,  # Story 9.5a: N:M relationship
             farm_location=farmer.farm_location,
             farm_size_hectares=farmer.farm_size_hectares,
             farm_scale=farmer.farm_scale,

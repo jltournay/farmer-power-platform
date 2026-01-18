@@ -35,12 +35,16 @@ from fp_common.models.farmer_performance import (
 
 @pytest.fixture
 def mock_plantation_client() -> MagicMock:
-    """Create a mock PlantationClient."""
+    """Create a mock PlantationClient.
+
+    Story 9.5a: Added get_collection_points_for_farmer mock.
+    """
     client = MagicMock(spec=PlantationClient)
     client.get_factory = AsyncMock()
     client.get_farmer = AsyncMock()
     client.get_farmer_summary = AsyncMock()
     client.get_collection_point = AsyncMock()
+    client.get_collection_points_for_farmer = AsyncMock()  # Story 9.5a
     client.list_farmers = AsyncMock()
     client.list_collection_points = AsyncMock()
     return client
@@ -74,7 +78,10 @@ def sample_factory() -> Factory:
 
 @pytest.fixture
 def sample_collection_point() -> CollectionPoint:
-    """Create a sample CollectionPoint domain model."""
+    """Create a sample CollectionPoint domain model.
+
+    Story 9.5a: Added farmer_ids for N:M relationship.
+    """
     return CollectionPoint(
         id="nyeri-highland-cp-001",
         name="Kamakwa Collection Point",
@@ -91,19 +98,22 @@ def sample_collection_point() -> CollectionPoint:
             has_weighing_scale=True,
             has_qc_device=False,
         ),
+        farmer_ids=["WM-0001"],  # Story 9.5a: N:M relationship
         status="active",
     )
 
 
 @pytest.fixture
 def sample_farmer() -> Farmer:
-    """Create a sample Farmer domain model."""
+    """Create a sample Farmer domain model.
+
+    Story 9.5a: collection_point_id removed - N:M relationship via CP.farmer_ids.
+    """
     return Farmer(
         id="WM-0001",
         first_name="Wanjiku",
         last_name="Muthoni",
         region_id="nyeri-highland",
-        collection_point_id="nyeri-highland-cp-001",
         farm_location=GeoLocation(latitude=-0.4197, longitude=36.9553, altitude_meters=1950.0),
         contact=ContactInfo(phone="+254712345678", email="", address=""),
         farm_size_hectares=1.5,
@@ -146,21 +156,30 @@ class TestListFarmers:
         sample_farmer: Farmer,
         sample_performance: FarmerPerformance,
     ):
-        """Test successful farmer listing."""
+        """Test successful farmer listing.
+
+        Story 9.5a: Updated test for N:M farmer-CP relationship.
+        Service now collects farmer_ids from CPs and filters list_farmers results.
+        """
         # Setup mocks
         mock_plantation_client.get_factory.return_value = sample_factory
 
-        # Mock list_collection_points to return PaginatedResponse-like object
+        # Mock list_collection_points - CP has farmer_ids for N:M relationship
         cp_response = MagicMock()
-        cp_response.data = [sample_collection_point]
+        cp_response.data = [sample_collection_point]  # CP has farmer_ids=["WM-0001"]
         cp_response.pagination = PaginationMeta(page=1, page_size=100, total_count=1, has_next=False, has_prev=False)
         mock_plantation_client.list_collection_points.return_value = cp_response
 
-        # Mock list_farmers to return PaginatedResponse-like object
+        # Mock list_farmers - returns farmers by region, service filters by CP's farmer_ids
         farmers_response = MagicMock()
-        farmers_response.data = [sample_farmer]
+        farmers_response.data = [sample_farmer]  # sample_farmer.id == "WM-0001" is in CP's farmer_ids
         farmers_response.pagination = PaginationMeta(
-            page=1, page_size=50, total_count=1, has_next=False, has_prev=False
+            page=1,
+            page_size=50,
+            total_count=1,
+            has_next=False,
+            has_prev=False,
+            next_page_token=None,
         )
         mock_plantation_client.list_farmers.return_value = farmers_response
 
@@ -219,15 +238,18 @@ class TestListFarmers:
         sample_farmer: Farmer,
         sample_performance: FarmerPerformance,
     ):
-        """Test listing farmers with pagination token."""
+        """Test listing farmers with pagination token.
+
+        Story 9.5a: list_farmers now uses region_id instead of collection_point_id.
+        """
         mock_plantation_client.get_factory.return_value = sample_factory
 
         cp_response = MagicMock()
-        cp_response.data = [sample_collection_point]
+        cp_response.data = [sample_collection_point]  # CP has farmer_ids=["WM-0001"]
         mock_plantation_client.list_collection_points.return_value = cp_response
 
         farmers_response = MagicMock()
-        farmers_response.data = [sample_farmer]
+        farmers_response.data = [sample_farmer]  # Farmer id in CP's farmer_ids
         farmers_response.pagination = PaginationMeta(
             page=2,
             page_size=50,
@@ -246,9 +268,9 @@ class TestListFarmers:
             page_token="cursor-abc",
         )
 
-        # Verify pagination token was passed
+        # Story 9.5a: list_farmers called with region_id, not collection_point_id
         mock_plantation_client.list_farmers.assert_called_once_with(
-            collection_point_id="nyeri-highland-cp-001",
+            region_id="nyeri-highland",  # From CP's region_id
             page_size=50,
             page_token="cursor-abc",
             active_only=True,
@@ -269,12 +291,14 @@ class TestListFarmers:
         mock_plantation_client.get_factory.return_value = sample_factory
 
         cp_response = MagicMock()
-        cp_response.data = [sample_collection_point]
+        cp_response.data = [sample_collection_point]  # CP has farmer_ids=["WM-0001"]
         mock_plantation_client.list_collection_points.return_value = cp_response
 
         farmers_response = MagicMock()
-        farmers_response.data = [sample_farmer]
-        farmers_response.pagination = PaginationMeta(page=1, page_size=50, total_count=1)
+        farmers_response.data = [sample_farmer]  # Farmer id in CP's farmer_ids
+        farmers_response.pagination = PaginationMeta(
+            page=1, page_size=50, total_count=1, has_next=False, has_prev=False, next_page_token=None
+        )
         mock_plantation_client.list_farmers.return_value = farmers_response
 
         # Performance not found for this farmer
@@ -302,9 +326,17 @@ class TestGetFarmer:
         sample_factory: Factory,
         sample_performance: FarmerPerformance,
     ):
-        """Test successful farmer detail retrieval."""
+        """Test successful farmer detail retrieval.
+
+        Story 9.5a: Uses get_collection_points_for_farmer instead of get_collection_point.
+        """
         mock_plantation_client.get_farmer.return_value = sample_farmer
-        mock_plantation_client.get_collection_point.return_value = sample_collection_point
+
+        # Story 9.5a: Mock get_collection_points_for_farmer instead of get_collection_point
+        cps_response = MagicMock()
+        cps_response.data = [sample_collection_point]
+        mock_plantation_client.get_collection_points_for_farmer.return_value = cps_response
+
         mock_plantation_client.get_factory.return_value = sample_factory
         mock_plantation_client.get_farmer_summary.return_value = sample_performance
 
@@ -319,6 +351,9 @@ class TestGetFarmer:
         assert result.performance.deliveries_today == 2
         assert result.tier == TierLevel.TIER_2
         assert result.meta.request_id is not None
+        # Story 9.5a: Verify collection_points returned
+        assert len(result.profile.collection_points) == 1
+        assert result.profile.collection_points[0].id == "nyeri-highland-cp-001"
 
     @pytest.mark.asyncio
     async def test_get_farmer_not_found(
@@ -333,18 +368,34 @@ class TestGetFarmer:
             await farmer_service.get_farmer("WM-9999")
 
     @pytest.mark.asyncio
-    async def test_get_farmer_collection_point_not_found(
+    async def test_get_farmer_no_collection_points(
         self,
         farmer_service: FarmerService,
         mock_plantation_client: MagicMock,
         sample_farmer: Farmer,
+        sample_performance: FarmerPerformance,
     ):
-        """Test error when collection point not found."""
-        mock_plantation_client.get_farmer.return_value = sample_farmer
-        mock_plantation_client.get_collection_point.side_effect = NotFoundError("Collection point not found")
+        """Test farmer with no assigned collection points uses defaults.
 
-        with pytest.raises(NotFoundError, match="Collection point not found"):
-            await farmer_service.get_farmer("WM-0001")
+        Story 9.5a: Farmer without CPs should still work, using default thresholds.
+        """
+        mock_plantation_client.get_farmer.return_value = sample_farmer
+
+        # Return empty collection points list
+        cps_response = MagicMock()
+        cps_response.data = []
+        mock_plantation_client.get_collection_points_for_farmer.return_value = cps_response
+
+        mock_plantation_client.get_farmer_summary.return_value = sample_performance
+
+        result = await farmer_service.get_farmer("WM-0001")
+
+        # Should succeed with default thresholds
+        assert result.profile.id == "WM-0001"
+        assert result.profile.collection_points == []
+        # Default thresholds: tier_1=85, tier_2=70, tier_3=50
+        # Performance is 82.5% which is >= 70% (tier_2)
+        assert result.tier == TierLevel.TIER_2
 
     @pytest.mark.asyncio
     async def test_get_farmer_service_unavailable(
@@ -368,17 +419,19 @@ class TestParallelEnrichment:
         farmer_service: FarmerService,
         mock_plantation_client: MagicMock,
         sample_factory: Factory,
-        sample_collection_point: CollectionPoint,
     ):
-        """Test that multiple farmers are enriched in parallel."""
-        # Create multiple farmers
+        """Test that multiple farmers are enriched in parallel.
+
+        Story 9.5a: Farmers no longer have collection_point_id.
+        CP's farmer_ids list determines which farmers belong to a CP.
+        """
+        # Create multiple farmers (Story 9.5a: no collection_point_id)
         farmers = [
             Farmer(
                 id=f"WM-000{i}",
                 first_name=f"Farmer{i}",
                 last_name="Test",
                 region_id="nyeri-highland",
-                collection_point_id="nyeri-highland-cp-001",
                 farm_location=GeoLocation(latitude=-0.4197, longitude=36.9553, altitude_meters=1950.0),
                 contact=ContactInfo(phone=f"+25471234567{i}", email="", address=""),
                 farm_size_hectares=1.5,
@@ -404,10 +457,21 @@ class TestParallelEnrichment:
             for i in range(1, 4)
         ]
 
+        # Story 9.5a: Create CP with all 3 farmer_ids for this test
+        test_cp = CollectionPoint(
+            id="nyeri-highland-cp-001",
+            name="Test CP",
+            factory_id="KEN-FAC-001",
+            location=GeoLocation(latitude=-0.4150, longitude=36.9500, altitude_meters=1850.0),
+            region_id="nyeri-highland",
+            farmer_ids=["WM-0001", "WM-0002", "WM-0003"],  # All 3 test farmers
+            status="active",
+        )
+
         mock_plantation_client.get_factory.return_value = sample_factory
 
         cp_response = MagicMock()
-        cp_response.data = [sample_collection_point]
+        cp_response.data = [test_cp]
         mock_plantation_client.list_collection_points.return_value = cp_response
 
         farmers_response = MagicMock()

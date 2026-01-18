@@ -16,6 +16,8 @@ class CollectionPoint(BaseModel):
 
     Collection Point IDs follow the format: {region_id}-cp-XXX
     (e.g., nyeri-highland-cp-001) where XXX is a zero-padded sequence number.
+
+    Story 9.5a: farmer_ids added for N:M Farmer-CP relationship
     """
 
     id: str = Field(description="Unique CP ID (format: {region}-cp-XXX)")
@@ -37,6 +39,10 @@ class CollectionPoint(BaseModel):
     status: str = Field(
         default="active",
         description="Status: active, inactive, seasonal",
+    )
+    farmer_ids: list[str] = Field(
+        default_factory=list,
+        description="Farmers assigned to this CP (Story 9.5a)",
     )
     created_at: datetime = Field(
         default_factory=lambda: datetime.now(UTC),
@@ -73,6 +79,7 @@ class CollectionPoint(BaseModel):
                     "has_qc_device": False,
                 },
                 "status": "active",
+                "farmer_ids": ["WM-0001", "WM-0002"],
             }
         }
     }

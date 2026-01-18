@@ -333,7 +333,6 @@ class PlantationServiceClient:
         self,
         first_name: str,
         last_name: str,
-        collection_point_id: str,
         farm_location: dict[str, float],
         contact: dict[str, str],
         farm_size_hectares: float,
@@ -341,6 +340,9 @@ class PlantationServiceClient:
         grower_number: str = "",
     ) -> dict[str, Any]:
         """Create a farmer via gRPC.
+
+        Story 9.5a: collection_point_id removed from CreateFarmerRequest.
+        Use assign_farmer_to_cp() separately to assign farmer to a collection point.
 
         Note: region_id is auto-assigned based on GPS + altitude from elevation API.
         """
@@ -359,7 +361,6 @@ class PlantationServiceClient:
         request = plantation_pb2.CreateFarmerRequest(
             first_name=first_name,
             last_name=last_name,
-            collection_point_id=collection_point_id,
             farm_location=geo_location,
             contact=contact_info,
             farm_size_hectares=farm_size_hectares,
@@ -373,6 +374,64 @@ class PlantationServiceClient:
         except grpc.RpcError as e:
             raise PlantationServiceError(
                 operation="CreateFarmer",
+                code=e.code(),
+                details=e.details() or str(e),
+            ) from e
+
+    async def assign_farmer_to_cp(
+        self,
+        collection_point_id: str,
+        farmer_id: str,
+    ) -> dict[str, Any]:
+        """Assign a farmer to a collection point (Story 9.5a).
+
+        Args:
+            collection_point_id: Collection point ID to assign farmer to.
+            farmer_id: Farmer ID to assign.
+
+        Returns:
+            Updated CollectionPoint with farmer_ids.
+        """
+        request = plantation_pb2.AssignFarmerRequest(
+            collection_point_id=collection_point_id,
+            farmer_id=farmer_id,
+        )
+
+        try:
+            response = await self.stub.AssignFarmerToCollectionPoint(request)
+            return MessageToDict(response, preserving_proto_field_name=True)
+        except grpc.RpcError as e:
+            raise PlantationServiceError(
+                operation="AssignFarmerToCollectionPoint",
+                code=e.code(),
+                details=e.details() or str(e),
+            ) from e
+
+    async def unassign_farmer_from_cp(
+        self,
+        collection_point_id: str,
+        farmer_id: str,
+    ) -> dict[str, Any]:
+        """Unassign a farmer from a collection point (Story 9.5a).
+
+        Args:
+            collection_point_id: Collection point ID to unassign farmer from.
+            farmer_id: Farmer ID to unassign.
+
+        Returns:
+            Updated CollectionPoint with farmer_ids.
+        """
+        request = plantation_pb2.UnassignFarmerRequest(
+            collection_point_id=collection_point_id,
+            farmer_id=farmer_id,
+        )
+
+        try:
+            response = await self.stub.UnassignFarmerFromCollectionPoint(request)
+            return MessageToDict(response, preserving_proto_field_name=True)
+        except grpc.RpcError as e:
+            raise PlantationServiceError(
+                operation="UnassignFarmerFromCollectionPoint",
                 code=e.code(),
                 details=e.details() or str(e),
             ) from e

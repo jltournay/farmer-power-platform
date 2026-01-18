@@ -12,13 +12,15 @@ from plantation_model.infrastructure.repositories.farmer_repository import (
 
 @pytest.fixture
 def sample_farmer() -> Farmer:
-    """Create a sample farmer for testing."""
+    """Create a sample farmer for testing.
+
+    Story 9.5a: collection_point_id removed - N:M via CP.farmer_ids
+    """
     return Farmer(
         id="WM-0001",
         first_name="Wanjiku",
         last_name="Kamau",
         region_id="nyeri-highland",
-        collection_point_id="nyeri-highland-cp-001",
         farm_location=GeoLocation(
             latitude=-0.4197,
             longitude=36.9553,
@@ -33,14 +35,16 @@ def sample_farmer() -> Farmer:
 
 @pytest.fixture
 def sample_farmer_doc() -> dict:
-    """Create a sample farmer document as stored in MongoDB."""
+    """Create a sample farmer document as stored in MongoDB.
+
+    Story 9.5a: collection_point_id removed - N:M via CP.farmer_ids
+    """
     return {
         "_id": "WM-0001",
         "id": "WM-0001",
         "first_name": "Wanjiku",
         "last_name": "Kamau",
         "region_id": "nyeri-highland",
-        "collection_point_id": "nyeri-highland-cp-001",
         "farm_location": {
             "latitude": -0.4197,
             "longitude": 36.9553,
@@ -239,35 +243,10 @@ class TestFarmerRepositoryUpdate:
 
 
 class TestFarmerRepositoryList:
-    """Tests for FarmerRepository list methods."""
+    """Tests for FarmerRepository list methods.
 
-    @pytest.mark.asyncio
-    async def test_list_by_collection_point(
-        self,
-        farmer_repository: FarmerRepository,
-        mock_db: MagicMock,
-        sample_farmer_doc: dict,
-    ) -> None:
-        """Test listing farmers by collection point."""
-        collection = mock_db["farmers"]
-        collection.count_documents = AsyncMock(return_value=1)
-
-        cursor_mock = MagicMock()
-        cursor_mock.sort = MagicMock(return_value=cursor_mock)
-        cursor_mock.limit = MagicMock(return_value=cursor_mock)
-        cursor_mock.to_list = AsyncMock(return_value=[sample_farmer_doc.copy()])
-        collection.find = MagicMock(return_value=cursor_mock)
-
-        farmers, next_token, total = await farmer_repository.list_by_collection_point("nyeri-highland-cp-001")
-
-        assert len(farmers) == 1
-        assert farmers[0].collection_point_id == "nyeri-highland-cp-001"
-        assert total == 1
-        # Verify filter includes collection_point_id and is_active
-        collection.find.assert_called_once()
-        call_filters = collection.find.call_args[0][0]
-        assert call_filters["collection_point_id"] == "nyeri-highland-cp-001"
-        assert call_filters["is_active"] is True
+    Story 9.5a: list_by_collection_point removed - use CP.farmer_ids
+    """
 
     @pytest.mark.asyncio
     async def test_list_by_region(
@@ -370,7 +349,10 @@ class TestFarmerRepositoryDuplicateDetection:
 
 
 class TestFarmerRepositoryIndexes:
-    """Tests for index creation."""
+    """Tests for index creation.
+
+    Story 9.5a: collection_point_id index removed
+    """
 
     @pytest.mark.asyncio
     async def test_ensure_indexes_creates_required_indexes(
@@ -384,15 +366,15 @@ class TestFarmerRepositoryIndexes:
 
         await farmer_repository.ensure_indexes()
 
-        # Should create 7 indexes
-        assert collection.create_index.call_count == 7
+        # Should create 6 indexes (Story 9.5a: collection_point_id index removed)
+        assert collection.create_index.call_count == 6
 
         # Verify specific indexes were created
         index_names = [call.kwargs["name"] for call in collection.create_index.call_args_list]
         assert "idx_farmer_id" in index_names
         assert "idx_farmer_phone" in index_names
         assert "idx_farmer_national_id" in index_names
-        assert "idx_farmer_collection_point" in index_names
+        # Story 9.5a: idx_farmer_collection_point removed
         assert "idx_farmer_region" in index_names
         assert "idx_farmer_farm_scale" in index_names
         assert "idx_farmer_active" in index_names

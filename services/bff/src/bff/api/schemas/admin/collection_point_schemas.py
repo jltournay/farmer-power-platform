@@ -102,6 +102,19 @@ class CollectionPointUpdateRequest(BaseModel):
     status: str | None = Field(default=None)
 
 
+class FarmerAssignmentResponse(BaseModel):
+    """Response for farmer assignment/unassignment operations (Story 9.5a).
+
+    Returns the updated collection point with its farmer_ids list.
+    """
+
+    id: str = Field(description="Collection point ID")
+    name: str = Field(description="Collection point name")
+    factory_id: str = Field(description="Parent factory ID")
+    farmer_ids: list[str] = Field(description="List of assigned farmer IDs")
+    farmer_count: int = Field(description="Number of farmers assigned")
+
+
 class CollectionPointListResponse(BaseModel):
     """Paginated response for collection point list endpoint."""
 

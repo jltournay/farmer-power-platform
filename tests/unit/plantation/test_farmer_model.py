@@ -1,4 +1,7 @@
-"""Unit tests for Farmer domain model."""
+"""Unit tests for Farmer domain model.
+
+Story 9.5a: collection_point_id removed from Farmer and FarmerCreate models.
+"""
 
 import pytest
 from plantation_model.domain.models import (
@@ -49,7 +52,10 @@ class TestFarmScale:
 
 
 class TestFarmer:
-    """Tests for Farmer model validation."""
+    """Tests for Farmer model validation.
+
+    Story 9.5a: collection_point_id removed - N:M relationship via CP.farmer_ids.
+    """
 
     def test_farmer_creation_valid(self) -> None:
         """Test creating a valid farmer."""
@@ -58,7 +64,6 @@ class TestFarmer:
             first_name="Wanjiku",
             last_name="Kamau",
             region_id="nyeri-highland",
-            collection_point_id="nyeri-highland-cp-001",
             farm_location=GeoLocation(
                 latitude=-0.4197,
                 longitude=36.9553,
@@ -74,7 +79,7 @@ class TestFarmer:
         assert farmer.first_name == "Wanjiku"
         assert farmer.last_name == "Kamau"
         assert farmer.region_id == "nyeri-highland"
-        assert farmer.collection_point_id == "nyeri-highland-cp-001"
+        # Story 9.5a: collection_point_id removed
         assert farmer.farm_location.latitude == -0.4197
         assert farmer.farm_size_hectares == 1.5
         assert farmer.farm_scale == FarmScale.MEDIUM
@@ -89,7 +94,6 @@ class TestFarmer:
                 first_name="",  # Empty name should fail
                 last_name="Kamau",
                 region_id="nyeri-highland",
-                collection_point_id="nyeri-highland-cp-001",
                 farm_location=GeoLocation(latitude=0, longitude=0),
                 contact=ContactInfo(phone="+254712345678"),
                 farm_size_hectares=1.5,
@@ -105,7 +109,6 @@ class TestFarmer:
                 first_name="Wanjiku",
                 last_name="",  # Empty name should fail
                 region_id="nyeri-highland",
-                collection_point_id="nyeri-highland-cp-001",
                 farm_location=GeoLocation(latitude=0, longitude=0),
                 contact=ContactInfo(phone="+254712345678"),
                 farm_size_hectares=1.5,
@@ -121,7 +124,6 @@ class TestFarmer:
                 first_name="Wanjiku",
                 last_name="Kamau",
                 region_id="nyeri-highland",
-                collection_point_id="nyeri-highland-cp-001",
                 farm_location=GeoLocation(latitude=0, longitude=0),
                 contact=ContactInfo(phone="+254712345678"),
                 farm_size_hectares=0.001,  # Too small
@@ -137,7 +139,6 @@ class TestFarmer:
                 first_name="Wanjiku",
                 last_name="Kamau",
                 region_id="nyeri-highland",
-                collection_point_id="nyeri-highland-cp-001",
                 farm_location=GeoLocation(latitude=0, longitude=0),
                 contact=ContactInfo(phone="+254712345678"),
                 farm_size_hectares=1001.0,  # Too large
@@ -153,7 +154,6 @@ class TestFarmer:
                 first_name="Wanjiku",
                 last_name="Kamau",
                 region_id="nyeri-highland",
-                collection_point_id="nyeri-highland-cp-001",
                 farm_location=GeoLocation(latitude=0, longitude=0),
                 contact=ContactInfo(phone="+254712345678"),
                 farm_size_hectares=1.5,
@@ -168,7 +168,6 @@ class TestFarmer:
             first_name="Test",
             last_name="Farmer",
             region_id="test-region",
-            collection_point_id="test-cp",
             farm_location=GeoLocation(latitude=0, longitude=0),
             contact=ContactInfo(phone="+254700000000"),
             farm_size_hectares=1.0,
@@ -186,7 +185,6 @@ class TestFarmer:
             first_name="Test",
             last_name="Farmer",
             region_id="test-region",
-            collection_point_id="test-cp",
             farm_location=GeoLocation(latitude=0, longitude=0),
             contact=ContactInfo(phone="+254700000000"),
             farm_size_hectares=1.0,
@@ -204,7 +202,6 @@ class TestFarmer:
             first_name="Wanjiku",
             last_name="Kamau",
             region_id="nyeri-highland",
-            collection_point_id="nyeri-highland-cp-001",
             farm_location=GeoLocation(
                 latitude=-0.4197,
                 longitude=36.9553,
@@ -225,7 +222,10 @@ class TestFarmer:
 
 
 class TestFarmerCreate:
-    """Tests for FarmerCreate model."""
+    """Tests for FarmerCreate model.
+
+    Story 9.5a: collection_point_id removed - use separate assignment API.
+    """
 
     def test_farmer_create_valid(self) -> None:
         """Test valid farmer creation request."""
@@ -237,7 +237,6 @@ class TestFarmerCreate:
             farm_size_hectares=1.5,
             latitude=-0.4197,
             longitude=36.9553,
-            collection_point_id="nyeri-highland-cp-001",
         )
 
         assert create_req.first_name == "Wanjiku"
@@ -245,7 +244,7 @@ class TestFarmerCreate:
         assert create_req.phone == "+254712345678"
         assert create_req.national_id == "12345678"
         assert create_req.farm_size_hectares == 1.5
-        assert create_req.collection_point_id == "nyeri-highland-cp-001"
+        # Story 9.5a: collection_point_id removed
 
     def test_farmer_create_with_grower_number(self) -> None:
         """Test farmer creation with optional grower number."""
@@ -257,7 +256,6 @@ class TestFarmerCreate:
             farm_size_hectares=1.5,
             latitude=-0.4197,
             longitude=36.9553,
-            collection_point_id="nyeri-highland-cp-001",
             grower_number="GN-12345",
         )
 
@@ -274,7 +272,6 @@ class TestFarmerCreate:
                 farm_size_hectares=1.5,
                 latitude=0,
                 longitude=0,
-                collection_point_id="test-cp",
             )
 
     def test_farmer_create_latitude_validation(self) -> None:
@@ -288,7 +285,6 @@ class TestFarmerCreate:
                 farm_size_hectares=1.5,
                 latitude=91.0,  # Invalid latitude
                 longitude=0,
-                collection_point_id="test-cp",
             )
 
     def test_farmer_create_longitude_validation(self) -> None:
@@ -302,7 +298,6 @@ class TestFarmerCreate:
                 farm_size_hectares=1.5,
                 latitude=0,
                 longitude=181.0,  # Invalid longitude
-                collection_point_id="test-cp",
             )
 
 

@@ -292,13 +292,21 @@ class TestAdminFarmerEndpoints:
         bff_api: BFFClient,
         seed_data: dict[str, Any],
     ):
-        """Test filtering farmers by collection point."""
+        """Test filtering farmers by collection point.
+
+        Story 9.5a: Farmer response no longer has collection_point_id.
+        Filter still works - it returns farmers assigned to that CP.
+        Response has cp_count instead.
+        """
         cp_id = "kericho-highland-cp-100"
         result = await bff_api.admin_list_farmers(collection_point_id=cp_id)
 
-        # All returned farmers should belong to the specified collection point
-        for farmer in result["data"]:
-            assert farmer["collection_point_id"] == cp_id
+        # Verify we got farmers assigned to this CP
+        # Seed data has FRM-E2E-001 and FRM-E2E-002 at kericho-highland-cp-100
+        assert len(result["data"]) >= 1
+        farmer_ids = [f["id"] for f in result["data"]]
+        # At least one of the expected farmers should be present
+        assert any(fid in farmer_ids for fid in ["FRM-E2E-001", "FRM-E2E-002"])
 
     @pytest.mark.asyncio
     async def test_get_farmer_detail(
@@ -309,6 +317,7 @@ class TestAdminFarmerEndpoints:
         """Test getting a specific farmer returns detailed info.
 
         API returns FarmerDetail directly (not wrapped).
+        Story 9.5a: collection_point_id replaced with collection_points list.
         """
         # Use known seed data farmer
         farmer_id = "FRM-E2E-001"
@@ -319,7 +328,9 @@ class TestAdminFarmerEndpoints:
         assert "first_name" in result
         assert "last_name" in result
         assert "phone" in result
-        assert "collection_point_id" in result
+        # Story 9.5a: collection_points list instead of collection_point_id
+        assert "collection_points" in result
+        assert isinstance(result["collection_points"], list)
         assert "is_active" in result
 
     @pytest.mark.asyncio

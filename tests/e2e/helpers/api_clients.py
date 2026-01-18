@@ -674,6 +674,40 @@ class BFFClient:
         response.raise_for_status()
         return response.json()
 
+    async def admin_assign_farmer_to_cp(self, collection_point_id: str, farmer_id: str) -> dict[str, Any]:
+        """Assign a farmer to a collection point (Story 9.5a).
+
+        Args:
+            collection_point_id: Collection point ID
+            farmer_id: Farmer ID to assign
+
+        Returns:
+            Updated collection point with farmer_ids
+        """
+        response = await self.client.post(
+            f"/api/admin/collection-points/{collection_point_id}/farmers/{farmer_id}",
+            headers=self._get_auth_headers(role="platform_admin"),
+        )
+        response.raise_for_status()
+        return response.json()
+
+    async def admin_unassign_farmer_from_cp(self, collection_point_id: str, farmer_id: str) -> dict[str, Any]:
+        """Unassign a farmer from a collection point (Story 9.5a).
+
+        Args:
+            collection_point_id: Collection point ID
+            farmer_id: Farmer ID to unassign
+
+        Returns:
+            Updated collection point with farmer_ids
+        """
+        response = await self.client.delete(
+            f"/api/admin/collection-points/{collection_point_id}/farmers/{farmer_id}",
+            headers=self._get_auth_headers(role="platform_admin"),
+        )
+        response.raise_for_status()
+        return response.json()
+
     async def admin_list_farmers(
         self,
         page: int = 1,

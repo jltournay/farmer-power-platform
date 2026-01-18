@@ -82,13 +82,15 @@ class TestFarmerModel:
 
     @pytest.fixture
     def valid_farmer_data(self):
-        """Valid farmer data for testing."""
+        """Valid farmer data for testing.
+
+        Story 9.5a: collection_point_id removed - N:M via CP.farmer_ids
+        """
         return {
             "id": "WM-0001",
             "first_name": "Wanjiku",
             "last_name": "Kamau",
             "region_id": "nyeri-highland",
-            "collection_point_id": "nyeri-highland-cp-001",
             "farm_location": GeoLocation(latitude=-0.4197, longitude=36.9553, altitude_meters=1950.0),
             "contact": ContactInfo(phone="+254712345678"),
             "farm_size_hectares": 1.5,
@@ -173,7 +175,10 @@ class TestFarmerCreate:
     """Tests for FarmerCreate model."""
 
     def test_farmer_create_valid(self):
-        """FarmerCreate accepts valid data."""
+        """FarmerCreate accepts valid data.
+
+        Story 9.5a: collection_point_id removed - use separate assignment API
+        """
         create_data = FarmerCreate(
             first_name="John",
             last_name="Doe",
@@ -182,7 +187,6 @@ class TestFarmerCreate:
             farm_size_hectares=2.0,
             latitude=-0.4197,
             longitude=36.9553,
-            collection_point_id="cp-001",
         )
         assert create_data.first_name == "John"
         assert create_data.farm_size_hectares == 2.0
@@ -198,7 +202,6 @@ class TestFarmerCreate:
                 farm_size_hectares=2.0,
                 latitude=-0.4197,
                 longitude=36.9553,
-                collection_point_id="cp-001",
             )
         assert "phone" in str(exc_info.value)
 
@@ -213,7 +216,6 @@ class TestFarmerCreate:
                 farm_size_hectares=2.0,
                 latitude=-100.0,  # Invalid
                 longitude=36.9553,
-                collection_point_id="cp-001",
             )
         assert "latitude" in str(exc_info.value)
 

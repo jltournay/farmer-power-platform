@@ -15,8 +15,9 @@ class FarmerRepository(BaseRepository[Farmer]):
     Provides CRUD operations plus specialized queries:
     - get_by_phone: For duplicate phone detection during registration
     - get_by_national_id: For duplicate national ID detection
-    - list_by_collection_point: List farmers registered at a collection point
     - list_by_region: List farmers in a region
+
+    Story 9.5a: Farmer-CP relationship moved to CollectionPoint.farmer_ids
     """
 
     COLLECTION_NAME = "farmers"
@@ -63,28 +64,7 @@ class FarmerRepository(BaseRepository[Farmer]):
         doc.pop("_id", None)
         return Farmer.model_validate(doc)
 
-    async def list_by_collection_point(
-        self,
-        collection_point_id: str,
-        active_only: bool = True,
-        page_size: int = 100,
-        page_token: str | None = None,
-    ) -> tuple[list[Farmer], str | None, int]:
-        """List farmers registered at a specific collection point.
-
-        Args:
-            collection_point_id: The collection point identifier.
-            active_only: If True, only return active farmers.
-            page_size: Number of results per page.
-            page_token: Token for the next page.
-
-        Returns:
-            Tuple of (farmers, next_page_token, total_count).
-        """
-        filters: dict = {"collection_point_id": collection_point_id}
-        if active_only:
-            filters["is_active"] = True
-        return await self.list(filters, page_size, page_token)
+    # Story 9.5a: list_by_collection_point removed - use CollectionPoint.farmer_ids
 
     async def list_by_region(
         self,
@@ -159,10 +139,11 @@ class FarmerRepository(BaseRepository[Farmer]):
         - id (unique): Primary key lookup
         - contact.phone (unique): Phone duplicate detection
         - national_id (unique): National ID duplicate detection
-        - collection_point_id: List farmers by CP
         - region_id: List farmers by region
         - farm_scale: Filter by farm classification
         - is_active: Filter active/inactive farmers
+
+        Story 9.5a: collection_point_id index removed - relationship via CP.farmer_ids
         """
         await self._collection.create_index(
             [("id", ASCENDING)],
@@ -179,10 +160,7 @@ class FarmerRepository(BaseRepository[Farmer]):
             unique=True,
             name="idx_farmer_national_id",
         )
-        await self._collection.create_index(
-            [("collection_point_id", ASCENDING)],
-            name="idx_farmer_collection_point",
-        )
+        # Story 9.5a: collection_point_id index removed
         await self._collection.create_index(
             [("region_id", ASCENDING)],
             name="idx_farmer_region",

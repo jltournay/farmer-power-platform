@@ -118,14 +118,16 @@ def sample_collection_point() -> CollectionPoint:
 
 @pytest.fixture
 def sample_farmer() -> Farmer:
-    """Create a sample Farmer domain model."""
+    """Create a sample Farmer domain model.
+
+    Story 9.5a: collection_point_id removed - N:M relationship via CP.farmer_ids.
+    """
     return Farmer(
         id="WM-0001",
         grower_number="GN-001",
         first_name="Wanjiku",
         last_name="Muthoni",
         region_id="nyeri-highland",
-        collection_point_id="nyeri-highland-cp-001",
         farm_location=GeoLocation(latitude=-0.4197, longitude=36.9553, altitude_meters=1950.0),
         contact=ContactInfo(phone="+254712345678"),
         farm_size_hectares=1.5,
@@ -349,7 +351,8 @@ class TestAdminFarmerTransformer:
         assert summary.id == "WM-0001"
         assert summary.name == "Wanjiku Muthoni"
         assert summary.phone == "+254712345678"
-        assert summary.collection_point_id == "nyeri-highland-cp-001"
+        # Story 9.5a: collection_point_id replaced with cp_count
+        assert summary.cp_count == 0  # No CPs passed to to_summary
         assert summary.farm_scale == FarmScale.MEDIUM
         assert summary.tier == TierLevel.TIER_2  # 82.5% >= 70%
         assert summary.trend == TrendIndicator.UP  # IMPROVING

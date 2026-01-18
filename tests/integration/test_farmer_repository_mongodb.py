@@ -31,16 +31,18 @@ def create_test_farmer(
     phone: str = "+254712345678",
     national_id: str = "12345678",
     region_id: str = "nyeri-highland",
-    collection_point_id: str = "nyeri-highland-cp-001",
     is_active: bool = True,
 ) -> Farmer:
-    """Create a test farmer with default values."""
+    """Create a test farmer with default values.
+
+    Story 9.5a: collection_point_id removed - N:M relationship via CP.farmer_ids.
+    """
     return Farmer(
         id=farmer_id,
         first_name="Test",
         last_name="Farmer",
         region_id=region_id,
-        collection_point_id=collection_point_id,
+        # Story 9.5a: collection_point_id removed
         farm_location=GeoLocation(
             latitude=-0.4197,
             longitude=36.9553,
@@ -164,38 +166,12 @@ class TestFarmerRepository:
         assert updated.farm_size_hectares == 3.0
         assert updated.last_name == "Farmer"  # Unchanged
 
-    async def test_list_by_collection_point(self, test_db) -> None:
-        """Test listing farmers by collection point."""
-        repo = FarmerRepository(test_db)
+    async def test_list_by_region_active_only(self, test_db) -> None:
+        """Test listing only active farmers by region.
 
-        # Create farmers at different collection points
-        for i in range(3):
-            farmer = create_test_farmer(
-                farmer_id=f"WM-{i:04d}",
-                phone=f"+25471{i:07d}",
-                national_id=f"1234567{i}",
-                collection_point_id="cp-001",
-            )
-            await repo.create(farmer)
-
-        for i in range(2):
-            farmer = create_test_farmer(
-                farmer_id=f"WM-{100 + i:04d}",
-                phone=f"+25472{i:07d}",
-                national_id=f"9876543{i}",
-                collection_point_id="cp-002",
-            )
-            await repo.create(farmer)
-
-        # List farmers at cp-001
-        farmers, _, total = await repo.list_by_collection_point("cp-001")
-
-        assert total == 3
-        assert len(farmers) == 3
-        assert all(f.collection_point_id == "cp-001" for f in farmers)
-
-    async def test_list_by_collection_point_active_only(self, test_db) -> None:
-        """Test listing only active farmers."""
+        Story 9.5a: list_by_collection_point removed.
+        Use list_by_region for farmer queries within a region.
+        """
         repo = FarmerRepository(test_db)
 
         # Create active and inactive farmers
@@ -203,6 +179,7 @@ class TestFarmerRepository:
             farmer_id="WM-0001",
             phone="+254711111111",
             national_id="11111111",
+            region_id="nyeri-highland",
             is_active=True,
         )
         await repo.create(active)
@@ -211,13 +188,14 @@ class TestFarmerRepository:
             farmer_id="WM-0002",
             phone="+254722222222",
             national_id="22222222",
+            region_id="nyeri-highland",
             is_active=False,
         )
         await repo.create(inactive)
 
         # List only active
-        farmers, _, total = await repo.list_by_collection_point(
-            "nyeri-highland-cp-001",
+        farmers, _, total = await repo.list_by_region(
+            "nyeri-highland",
             active_only=True,
         )
 
@@ -225,8 +203,8 @@ class TestFarmerRepository:
         assert farmers[0].id == "WM-0001"
 
         # List all (including inactive)
-        farmers_all, _, total_all = await repo.list_by_collection_point(
-            "nyeri-highland-cp-001",
+        farmers_all, _, total_all = await repo.list_by_region(
+            "nyeri-highland",
             active_only=False,
         )
 
@@ -262,7 +240,10 @@ class TestFarmerRepository:
         assert all(f.region_id == "nyeri-highland" for f in farmers)
 
     async def test_ensure_indexes(self, test_db) -> None:
-        """Test index creation happens correctly."""
+        """Test index creation happens correctly.
+
+        Story 9.5a: idx_farmer_collection_point removed - relationship via CP.farmer_ids.
+        """
         repo = FarmerRepository(test_db)
 
         # Create indexes
@@ -274,7 +255,7 @@ class TestFarmerRepository:
         assert "idx_farmer_id" in indexes
         assert "idx_farmer_phone" in indexes
         assert "idx_farmer_national_id" in indexes
-        assert "idx_farmer_collection_point" in indexes
+        # Story 9.5a: idx_farmer_collection_point removed
         assert "idx_farmer_region" in indexes
 
     async def test_unique_phone_constraint(self, test_db) -> None:

@@ -272,19 +272,10 @@ class AdminFactoryService(BaseService):
         cp_count = cp_response.pagination.total_count
 
         # Aggregate farmer counts across all collection points
+        # Story 9.5a: Use CP.farmer_ids for N:M relationship
         farmer_count = 0
         if cp_response.data:
-
-            async def get_cp_farmer_count(cp_id: str) -> int:
-                """Get farmer count for a single collection point."""
-                farmer_response = await self._plantation.list_farmers(
-                    collection_point_id=cp_id,
-                    page_size=1,  # Only need the count
-                )
-                return farmer_response.pagination.total_count
-
-            cp_ids = [cp.id for cp in cp_response.data]
-            counts = await self._parallel_map(cp_ids, get_cp_farmer_count)
-            farmer_count = sum(counts)
+            # Sum farmer_ids from each CP (already have CPs from list)
+            farmer_count = sum(len(cp.farmer_ids) for cp in cp_response.data)
 
         return cp_count, farmer_count
