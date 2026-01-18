@@ -12,6 +12,7 @@ Acceptance Criteria tested:
 4. AC4: Idempotent unassign (no error if farmer not in CP)
 5. AC5: Multi-CP assignment (farmer can be in multiple CPs)
 6. AC6: Error handling (404 for invalid IDs)
+7. AC7: BFF REST API endpoints work correctly (POST/DELETE)
 
 Prerequisites:
     docker compose -f tests/e2e/infrastructure/docker-compose.e2e.yaml up -d
@@ -23,6 +24,8 @@ Seed Data Required (from tests/e2e/infrastructure/seed/):
 """
 
 import pytest
+
+from tests.e2e.helpers.api_clients import BFFClient
 
 
 @pytest.mark.e2e
@@ -246,3 +249,101 @@ class TestAssignmentErrorHandling:
         # Should be NOT_FOUND error
         error_str = str(exc_info.value).lower()
         assert "not found" in error_str or "not_found" in error_str
+
+
+# ============================================================================
+# BFF REST API Tests (AC 9.5a.3 - Code Review Fix)
+# ============================================================================
+
+
+@pytest.mark.e2e
+class TestBFFAssignmentEndpoints:
+    """Test BFF REST API endpoints for farmer-CP assignment.
+
+    These tests verify the BFF layer works correctly, not just gRPC.
+    AC 9.5a.3: POST/DELETE /api/admin/collection-points/{cp_id}/farmers/{farmer_id}
+    """
+
+    @pytest.fixture
+    async def bff_client(self):
+        """BFF client fixture."""
+        async with BFFClient() as client:
+            yield client
+
+    @pytest.mark.asyncio
+    async def test_bff_assign_farmer_success(
+        self,
+        bff_client,
+        seed_data,
+    ):
+        """Test BFF POST endpoint assigns farmer to CP."""
+        farmer_id = "FRM-E2E-003"
+        cp_id = "nandi-highland-cp-100"
+
+        result = await bff_client.admin_assign_farmer_to_cp(cp_id, farmer_id)
+
+        assert result is not None
+        assert result.get("id") == cp_id
+        assert farmer_id in result.get("farmer_ids", [])
+        assert result.get("farmer_count") >= 1
+
+    @pytest.mark.asyncio
+    async def test_bff_assign_farmer_idempotent(
+        self,
+        bff_client,
+        seed_data,
+    ):
+        """Test BFF POST endpoint is idempotent."""
+        farmer_id = "FRM-E2E-001"
+        cp_id = "kericho-highland-cp-100"
+
+        # Assign twice
+        result1 = await bff_client.admin_assign_farmer_to_cp(cp_id, farmer_id)
+        result2 = await bff_client.admin_assign_farmer_to_cp(cp_id, farmer_id)
+
+        # Both should succeed
+        assert result1 is not None
+        assert result2 is not None
+
+        # Farmer should appear only once
+        farmer_ids = result2.get("farmer_ids", [])
+        count = farmer_ids.count(farmer_id)
+        assert count == 1, f"Expected farmer once, got {count}"
+
+    @pytest.mark.asyncio
+    async def test_bff_unassign_farmer_success(
+        self,
+        bff_client,
+        seed_data,
+    ):
+        """Test BFF DELETE endpoint unassigns farmer from CP."""
+        farmer_id = "FRM-E2E-002"
+        cp_id = "kericho-highland-cp-100"
+
+        # Ensure farmer is assigned first
+        await bff_client.admin_assign_farmer_to_cp(cp_id, farmer_id)
+
+        # Unassign
+        result = await bff_client.admin_unassign_farmer_from_cp(cp_id, farmer_id)
+
+        assert result is not None
+        assert result.get("id") == cp_id
+        assert farmer_id not in result.get("farmer_ids", [])
+
+    @pytest.mark.asyncio
+    async def test_bff_unassign_farmer_idempotent(
+        self,
+        bff_client,
+        seed_data,
+    ):
+        """Test BFF DELETE endpoint is idempotent."""
+        farmer_id = "FRM-E2E-004"
+        cp_id = "kericho-highland-cp-100"
+
+        # Unassign twice (farmer may not be in this CP)
+        result1 = await bff_client.admin_unassign_farmer_from_cp(cp_id, farmer_id)
+        result2 = await bff_client.admin_unassign_farmer_from_cp(cp_id, farmer_id)
+
+        # Both should succeed without error
+        assert result1 is not None
+        assert result2 is not None

@@ -175,14 +175,12 @@ class FarmerImportRequest(BaseModel):
     CSV file is uploaded as multipart/form-data, not in this schema.
 
     Expected CSV columns:
-    - first_name, last_name, phone, national_id, collection_point_id
+    - first_name, last_name, phone, national_id
     - farm_size_hectares, latitude, longitude, grower_number (optional)
+
+    Story 9.5a: collection_point_id removed - use separate assignment API after import.
     """
 
-    collection_point_id: str | None = Field(
-        default=None,
-        description="Default collection point ID if not in CSV",
-    )
     skip_header: bool = Field(
         default=True,
         description="Whether to skip the first row (header)",

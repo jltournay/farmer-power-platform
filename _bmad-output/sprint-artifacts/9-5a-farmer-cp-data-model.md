@@ -332,7 +332,7 @@ Update integration tests:
 ### Story Done
 - [ ] Create Pull Request: `gh pr create --title "Story 9.5a: Farmer-CP Data Model Refactor" --base main`
 - [ ] CI passes on PR (including E2E tests)
-- [ ] Code review completed (`/code-review`)
+- [x] Code review completed (`/code-review`) - 2026-01-18
 - [ ] PR approved and merged (squash)
 - [ ] Local branch cleaned up: `git branch -d story/9-5a-farmer-cp-data-model`
 
@@ -650,3 +650,82 @@ None
 - `tests/unit/bff/test_plantation_client.py` - Updated tests
 - `tests/unit/plantation/test_collection_point_repository.py` - Added assignment tests
 - `tests/unit/plantation/test_grpc_collection_point.py` - Added assignment tests
+- `services/bff/src/bff/services/farmer_service.py` - Updated for N:M (non-admin farmer service)
+- `services/bff/src/bff/api/schemas/farmer_schemas.py` - Updated for N:M
+- `tests/unit/fp_common/converters/test_plantation_converters.py` - Updated converter tests
+- `tests/unit/fp_common/models/test_farmer.py` - Updated model tests
+- `tests/unit/plantation/test_farmer_events.py` - Updated event tests
+- `tests/unit/plantation/test_farmer_model.py` - Updated model tests
+- `tests/unit/plantation/test_farmer_repository.py` - Updated repository tests
+- `tests/unit/plantation/test_grpc_farmer_summary.py` - Updated gRPC tests
+
+---
+
+## Code Review
+
+**Reviewer:** Claude Opus 4.5 (claude-opus-4-5-20251101)
+**Review Date:** 2026-01-18
+**Review Type:** Adversarial Senior Developer Review
+**Outcome:** ✅ APPROVED (after fixes)
+
+### Issues Found and Fixed
+
+#### 🔴 CRITICAL - AC 9.5a.3 BFF REST Endpoints Missing (FIXED)
+
+**Problem:** Task 4.3 was marked [x] complete but the actual BFF REST API endpoints for farmer-CP assignment were NOT implemented. The E2E tests passed because they tested at gRPC level directly, bypassing the BFF.
+
+**Missing endpoints:**
+- `POST /api/admin/collection-points/{cp_id}/farmers/{farmer_id}`
+- `DELETE /api/admin/collection-points/{cp_id}/farmers/{farmer_id}`
+
+**Fix applied:**
+- Added `FarmerAssignmentResponse` schema to `collection_point_schemas.py`
+- Added `assign_farmer()` and `unassign_farmer()` methods to `collection_point_service.py`
+- Added POST and DELETE routes to `collection_points.py`
+- Added BFF E2E tests to `test_35_farmer_cp_assignment.py`
+
+**Files modified:**
+- `services/bff/src/bff/api/schemas/admin/collection_point_schemas.py`
+- `services/bff/src/bff/services/admin/collection_point_service.py`
+- `services/bff/src/bff/api/routes/admin/collection_points.py`
+- `tests/e2e/scenarios/test_35_farmer_cp_assignment.py`
+
+#### 🟡 MEDIUM - FarmerImportRequest still had collection_point_id (FIXED)
+
+**Problem:** Task 4.1.4 claimed collection_point_id was removed from FarmerImportRequest, but it was still present.
+
+**Fix applied:**
+- Removed `collection_point_id` field from `FarmerImportRequest`
+- Updated docstring to reflect Story 9.5a changes
+
+**Files modified:**
+- `services/bff/src/bff/api/schemas/admin/farmer_schemas.py`
+
+#### 🟡 MEDIUM - Story File List Incomplete (FIXED)
+
+**Problem:** Several files changed in git were not documented in the story's File List.
+
+**Fix applied:**
+- Added missing files to File List section above
+
+### Review Verification
+
+```
+$ ruff check [modified files]
+All checks passed!
+
+$ pytest tests/unit/bff/ -k "admin"
+26 passed in 1.46s
+```
+
+### Action Items
+
+- [x] Fix BFF REST endpoints (CRITICAL)
+- [x] Remove collection_point_id from FarmerImportRequest
+- [x] Update story File List
+- [x] Add E2E tests for BFF assignment endpoints
+- [x] Verify unit tests pass
+
+### Recommendation
+
+Story can proceed to PR merge after these fixes are committed and CI passes.

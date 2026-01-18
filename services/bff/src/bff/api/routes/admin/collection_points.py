@@ -16,6 +16,7 @@ from bff.api.schemas.admin.collection_point_schemas import (
     CollectionPointDetail,
     CollectionPointListResponse,
     CollectionPointUpdateRequest,
+    FarmerAssignmentResponse,
 )
 from bff.infrastructure.clients import NotFoundError, ServiceUnavailableError
 from bff.infrastructure.clients.plantation_client import PlantationClient
@@ -144,6 +145,99 @@ async def update_collection_point(
         raise HTTPException(
             status_code=404,
             detail=ApiError.not_found("Collection Point", cp_id).model_dump(),
+        ) from e
+    except ServiceUnavailableError as e:
+        raise HTTPException(
+            status_code=503,
+            detail=ApiError.service_unavailable("Plantation Model").model_dump(),
+        ) from e
+
+
+# ============================================================================
+# Farmer-CollectionPoint Assignment Endpoints (Story 9.5a)
+# ============================================================================
+
+
+@router.post(
+    "/{cp_id}/farmers/{farmer_id}",
+    response_model=FarmerAssignmentResponse,
+    responses={
+        200: {"description": "Farmer assigned to collection point"},
+        401: {"description": "Authentication required", "model": ApiError},
+        403: {"description": "Platform admin access required", "model": ApiError},
+        404: {"description": "Collection point or farmer not found", "model": ApiError},
+        503: {"description": "Service unavailable", "model": ApiError},
+    },
+    summary="Assign farmer to collection point",
+    description="Assign a farmer to a collection point. Idempotent - assigning twice has no effect. (Story 9.5a)",
+)
+async def assign_farmer_to_collection_point(
+    cp_id: str = Path(
+        ...,
+        description="Collection point ID",
+        pattern=r"^[a-z][a-z0-9-]*-cp-\d{3}$",
+        examples=["nyeri-highland-cp-001"],
+    ),
+    farmer_id: str = Path(
+        ...,
+        description="Farmer ID to assign",
+        pattern=r"^(WM-\d{4}|FRM-E2E-\d{3})$",
+        examples=["WM-0001", "FRM-E2E-001"],
+    ),
+    user: TokenClaims = require_platform_admin(),
+    service: AdminCollectionPointService = Depends(get_collection_point_service),
+) -> FarmerAssignmentResponse:
+    """Assign a farmer to a collection point (AC 9.5a.3)."""
+    try:
+        return await service.assign_farmer(cp_id, farmer_id)
+    except NotFoundError as e:
+        raise HTTPException(
+            status_code=404,
+            detail=ApiError.not_found("Collection Point or Farmer", f"{cp_id}/{farmer_id}").model_dump(),
+        ) from e
+    except ServiceUnavailableError as e:
+        raise HTTPException(
+            status_code=503,
+            detail=ApiError.service_unavailable("Plantation Model").model_dump(),
+        ) from e
+
+
+@router.delete(
+    "/{cp_id}/farmers/{farmer_id}",
+    response_model=FarmerAssignmentResponse,
+    responses={
+        200: {"description": "Farmer unassigned from collection point"},
+        401: {"description": "Authentication required", "model": ApiError},
+        403: {"description": "Platform admin access required", "model": ApiError},
+        404: {"description": "Collection point or farmer not found", "model": ApiError},
+        503: {"description": "Service unavailable", "model": ApiError},
+    },
+    summary="Unassign farmer from collection point",
+    description="Unassign a farmer from a collection point. Idempotent - unassigning non-member has no effect. (Story 9.5a)",
+)
+async def unassign_farmer_from_collection_point(
+    cp_id: str = Path(
+        ...,
+        description="Collection point ID",
+        pattern=r"^[a-z][a-z0-9-]*-cp-\d{3}$",
+        examples=["nyeri-highland-cp-001"],
+    ),
+    farmer_id: str = Path(
+        ...,
+        description="Farmer ID to unassign",
+        pattern=r"^(WM-\d{4}|FRM-E2E-\d{3})$",
+        examples=["WM-0001", "FRM-E2E-001"],
+    ),
+    user: TokenClaims = require_platform_admin(),
+    service: AdminCollectionPointService = Depends(get_collection_point_service),
+) -> FarmerAssignmentResponse:
+    """Unassign a farmer from a collection point (AC 9.5a.3)."""
+    try:
+        return await service.unassign_farmer(cp_id, farmer_id)
+    except NotFoundError as e:
+        raise HTTPException(
+            status_code=404,
+            detail=ApiError.not_found("Collection Point or Farmer", f"{cp_id}/{farmer_id}").model_dump(),
         ) from e
     except ServiceUnavailableError as e:
         raise HTTPException(

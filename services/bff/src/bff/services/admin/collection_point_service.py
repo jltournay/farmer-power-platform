@@ -9,6 +9,7 @@ from bff.api.schemas.admin.collection_point_schemas import (
     CollectionPointListResponse,
     CollectionPointSummary,
     CollectionPointUpdateRequest,
+    FarmerAssignmentResponse,
 )
 from bff.infrastructure.clients.plantation_client import PlantationClient
 from bff.services.base_service import BaseService
@@ -260,3 +261,87 @@ class AdminCollectionPointService(BaseService):
             return len(cp.farmer_ids)
         except Exception:
             return 0
+
+    async def assign_farmer(
+        self,
+        cp_id: str,
+        farmer_id: str,
+    ) -> FarmerAssignmentResponse:
+        """Assign a farmer to a collection point (Story 9.5a).
+
+        Uses $addToSet for idempotency - assigning twice has no effect.
+
+        Args:
+            cp_id: Collection point ID.
+            farmer_id: Farmer ID to assign.
+
+        Returns:
+            FarmerAssignmentResponse with updated CP.
+
+        Raises:
+            NotFoundError: If CP or farmer not found.
+        """
+        self._logger.info(
+            "assigning_farmer_to_cp",
+            cp_id=cp_id,
+            farmer_id=farmer_id,
+        )
+
+        cp = await self._plantation.assign_farmer_to_collection_point(cp_id, farmer_id)
+
+        self._logger.info(
+            "assigned_farmer_to_cp",
+            cp_id=cp_id,
+            farmer_id=farmer_id,
+            farmer_count=len(cp.farmer_ids),
+        )
+
+        return FarmerAssignmentResponse(
+            id=cp.id,
+            name=cp.name,
+            factory_id=cp.factory_id,
+            farmer_ids=cp.farmer_ids,
+            farmer_count=len(cp.farmer_ids),
+        )
+
+    async def unassign_farmer(
+        self,
+        cp_id: str,
+        farmer_id: str,
+    ) -> FarmerAssignmentResponse:
+        """Unassign a farmer from a collection point (Story 9.5a).
+
+        Uses $pull for idempotency - unassigning non-member has no effect.
+
+        Args:
+            cp_id: Collection point ID.
+            farmer_id: Farmer ID to unassign.
+
+        Returns:
+            FarmerAssignmentResponse with updated CP.
+
+        Raises:
+            NotFoundError: If CP or farmer not found.
+        """
+        self._logger.info(
+            "unassigning_farmer_from_cp",
+            cp_id=cp_id,
+            farmer_id=farmer_id,
+        )
+
+        cp = await self._plantation.unassign_farmer_from_collection_point(cp_id, farmer_id)
+
+        self._logger.info(
+            "unassigned_farmer_from_cp",
+            cp_id=cp_id,
+            farmer_id=farmer_id,
+            farmer_count=len(cp.farmer_ids),
+        )
+
+        return FarmerAssignmentResponse(
+            id=cp.id,
+            name=cp.name,
+            factory_id=cp.factory_id,
+            farmer_ids=cp.farmer_ids,
+            farmer_count=len(cp.farmer_ids),
+        )
