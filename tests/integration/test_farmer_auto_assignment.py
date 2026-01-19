@@ -88,7 +88,7 @@ def sample_farmer() -> dict:
         "grower_number": "GN-INT-001",
         "first_name": "Integration",
         "last_name": "Test",
-        "region_id": "region-int-001",
+        "region_id": "integration-highland",
         "farm_location": {
             "latitude": 0.29,
             "longitude": 35.29,
@@ -116,17 +116,54 @@ def sample_farmer() -> dict:
 def sample_region() -> dict:
     """Create a sample region document for MongoDB."""
     return {
-        "_id": "region-int-001",
-        "id": "region-int-001",
+        "_id": "integration-highland",
+        "region_id": "integration-highland",
         "name": "Integration Highland",
-        "county": "Integration County",
-        "altitude_band": "highland",
-        "climate_zone": "tropical_highland",
-        "weather_config": {
-            "api_provider": "open_meteo",
-            "coordinates": {"latitude": 0.29, "longitude": 35.29},
-            "update_frequency_hours": 6,
+        "county": "Integration",
+        "country": "Kenya",
+        "geography": {
+            "center_gps": {"lat": 0.29, "lng": 35.29},
+            "radius_km": 25,
+            "altitude_band": {
+                "min_meters": 1800,
+                "max_meters": 2200,
+                "label": "highland",
+            },
         },
+        "flush_calendar": {
+            "first_flush": {
+                "start": "03-15",
+                "end": "05-15",
+                "characteristics": "Highest quality",
+            },
+            "monsoon_flush": {
+                "start": "06-15",
+                "end": "09-30",
+                "characteristics": "High volume",
+            },
+            "autumn_flush": {
+                "start": "10-15",
+                "end": "12-15",
+                "characteristics": "Balanced quality",
+            },
+            "dormant": {
+                "start": "12-16",
+                "end": "03-14",
+                "characteristics": "Minimal growth",
+            },
+        },
+        "agronomic": {
+            "soil_type": "volcanic_red",
+            "typical_diseases": ["blister_blight", "grey_blight"],
+            "harvest_peak_hours": "06:00-10:00",
+            "frost_risk": True,
+        },
+        "weather_config": {
+            "api_location": {"lat": 0.29, "lng": 35.29},
+            "altitude_for_api": 1900,
+            "collection_time": "06:00",
+        },
+        "is_active": True,
         "created_at": "2025-01-01T00:00:00Z",
         "updated_at": "2025-01-01T00:00:00Z",
     }
@@ -145,7 +182,7 @@ def sample_collection_point() -> dict:
             "longitude": 35.28,
             "altitude_meters": 1780.0,
         },
-        "region_id": "region-int-001",
+        "region_id": "integration-highland",
         "clerk_id": "CLK-INT-001",
         "clerk_phone": "+254712999101",
         "operating_hours": {
@@ -179,7 +216,7 @@ def sample_collection_point_2() -> dict:
             "longitude": 35.32,
             "altitude_meters": 1820.0,
         },
-        "region_id": "region-int-001",
+        "region_id": "integration-highland",
         "clerk_id": "CLK-INT-002",
         "clerk_phone": "+254712999102",
         "operating_hours": {
@@ -208,7 +245,7 @@ def sample_factory() -> dict:
         "id": "FAC-INT-001",
         "code": "FAC-INT-001",
         "name": "Integration Factory",
-        "region_id": "region-int-001",
+        "region_id": "integration-highland",
         "location": {"latitude": 0.3, "longitude": 35.3, "altitude_meters": 1800.0},
         "contact": {"phone": "+254712999201", "email": "factory@test.com"},
         "grading_models": ["tbk_kenya_tea_v1"],
