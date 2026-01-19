@@ -256,6 +256,24 @@ def sample_factory() -> dict:
 
 
 @pytest.fixture
+def sample_factory_2() -> dict:
+    """Create a second factory for cross-factory tests."""
+    return {
+        "_id": "FAC-INT-002",
+        "id": "FAC-INT-002",
+        "code": "FAC-INT-002",
+        "name": "Integration Factory 2",
+        "region_id": "integration-highland",
+        "location": {"latitude": 0.35, "longitude": 35.35, "altitude_meters": 1850.0},
+        "contact": {"phone": "+254712999202", "email": "factory2@test.com"},
+        "grading_models": ["tbk_kenya_tea_v1"],
+        "is_active": True,
+        "created_at": "2025-01-01T00:00:00Z",
+        "updated_at": "2025-01-01T00:00:00Z",
+    }
+
+
+@pytest.fixture
 def sample_grading_model() -> dict:
     """Create a sample grading model document."""
     return {
@@ -316,6 +334,7 @@ async def seeded_db(
     sample_collection_point: dict,
     sample_collection_point_2: dict,
     sample_factory: dict,
+    sample_factory_2: dict,
     sample_grading_model: dict,
     sample_farmer_performance: dict,
 ) -> AsyncIOMotorDatabase:
@@ -324,9 +343,9 @@ async def seeded_db(
     await plantation_test_db.farmers.insert_one(sample_farmer)
     await plantation_test_db.regions.insert_one(sample_region)
     await plantation_test_db.collection_points.insert_many([sample_collection_point, sample_collection_point_2])
-    await plantation_test_db.factories.insert_one(sample_factory)
+    await plantation_test_db.factories.insert_many([sample_factory, sample_factory_2])
     await plantation_test_db.grading_models.insert_one(sample_grading_model)
-    await plantation_test_db.farmer_performance.insert_one(sample_farmer_performance)
+    await plantation_test_db.farmer_performances.insert_one(sample_farmer_performance)
 
     return plantation_test_db
 
