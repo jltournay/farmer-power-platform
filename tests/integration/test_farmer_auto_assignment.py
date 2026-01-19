@@ -206,6 +206,7 @@ def sample_factory() -> dict:
     return {
         "_id": "FAC-INT-001",
         "id": "FAC-INT-001",
+        "code": "FAC-INT-001",
         "name": "Integration Factory",
         "region_id": "region-int-001",
         "location": {"latitude": 0.3, "longitude": 35.3, "altitude_meters": 1800.0},
