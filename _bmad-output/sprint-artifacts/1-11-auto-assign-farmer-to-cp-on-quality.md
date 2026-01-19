@@ -1,6 +1,6 @@
 # Story 1.11: Auto-Assignment of Farmer to Collection Point on Quality Result
 
-**Status:** in-progress
+**Status:** review
 **GitHub Issue:** #203
 **Story Points:** 2
 **Epic:** Epic 1 - Farmer Registration & Data Foundation
@@ -135,13 +135,13 @@ After Story 9.5a refactored the data model to N:M (farmer_ids on CollectionPoint
 - [x] Push to feature branch: `git push -u origin story/1-11-auto-assign-farmer-to-cp`
 
 ### Story Done
-- [ ] Create Pull Request: `gh pr create --title "Story 1.11: Auto-Assign Farmer to CP" --base main`
-- [ ] CI passes on PR (including E2E tests)
+- [x] Create Pull Request: `gh pr create --title "Story 1.11: Auto-Assign Farmer to CP" --base main`
+- [x] CI passes on PR (including E2E tests)
 - [ ] Code review completed (`/code-review` or human review)
 - [ ] PR approved and merged (squash)
 - [ ] Local branch cleaned up: `git branch -d story/1-11-auto-assign-farmer-to-cp`
 
-**PR URL:** _______________ (fill in when created)
+**PR URL:** https://github.com/jltournay/farmer-power-platform/pull/204
 
 ---
 
