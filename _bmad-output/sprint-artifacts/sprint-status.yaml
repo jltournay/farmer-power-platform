@@ -75,7 +75,7 @@ development_status:
   1-8-region-entity-weather-configuration: done  # github_issue: 25
   1-9-payment-policy-configuration: done  # github_issue: 26
   1-10-gps-region-assignment-polygon-boundaries: done  # github_issue: 181, ADR-017, PR: #182 MERGED 2026-01-14
-  1-11-auto-assign-farmer-to-cp-on-quality: backlog  # github_issue: TBD, UNBLOCKED by 9-5a (N:M data model complete)
+  1-11-auto-assign-farmer-to-cp-on-quality: in-progress  # github_issue: 203, UNBLOCKED by 9-5a (N:M data model complete)
   epic-1-retrospective: done
 
   # Epic 2: Quality Data Ingestion (REVISED - BLOB_TRIGGER architecture)
