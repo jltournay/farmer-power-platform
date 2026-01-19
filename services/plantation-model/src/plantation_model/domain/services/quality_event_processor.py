@@ -28,6 +28,9 @@ from plantation_model.infrastructure.collection_grpc_client import (
     CollectionGrpcClient,
     DocumentNotFoundError,
 )
+from plantation_model.infrastructure.repositories.collection_point_repository import (
+    CollectionPointRepository,
+)
 from plantation_model.infrastructure.repositories.factory_repository import (
     FactoryRepository,
 )
@@ -53,6 +56,14 @@ meter = metrics.get_meter("plantation-model")
 linkage_validation_failures = meter.create_counter(
     name="event_linkage_validation_failures_total",
     description="Total events with invalid linkage fields that require DLQ handling",
+    unit="1",
+)
+
+# Story 1.11 - Counter for farmer auto-assignments
+# Status labels: success, already_assigned, cp_not_found, skipped_no_repo, error
+farmer_auto_assignments = meter.create_counter(
+    name="farmer_auto_assignments_total",
+    description="Total farmer auto-assignments to collection points on quality events",
     unit="1",
 )
 
@@ -125,6 +136,7 @@ class QualityEventProcessor:
         farmer_repo: FarmerRepository | None = None,
         factory_repo: FactoryRepository | None = None,
         region_repo: RegionRepository | None = None,
+        cp_repo: CollectionPointRepository | None = None,
     ) -> None:
         """Initialize the processor with required dependencies.
 
@@ -135,6 +147,7 @@ class QualityEventProcessor:
             farmer_repo: Repository for farmer validation (Story 0.6.10).
             factory_repo: Repository for factory validation (Story 0.6.10).
             region_repo: Repository for region validation (Story 0.6.10).
+            cp_repo: Repository for collection point operations (Story 1.11).
 
         Note:
             Story 0.6.14: DAPR publishing now uses module-level publish_event() function
@@ -146,6 +159,7 @@ class QualityEventProcessor:
         self._farmer_repo = farmer_repo
         self._factory_repo = factory_repo
         self._region_repo = region_repo
+        self._cp_repo = cp_repo
 
     async def process(
         self,
@@ -189,6 +203,11 @@ class QualityEventProcessor:
 
                 # Step 2: Validate farmer_id (AC1)
                 farmer = await self._validate_farmer_id(document_id, farmer_id)
+
+                # Step 2b: Auto-assign farmer to collection point (Story 1.11)
+                cp_id = self._get_collection_point_id(document)
+                if cp_id:
+                    await self._ensure_farmer_assigned_to_cp(farmer_id, cp_id)
 
                 # Step 3: Validate factory_id (AC2)
                 factory_id = self._get_factory_id(document)
@@ -512,6 +531,117 @@ class QualityEventProcessor:
         if "factory_id" in document.linkage_fields:
             return str(document.linkage_fields["factory_id"])
         return "unknown"
+
+    def _get_collection_point_id(self, document: Document) -> str | None:
+        """Extract collection point ID from document.
+
+        Story 1.11: Get CP ID for auto-assignment.
+
+        Args:
+            document: The quality document.
+
+        Returns:
+            Collection point ID or None if not present.
+        """
+        # Check extracted_fields first
+        if "collection_point_id" in document.extracted_fields:
+            return str(document.extracted_fields["collection_point_id"])
+        # Check linkage_fields
+        if "collection_point_id" in document.linkage_fields:
+            return str(document.linkage_fields["collection_point_id"])
+        return None
+
+    async def _ensure_farmer_assigned_to_cp(self, farmer_id: str, cp_id: str) -> bool:
+        """Auto-assign farmer to collection point if not already assigned (idempotent).
+
+        Story 1.11: Automatically associates a farmer with the collection point
+        when their first quality result is received at that CP. Uses $addToSet
+        for idempotency - calling this multiple times for the same farmer/CP
+        combination has no effect after the first assignment.
+
+        Args:
+            farmer_id: The farmer identifier.
+            cp_id: The collection point identifier.
+
+        Returns:
+            True if farmer was newly assigned, False if already assigned or CP not found.
+        """
+        if self._cp_repo is None:
+            logger.debug(
+                "Collection point repository not configured - skipping auto-assignment",
+                farmer_id=farmer_id,
+                cp_id=cp_id,
+            )
+            farmer_auto_assignments.add(1, {"status": "skipped_no_repo"})
+            return False
+
+        with tracer.start_as_current_span("ensure_farmer_assigned_to_cp") as span:
+            span.set_attribute("farmer_id", farmer_id)
+            span.set_attribute("cp_id", cp_id)
+
+            import time
+
+            start_time = time.time()
+
+            try:
+                # First check if farmer is already assigned (optimization to avoid write if not needed)
+                cps, _, _ = await self._cp_repo.list_by_farmer(farmer_id, page_size=100)
+                already_assigned = any(cp.id == cp_id for cp in cps)
+
+                if already_assigned:
+                    duration_ms = (time.time() - start_time) * 1000
+                    logger.debug(
+                        "Farmer already assigned to collection point",
+                        farmer_id=farmer_id,
+                        cp_id=cp_id,
+                        duration_ms=round(duration_ms, 2),
+                    )
+                    span.set_attribute("assignment.status", "already_assigned")
+                    farmer_auto_assignments.add(1, {"status": "already_assigned"})
+                    return False
+
+                # Add farmer to CP (idempotent via $addToSet)
+                updated_cp = await self._cp_repo.add_farmer(cp_id, farmer_id)
+                duration_ms = (time.time() - start_time) * 1000
+
+                if updated_cp is None:
+                    logger.warning(
+                        "Collection point not found for auto-assignment",
+                        farmer_id=farmer_id,
+                        cp_id=cp_id,
+                        duration_ms=round(duration_ms, 2),
+                    )
+                    span.set_attribute("assignment.status", "cp_not_found")
+                    farmer_auto_assignments.add(1, {"status": "cp_not_found"})
+                    return False
+
+                logger.info(
+                    "Farmer auto-assigned to collection point",
+                    farmer_id=farmer_id,
+                    cp_id=cp_id,
+                    cp_name=updated_cp.name,
+                    factory_id=updated_cp.factory_id,
+                    duration_ms=round(duration_ms, 2),
+                )
+                span.set_attribute("assignment.status", "success")
+                span.set_attribute("assignment.cp_name", updated_cp.name)
+                farmer_auto_assignments.add(1, {"status": "success"})
+                return True
+
+            except Exception as e:
+                duration_ms = (time.time() - start_time) * 1000
+                logger.warning(
+                    "Failed to auto-assign farmer to collection point",
+                    farmer_id=farmer_id,
+                    cp_id=cp_id,
+                    error=str(e),
+                    duration_ms=round(duration_ms, 2),
+                )
+                span.set_attribute("assignment.status", "error")
+                span.set_attribute("assignment.error", str(e))
+                farmer_auto_assignments.add(1, {"status": "error"})
+                # Don't raise - auto-assignment failure should not fail the event processing
+                return False
 
     def _get_bag_summary(self, document: Document) -> dict[str, Any]:
         """Extract bag summary from document.

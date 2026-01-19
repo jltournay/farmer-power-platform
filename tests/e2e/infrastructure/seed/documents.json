@@ -245,5 +245,94 @@
       "grading_model_id": "ktda_ternary_v1"
     },
     "created_at": "2025-01-19T16:01:00Z"
+  },
+  {
+    "_comment": "Story 1.11: Document with collection_point_id for auto-assignment testing",
+    "document_id": "DOC-E2E-007",
+    "raw_document": {
+      "blob_container": "quality-events-e2e",
+      "blob_path": "results/FAC-E2E-001/FRM-E2E-003/batch-autoassign-001.json",
+      "content_hash": "sha256:autoassign001",
+      "size_bytes": 1100,
+      "stored_at": "2025-01-20T08:00:00Z"
+    },
+    "extraction": {
+      "ai_agent_id": "qc_event_extractor",
+      "extraction_timestamp": "2025-01-20T08:01:00Z",
+      "confidence": 0.94,
+      "validation_passed": true,
+      "validation_warnings": []
+    },
+    "ingestion": {
+      "ingestion_id": "ING-E2E-007",
+      "source_id": "e2e-qc-analyzer-json",
+      "received_at": "2025-01-20T08:00:00Z",
+      "processed_at": "2025-01-20T08:01:00Z"
+    },
+    "extracted_fields": {
+      "farmer_id": "FRM-E2E-003",
+      "factory_id": "FAC-E2E-001",
+      "collection_point_id": "kericho-highland-cp-100",
+      "grading_model_id": "tbk_kenya_tea_v1",
+      "grading_model_version": "1.0",
+      "bag_summary": {
+        "total_weight_kg": 48.0,
+        "primary_percentage": 76.0,
+        "secondary_percentage": 24.0,
+        "grade": "primary"
+      }
+    },
+    "linkage_fields": {
+      "farmer_id": "FRM-E2E-003",
+      "factory_id": "FAC-E2E-001",
+      "collection_point_id": "kericho-highland-cp-100",
+      "grading_model_id": "tbk_kenya_tea_v1"
+    },
+    "created_at": "2025-01-20T08:01:00Z"
+  },
+  {
+    "_comment": "Story 1.11: Document for cross-factory auto-assignment testing (FRM-E2E-003 at nandi CP)",
+    "document_id": "DOC-E2E-008",
+    "raw_document": {
+      "blob_container": "quality-events-e2e",
+      "blob_path": "results/FAC-E2E-002/FRM-E2E-003/batch-autoassign-002.json",
+      "content_hash": "sha256:autoassign002",
+      "size_bytes": 1120,
+      "stored_at": "2025-01-21T09:00:00Z"
+    },
+    "extraction": {
+      "ai_agent_id": "qc_event_extractor",
+      "extraction_timestamp": "2025-01-21T09:01:00Z",
+      "confidence": 0.93,
+      "validation_passed": true,
+      "validation_warnings": []
+    },
+    "ingestion": {
+      "ingestion_id": "ING-E2E-008",
+      "source_id": "e2e-qc-analyzer-json",
+      "received_at": "2025-01-21T09:00:00Z",
+      "processed_at": "2025-01-21T09:01:00Z"
+    },
+    "extracted_fields": {
+      "farmer_id": "FRM-E2E-003",
+      "factory_id": "FAC-E2E-002",
+      "collection_point_id": "nandi-highland-cp-100",
+      "grading_model_id": "ktda_ternary_v1",
+      "grading_model_version": "1.0",
+      "bag_summary": {
+        "total_weight_kg": 51.5,
+        "primary_percentage": 72.0,
+        "secondary_percentage": 20.0,
+        "tertiary_percentage": 8.0,
+        "grade": "primary"
+      }
+    },
+    "linkage_fields": {
+      "farmer_id": "FRM-E2E-003",
+      "factory_id": "FAC-E2E-002",
+      "collection_point_id": "nandi-highland-cp-100",
+      "grading_model_id": "ktda_ternary_v1"
+    },
+    "created_at": "2025-01-21T09:01:00Z"
   }
 ]
