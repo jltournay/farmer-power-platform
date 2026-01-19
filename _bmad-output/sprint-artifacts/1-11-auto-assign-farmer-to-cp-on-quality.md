@@ -130,9 +130,9 @@ After Story 9.5a refactored the data model to N:M (farmer_ids on CollectionPoint
 **Branch name:** `story/1-11-auto-assign-farmer-to-cp`
 
 ### During Development
-- [ ] All commits reference GitHub issue: `Relates to #XX`
-- [ ] Commits are atomic by type (production, test, seed - not mixed)
-- [ ] Push to feature branch: `git push -u origin story/1-11-auto-assign-farmer-to-cp`
+- [x] All commits reference GitHub issue: `Relates to #203`
+- [x] Commits are atomic by type (production, test, seed - not mixed)
+- [x] Push to feature branch: `git push -u origin story/1-11-auto-assign-farmer-to-cp`
 
 ### Story Done
 - [ ] Create Pull Request: `gh pr create --title "Story 1.11: Auto-Assign Farmer to CP" --base main`
@@ -216,9 +216,11 @@ git push origin story/1-11-auto-assign-farmer-to-cp
 # Wait ~30s, then check CI status
 gh run list --branch story/1-11-auto-assign-farmer-to-cp --limit 3
 ```
-**CI Run ID:** _______________
-**CI E2E Status:** [ ] Passed / [ ] Failed
-**Verification Date:** _______________
+**CI Run ID:** 21148933795
+**CI Status:** ✅ Passed
+**E2E CI Run ID:** 21149156476
+**E2E CI Status:** ✅ Passed (220 passed, 1 skipped)
+**Verification Date:** 2026-01-19
 
 ---
 
