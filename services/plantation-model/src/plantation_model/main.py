@@ -42,6 +42,9 @@ from plantation_model.infrastructure.mongodb import (
     get_database,
     get_mongodb_client,
 )
+from plantation_model.infrastructure.repositories.collection_point_repository import (
+    CollectionPointRepository,
+)
 from plantation_model.infrastructure.repositories.factory_repository import (
     FactoryRepository,
 )
@@ -103,12 +106,15 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
         factory_repo = FactoryRepository(db)
         region_repo = RegionRepository(db)
 
+        # Story 1.11: Collection point repository for auto-assignment
+        cp_repo = CollectionPointRepository(db)
+
         # Initialize Collection gRPC client for fetching quality documents
         # Story 0.6.13: Uses gRPC via DAPR instead of direct MongoDB
         collection_client = CollectionGrpcClient()
         app.state.collection_client = collection_client
 
-        # Initialize QualityEventProcessor (Story 1.7 + Story 0.6.10)
+        # Initialize QualityEventProcessor (Story 1.7 + Story 0.6.10 + Story 1.11)
         # Story 0.6.14: DAPR publishing uses module-level publish_event() per ADR-010
         quality_event_processor = QualityEventProcessor(
             collection_client=collection_client,
@@ -117,6 +123,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
             farmer_repo=farmer_repo,
             factory_repo=factory_repo,
             region_repo=region_repo,
+            cp_repo=cp_repo,
         )
         app.state.quality_event_processor = quality_event_processor
         logger.info("QualityEventProcessor initialized")
