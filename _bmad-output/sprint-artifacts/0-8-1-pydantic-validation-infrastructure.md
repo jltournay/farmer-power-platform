@@ -1,6 +1,6 @@
 # Story 0.8.1: Pydantic Validation Infrastructure for Seed Data
 
-**Status:** in-progress
+**Status:** review
 **GitHub Issue:** #205
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
@@ -95,17 +95,17 @@ So that schema errors are caught before any database write.
 
 ### During Development
 - [x] All commits reference GitHub issue: `Relates to #205`
-- [ ] Commits are atomic by type (production, test, seed - not mixed)
-- [ ] Push to feature branch: `git push -u origin story/0-8-1-pydantic-validation-infrastructure`
+- [x] Commits are atomic by type (production, test, seed - not mixed)
+- [x] Push to feature branch: `git push -u origin story/0-8-1-pydantic-validation-infrastructure`
 
 ### Story Done
-- [ ] Create Pull Request: `gh pr create --title "Story 0.8.1: Pydantic Validation Infrastructure" --base main`
-- [ ] CI passes on PR (including E2E tests)
+- [x] Create Pull Request: `gh pr create --title "Story 0.8.1: Pydantic Validation Infrastructure" --base main`
+- [x] CI passes on PR (including E2E tests)
 - [ ] Code review completed (`/code-review` or human review)
 - [ ] PR approved and merged (squash)
 - [ ] Local branch cleaned up: `git branch -d story/0-8-1-pydantic-validation-infrastructure`
 
-**PR URL:** _______________ (fill in when created)
+**PR URL:** https://github.com/jltournay/farmer-power-platform/pull/206
 
 ---
 
