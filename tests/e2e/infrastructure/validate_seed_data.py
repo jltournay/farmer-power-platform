@@ -282,57 +282,39 @@ class SeedValidator:
             print(f"SKIP (model not available: {e})")
 
     def _validate_weather_observations(self) -> None:
-        """Validate weather_observations.json (MongoDB seed structure)."""
+        """Validate weather_observations.json against RegionalWeather Pydantic model.
+
+        Flat format: one record per (region_id, date) matching the RegionalWeather model.
+        """
         print("Validating weather_observations.json...", end=" ")
         data = self._load_json("weather_observations.json")
         if data is None:
             print("SKIP")
             return
 
-        # MongoDB seed structure: { region_id, observations: [...], updated_at }
-        required_fields = ["region_id", "observations"]
-        observation_fields = ["date", "temperature", "precipitation_mm", "humidity_percent"]
+        try:
+            from fp_common.models.regional_weather import RegionalWeather
 
-        for i, record in enumerate(data):
-            record_id = record.get("region_id", f"index-{i}")
-            missing = [f for f in required_fields if f not in record]
-            if missing:
-                self.errors.append(
-                    ValidationError(
-                        "weather_observations.json",
-                        i,
-                        record_id,
-                        f"Missing required fields: {missing}",
-                    )
-                )
-            # Validate observations array
-            observations = record.get("observations", [])
-            if not observations:
-                self.errors.append(
-                    ValidationError(
-                        "weather_observations.json",
-                        i,
-                        record_id,
-                        "observations array is empty",
-                    )
-                )
-            else:
-                for j, obs in enumerate(observations):
-                    obs_missing = [f for f in observation_fields if f not in obs]
-                    if obs_missing:
-                        self.errors.append(
-                            ValidationError(
-                                "weather_observations.json",
-                                i,
-                                f"{record_id}[{j}]",
-                                f"Observation missing fields: {obs_missing}",
-                            )
+            for i, record in enumerate(data):
+                record_id = f"{record.get('region_id', 'unknown')}:{record.get('date', i)}"
+                try:
+                    RegionalWeather.model_validate(record)
+                except Exception as e:
+                    self.errors.append(
+                        ValidationError(
+                            "weather_observations.json",
+                            i,
+                            record_id,
+                            str(e),
                         )
+                    )
 
-        if not any(e.file == "weather_observations.json" for e in self.errors):
-            print(f"OK ({len(data)} records)")
-        else:
-            print("ERRORS")
+            if not any(e.file == "weather_observations.json" for e in self.errors):
+                print(f"OK ({len(data)} records)")
+            else:
+                print("ERRORS")
+        except ImportError as e:
+            print(f"SKIP (model not available: {e})")
 
     def _validate_source_configs(self) -> None:
         """Validate source_configs.json against SourceConfig Pydantic model."""

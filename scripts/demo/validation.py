@@ -119,9 +119,29 @@ def validate_with_pydantic(  # noqa: UP047
     return validated, errors
 
 
+def strip_mongodb_fields(record: dict[str, Any]) -> dict[str, Any]:
+    """Remove MongoDB-specific fields from a record before validation.
+
+    MongoDB adds fields like _id when storing documents. These fields
+    are not part of the Pydantic models and will cause validation errors
+    if not stripped. Also removes comment fields (_comment).
+
+    Args:
+        record: A dictionary record that may contain MongoDB fields.
+
+    Returns:
+        A new dictionary with MongoDB fields removed.
+    """
+    # Fields that MongoDB adds or that are documentation-only
+    mongodb_fields = {"_id", "_comment"}
+
+    return {k: v for k, v in record.items() if k not in mongodb_fields}
+
+
 def validate_json_file(  # noqa: UP047
     file_path: Path,
     model: type[T],
+    strip_mongo_fields: bool = True,
 ) -> ValidationResult[T]:
     """Load and validate a JSON file through a Pydantic model.
 
@@ -130,6 +150,7 @@ def validate_json_file(  # noqa: UP047
     Args:
         file_path: Path to the JSON file to validate.
         model: Pydantic model class to validate against.
+        strip_mongo_fields: If True, strip MongoDB-specific fields before validation.
 
     Returns:
         ValidationResult containing validated records and any errors.
@@ -144,6 +165,10 @@ def validate_json_file(  # noqa: UP047
     if not isinstance(records, list):
         # Single object should be wrapped in list
         records = [records]
+
+    # Strip MongoDB-specific fields if requested
+    if strip_mongo_fields:
+        records = [strip_mongodb_fields(r) for r in records]
 
     filename = file_path.name
     validated, errors = validate_with_pydantic(records, model, filename)
