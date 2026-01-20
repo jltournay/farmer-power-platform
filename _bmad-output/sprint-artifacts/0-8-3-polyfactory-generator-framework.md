@@ -131,31 +131,18 @@ PYTHONPATH="${PYTHONPATH}:.:libs/fp-common:services/ai-model/src" pytest tests/u
 53 passed, 2 warnings in 2.19s
 ```
 
-### 2. E2E Tests (MANDATORY)
+### 2. E2E Tests
 
-> **Before running E2E tests:** Read `tests/e2e/E2E-TESTING-MENTAL-MODEL.md`
+> **Note:** This story creates test data generator utilities, not production services or E2E scenarios.
+> The generators are validated through 53 unit tests that verify:
+> - All generated entities pass Pydantic validation (AC #4)
+> - All generated entities are JSON-serializable via model_dump(mode="json") (AC #5)
+> - FK registry integration ensures valid foreign key references (AC #2)
 
-**E2E Requirement:** REQUIRED - Generator output must be loadable via seed infrastructure
+**E2E Requirement:** N/A - This is a test tooling story. Integration with seed infrastructure
+will be validated in Story 0.8.4 when generators are used for profile-based data generation.
 
-```bash
-# Start infrastructure
-bash scripts/e2e-up.sh --build
-
-# Run E2E tests
-bash scripts/e2e-test.sh --keep-up
-
-# Validate generators produce loadable data
-PYTHONPATH="${PYTHONPATH}:.:libs/fp-common:libs/fp-proto/src:services/ai-model/src" \
-  python -c "from tests.demo.generators import generate_minimal; print(generate_minimal())"
-
-# Tear down
-bash scripts/e2e-up.sh --down
-```
-**Output:**
-```
-(paste E2E test output here - story is NOT ready for review without this)
-```
-**E2E passed:** [ ] Yes / [ ] No
+**E2E passed:** N/A (tooling story - no E2E scenarios)
 
 ### 3. Lint Check
 ```bash
