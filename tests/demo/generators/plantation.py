@@ -104,13 +104,14 @@ class RegionFactory(BaseModelFactory[Region]):
         """Generate valid Geography with altitude band."""
         lat, lng, alt = KenyaProvider.kenya_coordinates(tea_region=True)
 
-        # Determine altitude band from altitude
-        if alt >= 1400:
+        # Determine altitude band from altitude (per project-context.md)
+        # Low: <800m, Medium: 800-1200m, High: >1200m
+        if alt >= 1200:
             band_label = AltitudeBandLabel.HIGHLAND
-            alt_min, alt_max = 1400, 2500
+            alt_min, alt_max = 1200, 2500
         elif alt >= 800:
             band_label = AltitudeBandLabel.MIDLAND
-            alt_min, alt_max = 800, 1400
+            alt_min, alt_max = 800, 1200
         else:
             band_label = AltitudeBandLabel.LOWLAND
             alt_min, alt_max = 0, 800

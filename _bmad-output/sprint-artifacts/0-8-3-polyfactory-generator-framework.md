@@ -84,9 +84,9 @@ So that I can generate large volumes of valid data from Pydantic models.
   - [x] 6.2: Create `tests/unit/demo/generators/test_weather_factory.py` (12 tests)
   - [x] 6.3: Create `tests/unit/demo/generators/test_kenya_providers.py` (13 tests)
 
-- [ ] Task 7: Integration test with seed infrastructure
-  - [ ] 7.1: Test generated entities can be loaded via `MongoDBDirectClient.seed_*`
-  - [ ] 7.2: Test generated data passes same FK validation as Story 0.8.1
+- [ ] ~~Task 7: Integration test with seed infrastructure~~ - DEFERRED to Story 0.8.4
+  - [ ] ~~7.1: Test generated entities can be loaded via `MongoDBDirectClient.seed_*`~~
+  - [ ] ~~7.2: Test generated data passes same FK validation as Story 0.8.1~~
 
 ## Git Workflow (MANDATORY)
 
@@ -304,25 +304,28 @@ class FarmerFactory(ModelFactory):
 
 ```
 tests/demo/
+├── __init__.py                   # Package init (created)
 ├── generators/
 │   ├── __init__.py               # Package exports
 │   ├── base.py                   # BaseFactory, FK registry integration
 │   ├── plantation.py             # Region, Factory, CollectionPoint, Farmer, FarmerPerformance
 │   ├── weather.py                # RegionalWeather factory
-│   ├── kenya_providers.py        # Kenya-specific Faker providers
-│   └── registry_integration.py   # Generate all with FK wiring
+│   └── kenya_providers.py        # Kenya-specific Faker providers
 
-tests/unit/demo/generators/
-├── __init__.py
-├── test_base.py
-├── test_plantation.py
-└── test_weather.py
+tests/unit/demo/
+├── __init__.py                   # Package init (created)
+├── generators/
+│   ├── __init__.py
+│   ├── test_kenya_providers.py   # Kenya provider tests
+│   ├── test_plantation_factories.py  # Plantation factory tests
+│   └── test_weather_factory.py   # Weather factory tests
 ```
+
+**Note:** `registry_integration.py` was originally planned but deemed unnecessary - the functionality is implemented via `build_batch_and_register()` in `base.py` and helper functions in `__init__.py`.
 
 **NOT in this story (deferred to 0.8.4):**
 - `ai_model.py` - AgentConfig, Prompt (reference data)
 - `collection.py` - SourceConfig, Document (reference/scenario data)
-```
 
 ### Dependency Order (CRITICAL - Same as loader.py)
 
@@ -584,11 +587,13 @@ Claude Opus 4.5 (claude-opus-4-5-20251101)
 ### File List
 
 **Created:**
+- `tests/demo/__init__.py` - Demo package init
 - `tests/demo/generators/__init__.py` - Package exports and utility functions
 - `tests/demo/generators/base.py` - FKRegistryMixin and BaseModelFactory
 - `tests/demo/generators/kenya_providers.py` - Kenya-specific data provider
 - `tests/demo/generators/plantation.py` - Region, Factory, CollectionPoint, Farmer, FarmerPerformance factories
 - `tests/demo/generators/weather.py` - RegionalWeatherFactory
+- `tests/unit/demo/__init__.py` - Unit test demo package init
 - `tests/unit/demo/generators/__init__.py` - Test package init
 - `tests/unit/demo/generators/test_kenya_providers.py` - 13 tests for Kenya provider
 - `tests/unit/demo/generators/test_plantation_factories.py` - 28 tests for plantation factories

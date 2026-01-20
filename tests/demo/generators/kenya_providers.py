@@ -195,10 +195,11 @@ class KenyaProvider:
     ]
 
     # Altitude bands per project-context.md
+    # Low: <800m, Medium: 800-1200m, High: >1200m
     ALTITUDE_BANDS: ClassVar[dict[str, tuple[int, int]]] = {
         "lowland": (0, 800),
-        "midland": (800, 1400),
-        "highland": (1400, 2500),
+        "midland": (800, 1200),
+        "highland": (1200, 2500),
     }
 
     @classmethod
