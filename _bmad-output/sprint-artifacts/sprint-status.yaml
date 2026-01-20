@@ -34,10 +34,10 @@
 # - SM typically creates next story after previous one is 'done' to incorporate learnings
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 #
-# PRIORITY ORDER (2026-01-14 update):
+# PRIORITY ORDER (2026-01-20 update):
 # ========================================
 # P0: Epic 0 (Done), Epic 1 (Done), Epic 2 (Done), Epic 0.4 (E2E Tests), Epic 0.6 (Done), Epic 13 (Done)
-# P1: Epic 0.5 (in-progress), Epic 0.75 (in-progress)
+# P1: Epic 0.5 (in-progress), Epic 0.75 (in-progress), Epic 0.8 (Demo Tooling - backlog)
 # P2: Epic 11 (Kiosk - 1st UI), Epic 9 (Admin - 2nd UI, all stories unblocked)
 # P3: Epic 5, Epic 10 (Regulator - 3rd UI)
 # P4: Epic 6, Epic 4
@@ -215,6 +215,17 @@ development_status:
   13-7-ai-model-refactor-publish-costs: done  # github_issue: 175, ai-model publishes instead of persists, cleanup, CODE REVIEW COMPLETED 2026-01-13
   13-8-e2e-integration-tests: done  # github_issue: 177, Full pub/sub flow validation
   epic-13-retrospective: done  # 2026-01-14, epic-13-retro-2026-01-14.md
+
+  # Epic 0.8: Demo & Developer Tooling (NEW - 2026-01-20, ADR-020)
+  # Dependencies: Epic 0.4 (E2E Tests), Epic 1, Epic 2
+  # Pydantic-validated seed loader + Polyfactory-based data generator
+  epic-0-8: backlog
+  0-8-1-pydantic-validation-infrastructure: backlog  # 5 points - Schema validation, FK registry
+  0-8-2-seed-data-loader-script: backlog  # 5 points - load-demo-data.py, depends: 0-8-1
+  0-8-3-polyfactory-generator-framework: backlog  # 5 points - Factory classes for each model, depends: 0-8-1
+  0-8-4-profile-based-data-generation: backlog  # 5 points - generate-demo-data.py, profiles, depends: 0-8-3
+  0-8-5-demo-data-documentation: backlog  # 2 points - Usage guide, depends: 0-8-2, 0-8-4
+  epic-0-8-retrospective: optional
 
   # ═══════════════════════════════════════════════════════════════════════════
   # P2: FIRST FRONTEND APPS (Simple React validation)
