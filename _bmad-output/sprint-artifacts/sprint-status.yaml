@@ -222,7 +222,7 @@ development_status:
   epic-0-8: in-progress
   0-8-1-pydantic-validation-infrastructure: done  # github_issue: 205, PR: #206  # 5 points - Schema validation, FK registry, CODE REVIEW COMPLETED 2026-01-20
   0-8-2-seed-data-loader-script: done  # github_issue: 207, PR: #208 MERGED 2026-01-20, 5 points - load_demo_data.py
-  0-8-3-polyfactory-generator-framework: in-progress  # 5 points - Factory classes for each model, depends: 0-8-1
+  0-8-3-polyfactory-generator-framework: review  # 5 points, github_issue: 209 - Factory classes for each model, depends: 0-8-1
   0-8-4-profile-based-data-generation: backlog  # 5 points - generate-demo-data.py, profiles, depends: 0-8-3
   0-8-5-demo-data-documentation: backlog  # 2 points - Usage guide, depends: 0-8-2, 0-8-4
   epic-0-8-retrospective: optional

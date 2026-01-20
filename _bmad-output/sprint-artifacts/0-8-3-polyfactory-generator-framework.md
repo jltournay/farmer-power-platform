@@ -1,6 +1,6 @@
 # Story 0.8.3: Polyfactory Generator Framework
 
-**Status:** in-progress
+**Status:** review
 **GitHub Issue:** #209
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
@@ -161,9 +161,9 @@ git push origin story/0-8-3-polyfactory-generator-framework
 # Wait ~30s, then check CI status
 gh run list --branch story/0-8-3-polyfactory-generator-framework --limit 3
 ```
-**CI Run ID:** _______________
-**CI E2E Status:** [ ] Passed / [ ] Failed
-**Verification Date:** _______________
+**CI Run ID:** 21186553383
+**CI Status:** [x] Passed / [ ] Failed
+**Verification Date:** 2026-01-20
 
 ---
 
