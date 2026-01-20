@@ -1,6 +1,6 @@
 # Story 0.8.2: Seed Data Loader Script (load-demo-data.py)
 
-**Status:** in-progress
+**Status:** review
 **GitHub Issue:** #207
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
@@ -134,7 +134,7 @@ PYTHONPATH="${PYTHONPATH}:.:libs/fp-common:services/ai-model/src" pytest tests/u
 ```
 **Output:**
 ```
-(paste test summary here - e.g., "55 passed in 2.10s")
+60 passed, 4 warnings in 1.24s
 ```
 
 ### 2. E2E Tests
@@ -162,15 +162,16 @@ bash scripts/e2e-up.sh --down
 ```
 **Output:**
 ```
-(paste E2E test output here)
+Dry-run validation passed: 11 files, 72 total records
+CI E2E Tests workflow passed: run ID 21180977899
 ```
-**E2E passed:** [ ] Yes / [ ] No
+**E2E passed:** [x] Yes / [ ] No
 
 ### 3. Lint Check
 ```bash
 ruff check . && ruff format --check .
 ```
-**Lint passed:** [ ] Yes / [ ] No
+**Lint passed:** [x] Yes / [ ] No
 
 ### 4. CI Verification on Story Branch (MANDATORY)
 
@@ -183,9 +184,9 @@ git push origin story/0-8-2-seed-data-loader-script
 # Wait ~30s, then check CI status
 gh run list --branch story/0-8-2-seed-data-loader-script --limit 3
 ```
-**CI Run ID:** _______________
-**CI E2E Status:** [ ] Passed / [ ] Failed
-**Verification Date:** _______________
+**CI Run ID:** 21180958556 (CI), 21180977899 (E2E Tests)
+**CI E2E Status:** [x] Passed / [ ] Failed
+**Verification Date:** 2026-01-20
 
 ---
 
@@ -562,16 +563,33 @@ From Story 0.8.1 implementation:
 
 ### Agent Model Used
 
-{{agent_model_name_version}}
+Claude Opus 4.5 (claude-opus-4-5-20251101)
 
 ### Debug Log References
 
+N/A
+
 ### Completion Notes List
+
+1. **Implementation complete** - Created load_demo_data.py with 4-phase pipeline (Pydantic validation → FK validation → DB load → Verification)
+2. **Seed data fixes** - Fixed source_configs.json (removed timestamp fields) and weather_observations.json (flattened structure) to match production Pydantic models
+3. **User feedback addressed** - Reverted from dedicated seed models to production models with extra="forbid" per user request
+4. **AgentConfig special handling** - Uses TypeAdapter for discriminated union validation (doesn't reject extra fields due to underlying model design)
+5. **CI passed** - Both CI (21180958556) and E2E Tests (21180977899) workflows passed on story branch
 
 ### File List
 
 **Created:**
-- (list new files)
+- `scripts/demo/load_demo_data.py` - Main entry script with 4-phase loader pipeline
+- `scripts/demo/loader.py` - Database loading module with SEED_ORDER dependency ordering
+- `scripts/demo-up.sh` - Shell wrapper for PYTHONPATH setup
+- `tests/unit/demo/test_loader.py` - Unit tests for loader module
 
 **Modified:**
-- (list modified files with brief description)
+- `scripts/demo/model_registry.py` - Reverted to production models, added AgentConfigValidator using TypeAdapter
+- `scripts/demo/validation.py` - Added strip_mongodb_fields() to remove _id/_comment before validation
+- `tests/e2e/helpers/mongodb_direct.py` - Updated seed_weather_observations to use composite key (region_id, date)
+- `tests/e2e/infrastructure/seed/source_configs.json` - Removed created_at/updated_at fields (not in SourceConfig model)
+- `tests/e2e/infrastructure/seed/weather_observations.json` - Flattened from nested to one record per (region_id, date)
+- `tests/e2e/infrastructure/validate_seed_data.py` - Updated weather validation to use RegionalWeather model
+- `tests/unit/demo/test_model_registry.py` - Added test for TypeAdapter-based agent_configs validation
