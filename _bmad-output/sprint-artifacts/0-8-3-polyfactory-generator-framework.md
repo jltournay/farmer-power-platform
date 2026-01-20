@@ -1,6 +1,6 @@
 # Story 0.8.3: Polyfactory Generator Framework
 
-**Status:** review
+**Status:** done
 **GitHub Issue:** #209
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
