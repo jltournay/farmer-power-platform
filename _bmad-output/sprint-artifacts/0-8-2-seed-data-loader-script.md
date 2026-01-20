@@ -1,6 +1,6 @@
 # Story 0.8.2: Seed Data Loader Script (load_demo_data.py)
 
-**Status:** review
+**Status:** done
 **GitHub Issue:** #207
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
@@ -120,7 +120,7 @@ So that I can quickly populate a local MongoDB with valid demo data.
 - [ ] PR approved and merged (squash)
 - [ ] Local branch cleaned up: `git branch -d story/0-8-2-seed-data-loader-script`
 
-**PR URL:** (to be created after code review approval)
+**PR URL:** https://github.com/jltournay/farmer-power-platform/pull/208 (MERGED 2026-01-20)
 
 ---
 
