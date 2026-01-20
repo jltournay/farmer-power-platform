@@ -220,7 +220,7 @@ development_status:
   # Dependencies: Epic 0.4 (E2E Tests), Epic 1, Epic 2
   # Pydantic-validated seed loader + Polyfactory-based data generator
   epic-0-8: in-progress
-  0-8-1-pydantic-validation-infrastructure: ready-for-dev  # github_issue: TBD  # 5 points - Schema validation, FK registry
+  0-8-1-pydantic-validation-infrastructure: in-progress  # github_issue: 205  # 5 points - Schema validation, FK registry
   0-8-2-seed-data-loader-script: backlog  # 5 points - load-demo-data.py, depends: 0-8-1
   0-8-3-polyfactory-generator-framework: backlog  # 5 points - Factory classes for each model, depends: 0-8-1
   0-8-4-profile-based-data-generation: backlog  # 5 points - generate-demo-data.py, profiles, depends: 0-8-3
