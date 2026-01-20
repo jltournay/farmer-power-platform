@@ -1,277 +1,41 @@
 [
-  {
-    "region_id": "kericho-highland",
-    "observations": [
-      {
-        "date": "2026-01-16",
-        "temperature": {"min": 12.0, "max": 24.0, "avg": 18.0},
-        "precipitation_mm": 2.5,
-        "humidity_percent": 75,
-        "conditions": "partly_cloudy"
-      },
-      {
-        "date": "2026-01-15",
-        "temperature": {"min": 11.0, "max": 23.0, "avg": 17.0},
-        "precipitation_mm": 18.0,
-        "humidity_percent": 92,
-        "conditions": "heavy_rain"
-      },
-      {
-        "date": "2026-01-14",
-        "temperature": {"min": 13.0, "max": 25.0, "avg": 19.0},
-        "precipitation_mm": 0.0,
-        "humidity_percent": 65,
-        "conditions": "sunny"
-      },
-      {
-        "date": "2026-01-13",
-        "temperature": {"min": 12.5, "max": 24.5, "avg": 18.5},
-        "precipitation_mm": 0.5,
-        "humidity_percent": 70,
-        "conditions": "partly_cloudy"
-      },
-      {
-        "date": "2026-01-12",
-        "temperature": {"min": 8.0, "max": 18.0, "avg": 13.0},
-        "precipitation_mm": 0.0,
-        "humidity_percent": 55,
-        "conditions": "cold"
-      },
-      {
-        "date": "2026-01-11",
-        "temperature": {"min": 11.5, "max": 23.5, "avg": 17.5},
-        "precipitation_mm": 5.0,
-        "humidity_percent": 80,
-        "conditions": "rain"
-      },
-      {
-        "date": "2026-01-10",
-        "temperature": {"min": 14.0, "max": 26.0, "avg": 20.0},
-        "precipitation_mm": 0.0,
-        "humidity_percent": 60,
-        "conditions": "sunny"
-      }
-    ],
-    "updated_at": "2026-01-16T06:00:00Z"
-  },
-  {
-    "region_id": "kericho-midland",
-    "observations": [
-      {
-        "date": "2026-01-16",
-        "temperature": {"min": 15.0, "max": 28.0, "avg": 21.5},
-        "precipitation_mm": 0.0,
-        "humidity_percent": 58,
-        "conditions": "sunny"
-      },
-      {
-        "date": "2026-01-15",
-        "temperature": {"min": 14.0, "max": 27.0, "avg": 20.5},
-        "precipitation_mm": 12.0,
-        "humidity_percent": 82,
-        "conditions": "rain"
-      },
-      {
-        "date": "2026-01-14",
-        "temperature": {"min": 16.0, "max": 29.0, "avg": 22.5},
-        "precipitation_mm": 0.0,
-        "humidity_percent": 55,
-        "conditions": "sunny"
-      },
-      {
-        "date": "2026-01-13",
-        "temperature": {"min": 15.5, "max": 28.5, "avg": 22.0},
-        "precipitation_mm": 1.5,
-        "humidity_percent": 65,
-        "conditions": "partly_cloudy"
-      },
-      {
-        "date": "2026-01-12",
-        "temperature": {"min": 14.0, "max": 27.0, "avg": 20.5},
-        "precipitation_mm": 0.0,
-        "humidity_percent": 60,
-        "conditions": "sunny"
-      },
-      {
-        "date": "2026-01-11",
-        "temperature": {"min": 15.0, "max": 28.0, "avg": 21.5},
-        "precipitation_mm": 8.0,
-        "humidity_percent": 78,
-        "conditions": "rain"
-      },
-      {
-        "date": "2026-01-10",
-        "temperature": {"min": 16.0, "max": 30.0, "avg": 23.0},
-        "precipitation_mm": 0.0,
-        "humidity_percent": 52,
-        "conditions": "sunny"
-      }
-    ],
-    "updated_at": "2026-01-16T06:00:00Z"
-  },
-  {
-    "region_id": "kericho-lowland",
-    "observations": [
-      {
-        "date": "2026-01-16",
-        "temperature": {"min": 18.0, "max": 32.0, "avg": 25.0},
-        "precipitation_mm": 0.0,
-        "humidity_percent": 45,
-        "conditions": "hot"
-      },
-      {
-        "date": "2026-01-15",
-        "temperature": {"min": 17.0, "max": 31.0, "avg": 24.0},
-        "precipitation_mm": 5.0,
-        "humidity_percent": 68,
-        "conditions": "partly_cloudy"
-      },
-      {
-        "date": "2026-01-14",
-        "temperature": {"min": 19.0, "max": 33.0, "avg": 26.0},
-        "precipitation_mm": 0.0,
-        "humidity_percent": 42,
-        "conditions": "hot"
-      },
-      {
-        "date": "2026-01-13",
-        "temperature": {"min": 18.0, "max": 32.0, "avg": 25.0},
-        "precipitation_mm": 0.0,
-        "humidity_percent": 48,
-        "conditions": "sunny"
-      },
-      {
-        "date": "2026-01-12",
-        "temperature": {"min": 17.0, "max": 30.0, "avg": 23.5},
-        "precipitation_mm": 2.0,
-        "humidity_percent": 55,
-        "conditions": "partly_cloudy"
-      },
-      {
-        "date": "2026-01-11",
-        "temperature": {"min": 18.0, "max": 31.0, "avg": 24.5},
-        "precipitation_mm": 0.0,
-        "humidity_percent": 50,
-        "conditions": "sunny"
-      },
-      {
-        "date": "2026-01-10",
-        "temperature": {"min": 19.0, "max": 34.0, "avg": 26.5},
-        "precipitation_mm": 0.0,
-        "humidity_percent": 40,
-        "conditions": "hot"
-      }
-    ],
-    "updated_at": "2026-01-16T06:00:00Z"
-  },
-  {
-    "region_id": "nandi-highland",
-    "observations": [
-      {
-        "date": "2026-01-16",
-        "temperature": {"min": 11.0, "max": 22.0, "avg": 16.5},
-        "precipitation_mm": 0.0,
-        "humidity_percent": 68,
-        "conditions": "sunny"
-      },
-      {
-        "date": "2026-01-15",
-        "temperature": {"min": 10.0, "max": 21.0, "avg": 15.5},
-        "precipitation_mm": 3.0,
-        "humidity_percent": 78,
-        "conditions": "partly_cloudy"
-      },
-      {
-        "date": "2026-01-14",
-        "temperature": {"min": 12.0, "max": 23.0, "avg": 17.5},
-        "precipitation_mm": 0.0,
-        "humidity_percent": 62,
-        "conditions": "sunny"
-      },
-      {
-        "date": "2026-01-13",
-        "temperature": {"min": 11.0, "max": 22.0, "avg": 16.5},
-        "precipitation_mm": 1.0,
-        "humidity_percent": 72,
-        "conditions": "partly_cloudy"
-      },
-      {
-        "date": "2026-01-12",
-        "temperature": {"min": 7.0, "max": 17.0, "avg": 12.0},
-        "precipitation_mm": 0.0,
-        "humidity_percent": 50,
-        "conditions": "cold"
-      },
-      {
-        "date": "2026-01-11",
-        "temperature": {"min": 10.5, "max": 21.5, "avg": 16.0},
-        "precipitation_mm": 4.0,
-        "humidity_percent": 75,
-        "conditions": "rain"
-      },
-      {
-        "date": "2026-01-10",
-        "temperature": {"min": 13.0, "max": 24.0, "avg": 18.5},
-        "precipitation_mm": 0.0,
-        "humidity_percent": 58,
-        "conditions": "sunny"
-      }
-    ],
-    "updated_at": "2026-01-16T06:00:00Z"
-  },
-  {
-    "region_id": "bomet-midland",
-    "observations": [
-      {
-        "date": "2026-01-16",
-        "temperature": {"min": 14.0, "max": 26.0, "avg": 20.0},
-        "precipitation_mm": 0.0,
-        "humidity_percent": 62,
-        "conditions": "sunny"
-      },
-      {
-        "date": "2026-01-15",
-        "temperature": {"min": 13.0, "max": 25.0, "avg": 19.0},
-        "precipitation_mm": 6.0,
-        "humidity_percent": 76,
-        "conditions": "rain"
-      },
-      {
-        "date": "2026-01-14",
-        "temperature": {"min": 15.0, "max": 27.0, "avg": 21.0},
-        "precipitation_mm": 0.0,
-        "humidity_percent": 58,
-        "conditions": "sunny"
-      },
-      {
-        "date": "2026-01-13",
-        "temperature": {"min": 14.0, "max": 26.0, "avg": 20.0},
-        "precipitation_mm": 2.0,
-        "humidity_percent": 68,
-        "conditions": "partly_cloudy"
-      },
-      {
-        "date": "2026-01-12",
-        "temperature": {"min": 13.0, "max": 25.0, "avg": 19.0},
-        "precipitation_mm": 0.0,
-        "humidity_percent": 60,
-        "conditions": "sunny"
-      },
-      {
-        "date": "2026-01-11",
-        "temperature": {"min": 14.0, "max": 26.0, "avg": 20.0},
-        "precipitation_mm": 10.0,
-        "humidity_percent": 82,
-        "conditions": "rain"
-      },
-      {
-        "date": "2026-01-10",
-        "temperature": {"min": 15.0, "max": 28.0, "avg": 21.5},
-        "precipitation_mm": 0.0,
-        "humidity_percent": 55,
-        "conditions": "sunny"
-      }
-    ],
-    "updated_at": "2026-01-16T06:00:00Z"
-  }
+  {"region_id": "kericho-highland", "date": "2026-01-16", "temp_min": 12.0, "temp_max": 24.0, "precipitation_mm": 2.5, "humidity_avg": 75.0, "source": "open-meteo"},
+  {"region_id": "kericho-highland", "date": "2026-01-15", "temp_min": 11.0, "temp_max": 23.0, "precipitation_mm": 18.0, "humidity_avg": 92.0, "source": "open-meteo"},
+  {"region_id": "kericho-highland", "date": "2026-01-14", "temp_min": 13.0, "temp_max": 25.0, "precipitation_mm": 0.0, "humidity_avg": 65.0, "source": "open-meteo"},
+  {"region_id": "kericho-highland", "date": "2026-01-13", "temp_min": 12.5, "temp_max": 24.5, "precipitation_mm": 0.5, "humidity_avg": 70.0, "source": "open-meteo"},
+  {"region_id": "kericho-highland", "date": "2026-01-12", "temp_min": 8.0, "temp_max": 18.0, "precipitation_mm": 0.0, "humidity_avg": 55.0, "source": "open-meteo"},
+  {"region_id": "kericho-highland", "date": "2026-01-11", "temp_min": 11.5, "temp_max": 23.5, "precipitation_mm": 5.0, "humidity_avg": 80.0, "source": "open-meteo"},
+  {"region_id": "kericho-highland", "date": "2026-01-10", "temp_min": 14.0, "temp_max": 26.0, "precipitation_mm": 0.0, "humidity_avg": 60.0, "source": "open-meteo"},
+
+  {"region_id": "kericho-midland", "date": "2026-01-16", "temp_min": 15.0, "temp_max": 28.0, "precipitation_mm": 0.0, "humidity_avg": 58.0, "source": "open-meteo"},
+  {"region_id": "kericho-midland", "date": "2026-01-15", "temp_min": 14.0, "temp_max": 27.0, "precipitation_mm": 12.0, "humidity_avg": 82.0, "source": "open-meteo"},
+  {"region_id": "kericho-midland", "date": "2026-01-14", "temp_min": 16.0, "temp_max": 29.0, "precipitation_mm": 0.0, "humidity_avg": 55.0, "source": "open-meteo"},
+  {"region_id": "kericho-midland", "date": "2026-01-13", "temp_min": 15.5, "temp_max": 28.5, "precipitation_mm": 1.5, "humidity_avg": 65.0, "source": "open-meteo"},
+  {"region_id": "kericho-midland", "date": "2026-01-12", "temp_min": 14.0, "temp_max": 27.0, "precipitation_mm": 0.0, "humidity_avg": 60.0, "source": "open-meteo"},
+  {"region_id": "kericho-midland", "date": "2026-01-11", "temp_min": 15.0, "temp_max": 28.0, "precipitation_mm": 8.0, "humidity_avg": 78.0, "source": "open-meteo"},
+  {"region_id": "kericho-midland", "date": "2026-01-10", "temp_min": 16.0, "temp_max": 30.0, "precipitation_mm": 0.0, "humidity_avg": 52.0, "source": "open-meteo"},
+
+  {"region_id": "kericho-lowland", "date": "2026-01-16", "temp_min": 18.0, "temp_max": 32.0, "precipitation_mm": 0.0, "humidity_avg": 45.0, "source": "open-meteo"},
+  {"region_id": "kericho-lowland", "date": "2026-01-15", "temp_min": 17.0, "temp_max": 31.0, "precipitation_mm": 5.0, "humidity_avg": 68.0, "source": "open-meteo"},
+  {"region_id": "kericho-lowland", "date": "2026-01-14", "temp_min": 19.0, "temp_max": 33.0, "precipitation_mm": 0.0, "humidity_avg": 42.0, "source": "open-meteo"},
+  {"region_id": "kericho-lowland", "date": "2026-01-13", "temp_min": 18.0, "temp_max": 32.0, "precipitation_mm": 0.0, "humidity_avg": 48.0, "source": "open-meteo"},
+  {"region_id": "kericho-lowland", "date": "2026-01-12", "temp_min": 17.0, "temp_max": 30.0, "precipitation_mm": 2.0, "humidity_avg": 55.0, "source": "open-meteo"},
+  {"region_id": "kericho-lowland", "date": "2026-01-11", "temp_min": 18.0, "temp_max": 31.0, "precipitation_mm": 0.0, "humidity_avg": 50.0, "source": "open-meteo"},
+  {"region_id": "kericho-lowland", "date": "2026-01-10", "temp_min": 19.0, "temp_max": 34.0, "precipitation_mm": 0.0, "humidity_avg": 40.0, "source": "open-meteo"},
+
+  {"region_id": "nandi-highland", "date": "2026-01-16", "temp_min": 11.0, "temp_max": 22.0, "precipitation_mm": 0.0, "humidity_avg": 68.0, "source": "open-meteo"},
+  {"region_id": "nandi-highland", "date": "2026-01-15", "temp_min": 10.0, "temp_max": 21.0, "precipitation_mm": 3.0, "humidity_avg": 78.0, "source": "open-meteo"},
+  {"region_id": "nandi-highland", "date": "2026-01-14", "temp_min": 12.0, "temp_max": 23.0, "precipitation_mm": 0.0, "humidity_avg": 62.0, "source": "open-meteo"},
+  {"region_id": "nandi-highland", "date": "2026-01-13", "temp_min": 11.0, "temp_max": 22.0, "precipitation_mm": 1.0, "humidity_avg": 72.0, "source": "open-meteo"},
+  {"region_id": "nandi-highland", "date": "2026-01-12", "temp_min": 7.0, "temp_max": 17.0, "precipitation_mm": 0.0, "humidity_avg": 50.0, "source": "open-meteo"},
+  {"region_id": "nandi-highland", "date": "2026-01-11", "temp_min": 10.5, "temp_max": 21.5, "precipitation_mm": 4.0, "humidity_avg": 75.0, "source": "open-meteo"},
+  {"region_id": "nandi-highland", "date": "2026-01-10", "temp_min": 13.0, "temp_max": 24.0, "precipitation_mm": 0.0, "humidity_avg": 58.0, "source": "open-meteo"},
+
+  {"region_id": "bomet-midland", "date": "2026-01-16", "temp_min": 14.0, "temp_max": 26.0, "precipitation_mm": 0.0, "humidity_avg": 62.0, "source": "open-meteo"},
+  {"region_id": "bomet-midland", "date": "2026-01-15", "temp_min": 13.0, "temp_max": 25.0, "precipitation_mm": 6.0, "humidity_avg": 76.0, "source": "open-meteo"},
+  {"region_id": "bomet-midland", "date": "2026-01-14", "temp_min": 15.0, "temp_max": 27.0, "precipitation_mm": 0.0, "humidity_avg": 58.0, "source": "open-meteo"},
+  {"region_id": "bomet-midland", "date": "2026-01-13", "temp_min": 14.0, "temp_max": 26.0, "precipitation_mm": 2.0, "humidity_avg": 68.0, "source": "open-meteo"},
+  {"region_id": "bomet-midland", "date": "2026-01-12", "temp_min": 13.0, "temp_max": 25.0, "precipitation_mm": 0.0, "humidity_avg": 60.0, "source": "open-meteo"},
+  {"region_id": "bomet-midland", "date": "2026-01-11", "temp_min": 14.0, "temp_max": 26.0, "precipitation_mm": 10.0, "humidity_avg": 82.0, "source": "open-meteo"},
+  {"region_id": "bomet-midland", "date": "2026-01-10", "temp_min": 15.0, "temp_max": 28.0, "precipitation_mm": 0.0, "humidity_avg": 55.0, "source": "open-meteo"}
 ]

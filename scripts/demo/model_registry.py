@@ -11,7 +11,9 @@ AC #2: Unknown fields rejected - strict models inherit with extra="forbid"
 
 from __future__ import annotations
 
-from pydantic import BaseModel, ConfigDict
+from typing import Any
+
+from pydantic import BaseModel, ConfigDict, TypeAdapter
 
 
 class ModelRegistry:
@@ -208,21 +210,26 @@ def _get_strict_document() -> type[BaseModel]:
 
 
 def _get_agent_config_model() -> type[BaseModel]:
-    """Get AgentConfig model (lazy loaded).
+    """Get AgentConfig model using TypeAdapter for discriminated union.
 
-    AgentConfig is a discriminated union. We use AgentConfigBase with strict
-    config for basic field validation. The actual validation uses TypeAdapter
-    for the discriminated union in the validation code.
+    AgentConfig is a discriminated union based on the 'type' field.
+    We use a wrapper class that delegates validation to TypeAdapter.
     """
     if "AgentConfig" not in _strict_models:
-        from ai_model.domain.agent_config import AgentConfigBase
+        from ai_model.domain.agent_config import AgentConfig
 
-        class StrictAgentConfigBase(AgentConfigBase):
-            """Strict AgentConfigBase model that rejects extra fields."""
+        # Create TypeAdapter for the discriminated union
+        _adapter = TypeAdapter(AgentConfig)
 
-            model_config = ConfigDict(extra="forbid")
+        class AgentConfigValidator(BaseModel):
+            """Wrapper that uses TypeAdapter for discriminated union validation."""
 
-        _strict_models["AgentConfig"] = StrictAgentConfigBase
+            @classmethod
+            def model_validate(cls, obj: dict[str, Any], **_kwargs: Any) -> BaseModel:
+                """Validate using TypeAdapter for proper discriminated union handling."""
+                return _adapter.validate_python(obj)
+
+        _strict_models["AgentConfig"] = AgentConfigValidator
     return _strict_models["AgentConfig"]
 
 

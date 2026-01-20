@@ -229,11 +229,15 @@ class MongoDBDirectClient:
                 )
 
     async def seed_weather_observations(self, weather_data: list[dict[str, Any]]) -> None:
-        """Seed weather observations into plantation database."""
+        """Seed weather observations into plantation database.
+
+        Uses (region_id, date) as composite key for upsert to allow
+        multiple observations per region (one per date).
+        """
         if weather_data:
             for obs in weather_data:
                 await self.plantation_db.weather_observations.update_one(
-                    {"region_id": obs["region_id"]},
+                    {"region_id": obs["region_id"], "date": obs["date"]},
                     {"$set": obs},
                     upsert=True,
                 )

@@ -1,7 +1,7 @@
 # Story 0.8.2: Seed Data Loader Script (load-demo-data.py)
 
-**Status:** ready-for-dev
-**GitHub Issue:** <!-- Auto-created by dev-story workflow -->
+**Status:** in-progress
+**GitHub Issue:** #207
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
