@@ -11,7 +11,6 @@ Tests for:
 import json
 import tempfile
 from pathlib import Path
-from typing import TypeVar
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -23,9 +22,10 @@ from scripts.demo.validation import (
 )
 
 
-# Test model with extra="forbid" to reject unknown fields
-class TestModel(BaseModel):
-    """Test model for validation tests."""
+# Sample model with extra="forbid" to reject unknown fields
+# Note: Named "SampleModel" not "SampleModel" to avoid pytest collection warning
+class SampleModel(BaseModel):
+    """Sample model for validation tests."""
 
     model_config = ConfigDict(extra="forbid")
 
@@ -33,9 +33,6 @@ class TestModel(BaseModel):
     name: str = Field(min_length=1, max_length=100, description="Name")
     count: int = Field(ge=0, description="Count")
     is_active: bool = Field(default=True, description="Active flag")
-
-
-T = TypeVar("T", bound=BaseModel)
 
 
 class TestValidateWithPydantic:
@@ -50,13 +47,13 @@ class TestValidateWithPydantic:
 
         validated, errors = validate_with_pydantic(
             records=records,
-            model=TestModel,
+            model=SampleModel,
             filename="test_data.json",
         )
 
         assert len(validated) == 2
         assert len(errors) == 0
-        assert isinstance(validated[0], TestModel)
+        assert isinstance(validated[0], SampleModel)
         assert validated[0].id == "test-001"
         assert validated[1].is_active is True  # default value
 
@@ -68,7 +65,7 @@ class TestValidateWithPydantic:
 
         validated, errors = validate_with_pydantic(
             records=records,
-            model=TestModel,
+            model=SampleModel,
             filename="test_data.json",
         )
 
@@ -88,7 +85,7 @@ class TestValidateWithPydantic:
 
         validated, errors = validate_with_pydantic(
             records=records,
-            model=TestModel,
+            model=SampleModel,
             filename="missing_fields.json",
         )
 
@@ -113,7 +110,7 @@ class TestValidateWithPydantic:
 
         validated, errors = validate_with_pydantic(
             records=records,
-            model=TestModel,
+            model=SampleModel,
             filename="extra_fields.json",
         )
 
@@ -137,7 +134,7 @@ class TestValidateWithPydantic:
 
         validated, errors = validate_with_pydantic(
             records=records,
-            model=TestModel,
+            model=SampleModel,
             filename="multiple_errors.json",
         )
 
@@ -160,7 +157,7 @@ class TestValidateWithPydantic:
 
         validated, errors = validate_with_pydantic(
             records=records,
-            model=TestModel,
+            model=SampleModel,
             filename="test.json",
         )
 
@@ -185,7 +182,7 @@ class TestValidateJsonFile:
         try:
             result = validate_json_file(
                 file_path=file_path,
-                model=TestModel,
+                model=SampleModel,
             )
 
             assert isinstance(result, ValidationResult)
@@ -207,7 +204,7 @@ class TestValidateJsonFile:
                 file_path = nested_path / "data.json"
                 file_path.write_text(json.dumps(records))
 
-                result = validate_json_file(file_path=file_path, model=TestModel)
+                result = validate_json_file(file_path=file_path, model=SampleModel)
                 assert len(result.validated) == 1
                 assert len(result.errors) == 0
 

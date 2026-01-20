@@ -125,6 +125,12 @@ class TestGetModelForFile:
         assert model is not None
         assert "region_id" in model.model_fields
 
+    def test_resolves_documents_json(self) -> None:
+        """AC #5: Resolves documents.json to Document from fp_common."""
+        model = get_model_for_file("documents.json")
+        assert model is not None
+        assert "document_id" in model.model_fields
+
     def test_unknown_file_returns_none(self) -> None:
         """Unknown file pattern returns None."""
         model = get_model_for_file("unknown_file.json")
@@ -159,6 +165,8 @@ class TestGetSeedModelRegistry:
             "source_configs.json",
             "prompts.json",
             "weather_observations.json",
+            "documents.json",
+            "agent_configs.json",
         ]
 
         for pattern in test_patterns:

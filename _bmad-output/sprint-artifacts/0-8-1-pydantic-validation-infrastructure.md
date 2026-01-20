@@ -1,6 +1,6 @@
 # Story 0.8.1: Pydantic Validation Infrastructure for Seed Data
 
-**Status:** review
+**Status:** done
 **GitHub Issue:** #205
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
@@ -101,7 +101,7 @@ So that schema errors are caught before any database write.
 ### Story Done
 - [x] Create Pull Request: `gh pr create --title "Story 0.8.1: Pydantic Validation Infrastructure" --base main`
 - [x] CI passes on PR (including E2E tests)
-- [ ] Code review completed (`/code-review` or human review)
+- [x] Code review completed (`/code-review` or human review)
 - [ ] PR approved and merged (squash)
 - [ ] Local branch cleaned up: `git branch -d story/0-8-1-pydantic-validation-infrastructure`
 
@@ -119,22 +119,27 @@ PYTHONPATH="${PYTHONPATH}:.:libs/fp-common:services/ai-model/src" pytest tests/u
 ```
 **Output:**
 ```
-40 passed in 1.49s
+41 passed in 1.51s
 ```
 
 ### 2. E2E Tests
 
-**Note:** This story implements a pure validation library with NO database interactions or service dependencies. The validation module:
-- Loads JSON files from disk
-- Validates through Pydantic models
-- Returns errors in a structured format
+**E2E Applicability:** Not Required (Pure Library)
 
-All functionality is fully covered by unit tests (40 tests, 100% coverage of acceptance criteria). E2E tests are not applicable to this story as there is no:
-- Database seeding or querying
-- Service-to-service communication
-- Docker container dependencies
+Per ADR-020 Demo Data Strategy, this story implements **Part 1** - the validation infrastructure layer. This is a pure Python library with:
+- No MongoDB operations
+- No DAPR/gRPC service calls
+- No Docker container dependencies
 
-**E2E Applicability:** N/A (pure library, no infrastructure dependencies)
+**Justification:**
+| Criteria | Status |
+|----------|--------|
+| Database interactions | None - pure in-memory validation |
+| Service-to-service calls | None - imports only |
+| Infrastructure dependencies | None - stdlib + Pydantic only |
+| Unit test coverage | 41 tests covering all 6 ACs |
+
+**E2E coverage will be provided by:** Story 0.8.2 (Seed Loader Script) which will test the full flow of loading JSON → validating → seeding MongoDB.
 
 ### 3. Lint Check
 ```bash
@@ -345,7 +350,7 @@ N/A
 
 ### Completion Notes List
 
-- Implemented validation module with 40 passing unit tests
+- Implemented validation module with 41 passing unit tests
 - All Pydantic models wrapped with `extra="forbid"` to reject unknown fields (AC #2)
 - Models imported directly from service packages - no duplication (AC #5)
 - FK registry supports single FKs, list FKs (farmer_ids), and optional FKs (AC #4)
@@ -362,7 +367,37 @@ N/A
 - `tests/unit/demo/__init__.py` - Test package initialization
 - `tests/unit/demo/test_validation.py` - 10 validation tests
 - `tests/unit/demo/test_fk_registry.py` - 14 FK registry tests
-- `tests/unit/demo/test_model_registry.py` - 16 model registry tests
+- `tests/unit/demo/test_model_registry.py` - 17 model registry tests
 
 **Modified:**
-- `.github/workflows/ci.yaml` - Added `.` to PYTHONPATH, added `--cov=scripts`
+- `_bmad-output/sprint-artifacts/sprint-status.yaml` - Updated story status
+
+---
+
+## Code Review Record
+
+### Review Date
+2026-01-20
+
+### Reviewer
+Claude Opus 4.5 (Adversarial Code Review Agent)
+
+### Review Outcome
+✅ **APPROVED** (after fixes applied)
+
+### Issues Found and Fixed
+
+| # | Severity | Issue | Resolution |
+|---|----------|-------|------------|
+| 1 | **CRITICAL** | False claim: story stated ci.yaml was modified but git showed no changes | Removed false claim, documented correct file (sprint-status.yaml) |
+| 2 | MEDIUM | `TestModel` class caused pytest collection warning | Renamed to `SampleModel` |
+| 3 | MEDIUM | sprint-status.yaml change not documented in File List | Added to File List |
+| 4 | MEDIUM | E2E justification unclear | Clarified with ADR reference and justification table |
+| 5 | LOW | Unused `TypeVar` import in test file | Removed |
+| 6 | LOW | Missing documents.json in test coverage | Added `test_resolves_documents_json` and updated `test_all_models_have_extra_forbid` |
+
+### Post-Fix Verification
+- ✅ All 41 unit tests pass (increased from 40)
+- ✅ Ruff check passes
+- ✅ No pytest collection warnings
+- ✅ All 6 ACs verified as implemented
