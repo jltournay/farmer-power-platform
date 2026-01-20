@@ -22,6 +22,10 @@ This folder contains Architecture Decision Records (ADRs) documenting significan
 | [ADR-014](./ADR-014-mongodb-async-driver-migration.md) | MongoDB Async Driver Migration (Motor → PyMongo Async) | Accepted | 2026-01-09 |
 | [ADR-015](./ADR-015-e2e-autonomous-debugging-infrastructure.md) | E2E Autonomous Debugging Infrastructure | Accepted | 2026-01-10 |
 | [ADR-016](./ADR-016-unified-cost-model.md) | Unified Cost Model and Platform Cost Service | Draft | 2026-01-11 |
+| [ADR-017](./ADR-017-map-services-gps-region-assignment.md) | Map Services and GPS Region Assignment | Accepted | 2026-01-15 |
+| [ADR-018](./ADR-018-real-time-communication-patterns.md) | Real-Time Communication Patterns (SSE vs WebSocket) | Accepted | 2026-01-16 |
+| [ADR-019](./ADR-019-admin-configuration-visibility.md) | Admin Configuration Visibility (Read-Only gRPC APIs) | Accepted | 2026-01-17 |
+| [ADR-020](./ADR-020-demo-data-loader-pydantic-validation.md) | Demo Data Strategy with Pydantic Validation | Accepted | 2026-01-20 |
 
 ## ADR Template
 

@@ -30,6 +30,7 @@ date: '2025-12-16'](#stepscompleted-1-inputdocuments-bmad-outputanalysisproduct-
     - [ADR-017: Map Services and GPS Region Assignment](./adr/ADR-017-map-services-gps-region-assignment.md)
     - [ADR-018: Real-Time Communication Patterns (SSE vs WebSocket)](./adr/ADR-018-real-time-communication-patterns.md)
     - [ADR-019: Admin Configuration Visibility (Read-Only gRPC APIs)](./adr/ADR-019-admin-configuration-visibility.md)
+    - [ADR-020: Demo Data Strategy with Pydantic Validation](./adr/ADR-020-demo-data-loader-pydantic-validation.md)
   - [Source of Truth Declaration](./source-of-truth-declaration.md)
     - [Platform Model Overview (9 Models)](./source-of-truth-declaration.md#platform-model-overview-9-models)
   - [Collection Model Architecture](./collection-model-architecture.md)
