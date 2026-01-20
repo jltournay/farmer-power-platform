@@ -65,8 +65,11 @@ So that I can support user administration tasks.
 - Audit log to MongoDB for compliance
 
 ## Dependencies
-- Story 9.1: Platform Admin Application Scaffold
-- Story 0.5.2: Azure AD B2C Configuration
+- Story 9.1a: Platform Admin Application Scaffold
+- **Story 0.5.8: Azure AD B2C Configuration (BLOCKING)** - Deferred for production deployment
+
+## Status: Deferred
+This story is deferred until Story 0.5.8 (Azure AD B2C Configuration) is completed. User management requires Microsoft Graph API access to Azure AD B2C, which is only available after the B2C tenant is configured.
 
 ## Story Points: 5
 
