@@ -221,7 +221,7 @@ development_status:
   # Pydantic-validated seed loader + Polyfactory-based data generator
   epic-0-8: in-progress
   0-8-1-pydantic-validation-infrastructure: done  # github_issue: 205, PR: #206  # 5 points - Schema validation, FK registry, CODE REVIEW COMPLETED 2026-01-20
-  0-8-2-seed-data-loader-script: backlog  # 5 points - load-demo-data.py, depends: 0-8-1
+  0-8-2-seed-data-loader-script: ready-for-dev  # 5 points - load-demo-data.py, depends: 0-8-1
   0-8-3-polyfactory-generator-framework: backlog  # 5 points - Factory classes for each model, depends: 0-8-1
   0-8-4-profile-based-data-generation: backlog  # 5 points - generate-demo-data.py, profiles, depends: 0-8-3
   0-8-5-demo-data-documentation: backlog  # 2 points - Usage guide, depends: 0-8-2, 0-8-4
