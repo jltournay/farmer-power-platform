@@ -12,6 +12,9 @@ from pathlib import Path
 
 import pytest
 
+# Skip all tests if polyfactory is not installed
+pytest.importorskip("polyfactory", reason="polyfactory required for generator tests")
+
 # Add tests/demo and scripts/demo to path
 sys.path.insert(0, str(Path(__file__).parent.parent.parent.parent.parent / "tests" / "demo"))
 sys.path.insert(0, str(Path(__file__).parent.parent.parent.parent.parent / "scripts" / "demo"))

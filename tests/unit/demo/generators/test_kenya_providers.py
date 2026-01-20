@@ -7,8 +7,13 @@ Tests AC #3: Kenya-specific data - Swahili names, +254 phone prefix, Kenya GPS b
 import sys
 from pathlib import Path
 
+import pytest
+
 # Add tests/demo to path
 sys.path.insert(0, str(Path(__file__).parent.parent.parent.parent.parent / "tests" / "demo"))
+
+# Skip all tests if polyfactory is not installed
+pytest.importorskip("polyfactory", reason="polyfactory required for generator tests")
 
 from generators.kenya_providers import KenyaProvider
 
