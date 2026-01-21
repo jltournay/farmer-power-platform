@@ -95,8 +95,6 @@ class FKRegistryMixin:
         Raises:
             ValueError: If no IDs registered for entity_type.
         """
-        import random
-
         valid_ids = cls.get_fk_registry().get_valid_ids(entity_type)
         if not valid_ids:
             raise ValueError(

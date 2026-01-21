@@ -17,6 +17,7 @@ AC #5: Scenario-based quality patterns
 from __future__ import annotations
 
 import json
+import random
 import sys
 from dataclasses import dataclass, field
 from datetime import datetime
@@ -275,8 +276,6 @@ class DataOrchestrator:
         for farmer in farmers:
             # Get a random factory for this farmer's documents
             factory_ids = list(self._fk_registry.get_valid_ids("factories"))
-            import random
-
             factory_id = random.choice(factory_ids)
 
             if farmer.id in farmer_scenarios:

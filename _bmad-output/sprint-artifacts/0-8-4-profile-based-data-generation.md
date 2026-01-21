@@ -1,6 +1,6 @@
 # Story 0.8.4: Profile-Based Data Generation
 
-**Status:** review
+**Status:** done
 **GitHub Issue:** #211
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
@@ -669,6 +669,39 @@ Claude Opus 4.5 (claude-opus-4-5-20251101)
 
 **Modified:**
 - `.gitignore` - Added tests/demo/generated/ to ignore generated output
+- `.github/workflows/ci.yaml` - Added polyfactory and faker to CI dependencies
 - `tests/demo/generators/__init__.py` - Export new modules
-- `tests/demo/generators/base.py` - Added set_seed() for deterministic generation
+- `tests/demo/generators/base.py` - Added set_seed() for deterministic generation, removed redundant import
+- `tests/demo/generators/orchestrator.py` - Moved import to module level (code review fix)
 - `_bmad-output/sprint-artifacts/sprint-status.yaml` - Story status tracking
+
+---
+
+## Code Review
+
+**Review Date:** 2026-01-21
+**Reviewer:** Claude Opus 4.5 (code-review workflow)
+**Outcome:** ✅ APPROVED (with minor fixes applied)
+
+### Summary
+
+All 5 Acceptance Criteria validated and implemented correctly. E2E evidence verified (CI Run 21203736648 PASSED).
+
+### Issues Found and Resolved
+
+| # | Severity | Issue | Resolution |
+|---|----------|-------|------------|
+| 1 | MEDIUM | File List missing `.github/workflows/ci.yaml` | ✅ Fixed - Added to Modified section |
+| 2 | MEDIUM | Fragile determinism pattern using global `random.seed()` | ✅ Accepted - Works correctly; `set_global_seed()` seeds both seeded and standard random modules |
+| 3 | MEDIUM | Bare `except Exception` in CLI script | ✅ Accepted - Appropriate for CLI error handling |
+| 4 | LOW | Redundant `import random` in `base.py:98` | ✅ Fixed - Removed nested import |
+| 5 | LOW | Nested `import random` in `orchestrator.py:278` | ✅ Fixed - Moved to module level |
+| 6 | LOW | Test file import reformatting not documented | ✅ Accepted - Trivial lint change |
+| 7 | LOW | AC #5 terminology mismatch (stars vs tiers) | ✅ Accepted - Implementation correct, AC used informal language |
+| 8 | LOW | Missing type annotation in `_generate_farmers_with_scenarios` | ✅ Accepted - Minor, doesn't affect functionality |
+
+### Verification
+
+- Unit tests: 45 passed
+- Lint: All checks passed
+- E2E CI: Run 21203736648 PASSED
