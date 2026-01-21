@@ -57,6 +57,40 @@ print_error() {
 }
 
 # =============================================================================
+# Clear Frontend Volumes (prevents stale content when rebuilding)
+# =============================================================================
+# Docker named volumes persist across rebuilds. When --build is used, we must
+# clear the frontend volumes to ensure fresh content is served.
+# See: https://github.com/docker/compose/issues/2127
+
+clear_frontend_volumes() {
+    print_header "Clearing Frontend Volumes (prevents stale content)"
+
+    # Get the project name used by docker compose (derived from compose file directory)
+    local project_name
+    project_name=$(docker compose -f "$COMPOSE_FILE" config --format json 2>/dev/null | grep -o '"name":"[^"]*"' | head -1 | cut -d'"' -f4 || echo "infrastructure")
+
+    local volumes=(
+        "${project_name}_platform-admin-dist"
+        "${project_name}_factory-portal-dist"
+    )
+
+    # Stop and remove frontend containers first (required to release volumes)
+    print_success "Stopping frontend containers..."
+    docker compose -f "$COMPOSE_FILE" stop nginx platform-admin factory-portal 2>/dev/null || true
+    docker compose -f "$COMPOSE_FILE" rm -f nginx platform-admin factory-portal 2>/dev/null || true
+
+    # Remove the volumes
+    for vol in "${volumes[@]}"; do
+        if docker volume inspect "$vol" &>/dev/null; then
+            docker volume rm "$vol" 2>/dev/null && print_success "Removed volume: $vol" || print_warning "Could not remove: $vol"
+        else
+            print_warning "Volume not found (will be created fresh): $vol"
+        fi
+    done
+}
+
+# =============================================================================
 # Step 1: Load Environment Variables
 # =============================================================================
 
@@ -147,6 +181,9 @@ start_infrastructure() {
     if [[ "${1:-}" == "--build" ]]; then
         build_flag="--build"
         print_success "Will rebuild Docker images before starting"
+
+        # Clear frontend volumes to prevent stale content
+        clear_frontend_volumes
     else
         print_warning "Starting WITHOUT rebuilding images"
         print_warning "If you modified service code, use: bash scripts/e2e-up.sh --build"
