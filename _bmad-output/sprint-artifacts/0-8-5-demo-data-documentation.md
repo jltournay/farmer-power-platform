@@ -74,26 +74,26 @@ So that I can quickly set up a working demo environment.
 **All story development MUST use feature branches.** Direct pushes to main are blocked.
 
 ### Story Start
-- [ ] GitHub Issue exists or created: `gh issue create --title "Story 0.8.5: Demo Data Documentation"`
-- [ ] Feature branch created from main:
+- [x] GitHub Issue exists or created: `gh issue create --title "Story 0.8.5: Demo Data Documentation"` → **#213**
+- [x] Feature branch created from main:
   ```bash
   git checkout main && git pull origin main
-  git checkout -b story/0-8-5-demo-data-documentation
+  git checkout -b feature/0-8-5-demo-data-documentation
   ```
 
-**Branch name:** `story/0-8-5-demo-data-documentation`
+**Branch name:** `feature/0-8-5-demo-data-documentation`
 
 ### During Development
-- [ ] All commits reference GitHub issue: `Relates to #XX`
-- [ ] Commits are atomic by type (production, test, seed - not mixed)
-- [ ] Push to feature branch: `git push -u origin story/0-8-5-demo-data-documentation`
+- [x] All commits reference GitHub issue: `Relates to #213`
+- [x] Commits are atomic by type (production, test, seed - not mixed)
+- [x] Push to feature branch: `git push -u origin feature/0-8-5-demo-data-documentation`
 
 ### Story Done
 - [ ] Create Pull Request: `gh pr create --title "Story 0.8.5: Demo Data Documentation" --base main`
 - [ ] CI passes on PR (including E2E tests)
 - [ ] Code review completed (`/code-review` or human review)
 - [ ] PR approved and merged (squash)
-- [ ] Local branch cleaned up: `git branch -d story/0-8-5-demo-data-documentation`
+- [ ] Local branch cleaned up: `git branch -d feature/0-8-5-demo-data-documentation`
 
 **PR URL:** _______________ (fill in when created)
 
@@ -165,14 +165,20 @@ ruff check scripts/demo/ && echo "Lint passed"
 
 ```bash
 # Push to story branch
-git push origin story/0-8-5-demo-data-documentation
+git push origin feature/0-8-5-demo-data-documentation
 
 # Wait ~30s, then check CI status
-gh run list --branch story/0-8-5-demo-data-documentation --limit 3
+gh run list --branch feature/0-8-5-demo-data-documentation --limit 3
 ```
-**CI Run ID:** _______________
-**CI Status:** [ ] Passed / [ ] Failed
-**Verification Date:** _______________
+**CI Run ID:** 21214003994
+**CI Status:** [x] Passed / [ ] Failed
+**Verification Date:** 2026-01-21
+
+### 5. E2E Testing (DOCUMENTATION STORY - NOT APPLICABLE)
+
+This is a documentation-only story with no production code changes. E2E infrastructure tests are not affected.
+
+Unit tests verified: 45 passed (demo_generators)
 
 ---
 
