@@ -1,0 +1,67 @@
+# Minimal Profile - For quick testing and development
+# Story 0.8.4: Profile-Based Data Generation (AC #1)
+#
+# Configuration: 1 region, 1 factory, 3 farmers
+# Use case: Fast feedback during development
+
+profile: minimal
+description: Minimal dataset for quick testing and development
+
+# Reference data (loaded from E2E seed files, NOT generated)
+reference_data:
+  source: e2e_seed
+  entities:
+    - grading_models
+    - regions
+    - agent_configs
+    - prompts
+    - source_configs
+
+# Generated data configuration
+generated_data:
+  factories:
+    count: 1
+    distribution:
+      by_region: first  # Use first available region
+
+  collection_points:
+    count: 2
+    per_factory: 2
+
+  farmers:
+    count: 3
+    id_prefix: "FRM-MIN-"
+    distribution:
+      by_region: first
+      farm_scale:
+        smallholder: 70
+        medium: 30
+        estate: 0
+      notification_channel:
+        sms: 100
+        whatsapp: 0
+      pref_lang:
+        sw: 70
+        en: 30
+        ki: 0
+        luo: 0
+
+    # Minimal scenario assignments
+    scenarios:
+      top_performer: 1
+      improving_trend: 1
+      consistently_poor: 1
+
+  farmer_performance:
+    generate_for: all_farmers
+    historical_days: 30
+
+  weather_observations:
+    generate_for: all_regions
+    date_range: last_30_days
+
+  quality_documents:
+    count: 15
+    distribution:
+      per_farmer: 5
+      date_range: last_30_days

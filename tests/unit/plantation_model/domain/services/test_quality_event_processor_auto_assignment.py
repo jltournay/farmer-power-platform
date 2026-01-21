@@ -14,8 +14,14 @@ from datetime import UTC, datetime
 from unittest.mock import AsyncMock, patch
 
 import pytest
-from fp_common.models import Document, ExtractionMetadata, IngestionMetadata, RawDocumentRef
-from fp_common.models import CollectionPoint, GeoLocation
+from fp_common.models import (
+    CollectionPoint,
+    Document,
+    ExtractionMetadata,
+    GeoLocation,
+    IngestionMetadata,
+    RawDocumentRef,
+)
 from plantation_model.domain.models import (
     FarmerPerformance,
     FarmScale,

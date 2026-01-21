@@ -48,3 +48,5 @@ storybook-static/
 dist/
 *.tsbuildinfo
 coverage/
+# Demo data generated output
+tests/demo/generated/

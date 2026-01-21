@@ -6,10 +6,14 @@ This module provides:
 
 Story 0.8.3: Polyfactory Generator Framework
 AC #2: Factories accept FK values as parameters and default values reference FK registry
+
+Story 0.8.4: Profile-Based Data Generation
+- Added seeded random support for deterministic generation
 """
 
 from __future__ import annotations
 
+import random
 import sys
 from pathlib import Path
 from typing import ClassVar, TypeVar
@@ -119,6 +123,7 @@ class BaseModelFactory(FKRegistryMixin, ModelFactory[T]):
     - FK registry integration via FKRegistryMixin
     - ID generation with prefixes
     - Auto-registration of generated IDs
+    - Seeded random support for deterministic generation
 
     Subclasses should define:
     - __model__: The Pydantic model class
@@ -137,6 +142,22 @@ class BaseModelFactory(FKRegistryMixin, ModelFactory[T]):
 
     # Allow extra fields to be passed (useful for FK overrides)
     __allow_none_optionals__ = True
+
+    # Shared Random instance for seeded generation (Story 0.8.4)
+    __random__: ClassVar[random.Random] = random.Random()
+    _seed: ClassVar[int | None] = None
+
+    @classmethod
+    def set_seed(cls, seed: int | None) -> None:
+        """Set the random seed for deterministic generation.
+
+        This affects all BaseModelFactory subclasses.
+
+        Args:
+            seed: Random seed. None resets to non-deterministic.
+        """
+        BaseModelFactory._seed = seed
+        BaseModelFactory.__random__ = random.Random(seed)
 
     @classmethod
     def _next_id(cls) -> str:
@@ -181,3 +202,15 @@ class BaseModelFactory(FKRegistryMixin, ModelFactory[T]):
             cls.register_generated(cls._entity_type, ids)
 
         return instances
+
+
+def set_factory_seed(seed: int | None) -> None:
+    """Set the random seed for all factories.
+
+    Convenience function that sets the seed on BaseModelFactory,
+    which affects all factory subclasses via the shared __random__.
+
+    Args:
+        seed: Random seed. None resets to non-deterministic.
+    """
+    BaseModelFactory.set_seed(seed)
