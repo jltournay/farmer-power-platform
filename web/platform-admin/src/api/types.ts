@@ -428,6 +428,33 @@ export function regionBoundaryToGeoJSON(boundary: RegionBoundary | undefined): G
 }
 
 /**
+ * Create a circle polygon from center GPS and radius (fallback when no boundary exists).
+ * Generates a 64-point polygon approximating a circle.
+ */
+export function createCircleFromCenterRadius(
+  center: { lat: number; lng: number },
+  radiusKm: number,
+  numPoints: number = 64
+): GeoJSONPolygon {
+  const coordinates: [number, number][] = [];
+  const earthRadiusKm = 6371;
+
+  for (let i = 0; i <= numPoints; i++) {
+    const angle = (i / numPoints) * 2 * Math.PI;
+    // Calculate offset in radians
+    const latOffset = (radiusKm / earthRadiusKm) * Math.cos(angle) * (180 / Math.PI);
+    const lngOffset = (radiusKm / earthRadiusKm) * Math.sin(angle) * (180 / Math.PI) / Math.cos(center.lat * Math.PI / 180);
+
+    coordinates.push([center.lng + lngOffset, center.lat + latOffset]);
+  }
+
+  return {
+    type: 'Polygon',
+    coordinates: [coordinates],
+  };
+}
+
+/**
  * Convert GeoJSON Polygon from BoundaryDrawer to API RegionBoundary.
  */
 export function geoJSONToRegionBoundary(geoJson: GeoJSONPolygon | null): RegionBoundary | undefined {

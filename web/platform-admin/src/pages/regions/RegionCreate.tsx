@@ -157,6 +157,12 @@ export function RegionCreate(): JSX.Element {
       setValue('weather_api_lat', stats.centroid.lat);
       setValue('weather_api_lng', stats.centroid.lng);
     }
+
+    // Auto-calculate radius from polygon area (equivalent circle radius)
+    if (stats?.areaKm2) {
+      const equivalentRadius = Math.sqrt(stats.areaKm2 / Math.PI);
+      setValue('radius_km', Math.round(equivalentRadius * 10) / 10); // Round to 1 decimal
+    }
   };
 
   // Form submission

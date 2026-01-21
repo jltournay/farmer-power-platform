@@ -73,8 +73,8 @@ interface SectionCardProps {
 
 function SectionCard({ title, icon, children }: SectionCardProps): JSX.Element {
   return (
-    <Card variant="outlined">
-      <CardContent>
+    <Card variant="outlined" sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+      <CardContent sx={{ flexGrow: 1 }}>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
           {icon}
           <Typography variant="h6" component="h2">
@@ -97,8 +97,8 @@ interface InfoRowProps {
 
 function InfoRow({ label, value }: InfoRowProps): JSX.Element {
   return (
-    <Box sx={{ display: 'flex', justifyContent: 'space-between', py: 1 }}>
-      <Typography variant="body2" color="text.secondary">
+    <Box sx={{ py: 1 }}>
+      <Typography variant="caption" color="text.secondary" display="block">
         {label}
       </Typography>
       <Typography variant="body2" fontWeight={500}>
@@ -267,7 +267,7 @@ export function FactoryDetail(): JSX.Element {
 
         {/* Map - Left Column */}
         <Grid size={{ xs: 12, lg: 8 }}>
-          <Paper sx={{ p: 2 }}>
+          <Paper sx={{ p: 2, height: '100%', display: 'flex', flexDirection: 'column' }}>
             <Typography variant="h6" gutterBottom>
               Factory Location
             </Typography>

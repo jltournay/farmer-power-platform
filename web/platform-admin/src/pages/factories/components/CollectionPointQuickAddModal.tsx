@@ -51,10 +51,9 @@ const quickAddSchema = z.object({
 
 type FormValues = z.infer<typeof quickAddSchema>;
 
-const DEFAULT_VALUES: FormValues = {
+const DEFAULT_VALUES: Partial<FormValues> = {
   name: '',
-  latitude: -1.0,
-  longitude: 37.0,
+  // GPS coordinates start empty - user must set them explicitly
   clerk_id: '',
   clerk_phone: '',
 };
@@ -172,8 +171,9 @@ export function CollectionPointQuickAddModal({
                 Location
               </Typography>
               <GPSFieldWithMapAssist
-                value={{ lat: latitude, lng: longitude }}
+                value={{ lat: latitude ?? null, lng: longitude ?? null }}
                 onChange={handleGPSChange}
+                initialExpanded
               />
             </Grid>
 

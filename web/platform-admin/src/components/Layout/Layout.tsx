@@ -34,8 +34,6 @@ export function Layout(): JSX.Element {
     setSidebarOpen((prev) => !prev);
   };
 
-  const sidebarWidth = sidebarOpen ? SIDEBAR_WIDTH : SIDEBAR_COLLAPSED_WIDTH;
-
   return (
     <Box sx={{ display: 'flex', minHeight: '100vh' }}>
       {/* Sidebar */}
@@ -53,11 +51,8 @@ export function Layout(): JSX.Element {
           flexGrow: 1,
           display: 'flex',
           flexDirection: 'column',
-          marginLeft: isMobile ? 0 : `${sidebarWidth}px`,
-          transition: theme.transitions.create('margin', {
-            easing: theme.transitions.easing.sharp,
-            duration: theme.transitions.duration.leavingScreen,
-          }),
+          // No marginLeft needed - the Sidebar already takes up space in the flex layout
+          // via its width and flexShrink: 0 properties
         }}
       >
         {/* Header */}

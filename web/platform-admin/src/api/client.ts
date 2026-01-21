@@ -54,8 +54,20 @@ class ApiClient {
     }
 
     if (!response.ok) {
-      const errorData = (await response.json().catch(() => ({}))) as ApiErrorResponse;
-      throw new Error(errorData.detail || `HTTP error ${response.status}`);
+      const errorData = await response.json().catch(() => ({}));
+      // Handle different error response formats
+      let errorMessage = `HTTP error ${response.status}`;
+      if (typeof errorData.detail === 'string') {
+        // Standard BFF error: { detail: "message" }
+        errorMessage = errorData.detail;
+      } else if (Array.isArray(errorData.detail)) {
+        // FastAPI validation error: { detail: [{ loc: [...], msg: "...", type: "..." }] }
+        errorMessage = errorData.detail.map((e: { msg?: string }) => e.msg || 'Validation error').join(', ');
+      } else if (errorData.error) {
+        // Legacy error format: { error: "message" }
+        errorMessage = errorData.error;
+      }
+      throw new Error(errorMessage);
     }
 
     return response.json() as Promise<T>;

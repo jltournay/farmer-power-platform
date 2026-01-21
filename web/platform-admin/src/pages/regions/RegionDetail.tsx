@@ -40,6 +40,7 @@ import {
   getRegion,
   getRegionWeather,
   regionBoundaryToGeoJSON,
+  createCircleFromCenterRadius,
   type RegionDetail as RegionDetailType,
   type RegionWeatherResponse,
 } from '@/api';
@@ -64,8 +65,8 @@ interface SectionCardProps {
 
 function SectionCard({ title, icon, children }: SectionCardProps): JSX.Element {
   return (
-    <Card variant="outlined">
-      <CardContent>
+    <Card variant="outlined" sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+      <CardContent sx={{ flexGrow: 1 }}>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
           {icon}
           <Typography variant="h6" component="h2">
@@ -88,8 +89,8 @@ interface InfoRowProps {
 
 function InfoRow({ label, value }: InfoRowProps): JSX.Element {
   return (
-    <Box sx={{ display: 'flex', justifyContent: 'space-between', py: 1 }}>
-      <Typography variant="body2" color="text.secondary">
+    <Box sx={{ py: 1 }}>
+      <Typography variant="caption" color="text.secondary" display="block">
         {label}
       </Typography>
       <Typography variant="body2" fontWeight={500}>
@@ -156,7 +157,12 @@ export function RegionDetail(): JSX.Element {
   }, [fetchData, fetchWeather]);
 
   // Convert region boundary to GeoJSON format for BoundaryDrawer
-  const existingBoundary = regionBoundaryToGeoJSON(region?.geography.boundary);
+  // Fall back to a circle from center GPS + radius if no polygon boundary exists
+  const existingBoundary = regionBoundaryToGeoJSON(region?.geography.boundary) ??
+    (region ? createCircleFromCenterRadius(
+      region.geography.center_gps,
+      region.geography.radius_km
+    ) : undefined);
 
   // Dummy handler for read-only mode
   const handleBoundaryChange = (_boundary: GeoJSONPolygon | null, _stats: BoundaryStats | null) => {
@@ -222,7 +228,7 @@ export function RegionDetail(): JSX.Element {
       <Grid container spacing={3}>
         {/* Left Column - Map */}
         <Grid size={{ xs: 12, lg: 8 }}>
-          <Paper sx={{ p: 2 }}>
+          <Paper sx={{ p: 2, height: '100%', display: 'flex', flexDirection: 'column' }}>
             <Typography variant="h6" gutterBottom>
               Region Boundary
             </Typography>

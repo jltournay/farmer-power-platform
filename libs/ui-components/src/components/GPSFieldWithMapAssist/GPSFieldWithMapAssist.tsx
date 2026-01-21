@@ -63,6 +63,8 @@ export interface GPSFieldWithMapAssistProps {
   errors?: { lat?: string; lng?: string };
   /** Helper text */
   helperText?: string;
+  /** Whether to start with map expanded (useful for creation forms) */
+  initialExpanded?: boolean;
 }
 
 /**
@@ -107,9 +109,10 @@ export function GPSFieldWithMapAssist({
   required = false,
   errors,
   helperText,
+  initialExpanded = false,
 }: GPSFieldWithMapAssistProps): JSX.Element {
   const theme = useTheme();
-  const [mapExpanded, setMapExpanded] = useState(false);
+  const [mapExpanded, setMapExpanded] = useState(initialExpanded);
   const [gettingLocation, setGettingLocation] = useState(false);
 
   const handleLatChange = (e: React.ChangeEvent<HTMLInputElement>) => {

@@ -68,15 +68,14 @@ const farmerFormSchema = z.object({
 
 type FormValues = z.infer<typeof farmerFormSchema>;
 
-const defaultValues: FormValues = {
+const defaultValues: Partial<FormValues> = {
   first_name: '',
   last_name: '',
   phone: '+254',
   national_id: '',
   // Story 9.5a: collection_point_id removed
   farm_size_hectares: 0.5,
-  latitude: -1.0,
-  longitude: 37.0,
+  // GPS coordinates start empty - user must set them explicitly
   grower_number: '',
   notification_channel: 'sms',
   interaction_pref: 'text',
@@ -290,8 +289,9 @@ export function FarmerCreate(): JSX.Element {
               </Grid>
             </Grid>
             <GPSFieldWithMapAssist
-              value={{ lat: latitude ?? 0, lng: longitude ?? 0 }}
+              value={{ lat: latitude ?? null, lng: longitude ?? null }}
               onChange={handleGPSChange}
+              initialExpanded
             />
           </Paper>
         </Grid>

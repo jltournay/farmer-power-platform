@@ -127,23 +127,10 @@ class AdminFarmerService(BaseService):
             cp = await self._plantation.get_collection_point(cp_id)
             factory = await self._plantation.get_factory(cp.factory_id)
         else:
-            # No CP filter - use region or return empty
-            if not region_id:
-                from bff.api.schemas.responses import PaginationMeta
-
-                return AdminFarmerListResponse(
-                    data=[],
-                    pagination=PaginationMeta(
-                        page=1,
-                        page_size=page_size,
-                        total_count=0,
-                        total_pages=0,
-                    ),
-                )
-
-            # List farmers by region
+            # List farmers - optionally filtered by region
+            # If no region_id, list all farmers across all regions
             response = await self._plantation.list_farmers(
-                region_id=region_id,
+                region_id=region_id,  # None means all regions
                 page_size=page_size,
                 page_token=page_token,
                 active_only=active_only,

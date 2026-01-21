@@ -101,8 +101,8 @@ async def get_farmer(
     farmer_id: str = Path(
         ...,
         description="Farmer ID",
-        pattern=r"^(?:WM|FRM-E2E)-\d{3,4}$",
-        examples=["WM-0001", "FRM-E2E-001"],
+        pattern=r"^(?:WM|FRM-E2E|FRM-DEMO)-\d{3,4}$",
+        examples=["WM-0001", "FRM-E2E-001", "FRM-DEMO-0001"],
     ),
     user: TokenClaims = require_platform_admin(),
     service: AdminFarmerService = Depends(get_farmer_service),
@@ -172,7 +172,7 @@ async def update_farmer(
     farmer_id: str = Path(
         ...,
         description="Farmer ID",
-        pattern=r"^(?:WM|FRM-E2E)-\d{3,4}$",
+        pattern=r"^(?:WM|FRM-E2E|FRM-DEMO)-\d{3,4}$",
     ),
     user: TokenClaims = require_platform_admin(),
     service: AdminFarmerService = Depends(get_farmer_service),

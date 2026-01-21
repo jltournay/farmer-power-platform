@@ -26,7 +26,7 @@ class RegionalWeatherRepository:
     TTL is managed via MongoDB TTL index on created_at field (90 days).
     """
 
-    COLLECTION_NAME = "regional_weather"
+    COLLECTION_NAME = "weather_observations"
 
     def __init__(self, db: AsyncIOMotorDatabase) -> None:
         """Initialize the regional weather repository.
