@@ -53,19 +53,69 @@ The demo data tooling consists of two main scripts:
 
 ---
 
+## Prerequisites
+
+### Starting the Infrastructure
+
+The demo data tools require MongoDB to be running. Use the E2E infrastructure scripts:
+
+```bash
+# Start MongoDB and all services (recommended for full demo)
+bash scripts/e2e-up.sh
+
+# Or start with fresh rebuild
+bash scripts/e2e-up.sh --build
+
+# When done, stop the infrastructure
+bash scripts/e2e-up.sh --down
+```
+
+**Note:** If you only need MongoDB (without the full service stack), you can also run:
+```bash
+docker-compose -f deploy/docker-compose.e2e.yaml up -d mongodb
+```
+
+### Verify MongoDB is Running
+
+```bash
+# Check MongoDB is accessible
+docker exec -it mongodb mongosh --eval "db.runCommand({ping:1})"
+```
+
+---
+
 ## Quick Start
+
+### Complete Setup (End-to-End)
+
+```bash
+# 1. Start the infrastructure (MongoDB + services)
+bash scripts/e2e-up.sh
+
+# 2. Load seed data into MongoDB
+python scripts/demo/load_demo_data.py --source e2e
+
+# 3. (Optional) Generate additional demo data
+python scripts/demo/generate_demo_data.py --profile demo --seed 12345 --load
+
+# 4. Your demo environment is ready!
+# Access services at their usual ports (check docker ps)
+
+# 5. When done, stop everything
+bash scripts/e2e-up.sh --down
+```
 
 ### Common Commands
 
 ```bash
-# Load E2E seed data (for integration testing)
+# Load E2E seed data (requires MongoDB running)
 python scripts/demo/load_demo_data.py --source e2e
 
 # Generate demo data (50 farmers with quality history)
 python scripts/demo/generate_demo_data.py --profile demo --seed 12345 --load
 
-# Validate custom data without loading (dry-run)
-python scripts/demo/load_demo_data.py --source custom --path ./my-data/ --dry-run
+# Validate data without loading (no MongoDB needed)
+python scripts/demo/load_demo_data.py --source e2e --dry-run
 ```
 
 ### Environment Setup

@@ -2,17 +2,33 @@
 
 Quick reference for demo data tooling. See [`docs/demo-data.md`](../../docs/demo-data.md) for full documentation.
 
-## Quick Start
+## Quick Start (End-to-End)
 
 ```bash
-# Load E2E seed data
+# 1. Start infrastructure (MongoDB + services)
+bash scripts/e2e-up.sh
+
+# 2. Load seed data
+python scripts/demo/load_demo_data.py --source e2e
+
+# 3. (Optional) Generate demo data
+python scripts/demo/generate_demo_data.py --profile demo --seed 12345 --load
+
+# 4. When done
+bash scripts/e2e-up.sh --down
+```
+
+## Individual Commands
+
+```bash
+# Load E2E seed data (requires MongoDB)
 python scripts/demo/load_demo_data.py --source e2e
 
 # Generate and load demo data (50 farmers)
 python scripts/demo/generate_demo_data.py --profile demo --load
 
-# Validate custom data (dry-run)
-python scripts/demo/load_demo_data.py --source custom --path ./my-data/ --dry-run
+# Validate only (no MongoDB needed)
+python scripts/demo/load_demo_data.py --source e2e --dry-run
 ```
 
 ## Environment Setup
