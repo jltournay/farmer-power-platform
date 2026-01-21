@@ -1,6 +1,6 @@
 # Story 0.8.4: Profile-Based Data Generation
 
-**Status:** in-progress
+**Status:** review
 **GitHub Issue:** #211
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
@@ -240,12 +240,14 @@ git push origin story/0-8-4-profile-based-data-generation
 # Wait ~30s, then check CI status
 gh run list --branch story/0-8-4-profile-based-data-generation --limit 3
 ```
-**CI Run ID:** _______________
-**CI Status:** [ ] Pending - polyfactory needs to be added to CI dependencies
-**Verification Date:** _______________
+**CI Run ID:** 21203374289
+**CI Status:** [x] PASSED
+**Verification Date:** 2026-01-21
 
 **CI Jobs:**
-- Pending CI run - polyfactory must be added to `.github/workflows/ci.yaml`
+- Unit Tests: ✅ PASSED
+- Integration Tests: ✅ PASSED
+- Lint: ✅ PASSED
 
 ---
 
@@ -635,8 +637,9 @@ Claude Opus 4.5 (claude-opus-4-5-20251101)
 
 ### Debug Log References
 
-- CI Run 21201484793: Failed due to polyfactory not installed in CI
-- CI pending: polyfactory must be added to CI dependencies
+- CI Run 21201484793: Failed due to polyfactory not installed in CI (FIXED)
+- CI Run 21203374289: Quality CI PASSED (lint, unit tests, integration tests)
+- E2E CI Run 21203736648: E2E CI PASSED (full docker stack validation)
 
 ### Completion Notes List
 
