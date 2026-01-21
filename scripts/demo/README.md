@@ -8,8 +8,8 @@ Quick reference for demo data tooling. See [`docs/demo-data.md`](../../docs/demo
 # 1. Start infrastructure (MongoDB + services)
 bash scripts/e2e-up.sh
 
-# 2. Load seed data
-python scripts/demo/load_demo_data.py --source e2e
+# 2. Load seed data (--clear wipes existing data first)
+python scripts/demo/load_demo_data.py --source e2e --clear
 
 # 3. (Optional) Generate demo data
 python scripts/demo/generate_demo_data.py --profile demo --seed 12345 --load

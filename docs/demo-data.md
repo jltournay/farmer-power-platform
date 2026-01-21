@@ -90,8 +90,8 @@ bash scripts/e2e-preflight.sh
 # 1. Start the infrastructure (MongoDB + services)
 bash scripts/e2e-up.sh
 
-# 2. Load seed data into MongoDB
-python scripts/demo/load_demo_data.py --source e2e
+# 2. Load seed data into MongoDB (--clear wipes existing data first)
+python scripts/demo/load_demo_data.py --source e2e --clear
 
 # 3. (Optional) Generate additional demo data
 python scripts/demo/generate_demo_data.py --profile demo --seed 12345 --load
@@ -102,6 +102,8 @@ python scripts/demo/generate_demo_data.py --profile demo --seed 12345 --load
 # 5. When done, stop everything
 bash scripts/e2e-up.sh --down
 ```
+
+> **Note:** Use `--clear` to ensure a clean database state. Without it, the loader uses upsert which keeps existing records.
 
 ### Common Commands
 
