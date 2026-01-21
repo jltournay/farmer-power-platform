@@ -1,0 +1,81 @@
+# Demo Profile - Standard demo dataset for UI testing
+# Story 0.8.4: Profile-Based Data Generation (AC #1, #5)
+#
+# Configuration: 2 regions, 3 factories, 50 farmers with quality history
+# Use case: Demos, UI testing, stakeholder presentations
+
+profile: demo
+description: Standard demo dataset for UI testing with realistic quality scenarios
+
+# Reference data (loaded from E2E seed files, NOT generated)
+reference_data:
+  source: e2e_seed
+  entities:
+    - grading_models
+    - regions
+    - agent_configs
+    - prompts
+    - source_configs
+
+# Generated data configuration
+generated_data:
+  factories:
+    count: 3
+    distribution:
+      by_region: proportional  # Distribute across available regions
+
+  collection_points:
+    count: 10
+    per_factory: ~3  # Approximate, auto-distributed
+
+  farmers:
+    count: 50
+    id_prefix: "FRM-DEMO-"
+    distribution:
+      by_region: proportional
+      farm_scale:
+        smallholder: 60
+        medium: 35
+        estate: 5
+      notification_channel:
+        sms: 70
+        whatsapp: 30
+      pref_lang:
+        sw: 50
+        en: 30
+        ki: 15
+        luo: 5
+
+    # Scenario assignments for demo storytelling (AC #5)
+    # These create recognizable quality patterns for UI demonstrations
+    scenarios:
+      # Farmers needing intervention - shows "ACTION" badge
+      consistently_poor: 3
+
+      # Success stories - shows improvement over time
+      improving_trend: 5
+
+      # Model farmers - consistently excellent, "WIN" badge
+      top_performer: 5
+
+      # At-risk farmers - quality declining, "WATCH" badge
+      declining_trend: 3
+
+      # Inactive farmers - no recent deliveries
+      inactive: 2
+
+      # Remaining 32 farmers: random quality patterns
+
+  farmer_performance:
+    generate_for: all_farmers
+    historical_days: 90
+
+  weather_observations:
+    generate_for: all_regions
+    date_range: last_90_days
+
+  quality_documents:
+    count: 500
+    distribution:
+      per_farmer: 5-15  # Variable per farmer
+      date_range: last_90_days

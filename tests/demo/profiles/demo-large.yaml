@@ -1,0 +1,70 @@
+# Demo Large Profile - Large dataset for performance testing
+# Story 0.8.4: Profile-Based Data Generation (AC #1)
+#
+# Configuration: 4 regions, 10 factories, 200+ farmers
+# Use case: Performance testing, load testing, pagination testing
+
+profile: demo-large
+description: Large dataset for performance and load testing
+
+# Reference data (loaded from E2E seed files, NOT generated)
+reference_data:
+  source: e2e_seed
+  entities:
+    - grading_models
+    - regions
+    - agent_configs
+    - prompts
+    - source_configs
+
+# Generated data configuration
+generated_data:
+  factories:
+    count: 10
+    distribution:
+      by_region: proportional
+
+  collection_points:
+    count: 40
+    per_factory: ~4
+
+  farmers:
+    count: 250
+    id_prefix: "FRM-LRG-"
+    distribution:
+      by_region: proportional
+      farm_scale:
+        smallholder: 60
+        medium: 35
+        estate: 5
+      notification_channel:
+        sms: 70
+        whatsapp: 30
+      pref_lang:
+        sw: 50
+        en: 30
+        ki: 15
+        luo: 5
+
+    # Scenario assignments scaled for larger dataset
+    scenarios:
+      consistently_poor: 15
+      improving_trend: 25
+      top_performer: 25
+      declining_trend: 15
+      inactive: 10
+      # Remaining 160 farmers: random quality patterns
+
+  farmer_performance:
+    generate_for: all_farmers
+    historical_days: 180
+
+  weather_observations:
+    generate_for: all_regions
+    date_range: last_180_days
+
+  quality_documents:
+    count: 3000
+    distribution:
+      per_farmer: 8-20
+      date_range: last_180_days
