@@ -10,6 +10,9 @@ from pathlib import Path
 
 import pytest
 
+# Skip all tests if polyfactory is not installed (generators module depends on it)
+pytest.importorskip("polyfactory", reason="polyfactory required for generator tests")
+
 _project_root = Path(__file__).parent.parent.parent.parent
 _tests_demo_path = _project_root / "tests" / "demo"
 if str(_tests_demo_path) not in sys.path:
