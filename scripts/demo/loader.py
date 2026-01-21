@@ -21,10 +21,10 @@ from typing import TYPE_CHECKING, Any
 if TYPE_CHECKING:
     from pydantic import BaseModel
 
-# Add tests/e2e to path for MongoDBDirectClient import
-_e2e_path = Path(__file__).parent.parent.parent / "tests" / "e2e"
-if str(_e2e_path) not in sys.path:
-    sys.path.insert(0, str(_e2e_path))
+# Add project root to path for tests.e2e imports (MongoDBDirectClient, etc.)
+_project_root = Path(__file__).parent.parent.parent
+if str(_project_root) not in sys.path:
+    sys.path.insert(0, str(_project_root))
 
 
 @dataclass
@@ -134,7 +134,7 @@ class SeedDataLoader:
     async def __aenter__(self) -> SeedDataLoader:
         """Initialize MongoDB client."""
         # Import here to avoid import cycles
-        from helpers.mongodb_direct import MongoDBDirectClient
+        from tests.e2e.helpers.mongodb_direct import MongoDBDirectClient
 
         self._client = MongoDBDirectClient(self._uri)
         await self._client.__aenter__()
