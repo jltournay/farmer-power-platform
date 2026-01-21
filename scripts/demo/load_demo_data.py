@@ -17,19 +17,19 @@ AC #6: Dry-run mode validates without loading
 
 Usage:
     # Load E2E seed data (default)
-    python scripts/demo/load-demo-data.py --source e2e
+    python scripts/demo/load_demo_data.py --source e2e
 
     # Load from custom directory
-    python scripts/demo/load-demo-data.py --source custom --path ./my-data/
+    python scripts/demo/load_demo_data.py --source custom --path ./my-data/
 
     # Dry-run validation only (no database writes)
-    python scripts/demo/load-demo-data.py --source e2e --dry-run
+    python scripts/demo/load_demo_data.py --source e2e --dry-run
 
     # Clear databases before loading
-    python scripts/demo/load-demo-data.py --source e2e --clear
+    python scripts/demo/load_demo_data.py --source e2e --clear
 
     # Custom MongoDB URI
-    python scripts/demo/load-demo-data.py --source e2e --mongodb-uri mongodb://user:pass@host:27017
+    python scripts/demo/load_demo_data.py --source e2e --mongodb-uri mongodb://user:pass@host:27017
 """
 
 from __future__ import annotations

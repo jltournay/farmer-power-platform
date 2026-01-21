@@ -2,7 +2,7 @@
 
 This guide documents the demo data tooling for the Farmer Power Platform. These tools enable developers to quickly set up demo environments, generate test data, and validate custom seed files.
 
-**ADR Reference:** [ADR-020: Demo Data Strategy](/_bmad-output/architecture/adr/ADR-020-demo-data-loader-pydantic-validation.md)
+**ADR Reference:** [ADR-020: Demo Data Strategy](../_bmad-output/architecture/adr/ADR-020-demo-data-loader-pydantic-validation.md)
 
 ---
 
@@ -497,9 +497,9 @@ pip install polyfactory faker
 
 ## Reference Links
 
-- [ADR-020: Demo Data Strategy](/_bmad-output/architecture/adr/ADR-020-demo-data-loader-pydantic-validation.md)
-- [Story 0.8.1: Pydantic Validation Infrastructure](/_bmad-output/sprint-artifacts/0-8-1-pydantic-validation-infrastructure.md)
-- [Story 0.8.2: Seed Data Loader Script](/_bmad-output/sprint-artifacts/0-8-2-seed-data-loader-script.md)
-- [Story 0.8.3: Polyfactory Generator Framework](/_bmad-output/sprint-artifacts/0-8-3-polyfactory-generator-framework.md)
-- [Story 0.8.4: Profile-Based Data Generation](/_bmad-output/sprint-artifacts/0-8-4-profile-based-data-generation.md)
-- [Project Context](/_bmad-output/project-context.md) - Pydantic patterns
+- [ADR-020: Demo Data Strategy](../_bmad-output/architecture/adr/ADR-020-demo-data-loader-pydantic-validation.md)
+- [Story 0.8.1: Pydantic Validation Infrastructure](../_bmad-output/sprint-artifacts/0-8-1-pydantic-validation-infrastructure.md)
+- [Story 0.8.2: Seed Data Loader Script](../_bmad-output/sprint-artifacts/0-8-2-seed-data-loader-script.md)
+- [Story 0.8.3: Polyfactory Generator Framework](../_bmad-output/sprint-artifacts/0-8-3-polyfactory-generator-framework.md)
+- [Story 0.8.4: Profile-Based Data Generation](../_bmad-output/sprint-artifacts/0-8-4-profile-based-data-generation.md)
+- [Project Context](../_bmad-output/project-context.md) - Pydantic patterns

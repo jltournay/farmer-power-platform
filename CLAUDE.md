@@ -282,7 +282,7 @@ Quick commands for setting up demo data:
 python scripts/demo/load_demo_data.py --source e2e
 
 # Generate demo data (50 farmers with quality history)
-python scripts/demo/generate_demo_data.py --profile demo --load
+python scripts/demo/generate_demo_data.py --profile demo --seed 12345 --load
 
 # Validate only (no load)
 python scripts/demo/load_demo_data.py --source e2e --dry-run
