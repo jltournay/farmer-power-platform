@@ -1,6 +1,6 @@
 # Story 0.8.5: Demo Data Documentation & Usage Guide
 
-**Status:** in-progress
+**Status:** review
 **GitHub Issue:** #213
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
@@ -89,13 +89,13 @@ So that I can quickly set up a working demo environment.
 - [x] Push to feature branch: `git push -u origin feature/0-8-5-demo-data-documentation`
 
 ### Story Done
-- [ ] Create Pull Request: `gh pr create --title "Story 0.8.5: Demo Data Documentation" --base main`
-- [ ] CI passes on PR (including E2E tests)
+- [x] Create Pull Request: `gh pr create --title "Story 0.8.5: Demo Data Documentation" --base main`
+- [x] CI passes on PR (CI run 21214003994 - passed)
 - [ ] Code review completed (`/code-review` or human review)
 - [ ] PR approved and merged (squash)
 - [ ] Local branch cleaned up: `git branch -d feature/0-8-5-demo-data-documentation`
 
-**PR URL:** _______________ (fill in when created)
+**PR URL:** https://github.com/jltournay/farmer-power-platform/pull/214
 
 ---
 
