@@ -60,26 +60,24 @@ The demo data tooling consists of two main scripts:
 The demo data tools require MongoDB to be running. Use the E2E infrastructure scripts:
 
 ```bash
-# Start MongoDB and all services (recommended for full demo)
+# Start the full stack (MongoDB + all services)
 bash scripts/e2e-up.sh
 
-# Or start with fresh rebuild
+# Or start with fresh image rebuild
 bash scripts/e2e-up.sh --build
 
 # When done, stop the infrastructure
 bash scripts/e2e-up.sh --down
 ```
 
-**Note:** If you only need MongoDB (without the full service stack), you can also run:
-```bash
-docker-compose -f deploy/docker-compose.e2e.yaml up -d mongodb
-```
-
-### Verify MongoDB is Running
+### Verify Infrastructure is Running
 
 ```bash
-# Check MongoDB is accessible
-docker exec -it mongodb mongosh --eval "db.runCommand({ping:1})"
+# Check all containers are running
+docker ps
+
+# Or run the preflight check
+bash scripts/e2e-preflight.sh
 ```
 
 ---
