@@ -12,8 +12,6 @@ import sys
 import tempfile
 from pathlib import Path
 
-import pytest
-
 _project_root = Path(__file__).parent.parent.parent.parent
 _tests_demo_path = _project_root / "tests" / "demo"
 if str(_tests_demo_path) not in sys.path:
