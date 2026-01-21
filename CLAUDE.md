@@ -273,6 +273,24 @@ When adding a new service (e.g., `services/new-model/`), you MUST:
   Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>
   ```
 
+## Demo Data Setup
+
+Quick commands for setting up demo data:
+
+```bash
+# Load E2E seed data (validation + MongoDB load)
+python scripts/demo/load_demo_data.py --source e2e
+
+# Generate demo data (50 farmers with quality history)
+python scripts/demo/generate_demo_data.py --profile demo --load
+
+# Validate only (no load)
+python scripts/demo/load_demo_data.py --source e2e --dry-run
+```
+
+**Full documentation:** `docs/demo-data.md`
+**Scripts reference:** `scripts/demo/README.md`
+
 ## Reference Documents
 
 | Topic | Document |
@@ -284,6 +302,7 @@ When adding a new service (e.g., `services/new-model/`), you MUST:
 | **E2E testing mental model** | `tests/e2e/E2E-TESTING-MENTAL-MODEL.md` |
 | UX specifications | `_bmad-output/ux-design-specification/index.md` |
 | Epics & stories | `_bmad-output/epics.md` |
+| **Demo data tooling** | `docs/demo-data.md` |
 
 ---
 
