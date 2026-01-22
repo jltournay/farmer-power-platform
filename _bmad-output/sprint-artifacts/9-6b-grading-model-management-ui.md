@@ -205,9 +205,9 @@ git push origin story/9-6b-grading-model-management-ui
 # Wait ~30s, then check CI status
 gh run list --branch story/9-6b-grading-model-management-ui --limit 3
 ```
-**CI Run ID:** _______________
-**CI E2E Status:** [ ] Passed / [ ] Failed
-**Verification Date:** _______________
+**CI Run ID:** 21265247704 (CI), 21265537328 (E2E)
+**CI E2E Status:** [x] Passed / [ ] Failed
+**Verification Date:** 2026-01-22
 
 ---
 
