@@ -1,6 +1,6 @@
 # Story 9.6a: Grading Model gRPC + BFF API
 
-**Status:** review
+**Status:** done
 **GitHub Issue:** #215
 
 ## Story
