@@ -1,7 +1,7 @@
 # Story 9.6b: Grading Model Management UI
 
 **Status:** ready-for-dev
-**GitHub Issue:** <!-- Auto-created by dev-story workflow -->
+**GitHub Issue:** #217
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -62,45 +62,45 @@ so that I can configure which quality assessment standards each factory uses wit
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: Add TypeScript types for grading models (AC: 1, 2, 3)
-  - [ ] 1.1 Add full GradingModel types to `web/platform-admin/src/api/types.ts` (GradingModelListSummary, GradingModelDetailResponse, GradingAttribute, ConditionalReject, GradeRules, FactoryReference, GradingModelListResponse, GradingModelListParams, AssignGradingModelRequest)
-  - [ ] 1.2 Add grading type display helper function
+- [x] Task 1: Add TypeScript types for grading models (AC: 1, 2, 3)
+  - [x] 1.1 Add full GradingModel types to `web/platform-admin/src/api/types.ts` (GradingModelListSummary, GradingModelDetailResponse, GradingAttribute, ConditionalReject, GradeRules, FactoryReference, GradingModelListResponse, GradingModelListParams, AssignGradingModelRequest)
+  - [x] 1.2 Add grading type display helper function
 
-- [ ] Task 2: Create API module for grading models (AC: 1, 2, 3)
-  - [ ] 2.1 Create `web/platform-admin/src/api/gradingModels.ts` with functions: `listGradingModels`, `getGradingModel`, `assignGradingModelToFactory`
-  - [ ] 2.2 Export from `web/platform-admin/src/api/index.ts`
+- [x] Task 2: Create API module for grading models (AC: 1, 2, 3)
+  - [x] 2.1 Create `web/platform-admin/src/api/gradingModels.ts` with functions: `listGradingModels`, `getGradingModel`, `assignGradingModelToFactory`
+  - [x] 2.2 Export from `web/platform-admin/src/api/index.ts`
 
-- [ ] Task 3: Implement GradingModelList page (AC: 1, 4) — see **Wireframe: Grading Model List**
-  - [ ] 3.1 Replace placeholder in `web/platform-admin/src/pages/grading-models/GradingModelList.tsx`
-  - [ ] 3.2 Implement DataTable with columns: Model ID, Version, Crops, Market, Grading Type (Chip), Factories, Attributes
-  - [ ] 3.3 Add grading type filter using FilterBar
-  - [ ] 3.4 Add client-side search filtering on model_id and crops_name
-  - [ ] 3.5 Add row click navigation to detail page
-  - [ ] 3.6 Add loading/error/empty states
+- [x] Task 3: Implement GradingModelList page (AC: 1, 4) — see **Wireframe: Grading Model List**
+  - [x] 3.1 Replace placeholder in `web/platform-admin/src/pages/grading-models/GradingModelList.tsx`
+  - [x] 3.2 Implement DataTable with columns: Model ID, Version, Crops, Market, Grading Type (Chip), Factories, Attributes
+  - [x] 3.3 Add grading type filter using FilterBar
+  - [x] 3.4 Add client-side search filtering on model_id and crops_name
+  - [x] 3.5 Add row click navigation to detail page
+  - [x] 3.6 Add loading/error/empty states
 
-- [ ] Task 4: Implement GradingModelDetail page (AC: 2, 4) — see **Wireframe: Grading Model Detail**
-  - [ ] 4.1 Replace placeholder in `web/platform-admin/src/pages/grading-models/GradingModelDetail.tsx`
-  - [ ] 4.2 Display model metadata section (Paper with Grid layout)
-  - [ ] 4.3 Display grading attributes table (Table component)
-  - [ ] 4.4 Display grade rules section (reject conditions as bullet list, conditional rules as IF...THEN)
-  - [ ] 4.5 Display grade labels as key-value pairs
-  - [ ] 4.6 Display factory assignments list with names
-  - [ ] 4.7 Add "Assign to Factory" button
-  - [ ] 4.8 Add "Back" navigation button
-  - [ ] 4.9 Add loading/error states
+- [x] Task 4: Implement GradingModelDetail page (AC: 2, 4) — see **Wireframe: Grading Model Detail**
+  - [x] 4.1 Replace placeholder in `web/platform-admin/src/pages/grading-models/GradingModelDetail.tsx`
+  - [x] 4.2 Display model metadata section (Paper with Grid layout)
+  - [x] 4.3 Display grading attributes table (Table component)
+  - [x] 4.4 Display grade rules section (reject conditions as bullet list, conditional rules as IF...THEN)
+  - [x] 4.5 Display grade labels as key-value pairs
+  - [x] 4.6 Display factory assignments list with names
+  - [x] 4.7 Add "Assign to Factory" button
+  - [x] 4.8 Add "Back" navigation button
+  - [x] 4.9 Add loading/error states
 
-- [ ] Task 5: Implement Factory Assignment Dialog (AC: 3) — triggered by `[+ Assign Factory]` button in **Wireframe: Grading Model Detail**
-  - [ ] 5.1 Create `AssignFactoryDialog` component within grading-models page folder
-  - [ ] 5.2 Fetch all factories and exclude already-assigned ones
-  - [ ] 5.3 Show factory dropdown with search/filter
-  - [ ] 5.4 Handle assignment via POST `/api/admin/grading-models/{id}/assign`
-  - [ ] 5.5 Show success/error feedback
-  - [ ] 5.6 Refresh detail page data on successful assignment
+- [x] Task 5: Implement Factory Assignment Dialog (AC: 3) — triggered by `[+ Assign Factory]` button in **Wireframe: Grading Model Detail**
+  - [x] 5.1 Create `AssignFactoryDialog` component within grading-models page folder
+  - [x] 5.2 Fetch all factories and exclude already-assigned ones
+  - [x] 5.3 Show factory dropdown with search/filter
+  - [x] 5.4 Handle assignment via POST `/api/admin/grading-models/{id}/assign`
+  - [x] 5.5 Show success/error feedback
+  - [x] 5.6 Refresh detail page data on successful assignment
 
-- [ ] Task 6: Lint and Build Verification (AC: all)
-  - [ ] 6.1 Run `npm run lint` and fix any issues
-  - [ ] 6.2 Run `npm run build` and verify no TypeScript errors
-  - [ ] 6.3 Run `ruff check . && ruff format --check .` for Python linting
+- [x] Task 6: Lint and Build Verification (AC: all)
+  - [x] 6.1 Run `npm run lint` and fix any issues
+  - [x] 6.2 Run `npm run build` and verify no TypeScript errors (pre-existing `initialExpanded` errors in unrelated files)
+  - [x] 6.3 Run `ruff check . && ruff format --check .` for Python linting
 
 ## Git Workflow (MANDATORY)
 
@@ -548,16 +548,35 @@ export async function assignGradingModelToFactory(modelId: string, factoryId: st
 
 ### Agent Model Used
 
-{{agent_model_name_version}}
+Claude Opus 4.5 (claude-opus-4-5-20251101)
 
 ### Debug Log References
 
+- Pre-existing TS errors in CollectionPointQuickAddModal.tsx, FactoryCreate.tsx, FarmerCreate.tsx (`initialExpanded` prop) - not related to this story
+
 ### Completion Notes List
+
+- All 6 tasks completed with all subtasks
+- TypeScript types match BFF API response schemas exactly
+- GradingModelList follows FactoryList.tsx pattern with DataTable, FilterBar, search
+- GradingModelDetail displays all model sections (metadata, attributes, rules, labels, factories)
+- AssignFactoryDialog follows CollectionPointQuickAddModal.tsx pattern (simpler - select instead of form)
+- PageHeader used with onBack for detail page navigation (no breadcrumbs prop available)
+- DataTable requires `id` field on rows - mapped model_id to id
+- Client-side search on model_id and crops_name as specified in AC 9.6b.1
+- Grading type chips with proper color mapping (default/primary/secondary)
+- Error/loading/empty states implemented per AC 9.6b.4
 
 ### File List
 
 **Created:**
-- (list new files)
+- `web/platform-admin/src/api/gradingModels.ts` - API module with list/get/assign functions
+- `web/platform-admin/src/pages/grading-models/components/AssignFactoryDialog.tsx` - Factory assignment dialog
 
 **Modified:**
-- (list modified files with brief description)
+- `web/platform-admin/src/api/types.ts` - Added GradingModel types (GradingType, GradingModelListSummary, GradingModelDetailResponse, GradingAttribute, ConditionalReject, GradeRules, FactoryReference, GradingModelListResponse, GradingModelListParams, AssignGradingModelRequest, getGradingTypeLabel, getGradingTypeColor)
+- `web/platform-admin/src/api/index.ts` - Added gradingModels export
+- `web/platform-admin/src/pages/grading-models/GradingModelList.tsx` - Replaced placeholder with full list page implementation
+- `web/platform-admin/src/pages/grading-models/GradingModelDetail.tsx` - Replaced placeholder with full detail page implementation
+- `_bmad-output/sprint-artifacts/sprint-status.yaml` - Updated story status to in-progress
+- `_bmad-output/sprint-artifacts/9-6b-grading-model-management-ui.md` - Story file updates

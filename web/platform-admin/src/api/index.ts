@@ -11,4 +11,5 @@ export * from './regions';
 export * from './factories';
 export * from './collectionPoints';
 export * from './farmers';
+export * from './gradingModels';
 export * from './types';
