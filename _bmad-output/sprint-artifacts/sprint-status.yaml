@@ -258,7 +258,7 @@ development_status:
   9-5a-farmer-cp-data-model: done  # github_issue: 200, PR: #201 MERGED 2026-01-18, Data model refactor: N:M Farmer-CP relationship
   9-5-farmer-management: done  # github_issue: 199, PR: #202, E2E CI: 21117120990
   # Grading Model Management - Split into backend (9.6a) and UI (9.6b)
-  9-6a-grading-model-grpc-bff-api: in-progress  # github_issue: 215, 5 points - Proto: ListGradingModels + Plantation Service + BFF client + REST endpoints
+  9-6a-grading-model-grpc-bff-api: review  # github_issue: 215, 5 points - Proto: ListGradingModels + Plantation Service + BFF client + REST endpoints
   9-6b-grading-model-management-ui: backlog  # 3 points - UI: List, Detail, Assignment. Depends: 9-6a
   9-7-user-management: deferred  # BLOCKED by 0-5-8 (Azure AD B2C), deferred for production
   9-8-platform-health-dashboard: backlog  # 3 points
