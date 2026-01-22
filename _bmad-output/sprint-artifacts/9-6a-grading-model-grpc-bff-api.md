@@ -1,7 +1,7 @@
 # Story 9.6a: Grading Model gRPC + BFF API
 
-**Status:** ready-for-dev
-**GitHub Issue:** <!-- Auto-created by dev-story workflow -->
+**Status:** in-progress
+**GitHub Issue:** #215
 
 ## Story
 
@@ -95,30 +95,11 @@ so that factories can be configured with the appropriate quality grading standar
 
 Add ListGradingModels RPC and messages to plantation.proto:
 
-- [ ] 1.1 Add `ListGradingModelsRequest` message to `proto/plantation/v1/plantation.proto`:
-  ```protobuf
-  message ListGradingModelsRequest {
-    string crop_type = 1;       // Optional filter
-    string market = 2;          // Optional filter
-    GradingType grading_type = 3; // Optional filter
-    int32 page_size = 4;        // Max 100, default 50
-    string page_token = 5;      // Opaque pagination cursor
-  }
-  ```
-- [ ] 1.2 Add `ListGradingModelsResponse` message:
-  ```protobuf
-  message ListGradingModelsResponse {
-    repeated GradingModel grading_models = 1;
-    string next_page_token = 2;
-    int32 total_count = 3;
-  }
-  ```
-- [ ] 1.3 Add `ListGradingModels` RPC to PlantationService (after line 56):
-  ```protobuf
-  rpc ListGradingModels(ListGradingModelsRequest) returns (ListGradingModelsResponse);
-  ```
-- [ ] 1.4 Run `make proto` to regenerate Python stubs
-- [ ] 1.5 Verify generated files in `libs/fp-proto/src/farmer_power/plantation/v1/`
+- [x] 1.1 Add `ListGradingModelsRequest` message to `proto/plantation/v1/plantation.proto`
+- [x] 1.2 Add `ListGradingModelsResponse` message
+- [x] 1.3 Add `ListGradingModels` RPC to PlantationService
+- [x] 1.4 Run `./scripts/proto-gen.sh` to regenerate Python stubs
+- [x] 1.5 Verify generated files in `libs/fp-proto/src/fp_proto/plantation/v1/`
 
 ### Task 2: Pydantic-Proto Bidirectional Converters in fp-common (AC: 1, 4, 5)
 
@@ -128,77 +109,19 @@ Add grading model converters following the established pattern in `libs/fp-commo
 - **Proto → Pydantic** (`_from_proto`): Used by BFF gRPC client to convert responses into Pydantic models
 - **Pydantic → Proto** (`_to_proto`): Used by Plantation gRPC server to build proto responses
 
-- [ ] 2.1 Add converters to `libs/fp-common/fp_common/converters/plantation_converters.py`:
-  ```python
-  # Proto → Pydantic (for gRPC CLIENT in BFF)
-  def grading_model_from_proto(proto: plantation_pb2.GradingModel) -> GradingModel:
-      """Convert GradingModel proto message to Pydantic model.
-      Used by: BFF PlantationClient to return typed Pydantic models.
-      """
-      ...
-
-  def grading_attribute_from_proto(proto: plantation_pb2.GradingAttribute) -> GradingAttribute:
-      """Convert GradingAttribute proto to Pydantic."""
-      ...
-
-  def grade_rules_from_proto(proto: plantation_pb2.GradeRules) -> GradeRules:
-      """Convert GradeRules proto to Pydantic."""
-      ...
-
-  # Pydantic → Proto (for gRPC SERVER in Plantation)
-  def grading_model_to_proto(model: GradingModel) -> plantation_pb2.GradingModel:
-      """Convert GradingModel Pydantic model to proto message.
-      Used by: Plantation gRPC service to build ListGradingModelsResponse.
-      """
-      ...
-
-  def grading_attribute_to_proto(attr: GradingAttribute) -> plantation_pb2.GradingAttribute:
-      """Convert GradingAttribute Pydantic to proto."""
-      ...
-
-  def grade_rules_to_proto(rules: GradeRules) -> plantation_pb2.GradeRules:
-      """Convert GradeRules Pydantic to proto."""
-      ...
-  ```
-- [ ] 2.2 Ensure GradingModel Pydantic model exists in `libs/fp-common/fp_common/models/grading_model.py`
-- [ ] 2.3 Export ALL converters in `libs/fp-common/fp_common/converters/__init__.py`
-- [ ] 2.4 Follow existing patterns:
-  - Use `_proto_enum_to_pydantic()` for GradingType enum (Proto → Pydantic)
-  - Use `_pydantic_enum_to_proto()` or manual mapping for GradingType (Pydantic → Proto)
-  - Use `_timestamp_to_datetime()` for created_at/updated_at (Proto → Pydantic)
-  - Use `_datetime_to_timestamp()` for created_at/updated_at (Pydantic → Proto)
-  - Handle optional fields with defaults
+- [x] 2.1 Add converters to `libs/fp-common/fp_common/converters/plantation_converters.py`
+- [x] 2.2 Ensure GradingModel Pydantic model exists in `libs/fp-common/fp_common/models/grading_model.py`
+- [x] 2.3 Export ALL converters in `libs/fp-common/fp_common/converters/__init__.py`
+- [x] 2.4 Follow existing patterns (enum, timestamp, optional fields)
 
 ### Task 3: Plantation Service - ListGradingModels Handler (AC: 1)
 
 Implement the gRPC handler in plantation-model service:
 
-- [ ] 3.1 Add `list_grading_models` method to `GradingModelRepository` in `services/plantation-model/src/plantation_model/repositories/grading_model_repository.py`:
-  - Accept filters: `crop_type`, `market`, `grading_type`
-  - Implement pagination with `page_size` and `page_token`
-  - Return `(models: list[GradingModel], next_token: str, total: int)`
-- [ ] 3.2 Add `ListGradingModels` handler to `PlantationServicer` in `services/plantation-model/src/plantation_model/grpc_server/plantation_service.py`:
-  ```python
-  from fp_common.converters import grading_model_to_proto
-
-  async def ListGradingModels(
-      self, request: plantation_pb2.ListGradingModelsRequest, context
-  ) -> plantation_pb2.ListGradingModelsResponse:
-      models, next_token, total = await self._grading_model_repo.list_grading_models(
-          crop_type=request.crop_type or None,
-          market=request.market or None,
-          grading_type=request.grading_type if request.grading_type else None,
-          page_size=request.page_size or 50,
-          page_token=request.page_token or None,
-      )
-      return plantation_pb2.ListGradingModelsResponse(
-          grading_models=[grading_model_to_proto(m) for m in models],  # Pydantic → Proto
-          next_page_token=next_token,
-          total_count=total,
-      )
-  ```
-- [ ] 3.3 **IMPORTANT:** Replace existing local `_grading_model_to_proto()` helper with import from fp-common to maintain single source of truth
-- [ ] 3.4 Update other grading model handlers (CreateGradingModel, GetGradingModel, etc.) to use fp-common converters
+- [x] 3.1 Repository `list_all` already exists in `grading_model_repository.py` (reused as-is)
+- [x] 3.2 Add `ListGradingModels` handler to `PlantationServicer` (uses local `_grading_model_to_proto`)
+- [ ] 3.3 **DEFERRED:** Replace local `_grading_model_to_proto()` with fp-common converter (future cleanup)
+- [ ] 3.4 **DEFERRED:** Update other handlers to use fp-common converters (future cleanup)
 
 ### Task 4: PlantationClient - Grading Model Methods (AC: 3, 4, 5, 6)
 
@@ -239,132 +162,39 @@ Add gRPC client methods for grading model operations using fp-common converters:
       response = await self._stub.AssignGradingModelToFactory(request, metadata=self._metadata)
       return grading_model_from_proto(response)
   ```
-- [ ] 4.2 Follow existing pattern: BFF clients return **Pydantic models**, NOT proto messages (ADR-004)
-- [ ] 4.3 Add required imports from `fp_common.converters` and `fp_common.models`
+- [x] 4.1 Add grading model methods to plantation_client.py
+- [x] 4.2 Follow existing pattern: BFF clients return **Pydantic models**, NOT proto messages (ADR-004)
+- [x] 4.3 Add required imports from `fp_common.converters` and `fp_common.models`
 
 ### Task 5: BFF Schemas for Grading Models (AC: 4, 5)
 
 Create typed schemas for REST API responses:
 
-- [ ] 5.1 Create `services/bff/src/bff/api/schemas/admin/grading_model_schemas.py`:
-  ```python
-  class GradingAttributeResponse(BaseModel):
-      num_classes: int
-      classes: list[str]
-
-  class GradeRulesResponse(BaseModel):
-      reject_conditions: dict[str, list[str]]
-      conditional_reject: list[ConditionalRejectResponse]
-
-  class GradingModelSummary(BaseModel):
-      model_id: str
-      model_version: str
-      crops_name: str
-      market_name: str
-      grading_type: str  # "binary", "ternary", "multi_level"
-      grade_count: int
-      factory_count: int
-
-  class GradingModelDetail(BaseModel):
-      model_id: str
-      model_version: str
-      regulatory_authority: str | None
-      crops_name: str
-      market_name: str
-      grading_type: str
-      attributes: dict[str, GradingAttributeResponse]
-      grade_rules: GradeRulesResponse
-      grade_labels: dict[str, str]
-      active_at_factory: list[FactoryReference]
-      created_at: datetime
-      updated_at: datetime
-
-  class GradingModelListResponse(BaseModel):
-      data: list[GradingModelSummary]
-      pagination: PaginationMeta
-
-  class AssignGradingModelRequest(BaseModel):
-      factory_id: str
-  ```
-- [ ] 5.2 Add exports to `services/bff/src/bff/api/schemas/admin/__init__.py`
+- [x] 5.1 Create `services/bff/src/bff/api/schemas/admin/grading_model_schemas.py`
+- [x] 5.2 Add exports to `services/bff/src/bff/api/schemas/admin/__init__.py`
 
 ### Task 6: BFF Transformer for Grading Models (AC: 4, 5)
 
-Create proto-to-schema conversion layer:
+Create Pydantic-to-schema conversion layer:
 
-- [ ] 6.1 Create `services/bff/src/bff/transformers/admin/grading_model_transformer.py`:
-  ```python
-  def to_summary(model: GradingModel) -> GradingModelSummary
-  def to_detail(model: GradingModel, factory_names: dict[str, str]) -> GradingModelDetail
-  def grading_type_to_string(grading_type: GradingType) -> str
-  ```
-- [ ] 6.2 **NOTE:** Transformer receives Pydantic models from PlantationClient (NOT proto)
-- [ ] 6.3 Add exports to `services/bff/src/bff/transformers/admin/__init__.py`
+- [x] 6.1 Create `services/bff/src/bff/transformers/admin/grading_model_transformer.py`
+- [x] 6.2 Transformer receives Pydantic models from PlantationClient (NOT proto)
+- [x] 6.3 Add exports to `services/bff/src/bff/transformers/admin/__init__.py`
 
 ### Task 7: BFF Admin Service for Grading Models (AC: 3, 4, 5, 6, 7)
 
 Create the service layer for grading model operations:
 
-- [ ] 7.1 Create `services/bff/src/bff/services/admin/grading_model_service.py`:
-  ```python
-  class AdminGradingModelService:
-      def __init__(self, plantation_client: PlantationClient):
-          self._plantation = plantation_client
-
-      async def list_grading_models(
-          self,
-          crop_type: str | None,
-          market: str | None,
-          page_size: int,
-          page_token: str | None,
-      ) -> GradingModelListResponse:
-          ...
-
-      async def get_grading_model(self, model_id: str) -> GradingModelDetail:
-          ...
-
-      async def assign_to_factory(
-          self, model_id: str, factory_id: str
-      ) -> GradingModelDetail:
-          ...
-  ```
-- [ ] 7.2 Add exports to `services/bff/src/bff/services/admin/__init__.py`
+- [x] 7.1 Create `services/bff/src/bff/services/admin/grading_model_service.py`
+- [x] 7.2 Add exports to `services/bff/src/bff/services/admin/__init__.py`
 
 ### Task 8: BFF Admin Routes for Grading Models (AC: 3, 4, 5, 6, 7)
 
 Create REST API endpoints:
 
-- [ ] 8.1 Create `services/bff/src/bff/api/routes/admin/grading_models.py`:
-  ```python
-  router = APIRouter(prefix="/grading-models", tags=["admin-grading-models"])
-
-  @router.get("", response_model=GradingModelListResponse)
-  async def list_grading_models(
-      crop_type: str | None = None,
-      market: str | None = None,
-      page_size: int = Query(default=50, le=100),
-      page_token: str | None = None,
-      service: AdminGradingModelService = Depends(get_grading_model_service),
-  ) -> GradingModelListResponse:
-      ...
-
-  @router.get("/{model_id}", response_model=GradingModelDetail)
-  async def get_grading_model(
-      model_id: str,
-      service: AdminGradingModelService = Depends(get_grading_model_service),
-  ) -> GradingModelDetail:
-      ...
-
-  @router.post("/{model_id}/assign", response_model=GradingModelDetail)
-  async def assign_grading_model(
-      model_id: str,
-      request: AssignGradingModelRequest,
-      service: AdminGradingModelService = Depends(get_grading_model_service),
-  ) -> GradingModelDetail:
-      ...
-  ```
-- [ ] 8.2 Register router in `services/bff/src/bff/api/routes/admin/__init__.py`
-- [ ] 8.3 Add dependency injection for `get_grading_model_service`
+- [x] 8.1 Create `services/bff/src/bff/api/routes/admin/grading_models.py`
+- [x] 8.2 Register router in `services/bff/src/bff/api/routes/admin/__init__.py`
+- [x] 8.3 Add dependency injection for `get_grading_model_service`
 
 ### Task 9: Unit Tests (AC: 1-7)
 

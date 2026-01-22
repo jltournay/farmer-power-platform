@@ -166,6 +166,11 @@ class PlantationServiceStub(object):
                 request_serializer=plantation_dot_v1_dot_plantation__pb2.GetFactoryGradingModelRequest.SerializeToString,
                 response_deserializer=plantation_dot_v1_dot_plantation__pb2.GradingModel.FromString,
                 _registered_method=True)
+        self.ListGradingModels = channel.unary_unary(
+                '/farmer_power.plantation.v1.PlantationService/ListGradingModels',
+                request_serializer=plantation_dot_v1_dot_plantation__pb2.ListGradingModelsRequest.SerializeToString,
+                response_deserializer=plantation_dot_v1_dot_plantation__pb2.ListGradingModelsResponse.FromString,
+                _registered_method=True)
         self.AssignGradingModelToFactory = channel.unary_unary(
                 '/farmer_power.plantation.v1.PlantationService/AssignGradingModelToFactory',
                 request_serializer=plantation_dot_v1_dot_plantation__pb2.AssignGradingModelToFactoryRequest.SerializeToString,
@@ -365,6 +370,13 @@ class PlantationServiceServicer(object):
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
+    def ListGradingModels(self, request, context):
+        """Story 9.6a
+        """
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
     def AssignGradingModelToFactory(self, request, context):
         """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
@@ -531,6 +543,11 @@ def add_PlantationServiceServicer_to_server(servicer, server):
                     servicer.GetFactoryGradingModel,
                     request_deserializer=plantation_dot_v1_dot_plantation__pb2.GetFactoryGradingModelRequest.FromString,
                     response_serializer=plantation_dot_v1_dot_plantation__pb2.GradingModel.SerializeToString,
+            ),
+            'ListGradingModels': grpc.unary_unary_rpc_method_handler(
+                    servicer.ListGradingModels,
+                    request_deserializer=plantation_dot_v1_dot_plantation__pb2.ListGradingModelsRequest.FromString,
+                    response_serializer=plantation_dot_v1_dot_plantation__pb2.ListGradingModelsResponse.SerializeToString,
             ),
             'AssignGradingModelToFactory': grpc.unary_unary_rpc_method_handler(
                     servicer.AssignGradingModelToFactory,
@@ -1245,6 +1262,33 @@ class PlantationService(object):
             '/farmer_power.plantation.v1.PlantationService/GetFactoryGradingModel',
             plantation_dot_v1_dot_plantation__pb2.GetFactoryGradingModelRequest.SerializeToString,
             plantation_dot_v1_dot_plantation__pb2.GradingModel.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def ListGradingModels(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/farmer_power.plantation.v1.PlantationService/ListGradingModels',
+            plantation_dot_v1_dot_plantation__pb2.ListGradingModelsRequest.SerializeToString,
+            plantation_dot_v1_dot_plantation__pb2.ListGradingModelsResponse.FromString,
             options,
             channel_credentials,
             insecure,

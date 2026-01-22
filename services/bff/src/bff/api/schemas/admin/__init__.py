@@ -35,6 +35,12 @@ from bff.api.schemas.admin.farmer_schemas import (
     FarmerImportResponse,
     ImportErrorRow,
 )
+from bff.api.schemas.admin.grading_model_schemas import (
+    AssignGradingModelRequest,
+    GradingModelDetail,
+    GradingModelListResponse,
+    GradingModelSummary,
+)
 from bff.api.schemas.admin.region_schemas import (
     RegionCreateRequest,
     RegionDetail,
@@ -49,6 +55,7 @@ __all__ = [
     "AdminFarmerListResponse",
     "AdminFarmerSummary",
     "AdminFarmerUpdateRequest",
+    "AssignGradingModelRequest",
     "CollectionPointCreateRequest",
     "CollectionPointDetail",
     "CollectionPointListResponse",
@@ -61,6 +68,9 @@ __all__ = [
     "FactoryUpdateRequest",
     "FarmerImportRequest",
     "FarmerImportResponse",
+    "GradingModelDetail",
+    "GradingModelListResponse",
+    "GradingModelSummary",
     "ImportErrorRow",
     "QualityThresholdsAPI",
     "RegionCreateRequest",

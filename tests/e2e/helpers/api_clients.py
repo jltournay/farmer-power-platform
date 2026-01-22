@@ -852,6 +852,86 @@ class BFFClient:
             **kwargs,
         )
 
+    # =========================================================================
+    # Grading Model Admin API Endpoints (Story 9.6a)
+    # =========================================================================
+
+    async def admin_list_grading_models(
+        self,
+        page_size: int = 50,
+        page_token: str | None = None,
+        market_name: str | None = None,
+        crops_name: str | None = None,
+        grading_type: str | None = None,
+    ) -> dict[str, Any]:
+        """List grading models (admin endpoint).
+
+        Args:
+            page_size: Number of items per page (1-100)
+            page_token: Pagination token
+            market_name: Filter by market (e.g., "Kenya_TBK")
+            crops_name: Filter by crop name (e.g., "Tea")
+            grading_type: Filter by type ("binary", "ternary", "multi_level")
+
+        Returns:
+            Paginated list of grading model summaries
+        """
+        params: dict[str, Any] = {"page_size": page_size}
+        if page_token is not None:
+            params["page_token"] = page_token
+        if market_name is not None:
+            params["market_name"] = market_name
+        if crops_name is not None:
+            params["crops_name"] = crops_name
+        if grading_type is not None:
+            params["grading_type"] = grading_type
+
+        response = await self.client.get(
+            "/api/admin/grading-models",
+            params=params,
+            headers=self._get_auth_headers(role="platform_admin"),
+        )
+        response.raise_for_status()
+        return response.json()
+
+    async def admin_get_grading_model(self, model_id: str) -> dict[str, Any]:
+        """Get grading model details (admin endpoint).
+
+        Args:
+            model_id: Grading model ID to retrieve
+
+        Returns:
+            Grading model detail with attributes, rules, and factory assignments
+        """
+        response = await self.client.get(
+            f"/api/admin/grading-models/{model_id}",
+            headers=self._get_auth_headers(role="platform_admin"),
+        )
+        response.raise_for_status()
+        return response.json()
+
+    async def admin_assign_grading_model(
+        self,
+        model_id: str,
+        factory_id: str,
+    ) -> dict[str, Any]:
+        """Assign grading model to factory (admin endpoint).
+
+        Args:
+            model_id: Grading model ID to assign
+            factory_id: Factory ID to assign the model to
+
+        Returns:
+            Updated grading model detail
+        """
+        response = await self.client.post(
+            f"/api/admin/grading-models/{model_id}/assign",
+            json={"factory_id": factory_id},
+            headers=self._get_auth_headers(role="platform_admin"),
+        )
+        response.raise_for_status()
+        return response.json()
+
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # Platform Cost API Client (Story 13.8)

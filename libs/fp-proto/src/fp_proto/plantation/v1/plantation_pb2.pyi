@@ -949,6 +949,30 @@ class AssignGradingModelToFactoryRequest(_message.Message):
     factory_id: str
     def __init__(self, model_id: _Optional[str] = ..., factory_id: _Optional[str] = ...) -> None: ...
 
+class ListGradingModelsRequest(_message.Message):
+    __slots__ = ("page_size", "page_token", "market_name", "grading_type", "crops_name")
+    PAGE_SIZE_FIELD_NUMBER: _ClassVar[int]
+    PAGE_TOKEN_FIELD_NUMBER: _ClassVar[int]
+    MARKET_NAME_FIELD_NUMBER: _ClassVar[int]
+    GRADING_TYPE_FIELD_NUMBER: _ClassVar[int]
+    CROPS_NAME_FIELD_NUMBER: _ClassVar[int]
+    page_size: int
+    page_token: str
+    market_name: str
+    grading_type: GradingType
+    crops_name: str
+    def __init__(self, page_size: _Optional[int] = ..., page_token: _Optional[str] = ..., market_name: _Optional[str] = ..., grading_type: _Optional[_Union[GradingType, str]] = ..., crops_name: _Optional[str] = ...) -> None: ...
+
+class ListGradingModelsResponse(_message.Message):
+    __slots__ = ("grading_models", "next_page_token", "total_count")
+    GRADING_MODELS_FIELD_NUMBER: _ClassVar[int]
+    NEXT_PAGE_TOKEN_FIELD_NUMBER: _ClassVar[int]
+    TOTAL_COUNT_FIELD_NUMBER: _ClassVar[int]
+    grading_models: _containers.RepeatedCompositeFieldContainer[GradingModel]
+    next_page_token: str
+    total_count: int
+    def __init__(self, grading_models: _Optional[_Iterable[_Union[GradingModel, _Mapping]]] = ..., next_page_token: _Optional[str] = ..., total_count: _Optional[int] = ...) -> None: ...
+
 class DistributionCounts(_message.Message):
     __slots__ = ("counts",)
     class CountsEntry(_message.Message):

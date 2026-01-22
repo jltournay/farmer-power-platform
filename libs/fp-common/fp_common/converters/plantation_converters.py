@@ -21,10 +21,15 @@ from fp_proto.plantation.v1 import plantation_pb2
 
 from fp_common.models import (
     CollectionPoint,
+    ConditionalReject,
     Factory,
     Farmer,
     FarmScale,
     GeoLocation,
+    GradeRules,
+    GradingAttribute,
+    GradingModel,
+    GradingType,
     HistoricalMetrics,
     InteractionPreference,
     NotificationChannel,
@@ -607,3 +612,228 @@ def farmer_summary_from_proto(proto: plantation_pb2.FarmerSummary) -> dict[str, 
         "created_at": created_at,
         "updated_at": updated_at,
     }
+
+
+# ==============================================================================
+# Story 9.6a: Grading Model Converters (Bidirectional)
+# ==============================================================================
+
+
+def grading_attribute_from_proto(proto: plantation_pb2.GradingAttribute) -> GradingAttribute:
+    """Convert GradingAttribute proto message to Pydantic model.
+
+    Args:
+        proto: The GradingAttribute proto message.
+
+    Returns:
+        GradingAttribute Pydantic model.
+    """
+    return GradingAttribute(
+        num_classes=proto.num_classes,
+        classes=list(proto.classes),
+    )
+
+
+def grading_attribute_to_proto(attr: GradingAttribute) -> plantation_pb2.GradingAttribute:
+    """Convert GradingAttribute Pydantic model to proto message.
+
+    Args:
+        attr: The GradingAttribute Pydantic model.
+
+    Returns:
+        GradingAttribute proto message.
+    """
+    return plantation_pb2.GradingAttribute(
+        num_classes=attr.num_classes,
+        classes=attr.classes,
+    )
+
+
+def conditional_reject_from_proto(proto: plantation_pb2.ConditionalReject) -> ConditionalReject:
+    """Convert ConditionalReject proto message to Pydantic model.
+
+    Args:
+        proto: The ConditionalReject proto message.
+
+    Returns:
+        ConditionalReject Pydantic model.
+    """
+    return ConditionalReject(
+        if_attribute=proto.if_attribute,
+        if_value=proto.if_value,
+        then_attribute=proto.then_attribute,
+        reject_values=list(proto.reject_values),
+    )
+
+
+def conditional_reject_to_proto(cr: ConditionalReject) -> plantation_pb2.ConditionalReject:
+    """Convert ConditionalReject Pydantic model to proto message.
+
+    Args:
+        cr: The ConditionalReject Pydantic model.
+
+    Returns:
+        ConditionalReject proto message.
+    """
+    return plantation_pb2.ConditionalReject(
+        if_attribute=cr.if_attribute,
+        if_value=cr.if_value,
+        then_attribute=cr.then_attribute,
+        reject_values=cr.reject_values,
+    )
+
+
+def grade_rules_from_proto(proto: plantation_pb2.GradeRules) -> GradeRules:
+    """Convert GradeRules proto message to Pydantic model.
+
+    Args:
+        proto: The GradeRules proto message.
+
+    Returns:
+        GradeRules Pydantic model.
+    """
+    # Convert reject_conditions map
+    reject_conditions: dict[str, list[str]] = {}
+    for attr_name, values in proto.reject_conditions.items():
+        reject_conditions[attr_name] = list(values.values)
+
+    # Convert conditional_reject list
+    conditional_reject = [conditional_reject_from_proto(cr) for cr in proto.conditional_reject]
+
+    return GradeRules(
+        reject_conditions=reject_conditions,
+        conditional_reject=conditional_reject,
+    )
+
+
+def grade_rules_to_proto(rules: GradeRules) -> plantation_pb2.GradeRules:
+    """Convert GradeRules Pydantic model to proto message.
+
+    Args:
+        rules: The GradeRules Pydantic model.
+
+    Returns:
+        GradeRules proto message.
+    """
+    # Build reject_conditions map
+    reject_conditions_proto = {}
+    for attr_name, values in rules.reject_conditions.items():
+        reject_conditions_proto[attr_name] = plantation_pb2.StringList(values=values)
+
+    return plantation_pb2.GradeRules(
+        reject_conditions=reject_conditions_proto,
+        conditional_reject=[conditional_reject_to_proto(cr) for cr in rules.conditional_reject],
+    )
+
+
+def grading_type_from_proto(proto_value: int) -> GradingType:
+    """Convert proto GradingType enum to Pydantic GradingType.
+
+    Args:
+        proto_value: The proto enum integer value.
+
+    Returns:
+        GradingType Pydantic enum.
+    """
+    proto_name = plantation_pb2.GradingType.Name(proto_value)
+    return _proto_enum_to_pydantic(proto_name, GradingType, "grading_type_")
+
+
+def grading_type_to_proto(grading_type: GradingType) -> int:
+    """Convert Pydantic GradingType to proto enum value.
+
+    Args:
+        grading_type: The GradingType Pydantic enum.
+
+    Returns:
+        Proto enum integer value.
+    """
+    mapping = {
+        GradingType.BINARY: plantation_pb2.GradingType.GRADING_TYPE_BINARY,
+        GradingType.TERNARY: plantation_pb2.GradingType.GRADING_TYPE_TERNARY,
+        GradingType.MULTI_LEVEL: plantation_pb2.GradingType.GRADING_TYPE_MULTI_LEVEL,
+    }
+    return mapping.get(grading_type, plantation_pb2.GradingType.GRADING_TYPE_UNSPECIFIED)
+
+
+def grading_model_from_proto(proto: plantation_pb2.GradingModel) -> GradingModel:
+    """Convert GradingModel proto message to Pydantic model.
+
+    Used by: BFF PlantationClient to return typed Pydantic models.
+
+    Args:
+        proto: The GradingModel proto message from gRPC response.
+
+    Returns:
+        GradingModel Pydantic model with all fields mapped.
+    """
+    # Convert grading type enum
+    grading_type = grading_type_from_proto(proto.grading_type)
+
+    # Convert attributes map
+    attributes: dict[str, GradingAttribute] = {}
+    for attr_name, attr_proto in proto.attributes.items():
+        attributes[attr_name] = grading_attribute_from_proto(attr_proto)
+
+    # Convert grade rules
+    grade_rules = grade_rules_from_proto(proto.grade_rules) if proto.HasField("grade_rules") else GradeRules()
+
+    # Convert grade labels map
+    grade_labels: dict[str, str] = dict(proto.grade_labels)
+
+    # Build timestamps
+    created_at = _timestamp_to_datetime(proto.created_at)
+    updated_at = _timestamp_to_datetime(proto.updated_at)
+
+    return GradingModel(
+        model_id=proto.model_id,
+        model_version=proto.model_version,
+        regulatory_authority=proto.regulatory_authority if proto.regulatory_authority else None,
+        crops_name=proto.crops_name,
+        market_name=proto.market_name,
+        grading_type=grading_type,
+        attributes=attributes,
+        grade_rules=grade_rules,
+        grade_labels=grade_labels,
+        active_at_factory=list(proto.active_at_factory),
+        created_at=created_at if created_at else datetime.now(),
+        updated_at=updated_at if updated_at else datetime.now(),
+    )
+
+
+def grading_model_to_proto(model: GradingModel) -> plantation_pb2.GradingModel:
+    """Convert GradingModel Pydantic model to proto message.
+
+    Used by: Plantation gRPC service to build ListGradingModelsResponse.
+
+    Args:
+        model: The GradingModel Pydantic model.
+
+    Returns:
+        GradingModel proto message for gRPC response.
+    """
+    # Convert grading type enum
+    grading_type_proto = grading_type_to_proto(model.grading_type)
+
+    # Convert attributes map
+    attributes_proto = {}
+    for attr_name, attr in model.attributes.items():
+        attributes_proto[attr_name] = grading_attribute_to_proto(attr)
+
+    # Convert grade rules
+    grade_rules_proto = grade_rules_to_proto(model.grade_rules)
+
+    return plantation_pb2.GradingModel(
+        model_id=model.model_id,
+        model_version=model.model_version,
+        regulatory_authority=model.regulatory_authority or "",
+        crops_name=model.crops_name,
+        market_name=model.market_name,
+        grading_type=grading_type_proto,
+        attributes=attributes_proto,
+        grade_rules=grade_rules_proto,
+        grade_labels=model.grade_labels,
+        active_at_factory=model.active_at_factory,
+        created_at=_datetime_to_timestamp(model.created_at),
+        updated_at=_datetime_to_timestamp(model.updated_at),
+    )
