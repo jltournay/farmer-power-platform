@@ -358,7 +358,7 @@ class TestRegionalWeatherRepository:
         await repo.ensure_indexes()
 
         # Verify indexes exist
-        indexes = await test_db["regional_weather"].index_information()
+        indexes = await test_db["weather_observations"].index_information()
 
         assert "idx_region_date" in indexes
         assert "idx_ttl" in indexes
