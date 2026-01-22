@@ -476,7 +476,7 @@ async def list_factories(
 
 **Plantation Service:**
 - `services/plantation-model/src/plantation_model/repositories/grading_model_repository.py` - Extend `list_all` if needed
-- `services/plantation-model/src/plantation_model/grpc_server/plantation_service.py` - Add `ListGradingModels` handler
+- `services/plantation-model/src/plantation_model/api/plantation_service.py` - Add `ListGradingModels` handler
 
 **BFF:**
 - `services/bff/src/bff/api/schemas/admin/grading_model_schemas.py` - NEW
@@ -543,7 +543,7 @@ This regenerates:
 - [Source: proto/plantation/v1/plantation.proto:53-56] - Existing grading model RPCs
 - [Source: proto/plantation/v1/plantation.proto:600-654] - GradingModel messages
 - [Source: services/plantation-model/src/plantation_model/repositories/grading_model_repository.py] - Existing repository
-- [Source: services/plantation-model/src/plantation_model/grpc_server/plantation_service.py:1054-1241] - Existing handlers
+- [Source: services/plantation-model/src/plantation_model/api/plantation_service.py:1054-1241] - Existing handlers
 - [Source: services/bff/src/bff/api/routes/admin/farmers.py] - Admin routes pattern
 - [Source: services/bff/src/bff/transformers/admin/factory_transformer.py] - Transformer pattern
 - [Source: _bmad-output/architecture/plantation-model-architecture.md] - Domain architecture
@@ -580,7 +580,6 @@ Claude Opus 4.5 (claude-opus-4-5-20251101)
 - `services/bff/src/bff/services/admin/grading_model_service.py` - Admin service layer
 - `services/bff/src/bff/api/routes/admin/grading_models.py` - REST API routes
 - `tests/unit/bff/test_grading_model_service.py` - BFF service unit tests
-- `tests/unit/bff/transformers/admin/test_grading_model_transformer.py` - Transformer unit tests
 - `tests/unit/fp_common/converters/test_plantation_converters.py` - Converter unit tests
 - `tests/e2e/scenarios/test_36_admin_grading_models.py` - E2E tests
 
@@ -589,11 +588,12 @@ Claude Opus 4.5 (claude-opus-4-5-20251101)
 - `libs/fp-proto/src/fp_proto/plantation/v1/plantation_pb2.py` - Regenerated proto stubs
 - `libs/fp-proto/src/fp_proto/plantation/v1/plantation_pb2_grpc.py` - Regenerated proto stubs
 - `libs/fp-common/fp_common/converters/__init__.py` - Export new converters
-- `services/plantation-model/src/plantation_model/grpc_server/plantation_service.py` - Added ListGradingModels handler
+- `services/plantation-model/src/plantation_model/api/plantation_service.py` - Added ListGradingModels handler
 - `services/bff/src/bff/infrastructure/clients/plantation_client.py` - Added grading model methods
 - `services/bff/src/bff/api/schemas/admin/__init__.py` - Export new schemas
 - `services/bff/src/bff/transformers/admin/__init__.py` - Export new transformer
 - `services/bff/src/bff/services/admin/__init__.py` - Export new service
 - `services/bff/src/bff/api/routes/admin/__init__.py` - Register grading models router
 - `tests/e2e/helpers/api_clients.py` - Added grading model API methods
+- `tests/unit/bff/test_admin_transformers.py` - Added GradingModelTransformer tests (class TestGradingModelTransformer)
 - `tests/integration/test_region_repository_mongodb.py` - Fixed collection name (CI fix)
