@@ -259,7 +259,7 @@ development_status:
   9-5-farmer-management: done  # github_issue: 199, PR: #202, E2E CI: 21117120990
   # Grading Model Management - Split into backend (9.6a) and UI (9.6b)
   9-6a-grading-model-grpc-bff-api: done  # github_issue: 215, PR: #216, 5 points - Proto: ListGradingModels + Plantation Service + BFF client + REST endpoints
-  9-6b-grading-model-management-ui: backlog  # 3 points - UI: List, Detail, Assignment. Depends: 9-6a
+  9-6b-grading-model-management-ui: ready-for-dev  # 3 points - UI: List, Detail, Assignment. Depends: 9-6a
   9-7-user-management: deferred  # BLOCKED by 0-5-8 (Azure AD B2C), deferred for production
   9-8-platform-health-dashboard: backlog  # 3 points
   9-9-knowledge-management-interface: backlog  # 5 points - SSE-based, depends: 0-5-9
