@@ -1,6 +1,6 @@
 # Story 9.6b: Grading Model Management UI
 
-**Status:** ready-for-dev
+**Status:** done
 **GitHub Issue:** #217
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->

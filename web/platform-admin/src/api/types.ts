@@ -559,14 +559,14 @@ export interface GradeRules {
 /** Factory reference in grading model detail */
 export interface FactoryReference {
   factory_id: string;
-  name: string;
+  name: string | null;
 }
 
 /** Full grading model detail response */
 export interface GradingModelDetailResponse {
   model_id: string;
   model_version: string;
-  regulatory_authority: string;
+  regulatory_authority: string | null;
   crops_name: string;
   market_name: string;
   grading_type: GradingType;

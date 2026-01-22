@@ -151,7 +151,7 @@ export function GradingModelDetail(): JSX.Element {
           </Grid>
           <Grid size={{ xs: 12, sm: 6, md: 3 }}>
             <Typography variant="body2" color="text.secondary">Regulatory Authority</Typography>
-            <Typography variant="body1">{data.regulatory_authority}</Typography>
+            <Typography variant="body1">{data.regulatory_authority ?? '—'}</Typography>
           </Grid>
           <Grid size={{ xs: 12, sm: 6, md: 3 }}>
             <Typography variant="body2" color="text.secondary">Grading Type</Typography>
@@ -320,8 +320,8 @@ export function GradingModelDetail(): JSX.Element {
                   <FactoryIcon fontSize="small" color="action" />
                 </ListItemIcon>
                 <ListItemText
-                  primary={factory.name}
-                  secondary={factory.factory_id}
+                  primary={factory.name ?? factory.factory_id}
+                  secondary={factory.name ? factory.factory_id : undefined}
                 />
               </ListItem>
             ))}
