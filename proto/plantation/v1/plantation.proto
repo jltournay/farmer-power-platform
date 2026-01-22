@@ -53,6 +53,7 @@ service PlantationService {
   rpc CreateGradingModel(CreateGradingModelRequest) returns (GradingModel);
   rpc GetGradingModel(GetGradingModelRequest) returns (GradingModel);
   rpc GetFactoryGradingModel(GetFactoryGradingModelRequest) returns (GradingModel);
+  rpc ListGradingModels(ListGradingModelsRequest) returns (ListGradingModelsResponse);  // Story 9.6a
   rpc AssignGradingModelToFactory(AssignGradingModelToFactoryRequest) returns (GradingModel);
 
   // Farmer Performance operations
@@ -677,6 +678,21 @@ message CreateGradingModelRequest {
 message AssignGradingModelToFactoryRequest {
   string model_id = 1;
   string factory_id = 2;
+}
+
+// Story 9.6a: ListGradingModels messages
+message ListGradingModelsRequest {
+  int32 page_size = 1;                // Number of results per page (default: 50)
+  string page_token = 2;              // Token for pagination
+  string market_name = 3;             // Optional filter by market (e.g., "Kenya_TBK")
+  GradingType grading_type = 4;       // Optional filter by grading type
+  string crops_name = 5;              // Optional filter by crop name (e.g., "Tea")
+}
+
+message ListGradingModelsResponse {
+  repeated GradingModel grading_models = 1;
+  string next_page_token = 2;
+  int32 total_count = 3;
 }
 
 // ============================================================================

@@ -21,6 +21,7 @@ from bff.infrastructure.clients.base import (
     BaseGrpcClient,
     grpc_retry,
 )
+from fp_common.converters import grading_model_from_proto
 from fp_common.models import (
     CollectionPoint,
     CollectionPointCapacity,
@@ -37,6 +38,7 @@ from fp_common.models import (
     Flush,
     FlushPeriod,
     GeoLocation,
+    GradingModel,
     InteractionPreference,
     NotificationChannel,
     OperatingHours,
@@ -1775,3 +1777,128 @@ class PlantationClient(BaseGrpcClient):
             created_at=_timestamp_to_datetime(proto.created_at),
             updated_at=_timestamp_to_datetime(proto.updated_at),
         )
+
+    # =========================================================================
+    # Grading Model Operations (Story 9.6a)
+    # =========================================================================
+
+    @grpc_retry
+    async def list_grading_models(
+        self,
+        market_name: str | None = None,
+        crops_name: str | None = None,
+        grading_type: str | None = None,
+        page_size: int = 50,
+        page_token: str | None = None,
+    ) -> PaginatedResponse[GradingModel]:
+        """List grading models with optional filtering.
+
+        Args:
+            market_name: Optional filter by market (e.g., "Kenya_TBK").
+            crops_name: Optional filter by crop name (e.g., "Tea").
+            grading_type: Optional filter by type ("binary", "ternary", "multi_level").
+            page_size: Number of results per page (default: 50, max: 100).
+            page_token: Token for pagination.
+
+        Returns:
+            PaginatedResponse containing GradingModel list with pagination metadata.
+
+        Raises:
+            ServiceUnavailableError: If service is unavailable.
+        """
+        try:
+            stub = await self._get_plantation_stub()
+
+            # Convert grading_type string to proto enum if provided
+            grading_type_proto = plantation_pb2.GradingType.GRADING_TYPE_UNSPECIFIED
+            if grading_type:
+                type_mapping = {
+                    "binary": plantation_pb2.GradingType.GRADING_TYPE_BINARY,
+                    "ternary": plantation_pb2.GradingType.GRADING_TYPE_TERNARY,
+                    "multi_level": plantation_pb2.GradingType.GRADING_TYPE_MULTI_LEVEL,
+                }
+                grading_type_proto = type_mapping.get(
+                    grading_type.lower(),
+                    plantation_pb2.GradingType.GRADING_TYPE_UNSPECIFIED,
+                )
+
+            request = plantation_pb2.ListGradingModelsRequest(
+                market_name=market_name or "",
+                crops_name=crops_name or "",
+                grading_type=grading_type_proto,
+                page_size=page_size,
+                page_token=page_token or "",
+            )
+            response = await stub.ListGradingModels(request, metadata=self._get_metadata())
+
+            # Use fp-common converter for proto -> Pydantic
+            models = [grading_model_from_proto(gm) for gm in response.grading_models]
+            next_token = response.next_page_token if response.next_page_token else None
+
+            return PaginatedResponse.from_client_response(
+                items=models,
+                total_count=response.total_count,
+                page_size=page_size,
+                next_page_token=next_token,
+            )
+        except grpc.aio.AioRpcError as e:
+            self._handle_grpc_error(e, "Grading models list")
+            raise
+
+    @grpc_retry
+    async def get_grading_model(self, model_id: str) -> GradingModel:
+        """Get a grading model by ID.
+
+        Args:
+            model_id: The grading model ID (e.g., "tbk_kenya_tea_v1").
+
+        Returns:
+            GradingModel Pydantic domain model.
+
+        Raises:
+            NotFoundError: If grading model not found.
+            ServiceUnavailableError: If service is unavailable.
+        """
+        try:
+            stub = await self._get_plantation_stub()
+            request = plantation_pb2.GetGradingModelRequest(model_id=model_id)
+            response = await stub.GetGradingModel(request, metadata=self._get_metadata())
+
+            # Use fp-common converter for proto -> Pydantic
+            return grading_model_from_proto(response)
+        except grpc.aio.AioRpcError as e:
+            self._handle_grpc_error(e, f"Grading model {model_id}")
+            raise
+
+    @grpc_retry
+    async def assign_grading_model_to_factory(
+        self,
+        model_id: str,
+        factory_id: str,
+    ) -> GradingModel:
+        """Assign a grading model to a factory.
+
+        Args:
+            model_id: The grading model ID to assign.
+            factory_id: The factory ID to assign the model to.
+
+        Returns:
+            Updated GradingModel Pydantic domain model.
+
+        Raises:
+            NotFoundError: If grading model or factory not found.
+            ServiceUnavailableError: If service is unavailable.
+        """
+        try:
+            stub = await self._get_plantation_stub()
+            request = plantation_pb2.AssignGradingModelToFactoryRequest(
+                model_id=model_id,
+                factory_id=factory_id,
+            )
+            response = await stub.AssignGradingModelToFactory(request, metadata=self._get_metadata())
+
+            # Use fp-common converter for proto -> Pydantic
+            return grading_model_from_proto(response)
+        except grpc.aio.AioRpcError as e:
+            self._handle_grpc_error(e, f"Assign grading model {model_id} to factory {factory_id}")
+            raise

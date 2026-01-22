@@ -10,6 +10,7 @@ from bff.api.schemas.farmer_schemas import TierLevel, TrendIndicator
 from bff.transformers.admin.collection_point_transformer import CollectionPointTransformer
 from bff.transformers.admin.factory_transformer import FactoryTransformer
 from bff.transformers.admin.farmer_transformer import AdminFarmerTransformer
+from bff.transformers.admin.grading_model_transformer import GradingModelTransformer
 from bff.transformers.admin.region_transformer import RegionTransformer
 from fp_common.models import (
     CollectionPoint,
@@ -28,7 +29,13 @@ from fp_common.models.farmer_performance import (
     TodayMetrics,
     TrendDirection,
 )
-from fp_common.models.grading_model import GradingAttribute, GradingModel, GradingType
+from fp_common.models.grading_model import (
+    ConditionalReject,
+    GradeRules,
+    GradingAttribute,
+    GradingModel,
+    GradingType,
+)
 from fp_common.models.region import Region
 from fp_common.models.value_objects import (
     GPS,
@@ -373,3 +380,122 @@ class TestAdminFarmerTransformer:
         assert detail.performance.primary_percentage_30d == 82.5
         assert detail.performance.tier == TierLevel.TIER_2
         assert detail.communication_prefs.pref_lang.value == "sw"
+
+
+class TestGradingModelTransformer:
+    """Tests for GradingModelTransformer (Story 9.6a)."""
+
+    @pytest.fixture
+    def full_grading_model(self) -> GradingModel:
+        """Create a full grading model with all fields."""
+        return GradingModel(
+            model_id="tbk_kenya_tea_v1",
+            model_version="2024.1",
+            regulatory_authority="KTDA",
+            crops_name="Tea",
+            market_name="Kenya_TBK",
+            grading_type=GradingType.BINARY,
+            attributes={
+                "leaf_appearance": GradingAttribute(num_classes=2, classes=["Fine", "Coarse"]),
+                "insect_damage": GradingAttribute(num_classes=3, classes=["None", "Light", "Heavy"]),
+            },
+            grade_rules=GradeRules(
+                reject_conditions={"insect_damage": ["Heavy"]},
+                conditional_reject=[
+                    ConditionalReject(
+                        if_attribute="leaf_appearance",
+                        if_value="Coarse",
+                        then_attribute="insect_damage",
+                        reject_values=["Light"],
+                    )
+                ],
+            ),
+            grade_labels={"ACCEPT": "Primary", "REJECT": "Secondary"},
+            active_at_factory=["KEN-FAC-001", "KEN-FAC-002"],
+            created_at=datetime(2024, 1, 1, tzinfo=UTC),
+            updated_at=datetime(2024, 6, 1, tzinfo=UTC),
+        )
+
+    def test_to_summary(self, full_grading_model: GradingModel):
+        """Test grading model summary transformation."""
+        summary = GradingModelTransformer.to_summary(full_grading_model)
+
+        assert summary.model_id == "tbk_kenya_tea_v1"
+        assert summary.model_version == "2024.1"
+        assert summary.crops_name == "Tea"
+        assert summary.market_name == "Kenya_TBK"
+        assert summary.grading_type == "binary"
+        assert summary.attribute_count == 2
+        assert summary.factory_count == 2
+
+    def test_to_summary_grading_type_variations(self, sample_grading_model: GradingModel):
+        """Test grading type string conversion."""
+        # Binary
+        sample_grading_model.grading_type = GradingType.BINARY
+        summary = GradingModelTransformer.to_summary(sample_grading_model)
+        assert summary.grading_type == "binary"
+
+        # Ternary
+        sample_grading_model.grading_type = GradingType.TERNARY
+        summary = GradingModelTransformer.to_summary(sample_grading_model)
+        assert summary.grading_type == "ternary"
+
+        # Multi-level
+        sample_grading_model.grading_type = GradingType.MULTI_LEVEL
+        summary = GradingModelTransformer.to_summary(sample_grading_model)
+        assert summary.grading_type == "multi_level"
+
+    def test_to_detail(self, full_grading_model: GradingModel):
+        """Test grading model detail transformation."""
+        factory_names = {
+            "KEN-FAC-001": "Nyeri Tea Factory",
+            "KEN-FAC-002": "Muranga Tea Factory",
+        }
+
+        detail = GradingModelTransformer.to_detail(full_grading_model, factory_names)
+
+        assert detail.model_id == "tbk_kenya_tea_v1"
+        assert detail.model_version == "2024.1"
+        assert detail.regulatory_authority == "KTDA"
+        assert detail.crops_name == "Tea"
+        assert detail.market_name == "Kenya_TBK"
+        assert detail.grading_type == "binary"
+
+        # Attributes
+        assert len(detail.attributes) == 2
+        assert detail.attributes["leaf_appearance"].num_classes == 2
+        assert detail.attributes["leaf_appearance"].classes == ["Fine", "Coarse"]
+
+        # Grade rules
+        assert detail.grade_rules.reject_conditions["insect_damage"] == ["Heavy"]
+        assert len(detail.grade_rules.conditional_reject) == 1
+        assert detail.grade_rules.conditional_reject[0].if_attribute == "leaf_appearance"
+
+        # Grade labels
+        assert detail.grade_labels == {"ACCEPT": "Primary", "REJECT": "Secondary"}
+
+        # Factory references with resolved names
+        assert len(detail.active_at_factories) == 2
+        assert detail.active_at_factories[0].factory_id == "KEN-FAC-001"
+        assert detail.active_at_factories[0].name == "Nyeri Tea Factory"
+        assert detail.active_at_factories[1].factory_id == "KEN-FAC-002"
+        assert detail.active_at_factories[1].name == "Muranga Tea Factory"
+
+        # Timestamps
+        assert detail.created_at == datetime(2024, 1, 1, tzinfo=UTC)
+        assert detail.updated_at == datetime(2024, 6, 1, tzinfo=UTC)
+
+    def test_to_detail_without_factory_names(self, full_grading_model: GradingModel):
+        """Test grading model detail transformation without factory name resolution."""
+        detail = GradingModelTransformer.to_detail(full_grading_model, factory_names=None)
+
+        # Factory references without resolved names
+        assert len(detail.active_at_factories) == 2
+        assert detail.active_at_factories[0].factory_id == "KEN-FAC-001"
+        assert detail.active_at_factories[0].name is None
+
+    def test_to_detail_empty_factories(self, sample_grading_model: GradingModel):
+        """Test grading model detail with no factory assignments."""
+        detail = GradingModelTransformer.to_detail(sample_grading_model)
+
+        assert detail.active_at_factories == []

@@ -13,13 +13,20 @@ from fp_common.converters import (
     factory_from_proto,
     farmer_from_proto,
     farmer_summary_from_proto,
+    grading_model_from_proto,
+    grading_model_to_proto,
     region_from_proto,
 )
 from fp_common.models import (
     CollectionPoint,
+    ConditionalReject,
     Factory,
     Farmer,
     FarmScale,
+    GradeRules,
+    GradingAttribute,
+    GradingModel,
+    GradingType,
     InteractionPreference,
     NotificationChannel,
     PreferredLanguage,
@@ -891,3 +898,277 @@ class TestRoundTrip:
         assert data["location"]["latitude"] == -0.4150
         assert data["location"]["longitude"] == 36.9500
         assert data["status"] == "active"
+
+
+class TestGradingModelFromProto:
+    """Tests for grading_model_from_proto converter (Story 9.6a)."""
+
+    def test_basic_fields_mapped(self):
+        """Basic fields are correctly mapped."""
+        proto = plantation_pb2.GradingModel(
+            model_id="tbk_kenya_tea_v1",
+            model_version="2024.1",
+            regulatory_authority="KTDA",
+            crops_name="Tea",
+            market_name="Kenya_TBK",
+            grading_type=plantation_pb2.GradingType.GRADING_TYPE_BINARY,
+        )
+
+        model = grading_model_from_proto(proto)
+
+        assert isinstance(model, GradingModel)
+        assert model.model_id == "tbk_kenya_tea_v1"
+        assert model.model_version == "2024.1"
+        assert model.regulatory_authority == "KTDA"
+        assert model.crops_name == "Tea"
+        assert model.market_name == "Kenya_TBK"
+        assert model.grading_type == GradingType.BINARY
+
+    def test_grading_type_enum_conversion(self):
+        """Grading type enum is correctly converted."""
+        # BINARY
+        proto = plantation_pb2.GradingModel(
+            model_id="test",
+            model_version="1.0",
+            grading_type=plantation_pb2.GradingType.GRADING_TYPE_BINARY,
+        )
+        model = grading_model_from_proto(proto)
+        assert model.grading_type == GradingType.BINARY
+
+        # TERNARY
+        proto.grading_type = plantation_pb2.GradingType.GRADING_TYPE_TERNARY
+        model = grading_model_from_proto(proto)
+        assert model.grading_type == GradingType.TERNARY
+
+        # MULTI_LEVEL
+        proto.grading_type = plantation_pb2.GradingType.GRADING_TYPE_MULTI_LEVEL
+        model = grading_model_from_proto(proto)
+        assert model.grading_type == GradingType.MULTI_LEVEL
+
+    def test_attributes_mapped(self):
+        """Grading attributes are correctly mapped."""
+        proto = plantation_pb2.GradingModel(
+            model_id="test",
+            model_version="1.0",
+        )
+        proto.attributes["leaf_appearance"].num_classes = 3
+        proto.attributes["leaf_appearance"].classes.extend(["Fine", "Medium", "Coarse"])
+        proto.attributes["insect_damage"].num_classes = 2
+        proto.attributes["insect_damage"].classes.extend(["None", "Present"])
+
+        model = grading_model_from_proto(proto)
+
+        assert len(model.attributes) == 2
+        assert model.attributes["leaf_appearance"].num_classes == 3
+        assert model.attributes["leaf_appearance"].classes == ["Fine", "Medium", "Coarse"]
+        assert model.attributes["insect_damage"].num_classes == 2
+        assert model.attributes["insect_damage"].classes == ["None", "Present"]
+
+    def test_grade_rules_reject_conditions(self):
+        """Grade rules reject conditions are correctly mapped."""
+        proto = plantation_pb2.GradingModel(
+            model_id="test",
+            model_version="1.0",
+        )
+        proto.grade_rules.reject_conditions["insect_damage"].values.append("heavy")
+        proto.grade_rules.reject_conditions["fungal_infection"].values.extend(["severe", "moderate"])
+
+        model = grading_model_from_proto(proto)
+
+        assert model.grade_rules.reject_conditions["insect_damage"] == ["heavy"]
+        assert model.grade_rules.reject_conditions["fungal_infection"] == ["severe", "moderate"]
+
+    def test_grade_rules_conditional_reject(self):
+        """Grade rules conditional reject is correctly mapped."""
+        proto = plantation_pb2.GradingModel(
+            model_id="test",
+            model_version="1.0",
+        )
+        cr = proto.grade_rules.conditional_reject.add()
+        cr.if_attribute = "leaf_appearance"
+        cr.if_value = "Coarse"
+        cr.then_attribute = "insect_damage"
+        cr.reject_values.extend(["Light", "Moderate"])
+
+        model = grading_model_from_proto(proto)
+
+        assert len(model.grade_rules.conditional_reject) == 1
+        assert model.grade_rules.conditional_reject[0].if_attribute == "leaf_appearance"
+        assert model.grade_rules.conditional_reject[0].if_value == "Coarse"
+        assert model.grade_rules.conditional_reject[0].then_attribute == "insect_damage"
+        assert model.grade_rules.conditional_reject[0].reject_values == ["Light", "Moderate"]
+
+    def test_grade_labels_mapped(self):
+        """Grade labels are correctly mapped."""
+        proto = plantation_pb2.GradingModel(
+            model_id="test",
+            model_version="1.0",
+        )
+        proto.grade_labels["ACCEPT"] = "Grade A"
+        proto.grade_labels["REJECT"] = "Grade B"
+
+        model = grading_model_from_proto(proto)
+
+        assert model.grade_labels == {"ACCEPT": "Grade A", "REJECT": "Grade B"}
+
+    def test_active_at_factory_mapped(self):
+        """Active factory assignments are correctly mapped."""
+        proto = plantation_pb2.GradingModel(
+            model_id="test",
+            model_version="1.0",
+        )
+        proto.active_at_factory.extend(["KEN-FAC-001", "KEN-FAC-002"])
+
+        model = grading_model_from_proto(proto)
+
+        assert model.active_at_factory == ["KEN-FAC-001", "KEN-FAC-002"]
+
+    def test_regulatory_authority_optional(self):
+        """Regulatory authority is optional."""
+        proto = plantation_pb2.GradingModel(
+            model_id="test",
+            model_version="1.0",
+        )
+
+        model = grading_model_from_proto(proto)
+
+        assert model.regulatory_authority is None
+
+
+class TestGradingModelToProto:
+    """Tests for grading_model_to_proto converter (Story 9.6a)."""
+
+    def test_basic_fields_mapped(self):
+        """Basic fields are correctly mapped."""
+        model = GradingModel(
+            model_id="tbk_kenya_tea_v1",
+            model_version="2024.1",
+            regulatory_authority="KTDA",
+            crops_name="Tea",
+            market_name="Kenya_TBK",
+            grading_type=GradingType.BINARY,
+            attributes={"leaf_appearance": GradingAttribute(num_classes=2, classes=["Fine", "Coarse"])},
+            grade_labels={"ACCEPT": "Primary", "REJECT": "Secondary"},
+        )
+
+        proto = grading_model_to_proto(model)
+
+        assert proto.model_id == "tbk_kenya_tea_v1"
+        assert proto.model_version == "2024.1"
+        assert proto.regulatory_authority == "KTDA"
+        assert proto.crops_name == "Tea"
+        assert proto.market_name == "Kenya_TBK"
+        assert proto.grading_type == plantation_pb2.GradingType.GRADING_TYPE_BINARY
+
+    def test_grading_type_enum_conversion(self):
+        """Grading type enum is correctly converted."""
+        model = GradingModel(
+            model_id="test",
+            model_version="1.0",
+            crops_name="Tea",
+            market_name="Kenya_TBK",
+            grading_type=GradingType.TERNARY,
+            attributes={"leaf_appearance": GradingAttribute(num_classes=2, classes=["Fine", "Coarse"])},
+            grade_labels={"ACCEPT": "Grade A"},
+        )
+        proto = grading_model_to_proto(model)
+        assert proto.grading_type == plantation_pb2.GradingType.GRADING_TYPE_TERNARY
+
+        model.grading_type = GradingType.MULTI_LEVEL
+        proto = grading_model_to_proto(model)
+        assert proto.grading_type == plantation_pb2.GradingType.GRADING_TYPE_MULTI_LEVEL
+
+    def test_attributes_mapped(self):
+        """Grading attributes are correctly mapped."""
+        model = GradingModel(
+            model_id="test",
+            model_version="1.0",
+            crops_name="Tea",
+            market_name="Kenya_TBK",
+            grading_type=GradingType.BINARY,
+            attributes={
+                "leaf_appearance": GradingAttribute(num_classes=3, classes=["Fine", "Medium", "Coarse"]),
+                "insect_damage": GradingAttribute(num_classes=2, classes=["None", "Present"]),
+            },
+            grade_labels={"ACCEPT": "Primary"},
+        )
+
+        proto = grading_model_to_proto(model)
+
+        assert proto.attributes["leaf_appearance"].num_classes == 3
+        assert list(proto.attributes["leaf_appearance"].classes) == ["Fine", "Medium", "Coarse"]
+        assert proto.attributes["insect_damage"].num_classes == 2
+
+    def test_grade_rules_mapped(self):
+        """Grade rules are correctly mapped."""
+        model = GradingModel(
+            model_id="test",
+            model_version="1.0",
+            crops_name="Tea",
+            market_name="Kenya_TBK",
+            grading_type=GradingType.BINARY,
+            attributes={"leaf_appearance": GradingAttribute(num_classes=3, classes=["Fine", "Medium", "Coarse"])},
+            grade_labels={"ACCEPT": "Primary"},
+            grade_rules=GradeRules(
+                reject_conditions={"insect_damage": ["heavy"]},
+                conditional_reject=[
+                    ConditionalReject(
+                        if_attribute="leaf_appearance",
+                        if_value="Coarse",
+                        then_attribute="insect_damage",
+                        reject_values=["Light"],
+                    )
+                ],
+            ),
+        )
+
+        proto = grading_model_to_proto(model)
+
+        assert list(proto.grade_rules.reject_conditions["insect_damage"].values) == ["heavy"]
+        assert len(proto.grade_rules.conditional_reject) == 1
+        assert proto.grade_rules.conditional_reject[0].if_attribute == "leaf_appearance"
+
+    def test_active_at_factory_mapped(self):
+        """Active factory assignments are correctly mapped."""
+        model = GradingModel(
+            model_id="test",
+            model_version="1.0",
+            crops_name="Tea",
+            market_name="Kenya_TBK",
+            grading_type=GradingType.BINARY,
+            attributes={"leaf_appearance": GradingAttribute(num_classes=2, classes=["Fine", "Coarse"])},
+            grade_labels={"ACCEPT": "Primary"},
+            active_at_factory=["KEN-FAC-001", "KEN-FAC-002"],
+        )
+
+        proto = grading_model_to_proto(model)
+
+        assert list(proto.active_at_factory) == ["KEN-FAC-001", "KEN-FAC-002"]
+
+    def test_round_trip_conversion(self):
+        """Proto -> Pydantic -> Proto preserves data."""
+        original_proto = plantation_pb2.GradingModel(
+            model_id="tbk_kenya_tea_v1",
+            model_version="2024.1",
+            regulatory_authority="KTDA",
+            crops_name="Tea",
+            market_name="Kenya_TBK",
+            grading_type=plantation_pb2.GradingType.GRADING_TYPE_BINARY,
+        )
+        original_proto.attributes["leaf_appearance"].num_classes = 2
+        original_proto.attributes["leaf_appearance"].classes.extend(["Fine", "Coarse"])
+        original_proto.grade_labels["ACCEPT"] = "Primary"
+        original_proto.active_at_factory.extend(["KEN-FAC-001"])
+
+        # Convert to Pydantic
+        model = grading_model_from_proto(original_proto)
+
+        # Convert back to Proto
+        result_proto = grading_model_to_proto(model)
+
+        # Verify key fields preserved
+        assert result_proto.model_id == original_proto.model_id
+        assert result_proto.model_version == original_proto.model_version
+        assert result_proto.grading_type == original_proto.grading_type
+        assert result_proto.attributes["leaf_appearance"].num_classes == 2
+        assert result_proto.grade_labels["ACCEPT"] == "Primary"

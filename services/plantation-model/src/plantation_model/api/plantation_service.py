@@ -1205,6 +1205,52 @@ class PlantationServiceServicer(plantation_pb2_grpc.PlantationServiceServicer):
 
         return self._grading_model_to_proto(model)
 
+    async def ListGradingModels(
+        self,
+        request: plantation_pb2.ListGradingModelsRequest,
+        context: grpc.aio.ServicerContext,
+    ) -> plantation_pb2.ListGradingModelsResponse:
+        """List grading models with optional filtering and pagination (Story 9.6a)."""
+        if not self._grading_model_repo:
+            await context.abort(
+                grpc.StatusCode.UNIMPLEMENTED,
+                "Grading model repository not configured",
+            )
+
+        # Build filters from request
+        filters: dict = {}
+        if request.market_name:
+            filters["market_name"] = request.market_name
+        if request.crops_name:
+            filters["crops_name"] = request.crops_name
+        if request.grading_type and request.grading_type != plantation_pb2.GradingType.GRADING_TYPE_UNSPECIFIED:
+            # Convert proto enum to string value stored in MongoDB
+            grading_type_domain = self._grading_type_from_proto(request.grading_type)
+            filters["grading_type"] = grading_type_domain.value
+
+        # Use page_size from request or default to 50, cap at 100
+        page_size = min(request.page_size, 100) if request.page_size > 0 else 50
+
+        # List grading models
+        models, next_page_token, total_count = await self._grading_model_repo.list_all(
+            page_size=page_size,
+            page_token=request.page_token if request.page_token else None,
+            filters=filters if filters else None,
+        )
+
+        logger.info(
+            "Listed grading models: count=%d, total=%d, filters=%s",
+            len(models),
+            total_count,
+            filters,
+        )
+
+        return plantation_pb2.ListGradingModelsResponse(
+            grading_models=[self._grading_model_to_proto(m) for m in models],
+            next_page_token=next_page_token or "",
+            total_count=total_count,
+        )
+
     async def AssignGradingModelToFactory(
         self,
         request: plantation_pb2.AssignGradingModelToFactoryRequest,
