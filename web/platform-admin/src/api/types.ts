@@ -510,12 +510,116 @@ export interface PaymentPolicyAPI {
   below_tier_3_adjustment: number;
 }
 
-/** Grading model summary */
+/** Grading model summary (used by FactoryDetail) */
 export interface GradingModelSummary {
   id: string;
   name: string;
   version: string;
   grade_count: number;
+}
+
+// ============================================================================
+// Grading Model Types (Story 9.6b)
+// ============================================================================
+
+/** Grading type classification */
+export type GradingType = 'binary' | 'ternary' | 'multi_level';
+
+/** Grading model list item summary */
+export interface GradingModelListSummary {
+  model_id: string;
+  model_version: string;
+  crops_name: string;
+  market_name: string;
+  grading_type: GradingType;
+  attribute_count: number;
+  factory_count: number;
+}
+
+/** Grading attribute with classes */
+export interface GradingAttribute {
+  num_classes: number;
+  classes: string[];
+}
+
+/** Conditional reject rule */
+export interface ConditionalReject {
+  if_attribute: string;
+  if_value: string;
+  then_attribute: string;
+  reject_values: string[];
+}
+
+/** Grade rules configuration */
+export interface GradeRules {
+  reject_conditions: Record<string, string[]>;
+  conditional_reject: ConditionalReject[];
+}
+
+/** Factory reference in grading model detail */
+export interface FactoryReference {
+  factory_id: string;
+  name: string | null;
+}
+
+/** Full grading model detail response */
+export interface GradingModelDetailResponse {
+  model_id: string;
+  model_version: string;
+  regulatory_authority: string | null;
+  crops_name: string;
+  market_name: string;
+  grading_type: GradingType;
+  attributes: Record<string, GradingAttribute>;
+  grade_rules: GradeRules;
+  grade_labels: Record<string, string>;
+  active_at_factories: FactoryReference[];
+  created_at: string;
+  updated_at: string;
+}
+
+/** Grading model list API response */
+export interface GradingModelListResponse {
+  data: GradingModelListSummary[];
+  pagination: PaginationMeta;
+}
+
+/** Grading model list query parameters */
+export interface GradingModelListParams {
+  crops_name?: string;
+  market_name?: string;
+  grading_type?: GradingType;
+  page_size?: number;
+  page_token?: string;
+}
+
+/** Assign grading model request */
+export interface AssignGradingModelRequest {
+  factory_id: string;
+}
+
+/** Get display label for grading type */
+export function getGradingTypeLabel(type: GradingType): string {
+  switch (type) {
+    case 'binary':
+      return 'Binary';
+    case 'ternary':
+      return 'Ternary';
+    case 'multi_level':
+      return 'Multi-level';
+  }
+}
+
+/** Get chip color for grading type */
+export function getGradingTypeColor(type: GradingType): 'default' | 'primary' | 'secondary' {
+  switch (type) {
+    case 'binary':
+      return 'default';
+    case 'ternary':
+      return 'primary';
+    case 'multi_level':
+      return 'secondary';
+  }
 }
 
 /** Factory summary for list views */
