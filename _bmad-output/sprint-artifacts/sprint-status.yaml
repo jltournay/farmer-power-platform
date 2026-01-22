@@ -34,15 +34,16 @@
 # - SM typically creates next story after previous one is 'done' to incorporate learnings
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 #
-# PRIORITY ORDER (2026-01-20 update):
+# PRIORITY ORDER (2026-01-22 update):
 # ========================================
-# P0: Epic 0 (Done), Epic 1 (Done), Epic 2 (Done), Epic 0.4 (E2E Tests), Epic 0.6 (Done), Epic 13 (Done)
-# P1: Epic 0.5 (in-progress), Epic 0.75 (in-progress), Epic 0.8 (Demo Tooling - backlog)
-# P2: Epic 11 (Kiosk - 1st UI), Epic 9 (Admin - 2nd UI, all stories unblocked)
+# P0: Epic 0 (Done), Epic 1 (Done), Epic 2 (Done), Epic 0.4 (E2E Tests), Epic 0.6 (Done), Epic 13 (Done), Epic 0.8 (Done)
+# P1: Epic 0.5 (in-progress), Epic 0.75 (Done)
+# P2: Epic 9 (Admin - in-progress, stories unblocked)
 # P3: Epic 5, Epic 10 (Regulator - 3rd UI)
 # P4: Epic 6, Epic 4
 # P5: Epic 7, Epic 8, Epic 12 (Engagement)
 # P6: Epic 3 (Dashboard - LAST UI, needs Epic 4,5,6)
+# DEFERRED: Epic 11 (Kiosk - awaiting PWA requirements)
 
 generated: 2026-01-08
 project: farmer-power-platform
@@ -80,7 +81,7 @@ development_status:
 
   # Epic 2: Quality Data Ingestion (REVISED - BLOB_TRIGGER architecture)
   # Dependencies: Epic 0, Epic 1
-  epic-2: in-progress  # Reopened for stories 2-12, 2-13 (AI Model integration prerequisites)
+  epic-2: done  # Completed: All stories including 2-12, 2-13 (AI Model integration)
   2-1-collection-model-service-setup: done  # github_issue: 16
   2-2-source-configuration-cli: done  # github_issue: 17
   2-3-event-grid-trigger-handler: done  # github_issue: 18
@@ -168,7 +169,7 @@ development_status:
   # Dependencies: Epic 0, Epic 1, Epic 2. Blocks: Epic 5, 6, 8, 12
   # Restructured: 26 stories in sequential development order, optimized for solo dev
   # Architecture: LLM Gateway, 5 Agent Types, RAG Pipeline, LangGraph Orchestration
-  epic-0-75: in-progress
+  epic-0-75: done
   0-75-1-ai-model-setup: done  # github_issue: 89, Service scaffold, DAPR, MongoDB, health endpoints, proto scaffold
   0-75-2-pydantic-model-prompt-mongo-repository: done  # github_issue: 91, PR: 92, Prompt storage with versioning
   0-75-3-pydantic-model-agent-config-mongo-repository: done  # github_issue: 93, Agent configuration storage
@@ -219,7 +220,7 @@ development_status:
   # Epic 0.8: Demo & Developer Tooling (NEW - 2026-01-20, ADR-020)
   # Dependencies: Epic 0.4 (E2E Tests), Epic 1, Epic 2
   # Pydantic-validated seed loader + Polyfactory-based data generator
-  epic-0-8: in-progress
+  epic-0-8: done
   0-8-1-pydantic-validation-infrastructure: done  # github_issue: 205, PR: #206  # 5 points - Schema validation, FK registry, CODE REVIEW COMPLETED 2026-01-20
   0-8-2-seed-data-loader-script: done  # github_issue: 207, PR: #208 MERGED 2026-01-20, 5 points - load_demo_data.py
   0-8-3-polyfactory-generator-framework: done  # 5 points, github_issue: 209 - Factory classes for each model, depends: 0-8-1
@@ -231,13 +232,14 @@ development_status:
   # P2: FIRST FRONTEND APPS (Simple React validation)
   # ═══════════════════════════════════════════════════════════════════════════
 
-  # Epic 11: Registration Kiosk PWA The (1st UI - SIMPLEST)
+  # Epic 11: Registration Kiosk PWA (1st UI - SIMPLEST)
   # Dependencies: Epic 0.5, Epic 1
-  epic-11: backlog
-  11-1-registration-kiosk-application-scaffold: backlog
-  11-2-farmer-registration-workflow: backlog
-  11-3-collection-point-assignment: backlog
-  11-4-farmer-id-card-printing: backlog
+  # DEFERRED (2026-01-11): Awaiting information on PWA requirements
+  epic-11: deferred
+  11-1-registration-kiosk-application-scaffold: deferred
+  11-2-farmer-registration-workflow: deferred
+  11-3-collection-point-assignment: deferred
+  11-4-farmer-id-card-printing: deferred
   epic-11-retrospective: optional
 
   # Epic 9: Platform Admin Portal (2nd UI - Simple CRUD)
@@ -256,20 +258,20 @@ development_status:
   9-5a-farmer-cp-data-model: done  # github_issue: 200, PR: #201 MERGED 2026-01-18, Data model refactor: N:M Farmer-CP relationship
   9-5-farmer-management: done  # github_issue: 199, PR: #202, E2E CI: 21117120990
   # Grading Model Management - Split into backend (9.6a) and UI (9.6b)
-  # BLOCKED by Epic 0.8 (Demo Data Tooling) - UI stories need demo data for testing
-  9-6a-grading-model-grpc-bff-api: blocked  # 5 points - Proto: ListGradingModels + Plantation Service + BFF client + REST endpoints. BLOCKED: Epic 0.8
-  9-6b-grading-model-management-ui: blocked  # 3 points - UI: List, Detail, Assignment. Depends: 9-6a, Epic 0.8
+  # Story files NOT YET CREATED - need to run *create-story for 9.6a first
+  9-6a-grading-model-grpc-bff-api: backlog  # 5 points - Proto: ListGradingModels + Plantation Service + BFF client + REST endpoints
+  9-6b-grading-model-management-ui: backlog  # 3 points - UI: List, Detail, Assignment. Depends: 9-6a
   9-7-user-management: deferred  # BLOCKED by 0-5-8 (Azure AD B2C), deferred for production
-  9-8-platform-health-dashboard: blocked  # BLOCKED by Epic 0.8 (needs demo data for testing)
-  9-9-knowledge-management-interface: blocked  # BLOCKED by Epic 0.8 (needs demo data for testing)
-  9-10-llm-cost-dashboard: blocked  # BLOCKED by Epic 0.8 (needs demo data for testing)
+  9-8-platform-health-dashboard: backlog  # 3 points
+  9-9-knowledge-management-interface: backlog  # 5 points - SSE-based, depends: 0-5-9
+  9-10-llm-cost-dashboard: backlog  # 5 points - depends: Epic 13
   # Admin Configuration Visibility (ADR-019) - View-only screens for Source Configs, AI Agents & Prompts
-  9-11a-source-config-grpc-collection-model: blocked  # 3 points - SourceConfigService gRPC in Collection Model. BLOCKED: Epic 0.8
-  9-11b-source-config-bff-client-rest: blocked  # 3 points - gRPC client + REST API in BFF, depends: 9-11a, Epic 0.8
-  9-11c-source-config-viewer-ui: blocked  # 3 points - Source Configuration Viewer UI, depends: 9-11b, Epic 0.8
-  9-12a-agent-config-grpc-ai-model: blocked  # 5 points - AgentConfigService gRPC in AI Model (agents + prompts). BLOCKED: Epic 0.8
-  9-12b-agent-config-bff-client-rest: blocked  # 3 points - gRPC client + REST API in BFF, depends: 9-12a, Epic 0.8
-  9-12c-agent-prompt-viewer-ui: blocked  # 5 points - AI Agent & Prompt Viewer UI, depends: 9-12b, Epic 0.8
+  9-11a-source-config-grpc-collection-model: backlog  # 3 points - SourceConfigService gRPC in Collection Model
+  9-11b-source-config-bff-client-rest: backlog  # 3 points - gRPC client + REST API in BFF, depends: 9-11a
+  9-11c-source-config-viewer-ui: backlog  # 3 points - Source Configuration Viewer UI, depends: 9-11b
+  9-12a-agent-config-grpc-ai-model: backlog  # 5 points - AgentConfigService gRPC in AI Model (agents + prompts)
+  9-12b-agent-config-bff-client-rest: backlog  # 3 points - gRPC client + REST API in BFF, depends: 9-12a
+  9-12c-agent-prompt-viewer-ui: backlog  # 5 points - AI Agent & Prompt Viewer UI, depends: 9-12b
   epic-9-retrospective: optional
 
   # ═══════════════════════════════════════════════════════════════════════════
