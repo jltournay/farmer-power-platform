@@ -115,16 +115,16 @@ so that I can configure which quality assessment standards each factory uses wit
 ### During Development
 - [x] All commits reference GitHub issue: `Relates to #217`
 - [x] Commits are atomic by type (production, test, seed - not mixed)
-- [ ] Push to feature branch: `git push -u origin feature/9-6b-grading-model-management-ui`
+- [x] Push to feature branch: `git push -u origin feature/9-6b-grading-model-management-ui`
 
 ### Story Done
-- [ ] Create Pull Request: `gh pr create --title "Story 9.6b: Grading Model Management UI" --base main`
+- [x] Create Pull Request: `gh pr create --title "Story 9.6b: Grading Model Management UI" --base main`
 - [ ] CI passes on PR (including E2E tests)
-- [ ] Code review completed (`/code-review` or human review)
+- [x] Code review completed (`/code-review` or human review)
 - [ ] PR approved and merged (squash)
 - [ ] Local branch cleaned up: `git branch -d story/9-6b-grading-model-management-ui`
 
-**PR URL:** _______________ (fill in when created)
+**PR URL:** https://github.com/jltournay/farmer-power-platform/pull/218
 
 ---
 
