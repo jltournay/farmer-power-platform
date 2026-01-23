@@ -6,6 +6,7 @@ Provides CRUD endpoints for:
 - Collection Points (AC3)
 - Farmers (AC4)
 - Grading Models (Story 9.6a)
+- Knowledge Management (Story 9.9a)
 
 All routes require platform_admin role (AC5).
 """
@@ -14,6 +15,7 @@ from bff.api.routes.admin.collection_points import router as collection_points_r
 from bff.api.routes.admin.factories import router as factories_router
 from bff.api.routes.admin.farmers import router as farmers_router
 from bff.api.routes.admin.grading_models import router as grading_models_router
+from bff.api.routes.admin.knowledge import router as knowledge_router
 from bff.api.routes.admin.regions import router as regions_router
 from fastapi import APIRouter
 
@@ -26,5 +28,6 @@ router.include_router(factories_router)
 router.include_router(collection_points_router)
 router.include_router(farmers_router)
 router.include_router(grading_models_router)
+router.include_router(knowledge_router)
 
 __all__ = ["router"]
