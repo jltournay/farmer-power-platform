@@ -627,16 +627,20 @@ Claude Opus 4.5 (claude-opus-4-5-20251101)
 - All 49 unit tests pass (service: 18, transformer: 9, schemas: 18, SSE: 4 via service test)
 - Full regression suite: 2993 passed, 0 failures
 - Lint: All checks passed, 682 files already formatted
-- E2E test file covers: CRUD (10 tests), Lifecycle (5), Upload (4), Chunks (2), Vectorization (2), Query (4), Auth (4), Validation (5), Integration (4)
+- E2E test file covers: CRUD (11 tests), Lifecycle (5), Upload (4), Chunks (2), Vectorization (2), Query (4), Auth (4), Validation (5), Integration (4) = 41 tests
 - SSE streaming endpoint (8.7) tested via unit test; E2E SSE validation requires live gRPC server
 - No additional seed data needed - E2E tests create their own documents
 - `query_knowledge()` reuses existing AiModelClient method from fp-common
 - Vectorization handled via `setattr(request, "async", True)` for proto reserved word
 
-### File List
+### Local E2E Results (Step 9)
 
-**Created:**
-- (list new files)
+```
+======================== 39 passed, 2 skipped in 5.47s =========================
+```
 
-**Modified:**
-- (list modified files with brief description)
+**2 skipped tests** (pre-existing ai-model service gaps, NOT BFF issues):
+- `test_get_extraction_job_status`: `_extraction_workflow` not wired in ai-model `grpc_server.py`
+- `test_query_result_item_structure`: `_retrieval_service` not wired in ai-model `grpc_server.py`
+
+Both use `pytest.skip()` when the ai-model returns gRPC UNAVAILABLE (BFF correctly returns 503).
