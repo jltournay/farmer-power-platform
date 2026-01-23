@@ -56,6 +56,13 @@ so that {{benefit}}.
 
 > **This section MUST be completed before marking story as "review"**
 
+> **⛔ REGRESSION RULE — NO EXCEPTIONS:**
+> - Run the **FULL** test suite, not just tests you think are related to your change.
+> - A previously passing test that now fails **IS a regression caused by your change**.
+> - "Not related to my change" is **NEVER** a valid reason to skip or ignore a failing test.
+> - **Zero failures** is the only acceptable outcome. Fix all regressions before proceeding.
+> - If you believe a test was already broken before your change, provide `git stash && pytest` evidence proving it fails on clean main too.
+
 ### 1. Unit Tests
 ```bash
 pytest tests/unit/ -v
