@@ -518,9 +518,9 @@ git push origin feature/9-9b-knowledge-management-ui
 # Wait ~30s, then check CI status
 gh run list --branch feature/9-9b-knowledge-management-ui --limit 3
 ```
-**CI Run ID:** _______________
-**CI Status:** [ ] Passed / [ ] Failed
-**Verification Date:** _______________
+**CI Run ID:** 21286934196
+**CI Status:** [x] Passed / [ ] Failed
+**Verification Date:** 2026-01-23
 
 > **Note:** E2E tests are NOT required for this frontend-only story. Backend API coverage was validated in Story 9.9a (41 knowledge-specific E2E tests pass).
 
