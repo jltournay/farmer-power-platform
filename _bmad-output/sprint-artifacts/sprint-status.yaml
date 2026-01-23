@@ -262,7 +262,7 @@ development_status:
   9-6b-grading-model-management-ui: done  # github_issue: 217, 3 points - UI: List, Detail, Assignment. Depends: 9-6a
   9-7-user-management: deferred  # BLOCKED by 0-5-8 (Azure AD B2C), deferred for production
   9-8-platform-health-dashboard: deferred  # 5 points - DEFERRED: depends on Epic 4 (SMS), Epic 5 (Knowledge MCP), Epic 7 (Voice IVR)
-  9-9a-knowledge-management-bff-api: backlog  # 3 points - BFF REST endpoints + SSE extraction progress, depends: 0-5-9, 0.75.10
+  9-9a-knowledge-management-bff-api: ready-for-dev  # 3 points - BFF REST endpoints + SSE extraction progress, depends: 0-5-9, 0.75.10
   9-9b-knowledge-management-ui: backlog  # 5 points - Document library, upload wizard, review/activation, depends: 9-9a
   9-10-llm-cost-dashboard: backlog  # 5 points - depends: Epic 13
   # Admin Configuration Visibility (ADR-019) - View-only screens for Source Configs, AI Agents & Prompts
