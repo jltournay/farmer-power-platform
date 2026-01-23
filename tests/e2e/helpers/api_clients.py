@@ -932,6 +932,437 @@ class BFFClient:
         response.raise_for_status()
         return response.json()
 
+    # =========================================================================
+    # Knowledge Management Admin API Endpoints (Story 9.9a)
+    # =========================================================================
+
+    async def admin_list_knowledge_documents(
+        self,
+        domain: str | None = None,
+        status: str | None = None,
+        author: str | None = None,
+        page: int = 1,
+        page_size: int = 20,
+    ) -> dict[str, Any]:
+        """List knowledge documents (admin endpoint).
+
+        Args:
+            domain: Filter by knowledge domain
+            status: Filter by status (draft, staged, active, archived)
+            author: Filter by author
+            page: Page number (1-based)
+            page_size: Items per page
+
+        Returns:
+            Paginated list of document summaries
+        """
+        params: dict[str, Any] = {"page": page, "page_size": page_size}
+        if domain is not None:
+            params["domain"] = domain
+        if status is not None:
+            params["status"] = status
+        if author is not None:
+            params["author"] = author
+
+        response = await self.client.get(
+            "/api/admin/knowledge",
+            params=params,
+            headers=self._get_auth_headers(role="platform_admin"),
+        )
+        response.raise_for_status()
+        return response.json()
+
+    async def admin_search_knowledge_documents(
+        self,
+        query: str,
+        domain: str | None = None,
+        status: str | None = None,
+        limit: int = 20,
+    ) -> list[dict[str, Any]]:
+        """Search knowledge documents (admin endpoint).
+
+        Args:
+            query: Search query text
+            domain: Filter by domain
+            status: Filter by status
+            limit: Max results
+
+        Returns:
+            List of matching document summaries
+        """
+        params: dict[str, Any] = {"q": query, "limit": limit}
+        if domain is not None:
+            params["domain"] = domain
+        if status is not None:
+            params["status"] = status
+
+        response = await self.client.get(
+            "/api/admin/knowledge/search",
+            params=params,
+            headers=self._get_auth_headers(role="platform_admin"),
+        )
+        response.raise_for_status()
+        return response.json()
+
+    async def admin_get_knowledge_document(
+        self,
+        document_id: str,
+        version: int = 0,
+    ) -> dict[str, Any]:
+        """Get knowledge document detail (admin endpoint).
+
+        Args:
+            document_id: Document ID
+            version: Specific version (0 = latest)
+
+        Returns:
+            Document detail with metadata
+        """
+        params: dict[str, Any] = {}
+        if version > 0:
+            params["version"] = version
+
+        response = await self.client.get(
+            f"/api/admin/knowledge/{document_id}",
+            params=params,
+            headers=self._get_auth_headers(role="platform_admin"),
+        )
+        response.raise_for_status()
+        return response.json()
+
+    async def admin_create_knowledge_document(
+        self,
+        data: dict[str, Any],
+    ) -> dict[str, Any]:
+        """Create knowledge document (admin endpoint).
+
+        Args:
+            data: Document creation payload (title, domain, content, author, etc.)
+
+        Returns:
+            Created document detail
+        """
+        response = await self.client.post(
+            "/api/admin/knowledge",
+            json=data,
+            headers=self._get_auth_headers(role="platform_admin"),
+        )
+        response.raise_for_status()
+        return response.json()
+
+    async def admin_update_knowledge_document(
+        self,
+        document_id: str,
+        data: dict[str, Any],
+    ) -> dict[str, Any]:
+        """Update knowledge document (admin endpoint).
+
+        Args:
+            document_id: Document ID to update
+            data: Update payload (title, content, change_summary, etc.)
+
+        Returns:
+            Updated document detail (new version)
+        """
+        response = await self.client.put(
+            f"/api/admin/knowledge/{document_id}",
+            json=data,
+            headers=self._get_auth_headers(role="platform_admin"),
+        )
+        response.raise_for_status()
+        return response.json()
+
+    async def admin_delete_knowledge_document(
+        self,
+        document_id: str,
+    ) -> dict[str, Any]:
+        """Delete knowledge document (admin endpoint).
+
+        Args:
+            document_id: Document ID to delete
+
+        Returns:
+            Deletion result with versions_archived count
+        """
+        response = await self.client.delete(
+            f"/api/admin/knowledge/{document_id}",
+            headers=self._get_auth_headers(role="platform_admin"),
+        )
+        response.raise_for_status()
+        return response.json()
+
+    async def admin_stage_knowledge_document(
+        self,
+        document_id: str,
+        version: int = 0,
+    ) -> dict[str, Any]:
+        """Stage knowledge document (admin endpoint).
+
+        Args:
+            document_id: Document ID
+            version: Version to stage (0 = latest)
+
+        Returns:
+            Updated document detail
+        """
+        params: dict[str, Any] = {}
+        if version > 0:
+            params["version"] = version
+
+        response = await self.client.post(
+            f"/api/admin/knowledge/{document_id}/stage",
+            params=params,
+            headers=self._get_auth_headers(role="platform_admin"),
+        )
+        response.raise_for_status()
+        return response.json()
+
+    async def admin_activate_knowledge_document(
+        self,
+        document_id: str,
+        version: int = 0,
+    ) -> dict[str, Any]:
+        """Activate knowledge document (admin endpoint).
+
+        Args:
+            document_id: Document ID
+            version: Version to activate (0 = latest)
+
+        Returns:
+            Updated document detail
+        """
+        params: dict[str, Any] = {}
+        if version > 0:
+            params["version"] = version
+
+        response = await self.client.post(
+            f"/api/admin/knowledge/{document_id}/activate",
+            params=params,
+            headers=self._get_auth_headers(role="platform_admin"),
+        )
+        response.raise_for_status()
+        return response.json()
+
+    async def admin_archive_knowledge_document(
+        self,
+        document_id: str,
+        version: int = 0,
+    ) -> dict[str, Any]:
+        """Archive knowledge document (admin endpoint).
+
+        Args:
+            document_id: Document ID
+            version: Version to archive (0 = all)
+
+        Returns:
+            Updated document detail
+        """
+        params: dict[str, Any] = {}
+        if version > 0:
+            params["version"] = version
+
+        response = await self.client.post(
+            f"/api/admin/knowledge/{document_id}/archive",
+            params=params,
+            headers=self._get_auth_headers(role="platform_admin"),
+        )
+        response.raise_for_status()
+        return response.json()
+
+    async def admin_rollback_knowledge_document(
+        self,
+        document_id: str,
+        target_version: int,
+    ) -> dict[str, Any]:
+        """Rollback knowledge document (admin endpoint).
+
+        Args:
+            document_id: Document ID
+            target_version: Version to rollback to
+
+        Returns:
+            New draft document detail
+        """
+        response = await self.client.post(
+            f"/api/admin/knowledge/{document_id}/rollback",
+            json={"target_version": target_version},
+            headers=self._get_auth_headers(role="platform_admin"),
+        )
+        response.raise_for_status()
+        return response.json()
+
+    async def admin_upload_knowledge_document(
+        self,
+        file_content: bytes,
+        filename: str,
+        title: str,
+        domain: str,
+        author: str = "",
+        source: str = "",
+        region: str = "",
+    ) -> dict[str, Any]:
+        """Upload knowledge document file (admin endpoint).
+
+        Args:
+            file_content: File bytes
+            filename: Original filename
+            title: Document title
+            domain: Knowledge domain
+            author: Document author
+            source: Original source
+            region: Geographic relevance
+
+        Returns:
+            Extraction job status
+        """
+        files = {"file": (filename, file_content, "application/octet-stream")}
+        data: dict[str, Any] = {"title": title, "domain": domain}
+        if author:
+            data["author"] = author
+        if source:
+            data["source"] = source
+        if region:
+            data["region"] = region
+
+        response = await self.client.post(
+            "/api/admin/knowledge/upload",
+            files=files,
+            data=data,
+            headers=self._get_auth_headers(role="platform_admin"),
+        )
+        response.raise_for_status()
+        return response.json()
+
+    async def admin_get_extraction_job(
+        self,
+        document_id: str,
+        job_id: str,
+    ) -> dict[str, Any]:
+        """Get extraction job status (admin endpoint).
+
+        Args:
+            document_id: Document ID
+            job_id: Extraction job ID
+
+        Returns:
+            Extraction job status
+        """
+        response = await self.client.get(
+            f"/api/admin/knowledge/{document_id}/extraction/{job_id}",
+            headers=self._get_auth_headers(role="platform_admin"),
+        )
+        response.raise_for_status()
+        return response.json()
+
+    async def admin_list_knowledge_chunks(
+        self,
+        document_id: str,
+        version: int = 0,
+        page: int = 1,
+        page_size: int = 50,
+    ) -> dict[str, Any]:
+        """List document chunks (admin endpoint).
+
+        Args:
+            document_id: Document ID
+            version: Document version (0 = latest)
+            page: Page number
+            page_size: Items per page
+
+        Returns:
+            Paginated chunk list
+        """
+        params: dict[str, Any] = {"page": page, "page_size": page_size}
+        if version > 0:
+            params["version"] = version
+
+        response = await self.client.get(
+            f"/api/admin/knowledge/{document_id}/chunks",
+            params=params,
+            headers=self._get_auth_headers(role="platform_admin"),
+        )
+        response.raise_for_status()
+        return response.json()
+
+    async def admin_vectorize_knowledge_document(
+        self,
+        document_id: str,
+        version: int = 0,
+    ) -> dict[str, Any]:
+        """Trigger document vectorization (admin endpoint).
+
+        Args:
+            document_id: Document ID
+            version: Version to vectorize (0 = latest)
+
+        Returns:
+            Vectorization job status
+        """
+        body: dict[str, Any] = {}
+        if version > 0:
+            body["version"] = version
+
+        response = await self.client.post(
+            f"/api/admin/knowledge/{document_id}/vectorize",
+            json=body if body else None,
+            headers=self._get_auth_headers(role="platform_admin"),
+        )
+        response.raise_for_status()
+        return response.json()
+
+    async def admin_get_vectorization_job(
+        self,
+        document_id: str,
+        job_id: str,
+    ) -> dict[str, Any]:
+        """Get vectorization job status (admin endpoint).
+
+        Args:
+            document_id: Document ID
+            job_id: Vectorization job ID
+
+        Returns:
+            Vectorization job status
+        """
+        response = await self.client.get(
+            f"/api/admin/knowledge/{document_id}/vectorization/{job_id}",
+            headers=self._get_auth_headers(role="platform_admin"),
+        )
+        response.raise_for_status()
+        return response.json()
+
+    async def admin_query_knowledge(
+        self,
+        query: str,
+        domains: list[str] | None = None,
+        top_k: int = 5,
+        confidence_threshold: float = 0.0,
+    ) -> dict[str, Any]:
+        """Query knowledge base (admin endpoint).
+
+        Args:
+            query: Natural language query
+            domains: Filter by domains
+            top_k: Max results
+            confidence_threshold: Minimum confidence score
+
+        Returns:
+            Query response with matches
+        """
+        body: dict[str, Any] = {"query": query, "top_k": top_k}
+        if domains:
+            body["domains"] = domains
+        if confidence_threshold > 0:
+            body["confidence_threshold"] = confidence_threshold
+
+        response = await self.client.post(
+            "/api/admin/knowledge/query",
+            json=body,
+            headers=self._get_auth_headers(role="platform_admin"),
+        )
+        response.raise_for_status()
+        return response.json()
+
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # Platform Cost API Client (Story 13.8)
