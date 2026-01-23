@@ -1,6 +1,6 @@
 # Story 9.9b: Knowledge Management UI
 
-**Status:** review
+**Status:** done
 **GitHub Issue:** #221
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
