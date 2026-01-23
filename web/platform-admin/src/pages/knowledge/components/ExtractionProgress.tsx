@@ -34,9 +34,7 @@ export function ExtractionProgress({ documentId, jobId, onComplete, onError }: E
       (event: ExtractionProgressEvent) => {
         setProgress(event.percent);
         setStatusMessage(event.message || `Pages ${event.pages_processed}/${event.total_pages}`);
-        if (event.status && !method) {
-          setMethod(event.status);
-        }
+        setMethod((prev) => prev ?? event.status);
         setConnectionError(null);
       },
       () => {
@@ -57,7 +55,7 @@ export function ExtractionProgress({ documentId, jobId, onComplete, onError }: E
         cleanupRef.current();
       }
     };
-  }, [documentId, jobId, onComplete, onError, method]);
+  }, [documentId, jobId, onComplete, onError]);
 
   return (
     <Box sx={{ py: 3 }}>

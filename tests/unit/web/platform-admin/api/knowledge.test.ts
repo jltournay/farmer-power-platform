@@ -256,15 +256,17 @@ describe('Knowledge API Client', () => {
   });
 
   describe('createExtractionProgressStream', () => {
-    it('should create EventSource and return cleanup function', () => {
-      const mockClose = vi.fn();
-      const mockAddEventListener = vi.fn();
-      const MockEventSource = vi.fn().mockImplementation(() => ({
-        close: mockClose,
-        addEventListener: mockAddEventListener,
-        readyState: 0,
-      }));
-      vi.stubGlobal('EventSource', MockEventSource);
+    it('should call fetch with auth header and return cleanup function', () => {
+      vi.stubGlobal('localStorage', { getItem: vi.fn().mockReturnValue('test-token'), setItem: vi.fn(), removeItem: vi.fn(), clear: vi.fn(), length: 0, key: vi.fn() });
+
+      const mockAbort = vi.fn();
+      vi.stubGlobal('AbortController', vi.fn().mockImplementation(() => ({
+        signal: 'mock-signal',
+        abort: mockAbort,
+      })));
+
+      const mockFetch = vi.fn().mockReturnValue(new Promise(() => {}));
+      vi.stubGlobal('fetch', mockFetch);
 
       const onProgress = vi.fn();
       const onComplete = vi.fn();
@@ -272,34 +274,47 @@ describe('Knowledge API Client', () => {
 
       const cleanup = createExtractionProgressStream('doc-123', 'job-1', onProgress, onComplete, onError);
 
-      expect(MockEventSource).toHaveBeenCalled();
-      expect(mockAddEventListener).toHaveBeenCalledWith('progress', expect.any(Function));
-      expect(mockAddEventListener).toHaveBeenCalledWith('complete', expect.any(Function));
-      expect(mockAddEventListener).toHaveBeenCalledWith('error', expect.any(Function));
+      expect(mockFetch).toHaveBeenCalledWith(
+        expect.stringContaining('/admin/knowledge/doc-123/extraction/progress?job_id=job-1'),
+        expect.objectContaining({
+          headers: { Accept: 'text/event-stream', Authorization: 'Bearer test-token' },
+          signal: 'mock-signal',
+        }),
+      );
 
       cleanup();
-      expect(mockClose).toHaveBeenCalled();
+      expect(mockAbort).toHaveBeenCalled();
 
       vi.unstubAllGlobals();
     });
 
-    it('should call onProgress when progress event received', () => {
-      const mockClose = vi.fn();
-      let progressHandler: ((event: unknown) => void) | null = null;
-      const MockEventSource = vi.fn().mockImplementation(() => ({
-        close: mockClose,
-        addEventListener: vi.fn().mockImplementation((event: string, handler: (event: unknown) => void) => {
-          if (event === 'progress') progressHandler = handler;
-        }),
-        readyState: 1,
+    it('should call onProgress when progress SSE event received', async () => {
+      vi.stubGlobal('localStorage', { getItem: vi.fn().mockReturnValue('test-token'), setItem: vi.fn(), removeItem: vi.fn(), clear: vi.fn(), length: 0, key: vi.fn() });
+
+      const sseData = 'event: progress\ndata: {"percent":50,"status":"in_progress","message":"Pages 6/12","pages_processed":6,"total_pages":12}\n\nevent: complete\ndata: {}\n\n';
+      const encoder = new TextEncoder();
+      const stream = new ReadableStream({
+        start(controller) {
+          controller.enqueue(encoder.encode(sseData));
+          controller.close();
+        },
+      });
+
+      vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+        ok: true,
+        status: 200,
+        body: stream,
       }));
-      vi.stubGlobal('EventSource', MockEventSource);
 
       const onProgress = vi.fn();
-      createExtractionProgressStream('doc-123', 'job-1', onProgress, vi.fn(), vi.fn());
+      const onComplete = vi.fn();
+      const onError = vi.fn();
 
-      expect(progressHandler).not.toBeNull();
-      progressHandler!({ data: JSON.stringify({ percent: 50, status: 'in_progress', message: 'Pages 6/12', pages_processed: 6, total_pages: 12 }) });
+      createExtractionProgressStream('doc-123', 'job-1', onProgress, onComplete, onError);
+
+      // Wait for async stream processing
+      await new Promise((resolve) => setTimeout(resolve, 50));
+
       expect(onProgress).toHaveBeenCalledWith({
         percent: 50,
         status: 'in_progress',
@@ -307,6 +322,7 @@ describe('Knowledge API Client', () => {
         pages_processed: 6,
         total_pages: 12,
       });
+      expect(onComplete).toHaveBeenCalled();
 
       vi.unstubAllGlobals();
     });

@@ -14,8 +14,10 @@ export interface PaginationMeta {
   total_count: number;
   page_size: number;
   page: number;
-  next_page_token: string | null;
+  total_pages: number;
   has_next: boolean;
+  has_prev: boolean;
+  next_page_token: string | null;
 }
 
 // ============================================================================

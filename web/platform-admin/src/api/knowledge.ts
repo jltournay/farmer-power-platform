@@ -187,8 +187,9 @@ export async function getExtractionJob(documentId: string, jobId: string): Promi
 }
 
 /**
- * Create an SSE stream for extraction progress updates.
- * Returns a cleanup function to close the connection.
+ * Create an SSE stream for extraction progress updates using fetch.
+ * Uses fetch instead of EventSource to support Authorization headers.
+ * Returns a cleanup function to abort the connection.
  */
 export function createExtractionProgressStream(
   documentId: string,
@@ -199,28 +200,83 @@ export function createExtractionProgressStream(
 ): () => void {
   const baseURL = import.meta.env.VITE_BFF_URL || '/api';
   const url = `${baseURL}${BASE_PATH}/${documentId}/extraction/progress?job_id=${jobId}`;
+  const token = localStorage.getItem('fp_auth_token');
+  const controller = new AbortController();
 
-  const eventSource = new EventSource(url);
+  (async () => {
+    try {
+      const response = await fetch(url, {
+        headers: {
+          Accept: 'text/event-stream',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        signal: controller.signal,
+      });
 
-  eventSource.addEventListener('progress', (event) => {
-    const data: ExtractionProgressEvent = JSON.parse((event as MessageEvent).data);
-    onProgress(data);
-  });
+      if (!response.ok) {
+        if (response.status === 401) {
+          localStorage.removeItem('fp_auth_token');
+          const baseUrl = import.meta.env.VITE_BASE_URL || '/';
+          window.location.href = baseUrl;
+        }
+        onError(`Connection failed: ${response.status}`);
+        return;
+      }
 
-  eventSource.addEventListener('complete', () => {
-    onComplete();
-    eventSource.close();
-  });
+      const reader = response.body?.getReader();
+      if (!reader) {
+        onError('Stream not available');
+        return;
+      }
 
-  eventSource.addEventListener('error', () => {
-    if (eventSource.readyState === EventSource.CLOSED) {
+      const decoder = new TextDecoder();
+      let buffer = '';
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n');
+        buffer = lines.pop() ?? '';
+
+        let eventType = '';
+        let eventData = '';
+
+        for (const line of lines) {
+          if (line.startsWith('event: ')) {
+            eventType = line.slice(7).trim();
+          } else if (line.startsWith('data: ')) {
+            eventData = line.slice(6);
+          } else if (line === '' && eventType && eventData) {
+            if (eventType === 'progress') {
+              const parsed: ExtractionProgressEvent = JSON.parse(eventData);
+              onProgress(parsed);
+            } else if (eventType === 'complete') {
+              onComplete();
+              reader.cancel();
+              return;
+            } else if (eventType === 'error') {
+              onError(eventData || 'Extraction error');
+              reader.cancel();
+              return;
+            }
+            eventType = '';
+            eventData = '';
+          }
+        }
+      }
+
+      // Stream ended without explicit complete event
       onComplete();
-    } else {
-      onError('Connection lost. Retrying...');
+    } catch (err) {
+      if ((err as Error).name !== 'AbortError') {
+        onError('Connection lost');
+      }
     }
-  });
+  })();
 
-  return () => eventSource.close();
+  return () => controller.abort();
 }
 
 // ============================================================================

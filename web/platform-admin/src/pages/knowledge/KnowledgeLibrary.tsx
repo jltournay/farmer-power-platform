@@ -5,7 +5,7 @@
  * Story 9.9b: Knowledge Management UI (AC 9.9b.1)
  */
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Box, Alert, Chip, CircularProgress, Typography } from '@mui/material';
 import type { GridColDef, GridPaginationModel } from '@mui/x-data-grid';
@@ -58,6 +58,19 @@ export function KnowledgeLibrary(): JSX.Element {
   });
   const [filters, setFilters] = useState<FilterValues>({});
   const [searchQuery, setSearchQuery] = useState('');
+  const [debouncedQuery, setDebouncedQuery] = useState('');
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Debounce search query by 300ms
+  useEffect(() => {
+    debounceRef.current = setTimeout(() => {
+      setDebouncedQuery(searchQuery);
+      setPaginationModel((prev) => ({ ...prev, page: 0 }));
+    }, 300);
+    return () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+    };
+  }, [searchQuery]);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -65,9 +78,9 @@ export function KnowledgeLibrary(): JSX.Element {
 
     try {
       let response: DocumentListResponse;
-      if (searchQuery.trim()) {
+      if (debouncedQuery.trim()) {
         response = await searchDocuments({
-          query: searchQuery.trim(),
+          query: debouncedQuery.trim(),
           domain: (filters.domain as string) || undefined,
         });
       } else {
@@ -84,7 +97,7 @@ export function KnowledgeLibrary(): JSX.Element {
     } finally {
       setLoading(false);
     }
-  }, [paginationModel.page, paginationModel.pageSize, filters.domain, filters.status, searchQuery]);
+  }, [paginationModel.page, paginationModel.pageSize, filters.domain, filters.status, debouncedQuery]);
 
   useEffect(() => {
     fetchData();
@@ -97,7 +110,6 @@ export function KnowledgeLibrary(): JSX.Element {
 
   const handleSearchChange = (value: string) => {
     setSearchQuery(value);
-    setPaginationModel((prev) => ({ ...prev, page: 0 }));
   };
 
   const rows: DocumentRow[] = (data?.data ?? []).map((doc) => ({

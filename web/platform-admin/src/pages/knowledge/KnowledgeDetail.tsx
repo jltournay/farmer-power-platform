@@ -29,6 +29,7 @@ import PublishIcon from '@mui/icons-material/Publish';
 import ArchiveIcon from '@mui/icons-material/Archive';
 import RateReviewIcon from '@mui/icons-material/RateReview';
 import DeleteIcon from '@mui/icons-material/Delete';
+import RestoreIcon from '@mui/icons-material/Restore';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import { PageHeader } from '@fp/ui-components';
 import {
@@ -327,6 +328,10 @@ export function KnowledgeDetail(): JSX.Element {
       actions.push(
         { id: 'edit', label: 'Edit', icon: <EditIcon />, onClick: handleEditOpen },
         { id: 'archive', label: 'Archive', icon: <ArchiveIcon />, onClick: handleArchive },
+      );
+    } else if (docStatus === 'archived') {
+      actions.push(
+        { id: 'rollback', label: 'Restore as Draft', icon: <RestoreIcon />, onClick: () => handleRollback(document!.version) },
       );
     }
 

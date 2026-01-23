@@ -36,6 +36,7 @@ import { PageHeader } from '@fp/ui-components';
 import {
   uploadDocument,
   getDocument,
+  createDocument,
   stageDocument,
   activateDocument,
   type KnowledgeDomain,
@@ -227,14 +228,26 @@ export function UploadWizard(): JSX.Element {
     setSaveError(null);
 
     try {
-      const docId = extractedDocument.document_id;
+      let docId = extractedDocument.document_id;
 
-      if (saveStatus === 'staged' && extractedDocument.status === 'draft') {
+      // Manual content path: create the document on the server first
+      if (!docId) {
+        const formData = getValues();
+        const created = await createDocument({
+          title: formData.title,
+          domain: formData.domain as KnowledgeDomain,
+          content: editedContent ?? extractedDocument.content,
+          author: formData.author || undefined,
+          source: formData.source || undefined,
+          region: formData.region || undefined,
+        });
+        docId = created.document_id;
+      }
+
+      if (saveStatus === 'staged') {
         await stageDocument(docId);
       } else if (saveStatus === 'active') {
-        if (extractedDocument.status === 'draft') {
-          await stageDocument(docId);
-        }
+        await stageDocument(docId);
         await activateDocument(docId);
       }
 
