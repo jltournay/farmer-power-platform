@@ -244,16 +244,30 @@ pytest tests/unit/bff/ -v -k knowledge
 ### 2. E2E Tests (MANDATORY)
 
 > **Before running E2E tests:** Read `tests/e2e/E2E-TESTING-MENTAL-MODEL.md`
+```
+*CRITICAL*:
+Always use the scripts to start the infrastructure and run the tests.
+Never call docker-compose or pytest directly. These scripts will ensure that the required environment variables are set to access AI model backends.
+```
+
 
 ```bash
 # Start infrastructure
+# 1. Start infrastructure (with fresh build if you modified code)
 bash scripts/e2e-up.sh --build
 
-# Run knowledge management E2E tests
-PYTHONPATH="${PYTHONPATH}:.:libs/fp-proto/src" pytest tests/e2e/scenarios/test_37_admin_knowledge.py -v
+# 2. Run pre-flight check
+bash scripts/e2e-preflight.sh
 
-# Tear down
+# 3. Run E2E tests (handles env vars automatically)
+bash scripts/e2e-test.sh tests/e2e/scenarios/<your test file>
+
+# 4. If tests fail, run diagnostics
+bash scripts/e2e-diagnose.sh
+
+# 5. When done, stop infrastructure
 bash scripts/e2e-up.sh --down
+
 ```
 **Output:**
 ```
