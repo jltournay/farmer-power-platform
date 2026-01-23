@@ -14,8 +14,10 @@ export interface PaginationMeta {
   total_count: number;
   page_size: number;
   page: number;
-  next_page_token: string | null;
+  total_pages: number;
   has_next: boolean;
+  has_prev: boolean;
+  next_page_token: string | null;
 }
 
 // ============================================================================
@@ -1392,4 +1394,230 @@ export function getTrendColor(trend: TrendIndicator): 'success' | 'error' | 'def
     default:
       return 'default';
   }
+}
+
+// ============================================================================
+// Knowledge Types (Story 9.9b)
+// ============================================================================
+
+/** Knowledge document domain classification */
+export type KnowledgeDomain = 'plant_diseases' | 'tea_cultivation' | 'weather_patterns' | 'quality_standards' | 'regional_context';
+
+/** Knowledge document lifecycle status */
+export type DocumentStatus = 'draft' | 'staged' | 'active' | 'archived';
+
+/** Request to create a new knowledge document */
+export interface CreateDocumentRequest {
+  title: string;
+  domain: KnowledgeDomain;
+  content?: string;
+  author?: string;
+  source?: string;
+  region?: string;
+  tags?: string[];
+}
+
+/** Request to update a knowledge document (creates new version) */
+export interface UpdateDocumentRequest {
+  title?: string;
+  content?: string;
+  author?: string;
+  source?: string;
+  region?: string;
+  tags?: string[];
+  change_summary: string;
+}
+
+/** Request to query knowledge base (Test with AI) */
+export interface QueryKnowledgeRequest {
+  query: string;
+  domains?: KnowledgeDomain[];
+  top_k?: number;
+  confidence_threshold?: number;
+}
+
+/** Request to rollback document to previous version */
+export interface RollbackDocumentRequest {
+  target_version: number;
+}
+
+/** Source file information for uploaded documents */
+export interface SourceFileResponse {
+  filename: string;
+  file_type: string;
+  file_size_bytes: number;
+  extraction_method: string;
+  extraction_confidence: number;
+  page_count: number;
+}
+
+/** Document metadata */
+export interface DocumentMetadataResponse {
+  author: string;
+  source: string;
+  region: string;
+  season: string;
+  tags: string[];
+}
+
+/** Document summary for list views */
+export interface DocumentSummary {
+  document_id: string;
+  version: number;
+  title: string;
+  domain: string;
+  status: string;
+  author: string;
+  created_at: string | null;
+  updated_at: string | null;
+}
+
+/** Full document detail */
+export interface DocumentDetail {
+  id: string;
+  document_id: string;
+  version: number;
+  title: string;
+  domain: string;
+  content: string;
+  status: string;
+  metadata: DocumentMetadataResponse;
+  source_file: SourceFileResponse | null;
+  change_summary: string;
+  pinecone_namespace: string;
+  content_hash: string;
+  created_at: string | null;
+  updated_at: string | null;
+}
+
+/** Paginated document list response */
+export interface DocumentListResponse {
+  data: DocumentSummary[];
+  pagination: PaginationMeta;
+}
+
+/** Delete document response */
+export interface DeleteDocumentResponse {
+  versions_archived: number;
+}
+
+/** Extraction job status */
+export interface ExtractionJobStatus {
+  job_id: string;
+  document_id: string;
+  status: string;
+  progress_percent: number;
+  pages_processed: number;
+  total_pages: number;
+  error_message: string;
+  started_at: string | null;
+  completed_at: string | null;
+}
+
+/** SSE extraction progress event data */
+export interface ExtractionProgressEvent {
+  percent: number;
+  status: string;
+  message: string;
+  pages_processed: number;
+  total_pages: number;
+}
+
+/** Vectorization job status */
+export interface VectorizationJobStatus {
+  job_id: string;
+  status: string;
+  document_id: string;
+  document_version: number;
+  namespace: string;
+  chunks_total: number;
+  chunks_embedded: number;
+  chunks_stored: number;
+  failed_count: number;
+  content_hash: string;
+  error_message: string;
+  started_at: string | null;
+  completed_at: string | null;
+}
+
+/** Chunk summary for chunk list */
+export interface ChunkSummary {
+  chunk_id: string;
+  document_id: string;
+  document_version: number;
+  chunk_index: number;
+  content: string;
+  section_title: string;
+  word_count: number;
+  char_count: number;
+  pinecone_id: string;
+  created_at: string | null;
+}
+
+/** Paginated chunk list response */
+export interface ChunkListResponse {
+  data: ChunkSummary[];
+  pagination: PaginationMeta;
+}
+
+/** Individual query result item */
+export interface QueryResultItem {
+  chunk_id: string;
+  content: string;
+  score: number;
+  document_id: string;
+  title: string;
+  domain: string;
+}
+
+/** Knowledge query response */
+export interface QueryResponse {
+  matches: QueryResultItem[];
+  query: string;
+  total_matches: number;
+}
+
+/** Parameters for listing knowledge documents */
+export interface KnowledgeListParams {
+  domain?: string;
+  status?: string;
+  author?: string;
+  page?: number;
+  page_size?: number;
+}
+
+/** Parameters for searching knowledge documents */
+export interface KnowledgeSearchParams {
+  query: string;
+  domain?: string;
+  top_k?: number;
+}
+
+/** Domain display labels */
+export const KNOWLEDGE_DOMAIN_OPTIONS: { value: KnowledgeDomain; label: string }[] = [
+  { value: 'plant_diseases', label: 'Plant Diseases' },
+  { value: 'tea_cultivation', label: 'Tea Cultivation' },
+  { value: 'weather_patterns', label: 'Weather Patterns' },
+  { value: 'quality_standards', label: 'Quality Standards' },
+  { value: 'regional_context', label: 'Regional Context' },
+];
+
+/** Status display configuration */
+export const DOCUMENT_STATUS_OPTIONS: { value: DocumentStatus; label: string; color: 'success' | 'warning' | 'default' | 'info' }[] = [
+  { value: 'active', label: 'Active', color: 'success' },
+  { value: 'staged', label: 'Staged', color: 'warning' },
+  { value: 'draft', label: 'Draft', color: 'default' },
+  { value: 'archived', label: 'Archived', color: 'info' },
+];
+
+/** Get display label for a domain value */
+export function getDomainLabel(domain: string): string {
+  const option = KNOWLEDGE_DOMAIN_OPTIONS.find(o => o.value === domain);
+  return option?.label ?? domain;
+}
+
+/** Get status chip color */
+export function getStatusColor(status: string): 'success' | 'warning' | 'default' | 'info' {
+  const option = DOCUMENT_STATUS_OPTIONS.find(o => o.value === status);
+  return option?.color ?? 'default';
 }

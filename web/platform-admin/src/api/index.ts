@@ -12,4 +12,5 @@ export * from './factories';
 export * from './collectionPoints';
 export * from './farmers';
 export * from './gradingModels';
+export * from './knowledge';
 export * from './types';

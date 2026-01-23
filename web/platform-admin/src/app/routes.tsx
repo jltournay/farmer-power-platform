@@ -16,7 +16,7 @@ import { GradingModelList } from '@/pages/grading-models/GradingModelList';
 import { GradingModelDetail } from '@/pages/grading-models/GradingModelDetail';
 import { UserList } from '@/pages/users/UserList';
 import { PlatformHealth } from '@/pages/health/PlatformHealth';
-import { KnowledgeLibrary } from '@/pages/knowledge/KnowledgeLibrary';
+import { KnowledgeLibrary, UploadWizard, KnowledgeDetail, KnowledgeReview } from '@/pages/knowledge';
 import { CostDashboard } from '@/pages/costs/CostDashboard';
 import { NotFound } from '@/pages/NotFound';
 
@@ -218,6 +218,30 @@ export const routes: RouteObject[] = [
         element: (
           <ProtectedRoute roles={['platform_admin']}>
             <KnowledgeLibrary />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: 'knowledge/upload',
+        element: (
+          <ProtectedRoute roles={['platform_admin']}>
+            <UploadWizard />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: 'knowledge/:documentId',
+        element: (
+          <ProtectedRoute roles={['platform_admin']}>
+            <KnowledgeDetail />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: 'knowledge/:documentId/review',
+        element: (
+          <ProtectedRoute roles={['platform_admin']}>
+            <KnowledgeReview />
           </ProtectedRoute>
         ),
       },
