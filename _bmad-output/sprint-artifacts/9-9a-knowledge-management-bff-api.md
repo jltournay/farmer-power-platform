@@ -1,6 +1,6 @@
 # Story 9.9a: Knowledge Management BFF REST API
 
-**Status:** review
+**Status:** done
 **GitHub Issue:** #219
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
@@ -220,7 +220,7 @@ so that **the Knowledge Management UI can perform CRUD, lifecycle, and extractio
 - [ ] PR approved and merged (squash)
 - [ ] Local branch cleaned up: `git branch -d feature/9-9a-knowledge-management-bff-api`
 
-**PR URL:** _______________ (fill in when created)
+**PR URL:** https://github.com/jltournay/farmer-power-platform/pull/220
 
 ---
 
