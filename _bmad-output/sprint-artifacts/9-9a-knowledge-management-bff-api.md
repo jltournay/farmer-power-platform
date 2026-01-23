@@ -1,6 +1,6 @@
 # Story 9.9a: Knowledge Management BFF REST API
 
-**Status:** in-progress
+**Status:** review
 **GitHub Issue:** #219
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
@@ -280,7 +280,7 @@ git push origin feature/9-9a-knowledge-management-bff-api
 gh run list --branch feature/9-9a-knowledge-management-bff-api --limit 3
 ```
 **CI Run ID:** _______________
-**CI E2E Status:** [ ] Passed / [ ] Failed
+**CI E2E Status:** [x] Passed / [ ] Failed (Run 21283678857)
 **Verification Date:** _______________
 
 ---
@@ -662,3 +662,19 @@ Knowledge tests (41/41 passed):
 - TestKnowledgeIntegration: 4 passed (create_get, update_get, lifecycle_filter, upload_extraction_flow)
 ```
 **E2E passed:** [x] Yes
+
+### E2E CI Results (Step 13)
+
+- **Workflow:** E2E Tests
+- **Run ID:** 21283678857
+- **Branch:** feature/9-9a-knowledge-management-bff-api
+- **Status:** PASSED
+- **Duration:** 7m53s
+- **Trigger:** workflow_dispatch
+
+**E2E CI passed:** [x] Yes
+
+### CI Quality Results (Step 12)
+
+- **Run ID:** 21283414407
+- **Status:** PASSED (lint + unit tests + all-pass gate)
