@@ -16,8 +16,10 @@ from bff.api.schemas import ApiError, TokenClaims
 from bff.api.schemas.admin.knowledge_schemas import (
     ChunkListResponse,
     CreateDocumentRequest,
+    DeleteDocumentResponse,
     DocumentDetail,
     DocumentListResponse,
+    DocumentStatus,
     DocumentSummary,
     ExtractionJobStatus,
     KnowledgeDomain,
@@ -67,7 +69,7 @@ def get_knowledge_service() -> AdminKnowledgeService:
 )
 async def list_documents(
     domain: KnowledgeDomain | None = Query(default=None, description="Filter by knowledge domain"),
-    status: str | None = Query(default=None, description="Filter by status (draft, staged, active, archived)"),
+    status: DocumentStatus | None = Query(default=None, description="Filter by status"),
     author: str | None = Query(default=None, description="Filter by author"),
     page: int = Query(default=1, ge=1, description="Page number"),
     page_size: int = Query(default=20, ge=1, le=100, description="Items per page"),
@@ -78,7 +80,7 @@ async def list_documents(
     try:
         return await service.list_documents(
             domain=domain.value if domain else None,
-            status=status,
+            status=status.value if status else None,
             author=author,
             page=page,
             page_size=page_size,
@@ -105,7 +107,7 @@ async def list_documents(
 async def search_documents(
     q: str = Query(description="Search query text", min_length=1),
     domain: KnowledgeDomain | None = Query(default=None, description="Filter by domain"),
-    status: str | None = Query(default=None, description="Filter by status"),
+    status: DocumentStatus | None = Query(default=None, description="Filter by status"),
     limit: int = Query(default=20, ge=1, le=100, description="Max results"),
     user: TokenClaims = require_platform_admin(),
     service: AdminKnowledgeService = Depends(get_knowledge_service),
@@ -115,7 +117,7 @@ async def search_documents(
         return await service.search_documents(
             query=q,
             domain=domain.value if domain else None,
-            status=status,
+            status=status.value if status else None,
             limit=limit,
         )
     except ServiceUnavailableError as e:
@@ -240,6 +242,7 @@ async def update_document(
 
 @router.delete(
     "/{document_id}",
+    response_model=DeleteDocumentResponse,
     responses={
         200: {"description": "Document deleted (archived)"},
         401: {"description": "Authentication required", "model": ApiError},
@@ -254,7 +257,7 @@ async def delete_document(
     document_id: str = Path(description="Document ID to delete"),
     user: TokenClaims = require_platform_admin(),
     service: AdminKnowledgeService = Depends(get_knowledge_service),
-) -> dict:
+) -> DeleteDocumentResponse:
     """Delete (archive) a knowledge document."""
     try:
         return await service.delete_document(document_id=document_id)
@@ -430,7 +433,7 @@ async def rollback_document(
 async def upload_document(
     file: UploadFile = File(..., description="Document file (pdf, docx, md, txt)"),
     title: str = Form(..., description="Document title"),
-    domain: str = Form(..., description="Knowledge domain"),
+    domain: KnowledgeDomain = Form(..., description="Knowledge domain"),
     author: str = Form(default="", description="Document author"),
     source: str = Form(default="", description="Original source"),
     region: str = Form(default="", description="Geographic relevance"),
@@ -442,45 +445,13 @@ async def upload_document(
         return await service.upload_document(
             file=file,
             title=title,
-            domain=domain,
+            domain=domain.value,
             author=author,
             source=source,
             region=region,
         )
     except HTTPException:
         raise
-    except ServiceUnavailableError as e:
-        raise HTTPException(
-            status_code=503,
-            detail=ApiError.service_unavailable("AI Model").model_dump(),
-        ) from e
-
-
-@router.get(
-    "/{document_id}/extraction/{job_id}",
-    response_model=ExtractionJobStatus,
-    responses={
-        200: {"description": "Extraction job status"},
-        404: {"description": "Job not found", "model": ApiError},
-        503: {"description": "Service unavailable", "model": ApiError},
-    },
-    summary="Get extraction job status",
-    description="Poll extraction job status. Requires platform_admin role.",
-)
-async def get_extraction_job(
-    document_id: str = Path(description="Document ID"),
-    job_id: str = Path(description="Extraction job ID"),
-    user: TokenClaims = require_platform_admin(),
-    service: AdminKnowledgeService = Depends(get_knowledge_service),
-) -> ExtractionJobStatus:
-    """Get extraction job status."""
-    try:
-        return await service.get_extraction_job(job_id=job_id)
-    except NotFoundError as e:
-        raise HTTPException(
-            status_code=404,
-            detail=ApiError.not_found("Extraction job", job_id).model_dump(),
-        ) from e
     except ServiceUnavailableError as e:
         raise HTTPException(
             status_code=503,
@@ -520,6 +491,38 @@ async def stream_extraction_progress(
         )
 
         return SSEManager.create_response(sse_events, event_type="progress")
+    except NotFoundError as e:
+        raise HTTPException(
+            status_code=404,
+            detail=ApiError.not_found("Extraction job", job_id).model_dump(),
+        ) from e
+    except ServiceUnavailableError as e:
+        raise HTTPException(
+            status_code=503,
+            detail=ApiError.service_unavailable("AI Model").model_dump(),
+        ) from e
+
+
+@router.get(
+    "/{document_id}/extraction/{job_id}",
+    response_model=ExtractionJobStatus,
+    responses={
+        200: {"description": "Extraction job status"},
+        404: {"description": "Job not found", "model": ApiError},
+        503: {"description": "Service unavailable", "model": ApiError},
+    },
+    summary="Get extraction job status",
+    description="Poll extraction job status. Requires platform_admin role.",
+)
+async def get_extraction_job(
+    document_id: str = Path(description="Document ID"),
+    job_id: str = Path(description="Extraction job ID"),
+    user: TokenClaims = require_platform_admin(),
+    service: AdminKnowledgeService = Depends(get_knowledge_service),
+) -> ExtractionJobStatus:
+    """Get extraction job status."""
+    try:
+        return await service.get_extraction_job(job_id=job_id)
     except NotFoundError as e:
         raise HTTPException(
             status_code=404,

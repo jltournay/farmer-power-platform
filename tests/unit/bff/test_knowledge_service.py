@@ -6,6 +6,7 @@ from unittest.mock import AsyncMock, MagicMock
 import pytest
 from bff.api.schemas.admin.knowledge_schemas import (
     ChunkListResponse,
+    DeleteDocumentResponse,
     DocumentDetail,
     DocumentListResponse,
     DocumentSummary,
@@ -153,7 +154,8 @@ class TestDeleteDocument:
 
         result = await service.delete_document(document_id="test-doc")
 
-        assert result == {"versions_archived": 3}
+        assert isinstance(result, DeleteDocumentResponse)
+        assert result.versions_archived == 3
 
 
 class TestLifecycle:

@@ -678,3 +678,31 @@ Knowledge tests (41/41 passed):
 
 - **Run ID:** 21283414407
 - **Status:** PASSED (lint + unit tests + all-pass gate)
+
+### Code Review (Step 15)
+
+**Reviewer:** Claude Code (fresh session)
+**Outcome:** Changes Requested (1 High, 4 Medium, 3 Low)
+
+#### Production Code Fixes Applied
+
+| # | File | What | Why | Evidence | Type |
+|---|------|------|-----|----------|------|
+| 1 | `services/bff/src/bff/api/routes/admin/knowledge.py` | Swap declaration order: move `/{document_id}/extraction/progress` route BEFORE `/{document_id}/extraction/{job_id}` route | FastAPI matches path parameters greedily - the parameterized `{job_id}` was capturing the literal string "progress", making the SSE endpoint unreachable | Standalone FastAPI test confirmed: `GET /extraction/progress` returned `{'route': 'job', 'job_id': 'progress'}` before fix | Bug fix (route ordering) |
+| 2 | `services/bff/src/bff/api/schemas/admin/knowledge_schemas.py` | Add `DeleteDocumentResponse` Pydantic model | `delete_document` returned raw `dict` violating "repository methods MUST return Pydantic models" rule | Route had `-> dict:` with no `response_model` | Architecture compliance |
+| 3 | `services/bff/src/bff/api/routes/admin/knowledge.py` | Add `response_model=DeleteDocumentResponse` and typed return on delete route | Consistent with all other routes that use typed response models | All other routes have `response_model=` except delete | Architecture compliance |
+| 4 | `services/bff/src/bff/services/admin/knowledge_service.py` | Return `DeleteDocumentResponse(...)` instead of raw dict | Service layer should return typed models | Was `return {"versions_archived": ...}` | Architecture compliance |
+| 5 | `services/bff/src/bff/api/routes/admin/knowledge.py` | Change `domain: str = Form(...)` to `domain: KnowledgeDomain = Form(...)` in upload route | Invalid domains passed through to gRPC without validation | Other endpoints use enum; upload didn't | Input validation |
+| 6 | `services/bff/src/bff/api/routes/admin/knowledge.py` | Change `status: str \| None` to `DocumentStatus \| None` in list/search routes | Invalid status values passed through to gRPC without validation | `DocumentStatus` enum defined but unused | Input validation |
+| 7 | `services/bff/src/bff/transformers/admin/knowledge_transformer.py` | Add proto type hints (`ai_model_pb2.RAGDocument`, etc.) to all transformer methods | Project rule: "ALL function signatures MUST have type hints" | Methods had untyped `doc`, `job`, `chunk`, `match` params | Type safety |
+| 8 | `services/bff/src/bff/api/schemas/admin/__init__.py` | Add missing exports: `DeleteDocumentResponse`, `DocumentStatus`, `DocumentMetadataResponse`, `SourceFileResponse`, `RollbackDocumentRequest`, `VectorizeDocumentRequest` | Inconsistent with export pattern for other resources | 6 schemas defined but not exported in `__all__` | Consistency |
+
+#### Why SSE Bug (Fix #1) Was Not Caught by E2E Tests
+
+The SSE streaming test (task 8.7) was deferred with the excuse "requires running gRPC server" - but the E2E infrastructure already runs the AI Model gRPC server. A basic route reachability test would have caught this. The dev agent should have at minimum verified the endpoint responds with `text/event-stream` content-type rather than a 404.
+
+#### Remaining Findings (not fixed - architectural decision needed)
+
+| Severity | Issue | File | Description |
+|----------|-------|------|-------------|
+| Medium | M1 | `knowledge.py:42-48` | `get_knowledge_service()` creates a new `AiModelClient` per request instead of singleton pattern (requires DI pattern decision) |

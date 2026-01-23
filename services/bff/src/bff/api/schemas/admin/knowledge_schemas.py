@@ -95,6 +95,12 @@ class RollbackDocumentRequest(BaseModel):
 # =========================================================================
 
 
+class DeleteDocumentResponse(BaseModel):
+    """Response from deleting (archiving) a document."""
+
+    versions_archived: int = Field(description="Number of versions archived")
+
+
 class SourceFileResponse(BaseModel):
     """Source file information for uploaded documents."""
 

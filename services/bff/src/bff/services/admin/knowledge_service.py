@@ -9,6 +9,7 @@ from bff.api.schemas.admin.knowledge_schemas import (
     ALLOWED_FILE_TYPES,
     MAX_FILE_SIZE_BYTES,
     ChunkListResponse,
+    DeleteDocumentResponse,
     DocumentDetail,
     DocumentListResponse,
     DocumentSummary,
@@ -169,12 +170,12 @@ class AdminKnowledgeService(BaseService):
 
         return self._transformer.to_detail(doc)
 
-    async def delete_document(self, document_id: str) -> dict:
+    async def delete_document(self, document_id: str) -> DeleteDocumentResponse:
         """Delete (archive) a document and all versions."""
         self._logger.info("deleting_knowledge_document", document_id=document_id)
 
         response = await self._client.delete_document(document_id=document_id)
-        return {"versions_archived": response.versions_archived}
+        return DeleteDocumentResponse(versions_archived=response.versions_archived)
 
     # =========================================================================
     # Document Lifecycle (AC 9.9a.2)

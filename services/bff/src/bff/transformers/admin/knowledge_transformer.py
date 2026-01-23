@@ -16,6 +16,7 @@ from bff.api.schemas.admin.knowledge_schemas import (
     SourceFileResponse,
     VectorizationJobStatus,
 )
+from fp_proto.ai_model.v1 import ai_model_pb2
 from google.protobuf.timestamp_pb2 import Timestamp
 
 
@@ -30,7 +31,7 @@ class KnowledgeTransformer:
     """Transforms proto RAGDocument messages to admin API schemas."""
 
     @staticmethod
-    def to_summary(doc) -> DocumentSummary:
+    def to_summary(doc: ai_model_pb2.RAGDocument) -> DocumentSummary:
         """Transform RAGDocument proto to summary schema for list views."""
         author = ""
         if doc.HasField("metadata"):
@@ -47,7 +48,7 @@ class KnowledgeTransformer:
         )
 
     @staticmethod
-    def to_detail(doc) -> DocumentDetail:
+    def to_detail(doc: ai_model_pb2.RAGDocument) -> DocumentDetail:
         """Transform RAGDocument proto to detail schema."""
         metadata_resp = DocumentMetadataResponse()
         if doc.HasField("metadata"):
@@ -88,7 +89,7 @@ class KnowledgeTransformer:
         )
 
     @staticmethod
-    def to_extraction_status(job) -> ExtractionJobStatus:
+    def to_extraction_status(job: ai_model_pb2.ExtractionJobResponse) -> ExtractionJobStatus:
         """Transform ExtractionJobResponse proto to status schema."""
         return ExtractionJobStatus(
             job_id=job.job_id,
@@ -103,7 +104,7 @@ class KnowledgeTransformer:
         )
 
     @staticmethod
-    def to_vectorization_status(job) -> VectorizationJobStatus:
+    def to_vectorization_status(job: ai_model_pb2.VectorizationJobResponse) -> VectorizationJobStatus:
         """Transform VectorizationJobResponse proto to status schema."""
         return VectorizationJobStatus(
             job_id=job.job_id,
@@ -122,7 +123,7 @@ class KnowledgeTransformer:
         )
 
     @staticmethod
-    def to_chunk_summary(chunk) -> ChunkSummary:
+    def to_chunk_summary(chunk: ai_model_pb2.RagChunk) -> ChunkSummary:
         """Transform RagChunk proto to chunk summary schema."""
         return ChunkSummary(
             chunk_id=chunk.chunk_id,
@@ -138,7 +139,7 @@ class KnowledgeTransformer:
         )
 
     @staticmethod
-    def to_query_result(match) -> QueryResultItem:
+    def to_query_result(match: ai_model_pb2.RetrievalMatch) -> QueryResultItem:
         """Transform RetrievalMatch proto to query result schema."""
         return QueryResultItem(
             chunk_id=match.chunk_id,
