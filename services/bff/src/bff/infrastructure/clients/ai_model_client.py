@@ -1,9 +1,11 @@
 """AI Model gRPC client for BFF.
 
 Story 0.75.23: RAG Query Service with BFF Integration
+Story 9.9a: Knowledge Management BFF API - RAG Document CRUD, Lifecycle, Extraction, Chunking, Vectorization
 
 This client provides typed access to the AI Model service via DAPR gRPC
-service invocation. All methods return fp-common Pydantic domain models (NOT dicts).
+service invocation. All methods return fp-common Pydantic domain models (NOT dicts)
+or proto responses for the transformer layer.
 
 Pattern follows:
 - ADR-002 §"Service Invocation Pattern" (native gRPC with dapr-app-id metadata)
@@ -11,6 +13,8 @@ Pattern follows:
 
 CRITICAL: Uses fp-common domain models for type safety. Never returns dict[str, Any].
 """
+
+from collections.abc import AsyncIterator
 
 import grpc
 import grpc.aio
@@ -27,7 +31,7 @@ from fp_common.models import (
     RetrievalQuery,
     RetrievalResult,
 )
-from fp_proto.ai_model.v1 import ai_model_pb2_grpc
+from fp_proto.ai_model.v1 import ai_model_pb2, ai_model_pb2_grpc
 
 logger = structlog.get_logger(__name__)
 
@@ -189,3 +193,331 @@ class AiModelClient(BaseGrpcClient):
             confidence_threshold=retrieval_query.confidence_threshold,
             namespace=retrieval_query.namespace,
         )
+
+    # =========================================================================
+    # Document CRUD Operations (Story 9.9a - Task 1.1)
+    # =========================================================================
+
+    @grpc_retry
+    async def list_documents(
+        self,
+        domain: str | None = None,
+        status: str | None = None,
+        author: str | None = None,
+        page: int = 1,
+        page_size: int = 20,
+    ) -> ai_model_pb2.ListDocumentsResponse:
+        """List RAG documents with filtering and pagination."""
+        try:
+            stub = await self._get_rag_stub()
+            request = ai_model_pb2.ListDocumentsRequest(
+                page=page,
+                page_size=page_size,
+                domain=domain or "",
+                status=status or "",
+                author=author or "",
+            )
+            return await stub.ListDocuments(request, metadata=self._get_metadata())
+        except grpc.aio.AioRpcError as e:
+            self._handle_grpc_error(e, "List documents")
+            raise
+
+    @grpc_retry
+    async def search_documents(
+        self,
+        query: str,
+        domain: str | None = None,
+        status: str | None = None,
+        limit: int = 20,
+    ) -> ai_model_pb2.SearchDocumentsResponse:
+        """Search RAG documents by title and content."""
+        try:
+            stub = await self._get_rag_stub()
+            request = ai_model_pb2.SearchDocumentsRequest(
+                query=query,
+                domain=domain or "",
+                status=status or "",
+                limit=limit,
+            )
+            return await stub.SearchDocuments(request, metadata=self._get_metadata())
+        except grpc.aio.AioRpcError as e:
+            self._handle_grpc_error(e, "Search documents")
+            raise
+
+    @grpc_retry
+    async def get_document(
+        self,
+        document_id: str,
+        version: int = 0,
+    ) -> ai_model_pb2.RAGDocument:
+        """Get a RAG document by ID, optionally a specific version."""
+        try:
+            stub = await self._get_rag_stub()
+            request = ai_model_pb2.GetDocumentRequest(
+                document_id=document_id,
+                version=version,
+            )
+            return await stub.GetDocument(request, metadata=self._get_metadata())
+        except grpc.aio.AioRpcError as e:
+            self._handle_grpc_error(e, f"Document {document_id}")
+            raise
+
+    @grpc_retry
+    async def create_document(
+        self,
+        title: str,
+        domain: str,
+        content: str = "",
+        metadata: ai_model_pb2.RAGDocumentMetadata | None = None,
+        source_file: ai_model_pb2.SourceFile | None = None,
+        document_id: str = "",
+    ) -> ai_model_pb2.CreateDocumentResponse:
+        """Create a new RAG document."""
+        try:
+            stub = await self._get_rag_stub()
+            request = ai_model_pb2.CreateDocumentRequest(
+                document_id=document_id,
+                title=title,
+                domain=domain,
+                content=content,
+            )
+            if metadata:
+                request.metadata.CopyFrom(metadata)
+            if source_file:
+                request.source_file.CopyFrom(source_file)
+            return await stub.CreateDocument(request, metadata=self._get_metadata())
+        except grpc.aio.AioRpcError as e:
+            self._handle_grpc_error(e, "Create document")
+            raise
+
+    @grpc_retry
+    async def update_document(
+        self,
+        document_id: str,
+        title: str = "",
+        content: str = "",
+        metadata: ai_model_pb2.RAGDocumentMetadata | None = None,
+        change_summary: str = "",
+    ) -> ai_model_pb2.RAGDocument:
+        """Update a RAG document (creates new version)."""
+        try:
+            stub = await self._get_rag_stub()
+            request = ai_model_pb2.UpdateDocumentRequest(
+                document_id=document_id,
+                title=title,
+                content=content,
+                change_summary=change_summary,
+            )
+            if metadata:
+                request.metadata.CopyFrom(metadata)
+            return await stub.UpdateDocument(request, metadata=self._get_metadata())
+        except grpc.aio.AioRpcError as e:
+            self._handle_grpc_error(e, f"Update document {document_id}")
+            raise
+
+    @grpc_retry
+    async def delete_document(
+        self,
+        document_id: str,
+    ) -> ai_model_pb2.DeleteDocumentResponse:
+        """Delete (archive) a RAG document and all versions."""
+        try:
+            stub = await self._get_rag_stub()
+            request = ai_model_pb2.DeleteDocumentRequest(document_id=document_id)
+            return await stub.DeleteDocument(request, metadata=self._get_metadata())
+        except grpc.aio.AioRpcError as e:
+            self._handle_grpc_error(e, f"Delete document {document_id}")
+            raise
+
+    # =========================================================================
+    # Document Lifecycle Operations (Story 9.9a - Task 1.2)
+    # =========================================================================
+
+    @grpc_retry
+    async def stage_document(
+        self,
+        document_id: str,
+        version: int = 0,
+    ) -> ai_model_pb2.RAGDocument:
+        """Transition document from draft to staged."""
+        try:
+            stub = await self._get_rag_stub()
+            request = ai_model_pb2.StageDocumentRequest(
+                document_id=document_id,
+                version=version,
+            )
+            return await stub.StageDocument(request, metadata=self._get_metadata())
+        except grpc.aio.AioRpcError as e:
+            self._handle_grpc_error(e, f"Stage document {document_id}")
+            raise
+
+    @grpc_retry
+    async def activate_document(
+        self,
+        document_id: str,
+        version: int = 0,
+    ) -> ai_model_pb2.RAGDocument:
+        """Transition document from staged to active."""
+        try:
+            stub = await self._get_rag_stub()
+            request = ai_model_pb2.ActivateDocumentRequest(
+                document_id=document_id,
+                version=version,
+            )
+            return await stub.ActivateDocument(request, metadata=self._get_metadata())
+        except grpc.aio.AioRpcError as e:
+            self._handle_grpc_error(e, f"Activate document {document_id}")
+            raise
+
+    @grpc_retry
+    async def archive_document(
+        self,
+        document_id: str,
+        version: int = 0,
+    ) -> ai_model_pb2.RAGDocument:
+        """Transition document to archived state."""
+        try:
+            stub = await self._get_rag_stub()
+            request = ai_model_pb2.ArchiveDocumentRequest(
+                document_id=document_id,
+                version=version,
+            )
+            return await stub.ArchiveDocument(request, metadata=self._get_metadata())
+        except grpc.aio.AioRpcError as e:
+            self._handle_grpc_error(e, f"Archive document {document_id}")
+            raise
+
+    @grpc_retry
+    async def rollback_document(
+        self,
+        document_id: str,
+        target_version: int,
+    ) -> ai_model_pb2.RAGDocument:
+        """Create new draft version from a previous version."""
+        try:
+            stub = await self._get_rag_stub()
+            request = ai_model_pb2.RollbackDocumentRequest(
+                document_id=document_id,
+                target_version=target_version,
+            )
+            return await stub.RollbackDocument(request, metadata=self._get_metadata())
+        except grpc.aio.AioRpcError as e:
+            self._handle_grpc_error(e, f"Rollback document {document_id}")
+            raise
+
+    # =========================================================================
+    # Extraction Operations (Story 9.9a - Task 1.3)
+    # =========================================================================
+
+    @grpc_retry
+    async def extract_document(
+        self,
+        document_id: str,
+        version: int = 0,
+    ) -> ai_model_pb2.ExtractDocumentResponse:
+        """Trigger document content extraction."""
+        try:
+            stub = await self._get_rag_stub()
+            request = ai_model_pb2.ExtractDocumentRequest(
+                document_id=document_id,
+                version=version,
+            )
+            return await stub.ExtractDocument(request, metadata=self._get_metadata())
+        except grpc.aio.AioRpcError as e:
+            self._handle_grpc_error(e, f"Extract document {document_id}")
+            raise
+
+    @grpc_retry
+    async def get_extraction_job(
+        self,
+        job_id: str,
+    ) -> ai_model_pb2.ExtractionJobResponse:
+        """Get extraction job status."""
+        try:
+            stub = await self._get_rag_stub()
+            request = ai_model_pb2.GetExtractionJobRequest(job_id=job_id)
+            return await stub.GetExtractionJob(request, metadata=self._get_metadata())
+        except grpc.aio.AioRpcError as e:
+            self._handle_grpc_error(e, f"Extraction job {job_id}")
+            raise
+
+    async def stream_extraction_progress(
+        self,
+        job_id: str,
+    ) -> AsyncIterator[ai_model_pb2.ExtractionProgressEvent]:
+        """Stream extraction progress events (server-streaming RPC).
+
+        Note: No @grpc_retry - streaming RPCs handle their own lifecycle.
+        """
+        try:
+            stub = await self._get_rag_stub()
+            request = ai_model_pb2.StreamExtractionProgressRequest(job_id=job_id)
+            return stub.StreamExtractionProgress(request, metadata=self._get_metadata())
+        except grpc.aio.AioRpcError as e:
+            self._handle_grpc_error(e, f"Stream extraction progress {job_id}")
+            raise
+
+    # =========================================================================
+    # Chunking Operations (Story 9.9a - Task 1.4)
+    # =========================================================================
+
+    @grpc_retry
+    async def list_chunks(
+        self,
+        document_id: str,
+        version: int = 0,
+        page: int = 1,
+        page_size: int = 50,
+    ) -> ai_model_pb2.ListChunksResponse:
+        """List chunks for a document version with pagination."""
+        try:
+            stub = await self._get_rag_stub()
+            request = ai_model_pb2.ListChunksRequest(
+                document_id=document_id,
+                version=version,
+                page=page,
+                page_size=page_size,
+            )
+            return await stub.ListChunks(request, metadata=self._get_metadata())
+        except grpc.aio.AioRpcError as e:
+            self._handle_grpc_error(e, f"List chunks for {document_id}")
+            raise
+
+    # =========================================================================
+    # Vectorization Operations (Story 9.9a - Task 1.5)
+    # =========================================================================
+
+    @grpc_retry
+    async def vectorize_document(
+        self,
+        document_id: str,
+        version: int = 0,
+    ) -> ai_model_pb2.VectorizeDocumentResponse:
+        """Trigger document vectorization (async mode)."""
+        try:
+            stub = await self._get_rag_stub()
+            request = ai_model_pb2.VectorizeDocumentRequest(
+                document_id=document_id,
+                version=version,
+            )
+            # Field name is 'async' in proto but Python reserved word
+            # Set via setattr
+            setattr(request, "async", True)
+            return await stub.VectorizeDocument(request, metadata=self._get_metadata())
+        except grpc.aio.AioRpcError as e:
+            self._handle_grpc_error(e, f"Vectorize document {document_id}")
+            raise
+
+    @grpc_retry
+    async def get_vectorization_job(
+        self,
+        job_id: str,
+    ) -> ai_model_pb2.VectorizationJobResponse:
+        """Get vectorization job status."""
+        try:
+            stub = await self._get_rag_stub()
+            request = ai_model_pb2.GetVectorizationJobRequest(job_id=job_id)
+            return await stub.GetVectorizationJob(request, metadata=self._get_metadata())
+        except grpc.aio.AioRpcError as e:
+            self._handle_grpc_error(e, f"Vectorization job {job_id}")
+            raise
