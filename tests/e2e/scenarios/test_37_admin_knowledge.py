@@ -417,12 +417,7 @@ class TestKnowledgeDocumentUpload:
         bff_api: BFFClient,
         seed_data: dict[str, Any],
     ):
-        """Test uploading a markdown file.
-
-        Note: Upload triggers extraction which requires Azure Document Intelligence.
-        In E2E without Azure DI, the upload may return 503 after document creation
-        succeeds but extraction fails. We test that the endpoint accepts the request.
-        """
+        """Test uploading a markdown file triggers extraction."""
         file_content = b"# E2E Upload Test\n\nThis is test content for upload.\n"
 
         response = await bff_api.admin_request_raw(
@@ -436,12 +431,10 @@ class TestKnowledgeDocumentUpload:
             },
         )
 
-        # 201 = full flow works, 503 = extraction service unavailable (acceptable in E2E)
-        assert response.status_code in (201, 503), f"Expected 201 or 503, got {response.status_code}: {response.text}"
-        if response.status_code == 201:
-            result = response.json()
-            assert "job_id" in result
-            assert "document_id" in result
+        assert response.status_code == 201, f"Expected 201, got {response.status_code}: {response.text}"
+        result = response.json()
+        assert "job_id" in result
+        assert "document_id" in result
 
     @pytest.mark.asyncio
     async def test_upload_text_file(
@@ -449,7 +442,7 @@ class TestKnowledgeDocumentUpload:
         bff_api: BFFClient,
         seed_data: dict[str, Any],
     ):
-        """Test uploading a plain text file (extraction may be unavailable)."""
+        """Test uploading a plain text file triggers extraction."""
         file_content = b"Plain text content for E2E testing.\nMultiple lines.\n"
 
         response = await bff_api.admin_request_raw(
@@ -459,8 +452,7 @@ class TestKnowledgeDocumentUpload:
             data={"title": "E2E Text Upload", "domain": "tea_cultivation", "author": "E2E Test"},
         )
 
-        # 201 = full flow works, 503 = extraction service unavailable (acceptable in E2E)
-        assert response.status_code in (201, 503), f"Expected 201 or 503, got {response.status_code}: {response.text}"
+        assert response.status_code == 201, f"Expected 201, got {response.status_code}: {response.text}"
 
     @pytest.mark.asyncio
     async def test_upload_invalid_file_type(
@@ -486,11 +478,7 @@ class TestKnowledgeDocumentUpload:
         bff_api: BFFClient,
         seed_data: dict[str, Any],
     ):
-        """Test polling extraction job status after upload.
-
-        Note: Requires extraction service (Azure DI). If upload returns 503,
-        skip the extraction polling test.
-        """
+        """Test polling extraction job status after upload."""
         file_content = b"# Extraction Status Test\n\nContent.\n"
         upload_response = await bff_api.admin_request_raw(
             "POST",
@@ -499,8 +487,9 @@ class TestKnowledgeDocumentUpload:
             data={"title": "E2E Extraction Status", "domain": "plant_diseases", "author": "E2E Test"},
         )
 
-        if upload_response.status_code == 503:
-            pytest.skip("Extraction service unavailable (Azure DI not configured)")
+        assert upload_response.status_code == 201, (
+            f"Expected 201, got {upload_response.status_code}: {upload_response.text}"
+        )
 
         upload_result = upload_response.json()
         job_id = upload_result["job_id"]
@@ -577,11 +566,7 @@ class TestKnowledgeVectorization:
         bff_api: BFFClient,
         seed_data: dict[str, Any],
     ):
-        """Test triggering vectorization returns job status.
-
-        Note: Vectorization requires Pinecone. If unavailable, the endpoint
-        may return 503. We verify the endpoint accepts the request.
-        """
+        """Test triggering vectorization returns job status."""
         # Create and stage a document (version=1 required by gRPC)
         created = await _create_test_document(
             bff_api,
@@ -596,13 +581,11 @@ class TestKnowledgeVectorization:
             f"/api/admin/knowledge/{document_id}/vectorize",
         )
 
-        # 200 = success, 503 = Pinecone unavailable (acceptable in E2E)
-        assert response.status_code in (200, 503), f"Expected 200 or 503, got {response.status_code}: {response.text}"
-        if response.status_code == 200:
-            result = response.json()
-            assert "job_id" in result
-            assert "status" in result
-            assert "namespace" in result
+        assert response.status_code == 200, f"Expected 200, got {response.status_code}: {response.text}"
+        result = response.json()
+        assert "job_id" in result
+        assert "status" in result
+        assert "namespace" in result
 
     @pytest.mark.asyncio
     async def test_get_vectorization_job_status(
@@ -610,10 +593,7 @@ class TestKnowledgeVectorization:
         bff_api: BFFClient,
         seed_data: dict[str, Any],
     ):
-        """Test polling vectorization job status.
-
-        Note: Requires Pinecone. If vectorization trigger returns 503, skip.
-        """
+        """Test polling vectorization job status."""
         # Create and stage a document
         created = await _create_test_document(
             bff_api,
@@ -628,8 +608,7 @@ class TestKnowledgeVectorization:
             "POST",
             f"/api/admin/knowledge/{document_id}/vectorize",
         )
-        if vec_response.status_code == 503:
-            pytest.skip("Vectorization service unavailable (Pinecone not configured)")
+        assert vec_response.status_code == 200, f"Expected 200, got {vec_response.status_code}: {vec_response.text}"
 
         vec_result = vec_response.json()
         job_id = vec_result["job_id"]
@@ -654,25 +633,19 @@ class TestKnowledgeQuery:
         bff_api: BFFClient,
         seed_data: dict[str, Any],
     ):
-        """Test querying the knowledge base returns expected structure.
-
-        Note: Knowledge query requires Pinecone for vector search.
-        If Pinecone is not configured, the endpoint returns 503.
-        """
+        """Test querying the knowledge base returns expected structure."""
         response = await bff_api.admin_request_raw(
             "POST",
             "/api/admin/knowledge/query",
             json={"query": "How to treat blister blight in tea?"},
         )
 
-        # 200 = success, 503 = Pinecone unavailable (acceptable in E2E)
-        assert response.status_code in (200, 503), f"Expected 200 or 503, got {response.status_code}: {response.text}"
-        if response.status_code == 200:
-            result = response.json()
-            assert "matches" in result
-            assert "query" in result
-            assert "total_matches" in result
-            assert isinstance(result["matches"], list)
+        assert response.status_code == 200, f"Expected 200, got {response.status_code}: {response.text}"
+        result = response.json()
+        assert "matches" in result
+        assert "query" in result
+        assert "total_matches" in result
+        assert isinstance(result["matches"], list)
 
     @pytest.mark.asyncio
     async def test_query_with_domain_filter(
@@ -680,18 +653,17 @@ class TestKnowledgeQuery:
         bff_api: BFFClient,
         seed_data: dict[str, Any],
     ):
-        """Test querying with domain filter (handles 503 for no Pinecone)."""
+        """Test querying with domain filter."""
         response = await bff_api.admin_request_raw(
             "POST",
             "/api/admin/knowledge/query",
             json={"query": "tea diseases", "domains": ["plant_diseases"]},
         )
 
-        assert response.status_code in (200, 503)
-        if response.status_code == 200:
-            result = response.json()
-            assert "matches" in result
-            assert isinstance(result["matches"], list)
+        assert response.status_code == 200, f"Expected 200, got {response.status_code}: {response.text}"
+        result = response.json()
+        assert "matches" in result
+        assert isinstance(result["matches"], list)
 
     @pytest.mark.asyncio
     async def test_query_with_top_k(
@@ -706,11 +678,10 @@ class TestKnowledgeQuery:
             json={"query": "tea cultivation best practices", "top_k": 3},
         )
 
-        assert response.status_code in (200, 503)
-        if response.status_code == 200:
-            result = response.json()
-            assert "matches" in result
-            assert len(result["matches"]) <= 3
+        assert response.status_code == 200, f"Expected 200, got {response.status_code}: {response.text}"
+        result = response.json()
+        assert "matches" in result
+        assert len(result["matches"]) <= 3
 
     @pytest.mark.asyncio
     async def test_query_result_item_structure(
@@ -718,16 +689,14 @@ class TestKnowledgeQuery:
         bff_api: BFFClient,
         seed_data: dict[str, Any],
     ):
-        """Test query result items have expected fields (when Pinecone available)."""
+        """Test query result items have expected fields."""
         response = await bff_api.admin_request_raw(
             "POST",
             "/api/admin/knowledge/query",
             json={"query": "blister blight treatment"},
         )
 
-        if response.status_code == 503:
-            pytest.skip("Knowledge query unavailable (Pinecone not configured)")
-
+        assert response.status_code == 200, f"Expected 200, got {response.status_code}: {response.text}"
         result = response.json()
         if result["matches"]:
             match = result["matches"][0]
@@ -964,11 +933,7 @@ class TestKnowledgeIntegration:
         bff_api: BFFClient,
         seed_data: dict[str, Any],
     ):
-        """Test the complete upload -> extraction flow via BFF.
-
-        Note: Extraction requires Azure DI. If unavailable, verifies
-        endpoint accepts the request format correctly.
-        """
+        """Test the complete upload -> extraction flow via BFF."""
         file_content = b"# Integration Test\n\nFull flow content.\n"
 
         response = await bff_api.admin_request_raw(
@@ -982,17 +947,15 @@ class TestKnowledgeIntegration:
             },
         )
 
-        # 201 = full flow, 503 = extraction unavailable
-        assert response.status_code in (201, 503)
+        assert response.status_code == 201, f"Expected 201, got {response.status_code}: {response.text}"
 
-        if response.status_code == 201:
-            upload_result = response.json()
-            assert "job_id" in upload_result
-            assert "document_id" in upload_result
+        upload_result = response.json()
+        assert "job_id" in upload_result
+        assert "document_id" in upload_result
 
-            # Can poll extraction status
-            job_status = await bff_api.admin_get_extraction_job(
-                upload_result["document_id"],
-                upload_result["job_id"],
-            )
-            assert job_status["job_id"] == upload_result["job_id"]
+        # Can poll extraction status
+        job_status = await bff_api.admin_get_extraction_job(
+            upload_result["document_id"],
+            upload_result["job_id"],
+        )
+        assert job_status["job_id"] == upload_result["job_id"]

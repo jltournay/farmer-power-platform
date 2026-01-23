@@ -1,6 +1,6 @@
 # Story 9.9a: Knowledge Management BFF REST API
 
-**Status:** review
+**Status:** in-progress
 **GitHub Issue:** #219
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
@@ -635,12 +635,4 @@ Claude Opus 4.5 (claude-opus-4-5-20251101)
 
 ### Local E2E Results (Step 9)
 
-```
-======================== 39 passed, 2 skipped in 5.47s =========================
-```
-
-**2 skipped tests** (pre-existing ai-model service gaps, NOT BFF issues):
-- `test_get_extraction_job_status`: `_extraction_workflow` not wired in ai-model `grpc_server.py`
-- `test_query_result_item_structure`: `_retrieval_service` not wired in ai-model `grpc_server.py`
-
-Both use `pytest.skip()` when the ai-model returns gRPC UNAVAILABLE (BFF correctly returns 503).
+Not yet validated - E2E tests must pass without skips.
