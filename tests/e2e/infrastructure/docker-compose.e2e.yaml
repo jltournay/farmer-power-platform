@@ -142,8 +142,11 @@ services:
       AZURE_DOCUMENT_ENDPOINT: ${AZURE_DOCUMENT_ENDPOINT:-}
       AZURE_DOCUMENT_KEY: ${AZURE_DOCUMENT_KEY:-}
       OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:-}
+      AI_MODEL_AZURE_STORAGE_CONNECTION_STRING: "DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;BlobEndpoint=http://azurite:10000/devstoreaccount1"
     depends_on:
       mongodb:
+        condition: service_healthy
+      azurite:
         condition: service_healthy
     healthcheck:
       test: ["CMD", "python", "-c", "import grpc; channel = grpc.insecure_channel('localhost:50051'); grpc.channel_ready_future(channel).result(timeout=5)"]

@@ -12,6 +12,7 @@ from ai_model.api.rag_document_service import RAGDocumentServiceServicer
 from ai_model.config import settings
 from ai_model.infrastructure.mongodb import get_database
 from ai_model.infrastructure.repositories import (
+    ExtractionJobRepository,
     MongoDBVectorizationJobRepository,
     RagChunkRepository,
     RagDocumentRepository,
@@ -179,12 +180,47 @@ class GrpcServer:
                 "Set PINECONE_API_KEY to enable vectorization."
             )
 
+        # Story 9.9a: Create ExtractionWorkflow for document extraction
+        from ai_model.infrastructure.blob_storage import BlobStorageClient
+        from ai_model.services.extraction_workflow import ExtractionWorkflow
+
+        extraction_job_repository = ExtractionJobRepository(db)
+        await extraction_job_repository.ensure_indexes()
+        blob_client = BlobStorageClient()
+        extraction_workflow = ExtractionWorkflow(
+            document_repository=rag_doc_repository,
+            job_repository=extraction_job_repository,
+            blob_client=blob_client,
+            settings=settings,
+        )
+        logger.info("ExtractionWorkflow initialized for RAGDocumentService")
+
+        # Story 9.9a: Create RetrievalService for QueryKnowledge (requires Pinecone)
+        retrieval_service = None
+        if settings.pinecone_enabled:
+            from ai_model.services.retrieval_service import RetrievalService
+
+            # Reuse embedding_service and vector_store from VectorizationPipeline
+            retrieval_service = RetrievalService(
+                embedding_service=embedding_service,
+                vector_store=vector_store,
+                chunk_repository=rag_chunk_repository,
+            )
+            logger.info("RetrievalService initialized for RAGDocumentService")
+        else:
+            logger.warning("Pinecone not configured - RetrievalService disabled. QueryKnowledge will be unavailable.")
+
         rag_doc_servicer = RAGDocumentServiceServicer(
             rag_doc_repository,
             vectorization_pipeline=vectorization_pipeline,
         )
         # Wire chunking workflow (independent of vectorization)
         rag_doc_servicer.set_chunking_workflow(chunking_workflow)
+        # Wire extraction workflow
+        rag_doc_servicer.set_extraction_workflow(extraction_workflow)
+        # Wire retrieval service (may be None if Pinecone not configured)
+        if retrieval_service:
+            rag_doc_servicer.set_retrieval_service(retrieval_service)
 
         ai_model_pb2_grpc.add_RAGDocumentServiceServicer_to_server(rag_doc_servicer, self._server)
         logger.info("RAGDocumentService registered")
