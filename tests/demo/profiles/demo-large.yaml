@@ -68,3 +68,17 @@ generated_data:
     distribution:
       per_farmer: 8-20
       date_range: last_180_days
+
+  cost_events:
+    date_range: 180  # days
+    daily_events: 50-150
+    distribution:
+      llm: 60
+      document: 20
+      embedding: 10
+      sms: 10
+    source_services:
+      - ai-model
+      - collection-model
+      - knowledge-model
+      - notification-model

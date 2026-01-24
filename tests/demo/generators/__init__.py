@@ -53,6 +53,7 @@ if str(_scripts_demo_path) not in sys.path:
     sys.path.insert(0, str(_scripts_demo_path))
 
 from .base import BaseModelFactory, FKRegistryMixin, set_factory_seed  # noqa: E402
+from .cost import CostEventFactory  # noqa: E402
 from .kenya_providers import KenyaProvider  # noqa: E402
 from .plantation import (  # noqa: E402
     CollectionPointFactory,
@@ -100,6 +101,8 @@ __all__ = [  # noqa: RUF022
     "RegionalWeatherFactory",
     # Document factory (Story 0.8.4)
     "DocumentFactory",
+    # Cost event factory (Story 0.8.6)
+    "CostEventFactory",
     # Scenarios (Story 0.8.4)
     "SCENARIOS",
     "FarmerScenario",

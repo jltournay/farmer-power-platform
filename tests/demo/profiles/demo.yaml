@@ -79,3 +79,17 @@ generated_data:
     distribution:
       per_farmer: 5-15  # Variable per farmer
       date_range: last_90_days
+
+  cost_events:
+    date_range: 90  # days
+    daily_events: 20-50
+    distribution:
+      llm: 60
+      document: 20
+      embedding: 10
+      sms: 10
+    source_services:
+      - ai-model
+      - collection-model
+      - knowledge-model
+      - notification-model
