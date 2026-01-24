@@ -337,11 +337,14 @@ class RAGDocumentServiceServicer(ai_model_pb2_grpc.RAGDocumentServiceServicer):
                 )
                 return ai_model_pb2.RAGDocument()
 
-            # Get specific version or active version
+            # Get specific version or active version (fallback to latest)
             if request.version > 0:
                 doc = await self._repository.get_by_version(request.document_id, request.version)
             else:
                 doc = await self._repository.get_active(request.document_id)
+                if doc is None:
+                    # Fallback to latest version (for admin views of non-active docs)
+                    doc = await self._repository.get_latest(request.document_id)
 
             if doc is None:
                 await context.abort(
@@ -636,19 +639,16 @@ class RAGDocumentServiceServicer(ai_model_pb2_grpc.RAGDocumentServiceServicer):
                 )
                 return ai_model_pb2.RAGDocument()
 
-            if request.version <= 0:
-                await context.abort(
-                    grpc.StatusCode.INVALID_ARGUMENT,
-                    "version is required (must be > 0)",
-                )
-                return ai_model_pb2.RAGDocument()
-
-            # Get the document
-            doc = await self._repository.get_by_version(request.document_id, request.version)
+            # Get the document (by version or latest)
+            if request.version > 0:
+                doc = await self._repository.get_by_version(request.document_id, request.version)
+            else:
+                doc = await self._repository.get_latest(request.document_id)
             if doc is None:
                 await context.abort(
                     grpc.StatusCode.NOT_FOUND,
-                    f"Document not found: {request.document_id} version {request.version}",
+                    f"Document not found: {request.document_id}"
+                    + (f" version {request.version}" if request.version > 0 else ""),
                 )
                 return ai_model_pb2.RAGDocument()
 
@@ -710,19 +710,16 @@ class RAGDocumentServiceServicer(ai_model_pb2_grpc.RAGDocumentServiceServicer):
                 )
                 return ai_model_pb2.RAGDocument()
 
-            if request.version <= 0:
-                await context.abort(
-                    grpc.StatusCode.INVALID_ARGUMENT,
-                    "version is required (must be > 0)",
-                )
-                return ai_model_pb2.RAGDocument()
-
-            # Get the document to activate
-            doc = await self._repository.get_by_version(request.document_id, request.version)
+            # Get the document to activate (by version or latest)
+            if request.version > 0:
+                doc = await self._repository.get_by_version(request.document_id, request.version)
+            else:
+                doc = await self._repository.get_latest(request.document_id)
             if doc is None:
                 await context.abort(
                     grpc.StatusCode.NOT_FOUND,
-                    f"Document not found: {request.document_id} version {request.version}",
+                    f"Document not found: {request.document_id}"
+                    + (f" version {request.version}" if request.version > 0 else ""),
                 )
                 return ai_model_pb2.RAGDocument()
 

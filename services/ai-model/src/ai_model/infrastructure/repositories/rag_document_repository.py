@@ -88,6 +88,22 @@ class RagDocumentRepository(BaseRepository[RagDocument]):
         doc.pop("_id", None)
         return RagDocument.model_validate(doc)
 
+    async def get_latest(self, document_id: str) -> RagDocument | None:
+        """Get the latest version of a document regardless of status.
+
+        Args:
+            document_id: The stable document identifier.
+
+        Returns:
+            The latest version if found, None otherwise.
+        """
+        cursor = self._collection.find({"document_id": document_id}).sort("version", DESCENDING).limit(1)
+        docs = await cursor.to_list(length=1)
+        if not docs:
+            return None
+        docs[0].pop("_id", None)
+        return RagDocument.model_validate(docs[0])
+
     async def list_versions(
         self,
         document_id: str,
@@ -199,8 +215,8 @@ class RagDocumentRepository(BaseRepository[RagDocument]):
         # Get total count
         total_count = await self._collection.count_documents(query)
 
-        # Execute query with pagination
-        cursor = self._collection.find(query).skip(skip).limit(limit)
+        # Execute query with pagination (sort by created_at desc for consistent ordering)
+        cursor = self._collection.find(query).sort("created_at", -1).skip(skip).limit(limit)
         docs = await cursor.to_list(length=limit)
 
         # Convert to models

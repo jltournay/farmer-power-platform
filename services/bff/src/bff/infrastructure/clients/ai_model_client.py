@@ -486,6 +486,28 @@ class AiModelClient(BaseGrpcClient):
             raise
 
     # =========================================================================
+    # Chunking Operations
+    # =========================================================================
+
+    @grpc_retry
+    async def chunk_document(
+        self,
+        document_id: str,
+        version: int = 0,
+    ) -> ai_model_pb2.ChunkDocumentResponse:
+        """Trigger document chunking (synchronous)."""
+        try:
+            stub = await self._get_rag_stub()
+            request = ai_model_pb2.ChunkDocumentRequest(
+                document_id=document_id,
+                version=version,
+            )
+            return await stub.ChunkDocument(request, metadata=self._get_metadata())
+        except grpc.aio.AioRpcError as e:
+            self._handle_grpc_error(e, f"Chunk document {document_id}")
+            raise
+
+    # =========================================================================
     # Vectorization Operations (Story 9.9a - Task 1.5)
     # =========================================================================
 

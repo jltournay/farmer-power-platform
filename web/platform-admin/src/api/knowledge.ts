@@ -260,6 +260,11 @@ export function createExtractionProgressStream(
                 return;
               }
               onProgress(parsed);
+              if (parsed.status === 'completed') {
+                onComplete();
+                reader.cancel();
+                return;
+              }
             } else if (eventType === 'complete') {
               onComplete();
               reader.cancel();

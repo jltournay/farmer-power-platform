@@ -188,9 +188,33 @@ class AdminKnowledgeService(BaseService):
         return self._transformer.to_detail(doc)
 
     async def activate_document(self, document_id: str, version: int = 0) -> DocumentDetail:
-        """Transition document from staged to active."""
+        """Transition document from staged to active, then chunk and vectorize."""
         self._logger.info("activating_document", document_id=document_id, version=version)
         doc = await self._client.activate_document(document_id=document_id, version=version)
+
+        # Trigger chunking + vectorization pipeline (mirrors CLI promote --vectorize)
+        try:
+            chunk_result = await self._client.chunk_document(
+                document_id=document_id, version=doc.version
+            )
+            self._logger.info(
+                "document_chunked",
+                document_id=document_id,
+                chunks_created=chunk_result.chunks_created,
+            )
+
+            await self._client.vectorize_document(
+                document_id=document_id, version=doc.version
+            )
+            self._logger.info("document_vectorization_started", document_id=document_id)
+        except Exception as e:
+            # Don't fail activation if chunking/vectorization fails
+            self._logger.warning(
+                "post_activation_pipeline_error",
+                document_id=document_id,
+                error=str(e),
+            )
+
         return self._transformer.to_detail(doc)
 
     async def archive_document(self, document_id: str, version: int = 0) -> DocumentDetail:
