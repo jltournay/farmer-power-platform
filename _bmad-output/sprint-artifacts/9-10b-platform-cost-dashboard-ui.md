@@ -196,12 +196,12 @@ so that **I can monitor platform spending across LLM, Document, and Embedding co
 > This task corresponds to the AC-E2E acceptance criterion and the E2E gate in CLAUDE.md Steps 9 & 13.
 > Skipping, deferring, or marking as "to be verified later" is NOT acceptable.
 
-- [ ] Add tests to `tests/e2e/scenarios/test_11_platform_cost_bff.py` (extend existing file)
-- [ ] Test: GET `/api/admin/costs/summary` with date range returns `total_cost_usd > 0` and `by_type` array with entries
-- [ ] Test: GET `/api/admin/costs/trend/daily` returns `entries[]` with at least one day of data
-- [ ] Test: GET `/api/admin/costs/budget` returns budget status with `daily_threshold_usd` and `monthly_threshold_usd` > 0
-- [ ] Test: GET `/api/admin/costs/llm/by-agent-type` returns `agent_costs[]` with at least one entry
-- [ ] Test: GET `/api/admin/costs/embeddings/by-domain` returns `domain_costs[]`
+- [x] Add tests to `tests/e2e/scenarios/test_11_platform_cost_bff.py` (extend existing file)
+- [x] Test: GET `/api/admin/costs/summary` with date range returns `total_cost_usd > 0` and `by_type` array with entries
+- [x] Test: GET `/api/admin/costs/trend/daily` returns `entries[]` with at least one day of data
+- [x] Test: GET `/api/admin/costs/budget` returns budget status with `daily_threshold_usd` and `monthly_threshold_usd` > 0
+- [x] Test: GET `/api/admin/costs/llm/by-agent-type` returns `agent_costs[]` with at least one entry
+- [x] Test: GET `/api/admin/costs/embeddings/by-domain` returns `domain_costs[]`
 - [ ] All tests MUST pass locally (`bash scripts/e2e-test.sh --keep-up`) before proceeding
 - [ ] All tests MUST pass in CI (`gh workflow run e2e.yaml --ref <branch>`) before code review
 

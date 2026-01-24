@@ -317,6 +317,116 @@ class TestPlatformCostBFFDailyTrend:
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
+# LLM BREAKDOWN VIA BFF (Story 9.10b - AC 9.10b.2)
+# ═══════════════════════════════════════════════════════════════════════════════
+
+
+@pytest.mark.e2e
+class TestPlatformCostBFFLlmBreakdown:
+    """Test LLM cost breakdown endpoints via BFF (Story 9.10b)."""
+
+    @pytest.mark.asyncio
+    async def test_llm_by_agent_type_returns_costs(
+        self,
+        bff_api: BFFClient,
+        seed_data: Any,
+    ):
+        """Given the Platform Cost Service has LLM cost data,
+        When I call GET /api/admin/costs/llm/by-agent-type,
+        Then the response contains agent_costs list and total.
+        """
+        today = date.today().isoformat()
+        start_of_month = date.today().replace(day=1).isoformat()
+
+        result = await _admin_get(
+            bff_api,
+            "/api/admin/costs/llm/by-agent-type",
+            params={"start_date": start_of_month, "end_date": today},
+        )
+
+        assert "agent_costs" in result, "Response missing agent_costs"
+        assert "total_llm_cost_usd" in result, "Response missing total_llm_cost_usd"
+        assert isinstance(result["agent_costs"], list), "agent_costs should be a list"
+
+        if result["agent_costs"]:
+            entry = result["agent_costs"][0]
+            assert "agent_type" in entry, "Entry missing agent_type"
+            assert "cost_usd" in entry, "Entry missing cost_usd"
+
+        print(f"[AC-E2E] LLM by agent type: {len(result['agent_costs'])} entries, total=${result['total_llm_cost_usd']}")
+
+    @pytest.mark.asyncio
+    async def test_llm_by_model_returns_costs(
+        self,
+        bff_api: BFFClient,
+        seed_data: Any,
+    ):
+        """Given the Platform Cost Service has LLM cost data,
+        When I call GET /api/admin/costs/llm/by-model,
+        Then the response contains model_costs list and total.
+        """
+        today = date.today().isoformat()
+        start_of_month = date.today().replace(day=1).isoformat()
+
+        result = await _admin_get(
+            bff_api,
+            "/api/admin/costs/llm/by-model",
+            params={"start_date": start_of_month, "end_date": today},
+        )
+
+        assert "model_costs" in result, "Response missing model_costs"
+        assert "total_llm_cost_usd" in result, "Response missing total_llm_cost_usd"
+        assert isinstance(result["model_costs"], list), "model_costs should be a list"
+
+        if result["model_costs"]:
+            entry = result["model_costs"][0]
+            assert "model" in entry, "Entry missing model"
+            assert "cost_usd" in entry, "Entry missing cost_usd"
+
+        print(f"[AC-E2E] LLM by model: {len(result['model_costs'])} entries, total=${result['total_llm_cost_usd']}")
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# EMBEDDING BREAKDOWN VIA BFF (Story 9.10b - AC 9.10b.4)
+# ═══════════════════════════════════════════════════════════════════════════════
+
+
+@pytest.mark.e2e
+class TestPlatformCostBFFEmbeddingBreakdown:
+    """Test embedding cost breakdown endpoint via BFF (Story 9.10b)."""
+
+    @pytest.mark.asyncio
+    async def test_embeddings_by_domain_returns_costs(
+        self,
+        bff_api: BFFClient,
+        seed_data: Any,
+    ):
+        """Given the Platform Cost Service has embedding cost data,
+        When I call GET /api/admin/costs/embeddings/by-domain,
+        Then the response contains domain_costs list and total.
+        """
+        today = date.today().isoformat()
+        start_of_month = date.today().replace(day=1).isoformat()
+
+        result = await _admin_get(
+            bff_api,
+            "/api/admin/costs/embeddings/by-domain",
+            params={"start_date": start_of_month, "end_date": today},
+        )
+
+        assert "domain_costs" in result, "Response missing domain_costs"
+        assert "total_embedding_cost_usd" in result, "Response missing total_embedding_cost_usd"
+        assert isinstance(result["domain_costs"], list), "domain_costs should be a list"
+
+        if result["domain_costs"]:
+            entry = result["domain_costs"][0]
+            assert "knowledge_domain" in entry, "Entry missing knowledge_domain"
+            assert "cost_usd" in entry, "Entry missing cost_usd"
+
+        print(f"[AC-E2E] Embeddings by domain: {len(result['domain_costs'])} entries, total=${result['total_embedding_cost_usd']}")
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
 # AUTHORIZATION ENFORCEMENT
 # ═══════════════════════════════════════════════════════════════════════════════
 
