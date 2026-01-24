@@ -24,6 +24,18 @@ export function DateRangePicker({ startDate, endDate, onStartDateChange, onEndDa
     onEndDateChange(end);
   };
 
+  const handleStartChange = (value: string) => {
+    if (value > endDate) return;
+    onStartDateChange(value);
+  };
+
+  const handleEndChange = (value: string) => {
+    if (value < startDate) return;
+    onEndDateChange(value);
+  };
+
+  const today = new Date().toISOString().split('T')[0];
+
   return (
     <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, flexWrap: 'wrap' }}>
       <ButtonGroup size="small" variant="outlined">
@@ -37,16 +49,16 @@ export function DateRangePicker({ startDate, endDate, onStartDateChange, onEndDa
         label="Start"
         size="small"
         value={startDate}
-        onChange={(e) => onStartDateChange(e.target.value)}
-        slotProps={{ inputLabel: { shrink: true } }}
+        onChange={(e) => handleStartChange(e.target.value)}
+        slotProps={{ inputLabel: { shrink: true }, htmlInput: { max: endDate } }}
       />
       <TextField
         type="date"
         label="End"
         size="small"
         value={endDate}
-        onChange={(e) => onEndDateChange(e.target.value)}
-        slotProps={{ inputLabel: { shrink: true } }}
+        onChange={(e) => handleEndChange(e.target.value)}
+        slotProps={{ inputLabel: { shrink: true }, htmlInput: { min: startDate, max: today } }}
       />
     </Box>
   );

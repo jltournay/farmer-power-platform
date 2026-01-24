@@ -7,9 +7,10 @@ import { MetricCard } from '../components/MetricCard';
 interface DocumentsTabProps {
   startDate: string;
   endDate: string;
+  onExportData?: (data: Record<string, unknown>[]) => void;
 }
 
-export function DocumentsTab({ startDate, endDate }: DocumentsTabProps): JSX.Element {
+export function DocumentsTab({ startDate, endDate, onExportData }: DocumentsTabProps): JSX.Element {
   const [data, setData] = useState<DocumentCostResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -30,6 +31,20 @@ export function DocumentsTab({ startDate, endDate }: DocumentsTabProps): JSX.Ele
   useEffect(() => {
     fetchData();
   }, [fetchData]);
+
+  // Report export data when document cost data loads
+  useEffect(() => {
+    if (data && onExportData) {
+      onExportData([{
+        total_cost_usd: data.total_cost_usd,
+        total_pages: data.total_pages,
+        avg_cost_per_page_usd: data.avg_cost_per_page_usd,
+        document_count: data.document_count,
+        period_start: data.period_start,
+        period_end: data.period_end,
+      }]);
+    }
+  }, [data, onExportData]);
 
   if (error) {
     return (

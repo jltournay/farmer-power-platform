@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Dialog,
   DialogTitle,
@@ -25,6 +25,14 @@ export function BudgetConfigDialog({ open, onClose, budgetStatus, onSuccess }: B
   const [monthlyThreshold, setMonthlyThreshold] = useState(budgetStatus?.monthly_threshold_usd ?? '');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Sync state when budgetStatus prop updates
+  useEffect(() => {
+    if (budgetStatus) {
+      setDailyThreshold(budgetStatus.daily_threshold_usd);
+      setMonthlyThreshold(budgetStatus.monthly_threshold_usd);
+    }
+  }, [budgetStatus]);
 
   const dailyValue = parseFloat(dailyThreshold);
   const monthlyValue = parseFloat(monthlyThreshold);

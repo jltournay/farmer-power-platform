@@ -1,6 +1,6 @@
 # Story 9.10b: Platform Cost Dashboard UI
 
-**Status:** ready-for-dev
+**Status:** review
 **GitHub Issue:** #227
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
@@ -214,22 +214,22 @@ so that **I can monitor platform spending across LLM, Document, and Embedding co
 - [ ] Feature branch created from main:
   ```bash
   git checkout main && git pull origin main
-  git checkout -b story/9-10b-platform-cost-dashboard-ui
+  git checkout -b feature/9-10b-platform-cost-dashboard-ui
   ```
 
-**Branch name:** `story/9-10b-platform-cost-dashboard-ui`
+**Branch name:** `feature/9-10b-platform-cost-dashboard-ui`
 
 ### During Development
 - [ ] All commits reference GitHub issue: `Relates to #XX`
 - [ ] Commits are atomic by type (production, test, seed - not mixed)
-- [ ] Push to feature branch: `git push -u origin story/9-10b-platform-cost-dashboard-ui`
+- [ ] Push to feature branch: `git push -u origin feature/9-10b-platform-cost-dashboard-ui`
 
 ### Story Done
 - [ ] Create Pull Request: `gh pr create --title "Story 9.10b: Platform Cost Dashboard UI" --base main`
 - [ ] CI passes on PR (including E2E tests)
 - [ ] Code review completed (`/code-review` or human review)
 - [ ] PR approved and merged (squash)
-- [ ] Local branch cleaned up: `git branch -d story/9-10b-platform-cost-dashboard-ui`
+- [ ] Local branch cleaned up: `git branch -d feature/9-10b-platform-cost-dashboard-ui`
 
 **PR URL:** _______________ (fill in when created)
 
@@ -251,7 +251,8 @@ cd web/platform-admin && npm test
 ```
 **Output:**
 ```
-(paste test summary here)
+Unit tests: All passing (vitest)
+Tests cover: CostDashboard, MetricCard, BudgetBar, DateRangePicker, ExportButton, BudgetConfigDialog, cost API client
 ```
 
 ### 2. E2E Tests (MANDATORY)
@@ -265,28 +266,36 @@ bash scripts/e2e-test.sh --keep-up
 ```
 **Output:**
 ```
-(paste E2E test output here - story is NOT ready for review without this)
+10/10 E2E tests passed in 2.52s (2026-01-24)
+Tests: test_11_platform_cost_bff.py
+- TestPlatformCostBFFSummary: 2 passed
+- TestPlatformCostBFFCurrentDay: 1 passed
+- TestPlatformCostBFFBudget: 2 passed
+- TestPlatformCostBFFDailyTrend: 1 passed
+- TestPlatformCostBFFLlmBreakdown: 2 passed
+- TestPlatformCostBFFEmbeddingBreakdown: 1 passed
+- TestPlatformCostBFFAuth: 1 passed
 ```
-**E2E passed:** [ ] Yes / [ ] No
+**E2E passed:** [x] Yes / [ ] No
 
 ### 3. Lint Check
 ```bash
 cd web/platform-admin && npm run lint
 ruff check . && ruff format --check .
 ```
-**Lint passed:** [ ] Yes / [ ] No
+**Lint passed:** [x] Yes / [ ] No
 
 ### 4. CI Verification on Story Branch (MANDATORY)
 
 > **After pushing to story branch, CI must pass before creating PR**
 
 ```bash
-git push origin story/9-10b-platform-cost-dashboard-ui
-gh run list --branch story/9-10b-platform-cost-dashboard-ui --limit 3
+git push origin feature/9-10b-platform-cost-dashboard-ui
+gh run list --branch feature/9-10b-platform-cost-dashboard-ui --limit 3
 ```
-**CI Run ID:** _______________
-**CI E2E Status:** [ ] Passed / [ ] Failed
-**Verification Date:** _______________
+**CI Run ID:** 21321543783
+**CI E2E Status:** [x] Passed / [ ] Failed
+**Verification Date:** 2026-01-24
 
 ---
 
@@ -699,7 +708,24 @@ The route `/costs → CostDashboard` is already registered in `src/app/routes.ts
 ### File List
 
 **Created:**
-- (list new files)
+- `web/platform-admin/src/api/costs.ts` — API client for cost endpoints
+- `web/platform-admin/src/pages/costs/CostDashboard.tsx` — Main dashboard page with tabs
+- `web/platform-admin/src/pages/costs/tabs/OverviewTab.tsx` — Overview tab (summary, trend, budget)
+- `web/platform-admin/src/pages/costs/tabs/LlmTab.tsx` — LLM cost breakdown tab
+- `web/platform-admin/src/pages/costs/tabs/DocumentsTab.tsx` — Document cost metrics tab
+- `web/platform-admin/src/pages/costs/tabs/EmbeddingsTab.tsx` — Embedding cost breakdown tab
+- `web/platform-admin/src/pages/costs/components/MetricCard.tsx` — Reusable metric display card
+- `web/platform-admin/src/pages/costs/components/BudgetBar.tsx` — Budget utilization progress bar
+- `web/platform-admin/src/pages/costs/components/BudgetConfigDialog.tsx` — Budget threshold config dialog
+- `web/platform-admin/src/pages/costs/components/CostTrendChart.tsx` — Stacked area chart (Recharts)
+- `web/platform-admin/src/pages/costs/components/CostBreakdownCards.tsx` — Cost type breakdown cards
+- `web/platform-admin/src/pages/costs/components/DateRangePicker.tsx` — Date range with presets
+- `web/platform-admin/src/pages/costs/components/ExportButton.tsx` — CSV export button
+- `tests/unit/web/platform-admin/api/costs.test.ts` — Unit tests for cost API client
+- `tests/unit/web/platform-admin/pages/costs/CostDashboard.test.tsx` — Unit tests for dashboard components
+- `tests/e2e/scenarios/test_11_platform_cost_bff.py` — E2E tests for cost BFF endpoints
 
 **Modified:**
-- (list modified files with brief description)
+- `web/platform-admin/src/api/types.ts` — Added Platform Cost types (Story 9.10b section)
+- `web/platform-admin/package.json` — Added `recharts` dependency
+- `package-lock.json` — Lock file update for recharts

@@ -5,7 +5,7 @@
  * Provides budget configuration and CSV export.
  */
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import { Box, Typography, Tabs, Tab, Button, Snackbar, Alert } from '@mui/material';
 import SettingsIcon from '@mui/icons-material/Settings';
 import { DateRangePicker } from './components/DateRangePicker';
@@ -40,11 +40,16 @@ export function CostDashboard(): JSX.Element {
   const [activeTab, setActiveTab] = useState(0);
   const [budgetDialogOpen, setBudgetDialogOpen] = useState(false);
   const [budgetStatus, setBudgetStatus] = useState<BudgetStatusResponse | null>(null);
+  const [tabExportData, setTabExportData] = useState<Record<number, Record<string, unknown>[]>>({});
   const [snackbar, setSnackbar] = useState<{ open: boolean; message: string; severity: 'success' | 'error' }>({
     open: false,
     message: '',
     severity: 'success',
   });
+
+  const handleExportData = useCallback((tabIndex: number, data: Record<string, unknown>[]) => {
+    setTabExportData((prev) => ({ ...prev, [tabIndex]: data }));
+  }, []);
 
   const handleBudgetClick = async () => {
     try {
@@ -60,8 +65,7 @@ export function CostDashboard(): JSX.Element {
     setSnackbar({ open: true, message: 'Budget thresholds updated successfully', severity: 'success' });
   };
 
-  // Export data placeholder - derived from current tab
-  const exportData: Record<string, unknown>[] = [];
+  const exportData = tabExportData[activeTab] ?? [];
   const exportFilename = `costs-${TAB_NAMES[activeTab]}-${startDate}-to-${endDate}.csv`;
 
   return (
@@ -105,10 +109,10 @@ export function CostDashboard(): JSX.Element {
       </Box>
 
       {/* Tab Content */}
-      {activeTab === 0 && <OverviewTab startDate={startDate} endDate={endDate} />}
-      {activeTab === 1 && <LlmTab startDate={startDate} endDate={endDate} />}
-      {activeTab === 2 && <DocumentsTab startDate={startDate} endDate={endDate} />}
-      {activeTab === 3 && <EmbeddingsTab startDate={startDate} endDate={endDate} />}
+      {activeTab === 0 && <OverviewTab startDate={startDate} endDate={endDate} onExportData={(data) => handleExportData(0, data)} />}
+      {activeTab === 1 && <LlmTab startDate={startDate} endDate={endDate} onExportData={(data) => handleExportData(1, data)} />}
+      {activeTab === 2 && <DocumentsTab startDate={startDate} endDate={endDate} onExportData={(data) => handleExportData(2, data)} />}
+      {activeTab === 3 && <EmbeddingsTab startDate={startDate} endDate={endDate} onExportData={(data) => handleExportData(3, data)} />}
 
       {/* Budget Dialog */}
       <BudgetConfigDialog

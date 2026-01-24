@@ -1,4 +1,4 @@
-import { Box, Typography, Skeleton } from '@mui/material';
+import { Box, Typography, Skeleton, useTheme } from '@mui/material';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import type { DailyTrendEntry } from '../../../api/types';
 
@@ -9,6 +9,13 @@ interface CostTrendChartProps {
 }
 
 export function CostTrendChart({ entries, loading, dataAvailableFrom }: CostTrendChartProps): JSX.Element {
+  const theme = useTheme();
+  const colors = {
+    llm: theme.palette.primary.main,
+    documents: theme.palette.success.main,
+    embeddings: theme.palette.warning.main,
+  };
+
   if (loading) {
     return (
       <Box sx={{ p: 2 }}>
@@ -37,9 +44,9 @@ export function CostTrendChart({ entries, loading, dataAvailableFrom }: CostTren
           <YAxis tick={{ fontSize: 11 }} tickFormatter={(v: number) => `$${v}`} />
           <Tooltip formatter={(value) => `$${Number(value).toFixed(2)}`} />
           <Legend />
-          <Area type="monotone" dataKey="LLM" stackId="1" stroke="#8884d8" fill="#8884d8" />
-          <Area type="monotone" dataKey="Documents" stackId="1" stroke="#82ca9d" fill="#82ca9d" />
-          <Area type="monotone" dataKey="Embeddings" stackId="1" stroke="#ffc658" fill="#ffc658" />
+          <Area type="monotone" dataKey="LLM" stackId="1" stroke={colors.llm} fill={colors.llm} fillOpacity={0.6} />
+          <Area type="monotone" dataKey="Documents" stackId="1" stroke={colors.documents} fill={colors.documents} fillOpacity={0.6} />
+          <Area type="monotone" dataKey="Embeddings" stackId="1" stroke={colors.embeddings} fill={colors.embeddings} fillOpacity={0.6} />
         </AreaChart>
       </ResponsiveContainer>
       {dataAvailableFrom && (

@@ -8,9 +8,10 @@ import { MetricCard } from '../components/MetricCard';
 interface LlmTabProps {
   startDate: string;
   endDate: string;
+  onExportData?: (data: Record<string, unknown>[]) => void;
 }
 
-export function LlmTab({ startDate, endDate }: LlmTabProps): JSX.Element {
+export function LlmTab({ startDate, endDate, onExportData }: LlmTabProps): JSX.Element {
   const [agentData, setAgentData] = useState<LlmByAgentTypeResponse | null>(null);
   const [modelData, setModelData] = useState<LlmByModelResponse | null>(null);
   const [loadingAgent, setLoadingAgent] = useState(true);
@@ -48,6 +49,20 @@ export function LlmTab({ startDate, endDate }: LlmTabProps): JSX.Element {
     fetchAgentData();
     fetchModelData();
   }, [fetchAgentData, fetchModelData]);
+
+  // Report export data when agent/model data loads
+  useEffect(() => {
+    if (agentData && onExportData) {
+      onExportData(agentData.agent_costs.map((a) => ({
+        agent_type: a.agent_type,
+        cost_usd: a.cost_usd,
+        request_count: a.request_count,
+        tokens_in: a.tokens_in,
+        tokens_out: a.tokens_out,
+        percentage: a.percentage,
+      })));
+    }
+  }, [agentData, onExportData]);
 
   const totalCost = agentData?.total_llm_cost_usd ?? modelData?.total_llm_cost_usd ?? '0';
   const totalRequests = agentData?.agent_costs.reduce((sum, a) => sum + a.request_count, 0) ?? 0;
@@ -91,6 +106,10 @@ export function LlmTab({ startDate, endDate }: LlmTabProps): JSX.Element {
           </Alert>
         ) : loadingAgent ? (
           <Skeleton variant="rectangular" height={200} />
+        ) : !agentData?.agent_costs.length ? (
+          <Typography variant="body2" color="text.secondary" sx={{ p: 2, textAlign: 'center' }}>
+            No LLM cost data for the selected period.
+          </Typography>
         ) : (
           <TableContainer component={Paper} variant="outlined">
             <Table size="small">
@@ -105,7 +124,7 @@ export function LlmTab({ startDate, endDate }: LlmTabProps): JSX.Element {
                 </TableRow>
               </TableHead>
               <TableBody>
-                {agentData?.agent_costs.map((row) => (
+                {agentData.agent_costs.map((row) => (
                   <TableRow key={row.agent_type}>
                     <TableCell>{row.agent_type}</TableCell>
                     <TableCell align="right">${parseFloat(row.cost_usd).toFixed(2)}</TableCell>
@@ -132,6 +151,10 @@ export function LlmTab({ startDate, endDate }: LlmTabProps): JSX.Element {
           </Alert>
         ) : loadingModel ? (
           <Skeleton variant="rectangular" height={200} />
+        ) : !modelData?.model_costs.length ? (
+          <Typography variant="body2" color="text.secondary" sx={{ p: 2, textAlign: 'center' }}>
+            No model cost data for the selected period.
+          </Typography>
         ) : (
           <TableContainer component={Paper} variant="outlined">
             <Table size="small">
@@ -146,7 +169,7 @@ export function LlmTab({ startDate, endDate }: LlmTabProps): JSX.Element {
                 </TableRow>
               </TableHead>
               <TableBody>
-                {modelData?.model_costs.map((row) => (
+                {modelData.model_costs.map((row) => (
                   <TableRow key={row.model}>
                     <TableCell>{row.model}</TableCell>
                     <TableCell align="right">${parseFloat(row.cost_usd).toFixed(2)}</TableCell>

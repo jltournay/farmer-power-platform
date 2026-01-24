@@ -8,9 +8,10 @@ import { MetricCard } from '../components/MetricCard';
 interface EmbeddingsTabProps {
   startDate: string;
   endDate: string;
+  onExportData?: (data: Record<string, unknown>[]) => void;
 }
 
-export function EmbeddingsTab({ startDate, endDate }: EmbeddingsTabProps): JSX.Element {
+export function EmbeddingsTab({ startDate, endDate, onExportData }: EmbeddingsTabProps): JSX.Element {
   const [data, setData] = useState<EmbeddingByDomainResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -31,6 +32,19 @@ export function EmbeddingsTab({ startDate, endDate }: EmbeddingsTabProps): JSX.E
   useEffect(() => {
     fetchData();
   }, [fetchData]);
+
+  // Report export data when embedding data loads
+  useEffect(() => {
+    if (data && onExportData) {
+      onExportData(data.domain_costs.map((d) => ({
+        knowledge_domain: d.knowledge_domain,
+        cost_usd: d.cost_usd,
+        tokens_total: d.tokens_total,
+        texts_count: d.texts_count,
+        percentage: d.percentage,
+      })));
+    }
+  }, [data, onExportData]);
 
   if (error) {
     return (
@@ -81,6 +95,10 @@ export function EmbeddingsTab({ startDate, endDate }: EmbeddingsTabProps): JSX.E
         </Typography>
         {loading ? (
           <Skeleton variant="rectangular" height={200} />
+        ) : !data?.domain_costs.length ? (
+          <Typography variant="body2" color="text.secondary" sx={{ p: 2, textAlign: 'center' }}>
+            No embedding cost data for the selected period.
+          </Typography>
         ) : (
           <TableContainer component={Paper} variant="outlined">
             <Table size="small">
@@ -94,7 +112,7 @@ export function EmbeddingsTab({ startDate, endDate }: EmbeddingsTabProps): JSX.E
                 </TableRow>
               </TableHead>
               <TableBody>
-                {data?.domain_costs.map((row) => (
+                {data.domain_costs.map((row) => (
                   <TableRow key={row.knowledge_domain}>
                     <TableCell>{row.knowledge_domain}</TableCell>
                     <TableCell align="right">{row.texts_count.toLocaleString()}</TableCell>

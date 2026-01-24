@@ -11,9 +11,10 @@ import { CostBreakdownCards } from '../components/CostBreakdownCards';
 interface OverviewTabProps {
   startDate: string;
   endDate: string;
+  onExportData?: (data: Record<string, unknown>[]) => void;
 }
 
-export function OverviewTab({ startDate, endDate }: OverviewTabProps): JSX.Element {
+export function OverviewTab({ startDate, endDate, onExportData }: OverviewTabProps): JSX.Element {
   const [summary, setSummary] = useState<CostSummaryResponse | null>(null);
   const [trend, setTrend] = useState<DailyTrendResponse | null>(null);
   const [todayCost, setTodayCost] = useState<CurrentDayCostResponse | null>(null);
@@ -102,6 +103,19 @@ export function OverviewTab({ startDate, endDate }: OverviewTabProps): JSX.Eleme
     const interval = setInterval(fetchToday, 60000);
     return () => clearInterval(interval);
   }, [fetchToday]);
+
+  // Report export data when trend loads
+  useEffect(() => {
+    if (trend && onExportData) {
+      onExportData(trend.entries.map((e) => ({
+        date: e.entry_date,
+        total_cost_usd: e.total_cost_usd,
+        llm_cost_usd: e.llm_cost_usd,
+        document_cost_usd: e.document_cost_usd,
+        embedding_cost_usd: e.embedding_cost_usd,
+      })));
+    }
+  }, [trend, onExportData]);
 
   const formatTime = (isoString: string) => {
     try {
