@@ -62,16 +62,16 @@
 
 **Actor:** Platform Administrator
 **Preconditions:** Admin is authenticated with platform_admin role, platform cost service is operational (Epic 13)
-**Stories:** 9.10
+**Stories:** 9.10a, 9.10b
 
 **Main Flow:**
 
-1. Admin navigates to Platform Costs page → System displays total cost overview with trend chart and breakdown by service category
+1. Admin navigates to Platform Costs page → System displays total cost overview with today's live cost, budget utilization, daily trend chart (stacked by type), and cost breakdown by type (LLM, Documents, Embeddings)
 2. Admin selects a date range → System updates all cost figures and charts for the selected period
-3. Admin clicks a service tab (LLM, SMS, Voice, etc.) → System shows detailed breakdown for that service (cost drivers, usage metrics, trends)
-4. Admin configures budget alerts → System saves thresholds and recipient emails for warning/critical notifications
-5. Admin exports cost data → System generates CSV or PDF report for the selected period and services
+3. Admin clicks a cost type tab (LLM, Documents, Embeddings) → System shows detailed breakdown for that type (LLM: by agent type + by model with token counts; Documents: pages processed, avg cost/page; Embeddings: by knowledge domain)
+4. Admin configures budget thresholds → System saves daily and monthly threshold values (alert delivery handled by AlertManager via OTEL metrics)
+5. Admin exports cost data → System generates CSV for the selected period and cost type
 
-**Postcondition:** Admin has reviewed platform spending, identified cost drivers, and configured budget monitoring
+**Postcondition:** Admin has reviewed platform spending across LLM, Document, and Embedding costs, identified cost drivers, and configured budget thresholds
 
 ---
