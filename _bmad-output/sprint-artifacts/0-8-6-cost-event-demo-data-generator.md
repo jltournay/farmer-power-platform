@@ -1,6 +1,6 @@
 # Story 0.8.6: Cost Event Demo Data Generator
 
-**Status:** in-progress
+**Status:** review
 **Story Points:** 5
 **GitHub Issue:** #223
 
@@ -155,7 +155,7 @@ so that the platform-cost database has historical data for cost dashboard UI dev
 - [ ] PR approved and merged (squash)
 - [ ] Local branch cleaned up: `git branch -d story/0-8-6-cost-event-demo-data-generator`
 
-**PR URL:** _______________ (fill in when created)
+**PR URL:** https://github.com/jltournay/farmer-power-platform/pull/224
 
 ---
 

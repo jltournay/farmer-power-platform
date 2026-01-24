@@ -226,7 +226,7 @@ development_status:
   0-8-3-polyfactory-generator-framework: done  # 5 points, github_issue: 209 - Factory classes for each model, depends: 0-8-1
   0-8-4-profile-based-data-generation: done  # github_issue: 211, 5 points - generate-demo-data.py, profiles, depends: 0-8-3, CODE REVIEW COMPLETED 2026-01-21
   0-8-5-demo-data-documentation: done  # github_issue: 213, PR: #214, 2 points - Usage guide, CODE REVIEW COMPLETED 2026-01-21
-  0-8-6-cost-event-demo-data-generator: in-progress  # github_issue: 223, 5 points - Cost event Polyfactory generator for platform-cost dashboard
+  0-8-6-cost-event-demo-data-generator: review  # github_issue: 223, PR: #224, 5 points - Cost event Polyfactory generator for platform-cost dashboard
   epic-0-8-retrospective: optional
 
   # ═══════════════════════════════════════════════════════════════════════════
