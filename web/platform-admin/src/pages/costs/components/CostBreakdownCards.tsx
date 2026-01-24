@@ -1,4 +1,4 @@
-import { Grid, Card, CardContent, Typography, Skeleton, Box } from '@mui/material';
+import { Grid2 as Grid, Card, CardContent, Typography, Skeleton, Box } from '@mui/material';
 import type { CostTypeBreakdown } from '../../../api/types';
 
 interface CostBreakdownCardsProps {

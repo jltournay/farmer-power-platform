@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Box, Grid, Alert, Button, Typography, Skeleton } from '@mui/material';
+import { Box, Grid2 as Grid, Alert, Button, Typography, Skeleton } from '@mui/material';
 import { Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper } from '@mui/material';
 import { getEmbeddingsByDomain } from '../../../api/costs';
 import type { EmbeddingByDomainResponse } from '../../../api/types';

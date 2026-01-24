@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Box, Grid, Alert, Button } from '@mui/material';
+import { Box, Grid2 as Grid, Alert, Button } from '@mui/material';
 import { getDocumentCosts } from '../../../api/costs';
 import type { DocumentCostResponse } from '../../../api/types';
 import { MetricCard } from '../components/MetricCard';

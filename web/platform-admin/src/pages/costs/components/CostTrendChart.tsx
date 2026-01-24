@@ -35,7 +35,7 @@ export function CostTrendChart({ entries, loading, dataAvailableFrom }: CostTren
           <CartesianGrid strokeDasharray="3 3" />
           <XAxis dataKey="date" tick={{ fontSize: 11 }} />
           <YAxis tick={{ fontSize: 11 }} tickFormatter={(v: number) => `$${v}`} />
-          <Tooltip formatter={(value: number) => [`$${value.toFixed(2)}`, undefined]} />
+          <Tooltip formatter={(value) => `$${Number(value).toFixed(2)}`} />
           <Legend />
           <Area type="monotone" dataKey="LLM" stackId="1" stroke="#8884d8" fill="#8884d8" />
           <Area type="monotone" dataKey="Documents" stackId="1" stroke="#82ca9d" fill="#82ca9d" />

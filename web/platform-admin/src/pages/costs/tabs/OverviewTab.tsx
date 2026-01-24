@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Box, Grid, Alert, Button, CircularProgress, Typography } from '@mui/material';
+import { Box, Grid2 as Grid, Alert, Button, CircularProgress, Typography } from '@mui/material';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import { getCostSummary, getDailyTrend, getCurrentDayCost, getBudgetStatus } from '../../../api/costs';
 import type { CostSummaryResponse, DailyTrendResponse, CurrentDayCostResponse, BudgetStatusResponse } from '../../../api/types';
