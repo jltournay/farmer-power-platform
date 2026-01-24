@@ -13,8 +13,10 @@
 | 9.6b | Grading Model Management UI (Read-Only + Assignment) | 3 | P1 |
 | 9.7 | User Management Dashboard | 5 | Deferred (blocked by 0.5.8) |
 | 9.8 | Platform Health Dashboard | 5 | P2 |
-| 9.9 | Knowledge Management Interface | 8 | P2 |
-| 9.10 | Platform Cost Dashboard | 8 | P2 |
+| 9.9a | Knowledge Management BFF REST API | 3 | P2 |
+| 9.9b | Knowledge Management UI | 5 | P2 |
+| 9.10a | Platform Cost BFF REST API | 3 | P2 |
+| 9.10b | Platform Cost Dashboard UI | 3 | P2 |
 | 9.11a | SourceConfigService gRPC in Collection Model | 3 | P2 |
 | 9.11b | Source Config gRPC Client + REST API in BFF | 3 | P2 |
 | 9.11c | Source Configuration Viewer UI | 3 | P2 |
@@ -22,11 +24,13 @@
 | 9.12b | Agent Config gRPC Client + REST API in BFF | 3 | P2 |
 | 9.12c | AI Agent & Prompt Viewer UI | 5 | P2 |
 
-**Total Story Points:** 100
+**Use Cases:** [UC9.0-UC9.3](./use-cases.md)
+
+**Total Story Points:** 98
 
 **Pilot-Critical Stories (P0):** 9.1a-9.5 = 44 points
 **Important Stories (P1):** 9.6a-9.6b = 8 points
-**Nice-to-Have Stories (P2):** 9.8-9.12c = 43 points (includes ADR-019 config visibility)
+**Nice-to-Have Stories (P2):** 9.8-9.12c = 41 points (includes ADR-019 config visibility)
 **Deferred Stories:** 9.7 = 5 points (blocked by 0.5.8 Azure AD B2C)
 
 ---
