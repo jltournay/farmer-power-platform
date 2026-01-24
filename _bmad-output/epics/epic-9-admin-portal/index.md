@@ -3,6 +3,10 @@
 ## Table of Contents
 
 - [Epic 9: Platform Admin Portal](#table-of-contents)
+  - [Use Cases](./use-cases.md)
+    - [UC9.1: View Source Configurations](./use-cases.md#uc91-view-source-configurations)
+    - [UC9.2: View AI Agent and Prompt Configurations](./use-cases.md#uc92-view-ai-agent-and-prompt-configurations)
+    - [UC9.3: Monitor Platform Costs](./use-cases.md#uc93-monitor-platform-costs)
   - [Scope Overview](./scope-overview.md)
     - [Data Model Relationships (Important!)](./scope-overview.md#data-model-relationships-important)
     - [Navigation Model: Option C (Hybrid)](./scope-overview.md#navigation-model-option-c-hybrid)
