@@ -682,6 +682,7 @@ async def query_knowledge(
             domains=[d.value for d in request.domains] if request.domains else None,
             top_k=request.top_k,
             confidence_threshold=request.confidence_threshold,
+            namespace=request.namespace or None,
         )
     except ServiceUnavailableError as e:
         raise HTTPException(

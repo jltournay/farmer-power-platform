@@ -182,9 +182,33 @@ class AdminKnowledgeService(BaseService):
     # =========================================================================
 
     async def stage_document(self, document_id: str, version: int = 0) -> DocumentDetail:
-        """Transition document from draft to staged."""
+        """Transition document from draft to staged, then chunk and vectorize."""
         self._logger.info("staging_document", document_id=document_id, version=version)
         doc = await self._client.stage_document(document_id=document_id, version=version)
+
+        # Trigger chunking + vectorization so 'Test with AI' works for staged documents
+        try:
+            chunk_result = await self._client.chunk_document(
+                document_id=document_id, version=doc.version
+            )
+            self._logger.info(
+                "staged_document_chunked",
+                document_id=document_id,
+                chunks_created=chunk_result.chunks_created,
+            )
+
+            await self._client.vectorize_document(
+                document_id=document_id, version=doc.version
+            )
+            self._logger.info("staged_document_vectorization_started", document_id=document_id)
+        except Exception as e:
+            # Don't fail staging if chunking/vectorization fails
+            self._logger.warning(
+                "post_staging_pipeline_error",
+                document_id=document_id,
+                error=str(e),
+            )
+
         return self._transformer.to_detail(doc)
 
     async def activate_document(self, document_id: str, version: int = 0) -> DocumentDetail:
@@ -391,15 +415,17 @@ class AdminKnowledgeService(BaseService):
         domains: list[str] | None = None,
         top_k: int = 5,
         confidence_threshold: float = 0.0,
+        namespace: str | None = None,
     ) -> QueryResponse:
         """Query knowledge base using existing AiModelClient method."""
-        self._logger.info("querying_knowledge", query_length=len(query), domains=domains)
+        self._logger.info("querying_knowledge", query_length=len(query), domains=domains, namespace=namespace)
 
         result = await self._client.query_knowledge(
             query=query,
             domains=domains,
             top_k=top_k,
             confidence_threshold=confidence_threshold,
+            namespace=namespace,
         )
 
         # RetrievalResult is already Pydantic model from fp-common

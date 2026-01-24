@@ -91,6 +91,7 @@ export function KnowledgeReview(): JSX.Element {
         query: testQuery.trim(),
         domains: [document.domain as 'plant_diseases' | 'tea_cultivation' | 'weather_patterns' | 'quality_standards' | 'regional_context'],
         top_k: 3,
+        namespace: document.pinecone_namespace || undefined,
       });
       setTestResults(response.matches);
       setTestPerformed(true);

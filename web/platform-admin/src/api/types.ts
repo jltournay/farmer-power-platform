@@ -1434,6 +1434,7 @@ export interface QueryKnowledgeRequest {
   domains?: KnowledgeDomain[];
   top_k?: number;
   confidence_threshold?: number;
+  namespace?: string;
 }
 
 /** Request to rollback document to previous version */

@@ -82,6 +82,7 @@ class QueryKnowledgeRequest(BaseModel):
     domains: list[KnowledgeDomain] = Field(default_factory=list, description="Domains to search (empty = all)")
     top_k: int = Field(default=5, ge=1, le=100, description="Max results to return")
     confidence_threshold: float = Field(default=0.0, ge=0.0, le=1.0, description="Min similarity score")
+    namespace: str = Field(default="", description="Pinecone namespace to query (empty = default)")
 
 
 class RollbackDocumentRequest(BaseModel):
