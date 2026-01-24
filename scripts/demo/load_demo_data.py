@@ -57,6 +57,11 @@ _ai_model_path = _project_root / "services" / "ai-model" / "src"
 if str(_ai_model_path) not in sys.path:
     sys.path.insert(0, str(_ai_model_path))
 
+# Add services/platform-cost for UnifiedCostEvent model
+_platform_cost_path = _project_root / "services" / "platform-cost" / "src"
+if str(_platform_cost_path) not in sys.path:
+    sys.path.insert(0, str(_platform_cost_path))
+
 # Add tests/e2e for MongoDBDirectClient
 _e2e_path = _project_root / "tests" / "e2e"
 if str(_e2e_path) not in sys.path:
