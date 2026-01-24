@@ -3,6 +3,7 @@
 Orchestrates PlatformCostClient calls and transforms responses to API schemas.
 """
 
+import time
 from datetime import date
 from decimal import Decimal
 
@@ -20,6 +21,10 @@ from bff.api.schemas.admin.platform_cost_schemas import (
 from bff.infrastructure.clients.platform_cost_client import PlatformCostClient
 from bff.services.base_service import BaseService
 from bff.transformers.admin.platform_cost_transformer import PlatformCostTransformer
+
+# Module-level TTL cache for cost summary (AC 9.10a.1: cached for 5 minutes)
+_CACHE_TTL_SECONDS = 300
+_cost_summary_cache: dict[str, tuple[float, CostSummaryResponse]] = {}
 
 
 class AdminPlatformCostService(BaseService):
@@ -51,6 +56,8 @@ class AdminPlatformCostService(BaseService):
     ) -> CostSummaryResponse:
         """Get cost summary for a date range.
 
+        Cached for 5 minutes per AC 9.10a.1.
+
         Args:
             start_date: Start of date range (inclusive).
             end_date: End of date range (inclusive).
@@ -59,6 +66,16 @@ class AdminPlatformCostService(BaseService):
         Returns:
             CostSummaryResponse with total and breakdown.
         """
+        cache_key = f"{start_date}:{end_date}:{factory_id}"
+
+        # Check TTL cache (AC 9.10a.1: cached for 5 minutes)
+        if cache_key in _cost_summary_cache:
+            cached_time, cached_response = _cost_summary_cache[cache_key]
+            if time.time() - cached_time < _CACHE_TTL_SECONDS:
+                self._logger.info("cost_summary_cache_hit", cache_key=cache_key)
+                return cached_response
+            del _cost_summary_cache[cache_key]
+
         self._logger.info(
             "getting_cost_summary",
             start_date=str(start_date),
@@ -73,6 +90,9 @@ class AdminPlatformCostService(BaseService):
         )
 
         response = self._transformer.to_cost_summary_response(summary)
+
+        # Store in TTL cache
+        _cost_summary_cache[cache_key] = (time.time(), response)
 
         self._logger.info(
             "got_cost_summary",

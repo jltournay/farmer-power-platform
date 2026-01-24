@@ -266,7 +266,7 @@ development_status:
   9-9a-knowledge-management-bff-api: done  # 3 points - BFF REST endpoints + SSE extraction progress, depends: 0-5-9, 0.75.10, github_issue: 219, PR: #220
   9-9b-knowledge-management-ui: done  # 5 points - Document library, upload wizard, review/activation, depends: 9-9a, github_issue: 221, PR: #222
   # LLM Cost Dashboard - Split into BFF API (9.10a) and UI (9.10b)
-  9-10a-platform-cost-bff-api: review  # 3 points - BFF REST endpoints for platform cost monitoring, depends: Epic 13 (Story 13.4), github_issue: 225
+  9-10a-platform-cost-bff-api: done  # 3 points - BFF REST endpoints for platform cost monitoring, depends: Epic 13 (Story 13.4), github_issue: 225
   9-10b-platform-cost-dashboard-ui: backlog  # 3 points - Cost dashboard UI with tabs + charts, depends: 9-10a
   # Admin Configuration Visibility (ADR-019) - View-only screens for Source Configs, AI Agents & Prompts
   9-11a-source-config-grpc-collection-model: backlog  # 3 points - SourceConfigService gRPC in Collection Model

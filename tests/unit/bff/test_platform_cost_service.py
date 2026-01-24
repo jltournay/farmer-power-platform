@@ -5,11 +5,12 @@ Tests service orchestration, transformer calls, and error propagation.
 
 from datetime import date, datetime
 from decimal import Decimal
-from unittest.mock import AsyncMock, MagicMock
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 from bff.infrastructure.clients import ServiceUnavailableError
 from bff.infrastructure.clients.platform_cost_client import PlatformCostClient
+from bff.services.admin import platform_cost_service as pcs_module
 from bff.services.admin.platform_cost_service import AdminPlatformCostService
 from bff.transformers.admin.platform_cost_transformer import PlatformCostTransformer
 from fp_common.models import (
@@ -119,6 +120,14 @@ def sample_current_day_cost() -> CurrentDayCost:
     )
 
 
+@pytest.fixture(autouse=True)
+def clear_cost_summary_cache():
+    """Clear the module-level cost summary cache before each test."""
+    pcs_module._cost_summary_cache.clear()
+    yield
+    pcs_module._cost_summary_cache.clear()
+
+
 class TestGetCostSummary:
     """Tests for get_cost_summary method."""
 
@@ -186,6 +195,115 @@ class TestGetCostSummary:
                 start_date=date(2026, 1, 1),
                 end_date=date(2026, 1, 24),
             )
+
+
+class TestGetCostSummaryCaching:
+    """Tests for cost summary TTL caching (AC 9.10a.1)."""
+
+    @pytest.mark.asyncio
+    async def test_second_call_returns_cached_response(
+        self,
+        platform_cost_service: AdminPlatformCostService,
+        mock_platform_cost_client: MagicMock,
+        sample_cost_summary: CostSummary,
+    ):
+        """Test that repeated calls within TTL return cached response."""
+        mock_platform_cost_client.get_cost_summary.return_value = sample_cost_summary
+
+        # First call - hits client
+        result1 = await platform_cost_service.get_cost_summary(
+            start_date=date(2026, 1, 1),
+            end_date=date(2026, 1, 24),
+        )
+
+        # Second call - should use cache
+        result2 = await platform_cost_service.get_cost_summary(
+            start_date=date(2026, 1, 1),
+            end_date=date(2026, 1, 24),
+        )
+
+        assert result1.total_cost_usd == result2.total_cost_usd
+        # Client should only be called once
+        assert mock_platform_cost_client.get_cost_summary.call_count == 1
+
+    @pytest.mark.asyncio
+    async def test_cache_expires_after_ttl(
+        self,
+        platform_cost_service: AdminPlatformCostService,
+        mock_platform_cost_client: MagicMock,
+        sample_cost_summary: CostSummary,
+    ):
+        """Test that cache expires after 5 minutes."""
+        mock_platform_cost_client.get_cost_summary.return_value = sample_cost_summary
+
+        with patch("bff.services.admin.platform_cost_service.time") as mock_time:
+            mock_time.time.return_value = 1000.0
+
+            # First call
+            await platform_cost_service.get_cost_summary(
+                start_date=date(2026, 1, 1),
+                end_date=date(2026, 1, 24),
+            )
+
+            # Advance time past TTL (301 seconds)
+            mock_time.time.return_value = 1301.0
+
+            # Second call - cache expired, should hit client again
+            await platform_cost_service.get_cost_summary(
+                start_date=date(2026, 1, 1),
+                end_date=date(2026, 1, 24),
+            )
+
+        assert mock_platform_cost_client.get_cost_summary.call_count == 2
+
+    @pytest.mark.asyncio
+    async def test_different_params_not_shared(
+        self,
+        platform_cost_service: AdminPlatformCostService,
+        mock_platform_cost_client: MagicMock,
+        sample_cost_summary: CostSummary,
+    ):
+        """Test that different parameters use separate cache entries."""
+        mock_platform_cost_client.get_cost_summary.return_value = sample_cost_summary
+
+        # Call with one date range
+        await platform_cost_service.get_cost_summary(
+            start_date=date(2026, 1, 1),
+            end_date=date(2026, 1, 24),
+        )
+
+        # Call with different date range - should NOT use cache
+        await platform_cost_service.get_cost_summary(
+            start_date=date(2026, 1, 10),
+            end_date=date(2026, 1, 24),
+        )
+
+        assert mock_platform_cost_client.get_cost_summary.call_count == 2
+
+    @pytest.mark.asyncio
+    async def test_factory_id_included_in_cache_key(
+        self,
+        platform_cost_service: AdminPlatformCostService,
+        mock_platform_cost_client: MagicMock,
+        sample_cost_summary: CostSummary,
+    ):
+        """Test that factory_id differentiates cache entries."""
+        mock_platform_cost_client.get_cost_summary.return_value = sample_cost_summary
+
+        # Call without factory
+        await platform_cost_service.get_cost_summary(
+            start_date=date(2026, 1, 1),
+            end_date=date(2026, 1, 24),
+        )
+
+        # Call with factory - should NOT use cache
+        await platform_cost_service.get_cost_summary(
+            start_date=date(2026, 1, 1),
+            end_date=date(2026, 1, 24),
+            factory_id="factory-001",
+        )
+
+        assert mock_platform_cost_client.get_cost_summary.call_count == 2
 
 
 class TestGetDailyCostTrend:

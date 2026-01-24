@@ -1,6 +1,6 @@
 # Story 9.10a: Platform Cost BFF REST API
 
-**Status:** review
+**Status:** done
 **GitHub Issue:** #225
 
 ## Story
@@ -117,7 +117,7 @@ so that **the Platform Cost Dashboard UI can display cost summaries, breakdowns,
   - [x] Extend `BaseService` pattern
   - [x] Constructor takes `PlatformCostClient` + `PlatformCostTransformer`
   - [x] Implement all 9 async methods wrapping client calls
-  - [ ] Add 5-minute caching for `get_cost_summary` (AC 1) — deferred to UI story
+  - [x] Add 5-minute caching for `get_cost_summary` (AC 1) — module-level TTLCache (300s)
   - [x] NO caching for `get_current_day_cost` (AC 3)
 - [x] Task 4: Create Platform Cost Routes (AC: 1-7, 9)
   - [x] Create `services/bff/src/bff/api/routes/admin/platform_cost.py`
@@ -129,7 +129,7 @@ so that **the Platform Cost Dashboard UI can display cost summaries, breakdowns,
 - [x] Task 5: Register routes in admin router (AC: 9)
   - [x] Import `platform_cost_router` in `services/bff/src/bff/api/routes/admin/__init__.py`
   - [x] Add `router.include_router(platform_cost_router)`
-- [x] Task 6: Unit tests (59 tests passing)
+- [x] Task 6: Unit tests (63 tests passing)
   - [x] Test schemas validation (date format, threshold > 0)
   - [x] Test transformer conversions
   - [x] Test service methods with mocked client
@@ -187,9 +187,9 @@ pytest tests/unit/bff/ -q
 ```
 **Output:**
 ```
-391 passed, 43 warnings in 25.75s
+395 passed, 43 warnings in 25.41s
 ```
-Platform cost specific tests: schemas (17), transformer (11), service (14), routes (17) = 59 tests all passing.
+Platform cost specific tests: schemas (17), transformer (11), service (18), routes (17) = 63 tests all passing.
 
 ### 2. E2E Tests (MANDATORY)
 
@@ -434,3 +434,35 @@ user: TokenClaims = require_platform_admin()
 **Modified:**
 - `services/bff/src/bff/api/routes/admin/__init__.py` (register platform_cost_router)
 - `services/bff/src/bff/api/schemas/admin/__init__.py` (export cost schemas)
+- `tests/e2e/infrastructure/docker-compose.e2e.yaml` (platform-cost-dapr: fix app-port/protocol for gRPC)
+
+---
+
+## Senior Developer Review (AI)
+
+**Reviewer:** Code Review Workflow (Claude Opus 4.5)
+**Date:** 2026-01-24
+**Outcome:** Approved (after fixes applied)
+
+### Findings Summary
+
+| # | Severity | Issue | Resolution |
+|---|----------|-------|------------|
+| 1 | CRITICAL | AC 9.10a.1 caching NOT implemented (dev agent deferred without authority) | Fixed: added module-level TTLCache (300s) + 4 unit tests |
+| 2 | MEDIUM | docker-compose.e2e.yaml not in File List | Fixed: added to File List |
+| 3 | MEDIUM | sprint-status.yaml not in File List | Accepted: meta-file, not production code |
+| 4 | MEDIUM | No E2E tests for LLM/Document/Embedding endpoints | Accepted: AC-E2E only requires summary flow |
+| 5 | LOW | AC paths say /api/v1/admin but impl uses /api/admin | Accepted: consistent with all project routes |
+| 6 | LOW | "Agent Model Used" not filled | Accepted: cosmetic |
+
+### Fixes Applied
+
+1. `services/bff/src/bff/services/admin/platform_cost_service.py` — Added module-level `_cost_summary_cache` with 300s TTL for `get_cost_summary` (AC 9.10a.1)
+2. `tests/unit/bff/test_platform_cost_service.py` — Added 4 caching tests (cache hit, TTL expiry, param isolation, factory_id key)
+3. Story file — Updated subtask status, File List, test counts
+
+### Verification
+
+- Unit tests: 395 passed (was 391, +4 caching tests)
+- Lint: All checks passed
+- All ACs now fully implemented
