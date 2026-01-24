@@ -203,7 +203,7 @@ so that **I can monitor platform spending across LLM, Document, and Embedding co
 - [x] Test: GET `/api/admin/costs/llm/by-agent-type` returns `agent_costs[]` with at least one entry
 - [x] Test: GET `/api/admin/costs/embeddings/by-domain` returns `domain_costs[]`
 - [x] All tests MUST pass locally — 10/10 passed in 2.52s (2026-01-24)
-- [ ] All tests MUST pass in CI (`gh workflow run e2e.yaml --ref <branch>`) before code review
+- [x] All tests MUST pass in CI — E2E run 21321543783 PASSED (10m23s, 2026-01-24)
 
 ## Git Workflow (MANDATORY)
 
