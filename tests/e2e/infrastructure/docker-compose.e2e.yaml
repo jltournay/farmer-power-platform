@@ -519,13 +519,15 @@ services:
   platform-cost-dapr:
     image: daprio/daprd:1.14.0
     container_name: e2e-platform-cost-dapr
-    # ADR-016: Platform Cost uses streaming pub/sub for cost events
-    # - app-port 8000: FastAPI for health probes
+    # ADR-016: Platform Cost uses gRPC for service invocation + streaming pub/sub
+    # - app-port 50054: gRPC UnifiedCostService (for BFF proxy calls)
+    # - app-protocol grpc: For service invocation via DAPR proxy
     # - Pub/sub uses streaming subscriptions (outbound from app)
     command: [
       "./daprd",
       "-app-id", "platform-cost",
-      "-app-port", "8000",
+      "-app-port", "50054",
+      "-app-protocol", "grpc",
       "-dapr-http-port", "3500",
       "-dapr-grpc-port", "50001",
       "-components-path", "/components"

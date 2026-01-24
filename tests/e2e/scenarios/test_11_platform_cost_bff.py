@@ -263,9 +263,9 @@ class TestPlatformCostBFFBudget:
             f"monthly=${result['monthly_threshold_usd']}"
         )
 
-        # Verify the update persists by reading back
+        # Verify the update persists by reading back (compare as Decimal to avoid trailing zero differences)
         status = await _admin_get(bff_api, "/api/admin/costs/budget")
-        assert status["daily_threshold_usd"] == new_daily, "Budget update not persisted"
+        assert Decimal(status["daily_threshold_usd"]) == Decimal(new_daily), "Budget update not persisted"
 
         # Restore a reasonable threshold for other tests
         await _admin_put(
