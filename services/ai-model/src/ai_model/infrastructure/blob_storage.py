@@ -7,6 +7,7 @@ Story 0.75.10b: Basic PDF/Markdown Extraction
 """
 
 import asyncio
+import contextlib
 from concurrent.futures import ThreadPoolExecutor
 
 import structlog
@@ -101,10 +102,8 @@ class BlobStorageClient:
                 container_client = service_client.get_container_client(self._container_name)
 
                 # Ensure container exists (idempotent)
-                try:
+                with contextlib.suppress(Exception):
                     container_client.create_container()
-                except Exception:
-                    pass  # Already exists
 
                 blob_client = container_client.get_blob_client(blob_path)
 
