@@ -78,6 +78,7 @@ SEED_ORDER: list[tuple[str, str, str, str]] = [
     ("regions.json", "seed_regions", "region_id", "plantation_e2e"),
     ("agent_configs.json", "seed_agent_configs", "id", "ai_model_e2e"),
     ("prompts.json", "seed_prompts", "id", "ai_model_e2e"),
+    ("cost_events.json", "seed_cost_events", "request_id", "platform_cost_e2e"),
     # Level 1 - Depends on Level 0
     ("source_configs.json", "seed_source_configs", "source_id", "collection_e2e"),
     ("factories.json", "seed_factories", "id", "plantation_e2e"),
@@ -100,6 +101,7 @@ COLLECTION_MAPPING: dict[str, tuple[str, str]] = {
     "regions.json": ("plantation_e2e", "regions"),
     "agent_configs.json": ("ai_model_e2e", "agent_configs"),
     "prompts.json": ("ai_model_e2e", "prompts"),
+    "cost_events.json": ("platform_cost_e2e", "cost_events"),
     "source_configs.json": ("collection_e2e", "source_configs"),
     "factories.json": ("plantation_e2e", "factories"),
     "collection_points.json": ("plantation_e2e", "collection_points"),

@@ -188,18 +188,14 @@ class AdminKnowledgeService(BaseService):
 
         # Trigger chunking + vectorization so 'Test with AI' works for staged documents
         try:
-            chunk_result = await self._client.chunk_document(
-                document_id=document_id, version=doc.version
-            )
+            chunk_result = await self._client.chunk_document(document_id=document_id, version=doc.version)
             self._logger.info(
                 "staged_document_chunked",
                 document_id=document_id,
                 chunks_created=chunk_result.chunks_created,
             )
 
-            await self._client.vectorize_document(
-                document_id=document_id, version=doc.version
-            )
+            await self._client.vectorize_document(document_id=document_id, version=doc.version)
             self._logger.info("staged_document_vectorization_started", document_id=document_id)
         except Exception as e:
             # Don't fail staging if chunking/vectorization fails
@@ -218,18 +214,14 @@ class AdminKnowledgeService(BaseService):
 
         # Trigger chunking + vectorization pipeline (mirrors CLI promote --vectorize)
         try:
-            chunk_result = await self._client.chunk_document(
-                document_id=document_id, version=doc.version
-            )
+            chunk_result = await self._client.chunk_document(document_id=document_id, version=doc.version)
             self._logger.info(
                 "document_chunked",
                 document_id=document_id,
                 chunks_created=chunk_result.chunks_created,
             )
 
-            await self._client.vectorize_document(
-                document_id=document_id, version=doc.version
-            )
+            await self._client.vectorize_document(document_id=document_id, version=doc.version)
             self._logger.info("document_vectorization_started", document_id=document_id)
         except Exception as e:
             # Don't fail activation if chunking/vectorization fails

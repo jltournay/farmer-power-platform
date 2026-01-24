@@ -34,6 +34,7 @@ class TestSeedOrder:
             "regions.json",
             "agent_configs.json",
             "prompts.json",
+            "cost_events.json",
             "source_configs.json",
             "factories.json",
             "collection_points.json",

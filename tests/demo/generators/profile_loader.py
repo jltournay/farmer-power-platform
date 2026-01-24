@@ -77,6 +77,7 @@ class GeneratedDataConfig:
         farmer_performance: Performance data config.
         weather_observations: Weather data config.
         quality_documents: Document generation config.
+        cost_events: Cost event generation config (Story 0.8.6).
     """
 
     factories: dict[str, Any] = field(default_factory=dict)
@@ -85,6 +86,7 @@ class GeneratedDataConfig:
     farmer_performance: dict[str, Any] = field(default_factory=dict)
     weather_observations: dict[str, Any] = field(default_factory=dict)
     quality_documents: DocumentConfig = field(default_factory=lambda: DocumentConfig(count=100))
+    cost_events: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass
@@ -246,6 +248,7 @@ class ProfileLoader:
             farmer_performance=gen_data.get("farmer_performance", {}),
             weather_observations=gen_data.get("weather_observations", {}),
             quality_documents=document_config,
+            cost_events=gen_data.get("cost_events", {}),
         )
 
         return Profile(

@@ -37,6 +37,7 @@ if str(_demo_scripts_path) not in sys.path:
 from fk_registry import FKRegistry  # noqa: E402
 
 from .base import BaseModelFactory, FKRegistryMixin  # noqa: E402
+from .cost import CostEventFactory  # noqa: E402
 from .plantation import (  # noqa: E402
     CollectionPointFactory,
     FactoryEntityFactory,
@@ -61,6 +62,7 @@ class GeneratedData:
         farmer_performance: List of FarmerPerformance dicts.
         weather_observations: List of RegionalWeather dicts.
         documents: List of Document dicts.
+        cost_events: List of CostEvent dicts.
     """
 
     factories: list[dict[str, Any]] = field(default_factory=list)
@@ -69,6 +71,7 @@ class GeneratedData:
     farmer_performance: list[dict[str, Any]] = field(default_factory=list)
     weather_observations: list[dict[str, Any]] = field(default_factory=list)
     documents: list[dict[str, Any]] = field(default_factory=list)
+    cost_events: list[dict[str, Any]] = field(default_factory=list)
 
     # Metadata
     profile_name: str = ""
@@ -123,6 +126,7 @@ class DataOrchestrator:
         FarmerPerformanceFactory.reset_counter()
         RegionalWeatherFactory.reset_counter()
         DocumentFactory.reset_counter()
+        CostEventFactory.reset_counter()
 
         # E2E seed path
         self._e2e_seed_path = _project_root / "tests" / "e2e" / "infrastructure" / "seed"
@@ -181,6 +185,12 @@ class DataOrchestrator:
             profile=profile,
         )
         data.documents = [d.model_dump(mode="json") for d in documents]
+
+        # Step 8: Generate cost events (if configured in profile)
+        cost_events_config = profile.generated_data.cost_events
+        if cost_events_config:
+            cost_events = self._generate_cost_events(cost_events_config)
+            data.cost_events = [e.model_dump(mode="json") for e in cost_events]
 
         return data
 
@@ -301,6 +311,37 @@ class DataOrchestrator:
 
         return documents
 
+    def _generate_cost_events(self, config: dict) -> list:
+        """Generate cost events based on profile configuration.
+
+        Args:
+            config: Cost events configuration from profile YAML.
+
+        Returns:
+            List of UnifiedCostEvent instances.
+        """
+        days_span = config.get("date_range", 30)
+
+        # Parse daily_events (int or "min-max" range)
+        daily_events_raw = config.get("daily_events", 10)
+        if isinstance(daily_events_raw, str) and "-" in daily_events_raw:
+            parts = daily_events_raw.split("-")
+            daily_events: int | tuple[int, int] = (int(parts[0]), int(parts[1]))
+        elif isinstance(daily_events_raw, int):
+            daily_events = daily_events_raw
+        else:
+            daily_events = int(daily_events_raw)
+
+        distribution = config.get("distribution")
+        source_services = config.get("source_services")
+
+        return CostEventFactory.build_batch_for_period(
+            days_span=days_span,
+            daily_events=daily_events,
+            distribution=distribution,
+            source_services=source_services,
+        )
+
     def write_to_files(
         self,
         data: GeneratedData,
@@ -330,6 +371,7 @@ class DataOrchestrator:
             ("farmer_performance.json", data.farmer_performance),
             ("weather_observations.json", data.weather_observations),
             ("documents.json", data.documents),
+            ("cost_events.json", data.cost_events),
         ]
 
         for filename, records in files_to_write:

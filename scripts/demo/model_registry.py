@@ -233,6 +233,20 @@ def _get_agent_config_model() -> type[BaseModel]:
     return _strict_models["AgentConfig"]
 
 
+def _get_strict_cost_event() -> type[BaseModel]:
+    """Get strict UnifiedCostEvent model (lazy loaded)."""
+    if "UnifiedCostEvent" not in _strict_models:
+        from platform_cost.domain.cost_event import UnifiedCostEvent
+
+        class StrictUnifiedCostEvent(UnifiedCostEvent):
+            """Strict UnifiedCostEvent model that rejects extra fields."""
+
+            model_config = ConfigDict(extra="forbid")
+
+        _strict_models["UnifiedCostEvent"] = StrictUnifiedCostEvent
+    return _strict_models["UnifiedCostEvent"]
+
+
 def get_model_for_file(filename: str) -> type[BaseModel] | None:
     """Get the Pydantic model for a seed data file.
 
@@ -281,6 +295,7 @@ def get_seed_model_registry() -> ModelRegistry:
         _seed_registry.register("agent_configs.json", _get_agent_config_model())
         _seed_registry.register("weather_observations.json", _get_strict_regional_weather())
         _seed_registry.register("documents.json", _get_strict_document())
+        _seed_registry.register("cost_events.json", _get_strict_cost_event())
 
     return _seed_registry
 

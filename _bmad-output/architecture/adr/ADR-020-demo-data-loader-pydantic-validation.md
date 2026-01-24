@@ -228,6 +228,7 @@ Both tools share the same validation infrastructure (Pydantic models, FK checks)
 | `collection_e2e` | `quality_documents` | `document_id` | upsert on `document_id` |
 | `ai_model_e2e` | `agent_configs` | `id` | `_id` = `id` |
 | `ai_model_e2e` | `prompts` | `id` | `_id` = `id` |
+| `platform_cost_e2e` | `cost_events` | `request_id` | upsert on `request_id` |
 
 ### Dependency Order (CRITICAL)
 
@@ -240,6 +241,7 @@ SEED_ORDER = [
     ("regions.json", Region, "seed_regions", "region_id"),
     ("agent_configs.json", AgentConfig, "seed_agent_configs", "id"),
     ("prompts.json", Prompt, "seed_prompts", "id"),
+    ("cost_events.json", UnifiedCostEvent, "seed_cost_events", "request_id"),
 
     # Level 1 - Depends on Level 0
     ("source_configs.json", SourceConfig, "seed_source_configs", "source_id"),
@@ -267,7 +269,8 @@ LEVEL 0 (No dependencies):
 ├── grading_models
 ├── regions
 ├── agent_configs
-└── prompts
+├── prompts
+└── cost_events (platform_cost_e2e.cost_events)
 
 LEVEL 1 (Depends on Level 0):
 ├── source_configs

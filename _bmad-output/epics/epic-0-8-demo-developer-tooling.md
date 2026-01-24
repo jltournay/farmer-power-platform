@@ -347,16 +347,50 @@ So that I can quickly set up a working demo environment.
 
 ---
 
+### Story 0.8.6: Cost Event Demo Data Generator
+
+**Status:** Ready for Dev | **Depends On:** Stories 0.8.3, 0.8.4
+
+As a **developer preparing demo environments for the cost dashboard**,
+I want the demo data generator to produce realistic platform cost events,
+So that the platform-cost database has historical data for cost dashboard UI development and demos.
+
+**ADR:** ADR-020 - Demo Data Strategy with Pydantic Validation
+
+**Acceptance Criteria:**
+
+**Given** the CostEventFactory is invoked
+**When** I build cost events
+**Then** they are valid UnifiedCostEvent instances with correct cost_type/unit pairing
+
+**Given** a demo profile with cost_events section
+**When** the generator runs
+**Then** events are distributed across the configured date_range with weighted cost_type distribution
+
+**Given** cost_events.json is generated
+**When** the loader runs
+**Then** events are upserted to platform_cost_e2e.cost_events using request_id as key
+
+**Deliverables:**
+- `tests/demo/generators/cost.py` - CostEventFactory
+- `tests/unit/demo/generators/test_cost_factory.py` - Unit tests
+- Updated: orchestrator.py, profiles, model_registry.py, loader.py
+
+**Story Points:** 5
+
+---
+
 ## Summary
 
 | Story | Description | ADR | Points | Status | Depends On |
 |-------|-------------|-----|--------|--------|------------|
-| 0.8.1 | Pydantic Validation Infrastructure | ADR-020 | 5 | To Do | - |
-| 0.8.2 | Seed Data Loader Script | ADR-020 | 5 | To Do | 0.8.1 |
-| 0.8.3 | Polyfactory Generator Framework | ADR-020 | 5 | To Do | 0.8.1 |
-| 0.8.4 | Profile-Based Data Generation | ADR-020 | 5 | To Do | 0.8.3 |
-| 0.8.5 | Documentation & Usage Guide | ADR-020 | 2 | To Do | 0.8.2, 0.8.4 |
-| **Total** | | | **22** | | |
+| 0.8.1 | Pydantic Validation Infrastructure | ADR-020 | 5 | Done | - |
+| 0.8.2 | Seed Data Loader Script | ADR-020 | 5 | Done | 0.8.1 |
+| 0.8.3 | Polyfactory Generator Framework | ADR-020 | 5 | Done | 0.8.1 |
+| 0.8.4 | Profile-Based Data Generation | ADR-020 | 5 | Done | 0.8.3 |
+| 0.8.5 | Documentation & Usage Guide | ADR-020 | 2 | Done | 0.8.2, 0.8.4 |
+| 0.8.6 | Cost Event Demo Data Generator | ADR-020 | 5 | Ready for Dev | 0.8.3, 0.8.4 |
+| **Total** | | | **27** | | |
 
 ---
 

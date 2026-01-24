@@ -480,7 +480,11 @@ async def stream_extraction_progress(
         grpc_stream = await service.stream_extraction_progress(document_id, job_id)
 
         def _transform_progress(msg):
-            message = msg.error_message if msg.status == "failed" and msg.error_message else f"Pages {msg.pages_processed}/{msg.total_pages}"
+            message = (
+                msg.error_message
+                if msg.status == "failed" and msg.error_message
+                else f"Pages {msg.pages_processed}/{msg.total_pages}"
+            )
             return {
                 "percent": msg.progress_percent,
                 "status": msg.status,
