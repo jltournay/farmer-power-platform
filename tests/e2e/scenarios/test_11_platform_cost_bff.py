@@ -353,7 +353,9 @@ class TestPlatformCostBFFLlmBreakdown:
             assert "agent_type" in entry, "Entry missing agent_type"
             assert "cost_usd" in entry, "Entry missing cost_usd"
 
-        print(f"[AC-E2E] LLM by agent type: {len(result['agent_costs'])} entries, total=${result['total_llm_cost_usd']}")
+        print(
+            f"[AC-E2E] LLM by agent type: {len(result['agent_costs'])} entries, total=${result['total_llm_cost_usd']}"
+        )
 
     @pytest.mark.asyncio
     async def test_llm_by_model_returns_costs(
@@ -423,7 +425,9 @@ class TestPlatformCostBFFEmbeddingBreakdown:
             assert "knowledge_domain" in entry, "Entry missing knowledge_domain"
             assert "cost_usd" in entry, "Entry missing cost_usd"
 
-        print(f"[AC-E2E] Embeddings by domain: {len(result['domain_costs'])} entries, total=${result['total_embedding_cost_usd']}")
+        print(
+            f"[AC-E2E] Embeddings by domain: {len(result['domain_costs'])} entries, total=${result['total_embedding_cost_usd']}"
+        )
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
