@@ -114,8 +114,10 @@ class BaseGrpcClient:
                     app_id=self._target_app_id,
                 )
 
-            # Create channel with keepalive options
+            # Create channel with keepalive and message size options
             options = [
+                ("grpc.max_send_message_length", 50 * 1024 * 1024),  # 50MB
+                ("grpc.max_receive_message_length", 50 * 1024 * 1024),  # 50MB
                 ("grpc.keepalive_time_ms", 30000),  # 30s keepalive interval
                 ("grpc.keepalive_timeout_ms", 10000),  # 10s timeout
                 ("grpc.keepalive_permit_without_calls", True),

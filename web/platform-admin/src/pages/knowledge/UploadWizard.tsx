@@ -96,7 +96,7 @@ export function UploadWizard(): JSX.Element {
     mode: 'onChange',
     defaultValues: {
       title: '',
-      domain: undefined,
+      domain: '' as unknown as MetadataForm['domain'],
       author: '',
       source: '',
       region: '',
@@ -466,9 +466,24 @@ export function UploadWizard(): JSX.Element {
                 onComplete={handleExtractionComplete}
                 onError={handleExtractionError}
               />
+              {uploadError && (
+                <Alert severity="error" sx={{ mt: 2 }}>
+                  {uploadError}
+                </Alert>
+              )}
               <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
                 This may take 1-2 minutes for large documents
               </Typography>
+              {uploadError && (
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 3 }}>
+                  <Button onClick={() => { setActiveStep(0); setJobStatus(null); setUploadError(null); }}>
+                    Back
+                  </Button>
+                  <Button variant="contained" onClick={() => { setUploadError(null); handleExtractionComplete(); }}>
+                    Retry
+                  </Button>
+                </Box>
+              )}
             </Box>
           )}
 

@@ -213,6 +213,7 @@ class GrpcServer:
         rag_doc_servicer = RAGDocumentServiceServicer(
             rag_doc_repository,
             vectorization_pipeline=vectorization_pipeline,
+            blob_client=blob_client,
         )
         # Wire chunking workflow (independent of vectorization)
         rag_doc_servicer.set_chunking_workflow(chunking_workflow)

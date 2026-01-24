@@ -300,6 +300,8 @@ message CreateDocumentRequest {
   RAGDocumentMetadata metadata = 5;
   // Optional source file reference
   SourceFile source_file = 6;
+  // Optional raw file bytes for blob storage upload (PDF, DOCX)
+  bytes file_content = 7;
 }
 
 message CreateDocumentResponse {

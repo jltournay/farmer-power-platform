@@ -12,7 +12,7 @@ from concurrent.futures import ThreadPoolExecutor
 import structlog
 from ai_model.config import settings
 from azure.core.exceptions import ResourceNotFoundError
-from azure.storage.blob import BlobServiceClient
+from azure.storage.blob import BlobServiceClient, ContentSettings
 
 logger = structlog.get_logger(__name__)
 
@@ -77,6 +77,56 @@ class BlobStorageClient:
                 )
             self._blob_service_client = BlobServiceClient.from_connection_string(self._connection_string)
         return self._blob_service_client
+
+    async def upload_bytes(self, blob_path: str, content: bytes, content_type: str = "application/octet-stream") -> str:
+        """Upload bytes to blob storage.
+
+        Args:
+            blob_path: Path for the blob within the container.
+            content: The bytes to upload.
+            content_type: MIME type of the content.
+
+        Returns:
+            The blob_path that was used.
+
+        Raises:
+            BlobStorageError: If upload fails.
+        """
+        loop = asyncio.get_event_loop()
+
+        def _sync_upload() -> str:
+            """Synchronous upload operation run in thread pool."""
+            try:
+                service_client = self._get_blob_service_client()
+                container_client = service_client.get_container_client(self._container_name)
+
+                # Ensure container exists (idempotent)
+                try:
+                    container_client.create_container()
+                except Exception:
+                    pass  # Already exists
+
+                blob_client = container_client.get_blob_client(blob_path)
+
+                blob_client.upload_blob(
+                    content,
+                    overwrite=True,
+                    content_settings=ContentSettings(content_type=content_type),
+                )
+
+                logger.info(
+                    "Blob uploaded",
+                    blob_path=blob_path,
+                    container=self._container_name,
+                    size_bytes=len(content),
+                )
+
+                return blob_path
+
+            except Exception as e:
+                raise BlobStorageError(f"Failed to upload blob: {e}") from e
+
+        return await loop.run_in_executor(_executor, _sync_upload)
 
     async def download_to_bytes(self, blob_path: str) -> bytes:
         """Download a blob's content as bytes.

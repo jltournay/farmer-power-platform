@@ -271,6 +271,7 @@ class AiModelClient(BaseGrpcClient):
         metadata: ai_model_pb2.RAGDocumentMetadata | None = None,
         source_file: ai_model_pb2.SourceFile | None = None,
         document_id: str = "",
+        file_content: bytes = b"",
     ) -> ai_model_pb2.CreateDocumentResponse:
         """Create a new RAG document."""
         try:
@@ -280,6 +281,7 @@ class AiModelClient(BaseGrpcClient):
                 title=title,
                 domain=domain,
                 content=content,
+                file_content=file_content,
             )
             if metadata:
                 request.metadata.CopyFrom(metadata)

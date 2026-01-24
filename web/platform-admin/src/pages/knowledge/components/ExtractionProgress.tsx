@@ -6,7 +6,7 @@
  */
 
 import { useEffect, useRef, useState } from 'react';
-import { Box, LinearProgress, Typography, Alert } from '@mui/material';
+import { Box, LinearProgress, Typography } from '@mui/material';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import { createExtractionProgressStream, type ExtractionProgressEvent } from '@/api';
 
@@ -24,7 +24,6 @@ export function ExtractionProgress({ documentId, jobId, onComplete, onError }: E
   const [progress, setProgress] = useState(0);
   const [statusMessage, setStatusMessage] = useState('Starting extraction...');
   const [method, setMethod] = useState<string | null>(null);
-  const [connectionError, setConnectionError] = useState<string | null>(null);
   const cleanupRef = useRef<(() => void) | null>(null);
 
   useEffect(() => {
@@ -34,8 +33,10 @@ export function ExtractionProgress({ documentId, jobId, onComplete, onError }: E
       (event: ExtractionProgressEvent) => {
         setProgress(event.percent);
         setStatusMessage(event.message || `Pages ${event.pages_processed}/${event.total_pages}`);
-        setMethod((prev) => prev ?? event.status);
-        setConnectionError(null);
+        const lifecycleStatuses = ['pending', 'processing', 'complete', 'failed', 'error'];
+        if (!lifecycleStatuses.includes(event.status)) {
+          setMethod((prev) => prev ?? event.status);
+        }
       },
       () => {
         setProgress(100);
@@ -43,7 +44,6 @@ export function ExtractionProgress({ documentId, jobId, onComplete, onError }: E
         onComplete();
       },
       (error: string) => {
-        setConnectionError(error);
         onError(error);
       },
     );
@@ -59,12 +59,6 @@ export function ExtractionProgress({ documentId, jobId, onComplete, onError }: E
 
   return (
     <Box sx={{ py: 3 }}>
-      {connectionError && (
-        <Alert severity="warning" sx={{ mb: 2 }}>
-          {connectionError}
-        </Alert>
-      )}
-
       <Box sx={{ mb: 2 }}>
         <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
           <Typography variant="body2" color="text.secondary">

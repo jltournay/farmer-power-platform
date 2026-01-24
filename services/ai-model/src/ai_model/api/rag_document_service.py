@@ -37,8 +37,17 @@ from google.protobuf import timestamp_pb2
 
 # Lazy import types to avoid circular imports
 if TYPE_CHECKING:
+    from ai_model.infrastructure.blob_storage import BlobStorageClient
     from ai_model.services.retrieval_service import RetrievalService
     from ai_model.services.vectorization_pipeline import VectorizationPipeline
+
+# Content type mapping for blob uploads
+_FILE_TYPE_CONTENT_TYPES: dict[str, str] = {
+    "pdf": "application/pdf",
+    "docx": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    "md": "text/markdown",
+    "txt": "text/plain",
+}
 
 logger = structlog.get_logger(__name__)
 
@@ -148,6 +157,7 @@ class RAGDocumentServiceServicer(ai_model_pb2_grpc.RAGDocumentServiceServicer):
         repository: RagDocumentRepository,
         vectorization_pipeline: "VectorizationPipeline | None" = None,
         retrieval_service: "RetrievalService | None" = None,
+        blob_client: "BlobStorageClient | None" = None,
     ) -> None:
         """Initialize the RAGDocumentService.
 
@@ -157,10 +167,12 @@ class RAGDocumentServiceServicer(ai_model_pb2_grpc.RAGDocumentServiceServicer):
                                     Story 0.75.13c: Added for VectorizeDocument/GetVectorizationJob.
             retrieval_service: Optional service for RAG retrieval operations.
                                Story 0.75.23: Added for QueryKnowledge.
+            blob_client: Optional blob storage client for file uploads.
         """
         self._repository = repository
         self._vectorization_pipeline = vectorization_pipeline
         self._retrieval_service = retrieval_service
+        self._blob_client = blob_client
         logger.info("RAGDocumentService initialized")
 
     async def CreateDocument(
@@ -217,6 +229,57 @@ class RAGDocumentServiceServicer(ai_model_pb2_grpc.RAGDocumentServiceServicer):
             document_id = request.document_id or str(uuid.uuid4())
             version = 1
 
+            # Handle file upload to blob storage
+            blob_path = ""
+            if request.source_file.filename:
+                if not request.file_content:
+                    await context.abort(
+                        grpc.StatusCode.INVALID_ARGUMENT,
+                        "file_content is required when source_file is provided",
+                    )
+                    return ai_model_pb2.CreateDocumentResponse()
+
+                if not self._blob_client:
+                    await context.abort(
+                        grpc.StatusCode.INTERNAL,
+                        "Blob storage not configured. Cannot upload file.",
+                    )
+                    return ai_model_pb2.CreateDocumentResponse()
+
+                # Generate blob path and upload
+                filename = request.source_file.filename
+                blob_path = f"documents/{document_id}/{filename}"
+                content_type = _FILE_TYPE_CONTENT_TYPES.get(request.source_file.file_type, "application/octet-stream")
+
+                blob_path = await self._blob_client.upload_bytes(
+                    blob_path=blob_path,
+                    content=request.file_content,
+                    content_type=content_type,
+                )
+                logger.info(
+                    "File uploaded to blob storage",
+                    document_id=document_id,
+                    blob_path=blob_path,
+                    size_bytes=len(request.file_content),
+                )
+
+            # Build source_file pydantic model with blob_path set
+            source_file = None
+            if request.source_file.filename:
+                source_file = SourceFile(
+                    filename=request.source_file.filename,
+                    file_type=FileType(request.source_file.file_type),
+                    blob_path=blob_path,
+                    file_size_bytes=request.source_file.file_size_bytes or len(request.file_content),
+                    extraction_method=ExtractionMethod(request.source_file.extraction_method)
+                    if request.source_file.extraction_method
+                    else None,
+                    extraction_confidence=request.source_file.extraction_confidence
+                    if request.source_file.extraction_confidence
+                    else None,
+                    page_count=request.source_file.page_count if request.source_file.page_count else None,
+                )
+
             # Create the document
             now = datetime.now(UTC)
             doc = RagDocument(
@@ -228,7 +291,7 @@ class RAGDocumentServiceServicer(ai_model_pb2_grpc.RAGDocumentServiceServicer):
                 content=request.content,
                 status=RagDocumentStatus.DRAFT,
                 metadata=_proto_metadata_to_pydantic(request.metadata),
-                source_file=_proto_source_file_to_pydantic(request.source_file),
+                source_file=source_file,
                 created_at=now,
                 updated_at=now,
             )

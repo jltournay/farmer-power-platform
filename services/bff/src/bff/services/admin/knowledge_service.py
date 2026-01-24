@@ -238,9 +238,9 @@ class AdminKnowledgeService(BaseService):
             )
 
         # For text-based files, decode content directly
-        file_content = ""
+        text_content = ""
         if file_ext in {"md", "txt"}:
-            file_content = content_bytes.decode("utf-8", errors="replace")
+            text_content = content_bytes.decode("utf-8", errors="replace")
 
         # Build source file metadata
         source_file = ai_model_pb2.SourceFile(
@@ -256,13 +256,14 @@ class AdminKnowledgeService(BaseService):
             region=region,
         )
 
-        # Step 1: Create document
+        # Step 1: Create document (pass raw bytes for blob upload by AI Model)
         create_response = await self._client.create_document(
             title=title,
             domain=domain,
-            content=file_content,
+            content=text_content,
             metadata=metadata,
             source_file=source_file,
+            file_content=content_bytes,
         )
 
         created_doc = create_response.document

@@ -9,6 +9,7 @@ Implements retry logic per ADR-005 for resilient gRPC communication.
 
 from collections.abc import AsyncGenerator
 from datetime import datetime, timezone
+from pathlib import Path
 
 import grpc
 from fp_proto.ai_model.v1 import ai_model_pb2, ai_model_pb2_grpc
@@ -81,8 +82,10 @@ class KnowledgeClient:
         """
         endpoint = self._settings.get_grpc_endpoint(self._env)
 
-        # Channel options with keepalive per ADR-005
+        # Channel options with keepalive per ADR-005 and message size for file uploads
         options = [
+            ("grpc.max_send_message_length", 50 * 1024 * 1024),  # 50MB
+            ("grpc.max_receive_message_length", 50 * 1024 * 1024),  # 50MB
             ("grpc.keepalive_time_ms", 30000),  # 30 second interval
             ("grpc.keepalive_timeout_ms", 10000),  # 10 second timeout
             ("grpc.keepalive_permit_without_calls", True),
@@ -175,7 +178,7 @@ class KnowledgeClient:
         )
 
     def _input_to_proto_request(
-        self, doc_input: RagDocumentInput
+        self, doc_input: RagDocumentInput, base_dir: Path | None = None
     ) -> ai_model_pb2.CreateDocumentRequest:
         """Convert RagDocumentInput to CreateDocumentRequest protobuf."""
         # Build metadata proto
@@ -187,26 +190,47 @@ class KnowledgeClient:
             tags=doc_input.metadata.tags,
         )
 
-        return ai_model_pb2.CreateDocumentRequest(
+        # Read file bytes and build source_file if file path is specified
+        file_content = b""
+        source_file = None
+        if doc_input.file:
+            resolve_dir = base_dir or Path.cwd()
+            file_path = resolve_dir / doc_input.file
+            file_content = file_path.read_bytes()
+            file_ext = file_path.suffix.lstrip(".").lower()
+            source_file = ai_model_pb2.SourceFile(
+                filename=file_path.name,
+                file_type=file_ext,
+                file_size_bytes=len(file_content),
+            )
+
+        request = ai_model_pb2.CreateDocumentRequest(
             document_id=doc_input.document_id,
             title=doc_input.title,
             domain=doc_input.domain.value,
             content=doc_input.content or "",
             metadata=metadata,
+            file_content=file_content,
         )
+        if source_file:
+            request.source_file.CopyFrom(source_file)
+        return request
 
     @_grpc_retry()
-    async def create(self, doc_input: RagDocumentInput) -> RagDocument:
+    async def create(
+        self, doc_input: RagDocumentInput, base_dir: Path | None = None
+    ) -> RagDocument:
         """Create a new RAG document.
 
         Args:
             doc_input: Document input from YAML validation.
+            base_dir: Base directory for resolving relative file paths.
 
         Returns:
             The created RagDocument.
         """
         stub = self._ensure_connected()
-        request = self._input_to_proto_request(doc_input)
+        request = self._input_to_proto_request(doc_input, base_dir=base_dir)
 
         response = await stub.CreateDocument(
             request,

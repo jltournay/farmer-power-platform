@@ -195,8 +195,8 @@ def deploy(
         try:
             await client.connect()
 
-            # Create the document
-            created_doc = await client.create(document)
+            # Create the document (pass YAML dir for resolving relative file paths)
+            created_doc = await client.create(document, base_dir=file_path.parent)
 
             if not quiet:
                 doc_id = created_doc.document_id

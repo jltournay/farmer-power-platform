@@ -479,15 +479,19 @@ async def stream_extraction_progress(
     try:
         grpc_stream = await service.stream_extraction_progress(document_id, job_id)
 
-        sse_events = grpc_stream_to_sse(
-            grpc_stream,
-            transform=lambda msg: {
+        def _transform_progress(msg):
+            message = msg.error_message if msg.status == "failed" and msg.error_message else f"Pages {msg.pages_processed}/{msg.total_pages}"
+            return {
                 "percent": msg.progress_percent,
                 "status": msg.status,
-                "message": f"Pages {msg.pages_processed}/{msg.total_pages}",
+                "message": message,
                 "pages_processed": msg.pages_processed,
                 "total_pages": msg.total_pages,
-            },
+            }
+
+        sse_events = grpc_stream_to_sse(
+            grpc_stream,
+            transform=_transform_progress,
         )
 
         return SSEManager.create_response(sse_events, event_type="progress")

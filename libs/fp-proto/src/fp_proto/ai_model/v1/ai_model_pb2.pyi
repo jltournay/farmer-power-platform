@@ -239,20 +239,22 @@ class SourceFile(_message.Message):
     def __init__(self, filename: _Optional[str] = ..., file_type: _Optional[str] = ..., blob_path: _Optional[str] = ..., file_size_bytes: _Optional[int] = ..., extraction_method: _Optional[str] = ..., extraction_confidence: _Optional[float] = ..., page_count: _Optional[int] = ...) -> None: ...
 
 class CreateDocumentRequest(_message.Message):
-    __slots__ = ("document_id", "title", "domain", "content", "metadata", "source_file")
+    __slots__ = ("document_id", "title", "domain", "content", "metadata", "source_file", "file_content")
     DOCUMENT_ID_FIELD_NUMBER: _ClassVar[int]
     TITLE_FIELD_NUMBER: _ClassVar[int]
     DOMAIN_FIELD_NUMBER: _ClassVar[int]
     CONTENT_FIELD_NUMBER: _ClassVar[int]
     METADATA_FIELD_NUMBER: _ClassVar[int]
     SOURCE_FILE_FIELD_NUMBER: _ClassVar[int]
+    FILE_CONTENT_FIELD_NUMBER: _ClassVar[int]
     document_id: str
     title: str
     domain: str
     content: str
     metadata: RAGDocumentMetadata
     source_file: SourceFile
-    def __init__(self, document_id: _Optional[str] = ..., title: _Optional[str] = ..., domain: _Optional[str] = ..., content: _Optional[str] = ..., metadata: _Optional[_Union[RAGDocumentMetadata, _Mapping]] = ..., source_file: _Optional[_Union[SourceFile, _Mapping]] = ...) -> None: ...
+    file_content: bytes
+    def __init__(self, document_id: _Optional[str] = ..., title: _Optional[str] = ..., domain: _Optional[str] = ..., content: _Optional[str] = ..., metadata: _Optional[_Union[RAGDocumentMetadata, _Mapping]] = ..., source_file: _Optional[_Union[SourceFile, _Mapping]] = ..., file_content: _Optional[bytes] = ...) -> None: ...
 
 class CreateDocumentResponse(_message.Message):
     __slots__ = ("document",)

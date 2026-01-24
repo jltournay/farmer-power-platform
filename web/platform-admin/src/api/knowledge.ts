@@ -251,6 +251,14 @@ export function createExtractionProgressStream(
           } else if (line === '' && eventType && eventData) {
             if (eventType === 'progress') {
               const parsed: ExtractionProgressEvent = JSON.parse(eventData);
+              if (parsed.status === 'failed') {
+                const errorMsg = (parsed.message && !parsed.message.startsWith('Pages'))
+                  ? parsed.message
+                  : 'Document extraction failed. The file may be corrupted or unsupported.';
+                onError(errorMsg);
+                reader.cancel();
+                return;
+              }
               onProgress(parsed);
             } else if (eventType === 'complete') {
               onComplete();
@@ -267,8 +275,8 @@ export function createExtractionProgressStream(
         }
       }
 
-      // Stream ended without explicit complete event
-      onComplete();
+      // Stream ended without explicit complete event - treat as error
+      onError('Stream ended unexpectedly without completion');
     } catch (err) {
       if ((err as Error).name !== 'AbortError') {
         onError('Connection lost');
