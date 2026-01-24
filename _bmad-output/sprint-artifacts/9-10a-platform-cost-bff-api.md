@@ -1,7 +1,7 @@
 # Story 9.10a: Platform Cost BFF REST API
 
-**Status:** ready-for-dev
-**GitHub Issue:** <!-- Auto-created by dev-story workflow -->
+**Status:** in-progress
+**GitHub Issue:** #225
 
 ## Story
 
