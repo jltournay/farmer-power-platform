@@ -1,6 +1,6 @@
 # Story 9.10a: Platform Cost BFF REST API
 
-**Status:** in-progress
+**Status:** review
 **GitHub Issue:** #225
 
 ## Story
@@ -227,12 +227,13 @@ ruff check . && ruff format --check .
 ### 4. CI Verification on Story Branch (MANDATORY)
 
 ```bash
-git push origin story/9-10a-platform-cost-bff-api
-gh run list --branch story/9-10a-platform-cost-bff-api --limit 3
+git push origin feature/9-10a-platform-cost-bff-api
+gh run list --branch feature/9-10a-platform-cost-bff-api --limit 3
 ```
-**CI Run ID:** _______________
-**CI E2E Status:** [ ] Passed / [ ] Failed
-**Verification Date:** _______________
+**CI Run ID:** 21319549679 (CI), 21319559368 (E2E)
+**CI Status:** [x] Passed
+**CI E2E Status:** [x] Passed
+**Verification Date:** 2026-01-24
 
 ---
 
