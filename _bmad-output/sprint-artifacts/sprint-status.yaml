@@ -220,13 +220,13 @@ development_status:
   # Epic 0.8: Demo & Developer Tooling (NEW - 2026-01-20, ADR-020)
   # Dependencies: Epic 0.4 (E2E Tests), Epic 1, Epic 2
   # Pydantic-validated seed loader + Polyfactory-based data generator
-  epic-0-8: in-progress
+  epic-0-8: done
   0-8-1-pydantic-validation-infrastructure: done  # github_issue: 205, PR: #206  # 5 points - Schema validation, FK registry, CODE REVIEW COMPLETED 2026-01-20
   0-8-2-seed-data-loader-script: done  # github_issue: 207, PR: #208 MERGED 2026-01-20, 5 points - load_demo_data.py
   0-8-3-polyfactory-generator-framework: done  # 5 points, github_issue: 209 - Factory classes for each model, depends: 0-8-1
   0-8-4-profile-based-data-generation: done  # github_issue: 211, 5 points - generate-demo-data.py, profiles, depends: 0-8-3, CODE REVIEW COMPLETED 2026-01-21
   0-8-5-demo-data-documentation: done  # github_issue: 213, PR: #214, 2 points - Usage guide, CODE REVIEW COMPLETED 2026-01-21
-  0-8-6-cost-event-demo-data-generator: review  # github_issue: 223, PR: #224, 5 points - Cost event Polyfactory generator for platform-cost dashboard
+  0-8-6-cost-event-demo-data-generator: done  # github_issue: 223, PR: #224, 5 points - Cost event Polyfactory generator for platform-cost dashboard
   epic-0-8-retrospective: optional
 
   # ═══════════════════════════════════════════════════════════════════════════
@@ -265,7 +265,9 @@ development_status:
   9-8-platform-health-dashboard: deferred  # 5 points - DEFERRED: depends on Epic 4 (SMS), Epic 5 (Knowledge MCP), Epic 7 (Voice IVR)
   9-9a-knowledge-management-bff-api: done  # 3 points - BFF REST endpoints + SSE extraction progress, depends: 0-5-9, 0.75.10, github_issue: 219, PR: #220
   9-9b-knowledge-management-ui: done  # 5 points - Document library, upload wizard, review/activation, depends: 9-9a, github_issue: 221, PR: #222
-  9-10-llm-cost-dashboard: backlog  # 5 points - depends: Epic 13
+  # LLM Cost Dashboard - Split into BFF API (9.10a) and UI (9.10b)
+  9-10a-platform-cost-bff-api: backlog  # 3 points - BFF REST endpoints for platform cost monitoring, depends: Epic 13 (Story 13.4)
+  9-10b-platform-cost-dashboard-ui: backlog  # 3 points - Cost dashboard UI with tabs + charts, depends: 9-10a
   # Admin Configuration Visibility (ADR-019) - View-only screens for Source Configs, AI Agents & Prompts
   9-11a-source-config-grpc-collection-model: backlog  # 3 points - SourceConfigService gRPC in Collection Model
   9-11b-source-config-bff-client-rest: backlog  # 3 points - gRPC client + REST API in BFF, depends: 9-11a
