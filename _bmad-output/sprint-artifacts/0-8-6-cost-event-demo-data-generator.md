@@ -244,7 +244,7 @@ Profile YAML → Polyfactory Generator → FK Registry → Orchestrator → JSON
 **Source Pydantic Model:** `UnifiedCostEvent` at `services/platform-cost/src/platform_cost/domain/cost_event.py`
 - Uses `DecimalStr` (Decimal serialized as string) for `amount_usd`
 - Has `model_config = {"use_enum_values": True}` for enum serialization
-- Has `@model_validator` ensuring cost_type/unit matching
+- cost_type/unit matching enforced by factory's `build()` method (no model-level validator)
 - `factory_id` is optional (nullable FK to factories)
 - No required FK dependencies → Level 0 in SEED_ORDER
 
@@ -333,7 +333,9 @@ Story 0.8.5 (Documentation) completed the epic with docs. Key learnings from 0.8
 | `tests/demo/profiles/demo-large.yaml` | MODIFY | Add cost_events section |
 | `scripts/demo/model_registry.py` | MODIFY | Add _get_strict_cost_event() + register |
 | `scripts/demo/loader.py` | MODIFY | Add to SEED_ORDER + COLLECTION_MAPPING |
+| `scripts/demo/generate_demo_data.py` | MODIFY | Add cost_events to validated_data + print output |
 | `tests/unit/demo/generators/test_cost_factory.py` | CREATE | Unit tests |
+| `tests/unit/demo/test_loader.py` | MODIFY | Add cost_events.json to expected files |
 | `_bmad-output/architecture/adr/ADR-020-demo-data-loader-pydantic-validation.md` | MODIFY | Document cost events |
 
 ### References
@@ -369,9 +371,12 @@ Claude Opus 4.5 (claude-opus-4-5-20251101)
 **Modified:**
 - tests/demo/generators/__init__.py
 - tests/demo/generators/orchestrator.py
+- tests/demo/generators/profile_loader.py
 - tests/demo/profiles/minimal.yaml
 - tests/demo/profiles/demo.yaml
 - tests/demo/profiles/demo-large.yaml
 - scripts/demo/model_registry.py
 - scripts/demo/loader.py
+- scripts/demo/generate_demo_data.py
+- tests/unit/demo/test_loader.py
 - _bmad-output/architecture/adr/ADR-020-demo-data-loader-pydantic-validation.md

@@ -179,6 +179,7 @@ def generate_data(args: argparse.Namespace) -> GeneratedData:
     print(f"  Farmer Performance: {len(data.farmer_performance)}")
     print(f"  Weather Observations: {len(data.weather_observations)}")
     print(f"  Documents: {len(data.documents)}")
+    print(f"  Cost Events: {len(data.cost_events)}")
 
     return data
 
@@ -234,6 +235,7 @@ async def load_to_mongodb(
         "farmer_performance.json": data.farmer_performance,
         "weather_observations.json": data.weather_observations,
         "documents.json": data.documents,
+        "cost_events.json": data.cost_events,
     }
 
     print(f"\nLoading to MongoDB: {mongodb_uri}")
