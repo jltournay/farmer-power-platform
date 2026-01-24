@@ -11,9 +11,30 @@ As a {{role}},
 I want {{action}},
 so that {{benefit}}.
 
+## Use Case Context
+
+<!-- Fill ONLY if this story implements steps from an epic-level use case -->
+<!-- Remove this section if the story is standalone (no multi-step workflow) -->
+
+**Epic:** {{epic_num}} - {{epic_title}}
+**Use Case:** UC{{epic_num}}.{{uc_num}}: {{use_case_title}}
+**Steps Covered:** {{step_numbers}}
+**Input (from preceding steps):** {{what_must_exist_before_this_story_runs}}
+**Output (for subsequent steps):** {{what_this_story_produces_for_the_next_step}}
+**E2E Verification:** {{functional_assertion_proving_the_flow_works}}
+
 ## Acceptance Criteria
 
 1. [Add acceptance criteria from epics/PRD]
+
+### AC-E2E (from Use Case)
+
+<!-- Include ONLY if Use Case Context is defined above -->
+<!-- This AC ensures the E2E test covers the full functional flow, not just isolated operations -->
+
+**Given** {{preceding_step_output_exists}}
+**When** {{this_story_actions_are_performed_in_sequence}}
+**Then** {{expected_functional_outcome_is_verifiable}}
 
 ## Tasks / Subtasks
 

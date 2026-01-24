@@ -76,6 +76,7 @@ Load {outputFile} and review:
 3. **Incremental Delivery**: Each epic should deliver value independently
 4. **Logical Flow**: Natural progression from user's perspective
 5. **🔗 Dependency-Free Within Epic**: Stories within an epic must NOT depend on future stories
+6. **🧪 Use Case Definition**: Each epic involving a multi-step user workflow MUST define at least one use case describing the actor's full journey through the system. Use cases remain functional (no technical details) and define the sequence of user actions and system responses. Stories will reference these use cases in their AC to ensure E2E test coverage of the complete flow.
 
 **⚠️ CRITICAL PRINCIPLE:**
 Organize by USER VALUE, not technical layers:
@@ -114,7 +115,8 @@ For each proposed epic:
 1. **Epic Title**: User-centric, value-focused
 2. **User Outcome**: What users can accomplish after this epic
 3. **FR Coverage**: Which FR numbers this epic addresses
-4. **Implementation Notes**: Any technical or UX considerations
+4. **Use Cases**: Multi-step user workflows (if applicable) — functional description of the actor's journey with system responses at each step
+5. **Implementation Notes**: Any technical or UX considerations
 
 **Step C: Create the epics_list**
 

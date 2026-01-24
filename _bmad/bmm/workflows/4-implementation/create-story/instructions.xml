@@ -187,7 +187,18 @@
     <action>From {epics_content}, extract Epic {{epic_num}} complete context:</action> **EPIC ANALYSIS:** - Epic
     objectives and business value - ALL stories in this epic for cross-story context - Our specific story's requirements, user story
     statement, acceptance criteria - Technical requirements and constraints - Dependencies on other stories/epics - Source hints pointing to
-    original documents <!-- Extract specific story requirements -->
+    original documents - **Use Cases defined for this epic** (if any) — identify which use case steps this story covers
+    <!-- Extract use case context for E2E testing -->
+    <check if="Epic {{epic_num}} has a Use Cases section">
+      <action>Extract the use case(s) relevant to this story:</action>
+      **USE CASE CONTEXT:** - Use case ID and title (e.g., UC9.1: Publish Knowledge Document)
+      - Which steps of the use case this story implements
+      - What the preceding steps produce (input to this story)
+      - What this story must produce (output for subsequent steps)
+      - The functional assertion that proves the flow works end-to-end
+      <action>This context will be used to populate the "Use Case Context" and "AC-E2E" sections in the story template</action>
+    </check>
+    <!-- Extract specific story requirements -->
     <action>Extract our story ({{epic_num}}-{{story_num}}) details:</action> **STORY FOUNDATION:** - User story statement
     (As a, I want, so that) - Detailed acceptance criteria (already BDD formatted) - Technical requirements specific to this story -
     Business context and value - Success criteria <!-- Previous story analysis for context continuity -->
@@ -266,6 +277,26 @@
     <!-- Story foundation from epics analysis -->
     <template-output
       file="{default_output_file}">story_requirements</template-output>
+
+    <!-- Use Case Context - populate ONLY if epic defines use cases for this story -->
+    <check if="Epic has Use Cases section AND this story implements use case steps">
+      <action>Populate the "Use Case Context" section in the template with:
+        - Epic number and title
+        - Use case ID and title
+        - Steps covered by this story
+        - Input from preceding steps (what must exist before this story)
+        - Output for subsequent steps (what this story produces)
+        - E2E Verification (functional assertion proving the flow works)
+      </action>
+      <action>Populate the "AC-E2E" section in Acceptance Criteria with:
+        - Given: the preceding step output exists (e.g., "document has been chunked and vectorized")
+        - When: this story's actions are performed in sequence (e.g., "admin queries with relevant keywords")
+        - Then: the functional outcome is verifiable (e.g., "matching content is returned with relevance score")
+      </action>
+    </check>
+    <check if="Epic does NOT have Use Cases or this story is standalone">
+      <action>Remove the "Use Case Context" and "AC-E2E" placeholder sections from the template</action>
+    </check>
 
     <!-- Developer context section - MOST IMPORTANT PART -->
     <template-output file="{default_output_file}">

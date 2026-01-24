@@ -103,12 +103,19 @@ As a {user_type},
 I want {capability},
 So that {value_benefit}.
 
+**Use Case:** UC{N}.{X} steps {range} (if applicable)
+
 **Acceptance Criteria:**
 
 **Given** {precondition}
 **When** {action}
 **Then** {expected_outcome}
 **And** {additional_criteria}
+
+**AC-E2E** (if story covers use case steps):
+**Given** {preceding_step_output_exists}
+**When** {this_story_actions_performed_in_sequence}
+**Then** {functional_outcome_verifiable_end_to_end}
 ```
 
 **✅ GOOD STORY EXAMPLES:**
@@ -145,6 +152,7 @@ Display:
 - Epic goal statement
 - FRs covered by this epic
 - Any NFRs or additional requirements relevant
+- **Use Cases defined for this epic** (if any) — these define the multi-step user workflows that stories must collectively cover
 
 #### B. Story Breakdown
 
@@ -168,6 +176,7 @@ For each story in the epic:
 - Each AC should be independently testable
 - Include edge cases and error conditions
 - Reference specific requirements when applicable
+- **🧪 Use Case AC (AC-E2E):** When a story implements steps from an epic-level use case, include an AC-E2E that references the use case and specifies which steps are covered. This AC ensures the E2E test verifies the full functional flow — the output of preceding steps feeds correctly into this story's actions, and this story's output is verifiable by subsequent steps.
 
 #### D. Collaborative Review
 
