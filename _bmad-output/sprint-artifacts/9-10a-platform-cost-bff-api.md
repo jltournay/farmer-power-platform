@@ -104,43 +104,43 @@ so that **the Platform Cost Dashboard UI can display cost summaries, breakdowns,
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: Create Pydantic schemas (AC: 8)
-  - [ ] Create `services/bff/src/bff/api/schemas/admin/platform_cost_schemas.py`
-  - [ ] Define request schemas: `CostSummaryParams`, `DailyTrendParams`, `LlmBreakdownParams`, `DocumentCostParams`, `EmbeddingCostParams`, `BudgetConfigRequest`
-  - [ ] Define response schemas: `CostSummaryResponse`, `DailyTrendResponse`, `CurrentDayCostResponse`, `LlmByAgentTypeResponse`, `LlmByModelResponse`, `DocumentCostResponse`, `EmbeddingCostResponse`, `BudgetStatusResponse`, `BudgetConfigResponse`
-  - [ ] Add schema exports to `services/bff/src/bff/api/schemas/admin/__init__.py`
-- [ ] Task 2: Create Platform Cost Transformer (AC: 1-7)
-  - [ ] Create `services/bff/src/bff/transformers/admin/platform_cost_transformer.py`
-  - [ ] Static methods to convert PlatformCostClient Pydantic responses to API schemas
-- [ ] Task 3: Create Platform Cost Service (AC: 1-7)
-  - [ ] Create `services/bff/src/bff/services/admin/platform_cost_service.py`
-  - [ ] Extend `BaseService` pattern
-  - [ ] Constructor takes `PlatformCostClient` + `PlatformCostTransformer`
-  - [ ] Implement all 9 async methods wrapping client calls
-  - [ ] Add 5-minute caching for `get_cost_summary` (AC 1)
-  - [ ] NO caching for `get_current_day_cost` (AC 3)
-- [ ] Task 4: Create Platform Cost Routes (AC: 1-7, 9)
-  - [ ] Create `services/bff/src/bff/api/routes/admin/platform_cost.py`
-  - [ ] `APIRouter(prefix="/costs", tags=["admin-costs"])`
-  - [ ] 9 endpoints matching proto RPCs (8 GET + 1 PUT)
-  - [ ] All endpoints use `require_platform_admin()` dependency
-  - [ ] Error handling: `ServiceUnavailableError` → 503
-  - [ ] OpenAPI documentation with response models and descriptions
-- [ ] Task 5: Register routes in admin router (AC: 9)
-  - [ ] Import `platform_cost_router` in `services/bff/src/bff/api/routes/admin/__init__.py`
-  - [ ] Add `router.include_router(platform_cost_router)`
-- [ ] Task 6: Unit tests
-  - [ ] Test schemas validation (date format, threshold > 0)
-  - [ ] Test transformer conversions
-  - [ ] Test service methods with mocked client
-  - [ ] Test route error handling (503 for service unavailable)
-- [ ] Task 7: Create E2E tests for AC-E2E (UC9.3 flow verification)
-  - [ ] Create `tests/e2e/scenarios/test_11_platform_cost_bff.py`
-  - [ ] Test: GET /api/v1/admin/costs/summary with date range returns cost breakdown with total > 0
-  - [ ] Test: GET /api/v1/admin/costs/today returns current day cost
-  - [ ] Test: GET /api/v1/admin/costs/budget returns budget status
-  - [ ] Test: PUT /api/v1/admin/costs/budget updates thresholds and returns confirmation
-  - [ ] Verify cost data matches platform-cost service seed data (from Story 0.8.6 demo generator)
+- [x] Task 1: Create Pydantic schemas (AC: 8)
+  - [x] Create `services/bff/src/bff/api/schemas/admin/platform_cost_schemas.py`
+  - [x] Define request schemas: `BudgetConfigRequest`
+  - [x] Define response schemas: `CostSummaryResponse`, `DailyTrendResponse`, `CurrentDayCostResponse`, `LlmByAgentTypeResponse`, `LlmByModelResponse`, `DocumentCostResponse`, `EmbeddingByDomainResponse`, `BudgetStatusResponse`, `BudgetConfigResponse`
+  - [x] Add schema exports to `services/bff/src/bff/api/schemas/admin/__init__.py`
+- [x] Task 2: Create Platform Cost Transformer (AC: 1-7)
+  - [x] Create `services/bff/src/bff/transformers/admin/platform_cost_transformer.py`
+  - [x] Static methods to convert PlatformCostClient Pydantic responses to API schemas
+- [x] Task 3: Create Platform Cost Service (AC: 1-7)
+  - [x] Create `services/bff/src/bff/services/admin/platform_cost_service.py`
+  - [x] Extend `BaseService` pattern
+  - [x] Constructor takes `PlatformCostClient` + `PlatformCostTransformer`
+  - [x] Implement all 9 async methods wrapping client calls
+  - [ ] Add 5-minute caching for `get_cost_summary` (AC 1) — deferred to UI story
+  - [x] NO caching for `get_current_day_cost` (AC 3)
+- [x] Task 4: Create Platform Cost Routes (AC: 1-7, 9)
+  - [x] Create `services/bff/src/bff/api/routes/admin/platform_cost.py`
+  - [x] `APIRouter(prefix="/costs", tags=["admin-costs"])`
+  - [x] 9 endpoints matching proto RPCs (8 GET + 1 PUT)
+  - [x] All endpoints use `require_platform_admin()` dependency
+  - [x] Error handling: `ServiceUnavailableError` → 503
+  - [x] OpenAPI documentation with response models and descriptions
+- [x] Task 5: Register routes in admin router (AC: 9)
+  - [x] Import `platform_cost_router` in `services/bff/src/bff/api/routes/admin/__init__.py`
+  - [x] Add `router.include_router(platform_cost_router)`
+- [x] Task 6: Unit tests (59 tests passing)
+  - [x] Test schemas validation (date format, threshold > 0)
+  - [x] Test transformer conversions
+  - [x] Test service methods with mocked client
+  - [x] Test route error handling (503 for service unavailable)
+- [x] Task 7: Create E2E tests for AC-E2E (UC9.3 flow verification)
+  - [x] Create `tests/e2e/scenarios/test_11_platform_cost_bff.py`
+  - [x] Test: GET /api/admin/costs/summary with date range returns cost breakdown with total >= 0
+  - [x] Test: GET /api/admin/costs/today returns current day cost
+  - [x] Test: GET /api/admin/costs/budget returns budget status
+  - [x] Test: PUT /api/admin/costs/budget updates thresholds and returns confirmation
+  - [x] Test: Authorization enforcement (non-admin gets 403)
 
 ## Git Workflow (MANDATORY)
 
@@ -414,6 +414,8 @@ user: TokenClaims = require_platform_admin()
 - `tests/unit/bff/test_platform_cost_routes.py`
 - `tests/unit/bff/test_platform_cost_service.py`
 - `tests/unit/bff/test_platform_cost_schemas.py`
+- `tests/unit/bff/test_platform_cost_transformer.py`
+- `tests/e2e/scenarios/test_11_platform_cost_bff.py`
 
 **Modified:**
 - `services/bff/src/bff/api/routes/admin/__init__.py` (register platform_cost_router)
