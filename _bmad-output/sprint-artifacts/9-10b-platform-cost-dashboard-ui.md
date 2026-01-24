@@ -1,7 +1,7 @@
 # Story 9.10b: Platform Cost Dashboard UI
 
 **Status:** ready-for-dev
-**GitHub Issue:** <!-- Auto-created by dev-story workflow -->
+**GitHub Issue:** #227
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -110,12 +110,12 @@ so that **I can monitor platform spending across LLM, Document, and Embedding co
 
 ### Task 1: Add Recharts charting library (AC: 1, 2, 4)
 
-- [ ] Add `recharts` to `web/platform-admin/package.json` dependencies
-- [ ] Verify build still works after adding dependency
+- [x] Add `recharts` to `web/platform-admin/package.json` dependencies
+- [x] Verify build still works after adding dependency
 
 ### Task 2: Create TypeScript types for cost API (AC: 1-8)
 
-- [ ] Add cost-related types to `web/platform-admin/src/api/types.ts`:
+- [x] Add cost-related types to `web/platform-admin/src/api/types.ts`:
   - `CostSummaryResponse`, `CostTypeBreakdown`
   - `DailyTrendResponse`, `DailyTrendEntry`
   - `CurrentDayCostResponse`
@@ -128,67 +128,67 @@ so that **I can monitor platform spending across LLM, Document, and Embedding co
 
 ### Task 3: Create cost API module (AC: 1-8)
 
-- [ ] Create `web/platform-admin/src/api/costs.ts`
-- [ ] Implement API functions: `getCostSummary`, `getDailyTrend`, `getCurrentDayCost`, `getLlmByAgentType`, `getLlmByModel`, `getDocumentCosts`, `getEmbeddingsByDomain`, `getBudgetStatus`, `configureBudget`
-- [ ] Follow pattern from `knowledge.ts` (use `apiClient` singleton)
+- [x] Create `web/platform-admin/src/api/costs.ts`
+- [x] Implement API functions: `getCostSummary`, `getDailyTrend`, `getCurrentDayCost`, `getLlmByAgentType`, `getLlmByModel`, `getDocumentCosts`, `getEmbeddingsByDomain`, `getBudgetStatus`, `configureBudget`
+- [x] Follow pattern from `knowledge.ts` (use `apiClient` singleton)
 
 ### Task 4: Create reusable cost components (AC: 1-5) — See WF-5
 
-- [ ] Create `web/platform-admin/src/pages/costs/components/` directory
-- [ ] `MetricCard.tsx` — Reusable card showing label, value, subtitle, optional trend indicator
-- [ ] `BudgetBar.tsx` — Linear progress bar with utilization percentage and threshold
-- [ ] `DateRangePicker.tsx` — MUI-based date range selector (start_date, end_date)
-- [ ] `CostTrendChart.tsx` — Recharts stacked area chart for daily trend data
-- [ ] `CostBreakdownCards.tsx` — Grid of CostTypeBreakdown cards
-- [ ] `BudgetConfigDialog.tsx` — Dialog with form for budget threshold editing
-- [ ] `ExportButton.tsx` — CSV export button
+- [x] Create `web/platform-admin/src/pages/costs/components/` directory
+- [x] `MetricCard.tsx` — Reusable card showing label, value, subtitle, optional trend indicator
+- [x] `BudgetBar.tsx` — Linear progress bar with utilization percentage and threshold
+- [x] `DateRangePicker.tsx` — MUI-based date range selector (start_date, end_date)
+- [x] `CostTrendChart.tsx` — Recharts stacked area chart for daily trend data
+- [x] `CostBreakdownCards.tsx` — Grid of CostTypeBreakdown cards
+- [x] `BudgetConfigDialog.tsx` — Dialog with form for budget threshold editing
+- [x] `ExportButton.tsx` — CSV export button
 
 ### Task 5: Implement Overview Tab (AC: 1, 6, 7) — See WF-1
 
-- [ ] Create `web/platform-admin/src/pages/costs/tabs/OverviewTab.tsx`
-- [ ] Today's live cost with 60s polling interval (useEffect + setInterval)
-- [ ] Budget utilization bars (daily + monthly)
-- [ ] Daily trend stacked area chart
-- [ ] Cost breakdown cards
-- [ ] Skeleton loading states
-- [ ] Error states with retry button
+- [x] Create `web/platform-admin/src/pages/costs/tabs/OverviewTab.tsx`
+- [x] Today's live cost with 60s polling interval (useEffect + setInterval)
+- [x] Budget utilization bars (daily + monthly)
+- [x] Daily trend stacked area chart
+- [x] Cost breakdown cards
+- [x] Skeleton loading states
+- [x] Error states with retry button
 
 ### Task 6: Implement LLM Tab (AC: 2, 6, 7) — See WF-2
 
-- [ ] Create `web/platform-admin/src/pages/costs/tabs/LlmTab.tsx`
-- [ ] Agent type breakdown table with columns: agent_type, cost, requests, tokens_in, tokens_out, %
-- [ ] Model breakdown table with same columns
-- [ ] Respect date range from parent
+- [x] Create `web/platform-admin/src/pages/costs/tabs/LlmTab.tsx`
+- [x] Agent type breakdown table with columns: agent_type, cost, requests, tokens_in, tokens_out, %
+- [x] Model breakdown table with same columns
+- [x] Respect date range from parent
 
 ### Task 7: Implement Documents Tab (AC: 3, 6, 7) — See WF-3
 
-- [ ] Create `web/platform-admin/src/pages/costs/tabs/DocumentsTab.tsx`
-- [ ] Metric cards: total cost, pages, avg cost/page, document count
-- [ ] Respect date range from parent
+- [x] Create `web/platform-admin/src/pages/costs/tabs/DocumentsTab.tsx`
+- [x] Metric cards: total cost, pages, avg cost/page, document count
+- [x] Respect date range from parent
 
 ### Task 8: Implement Embeddings Tab (AC: 4, 6, 7) — See WF-4
 
-- [ ] Create `web/platform-admin/src/pages/costs/tabs/EmbeddingsTab.tsx`
-- [ ] Domain breakdown table: domain, cost, tokens, texts, %
-- [ ] Respect date range from parent
+- [x] Create `web/platform-admin/src/pages/costs/tabs/EmbeddingsTab.tsx`
+- [x] Domain breakdown table: domain, cost, tokens, texts, %
+- [x] Respect date range from parent
 
 ### Task 9: Implement CostDashboard page with tabs (AC: 1-8) — See WF-1
 
-- [ ] Replace placeholder in `web/platform-admin/src/pages/costs/CostDashboard.tsx`
-- [ ] MUI `Tabs` component with: Overview, LLM, Documents, Embeddings
-- [ ] Date range state lifted to page level, shared across tabs
-- [ ] Budget configure button in page header
-- [ ] Export CSV button in page header
+- [x] Replace placeholder in `web/platform-admin/src/pages/costs/CostDashboard.tsx`
+- [x] MUI `Tabs` component with: Overview, LLM, Documents, Embeddings
+- [x] Date range state lifted to page level, shared across tabs
+- [x] Budget configure button in page header
+- [x] Export CSV button in page header
 
 ### Task 10: Unit tests with Vitest (AC: all)
 
-- [ ] Test API module functions (mock fetch)
-- [ ] Test each tab component renders correctly with mock data
-- [ ] Test date range changes trigger API refetch
-- [ ] Test budget dialog validation and submit
-- [ ] Test CSV export generates correct file content
-- [ ] Test 60s polling for today's cost
-- [ ] Test error states display correctly
+- [x] Test API module functions (mock fetch) — 11 tests in `tests/unit/web/platform-admin/api/costs.test.ts`
+- [x] Test each tab component renders correctly with mock data — 20 tests in `tests/unit/web/platform-admin/pages/costs/CostDashboard.test.tsx`
+- [x] Test date range changes trigger API refetch
+- [x] Test budget dialog validation and submit
+- [x] Test CSV export generates correct file content
+- [x] Test 60s polling for today's cost
+- [x] Test error states display correctly
 
 ### Task 11: Create E2E tests for AC-E2E (MANDATORY — CANNOT BE SKIPPED OR DEFERRED)
 
@@ -210,7 +210,7 @@ so that **I can monitor platform spending across LLM, Document, and Embedding co
 **All story development MUST use feature branches.** Direct pushes to main are blocked.
 
 ### Story Start
-- [ ] GitHub Issue exists or created: `gh issue create --title "Story 9.10b: Platform Cost Dashboard UI"`
+- [x] GitHub Issue exists or created: #227
 - [ ] Feature branch created from main:
   ```bash
   git checkout main && git pull origin main

@@ -1611,6 +1611,143 @@ export const DOCUMENT_STATUS_OPTIONS: { value: DocumentStatus; label: string; co
   { value: 'archived', label: 'Archived', color: 'info' },
 ];
 
+// ============================================================================
+// Platform Cost Types (Story 9.10b)
+// ============================================================================
+
+/** Cost type breakdown for summary charts */
+export interface CostTypeBreakdown {
+  cost_type: string;
+  total_cost_usd: string;
+  total_quantity: number;
+  request_count: number;
+  percentage: number;
+}
+
+/** Cost summary response */
+export interface CostSummaryResponse {
+  total_cost_usd: string;
+  total_requests: number;
+  by_type: CostTypeBreakdown[];
+  period_start: string;
+  period_end: string;
+}
+
+/** Daily trend entry */
+export interface DailyTrendEntry {
+  entry_date: string;
+  total_cost_usd: string;
+  llm_cost_usd: string;
+  document_cost_usd: string;
+  embedding_cost_usd: string;
+}
+
+/** Daily trend response */
+export interface DailyTrendResponse {
+  entries: DailyTrendEntry[];
+  data_available_from: string;
+}
+
+/** Current day cost response */
+export interface CurrentDayCostResponse {
+  cost_date: string;
+  total_cost_usd: string;
+  by_type: Record<string, string>;
+  updated_at: string;
+}
+
+/** LLM cost per agent type */
+export interface AgentTypeCostEntry {
+  agent_type: string;
+  cost_usd: string;
+  request_count: number;
+  tokens_in: number;
+  tokens_out: number;
+  percentage: number;
+}
+
+/** LLM by agent type response */
+export interface LlmByAgentTypeResponse {
+  agent_costs: AgentTypeCostEntry[];
+  total_llm_cost_usd: string;
+}
+
+/** LLM cost per model */
+export interface ModelCostEntry {
+  model: string;
+  cost_usd: string;
+  request_count: number;
+  tokens_in: number;
+  tokens_out: number;
+  percentage: number;
+}
+
+/** LLM by model response */
+export interface LlmByModelResponse {
+  model_costs: ModelCostEntry[];
+  total_llm_cost_usd: string;
+}
+
+/** Document cost response */
+export interface DocumentCostResponse {
+  total_cost_usd: string;
+  total_pages: number;
+  avg_cost_per_page_usd: string;
+  document_count: number;
+  period_start: string;
+  period_end: string;
+}
+
+/** Embedding cost per domain */
+export interface DomainCostEntry {
+  knowledge_domain: string;
+  cost_usd: string;
+  tokens_total: number;
+  texts_count: number;
+  percentage: number;
+}
+
+/** Embedding by domain response */
+export interface EmbeddingByDomainResponse {
+  domain_costs: DomainCostEntry[];
+  total_embedding_cost_usd: string;
+}
+
+/** Budget status response */
+export interface BudgetStatusResponse {
+  daily_threshold_usd: string;
+  daily_total_usd: string;
+  daily_remaining_usd: string;
+  daily_utilization_percent: number;
+  monthly_threshold_usd: string;
+  monthly_total_usd: string;
+  monthly_remaining_usd: string;
+  monthly_utilization_percent: number;
+  by_type: Record<string, string>;
+  current_day: string;
+  current_month: string;
+}
+
+/** Budget configuration request */
+export interface BudgetConfigRequest {
+  daily_threshold_usd?: string;
+  monthly_threshold_usd?: string;
+}
+
+/** Budget configuration response */
+export interface BudgetConfigResponse {
+  daily_threshold_usd: string;
+  monthly_threshold_usd: string;
+  message: string;
+  updated_at: string;
+}
+
+/** Shared date range params for cost queries */
+export interface CostDateRangeParams {
+  start_date?: string;
+  end_date?: string;
+}
+
 /** Get display label for a domain value */
 export function getDomainLabel(domain: string): string {
   const option = KNOWLEDGE_DOMAIN_OPTIONS.find(o => o.value === domain);
