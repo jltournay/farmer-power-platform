@@ -5,6 +5,7 @@ Provides request/response schemas for admin CRUD operations on:
 - Factories (AC2)
 - Collection Points (AC3)
 - Farmers (AC4)
+- Platform Cost Monitoring (Story 9.10a)
 
 All schemas follow ADR-012 BFF patterns with separate API schemas
 from domain models.
@@ -62,6 +63,23 @@ from bff.api.schemas.admin.knowledge_schemas import (
     VectorizationJobStatus,
     VectorizeDocumentRequest,
 )
+from bff.api.schemas.admin.platform_cost_schemas import (
+    AgentTypeCostEntry,
+    BudgetConfigRequest,
+    BudgetConfigResponse,
+    BudgetStatusResponse,
+    CostSummaryResponse,
+    CostTypeBreakdown,
+    CurrentDayCostResponse,
+    DailyTrendEntry,
+    DailyTrendResponse,
+    DocumentCostResponse,
+    DomainCostEntry,
+    EmbeddingByDomainResponse,
+    LlmByAgentTypeResponse,
+    LlmByModelResponse,
+    ModelCostEntry,
+)
 from bff.api.schemas.admin.region_schemas import (
     RegionCreateRequest,
     RegionDetail,
@@ -76,7 +94,11 @@ __all__ = [
     "AdminFarmerListResponse",
     "AdminFarmerSummary",
     "AdminFarmerUpdateRequest",
+    "AgentTypeCostEntry",
     "AssignGradingModelRequest",
+    "BudgetConfigRequest",
+    "BudgetConfigResponse",
+    "BudgetStatusResponse",
     "ChunkListResponse",
     "ChunkSummary",
     "CollectionPointCreateRequest",
@@ -84,13 +106,21 @@ __all__ = [
     "CollectionPointListResponse",
     "CollectionPointSummary",
     "CollectionPointUpdateRequest",
+    "CostSummaryResponse",
+    "CostTypeBreakdown",
     "CreateDocumentRequest",
+    "CurrentDayCostResponse",
+    "DailyTrendEntry",
+    "DailyTrendResponse",
     "DeleteDocumentResponse",
+    "DocumentCostResponse",
     "DocumentDetail",
     "DocumentListResponse",
     "DocumentMetadataResponse",
     "DocumentStatus",
     "DocumentSummary",
+    "DomainCostEntry",
+    "EmbeddingByDomainResponse",
     "ExtractionJobStatus",
     "FactoryCreateRequest",
     "FactoryDetail",
@@ -104,6 +134,9 @@ __all__ = [
     "GradingModelSummary",
     "ImportErrorRow",
     "KnowledgeDomain",
+    "LlmByAgentTypeResponse",
+    "LlmByModelResponse",
+    "ModelCostEntry",
     "QualityThresholdsAPI",
     "QueryKnowledgeRequest",
     "QueryResponse",
