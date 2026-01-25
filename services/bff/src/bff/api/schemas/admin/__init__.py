@@ -87,6 +87,11 @@ from bff.api.schemas.admin.region_schemas import (
     RegionSummary,
     RegionUpdateRequest,
 )
+from bff.api.schemas.admin.source_config_schemas import (
+    SourceConfigDetailResponse,
+    SourceConfigListResponse,
+    SourceConfigSummaryResponse,
+)
 
 __all__ = [
     "AdminFarmerCreateRequest",
@@ -147,6 +152,9 @@ __all__ = [
     "RegionSummary",
     "RegionUpdateRequest",
     "RollbackDocumentRequest",
+    "SourceConfigDetailResponse",
+    "SourceConfigListResponse",
+    "SourceConfigSummaryResponse",
     "SourceFileResponse",
     "UpdateDocumentRequest",
     "VectorizationJobStatus",

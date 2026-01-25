@@ -112,6 +112,12 @@ from fp_common.models.source_config import (
     generate_json_schema,
 )
 
+# Source Config Summary models (Story 9.11b)
+from fp_common.models.source_config_summary import (
+    SourceConfigDetail,
+    SourceConfigSummary,
+)
+
 # Source Summary model
 from fp_common.models.source_summary import SourceSummary
 
@@ -233,6 +239,9 @@ __all__ = [
     "SchemaDocument",
     "SearchResult",
     "SourceConfig",
+    # Source Config Summary (Story 9.11b)
+    "SourceConfigDetail",
+    "SourceConfigSummary",
     # Source Summary
     "SourceSummary",
     "StorageConfig",

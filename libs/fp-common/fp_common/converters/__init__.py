@@ -78,9 +78,9 @@ from fp_common.converters.rag_converters import (
     retrieval_result_to_proto,
 )
 
-# Source Config converters (Story 9.11a)
+# Source Config converters (Story 9.11a/9.11b)
 from fp_common.converters.source_config_converters import (
-    source_config_response_from_proto,
+    source_config_detail_from_proto,
     source_config_response_to_proto,
     source_config_summary_from_proto,
     source_config_summary_to_proto,
@@ -129,8 +129,8 @@ __all__ = [
     "retrieval_result_from_proto",
     "retrieval_result_to_proto",
     "search_result_from_dict",
-    # Source Config converters (Story 9.11a)
-    "source_config_response_from_proto",
+    # Source Config converters (Story 9.11a/9.11b)
+    "source_config_detail_from_proto",
     "source_config_response_to_proto",
     "source_config_summary_from_proto",
     "source_config_summary_to_proto",
