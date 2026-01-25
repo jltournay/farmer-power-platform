@@ -18,6 +18,7 @@ import { UserList } from '@/pages/users/UserList';
 import { PlatformHealth } from '@/pages/health/PlatformHealth';
 import { KnowledgeLibrary, UploadWizard, KnowledgeDetail, KnowledgeReview } from '@/pages/knowledge';
 import { CostDashboard } from '@/pages/costs/CostDashboard';
+import { SourceConfigList } from '@/pages/source-configs';
 import { NotFound } from '@/pages/NotFound';
 
 /**
@@ -40,6 +41,7 @@ import { NotFound } from '@/pages/NotFound';
  * - /health - Platform health metrics
  * - /knowledge - RAG document library
  * - /costs - LLM spending dashboard
+ * - /source-configs - Source configuration viewer
  * - * - 404 Not Found
  *
  * All routes require platform_admin role.
@@ -250,6 +252,14 @@ export const routes: RouteObject[] = [
         element: (
           <ProtectedRoute roles={['platform_admin']}>
             <CostDashboard />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: 'source-configs',
+        element: (
+          <ProtectedRoute roles={['platform_admin']}>
+            <SourceConfigList />
           </ProtectedRoute>
         ),
       },
