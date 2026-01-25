@@ -51,6 +51,12 @@ export function CostDashboard(): JSX.Element {
     setTabExportData((prev) => ({ ...prev, [tabIndex]: data }));
   }, []);
 
+  // Memoized callbacks for each tab to prevent infinite re-renders
+  const handleOverviewExport = useCallback((data: Record<string, unknown>[]) => handleExportData(0, data), [handleExportData]);
+  const handleLlmExport = useCallback((data: Record<string, unknown>[]) => handleExportData(1, data), [handleExportData]);
+  const handleDocumentsExport = useCallback((data: Record<string, unknown>[]) => handleExportData(2, data), [handleExportData]);
+  const handleEmbeddingsExport = useCallback((data: Record<string, unknown>[]) => handleExportData(3, data), [handleExportData]);
+
   const handleBudgetClick = async () => {
     try {
       const status = await getBudgetStatus();
@@ -109,10 +115,10 @@ export function CostDashboard(): JSX.Element {
       </Box>
 
       {/* Tab Content */}
-      {activeTab === 0 && <OverviewTab startDate={startDate} endDate={endDate} onExportData={(data) => handleExportData(0, data)} />}
-      {activeTab === 1 && <LlmTab startDate={startDate} endDate={endDate} onExportData={(data) => handleExportData(1, data)} />}
-      {activeTab === 2 && <DocumentsTab startDate={startDate} endDate={endDate} onExportData={(data) => handleExportData(2, data)} />}
-      {activeTab === 3 && <EmbeddingsTab startDate={startDate} endDate={endDate} onExportData={(data) => handleExportData(3, data)} />}
+      {activeTab === 0 && <OverviewTab startDate={startDate} endDate={endDate} onExportData={handleOverviewExport} />}
+      {activeTab === 1 && <LlmTab startDate={startDate} endDate={endDate} onExportData={handleLlmExport} />}
+      {activeTab === 2 && <DocumentsTab startDate={startDate} endDate={endDate} onExportData={handleDocumentsExport} />}
+      {activeTab === 3 && <EmbeddingsTab startDate={startDate} endDate={endDate} onExportData={handleEmbeddingsExport} />}
 
       {/* Budget Dialog */}
       <BudgetConfigDialog

@@ -5,7 +5,7 @@
  * Collapses to icons only on smaller screens.
  */
 
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useLocation, Link as RouterLink } from 'react-router-dom';
 import {
   Box,
   Drawer,
@@ -120,7 +120,6 @@ interface SidebarProps {
 export function Sidebar({ open, width, collapsedWidth, onToggle }: SidebarProps): JSX.Element {
   const theme = useTheme();
   const location = useLocation();
-  const navigate = useNavigate();
   const { user } = useAuth();
 
   const currentWidth = open ? width : collapsedWidth;
@@ -203,8 +202,9 @@ export function Sidebar({ open, width, collapsedWidth, onToggle }: SidebarProps)
             <ListItem disablePadding sx={{ mb: 0.5 }}>
               <Tooltip title={open ? '' : item.label} placement="right" arrow>
                 <ListItemButton
+                  component={RouterLink}
+                  to={item.path}
                   selected={isActive(item.path)}
-                  onClick={() => navigate(item.path)}
                   aria-label={item.label}
                   sx={{
                     borderRadius: 1,

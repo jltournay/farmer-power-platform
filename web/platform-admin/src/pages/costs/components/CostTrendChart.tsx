@@ -1,5 +1,5 @@
 import { Box, Typography, Skeleton, useTheme } from '@mui/material';
-import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts';
 import type { DailyTrendEntry } from '../../../api/types';
 
 interface CostTrendChartProps {
@@ -37,8 +37,8 @@ export function CostTrendChart({ entries, loading, dataAvailableFrom }: CostTren
       <Typography variant="subtitle2" fontWeight={600} sx={{ mb: 1 }}>
         Daily Cost Trend (Stacked by Type)
       </Typography>
-      <ResponsiveContainer width="100%" height={280}>
-        <AreaChart data={chartData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+      <div style={{ width: '100%', height: 280 }}>
+        <AreaChart width={800} height={280} data={chartData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
           <CartesianGrid strokeDasharray="3 3" />
           <XAxis dataKey="date" tick={{ fontSize: 11 }} />
           <YAxis tick={{ fontSize: 11 }} tickFormatter={(v: number) => `$${v}`} />
@@ -48,7 +48,7 @@ export function CostTrendChart({ entries, loading, dataAvailableFrom }: CostTren
           <Area type="monotone" dataKey="Documents" stackId="1" stroke={colors.documents} fill={colors.documents} fillOpacity={0.6} isAnimationActive={false} />
           <Area type="monotone" dataKey="Embeddings" stackId="1" stroke={colors.embeddings} fill={colors.embeddings} fillOpacity={0.6} isAnimationActive={false} />
         </AreaChart>
-      </ResponsiveContainer>
+      </div>
       {dataAvailableFrom && (
         <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block' }}>
           Data available from: {dataAvailableFrom}
