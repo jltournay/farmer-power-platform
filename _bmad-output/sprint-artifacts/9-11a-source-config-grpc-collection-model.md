@@ -224,7 +224,7 @@ bash scripts/e2e-up.sh --down
 - [ ] PR approved and merged (squash)
 - [ ] Local branch cleaned up: `git branch -d story/9-11a-source-config-grpc`
 
-**PR URL:** _______________ (fill in when created)
+**PR URL:** https://github.com/jltournay/farmer-power-platform/pull/230
 
 ---
 
