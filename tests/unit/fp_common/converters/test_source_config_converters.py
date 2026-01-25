@@ -1,10 +1,11 @@
 """Unit tests for source_config_converters module.
 
 Story 9.11a: SourceConfigService gRPC in Collection Model
+Story 9.11b: Updated converters to return Pydantic models
 
 Tests verify bidirectional conversion correctness:
 - Pydantic-to-Proto conversion for gRPC service responses
-- Proto-to-dict conversion for BFF clients
+- Proto-to-Pydantic conversion for BFF clients
 - Timestamp handling (datetime -> proto -> datetime roundtrip)
 - JSON serialization for config_json field
 """
@@ -12,7 +13,7 @@ Tests verify bidirectional conversion correctness:
 from datetime import UTC, datetime
 
 from fp_common.converters import (
-    source_config_response_from_proto,
+    source_config_detail_from_proto,
     source_config_response_to_proto,
     source_config_summary_from_proto,
     source_config_summary_to_proto,
@@ -163,10 +164,13 @@ class TestSourceConfigResponseToProto:
 
 
 class TestSourceConfigSummaryFromProto:
-    """Tests for source_config_summary_from_proto converter."""
+    """Tests for source_config_summary_from_proto converter.
+
+    Story 9.11b: Now returns SourceConfigSummary Pydantic model instead of dict.
+    """
 
     def test_basic_fields_mapped(self):
-        """Basic fields are correctly mapped from proto to dict."""
+        """Basic fields are correctly mapped from proto to Pydantic model."""
         proto = collection_pb2.SourceConfigSummary(
             source_id="from-proto",
             display_name="From Proto",
@@ -177,15 +181,15 @@ class TestSourceConfigSummaryFromProto:
         )
         result = source_config_summary_from_proto(proto)
 
-        assert result["source_id"] == "from-proto"
-        assert result["display_name"] == "From Proto"
-        assert result["description"] == "Proto description"
-        assert result["enabled"] is True
-        assert result["ingestion_mode"] == "blob_trigger"
-        assert result["ai_agent_id"] == "my-agent"
+        assert result.source_id == "from-proto"
+        assert result.display_name == "From Proto"
+        assert result.description == "Proto description"
+        assert result.enabled is True
+        assert result.ingestion_mode == "blob_trigger"
+        assert result.ai_agent_id == "my-agent"
 
     def test_empty_ai_agent_id_becomes_none(self):
-        """Empty AI agent ID in proto becomes None in dict."""
+        """Empty AI agent ID in proto becomes None in model."""
         proto = collection_pb2.SourceConfigSummary(
             source_id="test",
             display_name="Test",
@@ -196,10 +200,10 @@ class TestSourceConfigSummaryFromProto:
         )
         result = source_config_summary_from_proto(proto)
 
-        assert result["ai_agent_id"] is None
+        assert result.ai_agent_id is None
 
-    def test_timestamp_converted_to_iso_string(self):
-        """Updated at timestamp is converted to ISO string."""
+    def test_timestamp_converted_to_datetime(self):
+        """Updated at timestamp is converted to datetime object."""
         ts = timestamp_pb2.Timestamp()
         ts.FromDatetime(datetime(2025, 1, 15, 12, 30, 45, tzinfo=UTC))
 
@@ -213,8 +217,10 @@ class TestSourceConfigSummaryFromProto:
         )
         result = source_config_summary_from_proto(proto)
 
-        assert result["updated_at"] is not None
-        assert "2025-01-15" in result["updated_at"]
+        assert result.updated_at is not None
+        assert result.updated_at.year == 2025
+        assert result.updated_at.month == 1
+        assert result.updated_at.day == 15
 
     def test_empty_timestamp_becomes_none(self):
         """Empty timestamp becomes None."""
@@ -227,14 +233,18 @@ class TestSourceConfigSummaryFromProto:
         )
         result = source_config_summary_from_proto(proto)
 
-        assert result["updated_at"] is None
+        assert result.updated_at is None
 
 
-class TestSourceConfigResponseFromProto:
-    """Tests for source_config_response_from_proto converter."""
+class TestSourceConfigDetailFromProto:
+    """Tests for source_config_detail_from_proto converter.
+
+    Story 9.11b: Renamed from source_config_response_from_proto.
+    Now returns SourceConfigDetail Pydantic model instead of dict.
+    """
 
     def test_basic_fields_mapped(self):
-        """Basic fields are correctly mapped from proto to dict."""
+        """Basic fields are correctly mapped from proto to Pydantic model."""
         proto = collection_pb2.SourceConfigResponse(
             source_id="response-test",
             display_name="Response Test",
@@ -242,16 +252,16 @@ class TestSourceConfigResponseFromProto:
             enabled=True,
             config_json='{"key": "value"}',
         )
-        result = source_config_response_from_proto(proto)
+        result = source_config_detail_from_proto(proto)
 
-        assert result["source_id"] == "response-test"
-        assert result["display_name"] == "Response Test"
-        assert result["description"] == "Response description"
-        assert result["enabled"] is True
-        assert result["config_json"] == '{"key": "value"}'
+        assert result.source_id == "response-test"
+        assert result.display_name == "Response Test"
+        assert result.description == "Response description"
+        assert result.enabled is True
+        assert result.config_json == '{"key": "value"}'
 
-    def test_timestamps_converted_to_iso_strings(self):
-        """Timestamps are converted to ISO strings."""
+    def test_timestamps_converted_to_datetime(self):
+        """Timestamps are converted to datetime objects."""
         created_ts = timestamp_pb2.Timestamp()
         created_ts.FromDatetime(datetime(2025, 1, 1, 0, 0, 0, tzinfo=UTC))
         updated_ts = timestamp_pb2.Timestamp()
@@ -266,16 +276,23 @@ class TestSourceConfigResponseFromProto:
             created_at=created_ts,
             updated_at=updated_ts,
         )
-        result = source_config_response_from_proto(proto)
+        result = source_config_detail_from_proto(proto)
 
-        assert result["created_at"] is not None
-        assert result["updated_at"] is not None
-        assert "2025-01-01" in result["created_at"]
-        assert "2025-01-15" in result["updated_at"]
+        assert result.created_at is not None
+        assert result.updated_at is not None
+        assert result.created_at.year == 2025
+        assert result.created_at.month == 1
+        assert result.created_at.day == 1
+        assert result.updated_at.year == 2025
+        assert result.updated_at.month == 1
+        assert result.updated_at.day == 15
 
 
 class TestRoundTrip:
-    """Tests for Pydantic -> Proto -> Dict round-trip conversions."""
+    """Tests for Pydantic -> Proto -> Pydantic round-trip conversions.
+
+    Story 9.11b: Updated to test Pydantic model return types.
+    """
 
     def test_summary_round_trip(self):
         """SourceConfigSummary round-trip preserves data."""
@@ -291,14 +308,14 @@ class TestRoundTrip:
         proto = source_config_summary_to_proto(config, updated_at=updated_at)
         result = source_config_summary_from_proto(proto)
 
-        assert result["source_id"] == config.source_id
-        assert result["display_name"] == config.display_name
-        assert result["enabled"] == config.enabled
-        assert result["ingestion_mode"] == config.ingestion.mode
-        assert result["ai_agent_id"] == config.transformation.get_ai_agent_id()
+        assert result.source_id == config.source_id
+        assert result.display_name == config.display_name
+        assert result.enabled == config.enabled
+        assert result.ingestion_mode == config.ingestion.mode
+        assert result.ai_agent_id == config.transformation.get_ai_agent_id()
 
-    def test_response_round_trip(self):
-        """SourceConfigResponse round-trip preserves data."""
+    def test_detail_round_trip(self):
+        """SourceConfigDetail round-trip preserves data."""
         config = create_test_source_config(
             source_id="detail-round-trip",
             display_name="Detail Round Trip",
@@ -307,10 +324,10 @@ class TestRoundTrip:
         updated_at = datetime(2025, 1, 15, 12, 0, 0, tzinfo=UTC)
 
         proto = source_config_response_to_proto(config, created_at=created_at, updated_at=updated_at)
-        result = source_config_response_from_proto(proto)
+        result = source_config_detail_from_proto(proto)
 
-        assert result["source_id"] == config.source_id
-        assert result["display_name"] == config.display_name
-        assert result["enabled"] == config.enabled
+        assert result.source_id == config.source_id
+        assert result.display_name == config.display_name
+        assert result.enabled == config.enabled
         # Verify JSON is valid by checking it contains expected content
-        assert config.source_id in result["config_json"]
+        assert config.source_id in result.config_json
