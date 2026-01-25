@@ -270,7 +270,7 @@ development_status:
   9-10b-platform-cost-dashboard-ui: done  # 3 points - Cost dashboard UI with tabs + charts, depends: 9-10a, github_issue: 227, PR: #228
   # Admin Configuration Visibility (ADR-019) - View-only screens for Source Configs, AI Agents & Prompts
   9-11a-source-config-grpc-collection-model: done  # github_issue: 229  # 3 points - SourceConfigService gRPC in Collection Model
-  9-11b-source-config-bff-client-rest: backlog  # 3 points - gRPC client + REST API in BFF, depends: 9-11a
+  9-11b-source-config-bff-client-rest: review  # github_issue: 231, 3 points - gRPC client + REST API in BFF, depends: 9-11a
   9-11c-source-config-viewer-ui: backlog  # 3 points - Source Configuration Viewer UI, depends: 9-11b
   9-12a-agent-config-grpc-ai-model: backlog  # 5 points - AgentConfigService gRPC in AI Model (agents + prompts)
   9-12b-agent-config-bff-client-rest: backlog  # 3 points - gRPC client + REST API in BFF, depends: 9-12a

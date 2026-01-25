@@ -22,6 +22,10 @@ from fp_proto.collection.v1 import collection_pb2
 from google.protobuf import timestamp_pb2
 
 from fp_common.models.source_config import SourceConfig
+from fp_common.models.source_config_summary import (
+    SourceConfigDetail,
+    SourceConfigSummary,
+)
 
 
 def _datetime_to_proto_timestamp(dt: datetime | None) -> timestamp_pb2.Timestamp:
@@ -114,52 +118,69 @@ def source_config_response_to_proto(
 
 
 # =============================================================================
-# Proto-to-Dict Converters (for BFF client in Story 9.11b)
+# Proto-to-Pydantic Converters (for BFF client - Story 9.11b)
 # =============================================================================
 
 
 def source_config_summary_from_proto(
     proto: collection_pb2.SourceConfigSummary,
-) -> dict:
-    """Convert SourceConfigSummary proto to dict for BFF.
+) -> SourceConfigSummary:
+    """Convert SourceConfigSummary proto to Pydantic model for BFF.
 
     Args:
         proto: The SourceConfigSummary proto message.
 
     Returns:
-        Dictionary with summary fields suitable for REST API response.
+        SourceConfigSummary Pydantic model.
     """
-    updated_at = _proto_timestamp_to_datetime(proto.updated_at)
-    return {
-        "source_id": proto.source_id,
-        "display_name": proto.display_name,
-        "description": proto.description,
-        "enabled": proto.enabled,
-        "ingestion_mode": proto.ingestion_mode,
-        "ai_agent_id": proto.ai_agent_id if proto.ai_agent_id else None,
-        "updated_at": updated_at.isoformat() if updated_at else None,
-    }
+    return SourceConfigSummary(
+        source_id=proto.source_id,
+        display_name=proto.display_name,
+        description=proto.description,
+        enabled=proto.enabled,
+        ingestion_mode=proto.ingestion_mode,
+        ai_agent_id=proto.ai_agent_id if proto.ai_agent_id else None,
+        updated_at=_proto_timestamp_to_datetime(proto.updated_at),
+    )
 
 
-def source_config_response_from_proto(
+def source_config_detail_from_proto(
     proto: collection_pb2.SourceConfigResponse,
-) -> dict:
-    """Convert SourceConfigResponse proto to dict for BFF.
+) -> SourceConfigDetail:
+    """Convert SourceConfigResponse proto to SourceConfigDetail Pydantic model.
+
+    Extracts ingestion_mode and ai_agent_id from config_json since these
+    fields are not directly in SourceConfigResponse proto but are needed
+    for consistency with SourceConfigSummary responses.
 
     Args:
         proto: The SourceConfigResponse proto message.
 
     Returns:
-        Dictionary with full config fields suitable for REST API response.
+        SourceConfigDetail Pydantic model with full configuration.
     """
-    created_at = _proto_timestamp_to_datetime(proto.created_at)
-    updated_at = _proto_timestamp_to_datetime(proto.updated_at)
-    return {
-        "source_id": proto.source_id,
-        "display_name": proto.display_name,
-        "description": proto.description,
-        "enabled": proto.enabled,
-        "config_json": proto.config_json,
-        "created_at": created_at.isoformat() if created_at else None,
-        "updated_at": updated_at.isoformat() if updated_at else None,
-    }
+    import json
+
+    # Extract ingestion_mode and ai_agent_id from config_json for consistency
+    # with SourceConfigSummary (which has these fields from proto)
+    ingestion_mode = ""
+    ai_agent_id = None
+    if proto.config_json:
+        try:
+            config_data = json.loads(proto.config_json)
+            ingestion_mode = config_data.get("ingestion", {}).get("mode", "")
+            ai_agent_id = config_data.get("transformation", {}).get("ai_agent_id")
+        except json.JSONDecodeError:
+            pass  # Keep defaults if JSON is invalid
+
+    return SourceConfigDetail(
+        source_id=proto.source_id,
+        display_name=proto.display_name,
+        description=proto.description,
+        enabled=proto.enabled,
+        ingestion_mode=ingestion_mode,
+        ai_agent_id=ai_agent_id if ai_agent_id else None,
+        config_json=proto.config_json,
+        created_at=_proto_timestamp_to_datetime(proto.created_at),
+        updated_at=_proto_timestamp_to_datetime(proto.updated_at),
+    )

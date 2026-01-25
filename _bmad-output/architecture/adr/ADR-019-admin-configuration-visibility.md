@@ -511,6 +511,108 @@ async def get_ai_agent(
 - Collapsible raw JSON for power users
 - Clear read-only indicator with CLI reference
 
+#### Implementation Notes for Story 9.11c (UI)
+
+> **Added 2026-01-25** after Party Mode analysis of 9.11a implementation compatibility.
+
+**1. JSON Parsing Responsibility**
+
+The gRPC `GetSourceConfig` returns `config_json` as a **JSON string** (not structured proto fields). This is intentional to avoid duplicating the complex nested Pydantic model in proto definitions.
+
+The **frontend must parse** `config_json` to render structured sections:
+
+```typescript
+// React component pattern
+const configData = JSON.parse(sourceConfigDetail.config_json);
+// Now access: configData.ingestion, configData.validation, etc.
+```
+
+**2. TypeScript Interfaces**
+
+Create TypeScript interfaces that mirror the `SourceConfig` Pydantic model structure from `libs/fp-common/fp_common/models/source_config.py`:
+
+```typescript
+// frontend/src/types/source-config.ts
+interface SourceConfig {
+  source_id: string;
+  display_name: string;
+  description: string;
+  enabled: boolean;
+  ingestion: IngestionConfig;
+  validation: ValidationConfig | null;
+  transformation: TransformationConfig;
+  storage: StorageConfig;
+  events: EventsConfig | null;
+}
+
+interface IngestionConfig {
+  mode: 'blob_trigger' | 'scheduled_pull';
+  // blob_trigger fields
+  landing_container?: string;
+  path_pattern?: PathPatternConfig;
+  file_pattern?: string;
+  file_format?: 'json' | 'zip';
+  trigger_mechanism?: 'event_grid';
+  processed_file_config?: ProcessedFileConfig;
+  processor_type?: string;
+  // scheduled_pull fields
+  provider?: string;
+  schedule?: string;
+  request?: RequestConfig;
+  iteration?: IterationConfig;
+  retry?: RetryConfig;
+}
+// ... (complete interfaces for all nested types)
+```
+
+**3. Conditional Rendering by Ingestion Mode**
+
+The wireframe shows different fields for `blob_trigger` vs `scheduled_pull` modes:
+
+```tsx
+// React pattern
+{configData.ingestion.mode === 'blob_trigger' ? (
+  <BlobTriggerSection ingestion={configData.ingestion} />
+) : (
+  <ScheduledPullSection ingestion={configData.ingestion} />
+)}
+```
+
+**4. Timestamp Field Handling**
+
+The `SourceConfig` Pydantic model does **not include timestamps** (`created_at`, `updated_at`). The proto fields exist for future compatibility, but currently return `null`.
+
+**UI Options:**
+- **Option A (Recommended):** Hide the "Updated" field until data model is enhanced
+- **Option B:** Display "Not tracked" placeholder text
+- **Option C:** Show field only when timestamp is non-null
+
+```tsx
+// Option A - Hide if null
+{sourceConfigDetail.updated_at && (
+  <DetailRow label="Updated" value={formatDate(sourceConfigDetail.updated_at)} />
+)}
+```
+
+**5. Null Safety for Optional Fields**
+
+Many config sections are optional. Use null coalescing:
+
+```tsx
+// Safe access pattern
+const schemaName = configData.validation?.schema_name ?? 'Not configured';
+const aiAgentId = configData.transformation?.ai_agent_id ?? '-';
+```
+
+**6. E2E Test Requirements for UI**
+
+Story 9.11c E2E tests must verify:
+- [ ] `blob_trigger` source config renders all INGESTION fields correctly
+- [ ] `scheduled_pull` source config renders alternative INGESTION fields
+- [ ] Optional sections (VALIDATION, EVENTS) render "Not configured" when null
+- [ ] RAW JSON section displays valid, parseable JSON
+- [ ] Timestamps hidden or show placeholder when null
+
 ### Screen 2: AI Agents List View
 
 **Route:** `/admin/ai-agents`

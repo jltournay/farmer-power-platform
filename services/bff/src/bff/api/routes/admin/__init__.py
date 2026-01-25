@@ -8,6 +8,7 @@ Provides CRUD endpoints for:
 - Grading Models (Story 9.6a)
 - Knowledge Management (Story 9.9a)
 - Platform Cost Monitoring (Story 9.10a)
+- Source Configurations (Story 9.11b)
 
 All routes require platform_admin role (AC5).
 """
@@ -19,6 +20,7 @@ from bff.api.routes.admin.grading_models import router as grading_models_router
 from bff.api.routes.admin.knowledge import router as knowledge_router
 from bff.api.routes.admin.platform_cost import router as platform_cost_router
 from bff.api.routes.admin.regions import router as regions_router
+from bff.api.routes.admin.source_configs import router as source_configs_router
 from fastapi import APIRouter
 
 # Combined admin router
@@ -32,5 +34,6 @@ router.include_router(farmers_router)
 router.include_router(grading_models_router)
 router.include_router(knowledge_router)
 router.include_router(platform_cost_router)
+router.include_router(source_configs_router)
 
 __all__ = ["router"]
