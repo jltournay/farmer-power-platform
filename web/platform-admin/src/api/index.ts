@@ -13,4 +13,5 @@ export * from './collectionPoints';
 export * from './farmers';
 export * from './gradingModels';
 export * from './knowledge';
+export * from './sourceConfigs';
 export * from './types';
