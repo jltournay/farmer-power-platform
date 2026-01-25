@@ -1,6 +1,6 @@
 # Story 9.11c: Source Configuration Viewer UI
 
-**Status:** review
+**Status:** done
 **GitHub Issue:** #233
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
@@ -567,8 +567,7 @@ web/platform-admin/src/
 │   └── source-configs/
 │       ├── index.ts                          # NEW - Page exports
 │       ├── SourceConfigList.tsx              # NEW - List page
-│       └── components/
-│           └── SourceConfigDetailPanel.tsx   # NEW - Detail slide-out
+│       └── SourceConfigDetailPanel.tsx       # NEW - Detail slide-out panel
 ├── app/
 │   └── routes.tsx                            # MODIFIED - Add route
 ├── components/
@@ -638,8 +637,9 @@ N/A
 
 1. All Tasks 1-7 completed
 2. All Acceptance Criteria met (AC 9.11c.1-6, AC-E2E)
-3. 24 unit tests passing, 9 BFF E2E tests passing
-4. Build succeeds after ui-components rebuild
+3. Unit tests: 14 type tests + 10 API tests + 17 list page tests + 20 detail panel tests = 61 total passing
+4. 9 BFF E2E tests passing (API layer validation)
+5. Build succeeds after ui-components rebuild
 
 ### File List
 
@@ -649,10 +649,70 @@ N/A
 - `web/platform-admin/src/pages/source-configs/index.ts` - Page exports
 - `web/platform-admin/src/pages/source-configs/SourceConfigList.tsx` - List page
 - `web/platform-admin/src/pages/source-configs/SourceConfigDetailPanel.tsx` - Detail panel
-- `tests/unit/web/platform-admin/types/sourceConfigs.test.ts` - Type tests
-- `tests/unit/web/platform-admin/api/sourceConfigs.test.ts` - API tests
+- `tests/unit/web/platform-admin/types/sourceConfigs.test.ts` - Type helper tests (14 tests)
+- `tests/unit/web/platform-admin/api/sourceConfigs.test.ts` - API client tests (10 tests)
+- `tests/unit/web/platform-admin/pages/source-configs/SourceConfigList.test.tsx` - List page tests (17 tests)
+- `tests/unit/web/platform-admin/pages/source-configs/SourceConfigDetailPanel.test.tsx` - Detail panel tests (20 tests)
 
 **Modified:**
 - `web/platform-admin/src/api/index.ts` - Export sourceConfigs
 - `web/platform-admin/src/app/routes.tsx` - Add /source-configs route
 - `web/platform-admin/src/components/Sidebar/Sidebar.tsx` - Add menu item
+
+---
+
+## Senior Developer Review (AI)
+
+**Review Date:** 2026-01-25
+**Reviewer:** Claude Opus 4.5 (Code Review Workflow)
+**Outcome:** ✅ APPROVED
+
+### Review Summary
+
+| Category | Finding |
+|----------|---------|
+| AC Validation | All 7 Acceptance Criteria implemented and verified |
+| Task Audit | All tasks marked [x] are actually complete |
+| E2E Evidence | ✅ Local E2E passed (9 tests), ✅ CI E2E passed (run 21337306731) |
+| Code Quality | Good - follows existing Admin Portal patterns |
+| Test Coverage | Comprehensive - 61 unit tests, 9 E2E tests |
+
+### Issues Found & Fixed
+
+| ID | Severity | Description | Resolution |
+|----|----------|-------------|------------|
+| M2 | MEDIUM | Story File Structure diagram showed wrong path (`components/` subdirectory) | Fixed - Updated diagram to show correct co-located path |
+| M3 | MEDIUM | Component test files not listed in File List section | Fixed - Added `SourceConfigList.test.tsx` and `SourceConfigDetailPanel.test.tsx` to File List |
+| L1 | LOW | Test count in Completion Notes was understated (24 vs actual 61) | Fixed - Updated to show accurate breakdown by test file |
+
+### Code Quality Assessment
+
+**Strengths:**
+- ✅ Follows existing `GradingModelList.tsx` patterns correctly
+- ✅ Proper TypeScript interfaces mirroring Pydantic models
+- ✅ Conditional rendering for blob_trigger vs scheduled_pull modes
+- ✅ Comprehensive null handling with fallback displays
+- ✅ ARIA labels on interactive elements (Chips, buttons)
+- ✅ Responsive drawer width (100% mobile, 600px sm, 700px md+)
+- ✅ Read-only indicator per AC 9.11c.2
+- ✅ All sections from SourceConfig model rendered in detail panel
+
+**No functional defects found.**
+
+### Acceptance Criteria Verification
+
+| AC | Status | Evidence |
+|----|--------|----------|
+| AC 9.11c.1 | ✅ | List page with PageHeader, FilterBar, DataTable, pagination |
+| AC 9.11c.2 | ✅ | Detail panel with all structured sections, close button, read-only indicator |
+| AC 9.11c.3 | ✅ | Conditional rendering blob_trigger (landing_container, path_pattern, etc.) vs scheduled_pull (provider, schedule, request, iteration, retry) |
+| AC 9.11c.4 | ✅ | enabled_only toggle and ingestion_mode dropdown filters working |
+| AC 9.11c.5 | ✅ | Empty state "No source configurations found", error alert with retry button |
+| AC 9.11c.6 | ✅ | Route at /source-configs with ProtectedRoute, sidebar menu item with SettingsInputComponentIcon |
+| AC-E2E | ✅ | BFF API E2E tests validate data layer (9 tests passing) |
+
+### Recommendation
+
+**APPROVED** - Story is complete and ready for PR creation.
+
+_Reviewed by: Claude Opus 4.5 on 2026-01-25_
