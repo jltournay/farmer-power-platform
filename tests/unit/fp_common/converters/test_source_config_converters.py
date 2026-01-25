@@ -241,6 +241,7 @@ class TestSourceConfigDetailFromProto:
 
     Story 9.11b: Renamed from source_config_response_from_proto.
     Now returns SourceConfigDetail Pydantic model instead of dict.
+    Extracts ingestion_mode and ai_agent_id from config_json for consistency.
     """
 
     def test_basic_fields_mapped(self):
@@ -259,6 +260,62 @@ class TestSourceConfigDetailFromProto:
         assert result.description == "Response description"
         assert result.enabled is True
         assert result.config_json == '{"key": "value"}'
+
+    def test_ingestion_mode_extracted_from_config_json(self):
+        """Ingestion mode is extracted from config_json for consistency."""
+        config_json = '{"source_id": "test", "ingestion": {"mode": "blob_trigger"}}'
+        proto = collection_pb2.SourceConfigResponse(
+            source_id="test",
+            display_name="Test",
+            description="Desc",
+            enabled=True,
+            config_json=config_json,
+        )
+        result = source_config_detail_from_proto(proto)
+
+        assert result.ingestion_mode == "blob_trigger"
+
+    def test_ai_agent_id_extracted_from_config_json(self):
+        """AI agent ID is extracted from config_json for consistency."""
+        config_json = '{"source_id": "test", "transformation": {"ai_agent_id": "qc-extractor-v1"}}'
+        proto = collection_pb2.SourceConfigResponse(
+            source_id="test",
+            display_name="Test",
+            description="Desc",
+            enabled=True,
+            config_json=config_json,
+        )
+        result = source_config_detail_from_proto(proto)
+
+        assert result.ai_agent_id == "qc-extractor-v1"
+
+    def test_empty_ai_agent_id_in_config_json_becomes_none(self):
+        """Empty AI agent ID in config_json becomes None."""
+        config_json = '{"source_id": "test", "transformation": {"ai_agent_id": ""}}'
+        proto = collection_pb2.SourceConfigResponse(
+            source_id="test",
+            display_name="Test",
+            description="Desc",
+            enabled=True,
+            config_json=config_json,
+        )
+        result = source_config_detail_from_proto(proto)
+
+        assert result.ai_agent_id is None
+
+    def test_invalid_config_json_uses_defaults(self):
+        """Invalid config_json uses default empty values."""
+        proto = collection_pb2.SourceConfigResponse(
+            source_id="test",
+            display_name="Test",
+            description="Desc",
+            enabled=True,
+            config_json="not valid json",
+        )
+        result = source_config_detail_from_proto(proto)
+
+        assert result.ingestion_mode == ""
+        assert result.ai_agent_id is None
 
     def test_timestamps_converted_to_datetime(self):
         """Timestamps are converted to datetime objects."""

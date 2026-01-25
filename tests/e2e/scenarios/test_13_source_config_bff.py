@@ -211,6 +211,11 @@ class TestSourceConfigBFFDetail:
         assert result["enabled"] is True, "Config should be enabled"
         assert "config_json" in result, "Response missing config_json"
 
+        # Verify ingestion_mode is populated (extracted from config_json for consistency)
+        assert result["ingestion_mode"] == "blob_trigger", (
+            f"Expected ingestion_mode='blob_trigger', got '{result.get('ingestion_mode')}'"
+        )
+
         # Verify config_json is valid JSON with full configuration
         config_json = json.loads(result["config_json"])
         assert config_json["source_id"] == "e2e-qc-direct-json", "config_json source_id mismatch"

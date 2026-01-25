@@ -149,19 +149,37 @@ def source_config_detail_from_proto(
 ) -> SourceConfigDetail:
     """Convert SourceConfigResponse proto to SourceConfigDetail Pydantic model.
 
+    Extracts ingestion_mode and ai_agent_id from config_json since these
+    fields are not directly in SourceConfigResponse proto but are needed
+    for consistency with SourceConfigSummary responses.
+
     Args:
         proto: The SourceConfigResponse proto message.
 
     Returns:
         SourceConfigDetail Pydantic model with full configuration.
     """
+    import json
+
+    # Extract ingestion_mode and ai_agent_id from config_json for consistency
+    # with SourceConfigSummary (which has these fields from proto)
+    ingestion_mode = ""
+    ai_agent_id = None
+    if proto.config_json:
+        try:
+            config_data = json.loads(proto.config_json)
+            ingestion_mode = config_data.get("ingestion", {}).get("mode", "")
+            ai_agent_id = config_data.get("transformation", {}).get("ai_agent_id")
+        except json.JSONDecodeError:
+            pass  # Keep defaults if JSON is invalid
+
     return SourceConfigDetail(
         source_id=proto.source_id,
         display_name=proto.display_name,
         description=proto.description,
         enabled=proto.enabled,
-        ingestion_mode="",  # Not in SourceConfigResponse, set to empty
-        ai_agent_id=None,  # Not in SourceConfigResponse
+        ingestion_mode=ingestion_mode,
+        ai_agent_id=ai_agent_id if ai_agent_id else None,
         config_json=proto.config_json,
         created_at=_proto_timestamp_to_datetime(proto.created_at),
         updated_at=_proto_timestamp_to_datetime(proto.updated_at),

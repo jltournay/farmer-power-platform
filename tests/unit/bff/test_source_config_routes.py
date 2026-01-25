@@ -54,7 +54,8 @@ app.dependency_overrides[get_current_user] = _mock_admin_user
 _mock_client = AsyncMock()
 
 
-def _get_mock_client():
+def _get_mock_client() -> AsyncMock:
+    """Dependency override for SourceConfigClient in tests."""
     return _mock_client
 
 
