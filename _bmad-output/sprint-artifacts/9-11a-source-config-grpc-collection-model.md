@@ -1,7 +1,7 @@
 # Story 9.11a: SourceConfigService gRPC in Collection Model
 
-**Status:** ready-for-dev
-**GitHub Issue:** <!-- Auto-created by dev-story workflow -->
+**Status:** in-progress
+**GitHub Issue:** #229
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -84,70 +84,70 @@ so that **the Admin UI can display source config data without direct MongoDB acc
 
 ### Task 1: Add Proto Service Definition (AC: 1)
 
-- [ ] Add `SourceConfigService` to `proto/collection/v1/collection.proto`
-- [ ] Define `ListSourceConfigsRequest` and `ListSourceConfigsResponse` messages
-- [ ] Define `GetSourceConfigRequest` and `SourceConfigResponse` messages
-- [ ] Define `SourceConfigSummary` message with key fields
-- [ ] Regenerate proto stubs: `bash scripts/proto-gen.sh`
-- [ ] Verify generated files in `libs/fp-proto/src/fp_proto/collection/v1/`
+- [x] Add `SourceConfigService` to `proto/collection/v1/collection.proto`
+- [x] Define `ListSourceConfigsRequest` and `ListSourceConfigsResponse` messages
+- [x] Define `GetSourceConfigRequest` and `SourceConfigResponse` messages
+- [x] Define `SourceConfigSummary` message with key fields
+- [x] Regenerate proto stubs: `bash scripts/proto-gen.sh`
+- [x] Verify generated files in `libs/fp-proto/src/fp_proto/collection/v1/`
 
 ### Task 2: Extend SourceConfigRepository (AC: 2, 3)
 
-- [ ] Add `list_all()` method with pagination support to `SourceConfigRepository`
-- [ ] Add optional filters: `enabled_only`, `ingestion_mode`
-- [ ] Add `count()` method for total count queries
-- [ ] Return Pydantic `SourceConfig` models (existing pattern)
+- [x] Add `list_all()` method with pagination support to `SourceConfigRepository`
+- [x] Add optional filters: `enabled_only`, `ingestion_mode`
+- [x] Add `count()` method for total count queries
+- [x] Return Pydantic `SourceConfig` models (existing pattern)
 
 ### Task 3: Create Source Config Converters in fp_common (AC: 2, 3)
 
-- [ ] Create `libs/fp-common/fp_common/converters/source_config_converters.py`
-- [ ] Implement `source_config_summary_to_proto(config: SourceConfig) -> SourceConfigSummary` (Pydantic → Proto)
-- [ ] Implement `source_config_response_to_proto(config: SourceConfig) -> SourceConfigResponse` (Pydantic → Proto)
-- [ ] Implement `source_config_summary_from_proto(proto: SourceConfigSummary) -> dict` (Proto → dict, for BFF in 9.11b)
-- [ ] Implement `source_config_response_from_proto(proto: SourceConfigResponse) -> dict` (Proto → dict, for BFF in 9.11b)
-- [ ] Add helper `_datetime_to_proto_timestamp()` if not already shared
-- [ ] Export converters in `libs/fp-common/fp_common/converters/__init__.py`
-- [ ] Follow existing converter patterns (see `plantation_converters.py`, `cost_converters.py`)
+- [x] Create `libs/fp-common/fp_common/converters/source_config_converters.py`
+- [x] Implement `source_config_summary_to_proto(config: SourceConfig) -> SourceConfigSummary` (Pydantic → Proto)
+- [x] Implement `source_config_response_to_proto(config: SourceConfig) -> SourceConfigResponse` (Pydantic → Proto)
+- [x] Implement `source_config_summary_from_proto(proto: SourceConfigSummary) -> dict` (Proto → dict, for BFF in 9.11b)
+- [x] Implement `source_config_response_from_proto(proto: SourceConfigResponse) -> dict` (Proto → dict, for BFF in 9.11b)
+- [x] Add helper `_datetime_to_proto_timestamp()` if not already shared
+- [x] Export converters in `libs/fp-common/fp_common/converters/__init__.py`
+- [x] Follow existing converter patterns (see `plantation_converters.py`, `cost_converters.py`)
 
 ### Task 4: Implement ListSourceConfigs RPC (AC: 2)
 
-- [ ] Create `services/collection-model/src/collection_model/api/source_config_service.py`
-- [ ] Implement `SourceConfigServiceServicer` class skeleton
-- [ ] Implement `ListSourceConfigs` RPC with:
+- [x] Create `services/collection-model/src/collection_model/api/source_config_service.py`
+- [x] Implement `SourceConfigServiceServicer` class skeleton
+- [x] Implement `ListSourceConfigs` RPC with:
   - Pagination via skip/limit (page_token is skip encoded as string)
   - Filter by `enabled_only`
   - Filter by `ingestion_mode`
   - Return `SourceConfigSummary` for each config
-- [ ] Use `source_config_summary_to_proto()` from `fp_common.converters`
+- [x] Use `source_config_summary_to_proto()` from `fp_common.converters`
 
 ### Task 5: Implement GetSourceConfig RPC (AC: 3)
 
-- [ ] Implement `GetSourceConfig` RPC in `SourceConfigServiceServicer`:
+- [x] Implement `GetSourceConfig` RPC in `SourceConfigServiceServicer`:
   - Lookup by `source_id` using `repository.get_by_source_id()`
   - Return full config as JSON in `config_json` field via `config.model_dump_json()`
   - Return NOT_FOUND gRPC error if source_id doesn't exist
-- [ ] Use `source_config_response_to_proto()` from `fp_common.converters`
+- [x] Use `source_config_response_to_proto()` from `fp_common.converters`
 
 ### Task 6: Register gRPC Service (AC: 4)
 
-- [ ] Update `serve_grpc()` in `grpc_service.py` to register `SourceConfigServiceServicer`
-- [ ] Pass MongoDB database to the servicer (same pattern as `CollectionServiceServicer`)
-- [ ] Verify both services accessible on port 50051
+- [x] Update `serve_grpc()` in `grpc_service.py` to register `SourceConfigServiceServicer`
+- [x] Pass MongoDB database to the servicer (same pattern as `CollectionServiceServicer`)
+- [x] Verify both services accessible on port 50051
 
 ### Task 7: Unit Tests (AC: 5)
 
-- [ ] Create `tests/unit/collection/api/test_source_config_service.py`
-- [ ] Test `ListSourceConfigs` with no filters
-- [ ] Test `ListSourceConfigs` with `enabled_only=true`
-- [ ] Test `ListSourceConfigs` with `ingestion_mode="blob_trigger"`
-- [ ] Test `ListSourceConfigs` with `ingestion_mode="scheduled_pull"`
-- [ ] Test `ListSourceConfigs` pagination (page_size, page_token)
-- [ ] Test `ListSourceConfigs` empty result set
-- [ ] Test `GetSourceConfig` success case
-- [ ] Test `GetSourceConfig` NOT_FOUND case
-- [ ] Test invalid `page_token` handling (reset to 0)
-- [ ] Mock `SourceConfigRepository` in tests
-- [ ] Create `tests/unit/fp_common/converters/test_source_config_converters.py` for converter unit tests
+- [x] Create `tests/unit/collection/api/test_source_config_service.py`
+- [x] Test `ListSourceConfigs` with no filters
+- [x] Test `ListSourceConfigs` with `enabled_only=true`
+- [x] Test `ListSourceConfigs` with `ingestion_mode="blob_trigger"`
+- [x] Test `ListSourceConfigs` with `ingestion_mode="scheduled_pull"`
+- [x] Test `ListSourceConfigs` pagination (page_size, page_token)
+- [x] Test `ListSourceConfigs` empty result set
+- [x] Test `GetSourceConfig` success case
+- [x] Test `GetSourceConfig` NOT_FOUND case
+- [x] Test invalid `page_token` handling (reset to 0)
+- [x] Mock `SourceConfigRepository` in tests
+- [x] Create `tests/unit/fp_common/converters/test_source_config_converters.py` for converter unit tests
 
 ### Task 8: Create New E2E Tests for AC-E2E (MANDATORY - DO NOT SKIP)
 

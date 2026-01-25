@@ -203,7 +203,10 @@ async def collection_service(
     e2e_config: dict[str, Any],
     wait_for_services: None,
 ) -> AsyncGenerator[Any, None]:
-    """Provide Collection Model gRPC client for document queries (Story 0.5.1a)."""
+    """Provide Collection Model gRPC client for document queries (Story 0.5.1a).
+
+    Story 9.11a: Also provides SourceConfig service methods (list_source_configs, get_source_config).
+    """
     from tests.e2e.helpers.mcp_clients import CollectionServiceClient
 
     async with CollectionServiceClient(

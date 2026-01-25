@@ -1,11 +1,12 @@
 """Collection Model gRPC Service - Document Query API.
 
 Story 0.5.1a: Implements CollectionService gRPC interface for BFF queries.
+Story 9.11a: Adds SourceConfigService gRPC interface for Admin UI queries (ADR-019).
 ADR-011: gRPC server runs on port 50051 alongside FastAPI health on port 8000.
 
 This module provides:
-- CollectionServiceServicer: gRPC handler implementation
-- serve_grpc: Async function to start gRPC server
+- CollectionServiceServicer: gRPC handler implementation for document queries
+- serve_grpc: Async function to start gRPC server with both services
 """
 
 from datetime import UTC, datetime
@@ -13,13 +14,14 @@ from typing import Any
 
 import grpc
 import structlog
+from collection_model.api.source_config_service import SourceConfigServiceServicer
 from collection_model.domain.document_index import DocumentIndex
 from collection_model.infrastructure.document_repository import DocumentRepository
 from fp_proto.collection.v1 import collection_pb2, collection_pb2_grpc
 from google.protobuf import timestamp_pb2
 from motor.motor_asyncio import AsyncIOMotorDatabase
 
-__all__ = ["CollectionServiceServicer", "serve_grpc"]
+__all__ = ["CollectionServiceServicer", "SourceConfigServiceServicer", "serve_grpc"]
 
 logger = structlog.get_logger(__name__)
 
@@ -362,7 +364,9 @@ async def serve_grpc(
     host: str = "0.0.0.0",
     port: int = 50051,
 ) -> grpc.aio.Server:
-    """Start the gRPC server.
+    """Start the gRPC server with both CollectionService and SourceConfigService.
+
+    Story 9.11a: Added SourceConfigService registration for Admin UI queries.
 
     Args:
         db: MongoDB database connection.
@@ -373,8 +377,14 @@ async def serve_grpc(
         Running gRPC server instance.
     """
     server = grpc.aio.server()
+
+    # Register CollectionService (Story 0.5.1a)
     collection_pb2_grpc.add_CollectionServiceServicer_to_server(CollectionServiceServicer(db), server)
+
+    # Register SourceConfigService (Story 9.11a - ADR-019)
+    collection_pb2_grpc.add_SourceConfigServiceServicer_to_server(SourceConfigServiceServicer(db), server)
+
     server.add_insecure_port(f"{host}:{port}")
     await server.start()
-    logger.info("gRPC server started", host=host, port=port)
+    logger.info("gRPC server started", host=host, port=port, services=["CollectionService", "SourceConfigService"])
     return server

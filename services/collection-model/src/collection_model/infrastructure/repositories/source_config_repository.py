@@ -5,6 +5,7 @@ returning typed Pydantic models instead of raw dicts.
 """
 
 import logging
+from typing import Any
 
 from collection_model.infrastructure.repositories.base import BaseRepository
 from fp_common.models.source_config import SourceConfig
@@ -104,6 +105,73 @@ class SourceConfigRepository(BaseRepository[SourceConfig]):
             extra={"container": container, "source_id": doc.get("source_id")},
         )
         return SourceConfig.model_validate(doc)
+
+    async def list_all(
+        self,
+        page_size: int = 20,
+        skip: int = 0,
+        enabled_only: bool = False,
+        ingestion_mode: str | None = None,
+    ) -> list[SourceConfig]:
+        """List source configs with pagination and optional filters.
+
+        Args:
+            page_size: Maximum number of configs to return.
+            skip: Number of configs to skip (for pagination).
+            enabled_only: If True, only return enabled configs.
+            ingestion_mode: Filter by ingestion mode ("blob_trigger" or "scheduled_pull").
+
+        Returns:
+            List of source configs matching the filters.
+        """
+        query: dict[str, Any] = {}
+
+        if enabled_only:
+            query["enabled"] = True
+
+        if ingestion_mode:
+            query["ingestion.mode"] = ingestion_mode
+
+        cursor = self._collection.find(query).skip(skip).limit(page_size)
+        docs = await cursor.to_list(length=page_size)
+
+        configs = []
+        for doc in docs:
+            doc.pop("_id", None)
+            configs.append(SourceConfig.model_validate(doc))
+
+        logger.debug(
+            "Listed %d source configs (skip=%d, enabled_only=%s, mode=%s)",
+            len(configs),
+            skip,
+            enabled_only,
+            ingestion_mode,
+        )
+        return configs
+
+    async def count(
+        self,
+        enabled_only: bool = False,
+        ingestion_mode: str | None = None,
+    ) -> int:
+        """Count source configs matching filters.
+
+        Args:
+            enabled_only: If True, only count enabled configs.
+            ingestion_mode: Filter by ingestion mode ("blob_trigger" or "scheduled_pull").
+
+        Returns:
+            Count of source configs matching the filters.
+        """
+        query: dict[str, Any] = {}
+
+        if enabled_only:
+            query["enabled"] = True
+
+        if ingestion_mode:
+            query["ingestion.mode"] = ingestion_mode
+
+        return await self._collection.count_documents(query)
 
     async def ensure_indexes(self) -> None:
         """Create indexes for the source_configs collection."""

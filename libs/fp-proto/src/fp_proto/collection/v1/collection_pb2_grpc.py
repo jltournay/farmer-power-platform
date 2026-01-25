@@ -249,3 +249,135 @@ class CollectionService(object):
             timeout,
             metadata,
             _registered_method=True)
+
+
+class SourceConfigServiceStub(object):
+    """============================================================================
+    Source Config Service - Read-only admin visibility (ADR-019, Story 9.11a)
+    Write operations handled by source-config CLI
+    ============================================================================
+
+    """
+
+    def __init__(self, channel):
+        """Constructor.
+
+        Args:
+            channel: A grpc.Channel.
+        """
+        self.ListSourceConfigs = channel.unary_unary(
+                '/farmer_power.collection.v1.SourceConfigService/ListSourceConfigs',
+                request_serializer=collection_dot_v1_dot_collection__pb2.ListSourceConfigsRequest.SerializeToString,
+                response_deserializer=collection_dot_v1_dot_collection__pb2.ListSourceConfigsResponse.FromString,
+                _registered_method=True)
+        self.GetSourceConfig = channel.unary_unary(
+                '/farmer_power.collection.v1.SourceConfigService/GetSourceConfig',
+                request_serializer=collection_dot_v1_dot_collection__pb2.GetSourceConfigRequest.SerializeToString,
+                response_deserializer=collection_dot_v1_dot_collection__pb2.SourceConfigResponse.FromString,
+                _registered_method=True)
+
+
+class SourceConfigServiceServicer(object):
+    """============================================================================
+    Source Config Service - Read-only admin visibility (ADR-019, Story 9.11a)
+    Write operations handled by source-config CLI
+    ============================================================================
+
+    """
+
+    def ListSourceConfigs(self, request, context):
+        """List all source configurations with optional filters
+        """
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def GetSourceConfig(self, request, context):
+        """Get a single source configuration by ID
+        """
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+
+def add_SourceConfigServiceServicer_to_server(servicer, server):
+    rpc_method_handlers = {
+            'ListSourceConfigs': grpc.unary_unary_rpc_method_handler(
+                    servicer.ListSourceConfigs,
+                    request_deserializer=collection_dot_v1_dot_collection__pb2.ListSourceConfigsRequest.FromString,
+                    response_serializer=collection_dot_v1_dot_collection__pb2.ListSourceConfigsResponse.SerializeToString,
+            ),
+            'GetSourceConfig': grpc.unary_unary_rpc_method_handler(
+                    servicer.GetSourceConfig,
+                    request_deserializer=collection_dot_v1_dot_collection__pb2.GetSourceConfigRequest.FromString,
+                    response_serializer=collection_dot_v1_dot_collection__pb2.SourceConfigResponse.SerializeToString,
+            ),
+    }
+    generic_handler = grpc.method_handlers_generic_handler(
+            'farmer_power.collection.v1.SourceConfigService', rpc_method_handlers)
+    server.add_generic_rpc_handlers((generic_handler,))
+    server.add_registered_method_handlers('farmer_power.collection.v1.SourceConfigService', rpc_method_handlers)
+
+
+ # This class is part of an EXPERIMENTAL API.
+class SourceConfigService(object):
+    """============================================================================
+    Source Config Service - Read-only admin visibility (ADR-019, Story 9.11a)
+    Write operations handled by source-config CLI
+    ============================================================================
+
+    """
+
+    @staticmethod
+    def ListSourceConfigs(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/farmer_power.collection.v1.SourceConfigService/ListSourceConfigs',
+            collection_dot_v1_dot_collection__pb2.ListSourceConfigsRequest.SerializeToString,
+            collection_dot_v1_dot_collection__pb2.ListSourceConfigsResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def GetSourceConfig(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/farmer_power.collection.v1.SourceConfigService/GetSourceConfig',
+            collection_dot_v1_dot_collection__pb2.GetSourceConfigRequest.SerializeToString,
+            collection_dot_v1_dot_collection__pb2.SourceConfigResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
