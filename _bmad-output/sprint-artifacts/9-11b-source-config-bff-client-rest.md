@@ -1,6 +1,6 @@
 # Story 9.11b: Source Config gRPC Client + REST API in BFF
 
-**Status:** in-progress
+**Status:** review
 **GitHub Issue:** #231
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
@@ -269,19 +269,19 @@ ruff check . && ruff format --check .
 
 ```bash
 # Push to story branch
-git push origin story/9-11b-source-config-bff-client-rest
+git push origin feature/9-11b-source-config-bff-client-rest
 
 # Trigger E2E CI workflow
-gh workflow run "E2E Tests" --ref story/9-11b-source-config-bff-client-rest
+gh workflow run "E2E Tests" --ref feature/9-11b-source-config-bff-client-rest
 
 # Wait and check status
 sleep 10
-gh run list --workflow="E2E Tests" --branch story/9-11b-source-config-bff-client-rest --limit 1
+gh run list --workflow="E2E Tests" --branch feature/9-11b-source-config-bff-client-rest --limit 1
 ```
-**CI Run ID:** _______________
-**CI Status:** [ ] Passed / [ ] Failed
-**CI E2E Status:** [ ] Passed / [ ] Failed
-**Verification Date:** _______________
+**CI Run ID:** 21335408033
+**CI Status:** [x] Passed / [ ] Failed
+**CI E2E Status:** [x] Passed (Run ID: 21335345961)
+**Verification Date:** 2026-01-25
 
 ---
 
