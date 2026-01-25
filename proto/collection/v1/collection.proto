@@ -32,6 +32,60 @@ service CollectionService {
 }
 
 // ============================================================================
+// Source Config Service - Read-only admin visibility (ADR-019, Story 9.11a)
+// Write operations handled by source-config CLI
+// ============================================================================
+
+service SourceConfigService {
+  // List all source configurations with optional filters
+  rpc ListSourceConfigs(ListSourceConfigsRequest) returns (ListSourceConfigsResponse);
+
+  // Get a single source configuration by ID
+  rpc GetSourceConfig(GetSourceConfigRequest) returns (SourceConfigResponse);
+}
+
+message ListSourceConfigsRequest {
+  int32 page_size = 1;         // Max 100, default 20
+  string page_token = 2;       // Pagination cursor
+  bool enabled_only = 3;       // Filter to enabled configs only
+  string ingestion_mode = 4;   // Filter: "blob_trigger" or "scheduled_pull"
+}
+
+message ListSourceConfigsResponse {
+  repeated SourceConfigSummary configs = 1;
+  string next_page_token = 2;
+  int32 total_count = 3;
+}
+
+message GetSourceConfigRequest {
+  string source_id = 1;
+}
+
+message SourceConfigSummary {
+  string source_id = 1;
+  string display_name = 2;
+  string description = 3;
+  bool enabled = 4;
+  string ingestion_mode = 5;      // "blob_trigger" or "scheduled_pull"
+  string ai_agent_id = 6;         // Linked AI agent (nullable)
+  google.protobuf.Timestamp updated_at = 7;
+}
+
+message SourceConfigResponse {
+  string source_id = 1;
+  string display_name = 2;
+  string description = 3;
+  bool enabled = 4;
+
+  // Full config as JSON for detail view
+  // Using JSON string to avoid duplicating complex nested proto definitions
+  string config_json = 5;
+
+  google.protobuf.Timestamp created_at = 6;
+  google.protobuf.Timestamp updated_at = 7;
+}
+
+// ============================================================================
 // Document Messages (Story 0.5.1a)
 // ============================================================================
 

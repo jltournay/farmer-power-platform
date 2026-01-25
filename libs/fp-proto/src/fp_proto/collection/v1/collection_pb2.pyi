@@ -32,6 +32,70 @@ QUALITY_GRADE_UNSPECIFIED: QualityGrade
 QUALITY_GRADE_PRIMARY: QualityGrade
 QUALITY_GRADE_SECONDARY: QualityGrade
 
+class ListSourceConfigsRequest(_message.Message):
+    __slots__ = ("page_size", "page_token", "enabled_only", "ingestion_mode")
+    PAGE_SIZE_FIELD_NUMBER: _ClassVar[int]
+    PAGE_TOKEN_FIELD_NUMBER: _ClassVar[int]
+    ENABLED_ONLY_FIELD_NUMBER: _ClassVar[int]
+    INGESTION_MODE_FIELD_NUMBER: _ClassVar[int]
+    page_size: int
+    page_token: str
+    enabled_only: bool
+    ingestion_mode: str
+    def __init__(self, page_size: _Optional[int] = ..., page_token: _Optional[str] = ..., enabled_only: bool = ..., ingestion_mode: _Optional[str] = ...) -> None: ...
+
+class ListSourceConfigsResponse(_message.Message):
+    __slots__ = ("configs", "next_page_token", "total_count")
+    CONFIGS_FIELD_NUMBER: _ClassVar[int]
+    NEXT_PAGE_TOKEN_FIELD_NUMBER: _ClassVar[int]
+    TOTAL_COUNT_FIELD_NUMBER: _ClassVar[int]
+    configs: _containers.RepeatedCompositeFieldContainer[SourceConfigSummary]
+    next_page_token: str
+    total_count: int
+    def __init__(self, configs: _Optional[_Iterable[_Union[SourceConfigSummary, _Mapping]]] = ..., next_page_token: _Optional[str] = ..., total_count: _Optional[int] = ...) -> None: ...
+
+class GetSourceConfigRequest(_message.Message):
+    __slots__ = ("source_id",)
+    SOURCE_ID_FIELD_NUMBER: _ClassVar[int]
+    source_id: str
+    def __init__(self, source_id: _Optional[str] = ...) -> None: ...
+
+class SourceConfigSummary(_message.Message):
+    __slots__ = ("source_id", "display_name", "description", "enabled", "ingestion_mode", "ai_agent_id", "updated_at")
+    SOURCE_ID_FIELD_NUMBER: _ClassVar[int]
+    DISPLAY_NAME_FIELD_NUMBER: _ClassVar[int]
+    DESCRIPTION_FIELD_NUMBER: _ClassVar[int]
+    ENABLED_FIELD_NUMBER: _ClassVar[int]
+    INGESTION_MODE_FIELD_NUMBER: _ClassVar[int]
+    AI_AGENT_ID_FIELD_NUMBER: _ClassVar[int]
+    UPDATED_AT_FIELD_NUMBER: _ClassVar[int]
+    source_id: str
+    display_name: str
+    description: str
+    enabled: bool
+    ingestion_mode: str
+    ai_agent_id: str
+    updated_at: _timestamp_pb2.Timestamp
+    def __init__(self, source_id: _Optional[str] = ..., display_name: _Optional[str] = ..., description: _Optional[str] = ..., enabled: bool = ..., ingestion_mode: _Optional[str] = ..., ai_agent_id: _Optional[str] = ..., updated_at: _Optional[_Union[datetime.datetime, _timestamp_pb2.Timestamp, _Mapping]] = ...) -> None: ...
+
+class SourceConfigResponse(_message.Message):
+    __slots__ = ("source_id", "display_name", "description", "enabled", "config_json", "created_at", "updated_at")
+    SOURCE_ID_FIELD_NUMBER: _ClassVar[int]
+    DISPLAY_NAME_FIELD_NUMBER: _ClassVar[int]
+    DESCRIPTION_FIELD_NUMBER: _ClassVar[int]
+    ENABLED_FIELD_NUMBER: _ClassVar[int]
+    CONFIG_JSON_FIELD_NUMBER: _ClassVar[int]
+    CREATED_AT_FIELD_NUMBER: _ClassVar[int]
+    UPDATED_AT_FIELD_NUMBER: _ClassVar[int]
+    source_id: str
+    display_name: str
+    description: str
+    enabled: bool
+    config_json: str
+    created_at: _timestamp_pb2.Timestamp
+    updated_at: _timestamp_pb2.Timestamp
+    def __init__(self, source_id: _Optional[str] = ..., display_name: _Optional[str] = ..., description: _Optional[str] = ..., enabled: bool = ..., config_json: _Optional[str] = ..., created_at: _Optional[_Union[datetime.datetime, _timestamp_pb2.Timestamp, _Mapping]] = ..., updated_at: _Optional[_Union[datetime.datetime, _timestamp_pb2.Timestamp, _Mapping]] = ...) -> None: ...
+
 class RawDocumentRef(_message.Message):
     __slots__ = ("blob_container", "blob_path", "content_hash", "size_bytes", "stored_at")
     BLOB_CONTAINER_FIELD_NUMBER: _ClassVar[int]

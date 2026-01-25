@@ -597,6 +597,74 @@ class CollectionServiceClient:
         except Exception:
             return False
 
+    # =========================================================================
+    # SourceConfig Service Methods (Story 9.11a)
+    # =========================================================================
+
+    async def list_source_configs(
+        self,
+        page_size: int = 20,
+        page_token: str | None = None,
+        enabled_only: bool = False,
+        ingestion_mode: str | None = None,
+    ) -> dict[str, Any]:
+        """List source configs with optional filters via gRPC (Story 9.11a).
+
+        Args:
+            page_size: Number of items per page (default 20, max 100).
+            page_token: Pagination token for next page.
+            enabled_only: Filter to enabled configs only.
+            ingestion_mode: Filter by ingestion mode (blob_trigger, scheduled_pull).
+
+        Returns:
+            ListSourceConfigsResponse with configs, next_page_token, total_count.
+        """
+        from fp_proto.collection.v1 import collection_pb2, collection_pb2_grpc
+
+        # SourceConfigService uses a separate stub
+        source_config_stub = collection_pb2_grpc.SourceConfigServiceStub(self._channel)
+
+        request = collection_pb2.ListSourceConfigsRequest(
+            page_size=page_size,
+            page_token=page_token or "",
+            enabled_only=enabled_only,
+            ingestion_mode=ingestion_mode or "",
+        )
+        try:
+            response = await source_config_stub.ListSourceConfigs(request)
+            return MessageToDict(response, preserving_proto_field_name=True)
+        except grpc.RpcError as e:
+            raise CollectionServiceError(
+                operation="ListSourceConfigs",
+                code=e.code(),
+                details=e.details() or str(e),
+            ) from e
+
+    async def get_source_config(self, source_id: str) -> dict[str, Any]:
+        """Get source config by ID with full JSON via gRPC (Story 9.11a).
+
+        Args:
+            source_id: The source configuration ID.
+
+        Returns:
+            SourceConfigResponse with full config_json.
+        """
+        from fp_proto.collection.v1 import collection_pb2, collection_pb2_grpc
+
+        # SourceConfigService uses a separate stub
+        source_config_stub = collection_pb2_grpc.SourceConfigServiceStub(self._channel)
+
+        request = collection_pb2.GetSourceConfigRequest(source_id=source_id)
+        try:
+            response = await source_config_stub.GetSourceConfig(request)
+            return MessageToDict(response, preserving_proto_field_name=True)
+        except grpc.RpcError as e:
+            raise CollectionServiceError(
+                operation="GetSourceConfig",
+                code=e.code(),
+                details=e.details() or str(e),
+            ) from e
+
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # Platform Cost Service gRPC Client (Story 13.8)

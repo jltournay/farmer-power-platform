@@ -366,3 +366,174 @@ class TestSourceConfigRepository:
         assert result.events.on_success is not None
         assert result.events.on_success.topic == "collection.quality_result.received"
         assert result.events.on_success.payload_fields == ["document_id", "source_id"]
+
+    @pytest.mark.asyncio
+    async def test_list_all_returns_all_configs(
+        self,
+        mock_mongodb_client,
+    ):
+        """Test that list_all returns all configs with pagination."""
+        # Arrange
+        db = mock_mongodb_client["collection_model"]
+        repo = SourceConfigRepository(db)
+
+        # Insert multiple configs
+        for i in range(5):
+            await db["source_configs"].insert_one(
+                create_source_config_doc(
+                    source_id=f"source-{i:03d}",
+                    display_name=f"Source {i}",
+                    enabled=i % 2 == 0,  # Alternating enabled/disabled
+                    mode="blob_trigger" if i % 2 == 0 else "scheduled_pull",
+                    landing_container=f"container-{i}" if i % 2 == 0 else None,
+                )
+            )
+
+        # Act
+        results = await repo.list_all()
+
+        # Assert
+        assert len(results) == 5
+        assert all(isinstance(config, SourceConfig) for config in results)
+
+    @pytest.mark.asyncio
+    async def test_list_all_with_enabled_only_filter(
+        self,
+        mock_mongodb_client,
+    ):
+        """Test that list_all filters enabled configs correctly."""
+        # Arrange
+        db = mock_mongodb_client["collection_model"]
+        repo = SourceConfigRepository(db)
+
+        # Insert enabled and disabled configs
+        await db["source_configs"].insert_one(create_source_config_doc(source_id="enabled-1", enabled=True))
+        await db["source_configs"].insert_one(create_source_config_doc(source_id="disabled-1", enabled=False))
+        await db["source_configs"].insert_one(create_source_config_doc(source_id="enabled-2", enabled=True))
+
+        # Act
+        results = await repo.list_all(enabled_only=True)
+
+        # Assert
+        assert len(results) == 2
+        assert all(config.enabled is True for config in results)
+
+    @pytest.mark.asyncio
+    @pytest.mark.skip(reason="MockMongoCollection doesn't support nested query notation (ingestion.mode)")
+    async def test_list_all_with_ingestion_mode_filter(
+        self,
+        mock_mongodb_client,
+    ):
+        """Test that list_all filters by ingestion mode.
+
+        Note: Skipped because MockMongoCollection doesn't support nested queries.
+        """
+        # Arrange
+        db = mock_mongodb_client["collection_model"]
+        repo = SourceConfigRepository(db)
+
+        # Insert configs with different modes
+        await db["source_configs"].insert_one(create_source_config_doc(source_id="blob-1", mode="blob_trigger"))
+        await db["source_configs"].insert_one(
+            {
+                **create_source_config_doc(source_id="pull-1"),
+                "ingestion": {
+                    "mode": "scheduled_pull",
+                    "schedule": "0 * * * *",
+                    "provider": "test",
+                    "processor_type": "json-extraction",
+                },
+            }
+        )
+
+        # Act
+        results = await repo.list_all(ingestion_mode="blob_trigger")
+
+        # Assert
+        assert len(results) == 1
+        assert results[0].ingestion.mode == "blob_trigger"
+
+    @pytest.mark.asyncio
+    async def test_list_all_with_pagination(
+        self,
+        mock_mongodb_client,
+    ):
+        """Test that list_all supports pagination."""
+        # Arrange
+        db = mock_mongodb_client["collection_model"]
+        repo = SourceConfigRepository(db)
+
+        # Insert 5 configs
+        for i in range(5):
+            await db["source_configs"].insert_one(create_source_config_doc(source_id=f"source-{i:03d}"))
+
+        # Act - First page
+        first_page = await repo.list_all(page_size=2, skip=0)
+
+        # Act - Second page
+        second_page = await repo.list_all(page_size=2, skip=2)
+
+        # Act - Third page (partial)
+        third_page = await repo.list_all(page_size=2, skip=4)
+
+        # Assert
+        assert len(first_page) == 2
+        assert len(second_page) == 2
+        assert len(third_page) == 1
+
+    @pytest.mark.asyncio
+    async def test_count_returns_total(
+        self,
+        mock_mongodb_client,
+    ):
+        """Test that count returns total number of configs."""
+        # Arrange
+        db = mock_mongodb_client["collection_model"]
+        repo = SourceConfigRepository(db)
+
+        # Insert 3 configs
+        for i in range(3):
+            await db["source_configs"].insert_one(create_source_config_doc(source_id=f"source-{i:03d}"))
+
+        # Act
+        count = await repo.count()
+
+        # Assert
+        assert count == 3
+
+    @pytest.mark.asyncio
+    async def test_count_with_enabled_only_filter(
+        self,
+        mock_mongodb_client,
+    ):
+        """Test that count filters by enabled status."""
+        # Arrange
+        db = mock_mongodb_client["collection_model"]
+        repo = SourceConfigRepository(db)
+
+        # Insert enabled and disabled configs
+        await db["source_configs"].insert_one(create_source_config_doc(source_id="enabled-1", enabled=True))
+        await db["source_configs"].insert_one(create_source_config_doc(source_id="disabled-1", enabled=False))
+        await db["source_configs"].insert_one(create_source_config_doc(source_id="enabled-2", enabled=True))
+
+        # Act
+        count = await repo.count(enabled_only=True)
+
+        # Assert
+        assert count == 2
+
+    @pytest.mark.asyncio
+    async def test_count_empty_collection(
+        self,
+        mock_mongodb_client,
+    ):
+        """Test that count returns 0 for empty collection."""
+        # Arrange
+        db = mock_mongodb_client["collection_model"]
+        repo = SourceConfigRepository(db)
+
+        # Act
+        count = await repo.count()
+
+        # Assert
+        assert count == 0

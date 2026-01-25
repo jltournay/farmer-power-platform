@@ -4,11 +4,13 @@ This module provides centralized conversion functions:
 - Plantation: Protocol Buffer messages to Pydantic models
 - Collection: Protocol Buffer messages and MongoDB dicts to Pydantic models
 - Cost: Protocol Buffer messages to Pydantic models (Story 13.6)
+- SourceConfig: Pydantic-to-Proto and Proto-to-dict converters (Story 9.11a)
 
 Usage:
     from fp_common.converters import farmer_from_proto, factory_from_proto
     from fp_common.converters import document_from_proto, document_from_dict
     from fp_common.converters import cost_summary_from_proto, budget_status_from_proto
+    from fp_common.converters import source_config_summary_to_proto
 
     # Convert gRPC response to Pydantic model
     farmer = farmer_from_proto(grpc_response.farmer)
@@ -19,6 +21,9 @@ Usage:
     # Convert MongoDB document to Pydantic model
     doc = document_from_dict(mongo_doc)
     result = search_result_from_dict(search_doc)
+
+    # Convert SourceConfig for gRPC service (Story 9.11a)
+    summary_proto = source_config_summary_to_proto(config, updated_at=...)
 """
 
 from fp_common.converters.collection_converters import (
@@ -73,6 +78,14 @@ from fp_common.converters.rag_converters import (
     retrieval_result_to_proto,
 )
 
+# Source Config converters (Story 9.11a)
+from fp_common.converters.source_config_converters import (
+    source_config_response_from_proto,
+    source_config_response_to_proto,
+    source_config_summary_from_proto,
+    source_config_summary_to_proto,
+)
+
 __all__ = [
     # Cost converters (proto-to-pydantic)
     "agent_type_cost_to_proto",
@@ -116,4 +129,9 @@ __all__ = [
     "retrieval_result_from_proto",
     "retrieval_result_to_proto",
     "search_result_from_dict",
+    # Source Config converters (Story 9.11a)
+    "source_config_response_from_proto",
+    "source_config_response_to_proto",
+    "source_config_summary_from_proto",
+    "source_config_summary_to_proto",
 ]
