@@ -44,9 +44,9 @@ export function CostTrendChart({ entries, loading, dataAvailableFrom }: CostTren
           <YAxis tick={{ fontSize: 11 }} tickFormatter={(v: number) => `$${v}`} />
           <Tooltip formatter={(value) => `$${Number(value).toFixed(2)}`} />
           <Legend />
-          <Area type="monotone" dataKey="LLM" stackId="1" stroke={colors.llm} fill={colors.llm} fillOpacity={0.6} />
-          <Area type="monotone" dataKey="Documents" stackId="1" stroke={colors.documents} fill={colors.documents} fillOpacity={0.6} />
-          <Area type="monotone" dataKey="Embeddings" stackId="1" stroke={colors.embeddings} fill={colors.embeddings} fillOpacity={0.6} />
+          <Area type="monotone" dataKey="LLM" stackId="1" stroke={colors.llm} fill={colors.llm} fillOpacity={0.6} isAnimationActive={false} />
+          <Area type="monotone" dataKey="Documents" stackId="1" stroke={colors.documents} fill={colors.documents} fillOpacity={0.6} isAnimationActive={false} />
+          <Area type="monotone" dataKey="Embeddings" stackId="1" stroke={colors.embeddings} fill={colors.embeddings} fillOpacity={0.6} isAnimationActive={false} />
         </AreaChart>
       </ResponsiveContainer>
       {dataAvailableFrom && (
