@@ -1,6 +1,6 @@
 # Story 9.11b: Source Config gRPC Client + REST API in BFF
 
-**Status:** review
+**Status:** done
 **GitHub Issue:** #231
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
@@ -202,10 +202,10 @@ so that **the Admin UI can fetch source configurations via standard REST calls**
 
 ### Story Done
 - [x] Create Pull Request: https://github.com/jltournay/farmer-power-platform/pull/232
-- [ ] CI passes on PR (including E2E tests)
+- [x] CI passes on PR (including E2E tests)
 - [x] Code review completed (`/code-review` or human review)
-- [ ] PR approved and merged (squash)
-- [ ] Local branch cleaned up: `git branch -d feature/9-11b-source-config-bff-client-rest`
+- [x] PR approved and merged (squash) - Commit: e06f2e4
+- [x] Local branch cleaned up (deleted on merge)
 
 **PR URL:** https://github.com/jltournay/farmer-power-platform/pull/232
 
