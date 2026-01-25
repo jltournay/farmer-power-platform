@@ -32,11 +32,9 @@ export function MetricCard({ label, value, subtitle, loading, error }: MetricCar
             {value}
           </Typography>
         </Box>
-        {subtitle && (
-          <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
-            {subtitle}
-          </Typography>
-        )}
+        <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5, minHeight: '1.5em' }}>
+          {subtitle || '\u00A0'}
+        </Typography>
       </CardContent>
     </Card>
   );
