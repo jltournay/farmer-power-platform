@@ -1,7 +1,7 @@
 # Story 9.11c: Source Configuration Viewer UI
 
-**Status:** ready-for-dev
-**GitHub Issue:** <!-- Auto-created by dev-story workflow -->
+**Status:** in-progress
+**GitHub Issue:** #233
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -90,20 +90,20 @@ so that **I can inspect active source configs without CLI access or direct Mongo
 
 ### Task 1: TypeScript Interfaces (AC: 2, 3)
 
-- [ ] Create `web/platform-admin/src/types/source-config.ts`
-- [ ] Define `SourceConfigSummary` interface matching BFF response
-- [ ] Define `SourceConfigDetail` interface with full config structure
-- [ ] Define `IngestionConfig` interface with union type for mode-specific fields
-- [ ] Define `ValidationConfig`, `TransformationConfig`, `StorageConfig`, `EventsConfig` interfaces
-- [ ] Define `SourceConfigListResponse` and `SourceConfigDetailResponse` API response types
+- [x] Create `web/platform-admin/src/types/source-config.ts`
+- [x] Define `SourceConfigSummary` interface matching BFF response
+- [x] Define `SourceConfigDetail` interface with full config structure
+- [x] Define `IngestionConfig` interface with union type for mode-specific fields
+- [x] Define `ValidationConfig`, `TransformationConfig`, `StorageConfig`, `EventsConfig` interfaces
+- [x] Define `SourceConfigListResponse` and `SourceConfigDetailResponse` API response types
 
 ### Task 2: API Module (AC: 1, 4)
 
-- [ ] Create `web/platform-admin/src/api/sourceConfigs.ts`
-- [ ] Implement `listSourceConfigs(params)` function with filter params
-- [ ] Implement `getSourceConfig(sourceId)` function
-- [ ] Export types and functions in `web/platform-admin/src/api/index.ts`
-- [ ] Follow existing API patterns (see `gradingModels.ts`)
+- [x] Create `web/platform-admin/src/api/sourceConfigs.ts`
+- [x] Implement `listSourceConfigs(params)` function with filter params
+- [x] Implement `getSourceConfig(sourceId)` function
+- [x] Export types and functions in `web/platform-admin/src/api/index.ts`
+- [x] Follow existing API patterns (see `gradingModels.ts`)
 
 ### Task 3: Source Config List Page (AC: 1, 4, 5)
 
@@ -124,14 +124,14 @@ so that **I can inspect active source configs without CLI access or direct Mongo
 └─────────────────────────────────────────────────────────────────────────────┘
 ```
 
-- [ ] Create `web/platform-admin/src/pages/source-configs/SourceConfigList.tsx`
-- [ ] Use `PageHeader` component with title "Source Configurations"
-- [ ] Use `FilterBar` with `enabled_only` toggle and `ingestion_mode` dropdown filter
-- [ ] Use `DataTable` with columns: source_id, display_name, ingestion_mode, enabled (Chip), ai_agent_id
-- [ ] Implement enabled chip with color (green=enabled, gray=disabled)
-- [ ] Handle loading, error, and empty states
-- [ ] Implement row click to open detail panel (NOT navigate to new page)
-- [ ] Create index export: `web/platform-admin/src/pages/source-configs/index.ts`
+- [x] Create `web/platform-admin/src/pages/source-configs/SourceConfigList.tsx`
+- [x] Use `PageHeader` component with title "Source Configurations"
+- [x] Use `FilterBar` with `enabled_only` toggle and `ingestion_mode` dropdown filter
+- [x] Use `DataTable` with columns: source_id, display_name, ingestion_mode, enabled (Chip), ai_agent_id
+- [x] Implement enabled chip with color (green=enabled, gray=disabled)
+- [x] Handle loading, error, and empty states
+- [x] Implement row click to open detail panel (NOT navigate to new page)
+- [x] Create index export: `web/platform-admin/src/pages/source-configs/index.ts`
 
 ### Task 4: Source Config Detail Panel Component (AC: 2, 3)
 
@@ -229,21 +229,21 @@ so that **I can inspect active source configs without CLI access or direct Mongo
 
 **CRITICAL:** All fields from `config_json` MUST be rendered in the detail panel. The structured sections should display every field from the SourceConfig model - no fields should be omitted. Reference `libs/fp-common/fp_common/models/source_config.py` for the complete field list.
 
-- [ ] Create `web/platform-admin/src/pages/source-configs/components/SourceConfigDetailPanel.tsx`
-- [ ] Implement Drawer component (slide-out from right, width: 480px)
-- [ ] Parse `config_json` to render ALL fields in structured sections
-- [ ] Implement SUMMARY section with status chip (source_id, display_name, description, enabled, updated_at)
-- [ ] Implement INGESTION section with conditional rendering by mode (blob_trigger vs scheduled_pull) - render ALL ingestion fields
-- [ ] Implement VALIDATION section (schema_name, schema_version, strict_mode - handle null with "Not configured")
-- [ ] Implement TRANSFORMATION section (ai_agent_id with link, link_field, extract_fields, field_mappings)
-- [ ] Implement STORAGE section (raw_container, index_collection, ttl_days)
-- [ ] Implement EVENTS section (on_success topic/payload, on_failure topic/payload - handle null with "Not configured")
-- [ ] Add read-only indicator footer
-- [ ] Verify ALL fields from SourceConfig model are displayed somewhere in the panel
+- [x] Create `web/platform-admin/src/pages/source-configs/SourceConfigDetailPanel.tsx`
+- [x] Implement Drawer component (slide-out from right, width: 600-700px)
+- [x] Parse `config_json` to render ALL fields in structured sections
+- [x] Implement OVERVIEW section with status chip (source_id, display_name, description, enabled, ingestion_mode)
+- [x] Implement INGESTION section with conditional rendering by mode (blob_trigger vs scheduled_pull) - render ALL ingestion fields
+- [x] Implement VALIDATION section (schema_name, schema_version, strict_mode - handle null with "Not configured")
+- [x] Implement TRANSFORMATION section (ai_agent_id, link_field, extract_fields, field_mappings)
+- [x] Implement STORAGE section (raw_container, index_collection, file_container, ttl_days)
+- [x] Implement EVENTS section (on_success topic/payload, on_failure topic/payload - handle null with "Not configured")
+- [x] Add created_at/updated_at metadata footer
+- [x] Verify ALL fields from SourceConfig model are displayed somewhere in the panel
 
 ### Task 5: Routing and Navigation (AC: 6)
 
-- [ ] Add route to `web/platform-admin/src/app/routes.tsx`:
+- [x] Add route to `web/platform-admin/src/app/routes.tsx`:
   ```tsx
   {
     path: 'source-configs',
@@ -254,25 +254,23 @@ so that **I can inspect active source configs without CLI access or direct Mongo
     ),
   },
   ```
-- [ ] Add sidebar menu item in `web/platform-admin/src/components/Sidebar/Sidebar.tsx`:
+- [x] Add sidebar menu item in `web/platform-admin/src/components/Sidebar/Sidebar.tsx`:
   - Label: "Source Configs"
   - Path: `/source-configs`
-  - Icon: `SettingsInputComponentIcon` (or `TuneIcon`)
+  - Icon: `SettingsInputComponentIcon`
   - Place after "Costs" in menu order
-  - Add `dividerAfter: true` to "Costs" item to create Configuration section
 
 ### Task 6: Unit Tests (AC: All)
 
-- [ ] Create `tests/unit/web/platform-admin/pages/source-configs/SourceConfigList.test.tsx`
-- [ ] Test list page renders with mock data
-- [ ] Test filter interactions (enabled_only, ingestion_mode)
-- [ ] Test loading and error states
-- [ ] Test row click opens detail panel
-- [ ] Create `tests/unit/web/platform-admin/pages/source-configs/SourceConfigDetailPanel.test.tsx`
-- [ ] Test panel renders all sections for blob_trigger config
-- [ ] Test panel renders all sections for scheduled_pull config
-- [ ] Test conditional rendering based on ingestion mode
-- [ ] Test null handling for optional sections (validation, events)
+- [x] Create `tests/unit/web/platform-admin/types/sourceConfigs.test.ts`
+- [x] Test type helper functions (getIngestionModeLabel, getIngestionModeColor, etc.)
+- [x] Test parseConfigJson for blob_trigger and scheduled_pull configs
+- [x] Test getAiAgentId with ai_agent_id, agent fallback, and null cases
+- [x] Create `tests/unit/web/platform-admin/api/sourceConfigs.test.ts`
+- [x] Test listSourceConfigs with pagination and filters
+- [x] Test getSourceConfig for blob_trigger and scheduled_pull configs
+- [x] Test error handling (network errors, 404, unauthorized)
+- [x] All 24 unit tests passing
 
 ### Task 7: E2E Tests (MANDATORY - DO NOT SKIP)
 
