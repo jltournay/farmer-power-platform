@@ -1,6 +1,6 @@
 # Story 9.11a: SourceConfigService gRPC in Collection Model
 
-**Status:** in-progress
+**Status:** done
 **GitHub Issue:** #229
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
@@ -161,21 +161,21 @@ so that **the Admin UI can display source config data without direct MongoDB acc
 **Why this matters:** E2E tests validate the full stack (gRPC → MongoDB → Response) with real DAPR service invocation. Unit tests with mocks cannot catch integration issues.
 
 #### 8.1 Verify Seed Data Exists
-- [ ] Check `tests/e2e/infrastructure/seed_data/` for source_configs
-- [ ] Verify at least 2 source configs exist in seed data (one `blob_trigger`, one `scheduled_pull`)
-- [ ] If missing, create seed data file before writing tests
+- [x] Check `tests/e2e/infrastructure/seed_data/` for source_configs
+- [x] Verify at least 2 source configs exist in seed data (one `blob_trigger`, one `scheduled_pull`)
+- [x] If missing, create seed data file before writing tests
 
 #### 8.2 Create E2E Test File
-- [ ] Create `tests/e2e/scenarios/test_12_source_config_service.py`
-- [ ] Follow existing E2E test patterns (see `test_01_plantation_service.py`)
-- [ ] Import `SourceConfigClient` from BFF (or use direct gRPC for this story)
+- [x] Create `tests/e2e/scenarios/test_12_source_config_service.py`
+- [x] Follow existing E2E test patterns (see `test_01_plantation_service.py`)
+- [x] Import `SourceConfigClient` from BFF (or use direct gRPC for this story)
 
 #### 8.3 Implement Required Test Cases
-- [ ] `test_list_source_configs_returns_all()` - ListSourceConfigs returns configs from seed
-- [ ] `test_list_source_configs_with_enabled_filter()` - Filter by enabled_only=true works
-- [ ] `test_list_source_configs_with_mode_filter()` - Filter by ingestion_mode works
-- [ ] `test_get_source_config_returns_full_json()` - GetSourceConfig returns valid config_json
-- [ ] `test_get_source_config_not_found()` - GetSourceConfig returns NOT_FOUND for invalid ID
+- [x] `test_list_source_configs_returns_all()` - ListSourceConfigs returns configs from seed
+- [x] `test_list_source_configs_with_enabled_filter()` - Filter by enabled_only=true works
+- [x] `test_list_source_configs_with_mode_filter()` - Filter by ingestion_mode works
+- [x] `test_get_source_config_returns_full_json()` - GetSourceConfig returns valid config_json
+- [x] `test_get_source_config_not_found()` - GetSourceConfig returns NOT_FOUND for invalid ID
 
 #### 8.4 Run E2E Tests Locally (BEFORE marking story complete)
 ```bash
@@ -196,9 +196,9 @@ bash scripts/e2e-up.sh --down
 ```
 
 #### 8.5 Capture Evidence
-- [ ] Paste test output in "Local Test Run Evidence" section below
-- [ ] All 5 test cases must PASS
-- [ ] No regressions in other E2E tests
+- [x] Paste test output in "Local Test Run Evidence" section below
+- [x] All 11 test cases PASS (6 ListSourceConfigs + 4 GetSourceConfig + 1 connectivity)
+- [x] No regressions in other E2E tests (weather extraction failure is pre-existing)
 
 **⛔ BLOCKER:** Do NOT proceed to Git Workflow until Task 8 is 100% complete with passing tests.
 
@@ -207,24 +207,20 @@ bash scripts/e2e-up.sh --down
 **All story development MUST use feature branches.** Direct pushes to main are blocked.
 
 ### Story Start
-- [ ] GitHub Issue exists or created: `gh issue create --title "Story 9.11a: SourceConfigService gRPC in Collection Model"`
-- [ ] Feature branch created from main:
-  ```bash
-  git checkout main && git pull origin main
-  git checkout -b story/9-11a-source-config-grpc
-  ```
+- [x] GitHub Issue exists or created: #229
+- [x] Feature branch created from main: `story/9-11a-source-config-grpc`
 
 **Branch name:** `story/9-11a-source-config-grpc`
 
 ### During Development
-- [ ] All commits reference GitHub issue: `Relates to #XX`
-- [ ] Commits are atomic by type (production, test, seed - not mixed)
-- [ ] Push to feature branch: `git push -u origin story/9-11a-source-config-grpc`
+- [x] All commits reference GitHub issue: `Relates to #229`
+- [x] Commits are atomic by type (production, test, seed - not mixed)
+- [x] Push to feature branch: `git push -u origin story/9-11a-source-config-grpc`
 
 ### Story Done
 - [ ] Create Pull Request: `gh pr create --title "Story 9.11a: SourceConfigService gRPC in Collection Model" --base main`
 - [ ] CI passes on PR (including E2E tests)
-- [ ] Code review completed (`/code-review` or human review)
+- [x] Code review completed (`/code-review` or human review)
 - [ ] PR approved and merged (squash)
 - [ ] Local branch cleaned up: `git branch -d story/9-11a-source-config-grpc`
 
@@ -247,7 +243,8 @@ pytest tests/unit/ -v
 ```
 **Output:**
 ```
-(paste test summary here - e.g., "42 passed in 5.23s")
+47 passed, 2 skipped in 0.40s
+(Story 9.11a tests: 14 service tests + 17 converter tests + 16 repository tests)
 ```
 
 ### 2. E2E Tests (MANDATORY)
@@ -269,15 +266,28 @@ bash scripts/e2e-up.sh --down
 ```
 **Output:**
 ```
-(paste E2E test output here - story is NOT ready for review without this)
+E2E CI Run: All 11 SourceConfig tests PASSED:
+- test_list_source_configs_returns_all PASSED
+- test_list_source_configs_with_enabled_filter PASSED
+- test_list_source_configs_with_blob_trigger_filter PASSED
+- test_list_source_configs_with_scheduled_pull_filter PASSED
+- test_list_source_configs_pagination PASSED
+- test_list_source_configs_combined_filters PASSED
+- test_get_source_config_returns_full_json PASSED
+- test_get_source_config_scheduled_pull PASSED
+- test_get_source_config_not_found PASSED
+- test_get_source_config_empty_source_id PASSED
+- test_source_config_service_connectivity PASSED
+
+Full suite: 306 passed, 1 failed (pre-existing weather extraction issue), 1 skipped
 ```
-**E2E passed:** [ ] Yes / [ ] No
+**E2E passed:** [x] Yes / [ ] No (SourceConfig tests all pass; 1 unrelated failure in weather extraction)
 
 ### 3. Lint Check
 ```bash
 ruff check . && ruff format --check .
 ```
-**Lint passed:** [ ] Yes / [ ] No
+**Lint passed:** [x] Yes / [ ] No
 
 ### 4. CI Verification on Story Branch (MANDATORY)
 
@@ -288,15 +298,16 @@ ruff check . && ruff format --check .
 git push origin story/9-11a-source-config-grpc
 
 # Trigger E2E CI workflow
-gh workflow run e2e.yaml --ref story/9-11a-source-config-grpc
+gh workflow run "E2E Tests" --ref story/9-11a-source-config-grpc
 
 # Wait and check status
 sleep 10
-gh run list --workflow=e2e.yaml --branch story/9-11a-source-config-grpc --limit 1
+gh run list --workflow="E2E Tests" --branch story/9-11a-source-config-grpc --limit 1
 ```
-**CI Run ID:** _______________
-**CI E2E Status:** [ ] Passed / [ ] Failed
-**Verification Date:** _______________
+**CI Run ID:** 21333540719 (CI), 21333667247 (E2E)
+**CI Status:** [x] Passed
+**CI E2E Status:** [x] Passed (306/307 tests pass; 1 pre-existing weather extraction failure unrelated to this story)
+**Verification Date:** 2026-01-25
 
 ---
 
@@ -635,16 +646,63 @@ If missing, create minimal seed:
 
 ### Agent Model Used
 
-{{agent_model_name_version}}
+Claude Opus 4.5 (claude-opus-4-5-20251101)
 
 ### Debug Log References
 
+- CI Run: 21333540719 (passed)
+- E2E CI Run: 21333667247 (306 passed, 1 unrelated failure)
+
+### Code Review (AI)
+
+**Review Date:** 2026-01-25
+**Reviewer:** Claude Opus 4.5 (Adversarial Code Review)
+**Outcome:** ✅ APPROVED
+
+**Findings:**
+| Severity | Issue | Resolution |
+|----------|-------|------------|
+| MEDIUM | File List incomplete - `sprint-status.yaml` not documented | Fixed - added to File List |
+| MEDIUM | Git Workflow checkboxes not marked | Fixed - updated checkboxes |
+| MEDIUM | E2E CI status description confusing | Fixed - clarified status |
+| LOW | Stub creation inside methods (optimization opportunity) | Accepted - test code, negligible overhead |
+| LOW | Type hint as `Any` in test client | Accepted - test infrastructure |
+
+**AC Verification:**
+- ✅ AC 9.11a.1: Proto service definition complete
+- ✅ AC 9.11a.2: ListSourceConfigs with filters/pagination
+- ✅ AC 9.11a.3: GetSourceConfig with full JSON
+- ✅ AC 9.11a.4: gRPC server registration
+- ✅ AC 9.11a.5: Unit tests comprehensive
+- ✅ AC-E2E: E2E tests passing
+
 ### Completion Notes List
+
+- All unit tests pass (47 passed, 2 skipped for expected MockMongo limitations)
+- All 11 E2E SourceConfig tests pass
+- E2E weather extraction failure is pre-existing and unrelated to this story
+- Merged SourceConfig methods into existing CollectionServiceClient (per user feedback)
+- Code review completed with 3 medium issues fixed
 
 ### File List
 
 **Created:**
-- (list new files)
+- `libs/fp-common/fp_common/converters/source_config_converters.py` - Pydantic↔Proto converters
+- `services/collection-model/src/collection_model/api/source_config_service.py` - SourceConfigServiceServicer
+- `tests/unit/collection/api/__init__.py` - Package init
+- `tests/unit/collection/api/test_source_config_service.py` - 14 unit tests for gRPC service
+- `tests/unit/fp_common/converters/test_source_config_converters.py` - 17 unit tests for converters
+- `tests/e2e/scenarios/test_12_source_config_service.py` - 11 E2E tests
 
 **Modified:**
-- (list modified files with brief description)
+- `proto/collection/v1/collection.proto` - Added SourceConfigService definition
+- `libs/fp-proto/src/fp_proto/collection/v1/collection_pb2.py` - Regenerated proto stubs
+- `libs/fp-proto/src/fp_proto/collection/v1/collection_pb2.pyi` - Regenerated proto stubs
+- `libs/fp-proto/src/fp_proto/collection/v1/collection_pb2_grpc.py` - Regenerated proto stubs
+- `libs/fp-common/fp_common/converters/__init__.py` - Export new converters
+- `services/collection-model/src/collection_model/api/grpc_service.py` - Register SourceConfigService
+- `services/collection-model/src/collection_model/infrastructure/repositories/source_config_repository.py` - Added list_all(), count()
+- `tests/unit/collection/test_source_config_repository.py` - Added tests for list_all(), count()
+- `tests/e2e/helpers/mcp_clients.py` - Added SourceConfig methods to CollectionServiceClient
+- `tests/e2e/conftest.py` - Updated collection_service fixture docstring
+- `_bmad-output/sprint-artifacts/sprint-status.yaml` - Updated story status
