@@ -1,6 +1,6 @@
 # Story 9.11c: Source Configuration Viewer UI
 
-**Status:** in-progress
+**Status:** review
 **GitHub Issue:** #233
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
@@ -403,15 +403,18 @@ npm run build -w @fp/platform-admin
 git push origin feature/9-11c-source-config-viewer-ui
 
 # Trigger E2E CI workflow
-gh workflow run e2e.yaml --ref feature/9-11c-source-config-viewer-ui
+gh workflow run "E2E Tests" --ref feature/9-11c-source-config-viewer-ui
 
 # Wait and check status
-sleep 10
-gh run list --workflow=e2e.yaml --branch feature/9-11c-source-config-viewer-ui --limit 1
+gh run view 21337306731 --json status,conclusion
+# Result: {"conclusion":"success","status":"completed"}
+
+gh run view 21337300403 --json status,conclusion
+# Result: {"conclusion":"success","status":"completed"}
 ```
-**CI Run ID:** _______________
-**CI E2E Status:** [ ] Passed / [ ] Failed
-**Verification Date:** _______________
+**CI Run ID:** 21337300403 (CI), 21337306731 (E2E Tests)
+**CI E2E Status:** [x] Passed / [ ] Failed
+**Verification Date:** 2026-01-25
 
 ---
 
