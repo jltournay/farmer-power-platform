@@ -105,10 +105,10 @@ describe('CostDashboard', () => {
     await act(async () => {
       render(<CostDashboard />);
     });
-    expect(screen.getByText('Overview')).toBeInTheDocument();
-    expect(screen.getByText('LLM')).toBeInTheDocument();
-    expect(screen.getByText('Documents')).toBeInTheDocument();
-    expect(screen.getByText('Embeddings')).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: 'Overview' })).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: 'LLM' })).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: 'Documents' })).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: 'Embeddings' })).toBeInTheDocument();
   });
 
   it('renders Budget button', async () => {
@@ -124,7 +124,7 @@ describe('CostDashboard', () => {
       render(<CostDashboard />);
     });
     await act(async () => {
-      fireEvent.click(screen.getByText('LLM'));
+      fireEvent.click(screen.getByRole('tab', { name: 'LLM' }));
     });
     await waitFor(() => {
       expect(screen.getByText('Cost by Agent Type')).toBeInTheDocument();
@@ -137,7 +137,7 @@ describe('CostDashboard', () => {
       render(<CostDashboard />);
     });
     await act(async () => {
-      fireEvent.click(screen.getByText('Documents'));
+      fireEvent.click(screen.getByRole('tab', { name: 'Documents' }));
     });
     await waitFor(() => {
       expect(screen.getByText('Pages Processed')).toBeInTheDocument();
@@ -150,7 +150,7 @@ describe('CostDashboard', () => {
       render(<CostDashboard />);
     });
     await act(async () => {
-      fireEvent.click(screen.getByText('Embeddings'));
+      fireEvent.click(screen.getByRole('tab', { name: 'Embeddings' }));
     });
     await waitFor(() => {
       expect(screen.getByText('Cost by Knowledge Domain')).toBeInTheDocument();

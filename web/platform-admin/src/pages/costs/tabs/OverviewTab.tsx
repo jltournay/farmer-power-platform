@@ -24,7 +24,7 @@ export function OverviewTab({ startDate, endDate, onExportData }: OverviewTabPro
   const [error, setError] = useState<string | null>(null);
 
   // Ref for polling interval
-  const pollingRef = useRef<NodeJS.Timeout | null>(null);
+  const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   // Fetch all data on mount and when date range changes
   useEffect(() => {

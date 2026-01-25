@@ -1,5 +1,6 @@
 """Direct MongoDB client for E2E test verification."""
 
+from datetime import UTC
 from typing import Any
 
 from motor.motor_asyncio import AsyncIOMotorClient, AsyncIOMotorDatabase
@@ -492,7 +493,7 @@ class MongoDBDirectClient:
             date queries. This is needed because model_dump(mode="json") converts
             datetime to ISO strings, but MongoDB queries require native dates.
         """
-        from datetime import datetime, timezone
+        from datetime import datetime
 
         if cost_events:
             for event in cost_events:
@@ -502,9 +503,7 @@ class MongoDBDirectClient:
                     # Handle ISO format with Z suffix or +00:00
                     if ts_str.endswith("Z"):
                         ts_str = ts_str[:-1] + "+00:00"
-                    event["timestamp"] = datetime.fromisoformat(ts_str).replace(
-                        tzinfo=timezone.utc
-                    )
+                    event["timestamp"] = datetime.fromisoformat(ts_str).replace(tzinfo=UTC)
 
                 await self.platform_cost_db.cost_events.update_one(
                     {"request_id": event["request_id"]},
