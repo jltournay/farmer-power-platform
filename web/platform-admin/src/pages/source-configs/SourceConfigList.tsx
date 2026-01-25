@@ -6,7 +6,7 @@
  */
 
 import { useState, useEffect, useCallback } from 'react';
-import { Box, Alert, Chip, CircularProgress, Drawer, Typography, IconButton } from '@mui/material';
+import { Box, Alert, Button, Chip, CircularProgress, Drawer, Typography, IconButton } from '@mui/material';
 import type { GridColDef, GridPaginationModel } from '@mui/x-data-grid';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import CloseIcon from '@mui/icons-material/Close';
@@ -211,7 +211,15 @@ export function SourceConfigList(): JSX.Element {
       />
 
       {error && (
-        <Alert severity="error" sx={{ mb: 2 }}>
+        <Alert
+          severity="error"
+          sx={{ mb: 2 }}
+          action={
+            <Button color="inherit" size="small" onClick={fetchData}>
+              Retry
+            </Button>
+          }
+        >
           {error}
         </Alert>
       )}

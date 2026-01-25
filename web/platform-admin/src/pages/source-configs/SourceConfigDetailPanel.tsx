@@ -197,6 +197,9 @@ export function SourceConfigDetailPanel({ config }: SourceConfigDetailPanelProps
                     {ingestion.processed_file_config.archive_ttl_days && (
                       <ConfigRow label="Archive TTL (days)" value={ingestion.processed_file_config.archive_ttl_days} />
                     )}
+                    {ingestion.processed_file_config.processed_folder && (
+                      <ConfigRow label="Processed Folder" value={ingestion.processed_file_config.processed_folder} />
+                    )}
                   </>
                 )}
                 {ingestion.zip_config && (
@@ -219,6 +222,9 @@ export function SourceConfigDetailPanel({ config }: SourceConfigDetailPanelProps
                   <>
                     <ConfigRow label="Base URL" value={ingestion.request.base_url} />
                     <ConfigRow label="Auth Type" value={ingestion.request.auth_type} />
+                    {ingestion.request.auth_secret_key && (
+                      <ConfigRow label="Auth Secret Key" value={ingestion.request.auth_secret_key} />
+                    )}
                     <ConfigRow label="Timeout (seconds)" value={ingestion.request.timeout_seconds} />
                     <ConfigRow label="Parameters" value={<JsonDisplay data={ingestion.request.parameters} />} />
                   </>
@@ -228,6 +234,15 @@ export function SourceConfigDetailPanel({ config }: SourceConfigDetailPanelProps
                     <ConfigRow label="Iterate Over" value={ingestion.iteration.foreach} />
                     <ConfigRow label="Source MCP" value={ingestion.iteration.source_mcp} />
                     <ConfigRow label="Source Tool" value={ingestion.iteration.source_tool} />
+                    {ingestion.iteration.tool_arguments && (
+                      <ConfigRow
+                        label="Tool Arguments"
+                        value={<JsonDisplay data={ingestion.iteration.tool_arguments as Record<string, unknown>} />}
+                      />
+                    )}
+                    {ingestion.iteration.result_path && (
+                      <ConfigRow label="Result Path" value={ingestion.iteration.result_path} />
+                    )}
                     <ConfigRow label="Concurrency" value={ingestion.iteration.concurrency} />
                     {ingestion.iteration.inject_linkage && (
                       <ConfigRow
@@ -334,6 +349,11 @@ export function SourceConfigDetailPanel({ config }: SourceConfigDetailPanelProps
       )}
 
       <Divider sx={{ my: 2 }} />
+
+      {/* Read-only indicator (AC 9.11c.2) */}
+      <Alert severity="warning" icon={false} sx={{ mb: 2 }}>
+        ⚠️ Read-only view. Use <code>source-config</code> CLI to modify.
+      </Alert>
 
       {/* Metadata */}
       <Typography variant="caption" color="text.secondary" display="block">
