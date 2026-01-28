@@ -9,10 +9,12 @@ Provides CRUD endpoints for:
 - Knowledge Management (Story 9.9a)
 - Platform Cost Monitoring (Story 9.10a)
 - Source Configurations (Story 9.11b)
+- AI Agent Configurations (Story 9.12b)
 
 All routes require platform_admin role (AC5).
 """
 
+from bff.api.routes.admin.ai_agents import router as ai_agents_router
 from bff.api.routes.admin.collection_points import router as collection_points_router
 from bff.api.routes.admin.factories import router as factories_router
 from bff.api.routes.admin.farmers import router as farmers_router
@@ -35,5 +37,6 @@ router.include_router(grading_models_router)
 router.include_router(knowledge_router)
 router.include_router(platform_cost_router)
 router.include_router(source_configs_router)
+router.include_router(ai_agents_router)
 
 __all__ = ["router"]

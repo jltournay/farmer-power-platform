@@ -6,11 +6,20 @@ Provides request/response schemas for admin CRUD operations on:
 - Collection Points (AC3)
 - Farmers (AC4)
 - Platform Cost Monitoring (Story 9.10a)
+- Agent Config Viewer (Story 9.12b)
 
 All schemas follow ADR-012 BFF patterns with separate API schemas
 from domain models.
 """
 
+# Agent Config Viewer schemas (Story 9.12b)
+from bff.api.schemas.admin.agent_config_schemas import (
+    AgentConfigDetailResponse,
+    AgentConfigListResponse,
+    AgentConfigSummaryResponse,
+    PromptListResponse,
+    PromptSummaryResponse,
+)
 from bff.api.schemas.admin.collection_point_schemas import (
     CollectionPointCreateRequest,
     CollectionPointDetail,
@@ -99,6 +108,10 @@ __all__ = [
     "AdminFarmerListResponse",
     "AdminFarmerSummary",
     "AdminFarmerUpdateRequest",
+    # Agent Config Viewer (Story 9.12b)
+    "AgentConfigDetailResponse",
+    "AgentConfigListResponse",
+    "AgentConfigSummaryResponse",
     "AgentTypeCostEntry",
     "AssignGradingModelRequest",
     "BudgetConfigRequest",
@@ -142,6 +155,9 @@ __all__ = [
     "LlmByAgentTypeResponse",
     "LlmByModelResponse",
     "ModelCostEntry",
+    # Agent Prompt Viewer (Story 9.12b)
+    "PromptListResponse",
+    "PromptSummaryResponse",
     "QualityThresholdsAPI",
     "QueryKnowledgeRequest",
     "QueryResponse",

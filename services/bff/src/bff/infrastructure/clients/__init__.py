@@ -1,5 +1,6 @@
 """gRPC client implementations for backend services."""
 
+from bff.infrastructure.clients.agent_config_client import AgentConfigClient
 from bff.infrastructure.clients.ai_model_client import AiModelClient
 from bff.infrastructure.clients.base import (
     BaseGrpcClient,
@@ -12,6 +13,7 @@ from bff.infrastructure.clients.platform_cost_client import PlatformCostClient
 from bff.infrastructure.clients.source_config_client import SourceConfigClient
 
 __all__ = [
+    "AgentConfigClient",
     "AiModelClient",
     "BaseGrpcClient",
     "CollectionClient",
