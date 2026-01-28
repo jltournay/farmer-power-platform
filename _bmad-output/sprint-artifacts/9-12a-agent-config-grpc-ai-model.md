@@ -1,6 +1,6 @@
 # Story 9.12a: AgentConfigService gRPC in AI Model
 
-**Status:** in-progress
+**Status:** review
 **GitHub Issue:** #235
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
@@ -284,11 +284,11 @@ bash scripts/e2e-up.sh --down
 
 ### 1. Unit Tests
 ```bash
-pytest tests/unit/ -v
+pytest tests/unit/ai_model/ -v
 ```
 **Output:**
 ```
-(paste test summary here - e.g., "42 passed in 5.23s")
+866 passed, 17 warnings in 13.60s
 ```
 
 ### 2. E2E Tests (MANDATORY)
@@ -299,23 +299,28 @@ pytest tests/unit/ -v
 # Start infrastructure
 bash scripts/e2e-up.sh --build
 
-# Wait for services, then run tests
-PYTHONPATH="${PYTHONPATH}:.:libs/fp-proto/src" pytest tests/e2e/scenarios/ -v
+# Wait for services, then run tests (full suite)
+bash scripts/e2e-test.sh --keep-up
 
 # Tear down
 bash scripts/e2e-up.sh --down
 ```
 **Output:**
 ```
-(paste E2E test output here - story is NOT ready for review without this)
+332 passed, 1 skipped in 213.15s (0:03:33)
 ```
-**E2E passed:** [ ] Yes / [ ] No
+**E2E passed:** [x] Yes / [ ] No
 
 ### 3. Lint Check
 ```bash
 ruff check . && ruff format --check .
 ```
-**Lint passed:** [ ] Yes / [ ] No
+**Output:**
+```
+All checks passed!
+710 files already formatted
+```
+**Lint passed:** [x] Yes / [ ] No
 
 ### 4. CI Verification on Story Branch (MANDATORY)
 
@@ -332,9 +337,9 @@ gh workflow run "E2E Tests" --ref story/9-12a-agent-config-grpc
 sleep 10
 gh run list --workflow="E2E Tests" --branch story/9-12a-agent-config-grpc --limit 1
 ```
-**CI Run ID:** _______________
-**CI E2E Status:** [ ] Passed / [ ] Failed
-**Verification Date:** _______________
+**CI Run ID:** 21442378353
+**CI E2E Status:** [x] Passed
+**Verification Date:** 2026-01-28
 
 ---
 
@@ -751,16 +756,40 @@ tests/
 
 ### Agent Model Used
 
-{{agent_model_name_version}}
+Claude Opus 4.5 (claude-opus-4-5-20251101)
 
 ### Debug Log References
 
+- Local E2E: 16/16 tests passed for AgentConfigService
+- Full E2E Suite: 332 passed, 1 skipped, 0 failed
+
 ### Completion Notes List
+
+- All 6 unit test tasks completed (Tasks 1-7)
+- E2E tests created and passing (Task 8)
+- Local E2E validation passed (Step 9)
+- CI E2E triggered (Step 13) - Run ID 21442378353
 
 ### File List
 
 **Created:**
-- (list new files)
+- `services/ai-model/src/ai_model/api/agent_config_service.py` - AgentConfigServiceServicer implementation
+- `libs/fp-common/fp_common/converters/agent_config_converters.py` - Pydantic-Proto converters
+- `tests/unit/ai_model/test_agent_config_service.py` - Unit tests (14 tests)
+- `tests/e2e/scenarios/test_14_agent_config_service.py` - E2E tests (16 tests)
 
 **Modified:**
-- (list modified files with brief description)
+- `proto/ai_model/v1/ai_model.proto` - Added AgentConfigService and messages
+- `libs/fp-proto/src/fp_proto/ai_model/v1/ai_model_pb2.py` - Regenerated stubs
+- `libs/fp-proto/src/fp_proto/ai_model/v1/ai_model_pb2.pyi` - Regenerated stubs
+- `libs/fp-proto/src/fp_proto/ai_model/v1/ai_model_pb2_grpc.py` - Regenerated stubs
+- `services/ai-model/src/ai_model/api/grpc_server.py` - Register AgentConfigService
+- `services/ai-model/src/ai_model/infrastructure/repositories/agent_config_repository.py` - Added list_all, count
+- `services/ai-model/src/ai_model/infrastructure/repositories/prompt_repository.py` - Added count_by_agent
+- `libs/fp-common/fp_common/converters/__init__.py` - Export new converters
+- `tests/unit/ai_model/test_agent_config_repository.py` - Added tests for new methods
+- `tests/unit/ai_model/test_prompt_repository.py` - Added tests for count_by_agent
+- `tests/e2e/conftest.py` - Added ai_model_service fixture
+- `tests/e2e/helpers/mcp_clients.py` - Added AiModelServiceClient
+- `tests/e2e/infrastructure/seed/agent_configs.json` - Added disease-diagnosis explorer
+- `tests/e2e/infrastructure/seed/prompts.json` - Added disease-diagnosis prompt
