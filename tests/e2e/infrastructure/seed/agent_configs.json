@@ -118,5 +118,54 @@
       "updated_at": "2026-01-10T00:00:00Z",
       "git_commit": null
     }
+  },
+  {
+    "_id": "disease-diagnosis:1.0.0",
+    "id": "disease-diagnosis:1.0.0",
+    "agent_id": "disease-diagnosis",
+    "version": "1.0.0",
+    "type": "explorer",
+    "status": "active",
+    "description": "Diagnoses tea plant diseases from quality events using RAG knowledge base",
+    "input": {
+      "event": "knowledge.analysis.requested",
+      "schema": {
+        "type": "object",
+        "required": ["farmer_id", "quality_data"]
+      }
+    },
+    "output": {
+      "event": "ai.diagnosis.complete",
+      "schema": {
+        "type": "object",
+        "required": ["diagnosis", "confidence", "recommendations"]
+      }
+    },
+    "llm": {
+      "model": "anthropic/claude-3-5-sonnet",
+      "temperature": 0.3,
+      "max_tokens": 2000
+    },
+    "rag": {
+      "enabled": true,
+      "knowledge_domains": ["plant_diseases", "tea_cultivation"],
+      "top_k": 5,
+      "min_similarity": 0.7,
+      "rerank_enabled": false,
+      "reranking_model": null
+    },
+    "mcp_sources": [],
+    "error_handling": {
+      "max_attempts": 3,
+      "backoff_ms": [100, 500, 2000],
+      "on_failure": "publish_error_event",
+      "dead_letter_topic": null
+    },
+    "metadata": {
+      "author": "dev-story-9.12a",
+      "created_at": "2026-01-28T00:00:00Z",
+      "updated_at": "2026-01-28T00:00:00Z",
+      "git_commit": null
+    }
   }
 ]

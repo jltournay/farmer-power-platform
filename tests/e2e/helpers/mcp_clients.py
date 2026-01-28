@@ -919,3 +919,159 @@ class PlatformCostServiceClient:
             return True
         except Exception:
             return False
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# AI Model Service gRPC Client (Story 9.12a)
+# ═══════════════════════════════════════════════════════════════════════════════
+
+
+class AiModelServiceError(Exception):
+    """Exception raised when AI Model gRPC service returns an error."""
+
+    def __init__(self, operation: str, code: grpc.StatusCode, details: str):
+        self.operation = operation
+        self.code = code
+        self.details = details
+        super().__init__(f"{operation} failed: [{code.name}] {details}")
+
+
+class AiModelServiceClient:
+    """gRPC client for AI Model Service (Story 9.12a).
+
+    This client connects directly to the AI Model gRPC service
+    for AgentConfig read-only queries (AgentConfigService).
+    """
+
+    def __init__(self, host: str = "localhost", port: int = 50091):
+        self.address = f"{host}:{port}"
+        self._channel: grpc.aio.Channel | None = None
+        self._agent_config_stub: Any | None = None
+
+    async def __aenter__(self) -> "AiModelServiceClient":
+        from fp_proto.ai_model.v1 import ai_model_pb2_grpc
+
+        self._channel = grpc.aio.insecure_channel(self.address)
+        self._agent_config_stub = ai_model_pb2_grpc.AgentConfigServiceStub(self._channel)
+        return self
+
+    async def __aexit__(self, *args: Any) -> None:
+        if self._channel:
+            await self._channel.close()
+
+    @property
+    def agent_config_stub(self) -> Any:
+        if self._agent_config_stub is None:
+            raise RuntimeError("Client not initialized. Use async context manager.")
+        return self._agent_config_stub
+
+    # =========================================================================
+    # AgentConfig Service Methods (Story 9.12a)
+    # =========================================================================
+
+    async def list_agent_configs(
+        self,
+        page_size: int = 20,
+        page_token: str | None = None,
+        agent_type: str | None = None,
+        status: str | None = None,
+    ) -> dict[str, Any]:
+        """List agent configs with optional filters via gRPC (Story 9.12a).
+
+        Args:
+            page_size: Number of items per page (default 20, max 100).
+            page_token: Pagination token for next page.
+            agent_type: Filter by agent type (extractor, explorer, etc.).
+            status: Filter by status (draft, staged, active, archived).
+
+        Returns:
+            ListAgentConfigsResponse with agents, next_page_token, total_count.
+        """
+        from fp_proto.ai_model.v1 import ai_model_pb2
+
+        request = ai_model_pb2.ListAgentConfigsRequest(
+            page_size=page_size,
+            page_token=page_token or "",
+            agent_type=agent_type or "",
+            status=status or "",
+        )
+        try:
+            response = await self.agent_config_stub.ListAgentConfigs(request)
+            return MessageToDict(response, preserving_proto_field_name=True)
+        except grpc.RpcError as e:
+            raise AiModelServiceError(
+                operation="ListAgentConfigs",
+                code=e.code(),
+                details=e.details() or str(e),
+            ) from e
+
+    async def get_agent_config(
+        self,
+        agent_id: str,
+        version: str | None = None,
+    ) -> dict[str, Any]:
+        """Get agent config by ID with full JSON via gRPC (Story 9.12a).
+
+        Args:
+            agent_id: The agent configuration ID.
+            version: Optional specific version (empty = active version).
+
+        Returns:
+            AgentConfigResponse with full config_json and linked prompts.
+        """
+        from fp_proto.ai_model.v1 import ai_model_pb2
+
+        request = ai_model_pb2.GetAgentConfigRequest(
+            agent_id=agent_id,
+            version=version or "",
+        )
+        try:
+            response = await self.agent_config_stub.GetAgentConfig(request)
+            return MessageToDict(response, preserving_proto_field_name=True)
+        except grpc.RpcError as e:
+            raise AiModelServiceError(
+                operation="GetAgentConfig",
+                code=e.code(),
+                details=e.details() or str(e),
+            ) from e
+
+    async def list_prompts_by_agent(
+        self,
+        agent_id: str,
+        status: str | None = None,
+    ) -> dict[str, Any]:
+        """List prompts for an agent via gRPC (Story 9.12a).
+
+        Args:
+            agent_id: The agent configuration ID.
+            status: Optional filter by status (draft, staged, active, archived).
+
+        Returns:
+            ListPromptsResponse with prompts and total_count.
+        """
+        from fp_proto.ai_model.v1 import ai_model_pb2
+
+        request = ai_model_pb2.ListPromptsByAgentRequest(
+            agent_id=agent_id,
+            status=status or "",
+        )
+        try:
+            response = await self.agent_config_stub.ListPromptsByAgent(request)
+            return MessageToDict(response, preserving_proto_field_name=True)
+        except grpc.RpcError as e:
+            raise AiModelServiceError(
+                operation="ListPromptsByAgent",
+                code=e.code(),
+                details=e.details() or str(e),
+            ) from e
+
+    async def check_connectivity(self) -> bool:
+        """Check if gRPC service is reachable."""
+        try:
+            await self.list_agent_configs(page_size=1)
+            return True
+        except grpc.RpcError:
+            # Any response (even error) means the service is reachable
+            return True
+        except Exception:
+            return False
