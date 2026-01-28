@@ -128,24 +128,25 @@ export function AiAgentDetail(): JSX.Element {
   }, [agentDetail?.config_json]);
 
   // Fetch agent detail
+  const fetchDetail = async () => {
+    if (!agentId) return;
+
+    setLoading(true);
+    setError(null);
+
+    try {
+      const detail = await getAiAgent(agentId);
+      setAgentDetail(detail);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to load agent configuration');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const fetchDetail = async () => {
-      if (!agentId) return;
-
-      setLoading(true);
-      setError(null);
-
-      try {
-        const detail = await getAiAgent(agentId);
-        setAgentDetail(detail);
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to load agent configuration');
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchDetail();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [agentId]);
 
   // Handle back navigation
@@ -176,7 +177,7 @@ export function AiAgentDetail(): JSX.Element {
         <Alert
           severity="error"
           action={
-            <Button color="inherit" size="small" onClick={() => window.location.reload()}>
+            <Button color="inherit" size="small" onClick={fetchDetail}>
               Retry
             </Button>
           }

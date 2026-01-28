@@ -77,8 +77,8 @@ export function AiAgentList(): JSX.Element {
     try {
       const response = await listAiAgents({
         page_size: paginationModel.pageSize,
-        agent_type: (filters.agent_type as AgentType | undefined) || undefined,
-        status: (filters.status as AgentStatus | undefined) || undefined,
+        agent_type: filters.agent_type as AgentType | undefined,
+        status: filters.status as AgentStatus | undefined,
       });
       setData(response);
     } catch (err) {

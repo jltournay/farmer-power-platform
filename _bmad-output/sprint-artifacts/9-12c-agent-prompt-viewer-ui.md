@@ -1,6 +1,6 @@
 # Story 9.12c: AI Agent & Prompt Viewer UI
 
-**Status:** review
+**Status:** done
 **GitHub Issue:** #239
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
@@ -402,6 +402,10 @@ so that **I can inspect agent configurations, their linked prompts, and prompt c
 
 Note: Browser-based UI E2E tests require Playwright/Cypress which is out of scope.
 The BFF API E2E tests validate the data layer that the UI consumes (22 tests from 9.12b).
+
+### Review Follow-ups (AI)
+
+- [ ] [AI-Review][MEDIUM] AC 9.12c.4 Partial: Full prompt content (system_prompt, template, output_schema, few_shot_examples, ab_test) not displayed in PromptDetailExpansion. Requires BFF enhancement: either include PromptDetail fields in AgentConfigDetail.prompts[] or add GET /api/admin/prompts/{prompt_id} endpoint. [PromptDetailExpansion.tsx] - **Future Story Required**
 
 ## Git Workflow (MANDATORY)
 
@@ -928,3 +932,42 @@ N/A
 - `web/platform-admin/src/api/index.ts` - Added aiAgents export
 - `web/platform-admin/src/app/routes.tsx` - Added /ai-agents routes
 - `web/platform-admin/src/components/Sidebar/Sidebar.tsx` - Added AI Agents menu item
+
+---
+
+## Senior Developer Review (AI)
+
+**Review Date:** 2026-01-28
+**Reviewer:** Claude Opus 4.5 (Code Review Workflow)
+**Outcome:** ✅ APPROVED with noted limitations
+
+### Review Summary
+
+| Category | Finding |
+|---|---|
+| Git vs Story | 0 discrepancies - all files match |
+| Issues Found | 0 High, 1 Medium, 4 Low |
+| ACs Validated | 7/8 fully implemented, 1 partial (documented) |
+| Tests | 54 unit tests + 22 E2E tests passing |
+| E2E Evidence | Local + CI both validated |
+
+### Issues Fixed During Review
+
+| Severity | Issue | File | Fix |
+|---|---|---|---|
+| LOW | Window reload on retry | `AiAgentDetail.tsx:179` | Changed to call `fetchDetail()` function |
+| LOW | Verbose type casting | `AiAgentList.tsx:80-81` | Simplified cast expressions |
+
+### Documented Limitations (Not Blocking)
+
+1. **AC 9.12c.4 Partial** - Prompt detail expansion shows metadata only, not full content. Requires BFF enhancement (added as Review Follow-up task for future story).
+
+2. **Client-side search** - Search filtering done client-side; acceptable for small admin dataset.
+
+3. **Component tests optional** - Only type/API unit tests; component tests marked optional in story.
+
+### Change Log Entry
+
+| Date | Author | Change |
+|---|---|---|
+| 2026-01-28 | Code Review (AI) | Fixed: error retry uses fetchDetail() instead of window.reload(); simplified type casts in filter params |
