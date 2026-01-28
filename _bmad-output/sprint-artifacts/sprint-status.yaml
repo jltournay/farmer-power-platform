@@ -274,7 +274,7 @@ development_status:
   9-11c-source-config-viewer-ui: done  # github_issue: 233, 3 points - Source Configuration Viewer UI, depends: 9-11b, CODE REVIEW COMPLETED 2026-01-25
   9-12a-agent-config-grpc-ai-model: done  # 5 points - AgentConfigService gRPC in AI Model (agents + prompts), github_issue: 235
   9-12b-agent-config-bff-client-rest: done  # 3 points - gRPC client + REST API in BFF, depends: 9-12a, github_issue: 237
-  9-12c-agent-prompt-viewer-ui: ready-for-dev  # 5 points - AI Agent & Prompt Viewer UI, depends: 9-12b
+  9-12c-agent-prompt-viewer-ui: in-progress  # 5 points - AI Agent & Prompt Viewer UI, depends: 9-12b
   epic-9-retrospective: optional
 
   # ═══════════════════════════════════════════════════════════════════════════
