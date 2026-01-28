@@ -1,6 +1,6 @@
 # Story 9.12a: AgentConfigService gRPC in AI Model
 
-**Status:** review
+**Status:** done
 **GitHub Issue:** #235
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
@@ -265,7 +265,7 @@ bash scripts/e2e-up.sh --down
 ### Story Done
 - [x] Create Pull Request: `gh pr create --title "Story 9.12a: AgentConfigService gRPC in AI Model" --base main`
 - [x] CI passes on PR (including E2E tests)
-- [ ] Code review completed (`/code-review` or human review) - **IN PROGRESS**
+- [x] Code review completed (`/code-review` or human review) - **APPROVED**
 - [ ] PR approved and merged (squash)
 - [ ] Local branch cleaned up: `git branch -d story/9-12a-agent-config-grpc`
 
