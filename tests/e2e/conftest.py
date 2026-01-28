@@ -51,7 +51,7 @@ E2E_CONFIG = {
     "bff_url": "http://localhost:8083",  # Story 0.5.4b
     "ai_model_url": "http://localhost:8091",  # Story 0.75.18: AI Model HTTP port
     "ai_model_grpc_host": "localhost",  # Story 9.12a: AI Model gRPC host
-    "ai_model_grpc_port": 50091,  # Story 9.12a: AI Model gRPC port
+    "ai_model_grpc_port": 8090,  # Story 9.12a: AI Model gRPC port (mapped from 50051)
     # Story 13.8: Platform Cost service configuration
     "platform_cost_url": "http://localhost:8084",
     "platform_cost_grpc_host": "localhost",
