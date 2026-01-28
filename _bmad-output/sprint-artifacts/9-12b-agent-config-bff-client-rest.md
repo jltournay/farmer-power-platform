@@ -1,7 +1,8 @@
 # Story 9.12b: Agent Config gRPC Client + REST API in BFF
 
-**Status:** in-progress
+**Status:** review
 **GitHub Issue:** #237
+**Branch:** feature/9-12b-agent-config-bff-client-rest
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -113,110 +114,110 @@ so that **the Admin UI can fetch AI agent configurations and their linked prompt
 
 ### Task 1: Create Pydantic Domain Models (AC: 2)
 
-- [ ] Create `libs/fp-common/fp_common/models/agent_config_summary.py`
-- [ ] Define `AgentConfigSummary` Pydantic model
-- [ ] Define `AgentConfigDetail` Pydantic model
-- [ ] Define `PromptSummary` Pydantic model
-- [ ] Export models in `libs/fp-common/fp_common/models/__init__.py`
-- [ ] Run: `ruff check libs/fp-common/ && ruff format libs/fp-common/`
+- [x] Create `libs/fp-common/fp_common/models/agent_config_summary.py`
+- [x] Define `AgentConfigSummary` Pydantic model
+- [x] Define `AgentConfigDetail` Pydantic model
+- [x] Define `PromptSummary` Pydantic model
+- [x] Export models in `libs/fp-common/fp_common/models/__init__.py`
+- [x] Run: `ruff check libs/fp-common/ && ruff format libs/fp-common/`
 
 ### Task 2: Update Proto-to-Domain Converters (AC: 2)
 
-- [ ] Update `libs/fp-common/fp_common/converters/agent_config_converters.py`
-- [ ] Change `agent_config_summary_from_proto()` to return `AgentConfigSummary` model (not dict)
-- [ ] Change `agent_config_response_from_proto()` to return `AgentConfigDetail` model (not dict)
-- [ ] Change `prompt_summary_from_proto()` to return `PromptSummary` model (not dict)
-- [ ] Ensure converters handle timestamp conversion properly
-- [ ] Export updated converters in `libs/fp-common/fp_common/converters/__init__.py`
+- [x] Update `libs/fp-common/fp_common/converters/agent_config_converters.py`
+- [x] Change `agent_config_summary_from_proto()` to return `AgentConfigSummary` model (not dict)
+- [x] Change `agent_config_response_from_proto()` to return `AgentConfigDetail` model (not dict)
+- [x] Change `prompt_summary_from_proto()` to return `PromptSummary` model (not dict)
+- [x] Ensure converters handle timestamp conversion properly
+- [x] Export updated converters in `libs/fp-common/fp_common/converters/__init__.py`
 
 ### Task 3: Implement AgentConfigClient (AC: 1)
 
-- [ ] Create `services/bff/src/bff/infrastructure/clients/agent_config_client.py`
-- [ ] Inherit from `BaseGrpcClient` with `target_app_id="ai-model"`
-- [ ] Implement `list_agent_configs()` returning `PaginatedResponse[AgentConfigSummary]`
-- [ ] Implement `get_agent_config()` returning `AgentConfigDetail`
-- [ ] Implement `list_prompts_by_agent()` returning `list[PromptSummary]`
-- [ ] Use `AgentConfigServiceStub` from `ai_model_pb2_grpc`
-- [ ] Use converters from `fp_common.converters.agent_config_converters`
-- [ ] Handle gRPC errors with `_handle_grpc_error()`
-- [ ] Export client in `services/bff/src/bff/infrastructure/clients/__init__.py`
+- [x] Create `services/bff/src/bff/infrastructure/clients/agent_config_client.py`
+- [x] Inherit from `BaseGrpcClient` with `target_app_id="ai-model"`
+- [x] Implement `list_agent_configs()` returning `PaginatedResponse[AgentConfigSummary]`
+- [x] Implement `get_agent_config()` returning `AgentConfigDetail`
+- [x] Implement `list_prompts_by_agent()` returning `list[PromptSummary]`
+- [x] Use `AgentConfigServiceStub` from `ai_model_pb2_grpc`
+- [x] Use converters from `fp_common.converters.agent_config_converters`
+- [x] Handle gRPC errors with `_handle_grpc_error()`
+- [x] Export client in `services/bff/src/bff/infrastructure/clients/__init__.py`
 
 ### Task 4: Implement REST Routes (AC: 3, 4, 5)
 
-- [ ] Create `services/bff/src/bff/api/routes/admin/ai_agents.py`
-- [ ] Implement list endpoint `GET /api/admin/ai-agents` with pagination and filters
-- [ ] Implement detail endpoint `GET /api/admin/ai-agents/{agent_id}`
-- [ ] Implement prompts endpoint `GET /api/admin/ai-agents/{agent_id}/prompts`
-- [ ] Create response schema models in `services/bff/src/bff/api/schemas/admin/agent_config_schemas.py`
-- [ ] Register router in `services/bff/src/bff/api/routes/admin/__init__.py`
-- [ ] Routes auto-registered via admin router (no main.py changes needed)
+- [x] Create `services/bff/src/bff/api/routes/admin/ai_agents.py`
+- [x] Implement list endpoint `GET /api/admin/ai-agents` with pagination and filters
+- [x] Implement detail endpoint `GET /api/admin/ai-agents/{agent_id}`
+- [x] Implement prompts endpoint `GET /api/admin/ai-agents/{agent_id}/prompts`
+- [x] Create response schema models in `services/bff/src/bff/api/schemas/admin/agent_config_schemas.py`
+- [x] Register router in `services/bff/src/bff/api/routes/admin/__init__.py`
+- [x] Routes auto-registered via admin router (no main.py changes needed)
 
 ### Task 5: Create Response Schema Models (AC: 3, 4, 5)
 
-- [ ] Create `services/bff/src/bff/api/schemas/admin/agent_config_schemas.py`
-- [ ] Define `AgentConfigSummaryResponse` with `from_domain()` classmethod
-- [ ] Define `AgentConfigDetailResponse` with `from_domain()` classmethod
-- [ ] Define `PromptSummaryResponse` with `from_domain()` classmethod
-- [ ] Define `AgentConfigListResponse` using `PaginationMeta`
-- [ ] Define `PromptListResponse` for prompts endpoint
-- [ ] Export schemas in `services/bff/src/bff/api/schemas/admin/__init__.py`
+- [x] Create `services/bff/src/bff/api/schemas/admin/agent_config_schemas.py`
+- [x] Define `AgentConfigSummaryResponse` with `from_domain()` classmethod
+- [x] Define `AgentConfigDetailResponse` with `from_domain()` classmethod
+- [x] Define `PromptSummaryResponse` with `from_domain()` classmethod
+- [x] Define `AgentConfigListResponse` using `PaginationMeta`
+- [x] Define `PromptListResponse` for prompts endpoint
+- [x] Export schemas in `services/bff/src/bff/api/schemas/admin/__init__.py`
 
 ### Task 6: Unit Tests - Client (AC: 6)
 
-- [ ] Create `tests/unit/bff/test_agent_config_client.py`
-- [ ] Test client initialization (target_app_id, dapr_grpc_port, direct_host, channel)
-- [ ] Test metadata generation for DAPR routing
-- [ ] Test `list_agent_configs()` returns `PaginatedResponse[AgentConfigSummary]`
-- [ ] Test `list_agent_configs()` with `agent_type` filter
-- [ ] Test `list_agent_configs()` with `status` filter
-- [ ] Test `list_agent_configs()` pagination (page_size, page_token, next_page_token)
-- [ ] Test `get_agent_config()` returns `AgentConfigDetail` with prompts
-- [ ] Test `get_agent_config()` raises `NotFoundError` when not found
-- [ ] Test `get_agent_config()` raises `ServiceUnavailableError` on connection failure
-- [ ] Test `list_prompts_by_agent()` returns `list[PromptSummary]`
-- [ ] Test `list_prompts_by_agent()` with status filter
-- [ ] Test proto-to-domain conversion (timestamps, optional fields)
+- [x] Create `tests/unit/bff/test_agent_config_client.py`
+- [x] Test client initialization (target_app_id, dapr_grpc_port, direct_host, channel)
+- [x] Test metadata generation for DAPR routing
+- [x] Test `list_agent_configs()` returns `PaginatedResponse[AgentConfigSummary]`
+- [x] Test `list_agent_configs()` with `agent_type` filter
+- [x] Test `list_agent_configs()` with `status` filter
+- [x] Test `list_agent_configs()` pagination (page_size, page_token, next_page_token)
+- [x] Test `get_agent_config()` returns `AgentConfigDetail` with prompts
+- [x] Test `get_agent_config()` raises `NotFoundError` when not found
+- [x] Test `get_agent_config()` raises `ServiceUnavailableError` on connection failure
+- [x] Test `list_prompts_by_agent()` returns `list[PromptSummary]`
+- [x] Test `list_prompts_by_agent()` with status filter
+- [x] Test proto-to-domain conversion (timestamps, optional fields)
 
 ### Task 7: Unit Tests - Routes (AC: 6)
 
-- [ ] Create `tests/unit/bff/test_agent_config_routes.py`
-- [ ] Test `GET /api/admin/ai-agents` returns 200 with valid response
-- [ ] Test `GET /api/admin/ai-agents` with pagination params (page_size, page_token)
-- [ ] Test `GET /api/admin/ai-agents` with agent_type filter
-- [ ] Test `GET /api/admin/ai-agents` with status filter
-- [ ] Test page_size validation (max 100) returns 422
-- [ ] Test empty result returns 200 with empty data array
-- [ ] Test `GET /api/admin/ai-agents/{agent_id}` returns 200 with config_json and prompts
-- [ ] Test `GET /api/admin/ai-agents/{agent_id}` returns 404 when not found
-- [ ] Test `GET /api/admin/ai-agents/{agent_id}/prompts` returns 200 with prompts list
-- [ ] Test `GET /api/admin/ai-agents/{agent_id}/prompts` with status filter
-- [ ] Test auth middleware rejects non-admin users (403)
-- [ ] Test 503 response when service unavailable
-- [ ] Test response format compliance (timestamps, pagination)
+- [x] Create `tests/unit/bff/test_ai_agents_routes.py`
+- [x] Test `GET /api/admin/ai-agents` returns 200 with valid response
+- [x] Test `GET /api/admin/ai-agents` with pagination params (page_size, page_token)
+- [x] Test `GET /api/admin/ai-agents` with agent_type filter
+- [x] Test `GET /api/admin/ai-agents` with status filter
+- [x] Test page_size validation (max 100) returns 422
+- [x] Test empty result returns 200 with empty data array
+- [x] Test `GET /api/admin/ai-agents/{agent_id}` returns 200 with config_json and prompts
+- [x] Test `GET /api/admin/ai-agents/{agent_id}` returns 404 when not found
+- [x] Test `GET /api/admin/ai-agents/{agent_id}/prompts` returns 200 with prompts list
+- [x] Test `GET /api/admin/ai-agents/{agent_id}/prompts` with status filter
+- [x] Test auth middleware rejects non-admin users (403)
+- [x] Test 503 response when service unavailable
+- [x] Test response format compliance (timestamps, pagination)
 
 ### Task 8: E2E Tests (MANDATORY - DO NOT SKIP)
 
 > **This task is NON-NEGOTIABLE and BLOCKS story completion.**
 
-- [ ] Create `tests/e2e/scenarios/test_15_agent_config_bff.py`
-- [ ] Test `GET /api/admin/ai-agents` returns paginated data with at least 3 configs
-- [ ] Test pagination with page_size=2 and page_token navigation
-- [ ] Test agent_type filter (extractor, explorer, etc.)
-- [ ] Test status filter (active, archived)
-- [ ] Test `GET /api/admin/ai-agents/{agent_id}` returns detail with config_json
-- [ ] Test `GET /api/admin/ai-agents/{agent_id}` returns linked prompts array
-- [ ] Test 404 response for nonexistent agent_id
-- [ ] Test `GET /api/admin/ai-agents/{agent_id}/prompts` returns prompts list
-- [ ] Test 403 response for non-admin users (factory_manager)
-- [ ] Run full E2E suite to verify no regressions
+- [x] Create `tests/e2e/scenarios/test_38_admin_ai_agents.py`
+- [x] Test `GET /api/admin/ai-agents` returns paginated data with at least 3 configs
+- [x] Test pagination with page_size=2 and page_token navigation
+- [x] Test agent_type filter (extractor, explorer, etc.)
+- [x] Test status filter (active, archived)
+- [x] Test `GET /api/admin/ai-agents/{agent_id}` returns detail with config_json
+- [x] Test `GET /api/admin/ai-agents/{agent_id}` returns linked prompts array
+- [x] Test 404 response for nonexistent agent_id
+- [x] Test `GET /api/admin/ai-agents/{agent_id}/prompts` returns prompts list
+- [x] Test 403 response for non-admin users (factory_manager)
+- [x] Run full E2E suite to verify no regressions
 
 ## Git Workflow (MANDATORY)
 
 **All story development MUST use feature branches.** Direct pushes to main are blocked.
 
 ### Story Start
-- [ ] GitHub Issue exists or created: `gh issue create --title "Story 9.12b: Agent Config gRPC Client + REST API in BFF"`
-- [ ] Feature branch created from main:
+- [x] GitHub Issue exists or created: `gh issue create --title "Story 9.12b: Agent Config gRPC Client + REST API in BFF"` → #237
+- [x] Feature branch created from main:
   ```bash
   git checkout main && git pull origin main
   git checkout -b feature/9-12b-agent-config-bff-client-rest
@@ -225,9 +226,9 @@ so that **the Admin UI can fetch AI agent configurations and their linked prompt
 **Branch name:** `feature/9-12b-agent-config-bff-client-rest`
 
 ### During Development
-- [ ] All commits reference GitHub issue: `Relates to #XX`
-- [ ] Commits are atomic by type (production, test, seed - not mixed)
-- [ ] Push to feature branch: `git push -u origin feature/9-12b-agent-config-bff-client-rest`
+- [x] All commits reference GitHub issue: `Relates to #237`
+- [x] Commits are atomic by type (production, test, seed - not mixed)
+- [x] Push to feature branch: `git push -u origin feature/9-12b-agent-config-bff-client-rest`
 
 ### Story Done
 - [ ] Create Pull Request: `gh pr create --title "Story 9.12b: Agent Config gRPC Client + REST API in BFF" --base main`
@@ -251,11 +252,13 @@ so that **the Admin UI can fetch AI agent configurations and their linked prompt
 
 ### 1. Unit Tests
 ```bash
-pytest tests/unit/bff/test_agent_config_client.py tests/unit/bff/test_agent_config_routes.py -v
+pytest tests/unit/bff/test_agent_config_client.py tests/unit/bff/test_ai_agents_routes.py -v
 ```
 **Output:**
 ```
-(paste test summary here - e.g., "42 passed in 5.23s")
+50 passed in 4.76s
+- test_agent_config_client.py: 27 tests (initialization, metadata, list/get/prompts operations, error handling, proto conversion)
+- test_ai_agents_routes.py: 23 tests (REST routes, pagination, filtering, auth, response formats)
 ```
 
 ### 2. E2E Tests (MANDATORY)
@@ -277,15 +280,22 @@ bash scripts/e2e-up.sh --down
 ```
 **Output:**
 ```
-(paste E2E test output here - story is NOT ready for review without this)
+354 passed, 1 skipped in 191.44s (0:03:11)
+- test_38_admin_ai_agents.py: 22 new tests ALL PASSED
+  - TestAiAgentList: 5 tests (structure, seed data, filters, pagination)
+  - TestAiAgentDetail: 6 tests (loads, config_json, prompts, timestamps, explorer type, 404)
+  - TestAiAgentPrompts: 4 tests (structure, linked, status filter, empty for unknown)
+  - TestAiAgentAuthorization: 4 tests (non-admin blocked, unauthenticated rejected)
+  - TestAiAgentUIIntegration: 3 tests (list→detail, detail→prompts, filter→detail flows)
 ```
-**E2E passed:** [ ] Yes / [ ] No
+**E2E passed:** [x] Yes / [ ] No
 
 ### 3. Lint Check
 ```bash
 ruff check . && ruff format --check .
 ```
-**Lint passed:** [ ] Yes / [ ] No
+**Output:** All checks passed! 717 files already formatted
+**Lint passed:** [x] Yes / [ ] No
 
 ### 4. CI Verification on Story Branch (MANDATORY)
 
@@ -296,16 +306,16 @@ ruff check . && ruff format --check .
 git push origin feature/9-12b-agent-config-bff-client-rest
 
 # Trigger E2E CI workflow
-gh workflow run "E2E Tests" --ref feature/9-12b-agent-config-bff-client-rest
+gh workflow run e2e.yaml --ref feature/9-12b-agent-config-bff-client-rest
 
 # Wait and check status
 sleep 10
-gh run list --workflow="E2E Tests" --branch feature/9-12b-agent-config-bff-client-rest --limit 1
+gh run list --workflow=e2e.yaml --branch feature/9-12b-agent-config-bff-client-rest --limit 1
 ```
-**CI Run ID:** _______________
+**CI Run ID:** _______________ (pending)
 **CI Status:** [ ] Passed / [ ] Failed
 **CI E2E Status:** [ ] Passed
-**Verification Date:** _______________
+**Verification Date:** 2026-01-28
 
 ---
 
@@ -493,16 +503,36 @@ Prompts: qc-extraction, disease-diagnosis-main, weekly-action-plan-main
 
 ### Agent Model Used
 
-{{agent_model_name_version}}
+Claude Opus 4.5 (claude-opus-4-5-20251101)
 
 ### Debug Log References
 
+None
+
 ### Completion Notes List
+
+- Implemented AgentConfigClient with all 3 methods (list, get, list_prompts)
+- Created Pydantic domain models in fp-common (frozen models per ADR)
+- Updated converters to return Pydantic models instead of dicts
+- Created REST routes with platform_admin auth requirement
+- Created comprehensive unit tests (50 tests)
+- Created E2E tests (22 tests) for BFF REST API
 
 ### File List
 
 **Created:**
-- (list new files)
+- `libs/fp-common/fp_common/models/agent_config_summary.py` - Pydantic domain models
+- `services/bff/src/bff/infrastructure/clients/agent_config_client.py` - gRPC client
+- `services/bff/src/bff/api/routes/admin/ai_agents.py` - REST endpoints
+- `services/bff/src/bff/api/schemas/admin/agent_config_schemas.py` - API response schemas
+- `tests/unit/bff/test_agent_config_client.py` - Client unit tests (27 tests)
+- `tests/unit/bff/test_ai_agents_routes.py` - Routes unit tests (23 tests)
+- `tests/e2e/scenarios/test_38_admin_ai_agents.py` - E2E tests (22 tests)
 
 **Modified:**
-- (list modified files with brief description)
+- `libs/fp-common/fp_common/models/__init__.py` - Export new models
+- `libs/fp-common/fp_common/converters/agent_config_converters.py` - Return Pydantic models instead of dicts
+- `libs/fp-common/fp_common/converters/__init__.py` - Export new converter functions
+- `services/bff/src/bff/infrastructure/clients/__init__.py` - Export AgentConfigClient
+- `services/bff/src/bff/api/routes/admin/__init__.py` - Register ai_agents router
+- `services/bff/src/bff/api/schemas/admin/__init__.py` - Export agent config schemas
