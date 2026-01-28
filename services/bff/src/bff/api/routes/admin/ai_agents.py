@@ -67,7 +67,7 @@ async def list_ai_agents(
         default=None,
         description="Filter by status: 'draft', 'staged', 'active', 'archived'",
     ),
-    user: TokenClaims = require_platform_admin(),
+    _user: TokenClaims = require_platform_admin(),
     client: AgentConfigClient = Depends(get_agent_config_client),
 ) -> AgentConfigListResponse:
     """List all AI agent configurations with optional filtering and pagination.
@@ -115,7 +115,7 @@ async def get_ai_agent(
     agent_id: str = Path(
         description="Agent configuration ID (e.g., 'disease-diagnosis')",
     ),
-    user: TokenClaims = require_platform_admin(),
+    _user: TokenClaims = require_platform_admin(),
     client: AgentConfigClient = Depends(get_agent_config_client),
 ) -> AgentConfigDetailResponse:
     """Get AI agent configuration detail by ID.
@@ -162,7 +162,7 @@ async def list_prompts_by_agent(
         default=None,
         description="Filter by prompt status: 'draft', 'staged', 'active', 'archived'",
     ),
-    user: TokenClaims = require_platform_admin(),
+    _user: TokenClaims = require_platform_admin(),
     client: AgentConfigClient = Depends(get_agent_config_client),
 ) -> PromptListResponse:
     """List all prompts linked to a specific AI agent.

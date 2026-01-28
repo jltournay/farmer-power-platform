@@ -262,7 +262,7 @@ def agent_config_detail_from_proto(
         agent_type=proto.agent_type,
         status=proto.status,
         description=proto.description,
-        model="",  # Not in AgentConfigResponse proto, will be extracted from config_json if needed
+        model="",  # AgentConfigResponse proto doesn't include model field; UI can parse from config_json if needed
         prompt_count=len(prompts),
         config_json=proto.config_json,
         prompts=prompts,

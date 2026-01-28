@@ -95,7 +95,7 @@ class AgentConfigClient(BaseGrpcClient):
             ServiceUnavailableError: If the AI Model service is unavailable.
         """
         stub = await self._get_stub(ai_model_pb2_grpc.AgentConfigServiceStub)
-        effective_page_size = min(page_size, 100)
+        effective_page_size = max(1, min(page_size, 100))
 
         request = ai_model_pb2.ListAgentConfigsRequest(
             page_size=effective_page_size,
