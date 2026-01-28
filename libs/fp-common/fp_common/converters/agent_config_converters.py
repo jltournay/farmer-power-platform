@@ -39,6 +39,7 @@ if TYPE_CHECKING:
     from fp_common.models.agent_config_summary import (
         AgentConfigDetail,
         AgentConfigSummary,
+        PromptDetail,
         PromptSummary,
     )
 
@@ -186,6 +187,74 @@ def prompt_summary_to_proto(
     )
 
 
+def prompt_detail_to_proto(
+    prompt,  # Prompt
+) -> ai_model_pb2.PromptDetail:
+    """Convert Prompt Pydantic model to PromptDetail proto (Story 9.12c - AC 9.12c.4).
+
+    Args:
+        prompt: The Prompt Pydantic model with full content.
+
+    Returns:
+        PromptDetail proto message with all content fields.
+    """
+    import json
+
+    from fp_proto.ai_model.v1 import ai_model_pb2
+
+    # Get metadata fields
+    updated_at = None
+    created_at = None
+    author = ""
+    changelog = ""
+    git_commit = ""
+    if hasattr(prompt, "metadata") and prompt.metadata is not None:
+        updated_at = prompt.metadata.updated_at
+        created_at = prompt.metadata.created_at
+        author = prompt.metadata.author or ""
+        changelog = prompt.metadata.changelog or ""
+        git_commit = prompt.metadata.git_commit or ""
+
+    # Get content fields
+    system_prompt = ""
+    template = ""
+    output_schema_json = ""
+    few_shot_examples_json = ""
+    if hasattr(prompt, "content") and prompt.content is not None:
+        system_prompt = prompt.content.system_prompt or ""
+        template = prompt.content.template or ""
+        if prompt.content.output_schema:
+            output_schema_json = json.dumps(prompt.content.output_schema, indent=2)
+        if prompt.content.few_shot_examples:
+            few_shot_examples_json = json.dumps(prompt.content.few_shot_examples, indent=2)
+
+    # Get A/B test fields
+    ab_test_enabled = False
+    ab_test_traffic_percentage = 0.0
+    if hasattr(prompt, "ab_test") and prompt.ab_test is not None:
+        ab_test_enabled = prompt.ab_test.enabled
+        ab_test_traffic_percentage = prompt.ab_test.traffic_percentage
+
+    return ai_model_pb2.PromptDetail(
+        id=prompt.id,
+        prompt_id=prompt.prompt_id,
+        agent_id=prompt.agent_id,
+        version=prompt.version,
+        status=prompt.status.value if hasattr(prompt.status, "value") else str(prompt.status),
+        author=author,
+        updated_at=_datetime_to_proto_timestamp(updated_at),
+        created_at=_datetime_to_proto_timestamp(created_at),
+        changelog=changelog,
+        git_commit=git_commit,
+        system_prompt=system_prompt,
+        template=template,
+        output_schema_json=output_schema_json,
+        few_shot_examples_json=few_shot_examples_json,
+        ab_test_enabled=ab_test_enabled,
+        ab_test_traffic_percentage=ab_test_traffic_percentage,
+    )
+
+
 # =============================================================================
 # Proto-to-Pydantic Converters (for BFF client - Story 9.12b)
 # =============================================================================
@@ -286,3 +355,36 @@ def agent_config_response_from_proto(
         AgentConfigDetail Pydantic model with full configuration.
     """
     return agent_config_detail_from_proto(proto)
+
+
+def prompt_detail_from_proto(
+    proto: ai_model_pb2.PromptDetail,
+) -> PromptDetail:
+    """Convert PromptDetail proto to Pydantic model for BFF (Story 9.12c - AC 9.12c.4).
+
+    Args:
+        proto: The PromptDetail proto message.
+
+    Returns:
+        PromptDetail Pydantic model.
+    """
+    from fp_common.models.agent_config_summary import PromptDetail
+
+    return PromptDetail(
+        id=proto.id,
+        prompt_id=proto.prompt_id,
+        agent_id=proto.agent_id,
+        version=proto.version,
+        status=proto.status,
+        author=proto.author if proto.author else "",
+        updated_at=_proto_timestamp_to_datetime(proto.updated_at),
+        created_at=_proto_timestamp_to_datetime(proto.created_at),
+        changelog=proto.changelog if proto.changelog else None,
+        git_commit=proto.git_commit if proto.git_commit else None,
+        system_prompt=proto.system_prompt,
+        template=proto.template,
+        output_schema_json=proto.output_schema_json if proto.output_schema_json else None,
+        few_shot_examples_json=proto.few_shot_examples_json if proto.few_shot_examples_json else None,
+        ab_test_enabled=proto.ab_test_enabled,
+        ab_test_traffic_percentage=proto.ab_test_traffic_percentage,
+    )

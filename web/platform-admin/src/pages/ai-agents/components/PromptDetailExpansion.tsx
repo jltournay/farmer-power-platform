@@ -2,11 +2,12 @@
  * Prompt Detail Expansion Component
  *
  * Displays full prompt detail when a prompt row is expanded in the LinkedPromptsTable.
- * Shows: Status & Metadata, System Prompt, Template, Output Schema, Few-Shot Examples, A/B Test Config.
+ * Fetches full content from API: System Prompt, Template, Output Schema, Few-Shot Examples, A/B Test Config.
  *
  * Implements Story 9.12c - AI Agent & Prompt Viewer UI (AC 9.12c.4).
  */
 
+import { useEffect, useState, useCallback } from 'react';
 import {
   Box,
   Chip,
@@ -15,10 +16,16 @@ import {
   TableBody,
   TableRow,
   TableCell,
+  Accordion,
+  AccordionSummary,
+  AccordionDetails,
+  CircularProgress,
   Alert,
 } from '@mui/material';
-import type { PromptSummary } from '@/types/agent-config';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import type { PromptSummary, PromptDetailResponse } from '@/types/agent-config';
 import { getStatusLabel, getStatusColor } from '@/types/agent-config';
+import { getPromptDetail } from '@/api/aiAgents';
 
 export interface PromptDetailExpansionProps {
   /** Prompt summary to display detail for */
@@ -26,18 +33,178 @@ export interface PromptDetailExpansionProps {
 }
 
 /**
+ * Highlight {{variable}} placeholders in template text
+ */
+function highlightTemplateVariables(template: string): JSX.Element {
+  const parts = template.split(/(\{\{[^}]+\}\})/g);
+  return (
+    <>
+      {parts.map((part, index) => {
+        if (part.match(/^\{\{[^}]+\}\}$/)) {
+          return (
+            <Box
+              key={index}
+              component="span"
+              sx={{
+                backgroundColor: 'primary.light',
+                color: 'primary.contrastText',
+                px: 0.5,
+                borderRadius: 0.5,
+                fontWeight: 600,
+              }}
+            >
+              {part}
+            </Box>
+          );
+        }
+        return <span key={index}>{part}</span>;
+      })}
+    </>
+  );
+}
+
+/**
+ * Collapsible section for long content
+ */
+function ContentSection({
+  title,
+  content,
+  defaultExpanded = false,
+  isJson = false,
+}: {
+  title: string;
+  content: string | null | undefined;
+  defaultExpanded?: boolean;
+  isJson?: boolean;
+}): JSX.Element | null {
+  if (!content) {
+    return (
+      <Accordion disabled sx={{ mb: 1 }}>
+        <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+          <Typography variant="subtitle2">{title}</Typography>
+          <Typography variant="body2" color="text.secondary" sx={{ ml: 2 }}>
+            (Empty)
+          </Typography>
+        </AccordionSummary>
+      </Accordion>
+    );
+  }
+
+  const isLongContent = content.length > 200;
+
+  return (
+    <Accordion defaultExpanded={defaultExpanded || !isLongContent} sx={{ mb: 1 }}>
+      <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+        <Typography variant="subtitle2">{title}</Typography>
+        {isLongContent && (
+          <Typography variant="caption" color="text.secondary" sx={{ ml: 2 }}>
+            ({content.length} chars)
+          </Typography>
+        )}
+      </AccordionSummary>
+      <AccordionDetails>
+        <Box
+          sx={{
+            backgroundColor: 'grey.50',
+            p: 1.5,
+            borderRadius: 1,
+            maxHeight: 300,
+            overflow: 'auto',
+          }}
+        >
+          <Typography
+            variant="body2"
+            component="pre"
+            sx={{
+              fontFamily: 'monospace',
+              fontSize: '0.75rem',
+              whiteSpace: 'pre-wrap',
+              wordBreak: 'break-word',
+              m: 0,
+            }}
+          >
+            {isJson ? content : title === 'Template' ? highlightTemplateVariables(content) : content}
+          </Typography>
+        </Box>
+      </AccordionDetails>
+    </Accordion>
+  );
+}
+
+/**
  * Prompt detail expansion panel content.
+ * Fetches full prompt detail from API and displays all sections per wireframe.
  */
 export function PromptDetailExpansion({ prompt }: PromptDetailExpansionProps): JSX.Element {
-  // For now, we use the prompt summary data
-  // In a full implementation, we would fetch full prompt detail if needed
-  // However, the seed data includes content in the prompts collection
-  // but the BFF PromptSummary doesn't include content
-  // We'll display what we have from the summary
+  const [detail, setDetail] = useState<PromptDetailResponse | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  // Note: The BFF currently only returns PromptSummary fields in the AgentConfigDetail.prompts array
-  // Full prompt content would require a separate API call or enhancing the BFF response
-  // For this story, we'll show metadata and indicate that full content would need an enhanced API
+  const fetchDetail = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const data = await getPromptDetail(prompt.prompt_id, prompt.version);
+      setDetail(data);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to load prompt detail');
+    } finally {
+      setLoading(false);
+    }
+  }, [prompt.prompt_id, prompt.version]);
+
+  useEffect(() => {
+    fetchDetail();
+  }, [fetchDetail]);
+
+  if (loading) {
+    return (
+      <Box sx={{ p: 2, display: 'flex', alignItems: 'center', gap: 2 }}>
+        <CircularProgress size={20} />
+        <Typography variant="body2" color="text.secondary">
+          Loading prompt detail...
+        </Typography>
+      </Box>
+    );
+  }
+
+  if (error) {
+    return (
+      <Box sx={{ p: 2 }}>
+        <Alert severity="error" sx={{ mb: 1 }}>
+          {error}
+        </Alert>
+      </Box>
+    );
+  }
+
+  if (!detail) {
+    return (
+      <Box sx={{ p: 2 }}>
+        <Alert severity="warning">No prompt detail available</Alert>
+      </Box>
+    );
+  }
+
+  // Parse JSON fields for display
+  let outputSchema: string | null = null;
+  let fewShotExamples: string | null = null;
+
+  if (detail.output_schema_json) {
+    try {
+      outputSchema = JSON.stringify(JSON.parse(detail.output_schema_json), null, 2);
+    } catch {
+      outputSchema = detail.output_schema_json;
+    }
+  }
+
+  if (detail.few_shot_examples_json) {
+    try {
+      fewShotExamples = JSON.stringify(JSON.parse(detail.few_shot_examples_json), null, 2);
+    } catch {
+      fewShotExamples = detail.few_shot_examples_json;
+    }
+  }
 
   return (
     <Box sx={{ p: 1 }}>
@@ -56,9 +223,9 @@ export function PromptDetailExpansion({ prompt }: PromptDetailExpansionProps): J
               </TableCell>
               <TableCell sx={{ border: 'none', py: 0.5 }}>
                 <Chip
-                  label={getStatusLabel(prompt.status)}
+                  label={getStatusLabel(detail.status)}
                   size="small"
-                  color={getStatusColor(prompt.status)}
+                  color={getStatusColor(detail.status)}
                 />
               </TableCell>
             </TableRow>
@@ -69,40 +236,30 @@ export function PromptDetailExpansion({ prompt }: PromptDetailExpansionProps): J
                 </Typography>
               </TableCell>
               <TableCell sx={{ border: 'none', py: 0.5 }}>
-                <Typography variant="body2">{prompt.author || '—'}</Typography>
+                <Typography variant="body2">{detail.author || '—'}</Typography>
               </TableCell>
             </TableRow>
             <TableRow>
               <TableCell sx={{ border: 'none', py: 0.5 }}>
                 <Typography variant="body2" color="text.secondary">
-                  Prompt ID
+                  Changelog
+                </Typography>
+              </TableCell>
+              <TableCell sx={{ border: 'none', py: 0.5 }}>
+                <Typography variant="body2">
+                  {detail.changelog ? `"${detail.changelog}"` : '—'}
+                </Typography>
+              </TableCell>
+            </TableRow>
+            <TableRow>
+              <TableCell sx={{ border: 'none', py: 0.5 }}>
+                <Typography variant="body2" color="text.secondary">
+                  Git Commit
                 </Typography>
               </TableCell>
               <TableCell sx={{ border: 'none', py: 0.5 }}>
                 <Typography variant="body2" fontFamily="monospace">
-                  {prompt.prompt_id}
-                </Typography>
-              </TableCell>
-            </TableRow>
-            <TableRow>
-              <TableCell sx={{ border: 'none', py: 0.5 }}>
-                <Typography variant="body2" color="text.secondary">
-                  Version
-                </Typography>
-              </TableCell>
-              <TableCell sx={{ border: 'none', py: 0.5 }}>
-                <Typography variant="body2">{prompt.version}</Typography>
-              </TableCell>
-            </TableRow>
-            <TableRow>
-              <TableCell sx={{ border: 'none', py: 0.5 }}>
-                <Typography variant="body2" color="text.secondary">
-                  Document ID
-                </Typography>
-              </TableCell>
-              <TableCell sx={{ border: 'none', py: 0.5 }}>
-                <Typography variant="body2" fontFamily="monospace" fontSize="0.75rem">
-                  {prompt.id}
+                  {detail.git_commit || '—'}
                 </Typography>
               </TableCell>
             </TableRow>
@@ -110,49 +267,49 @@ export function PromptDetailExpansion({ prompt }: PromptDetailExpansionProps): J
         </Table>
       </Box>
 
-      {/* Note about full content */}
-      <Alert severity="info" sx={{ mb: 2 }}>
-        <Typography variant="body2">
-          Full prompt content (system prompt, template, output schema, few-shot examples)
-          is available via the <code>prompt-config</code> CLI.
-        </Typography>
-        <Typography variant="body2" sx={{ mt: 0.5 }}>
-          Run: <code>prompt-config get {prompt.prompt_id} --version {prompt.version}</code>
-        </Typography>
-      </Alert>
+      {/* System Prompt Section */}
+      <ContentSection
+        title="System Prompt"
+        content={detail.system_prompt}
+        defaultExpanded={true}
+      />
 
-      {/* Placeholder sections for future enhancement */}
-      <Box sx={{ opacity: 0.6 }}>
-        <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 1 }}>
-          Available Sections (via CLI):
+      {/* Template Section */}
+      <ContentSection
+        title="Template"
+        content={detail.template}
+        defaultExpanded={true}
+      />
+
+      {/* Output Schema Section */}
+      <ContentSection
+        title="Output Schema"
+        content={outputSchema}
+        isJson={true}
+      />
+
+      {/* Few-Shot Examples Section */}
+      <ContentSection
+        title={`Few-Shot Examples${fewShotExamples ? ` (${JSON.parse(detail.few_shot_examples_json || '[]').length})` : ''}`}
+        content={fewShotExamples}
+        isJson={true}
+      />
+
+      {/* A/B Test Configuration */}
+      <Box sx={{ mt: 2 }}>
+        <Typography variant="subtitle2" gutterBottom>
+          A/B Test
         </Typography>
-        <Box component="ul" sx={{ m: 0, pl: 3 }}>
-          <li>
-            <Typography variant="body2" color="text.secondary">
-              System Prompt
-            </Typography>
-          </li>
-          <li>
-            <Typography variant="body2" color="text.secondary">
-              Template (with variable highlighting)
-            </Typography>
-          </li>
-          <li>
-            <Typography variant="body2" color="text.secondary">
-              Output Schema
-            </Typography>
-          </li>
-          <li>
-            <Typography variant="body2" color="text.secondary">
-              Few-Shot Examples
-            </Typography>
-          </li>
-          <li>
-            <Typography variant="body2" color="text.secondary">
-              A/B Test Configuration
-            </Typography>
-          </li>
-        </Box>
+        <Typography variant="body2">
+          {detail.ab_test_enabled ? (
+            <>
+              <Chip label="Enabled" size="small" color="success" sx={{ mr: 1 }} />
+              Traffic: {detail.ab_test_traffic_percentage}%
+            </>
+          ) : (
+            <Chip label="Disabled" size="small" color="default" icon={<span>❌</span>} />
+          )}
+        </Typography>
       </Box>
     </Box>
   );

@@ -16,6 +16,7 @@ from ai_model.infrastructure.repositories.prompt_repository import PromptReposit
 from fp_common.converters import (
     agent_config_response_to_proto,
     agent_config_summary_to_proto,
+    prompt_detail_to_proto,
     prompt_summary_to_proto,
 )
 from fp_proto.ai_model.v1 import ai_model_pb2, ai_model_pb2_grpc
@@ -262,3 +263,53 @@ class AgentConfigServiceServicer(ai_model_pb2_grpc.AgentConfigServiceServicer):
             prompts=proto_prompts,
             total_count=total_count,
         )
+
+    async def GetPrompt(
+        self,
+        request: ai_model_pb2.GetPromptRequest,
+        context: grpc.aio.ServicerContext,
+    ) -> ai_model_pb2.PromptDetail:
+        """Get full prompt detail including content (Story 9.12c - AC 9.12c.4).
+
+        Args:
+            request: Contains prompt_id and optional version.
+            context: gRPC context for setting error codes.
+
+        Returns:
+            PromptDetail proto with all content fields.
+
+        Raises:
+            INVALID_ARGUMENT if prompt_id is empty.
+            NOT_FOUND if prompt doesn't exist.
+        """
+        if not request.prompt_id:
+            await context.abort(grpc.StatusCode.INVALID_ARGUMENT, "prompt_id is required")
+            return ai_model_pb2.PromptDetail()
+
+        logger.info(
+            "GetPrompt request",
+            prompt_id=request.prompt_id,
+            version=request.version or None,
+        )
+
+        # Lookup prompt
+        if request.version:
+            # Get specific version
+            prompt = await self._prompt_repository.get_by_version(
+                request.prompt_id,
+                request.version,
+            )
+        else:
+            # Get active version
+            prompt = await self._prompt_repository.get_active(request.prompt_id)
+
+        if prompt is None:
+            await context.abort(
+                grpc.StatusCode.NOT_FOUND,
+                f"Prompt not found: {request.prompt_id}"
+                + (f" version {request.version}" if request.version else " (active)"),
+            )
+            return ai_model_pb2.PromptDetail()
+
+        # Convert to proto detail
+        return prompt_detail_to_proto(prompt)

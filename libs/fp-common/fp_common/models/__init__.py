@@ -4,10 +4,11 @@ This module exports all shared domain models used across services.
 """
 
 # Collection Point models
-# Agent Config Summary models (Story 9.12b)
+# Agent Config Summary models (Story 9.12b/9.12c)
 from fp_common.models.agent_config_summary import (
     AgentConfigDetail,
     AgentConfigSummary,
+    PromptDetail,
     PromptSummary,
 )
 from fp_common.models.collection_point import (
@@ -230,7 +231,8 @@ __all__ = [
     "PreferredChannel",
     "PreferredLanguage",
     "ProcessedFileConfig",
-    # Agent Prompts (Story 9.12b)
+    # Agent Prompts (Story 9.12b/9.12c)
+    "PromptDetail",
     "PromptSummary",
     "QualityThresholds",
     "RawDocumentRef",

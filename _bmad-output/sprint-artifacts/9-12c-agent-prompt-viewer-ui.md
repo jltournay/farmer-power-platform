@@ -1,6 +1,6 @@
 # Story 9.12c: AI Agent & Prompt Viewer UI
 
-**Status:** done
+**Status:** in-progress
 **GitHub Issue:** #239
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->

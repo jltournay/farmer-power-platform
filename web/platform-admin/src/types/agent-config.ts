@@ -190,7 +190,27 @@ export interface PromptSummary {
   updated_at: string | null;
 }
 
-/** Full prompt detail (for expanded view) */
+/** Full prompt detail API response (Story 9.12c - AC 9.12c.4) */
+export interface PromptDetailResponse {
+  id: string;
+  prompt_id: string;
+  agent_id: string;
+  version: string;
+  status: string;
+  author: string;
+  updated_at: string | null;
+  created_at: string | null;
+  changelog: string | null;
+  git_commit: string | null;
+  system_prompt: string;
+  template: string;
+  output_schema_json: string | null;
+  few_shot_examples_json: string | null;
+  ab_test_enabled: boolean;
+  ab_test_traffic_percentage: number;
+}
+
+/** Full prompt detail (for expanded view) - DEPRECATED: use PromptDetailResponse */
 export interface PromptDetail extends PromptSummary {
   content?: PromptContent;
   metadata?: PromptMetadata;

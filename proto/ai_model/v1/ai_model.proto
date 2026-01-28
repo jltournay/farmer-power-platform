@@ -689,6 +689,9 @@ service AgentConfigService {
 
   // List prompts for a specific agent
   rpc ListPromptsByAgent(ListPromptsByAgentRequest) returns (ListPromptsResponse);
+
+  // Get full prompt detail including content (Story 9.12c - AC 9.12c.4)
+  rpc GetPrompt(GetPromptRequest) returns (PromptDetail);
 }
 
 // ============================================
@@ -795,4 +798,51 @@ message PromptSummary {
   string author = 6;
   // Last update timestamp
   google.protobuf.Timestamp updated_at = 7;
+}
+
+// ============================================
+// Prompt Detail Messages (Story 9.12c - AC 9.12c.4)
+// Full prompt content for inline expansion view
+// ============================================
+
+message GetPromptRequest {
+  // Prompt identifier (e.g., "disease-diagnosis")
+  string prompt_id = 1;
+  // Semantic version (optional - empty = active version)
+  string version = 2;
+}
+
+message PromptDetail {
+  // Unique document ID (format: {prompt_id}:{version})
+  string id = 1;
+  // Logical prompt identifier
+  string prompt_id = 2;
+  // Agent this prompt belongs to
+  string agent_id = 3;
+  // Semantic version string
+  string version = 4;
+  // Lifecycle status
+  string status = 5;
+  // Author username
+  string author = 6;
+  // Last update timestamp
+  google.protobuf.Timestamp updated_at = 7;
+  // Creation timestamp
+  google.protobuf.Timestamp created_at = 8;
+  // What changed in this version
+  string changelog = 9;
+  // Source commit SHA for traceability
+  string git_commit = 10;
+  // Full system prompt text
+  string system_prompt = 11;
+  // Template with {{variables}}
+  string template = 12;
+  // Output schema as JSON string
+  string output_schema_json = 13;
+  // Few-shot examples as JSON array string
+  string few_shot_examples_json = 14;
+  // A/B test enabled flag
+  bool ab_test_enabled = 15;
+  // A/B test traffic percentage (0-100)
+  float ab_test_traffic_percentage = 16;
 }

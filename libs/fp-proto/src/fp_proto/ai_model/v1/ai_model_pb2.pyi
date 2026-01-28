@@ -738,3 +738,47 @@ class PromptSummary(_message.Message):
     author: str
     updated_at: _timestamp_pb2.Timestamp
     def __init__(self, id: _Optional[str] = ..., prompt_id: _Optional[str] = ..., agent_id: _Optional[str] = ..., version: _Optional[str] = ..., status: _Optional[str] = ..., author: _Optional[str] = ..., updated_at: _Optional[_Union[datetime.datetime, _timestamp_pb2.Timestamp, _Mapping]] = ...) -> None: ...
+
+class GetPromptRequest(_message.Message):
+    __slots__ = ("prompt_id", "version")
+    PROMPT_ID_FIELD_NUMBER: _ClassVar[int]
+    VERSION_FIELD_NUMBER: _ClassVar[int]
+    prompt_id: str
+    version: str
+    def __init__(self, prompt_id: _Optional[str] = ..., version: _Optional[str] = ...) -> None: ...
+
+class PromptDetail(_message.Message):
+    __slots__ = ("id", "prompt_id", "agent_id", "version", "status", "author", "updated_at", "created_at", "changelog", "git_commit", "system_prompt", "template", "output_schema_json", "few_shot_examples_json", "ab_test_enabled", "ab_test_traffic_percentage")
+    ID_FIELD_NUMBER: _ClassVar[int]
+    PROMPT_ID_FIELD_NUMBER: _ClassVar[int]
+    AGENT_ID_FIELD_NUMBER: _ClassVar[int]
+    VERSION_FIELD_NUMBER: _ClassVar[int]
+    STATUS_FIELD_NUMBER: _ClassVar[int]
+    AUTHOR_FIELD_NUMBER: _ClassVar[int]
+    UPDATED_AT_FIELD_NUMBER: _ClassVar[int]
+    CREATED_AT_FIELD_NUMBER: _ClassVar[int]
+    CHANGELOG_FIELD_NUMBER: _ClassVar[int]
+    GIT_COMMIT_FIELD_NUMBER: _ClassVar[int]
+    SYSTEM_PROMPT_FIELD_NUMBER: _ClassVar[int]
+    TEMPLATE_FIELD_NUMBER: _ClassVar[int]
+    OUTPUT_SCHEMA_JSON_FIELD_NUMBER: _ClassVar[int]
+    FEW_SHOT_EXAMPLES_JSON_FIELD_NUMBER: _ClassVar[int]
+    AB_TEST_ENABLED_FIELD_NUMBER: _ClassVar[int]
+    AB_TEST_TRAFFIC_PERCENTAGE_FIELD_NUMBER: _ClassVar[int]
+    id: str
+    prompt_id: str
+    agent_id: str
+    version: str
+    status: str
+    author: str
+    updated_at: _timestamp_pb2.Timestamp
+    created_at: _timestamp_pb2.Timestamp
+    changelog: str
+    git_commit: str
+    system_prompt: str
+    template: str
+    output_schema_json: str
+    few_shot_examples_json: str
+    ab_test_enabled: bool
+    ab_test_traffic_percentage: float
+    def __init__(self, id: _Optional[str] = ..., prompt_id: _Optional[str] = ..., agent_id: _Optional[str] = ..., version: _Optional[str] = ..., status: _Optional[str] = ..., author: _Optional[str] = ..., updated_at: _Optional[_Union[datetime.datetime, _timestamp_pb2.Timestamp, _Mapping]] = ..., created_at: _Optional[_Union[datetime.datetime, _timestamp_pb2.Timestamp, _Mapping]] = ..., changelog: _Optional[str] = ..., git_commit: _Optional[str] = ..., system_prompt: _Optional[str] = ..., template: _Optional[str] = ..., output_schema_json: _Optional[str] = ..., few_shot_examples_json: _Optional[str] = ..., ab_test_enabled: bool = ..., ab_test_traffic_percentage: _Optional[float] = ...) -> None: ...

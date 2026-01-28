@@ -12,11 +12,12 @@ All schemas follow ADR-012 BFF patterns with separate API schemas
 from domain models.
 """
 
-# Agent Config Viewer schemas (Story 9.12b)
+# Agent Config Viewer schemas (Story 9.12b/9.12c)
 from bff.api.schemas.admin.agent_config_schemas import (
     AgentConfigDetailResponse,
     AgentConfigListResponse,
     AgentConfigSummaryResponse,
+    PromptDetailResponse,
     PromptListResponse,
     PromptSummaryResponse,
 )
@@ -155,7 +156,8 @@ __all__ = [
     "LlmByAgentTypeResponse",
     "LlmByModelResponse",
     "ModelCostEntry",
-    # Agent Prompt Viewer (Story 9.12b)
+    # Agent Prompt Viewer (Story 9.12b/9.12c)
+    "PromptDetailResponse",
     "PromptListResponse",
     "PromptSummaryResponse",
     "QualityThresholdsAPI",

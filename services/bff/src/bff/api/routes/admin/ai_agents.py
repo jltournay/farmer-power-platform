@@ -16,6 +16,7 @@ from bff.api.schemas.admin.agent_config_schemas import (
     AgentConfigDetailResponse,
     AgentConfigListResponse,
     AgentConfigSummaryResponse,
+    PromptDetailResponse,
     PromptListResponse,
     PromptSummaryResponse,
 )
@@ -182,6 +183,56 @@ async def list_prompts_by_agent(
             detail=ApiError(
                 code="AGENT_NOT_FOUND",
                 message=f"Agent '{agent_id}' not found",
+            ).model_dump(),
+        ) from e
+    except ServiceUnavailableError as e:
+        raise HTTPException(
+            status_code=503,
+            detail=ApiError.service_unavailable("AI Model").model_dump(),
+        ) from e
+
+
+@router.get(
+    "/prompts/{prompt_id}",
+    response_model=PromptDetailResponse,
+    responses={
+        200: {"description": "Full prompt detail"},
+        401: {"description": "Authentication required", "model": ApiError},
+        403: {"description": "Platform admin access required", "model": ApiError},
+        404: {"description": "Prompt not found", "model": ApiError},
+        503: {"description": "AI Model service unavailable", "model": ApiError},
+    },
+    summary="Get prompt detail (Story 9.12c - AC 9.12c.4)",
+    description="Get full prompt detail including content fields (system_prompt, template, output_schema, few_shot_examples, ab_test). Requires platform_admin role.",
+)
+async def get_prompt_detail(
+    prompt_id: str = Path(
+        description="Prompt identifier (e.g., 'disease-diagnosis-main')",
+    ),
+    version: str | None = Query(
+        default=None,
+        description="Specific version to retrieve (default: active version)",
+    ),
+    _user: TokenClaims = require_platform_admin(),
+    client: AgentConfigClient = Depends(get_agent_config_client),
+) -> PromptDetailResponse:
+    """Get full prompt detail including all content fields.
+
+    Returns the complete prompt including system_prompt, template, output_schema,
+    few_shot_examples, changelog, git_commit, and A/B test configuration.
+    Used by the Admin UI prompt detail inline expansion (AC 9.12c.4).
+    """
+    try:
+        result = await client.get_prompt(prompt_id, version=version)
+        return PromptDetailResponse.from_domain(result)
+    except NotFoundError as e:
+        raise HTTPException(
+            status_code=404,
+            detail=ApiError(
+                code="PROMPT_NOT_FOUND",
+                message=f"Prompt '{prompt_id}'"
+                + (f" version {version}" if version else " (active)")
+                + " not found",
             ).model_dump(),
         ) from e
     except ServiceUnavailableError as e:

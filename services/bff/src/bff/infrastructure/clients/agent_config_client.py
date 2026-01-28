@@ -19,11 +19,13 @@ from bff.infrastructure.clients.base import (
 from fp_common.converters import (
     agent_config_detail_from_proto,
     agent_config_summary_from_proto,
+    prompt_detail_from_proto,
     prompt_summary_from_proto,
 )
 from fp_common.models import (
     AgentConfigDetail,
     AgentConfigSummary,
+    PromptDetail,
     PromptSummary,
 )
 from fp_proto.ai_model.v1 import ai_model_pb2, ai_model_pb2_grpc
@@ -183,4 +185,37 @@ class AgentConfigClient(BaseGrpcClient):
             return [prompt_summary_from_proto(p) for p in response.prompts]
         except grpc.aio.AioRpcError as e:
             self._handle_grpc_error(e, f"Prompts for agent {agent_id}")
+            raise  # For type checker, _handle_grpc_error always raises
+
+    @grpc_retry
+    async def get_prompt(
+        self,
+        prompt_id: str,
+        version: str | None = None,
+    ) -> PromptDetail:
+        """Get full prompt detail including content (Story 9.12c - AC 9.12c.4).
+
+        Args:
+            prompt_id: The prompt ID (e.g., "disease-diagnosis-main").
+            version: Optional specific version to retrieve (default: active version).
+
+        Returns:
+            PromptDetail with all content fields (system_prompt, template, output_schema, etc.).
+
+        Raises:
+            NotFoundError: If the prompt is not found.
+            ServiceUnavailableError: If the AI Model service is unavailable.
+        """
+        stub = await self._get_stub(ai_model_pb2_grpc.AgentConfigServiceStub)
+
+        request = ai_model_pb2.GetPromptRequest(
+            prompt_id=prompt_id,
+            version=version or "",
+        )
+
+        try:
+            response = await stub.GetPrompt(request, metadata=self._get_metadata())
+            return prompt_detail_from_proto(response)
+        except grpc.aio.AioRpcError as e:
+            self._handle_grpc_error(e, f"Prompt {prompt_id}")
             raise  # For type checker, _handle_grpc_error always raises

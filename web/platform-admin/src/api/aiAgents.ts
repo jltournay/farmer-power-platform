@@ -12,6 +12,7 @@ import type {
   AgentConfigDetail,
   AgentConfigListParams,
   AgentConfigListResponse,
+  PromptDetailResponse,
   PromptListResponse,
 } from '@/types/agent-config';
 
@@ -70,6 +71,34 @@ export async function listPromptsByAgent(
 
   const { data } = await apiClient.get<PromptListResponse>(
     `${BASE_PATH}/${encodeURIComponent(agentId)}/prompts`,
+    params
+  );
+  return data;
+}
+
+/**
+ * Get full prompt detail including content fields.
+ *
+ * Returns the complete prompt with system_prompt, template, output_schema,
+ * few_shot_examples, changelog, git_commit, and A/B test configuration.
+ *
+ * Story 9.12c - AC 9.12c.4: Inline Prompt Detail Expansion
+ *
+ * @param promptId - Prompt identifier (e.g., 'disease-diagnosis-main')
+ * @param version - Optional specific version (default: active version)
+ * @returns Full prompt detail with all content fields
+ */
+export async function getPromptDetail(
+  promptId: string,
+  version?: string
+): Promise<PromptDetailResponse> {
+  const params: Record<string, unknown> = {};
+  if (version) {
+    params.version = version;
+  }
+
+  const { data } = await apiClient.get<PromptDetailResponse>(
+    `${BASE_PATH}/prompts/${encodeURIComponent(promptId)}`,
     params
   );
   return data;

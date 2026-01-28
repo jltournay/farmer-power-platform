@@ -75,6 +75,51 @@ class AgentConfigSummary(BaseModel):
     model_config = {"frozen": True}
 
 
+class PromptDetail(BaseModel):
+    """Full detail view of a prompt for inline expansion (Story 9.12c - AC 9.12c.4).
+
+    Contains all prompt content fields for displaying in the Admin UI
+    prompt detail expansion view.
+
+    Attributes:
+        id: MongoDB document ID (format: {prompt_id}:{version}).
+        prompt_id: Logical prompt identifier.
+        agent_id: Agent ID this prompt belongs to.
+        version: Version string (semver format).
+        status: Prompt status (draft, staged, active, archived).
+        author: Author of the prompt.
+        updated_at: When this prompt was last modified.
+        created_at: When this prompt was first created.
+        changelog: What changed in this version.
+        git_commit: Source commit SHA for traceability.
+        system_prompt: Full system prompt text.
+        template: Template with {{variables}}.
+        output_schema_json: Output schema as JSON string.
+        few_shot_examples_json: Few-shot examples as JSON array string.
+        ab_test_enabled: Whether A/B testing is enabled.
+        ab_test_traffic_percentage: Percentage of traffic for this variant (0-100).
+    """
+
+    id: str = Field(description="MongoDB document ID")
+    prompt_id: str = Field(description="Logical prompt identifier")
+    agent_id: str = Field(description="Agent ID this prompt belongs to")
+    version: str = Field(description="Version string (semver)")
+    status: str = Field(description="Prompt status: draft, staged, active, archived")
+    author: str = Field(default="", description="Author of the prompt")
+    updated_at: datetime | None = Field(default=None, description="Last update timestamp")
+    created_at: datetime | None = Field(default=None, description="Creation timestamp")
+    changelog: str | None = Field(default=None, description="What changed in this version")
+    git_commit: str | None = Field(default=None, description="Source commit SHA")
+    system_prompt: str = Field(default="", description="Full system prompt text")
+    template: str = Field(default="", description="Template with {{variables}}")
+    output_schema_json: str | None = Field(default=None, description="Output schema as JSON string")
+    few_shot_examples_json: str | None = Field(default=None, description="Few-shot examples as JSON array")
+    ab_test_enabled: bool = Field(default=False, description="A/B test enabled")
+    ab_test_traffic_percentage: float = Field(default=0.0, description="A/B test traffic percentage")
+
+    model_config = {"frozen": True}
+
+
 class AgentConfigDetail(AgentConfigSummary):
     """Full detail view of an agent configuration.
 
