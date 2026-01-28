@@ -33,6 +33,7 @@ Usage:
 
 # Agent Config converters (Story 9.12a/9.12b)
 from fp_common.converters.agent_config_converters import (
+    agent_config_detail_from_proto,
     agent_config_response_from_proto,
     agent_config_response_to_proto,
     agent_config_summary_from_proto,
@@ -101,6 +102,7 @@ from fp_common.converters.source_config_converters import (
 )
 
 __all__ = [
+    "agent_config_detail_from_proto",
     "agent_config_response_from_proto",
     "agent_config_response_to_proto",
     "agent_config_summary_from_proto",

@@ -1,7 +1,7 @@
 # Story 9.12b: Agent Config gRPC Client + REST API in BFF
 
-**Status:** ready-for-dev
-**GitHub Issue:** <!-- Auto-created by dev-story workflow -->
+**Status:** in-progress
+**GitHub Issue:** #237
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 

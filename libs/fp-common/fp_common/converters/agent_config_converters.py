@@ -1,6 +1,7 @@
 """Proto-to-Pydantic and Pydantic-to-Proto converters for Agent Config domain.
 
 Story 9.12a: AgentConfigService gRPC in AI Model
+Story 9.12b: Agent Config gRPC Client + REST API in BFF (Proto-to-Pydantic converters)
 
 These converters centralize the mapping between:
 - AgentConfig Pydantic model (ai_model.domain.agent_config)
@@ -13,10 +14,16 @@ Field mapping strategy:
 - Model extraction: Extract llm.model or tiered_llm.diagnose.model
 - Optional fields: Empty strings for nullable proto fields
 
+Proto-to-Pydantic converters (Story 9.12b):
+- agent_config_summary_from_proto: Returns AgentConfigSummary Pydantic model
+- agent_config_detail_from_proto: Returns AgentConfigDetail Pydantic model
+- prompt_summary_from_proto: Returns PromptSummary Pydantic model
+
 Reference:
 - Proto definitions: proto/ai_model/v1/ai_model.proto
 - Pydantic models: services/ai-model/src/ai_model/domain/agent_config.py
 - Pydantic models: services/ai-model/src/ai_model/domain/prompt.py
+- BFF models: libs/fp-common/fp_common/models/agent_config_summary.py
 """
 
 from __future__ import annotations
@@ -28,6 +35,12 @@ from google.protobuf import timestamp_pb2
 
 if TYPE_CHECKING:
     from fp_proto.ai_model.v1 import ai_model_pb2
+
+    from fp_common.models.agent_config_summary import (
+        AgentConfigDetail,
+        AgentConfigSummary,
+        PromptSummary,
+    )
 
 
 def _datetime_to_proto_timestamp(dt: datetime | None) -> timestamp_pb2.Timestamp:
@@ -174,84 +187,102 @@ def prompt_summary_to_proto(
 
 
 # =============================================================================
-# Proto-to-dict Converters (for BFF client - Story 9.12b)
+# Proto-to-Pydantic Converters (for BFF client - Story 9.12b)
 # =============================================================================
-
-
-def agent_config_summary_from_proto(
-    proto: ai_model_pb2.AgentConfigSummary,
-) -> dict:
-    """Convert AgentConfigSummary proto to dict for BFF REST responses.
-
-    Args:
-        proto: The AgentConfigSummary proto message.
-
-    Returns:
-        Dictionary suitable for FastAPI JSON response.
-    """
-    updated_at = _proto_timestamp_to_datetime(proto.updated_at)
-
-    return {
-        "agent_id": proto.agent_id,
-        "version": proto.version,
-        "agent_type": proto.agent_type,
-        "status": proto.status,
-        "description": proto.description,
-        "model": proto.model,
-        "prompt_count": proto.prompt_count,
-        "updated_at": updated_at.isoformat() if updated_at else None,
-    }
-
-
-def agent_config_response_from_proto(
-    proto: ai_model_pb2.AgentConfigResponse,
-) -> dict:
-    """Convert AgentConfigResponse proto to dict for BFF REST responses.
-
-    Args:
-        proto: The AgentConfigResponse proto message.
-
-    Returns:
-        Dictionary suitable for FastAPI JSON response with full config.
-    """
-    created_at = _proto_timestamp_to_datetime(proto.created_at)
-    updated_at = _proto_timestamp_to_datetime(proto.updated_at)
-
-    # Convert prompts
-    prompts = [prompt_summary_from_proto(p) for p in proto.prompts]
-
-    return {
-        "agent_id": proto.agent_id,
-        "version": proto.version,
-        "agent_type": proto.agent_type,
-        "status": proto.status,
-        "description": proto.description,
-        "config_json": proto.config_json,
-        "prompts": prompts,
-        "created_at": created_at.isoformat() if created_at else None,
-        "updated_at": updated_at.isoformat() if updated_at else None,
-    }
 
 
 def prompt_summary_from_proto(
     proto: ai_model_pb2.PromptSummary,
-) -> dict:
-    """Convert PromptSummary proto to dict for BFF REST responses.
+) -> PromptSummary:
+    """Convert PromptSummary proto to Pydantic model for BFF.
 
     Args:
         proto: The PromptSummary proto message.
 
     Returns:
-        Dictionary suitable for FastAPI JSON response.
+        PromptSummary Pydantic model.
     """
-    updated_at = _proto_timestamp_to_datetime(proto.updated_at)
+    from fp_common.models.agent_config_summary import PromptSummary
 
-    return {
-        "id": proto.id,
-        "prompt_id": proto.prompt_id,
-        "agent_id": proto.agent_id,
-        "version": proto.version,
-        "status": proto.status,
-        "author": proto.author,
-        "updated_at": updated_at.isoformat() if updated_at else None,
-    }
+    return PromptSummary(
+        id=proto.id,
+        prompt_id=proto.prompt_id,
+        agent_id=proto.agent_id,
+        version=proto.version,
+        status=proto.status,
+        author=proto.author if proto.author else "",
+        updated_at=_proto_timestamp_to_datetime(proto.updated_at),
+    )
+
+
+def agent_config_summary_from_proto(
+    proto: ai_model_pb2.AgentConfigSummary,
+) -> AgentConfigSummary:
+    """Convert AgentConfigSummary proto to Pydantic model for BFF.
+
+    Args:
+        proto: The AgentConfigSummary proto message.
+
+    Returns:
+        AgentConfigSummary Pydantic model.
+    """
+    from fp_common.models.agent_config_summary import AgentConfigSummary
+
+    return AgentConfigSummary(
+        agent_id=proto.agent_id,
+        version=proto.version,
+        agent_type=proto.agent_type,
+        status=proto.status,
+        description=proto.description,
+        model=proto.model if proto.model else "",
+        prompt_count=proto.prompt_count,
+        updated_at=_proto_timestamp_to_datetime(proto.updated_at),
+    )
+
+
+def agent_config_detail_from_proto(
+    proto: ai_model_pb2.AgentConfigResponse,
+) -> AgentConfigDetail:
+    """Convert AgentConfigResponse proto to AgentConfigDetail Pydantic model.
+
+    Args:
+        proto: The AgentConfigResponse proto message.
+
+    Returns:
+        AgentConfigDetail Pydantic model with full configuration.
+    """
+    from fp_common.models.agent_config_summary import AgentConfigDetail
+
+    # Convert prompts to Pydantic models
+    prompts = [prompt_summary_from_proto(p) for p in proto.prompts]
+
+    return AgentConfigDetail(
+        agent_id=proto.agent_id,
+        version=proto.version,
+        agent_type=proto.agent_type,
+        status=proto.status,
+        description=proto.description,
+        model="",  # Not in AgentConfigResponse proto, will be extracted from config_json if needed
+        prompt_count=len(prompts),
+        config_json=proto.config_json,
+        prompts=prompts,
+        created_at=_proto_timestamp_to_datetime(proto.created_at),
+        updated_at=_proto_timestamp_to_datetime(proto.updated_at),
+    )
+
+
+# Legacy dict converter - kept for backward compatibility
+def agent_config_response_from_proto(
+    proto: ai_model_pb2.AgentConfigResponse,
+) -> AgentConfigDetail:
+    """Convert AgentConfigResponse proto to AgentConfigDetail Pydantic model.
+
+    This is an alias for agent_config_detail_from_proto() for backward compatibility.
+
+    Args:
+        proto: The AgentConfigResponse proto message.
+
+    Returns:
+        AgentConfigDetail Pydantic model with full configuration.
+    """
+    return agent_config_detail_from_proto(proto)
