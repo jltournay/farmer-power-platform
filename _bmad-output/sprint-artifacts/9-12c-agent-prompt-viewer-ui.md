@@ -477,9 +477,36 @@ bash scripts/e2e-up.sh --down
 ```
 **Output:**
 ```
-(paste E2E test output here)
+============================= test session starts ==============================
+platform darwin -- Python 3.11.12, pytest-9.0.2, pluggy-1.6.0
+asyncio: mode=Mode.AUTO
+
+tests/e2e/scenarios/test_38_admin_ai_agents.py::TestAiAgentList::test_list_ai_agents_structure PASSED
+tests/e2e/scenarios/test_38_admin_ai_agents.py::TestAiAgentList::test_list_ai_agents_with_seed_data PASSED
+tests/e2e/scenarios/test_38_admin_ai_agents.py::TestAiAgentList::test_list_ai_agents_filter_by_agent_type PASSED
+tests/e2e/scenarios/test_38_admin_ai_agents.py::TestAiAgentList::test_list_ai_agents_filter_by_status PASSED
+tests/e2e/scenarios/test_38_admin_ai_agents.py::TestAiAgentList::test_list_ai_agents_pagination PASSED
+tests/e2e/scenarios/test_38_admin_ai_agents.py::TestAiAgentDetail::test_ai_agent_detail_loads PASSED
+tests/e2e/scenarios/test_38_admin_ai_agents.py::TestAiAgentDetail::test_ai_agent_detail_has_config_json PASSED
+tests/e2e/scenarios/test_38_admin_ai_agents.py::TestAiAgentDetail::test_ai_agent_detail_has_prompts PASSED
+tests/e2e/scenarios/test_38_admin_ai_agents.py::TestAiAgentDetail::test_ai_agent_detail_has_timestamps PASSED
+tests/e2e/scenarios/test_38_admin_ai_agents.py::TestAiAgentDetail::test_ai_agent_detail_explorer_type PASSED
+tests/e2e/scenarios/test_38_admin_ai_agents.py::TestAiAgentDetail::test_ai_agent_detail_404_not_found PASSED
+tests/e2e/scenarios/test_38_admin_ai_agents.py::TestAiAgentPrompts::test_list_prompts_by_agent_structure PASSED
+tests/e2e/scenarios/test_38_admin_ai_agents.py::TestAiAgentPrompts::test_list_prompts_by_agent_all_linked PASSED
+tests/e2e/scenarios/test_38_admin_ai_agents.py::TestAiAgentPrompts::test_list_prompts_by_agent_with_status_filter PASSED
+tests/e2e/scenarios/test_38_admin_ai_agents.py::TestAiAgentPrompts::test_list_prompts_by_agent_empty_for_unknown PASSED
+tests/e2e/scenarios/test_38_admin_ai_agents.py::TestAiAgentAuthorization::test_non_admin_cannot_list_ai_agents PASSED
+tests/e2e/scenarios/test_38_admin_ai_agents.py::TestAiAgentAuthorization::test_non_admin_cannot_get_ai_agent_detail PASSED
+tests/e2e/scenarios/test_38_admin_ai_agents.py::TestAiAgentAuthorization::test_non_admin_cannot_list_prompts PASSED
+tests/e2e/scenarios/test_38_admin_ai_agents.py::TestAiAgentAuthorization::test_unauthenticated_request_rejected PASSED
+tests/e2e/scenarios/test_38_admin_ai_agents.py::TestAiAgentUIIntegration::test_list_to_detail_flow PASSED
+tests/e2e/scenarios/test_38_admin_ai_agents.py::TestAiAgentUIIntegration::test_detail_to_prompts_flow PASSED
+tests/e2e/scenarios/test_38_admin_ai_agents.py::TestAiAgentUIIntegration::test_filter_then_detail_flow PASSED
+
+============================== 22 passed in 3.50s ==============================
 ```
-**E2E passed:** [ ] Yes / [ ] No
+**E2E passed:** [x] Yes / [ ] No
 
 ### 3. Lint Check
 ```bash
