@@ -1,6 +1,6 @@
 # Story 9.12c: AI Agent & Prompt Viewer UI
 
-**Status:** in-progress
+**Status:** review
 **GitHub Issue:** #239
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
@@ -418,9 +418,9 @@ The BFF API E2E tests validate the data layer that the UI consumes (22 tests fro
 **Branch name:** `feature/9-12c-agent-prompt-viewer-ui`
 
 ### During Development
-- [ ] All commits reference GitHub issue: `Relates to #XX`
-- [ ] Commits are atomic by type (production, test, chore - not mixed)
-- [ ] Push to feature branch: `git push -u origin feature/9-12c-agent-prompt-viewer-ui`
+- [x] All commits reference GitHub issue: `Relates to #239`
+- [x] Commits are atomic by type (production, test, chore - not mixed)
+- [x] Push to feature branch: `git push -u origin feature/9-12c-agent-prompt-viewer-ui`
 
 ### Story Done
 - [ ] Create Pull Request: `gh pr create --title "Story 9.12c: AI Agent & Prompt Viewer UI" --base main`
@@ -542,9 +542,9 @@ gh workflow run "E2E Tests" --ref feature/9-12c-agent-prompt-viewer-ui
 # Wait and check status
 gh run view <run_id> --json status,conclusion
 ```
-**CI Run ID:** _______________
-**CI E2E Status:** [ ] Passed / [ ] Failed
-**Verification Date:** _______________
+**CI Run ID:** 21451081083
+**CI E2E Status:** [x] Passed / [ ] Failed
+**Verification Date:** 2026-01-28
 
 ---
 
