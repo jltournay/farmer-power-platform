@@ -672,3 +672,127 @@ message RetrievalMatch {
   // Additional metadata as JSON string
   string metadata_json = 7;
 }
+
+// ============================================================================
+// Agent Config Service - Read-only admin visibility (ADR-019)
+// Story 9.12a: Provides read-only access to AI agent configurations and prompts
+// Write operations are handled by agent-config and prompt-config CLIs
+// ============================================================================
+
+// AgentConfigService provides read-only queries for AI agent configurations
+service AgentConfigService {
+  // List all agent configurations with optional filters
+  rpc ListAgentConfigs(ListAgentConfigsRequest) returns (ListAgentConfigsResponse);
+
+  // Get a single agent configuration with its linked prompts
+  rpc GetAgentConfig(GetAgentConfigRequest) returns (AgentConfigResponse);
+
+  // List prompts for a specific agent
+  rpc ListPromptsByAgent(ListPromptsByAgentRequest) returns (ListPromptsResponse);
+}
+
+// ============================================
+// Agent Config Request/Response Messages
+// ============================================
+
+message ListAgentConfigsRequest {
+  // Max results per page (default 20, max 100)
+  int32 page_size = 1;
+  // Pagination cursor (skip count encoded as string)
+  string page_token = 2;
+  // Filter by agent type: "extractor", "explorer", "generator", "conversational", "tiered-vision"
+  string agent_type = 3;
+  // Filter by status: "draft", "staged", "active", "archived"
+  string status = 4;
+}
+
+message ListAgentConfigsResponse {
+  // List of agent config summaries
+  repeated AgentConfigSummary agents = 1;
+  // Token for next page (empty if no more results)
+  string next_page_token = 2;
+  // Total count of matching records
+  int32 total_count = 3;
+}
+
+message GetAgentConfigRequest {
+  // Agent identifier (e.g., "disease-diagnosis")
+  string agent_id = 1;
+  // Optional: specific version to retrieve (empty = active version)
+  string version = 2;
+}
+
+message AgentConfigSummary {
+  // Agent identifier (e.g., "disease-diagnosis")
+  string agent_id = 1;
+  // Semantic version string (e.g., "1.0.0")
+  string version = 2;
+  // Agent type: "extractor", "explorer", "generator", "conversational", "tiered-vision"
+  string agent_type = 3;
+  // Lifecycle status: "draft", "staged", "active", "archived"
+  string status = 4;
+  // Human-readable description
+  string description = 5;
+  // LLM model identifier (e.g., "anthropic/claude-3-5-sonnet")
+  string model = 6;
+  // Number of linked prompts
+  int32 prompt_count = 7;
+  // Last update timestamp
+  google.protobuf.Timestamp updated_at = 8;
+}
+
+message AgentConfigResponse {
+  // Agent identifier
+  string agent_id = 1;
+  // Semantic version string
+  string version = 2;
+  // Agent type
+  string agent_type = 3;
+  // Lifecycle status
+  string status = 4;
+  // Human-readable description
+  string description = 5;
+  // Full config as JSON string for detail view
+  string config_json = 6;
+  // Linked prompts (denormalized for single call efficiency)
+  repeated PromptSummary prompts = 7;
+  // Creation timestamp
+  google.protobuf.Timestamp created_at = 8;
+  // Last update timestamp
+  google.protobuf.Timestamp updated_at = 9;
+}
+
+// ============================================
+// Prompt Messages for AgentConfigService
+// ============================================
+
+message ListPromptsByAgentRequest {
+  // Agent identifier to list prompts for
+  string agent_id = 1;
+  // Optional filter by status: "draft", "staged", "active", "archived"
+  string status = 2;
+}
+
+message ListPromptsResponse {
+  // List of prompt summaries
+  repeated PromptSummary prompts = 1;
+  // Total count of matching prompts
+  int32 total_count = 2;
+}
+
+message PromptSummary {
+  // Unique document ID (format: {prompt_id}:{version})
+  string id = 1;
+  // Logical prompt identifier (e.g., "disease-diagnosis")
+  string prompt_id = 2;
+  // Agent this prompt belongs to
+  string agent_id = 3;
+  // Semantic version string
+  string version = 4;
+  // Lifecycle status: "draft", "staged", "active", "archived"
+  string status = 5;
+  // Author username
+  string author = 6;
+  // Last update timestamp
+  google.protobuf.Timestamp updated_at = 7;
+}

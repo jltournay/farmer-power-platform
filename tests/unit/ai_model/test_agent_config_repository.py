@@ -592,6 +592,95 @@ class TestAgentConfigRepository:
         assert result[0].status != AgentConfigStatus.ARCHIVED
 
     # =========================================================================
+    # Paginated List and Count (Story 9.12a)
+    # =========================================================================
+
+    @pytest.mark.asyncio
+    async def test_list_all_with_pagination(
+        self,
+        repository: AgentConfigRepository,
+        sample_extractor_config: ExtractorConfig,
+        sample_explorer_config: ExplorerConfig,
+        sample_generator_config: GeneratorConfig,
+    ) -> None:
+        """List_all returns paginated results."""
+        await repository.create(sample_extractor_config)
+        await repository.create(sample_explorer_config)
+        await repository.create(sample_generator_config)
+
+        # Get first page of 2
+        page1 = await repository.list_all(page_size=2, skip=0)
+        assert len(page1) == 2
+
+        # Get second page
+        page2 = await repository.list_all(page_size=2, skip=2)
+        assert len(page2) == 1
+
+    @pytest.mark.asyncio
+    async def test_list_all_with_type_filter(
+        self,
+        repository: AgentConfigRepository,
+        sample_extractor_config: ExtractorConfig,
+        sample_explorer_config: ExplorerConfig,
+    ) -> None:
+        """List_all filters by agent type."""
+        await repository.create(sample_extractor_config)
+        await repository.create(sample_explorer_config)
+
+        result = await repository.list_all(agent_type=AgentType.EXTRACTOR)
+
+        assert len(result) == 1
+        assert result[0].type == "extractor"
+
+    @pytest.mark.asyncio
+    async def test_list_all_with_status_filter(
+        self,
+        repository: AgentConfigRepository,
+        sample_extractor_config: ExtractorConfig,
+        sample_explorer_config: ExplorerConfig,
+    ) -> None:
+        """List_all filters by status."""
+        await repository.create(sample_extractor_config)  # ACTIVE
+        await repository.create(sample_explorer_config)  # STAGED
+
+        result = await repository.list_all(status=AgentConfigStatus.ACTIVE)
+
+        assert len(result) == 1
+        assert result[0].status == AgentConfigStatus.ACTIVE
+
+    @pytest.mark.asyncio
+    async def test_count_all(
+        self,
+        repository: AgentConfigRepository,
+        sample_extractor_config: ExtractorConfig,
+        sample_explorer_config: ExplorerConfig,
+    ) -> None:
+        """Count returns total count."""
+        await repository.create(sample_extractor_config)
+        await repository.create(sample_explorer_config)
+
+        count = await repository.count()
+
+        assert count == 2
+
+    @pytest.mark.asyncio
+    async def test_count_with_filters(
+        self,
+        repository: AgentConfigRepository,
+        sample_extractor_config: ExtractorConfig,
+        sample_explorer_config: ExplorerConfig,
+    ) -> None:
+        """Count respects filters."""
+        await repository.create(sample_extractor_config)  # ACTIVE, extractor
+        await repository.create(sample_explorer_config)  # STAGED, explorer
+
+        count_active = await repository.count(status=AgentConfigStatus.ACTIVE)
+        count_extractor = await repository.count(agent_type=AgentType.EXTRACTOR)
+
+        assert count_active == 1
+        assert count_extractor == 1
+
+    # =========================================================================
     # Index Creation
     # =========================================================================
 

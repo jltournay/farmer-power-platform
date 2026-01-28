@@ -147,6 +147,28 @@ class PromptRepository(BaseRepository[Prompt]):
 
         return prompts
 
+    async def count_by_agent(
+        self,
+        agent_id: str,
+        status: PromptStatus | None = None,
+    ) -> int:
+        """Count prompts for an agent.
+
+        Story 9.12a: Supports prompt_count in AgentConfigSummary.
+
+        Args:
+            agent_id: The agent identifier.
+            status: Optional status filter.
+
+        Returns:
+            Total count of matching prompts.
+        """
+        query: dict = {"agent_id": agent_id}
+        if status is not None:
+            query["status"] = status.value
+
+        return await self._collection.count_documents(query)
+
     async def ensure_indexes(self) -> None:
         """Create indexes for the prompts collection.
 

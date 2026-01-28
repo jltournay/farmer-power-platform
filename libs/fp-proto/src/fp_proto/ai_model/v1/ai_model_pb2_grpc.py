@@ -1058,3 +1058,185 @@ class RAGDocumentService(object):
             timeout,
             metadata,
             _registered_method=True)
+
+
+class AgentConfigServiceStub(object):
+    """============================================================================
+    Agent Config Service - Read-only admin visibility (ADR-019)
+    Story 9.12a: Provides read-only access to AI agent configurations and prompts
+    Write operations are handled by agent-config and prompt-config CLIs
+    ============================================================================
+
+    AgentConfigService provides read-only queries for AI agent configurations
+    """
+
+    def __init__(self, channel):
+        """Constructor.
+
+        Args:
+            channel: A grpc.Channel.
+        """
+        self.ListAgentConfigs = channel.unary_unary(
+                '/farmer_power.ai_model.v1.AgentConfigService/ListAgentConfigs',
+                request_serializer=ai__model_dot_v1_dot_ai__model__pb2.ListAgentConfigsRequest.SerializeToString,
+                response_deserializer=ai__model_dot_v1_dot_ai__model__pb2.ListAgentConfigsResponse.FromString,
+                _registered_method=True)
+        self.GetAgentConfig = channel.unary_unary(
+                '/farmer_power.ai_model.v1.AgentConfigService/GetAgentConfig',
+                request_serializer=ai__model_dot_v1_dot_ai__model__pb2.GetAgentConfigRequest.SerializeToString,
+                response_deserializer=ai__model_dot_v1_dot_ai__model__pb2.AgentConfigResponse.FromString,
+                _registered_method=True)
+        self.ListPromptsByAgent = channel.unary_unary(
+                '/farmer_power.ai_model.v1.AgentConfigService/ListPromptsByAgent',
+                request_serializer=ai__model_dot_v1_dot_ai__model__pb2.ListPromptsByAgentRequest.SerializeToString,
+                response_deserializer=ai__model_dot_v1_dot_ai__model__pb2.ListPromptsResponse.FromString,
+                _registered_method=True)
+
+
+class AgentConfigServiceServicer(object):
+    """============================================================================
+    Agent Config Service - Read-only admin visibility (ADR-019)
+    Story 9.12a: Provides read-only access to AI agent configurations and prompts
+    Write operations are handled by agent-config and prompt-config CLIs
+    ============================================================================
+
+    AgentConfigService provides read-only queries for AI agent configurations
+    """
+
+    def ListAgentConfigs(self, request, context):
+        """List all agent configurations with optional filters
+        """
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def GetAgentConfig(self, request, context):
+        """Get a single agent configuration with its linked prompts
+        """
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def ListPromptsByAgent(self, request, context):
+        """List prompts for a specific agent
+        """
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+
+def add_AgentConfigServiceServicer_to_server(servicer, server):
+    rpc_method_handlers = {
+            'ListAgentConfigs': grpc.unary_unary_rpc_method_handler(
+                    servicer.ListAgentConfigs,
+                    request_deserializer=ai__model_dot_v1_dot_ai__model__pb2.ListAgentConfigsRequest.FromString,
+                    response_serializer=ai__model_dot_v1_dot_ai__model__pb2.ListAgentConfigsResponse.SerializeToString,
+            ),
+            'GetAgentConfig': grpc.unary_unary_rpc_method_handler(
+                    servicer.GetAgentConfig,
+                    request_deserializer=ai__model_dot_v1_dot_ai__model__pb2.GetAgentConfigRequest.FromString,
+                    response_serializer=ai__model_dot_v1_dot_ai__model__pb2.AgentConfigResponse.SerializeToString,
+            ),
+            'ListPromptsByAgent': grpc.unary_unary_rpc_method_handler(
+                    servicer.ListPromptsByAgent,
+                    request_deserializer=ai__model_dot_v1_dot_ai__model__pb2.ListPromptsByAgentRequest.FromString,
+                    response_serializer=ai__model_dot_v1_dot_ai__model__pb2.ListPromptsResponse.SerializeToString,
+            ),
+    }
+    generic_handler = grpc.method_handlers_generic_handler(
+            'farmer_power.ai_model.v1.AgentConfigService', rpc_method_handlers)
+    server.add_generic_rpc_handlers((generic_handler,))
+    server.add_registered_method_handlers('farmer_power.ai_model.v1.AgentConfigService', rpc_method_handlers)
+
+
+ # This class is part of an EXPERIMENTAL API.
+class AgentConfigService(object):
+    """============================================================================
+    Agent Config Service - Read-only admin visibility (ADR-019)
+    Story 9.12a: Provides read-only access to AI agent configurations and prompts
+    Write operations are handled by agent-config and prompt-config CLIs
+    ============================================================================
+
+    AgentConfigService provides read-only queries for AI agent configurations
+    """
+
+    @staticmethod
+    def ListAgentConfigs(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/farmer_power.ai_model.v1.AgentConfigService/ListAgentConfigs',
+            ai__model_dot_v1_dot_ai__model__pb2.ListAgentConfigsRequest.SerializeToString,
+            ai__model_dot_v1_dot_ai__model__pb2.ListAgentConfigsResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def GetAgentConfig(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/farmer_power.ai_model.v1.AgentConfigService/GetAgentConfig',
+            ai__model_dot_v1_dot_ai__model__pb2.GetAgentConfigRequest.SerializeToString,
+            ai__model_dot_v1_dot_ai__model__pb2.AgentConfigResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def ListPromptsByAgent(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/farmer_power.ai_model.v1.AgentConfigService/ListPromptsByAgent',
+            ai__model_dot_v1_dot_ai__model__pb2.ListPromptsByAgentRequest.SerializeToString,
+            ai__model_dot_v1_dot_ai__model__pb2.ListPromptsResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
