@@ -19,6 +19,7 @@ import { PlatformHealth } from '@/pages/health/PlatformHealth';
 import { KnowledgeLibrary, UploadWizard, KnowledgeDetail, KnowledgeReview } from '@/pages/knowledge';
 import { CostDashboard } from '@/pages/costs/CostDashboard';
 import { SourceConfigList } from '@/pages/source-configs';
+import { AiAgentList, AiAgentDetail } from '@/pages/ai-agents';
 import { NotFound } from '@/pages/NotFound';
 
 /**
@@ -42,6 +43,8 @@ import { NotFound } from '@/pages/NotFound';
  * - /knowledge - RAG document library
  * - /costs - LLM spending dashboard
  * - /source-configs - Source configuration viewer
+ * - /ai-agents - AI agent configurations
+ * - /ai-agents/:agentId - AI agent detail
  * - * - 404 Not Found
  *
  * All routes require platform_admin role.
@@ -260,6 +263,22 @@ export const routes: RouteObject[] = [
         element: (
           <ProtectedRoute roles={['platform_admin']}>
             <SourceConfigList />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: 'ai-agents',
+        element: (
+          <ProtectedRoute roles={['platform_admin']}>
+            <AiAgentList />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: 'ai-agents/:agentId',
+        element: (
+          <ProtectedRoute roles={['platform_admin']}>
+            <AiAgentDetail />
           </ProtectedRoute>
         ),
       },

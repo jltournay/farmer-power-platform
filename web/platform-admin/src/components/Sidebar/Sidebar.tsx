@@ -29,6 +29,7 @@ import MonitorHeartIcon from '@mui/icons-material/MonitorHeart';
 import MenuBookIcon from '@mui/icons-material/MenuBook';
 import AttachMoneyIcon from '@mui/icons-material/AttachMoney';
 import SettingsInputComponentIcon from '@mui/icons-material/SettingsInputComponent';
+import SmartToyIcon from '@mui/icons-material/SmartToy';
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import { useAuth } from '@fp/auth';
@@ -103,6 +104,12 @@ const menuItems: MenuItem[] = [
     label: 'Source Configs',
     path: '/source-configs',
     icon: <SettingsInputComponentIcon />,
+    roles: ['platform_admin'],
+  },
+  {
+    label: 'AI Agents',
+    path: '/ai-agents',
+    icon: <SmartToyIcon />,
     roles: ['platform_admin'],
   },
 ];
