@@ -4,10 +4,12 @@ Story 0.75.10: Added RAGDocumentService registration.
 Story 0.75.13c: Added VectorizationPipeline wiring for RAGDocumentService.
 Story 0.75.13d: Added VectorizationJobRepository for persistent job tracking.
 Story 13.7: Removed CostService - costs now published via DAPR to platform-cost (ADR-016)
+Story 9.12a: Added AgentConfigService for admin visibility (ADR-019)
 """
 
 import grpc
 import structlog
+from ai_model.api.agent_config_service import AgentConfigServiceServicer
 from ai_model.api.rag_document_service import RAGDocumentServiceServicer
 from ai_model.config import settings
 from ai_model.infrastructure.mongodb import get_database
@@ -17,6 +19,8 @@ from ai_model.infrastructure.repositories import (
     RagChunkRepository,
     RagDocumentRepository,
 )
+from ai_model.infrastructure.repositories.agent_config_repository import AgentConfigRepository
+from ai_model.infrastructure.repositories.prompt_repository import PromptRepository
 from fp_proto.ai_model.v1 import ai_model_pb2, ai_model_pb2_grpc
 from grpc_health.v1 import health, health_pb2, health_pb2_grpc
 from grpc_reflection.v1alpha import reflection
@@ -226,6 +230,21 @@ class GrpcServer:
         ai_model_pb2_grpc.add_RAGDocumentServiceServicer_to_server(rag_doc_servicer, self._server)
         logger.info("RAGDocumentService registered")
 
+        # Story 9.12a: Add AgentConfigService for admin visibility (ADR-019)
+        agent_config_repository = AgentConfigRepository(db)
+        await agent_config_repository.ensure_indexes()
+
+        prompt_repository = PromptRepository(db)
+        await prompt_repository.ensure_indexes()
+
+        agent_config_servicer = AgentConfigServiceServicer(
+            db=db,
+            agent_config_repository=agent_config_repository,
+            prompt_repository=prompt_repository,
+        )
+        ai_model_pb2_grpc.add_AgentConfigServiceServicer_to_server(agent_config_servicer, self._server)
+        logger.info("AgentConfigService registered")
+
         # Add health checking service
         self._health_servicer = health.HealthServicer()
         health_pb2_grpc.add_HealthServicer_to_server(self._health_servicer, self._server)
@@ -242,9 +261,11 @@ class GrpcServer:
 
         # Enable server reflection for debugging with grpcurl/grpcui
         # Note: CostService removed in Story 13.7 - costs now published via DAPR
+        # Note: AgentConfigService added in Story 9.12a for admin visibility
         service_names = (
             ai_model_pb2.DESCRIPTOR.services_by_name["AiModelService"].full_name,
             ai_model_pb2.DESCRIPTOR.services_by_name["RAGDocumentService"].full_name,
+            ai_model_pb2.DESCRIPTOR.services_by_name["AgentConfigService"].full_name,
             health_pb2.DESCRIPTOR.services_by_name["Health"].full_name,
             reflection.SERVICE_NAME,
         )

@@ -383,6 +383,50 @@ class TestPromptRepository:
         assert result[0].status == PromptStatus.STAGED
 
     # =========================================================================
+    # Count by Agent (Story 9.12a)
+    # =========================================================================
+
+    @pytest.mark.asyncio
+    async def test_count_by_agent(
+        self,
+        repository: PromptRepository,
+        sample_prompt: Prompt,
+        sample_prompt_v2: Prompt,
+    ) -> None:
+        """Count_by_agent returns total count for an agent."""
+        await repository.create(sample_prompt)
+        await repository.create(sample_prompt_v2)
+
+        count = await repository.count_by_agent("diagnose-quality-issue")
+
+        assert count == 2
+
+    @pytest.mark.asyncio
+    async def test_count_by_agent_with_status_filter(
+        self,
+        repository: PromptRepository,
+        sample_prompt: Prompt,
+        sample_prompt_v2: Prompt,
+    ) -> None:
+        """Count_by_agent respects status filter."""
+        await repository.create(sample_prompt)  # ACTIVE
+        await repository.create(sample_prompt_v2)  # STAGED
+
+        count = await repository.count_by_agent("diagnose-quality-issue", status=PromptStatus.ACTIVE)
+
+        assert count == 1
+
+    @pytest.mark.asyncio
+    async def test_count_by_agent_returns_zero_for_unknown(
+        self,
+        repository: PromptRepository,
+    ) -> None:
+        """Count_by_agent returns 0 for unknown agent."""
+        count = await repository.count_by_agent("unknown-agent")
+
+        assert count == 0
+
+    # =========================================================================
     # Index Creation
     # =========================================================================
 

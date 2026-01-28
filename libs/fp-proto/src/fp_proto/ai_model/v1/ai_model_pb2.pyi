@@ -632,3 +632,109 @@ class RetrievalMatch(_message.Message):
     domain: str
     metadata_json: str
     def __init__(self, chunk_id: _Optional[str] = ..., content: _Optional[str] = ..., score: _Optional[float] = ..., document_id: _Optional[str] = ..., title: _Optional[str] = ..., domain: _Optional[str] = ..., metadata_json: _Optional[str] = ...) -> None: ...
+
+class ListAgentConfigsRequest(_message.Message):
+    __slots__ = ("page_size", "page_token", "agent_type", "status")
+    PAGE_SIZE_FIELD_NUMBER: _ClassVar[int]
+    PAGE_TOKEN_FIELD_NUMBER: _ClassVar[int]
+    AGENT_TYPE_FIELD_NUMBER: _ClassVar[int]
+    STATUS_FIELD_NUMBER: _ClassVar[int]
+    page_size: int
+    page_token: str
+    agent_type: str
+    status: str
+    def __init__(self, page_size: _Optional[int] = ..., page_token: _Optional[str] = ..., agent_type: _Optional[str] = ..., status: _Optional[str] = ...) -> None: ...
+
+class ListAgentConfigsResponse(_message.Message):
+    __slots__ = ("agents", "next_page_token", "total_count")
+    AGENTS_FIELD_NUMBER: _ClassVar[int]
+    NEXT_PAGE_TOKEN_FIELD_NUMBER: _ClassVar[int]
+    TOTAL_COUNT_FIELD_NUMBER: _ClassVar[int]
+    agents: _containers.RepeatedCompositeFieldContainer[AgentConfigSummary]
+    next_page_token: str
+    total_count: int
+    def __init__(self, agents: _Optional[_Iterable[_Union[AgentConfigSummary, _Mapping]]] = ..., next_page_token: _Optional[str] = ..., total_count: _Optional[int] = ...) -> None: ...
+
+class GetAgentConfigRequest(_message.Message):
+    __slots__ = ("agent_id", "version")
+    AGENT_ID_FIELD_NUMBER: _ClassVar[int]
+    VERSION_FIELD_NUMBER: _ClassVar[int]
+    agent_id: str
+    version: str
+    def __init__(self, agent_id: _Optional[str] = ..., version: _Optional[str] = ...) -> None: ...
+
+class AgentConfigSummary(_message.Message):
+    __slots__ = ("agent_id", "version", "agent_type", "status", "description", "model", "prompt_count", "updated_at")
+    AGENT_ID_FIELD_NUMBER: _ClassVar[int]
+    VERSION_FIELD_NUMBER: _ClassVar[int]
+    AGENT_TYPE_FIELD_NUMBER: _ClassVar[int]
+    STATUS_FIELD_NUMBER: _ClassVar[int]
+    DESCRIPTION_FIELD_NUMBER: _ClassVar[int]
+    MODEL_FIELD_NUMBER: _ClassVar[int]
+    PROMPT_COUNT_FIELD_NUMBER: _ClassVar[int]
+    UPDATED_AT_FIELD_NUMBER: _ClassVar[int]
+    agent_id: str
+    version: str
+    agent_type: str
+    status: str
+    description: str
+    model: str
+    prompt_count: int
+    updated_at: _timestamp_pb2.Timestamp
+    def __init__(self, agent_id: _Optional[str] = ..., version: _Optional[str] = ..., agent_type: _Optional[str] = ..., status: _Optional[str] = ..., description: _Optional[str] = ..., model: _Optional[str] = ..., prompt_count: _Optional[int] = ..., updated_at: _Optional[_Union[datetime.datetime, _timestamp_pb2.Timestamp, _Mapping]] = ...) -> None: ...
+
+class AgentConfigResponse(_message.Message):
+    __slots__ = ("agent_id", "version", "agent_type", "status", "description", "config_json", "prompts", "created_at", "updated_at")
+    AGENT_ID_FIELD_NUMBER: _ClassVar[int]
+    VERSION_FIELD_NUMBER: _ClassVar[int]
+    AGENT_TYPE_FIELD_NUMBER: _ClassVar[int]
+    STATUS_FIELD_NUMBER: _ClassVar[int]
+    DESCRIPTION_FIELD_NUMBER: _ClassVar[int]
+    CONFIG_JSON_FIELD_NUMBER: _ClassVar[int]
+    PROMPTS_FIELD_NUMBER: _ClassVar[int]
+    CREATED_AT_FIELD_NUMBER: _ClassVar[int]
+    UPDATED_AT_FIELD_NUMBER: _ClassVar[int]
+    agent_id: str
+    version: str
+    agent_type: str
+    status: str
+    description: str
+    config_json: str
+    prompts: _containers.RepeatedCompositeFieldContainer[PromptSummary]
+    created_at: _timestamp_pb2.Timestamp
+    updated_at: _timestamp_pb2.Timestamp
+    def __init__(self, agent_id: _Optional[str] = ..., version: _Optional[str] = ..., agent_type: _Optional[str] = ..., status: _Optional[str] = ..., description: _Optional[str] = ..., config_json: _Optional[str] = ..., prompts: _Optional[_Iterable[_Union[PromptSummary, _Mapping]]] = ..., created_at: _Optional[_Union[datetime.datetime, _timestamp_pb2.Timestamp, _Mapping]] = ..., updated_at: _Optional[_Union[datetime.datetime, _timestamp_pb2.Timestamp, _Mapping]] = ...) -> None: ...
+
+class ListPromptsByAgentRequest(_message.Message):
+    __slots__ = ("agent_id", "status")
+    AGENT_ID_FIELD_NUMBER: _ClassVar[int]
+    STATUS_FIELD_NUMBER: _ClassVar[int]
+    agent_id: str
+    status: str
+    def __init__(self, agent_id: _Optional[str] = ..., status: _Optional[str] = ...) -> None: ...
+
+class ListPromptsResponse(_message.Message):
+    __slots__ = ("prompts", "total_count")
+    PROMPTS_FIELD_NUMBER: _ClassVar[int]
+    TOTAL_COUNT_FIELD_NUMBER: _ClassVar[int]
+    prompts: _containers.RepeatedCompositeFieldContainer[PromptSummary]
+    total_count: int
+    def __init__(self, prompts: _Optional[_Iterable[_Union[PromptSummary, _Mapping]]] = ..., total_count: _Optional[int] = ...) -> None: ...
+
+class PromptSummary(_message.Message):
+    __slots__ = ("id", "prompt_id", "agent_id", "version", "status", "author", "updated_at")
+    ID_FIELD_NUMBER: _ClassVar[int]
+    PROMPT_ID_FIELD_NUMBER: _ClassVar[int]
+    AGENT_ID_FIELD_NUMBER: _ClassVar[int]
+    VERSION_FIELD_NUMBER: _ClassVar[int]
+    STATUS_FIELD_NUMBER: _ClassVar[int]
+    AUTHOR_FIELD_NUMBER: _ClassVar[int]
+    UPDATED_AT_FIELD_NUMBER: _ClassVar[int]
+    id: str
+    prompt_id: str
+    agent_id: str
+    version: str
+    status: str
+    author: str
+    updated_at: _timestamp_pb2.Timestamp
+    def __init__(self, id: _Optional[str] = ..., prompt_id: _Optional[str] = ..., agent_id: _Optional[str] = ..., version: _Optional[str] = ..., status: _Optional[str] = ..., author: _Optional[str] = ..., updated_at: _Optional[_Union[datetime.datetime, _timestamp_pb2.Timestamp, _Mapping]] = ...) -> None: ...

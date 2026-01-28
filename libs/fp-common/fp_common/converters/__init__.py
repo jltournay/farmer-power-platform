@@ -5,12 +5,14 @@ This module provides centralized conversion functions:
 - Collection: Protocol Buffer messages and MongoDB dicts to Pydantic models
 - Cost: Protocol Buffer messages to Pydantic models (Story 13.6)
 - SourceConfig: Pydantic-to-Proto and Proto-to-dict converters (Story 9.11a)
+- AgentConfig: Pydantic-to-Proto and Proto-to-dict converters (Story 9.12a)
 
 Usage:
     from fp_common.converters import farmer_from_proto, factory_from_proto
     from fp_common.converters import document_from_proto, document_from_dict
     from fp_common.converters import cost_summary_from_proto, budget_status_from_proto
     from fp_common.converters import source_config_summary_to_proto
+    from fp_common.converters import agent_config_summary_to_proto
 
     # Convert gRPC response to Pydantic model
     farmer = farmer_from_proto(grpc_response.farmer)
@@ -24,8 +26,20 @@ Usage:
 
     # Convert SourceConfig for gRPC service (Story 9.11a)
     summary_proto = source_config_summary_to_proto(config, updated_at=...)
+
+    # Convert AgentConfig for gRPC service (Story 9.12a)
+    summary_proto = agent_config_summary_to_proto(config, prompt_count=...)
 """
 
+# Agent Config converters (Story 9.12a/9.12b)
+from fp_common.converters.agent_config_converters import (
+    agent_config_response_from_proto,
+    agent_config_response_to_proto,
+    agent_config_summary_from_proto,
+    agent_config_summary_to_proto,
+    prompt_summary_from_proto,
+    prompt_summary_to_proto,
+)
 from fp_common.converters.collection_converters import (
     document_from_dict,
     document_from_proto,
@@ -87,13 +101,15 @@ from fp_common.converters.source_config_converters import (
 )
 
 __all__ = [
-    # Cost converters (proto-to-pydantic)
+    "agent_config_response_from_proto",
+    "agent_config_response_to_proto",
+    "agent_config_summary_from_proto",
+    "agent_config_summary_to_proto",
     "agent_type_cost_to_proto",
     "budget_status_from_proto",
     "budget_threshold_config_from_proto",
     "collection_point_from_proto",
     "collection_point_to_proto",
-    # Grading model converters (Story 9.6a)
     "conditional_reject_from_proto",
     "conditional_reject_to_proto",
     "cost_summary_from_proto",
@@ -120,8 +136,9 @@ __all__ = [
     "llm_cost_by_agent_type_from_proto",
     "llm_cost_by_model_from_proto",
     "model_cost_to_proto",
+    "prompt_summary_from_proto",
+    "prompt_summary_to_proto",
     "region_from_proto",
-    # RAG converters (Story 0.75.23)
     "retrieval_match_from_proto",
     "retrieval_match_to_proto",
     "retrieval_query_from_proto",
@@ -129,7 +146,6 @@ __all__ = [
     "retrieval_result_from_proto",
     "retrieval_result_to_proto",
     "search_result_from_dict",
-    # Source Config converters (Story 9.11a/9.11b)
     "source_config_detail_from_proto",
     "source_config_response_to_proto",
     "source_config_summary_from_proto",

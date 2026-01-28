@@ -91,5 +91,34 @@
       "traffic_percentage": 0.0,
       "test_id": null
     }
+  },
+  {
+    "_id": "disease-diagnosis:1.0.0",
+    "id": "disease-diagnosis:1.0.0",
+    "prompt_id": "disease-diagnosis",
+    "agent_id": "disease-diagnosis",
+    "version": "1.0.0",
+    "status": "active",
+    "content": {
+      "system_prompt": "You are an expert tea plant pathologist for the Farmer Power platform.\n\nYour task is to analyze quality data and diagnose potential diseases affecting tea plants. Use the provided RAG knowledge base to inform your diagnoses.\n\n1. Analyze quality patterns for disease indicators\n2. Cross-reference with knowledge base on tea plant diseases\n3. Provide diagnosis with confidence level\n4. Suggest actionable recommendations\n\nRESPOND WITH ONLY VALID JSON.",
+      "template": "Analyze quality data for farmer {{farmer_id}}:\n\n{{quality_data}}\n\nKnowledge context:\n{{rag_context}}\n\nProvide a JSON response with:\n- diagnosis: string (disease name or 'healthy')\n- confidence: number (0.0-1.0)\n- symptoms_observed: array of strings\n- recommendations: array of strings",
+      "output_schema": {
+        "type": "object",
+        "required": ["diagnosis", "confidence", "recommendations"]
+      },
+      "few_shot_examples": []
+    },
+    "metadata": {
+      "author": "dev-story-9.12a",
+      "created_at": "2026-01-28T00:00:00Z",
+      "updated_at": "2026-01-28T00:00:00Z",
+      "changelog": "Initial version for Story 9.12a - E2E testing",
+      "git_commit": null
+    },
+    "ab_test": {
+      "enabled": false,
+      "traffic_percentage": 0.0,
+      "test_id": null
+    }
   }
 ]

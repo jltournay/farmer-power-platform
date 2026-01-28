@@ -294,6 +294,67 @@ class AgentConfigRepository:
 
         return [self._deserialize(doc) for doc in docs]
 
+    async def list_all(
+        self,
+        page_size: int = 20,
+        skip: int = 0,
+        agent_type: AgentType | None = None,
+        status: AgentConfigStatus | None = None,
+    ) -> list[AgentConfig]:
+        """List agent configs with pagination and optional filters.
+
+        Story 9.12a: Supports AgentConfigService.ListAgentConfigs RPC.
+
+        Args:
+            page_size: Maximum number of configs to return.
+            skip: Number of configs to skip (for pagination).
+            agent_type: Optional filter by agent type.
+            status: Optional filter by status.
+
+        Returns:
+            List of agent configurations matching the filters.
+        """
+        query: dict[str, Any] = {}
+
+        if agent_type is not None:
+            query["type"] = agent_type.value
+
+        if status is not None:
+            query["status"] = status.value
+
+        cursor = (
+            self._collection.find(query).sort([("agent_id", ASCENDING), ("version", -1)]).skip(skip).limit(page_size)
+        )
+        docs = await cursor.to_list(length=page_size)
+
+        return [self._deserialize(doc) for doc in docs]
+
+    async def count(
+        self,
+        agent_type: AgentType | None = None,
+        status: AgentConfigStatus | None = None,
+    ) -> int:
+        """Count agent configs matching filters.
+
+        Story 9.12a: Supports total_count in ListAgentConfigs response.
+
+        Args:
+            agent_type: Optional filter by agent type.
+            status: Optional filter by status.
+
+        Returns:
+            Total count of matching agent configurations.
+        """
+        query: dict[str, Any] = {}
+
+        if agent_type is not None:
+            query["type"] = agent_type.value
+
+        if status is not None:
+            query["status"] = status.value
+
+        return await self._collection.count_documents(query)
+
     async def ensure_indexes(self) -> None:
         """Create indexes for the agent_configs collection.
 

@@ -50,6 +50,8 @@ E2E_CONFIG = {
     "collection_model_grpc_port": 50054,  # Story 0.5.1a
     "bff_url": "http://localhost:8083",  # Story 0.5.4b
     "ai_model_url": "http://localhost:8091",  # Story 0.75.18: AI Model HTTP port
+    "ai_model_grpc_host": "localhost",  # Story 9.12a: AI Model gRPC host
+    "ai_model_grpc_port": 8090,  # Story 9.12a: AI Model gRPC port (mapped from 50051)
     # Story 13.8: Platform Cost service configuration
     "platform_cost_url": "http://localhost:8084",
     "platform_cost_grpc_host": "localhost",
@@ -280,6 +282,26 @@ async def platform_cost_api(
     """Provide Platform Cost API client for health checks and DAPR event publishing."""
     async with PlatformCostApiClient(
         base_url=e2e_config["platform_cost_url"],
+    ) as client:
+        yield client
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# AI MODEL SERVICE FIXTURES (Story 9.12a)
+# ═══════════════════════════════════════════════════════════════════════════════
+
+
+@pytest_asyncio.fixture
+async def ai_model_service(
+    e2e_config: dict[str, Any],
+    wait_for_services: None,
+) -> AsyncGenerator[Any, None]:
+    """Provide AI Model gRPC client for AgentConfig queries (Story 9.12a)."""
+    from tests.e2e.helpers.mcp_clients import AiModelServiceClient
+
+    async with AiModelServiceClient(
+        host=e2e_config["ai_model_grpc_host"],
+        port=e2e_config["ai_model_grpc_port"],
     ) as client:
         yield client
 
