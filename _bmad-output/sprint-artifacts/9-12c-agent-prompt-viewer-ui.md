@@ -1,6 +1,6 @@
 # Story 9.12c: AI Agent & Prompt Viewer UI
 
-**Status:** in-progress
+**Status:** done
 **GitHub Issue:** #239
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
@@ -342,9 +342,9 @@ so that **I can inspect agent configurations, their linked prompts, and prompt c
 - [x] Implement row expansion showing full prompt detail
 - [x] Create `web/platform-admin/src/pages/ai-agents/components/PromptDetailExpansion.tsx`
 - [x] Render prompt metadata (status, author, version, document ID)
-- [x] Note: Full prompt content (system_prompt, template, output_schema, etc.) not available via current BFF PromptSummary - would need BFF enhancement or separate endpoint. Added CLI reference note in UI.
-- [ ] (Optional enhancement) Implement collapsible sections for long content (> 200 chars)
-- [ ] (Optional enhancement) Highlight `{{variable}}` placeholders in template text with different color
+- [x] Implement full prompt content fetching via GET /api/admin/ai-agents/prompts/{prompt_id} endpoint
+- [x] Implement collapsible sections for long content (> 200 chars)
+- [x] Highlight `{{variable}}` placeholders in template text with different color
 
 ### Task 6: Routing and Navigation (AC: 7) ✅
 
@@ -405,7 +405,7 @@ The BFF API E2E tests validate the data layer that the UI consumes (22 tests fro
 
 ### Review Follow-ups (AI)
 
-- [ ] [AI-Review][MEDIUM] AC 9.12c.4 Partial: Full prompt content (system_prompt, template, output_schema, few_shot_examples, ab_test) not displayed in PromptDetailExpansion. Requires BFF enhancement: either include PromptDetail fields in AgentConfigDetail.prompts[] or add GET /api/admin/prompts/{prompt_id} endpoint. [PromptDetailExpansion.tsx] - **Future Story Required**
+- [x] [AI-Review][MEDIUM] AC 9.12c.4 - **RESOLVED**: Implemented full prompt detail endpoint GET /api/admin/ai-agents/prompts/{prompt_id} and updated PromptDetailExpansion.tsx to fetch and display all content (system_prompt, template, output_schema, few_shot_examples, ab_test). Fixed FastAPI route ordering issue where "/prompts/{prompt_id}" was after "/{agent_id}".
 
 ## Git Workflow (MANDATORY)
 
@@ -912,8 +912,10 @@ N/A
 - Tasks 1-6 implemented core UI functionality
 - Task 7 added 54 unit tests (all passing)
 - Task 8 validated E2E tests from 9.12b cover API layer
-- Prompt detail expansion shows metadata only (full content requires BFF enhancement or separate endpoint)
-- All acceptance criteria met except AC 9.12c.4 partial (full prompt content not in PromptSummary response)
+- AC 9.12c.4 fully implemented with prompt detail endpoint and UI expansion
+- Fixed FastAPI route ordering issue: `/prompts/{prompt_id}` must be defined before `/{agent_id}`
+- All 8 acceptance criteria fully met
+- E2E tests: 354 passed, 1 skipped
 
 ### File List
 
