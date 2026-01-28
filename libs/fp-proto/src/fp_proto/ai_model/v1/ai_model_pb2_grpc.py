@@ -1091,6 +1091,11 @@ class AgentConfigServiceStub(object):
                 request_serializer=ai__model_dot_v1_dot_ai__model__pb2.ListPromptsByAgentRequest.SerializeToString,
                 response_deserializer=ai__model_dot_v1_dot_ai__model__pb2.ListPromptsResponse.FromString,
                 _registered_method=True)
+        self.GetPrompt = channel.unary_unary(
+                '/farmer_power.ai_model.v1.AgentConfigService/GetPrompt',
+                request_serializer=ai__model_dot_v1_dot_ai__model__pb2.GetPromptRequest.SerializeToString,
+                response_deserializer=ai__model_dot_v1_dot_ai__model__pb2.PromptDetail.FromString,
+                _registered_method=True)
 
 
 class AgentConfigServiceServicer(object):
@@ -1124,6 +1129,13 @@ class AgentConfigServiceServicer(object):
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
+    def GetPrompt(self, request, context):
+        """Get full prompt detail including content (Story 9.12c - AC 9.12c.4)
+        """
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
 
 def add_AgentConfigServiceServicer_to_server(servicer, server):
     rpc_method_handlers = {
@@ -1141,6 +1153,11 @@ def add_AgentConfigServiceServicer_to_server(servicer, server):
                     servicer.ListPromptsByAgent,
                     request_deserializer=ai__model_dot_v1_dot_ai__model__pb2.ListPromptsByAgentRequest.FromString,
                     response_serializer=ai__model_dot_v1_dot_ai__model__pb2.ListPromptsResponse.SerializeToString,
+            ),
+            'GetPrompt': grpc.unary_unary_rpc_method_handler(
+                    servicer.GetPrompt,
+                    request_deserializer=ai__model_dot_v1_dot_ai__model__pb2.GetPromptRequest.FromString,
+                    response_serializer=ai__model_dot_v1_dot_ai__model__pb2.PromptDetail.SerializeToString,
             ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
@@ -1231,6 +1248,33 @@ class AgentConfigService(object):
             '/farmer_power.ai_model.v1.AgentConfigService/ListPromptsByAgent',
             ai__model_dot_v1_dot_ai__model__pb2.ListPromptsByAgentRequest.SerializeToString,
             ai__model_dot_v1_dot_ai__model__pb2.ListPromptsResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def GetPrompt(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/farmer_power.ai_model.v1.AgentConfigService/GetPrompt',
+            ai__model_dot_v1_dot_ai__model__pb2.GetPromptRequest.SerializeToString,
+            ai__model_dot_v1_dot_ai__model__pb2.PromptDetail.FromString,
             options,
             channel_credentials,
             insecure,

@@ -14,4 +14,5 @@ export * from './farmers';
 export * from './gradingModels';
 export * from './knowledge';
 export * from './sourceConfigs';
+export * from './aiAgents';
 export * from './types';

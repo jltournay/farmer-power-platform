@@ -1,9 +1,13 @@
-"""AI Agent Config admin API routes (Story 9.12b).
+"""AI Agent Config admin API routes (Story 9.12b/9.12c).
 
-Implements AC 9.12b.3, AC 9.12b.4, AC 9.12b.5 - AI Agent Configuration Viewer Endpoints:
+Implements AI Agent Configuration Viewer Endpoints:
 - GET /api/admin/ai-agents - List agent configs with filters
+- GET /api/admin/ai-agents/prompts/{prompt_id} - Get prompt detail (AC 9.12c.4)
 - GET /api/admin/ai-agents/{agent_id} - Get agent config detail
 - GET /api/admin/ai-agents/{agent_id}/prompts - List prompts by agent
+
+IMPORTANT: Route order matters! /prompts/{prompt_id} must be defined BEFORE
+/{agent_id} to avoid "prompts" being matched as an agent_id.
 
 All routes require platform_admin role (ADR-019 "Authorization").
 """
@@ -16,6 +20,7 @@ from bff.api.schemas.admin.agent_config_schemas import (
     AgentConfigDetailResponse,
     AgentConfigListResponse,
     AgentConfigSummaryResponse,
+    PromptDetailResponse,
     PromptListResponse,
     PromptSummaryResponse,
 )
@@ -91,6 +96,57 @@ async def list_ai_agents(
                 next_page_token=result.pagination.next_page_token,
             ),
         )
+    except ServiceUnavailableError as e:
+        raise HTTPException(
+            status_code=503,
+            detail=ApiError.service_unavailable("AI Model").model_dump(),
+        ) from e
+
+
+@router.get(
+    "/prompts/{prompt_id}",
+    response_model=PromptDetailResponse,
+    responses={
+        200: {"description": "Full prompt detail"},
+        401: {"description": "Authentication required", "model": ApiError},
+        403: {"description": "Platform admin access required", "model": ApiError},
+        404: {"description": "Prompt not found", "model": ApiError},
+        503: {"description": "AI Model service unavailable", "model": ApiError},
+    },
+    summary="Get prompt detail (Story 9.12c - AC 9.12c.4)",
+    description="Get full prompt detail including content fields (system_prompt, template, output_schema, few_shot_examples, ab_test). Requires platform_admin role.",
+)
+async def get_prompt_detail(
+    prompt_id: str = Path(
+        description="Prompt identifier (e.g., 'disease-diagnosis-main')",
+    ),
+    version: str | None = Query(
+        default=None,
+        description="Specific version to retrieve (default: active version)",
+    ),
+    _user: TokenClaims = require_platform_admin(),
+    client: AgentConfigClient = Depends(get_agent_config_client),
+) -> PromptDetailResponse:
+    """Get full prompt detail including all content fields.
+
+    Returns the complete prompt including system_prompt, template, output_schema,
+    few_shot_examples, changelog, git_commit, and A/B test configuration.
+    Used by the Admin UI prompt detail inline expansion (AC 9.12c.4).
+
+    NOTE: This route is defined BEFORE /{agent_id} to ensure "prompts" is not
+    captured as an agent_id by FastAPI's route matching.
+    """
+    try:
+        result = await client.get_prompt(prompt_id, version=version)
+        return PromptDetailResponse.from_domain(result)
+    except NotFoundError as e:
+        raise HTTPException(
+            status_code=404,
+            detail=ApiError(
+                code="PROMPT_NOT_FOUND",
+                message=f"Prompt '{prompt_id}'" + (f" version {version}" if version else " (active)") + " not found",
+            ).model_dump(),
+        ) from e
     except ServiceUnavailableError as e:
         raise HTTPException(
             status_code=503,

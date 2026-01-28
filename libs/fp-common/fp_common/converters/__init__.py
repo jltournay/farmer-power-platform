@@ -31,13 +31,15 @@ Usage:
     summary_proto = agent_config_summary_to_proto(config, prompt_count=...)
 """
 
-# Agent Config converters (Story 9.12a/9.12b)
+# Agent Config converters (Story 9.12a/9.12b/9.12c)
 from fp_common.converters.agent_config_converters import (
     agent_config_detail_from_proto,
     agent_config_response_from_proto,
     agent_config_response_to_proto,
     agent_config_summary_from_proto,
     agent_config_summary_to_proto,
+    prompt_detail_from_proto,
+    prompt_detail_to_proto,
     prompt_summary_from_proto,
     prompt_summary_to_proto,
 )
@@ -138,6 +140,8 @@ __all__ = [
     "llm_cost_by_agent_type_from_proto",
     "llm_cost_by_model_from_proto",
     "model_cost_to_proto",
+    "prompt_detail_from_proto",
+    "prompt_detail_to_proto",
     "prompt_summary_from_proto",
     "prompt_summary_to_proto",
     "region_from_proto",

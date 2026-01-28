@@ -17,7 +17,7 @@ from bff.api.schemas.responses import PaginationMeta
 from pydantic import BaseModel, Field
 
 if TYPE_CHECKING:
-    from fp_common.models import AgentConfigDetail, AgentConfigSummary, PromptSummary
+    from fp_common.models import AgentConfigDetail, AgentConfigSummary, PromptDetail, PromptSummary
 
 
 class PromptSummaryResponse(BaseModel):
@@ -52,6 +52,60 @@ class PromptSummaryResponse(BaseModel):
             status=model.status,
             author=model.author,
             updated_at=model.updated_at.isoformat() if model.updated_at else None,
+        )
+
+
+class PromptDetailResponse(BaseModel):
+    """Full prompt detail for admin inline expansion view (Story 9.12c - AC 9.12c.4).
+
+    Contains all prompt content fields for displaying in the Admin UI
+    prompt detail expansion accordion.
+    """
+
+    id: str = Field(description="MongoDB document ID")
+    prompt_id: str = Field(description="Logical prompt identifier")
+    agent_id: str = Field(description="Agent ID this prompt belongs to")
+    version: str = Field(description="Version string (semver)")
+    status: str = Field(description="Prompt status: draft, staged, active, archived")
+    author: str = Field(default="", description="Author of the prompt")
+    updated_at: str | None = Field(default=None, description="Last update timestamp (ISO format)")
+    created_at: str | None = Field(default=None, description="Creation timestamp (ISO format)")
+    changelog: str | None = Field(default=None, description="What changed in this version")
+    git_commit: str | None = Field(default=None, description="Source commit SHA")
+    system_prompt: str = Field(default="", description="Full system prompt text")
+    template: str = Field(default="", description="Template with {{variables}}")
+    output_schema_json: str | None = Field(default=None, description="Output schema as JSON string")
+    few_shot_examples_json: str | None = Field(default=None, description="Few-shot examples as JSON array")
+    ab_test_enabled: bool = Field(default=False, description="A/B test enabled")
+    ab_test_traffic_percentage: float = Field(default=0.0, description="A/B test traffic percentage (0-100)")
+
+    @classmethod
+    def from_domain(cls, model: "PromptDetail") -> "PromptDetailResponse":
+        """Create API response from domain model.
+
+        Args:
+            model: PromptDetail domain model from fp_common.
+
+        Returns:
+            PromptDetailResponse for API response.
+        """
+        return cls(
+            id=model.id,
+            prompt_id=model.prompt_id,
+            agent_id=model.agent_id,
+            version=model.version,
+            status=model.status,
+            author=model.author,
+            updated_at=model.updated_at.isoformat() if model.updated_at else None,
+            created_at=model.created_at.isoformat() if model.created_at else None,
+            changelog=model.changelog,
+            git_commit=model.git_commit,
+            system_prompt=model.system_prompt,
+            template=model.template,
+            output_schema_json=model.output_schema_json,
+            few_shot_examples_json=model.few_shot_examples_json,
+            ab_test_enabled=model.ab_test_enabled,
+            ab_test_traffic_percentage=model.ab_test_traffic_percentage,
         )
 
 
