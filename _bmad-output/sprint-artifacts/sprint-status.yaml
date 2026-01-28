@@ -272,7 +272,7 @@ development_status:
   9-11a-source-config-grpc-collection-model: done  # github_issue: 229  # 3 points - SourceConfigService gRPC in Collection Model
   9-11b-source-config-bff-client-rest: done  # github_issue: 231, 3 points - gRPC client + REST API in BFF, depends: 9-11a, PR: #232
   9-11c-source-config-viewer-ui: done  # github_issue: 233, 3 points - Source Configuration Viewer UI, depends: 9-11b, CODE REVIEW COMPLETED 2026-01-25
-  9-12a-agent-config-grpc-ai-model: ready-for-dev  # 5 points - AgentConfigService gRPC in AI Model (agents + prompts)
+  9-12a-agent-config-grpc-ai-model: in-progress  # 5 points - AgentConfigService gRPC in AI Model (agents + prompts)
   9-12b-agent-config-bff-client-rest: backlog  # 3 points - gRPC client + REST API in BFF, depends: 9-12a
   9-12c-agent-prompt-viewer-ui: backlog  # 5 points - AI Agent & Prompt Viewer UI, depends: 9-12b
   epic-9-retrospective: optional
