@@ -181,7 +181,7 @@ farmer-power-platform/
 | **Storage** | Azure Blob Storage |
 | **Observability** | OpenTelemetry via DAPR, Grafana Cloud |
 | **Container Orchestration** | Kubernetes (AKS) |
-| **Frontend** | React, Tailwind CSS, shadcn/ui, MUI v6 |
+| **Frontend** | React, MUI v6, Emotion |
 
 ---
 
