@@ -465,8 +465,10 @@ Example of a quality result for a tea bag with 102 tea leaves. The tea bag is cl
       }
     }
   },
-  "primary": 61,
-  "secondary": 41
+  "grading_result": {
+    "primary": 61,
+    "secondary": 41
+   }
 }
 
 
