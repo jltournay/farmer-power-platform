@@ -91,6 +91,9 @@ from fp_common.models.grading_model import (
 # Performance summary model
 from fp_common.models.performance_summary import PerformanceSummary
 
+# QC Analyzer result models
+from fp_common.models.qc_result import AttributeClassResult, GradeCount, QcAnalyzerResult
+
 # RAG retrieval models (Story 0.75.23)
 from fp_common.models.rag import RetrievalMatch, RetrievalQuery, RetrievalResult
 
@@ -234,6 +237,10 @@ __all__ = [
     # Agent Prompts (Story 9.12b/9.12c)
     "PromptDetail",
     "PromptSummary",
+    # QC Analyzer result
+    "AttributeClassResult",
+    "GradeCount",
+    "QcAnalyzerResult",
     "QualityThresholds",
     "RawDocumentRef",
     # Region
